@@ -306,6 +306,10 @@ subtest 'microservice address verified' => sub {
     ok !$client->status->unwelcome, 'client unwelcome is removed';
 
     is $mock_idv_status, 'verified', 'verify_identity returns `verified` status';
+
+    my $doc = $idv_model->get_last_updated_document();
+
+    cmp_deeply $doc->{status_messages}, encode_json_utf8(['ADDRESS_VERIFIED']), 'expected messages stored';
 };
 
 subtest 'microservice is unavailable' => sub {
@@ -400,6 +404,9 @@ subtest 'verify_process - apply side effects' => sub {
     ok $client->fully_authenticated(),    'client is fully authenticated';
     is $client->get_authentication('IDV')->{status}, 'pass', 'PoA with IDV';
 
+    my $doc = $idv_model->get_last_updated_document();
+
+    cmp_deeply $doc->{status_messages}, encode_json_utf8(['ADDRESS_VERIFIED']), 'expected messages stored';
 };
 
 subtest 'testing failed status' => sub {
@@ -1581,7 +1588,7 @@ subtest 'testing photo being sent as paramter - verified' => sub {
             'document_expiration_date' => undef,
             'is_checked'               => 1,
             'issuing_country'          => 'br',
-            'status_messages'          => undef,
+            'status_messages'          => '["NAME_MISMATCH"]',
             'id'                       => re('\d+'),
             'document_type'            => 'cpf'
         },

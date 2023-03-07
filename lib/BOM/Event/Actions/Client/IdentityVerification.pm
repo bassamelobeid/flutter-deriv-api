@@ -297,6 +297,7 @@ async sub idv_verified {
         document_id     => $document->{id},
         status          => 'verified',
         provider        => $provider,
+        messages        => [uniq @$messages],
         report          => encode_json_text($response_hash->{report} // {}),
         expiration_date => $response_hash->{report}->{expiry_date},
         request_body    => encode_json_text($response_hash->{request_body}  // {}),
