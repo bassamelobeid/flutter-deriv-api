@@ -414,6 +414,7 @@ subtest 'multiplier - get_bid' => sub {
         },
         'validation_error' =>
             'The spot price has moved. We have not closed this contract because your profit is negative and deal cancellation is active. Cancel your contract to get your full stake back.',
+        'validation_error_code' => 'General',
     };
     $res = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     cmp_deeply($res, $expected, 'get_bid as expected');
