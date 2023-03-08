@@ -45,6 +45,7 @@ has app_mapper => (
             deriv_dtrader      => \&_deriv_listing,
             deriv_go           => \&_deriv_listing,
             derivez            => \&_deriv_listing,
+            ctrader            => \&_deriv_listing,
             deriv_smarttrader  => \&_deriv_listing,
             deriv_binarybot    => \&_deriv_listing,
             mt5                => \&_mt5_listing,

@@ -133,7 +133,11 @@ subtest 'by app id' => sub {
         );
         my $apps = $deriv->whitelist_apps;
         foreach my $app_id (keys $apps->%*) {
-            next if $apps->{$app_id}->offerings eq 'none' or $apps->{$app_id}->offerings eq 'mt5' or $apps->{$app_id}->offerings eq 'derivez';
+            next
+                if $apps->{$app_id}->offerings eq 'none'
+                or $apps->{$app_id}->offerings eq 'mt5'
+                or $apps->{$app_id}->offerings eq 'derivez'
+                or $apps->{$app_id}->offerings eq 'ctrader';
 
             $args->{app_id} = $app_id;
             my $contracts = get_contracts($args);
@@ -163,7 +167,11 @@ subtest 'by app id' => sub {
         );
         my $apps = $binary->whitelist_apps;
         foreach my $app_id (keys $apps->%*) {
-            next if $apps->{$app_id}->offerings eq 'none' or $apps->{$app_id}->offerings eq 'mt5' or $apps->{$app_id}->offerings eq 'derivez';
+            next
+                if $apps->{$app_id}->offerings eq 'none'
+                or $apps->{$app_id}->offerings eq 'mt5'
+                or $apps->{$app_id}->offerings eq 'derivez'
+                or $apps->{$app_id}->offerings eq 'ctrader';
 
             $args->{app_id} = $app_id;
             my $contracts = get_contracts($args);
