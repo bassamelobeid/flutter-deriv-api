@@ -381,6 +381,26 @@
                        }
                    }
                }
+            },
+            "ctrader": {
+               "type": "object",
+               "additionalProperties": false,
+               "properties": {
+                   "all": {
+                       "type": "object",
+                       "additionalProperties": false,
+                       "properties": {
+                           "standard": {
+                              "type": "string",
+                              "additionalProperties": false,
+                              "enum": [
+                                 "svg",
+                                 "none"
+                              ]
+                           }
+                       }
+                   }
+               }
             }
          },
          "type" : "object"
