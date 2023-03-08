@@ -586,6 +586,11 @@ payments:
               description: 'Limits the amount of daily transfers in USD between binary accounts and DerivEZ accounts - not used'
               default: -1
               global: 1
+            ctrader:
+              isa: Num
+              description: 'Limits the amount of daily transfers in USD between binary accounts and CTrader accounts - not used'
+              default: -1
+              global: 1
         limits:
           isa: section
           description: 'Limits for internal transfers (default)'
@@ -623,6 +628,11 @@ payments:
             derivez:
               isa: Num
               description: 'Limits the numbers of daily transfers between binary accounts and DerivEZ accounts'
+              default: 10
+              global: 1
+            ctrader:
+              isa: Num
+              description: 'Limits the numbers of daily transfers between binary accounts and CTrader accounts'
               default: 10
               global: 1
         exchange_rate_expiry:
@@ -726,6 +736,11 @@ payments:
               description: 'Minimum amount for transferring between binary accounts and DerivEZ accounts per the brand. ("default" applies to all brands that are not in the config)'
               default: '{"default":{"currency":"USD","amount":0.01},"derivcrypto":{"currency":"BTC","amount":0.00008}}'
               global: 1
+            ctrader:
+              isa: json_string
+              description: 'Minimum amount for transferring between binary accounts and CTrader accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":0.01},"derivcrypto":{"currency":"BTC","amount":0.00008}}'
+              global: 1
         maximum:
           isa: section
           description: 'Transfer maximum amount (default)'
@@ -748,6 +763,11 @@ payments:
             derivez:
               isa: json_string
               description: 'Maximum amount for transferring between binary accounts and DerivEZ accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":15000},"derivcrypto":{"currency":"BTC","amount":0.25}}'
+              global: 1
+            ctrader:
+              isa: json_string
+              description: 'Maximum amount for transferring between binary accounts and CTrader accounts per the brand. ("default" applies to all brands that are not in the config)'
               default: '{"default":{"currency":"USD","amount":15000},"derivcrypto":{"currency":"BTC","amount":0.25}}'
               global: 1
     experimental_currencies_allowed:
