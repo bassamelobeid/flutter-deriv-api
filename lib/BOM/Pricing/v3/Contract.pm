@@ -209,6 +209,13 @@ sub _get_ask {
 
             $response->{multiplier} = $contract->multiplier if $contract->can('multiplier');
 
+            if ($contract->category_code eq 'turbos') {
+                $response->{number_of_contracts} = $contract->number_of_contracts;
+                $response->{barrier_choices}     = $contract->strike_price_choices;
+                $response->{min_stake}           = $contract->min_stake;
+                $response->{max_stake}           = $contract->max_stake;
+            }
+
             if ($contract->category_code eq 'vanilla') {
                 $response->{min_stake}           = $contract->min_stake;
                 $response->{max_stake}           = $contract->max_stake;
@@ -267,6 +274,16 @@ sub _get_ask {
                 $response->{contract_details}->{last_tick_epoch} = $last_tick_processed->{tick_epoch} if $last_tick_processed;
             }
 
+            if ($contract->category_code eq 'turbos') {
+                if ($contract->take_profit) {
+                    $response->{limit_order} = {
+                        'take_profit' => {
+                            'display_name' => 'Take profit',
+                            'order_date'   => $contract->take_profit->{date}->epoch,
+                            'order_amount' => $contract->take_profit->{amount}}};
+                }
+            }
+
             # On websocket, we are setting 'basis' to payout and 'amount' to 1000 to increase the collission rate.
             # This logic shouldn't be in websocket since it is business logic.
             unless ($streaming_params->{from_pricer}) {
@@ -274,9 +291,9 @@ sub _get_ask {
                 # the ask_price is defined by the user and the output of limit order (take profit or stop out),
                 # is dependent of the stake and multiplier provided by the client.
                 # There is no probability calculation involved. Hence, not optimising anything.
-                # Since vanilla has no payout, adding it here as well
+                # Since vanilla and turbos have no payout, adding it here as well
                 $response->{skip_basis_override} = 1
-                    if $contract->code =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD|ACCU|VANILLALONGCALL|VANILLALONGPUT)$/;
+                    if $contract->code =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD|ACCU|VANILLALONGCALL|VANILLALONGPUT|TURBOSLONG|TURBOSSHORT)$/;
             }
         }
         my $pen = $contract->pricing_engine_name;
@@ -632,9 +649,8 @@ sub _validate_offerings {
     }
 
     try {
-        my $landing_company = LandingCompany::Registry->by_name($args_copy->{landing_company} // 'virtual');
-
-        my $offerings_obj = $landing_company->basic_offerings_for_country(delete $args_copy->{country_code} // '',
+        my $landing_company = LandingCompany::Registry->by_name($args_copy->{landing_company}                 // 'virtual');
+        my $offerings_obj   = $landing_company->basic_offerings_for_country(delete $args_copy->{country_code} // '',
             BOM::Config::Runtime->instance->get_offerings_config($args_copy->{action}));
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
@@ -882,6 +898,16 @@ sub _build_bid_response {
         }
     }
 
+    if ($contract->category_code eq 'turbos') {
+        if ($contract->take_profit) {
+            $response->{limit_order} = {
+                'take_profit' => {
+                    'display_name' => 'Take profit',
+                    'order_date'   => $contract->take_profit->{date}->epoch,
+                    'order_amount' => $contract->take_profit->{amount}}};
+        }
+        $response->{barrier} = $contract->display_barrier;
+    }
     if ($contract->category_code eq 'vanilla') {
         $response->{number_of_contracts} = $contract->number_of_contracts;
     }
