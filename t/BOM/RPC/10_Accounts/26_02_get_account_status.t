@@ -1618,6 +1618,128 @@ subtest 'poi fully authenticated multiple authentication methods scenario' => su
     ok((grep { $_ eq 'authenticated' } $result->{status}->@*), 'Client is now fully authenticated');
 };
 
+subtest 'fully auth at BO' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+fullyauth+bo@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+
+    my $client_mock = Test::MockModule->new(ref($client));
+    my @latest_poi_by;
+    $client_mock->mock(
+        'latest_poi_by',
+        sub {
+            return @latest_poi_by;
+        });
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {};
+        });
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+    is $result->{authentication}->{identity}->{status},                       'none', 'status is none';
+    is $result->{authentication}->{identity}->{services}->{manual}->{status}, 'none', 'status is none';
+
+    @latest_poi_by = ('manual');
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_pending => 1,
+                    documents  => {
+                        test => {
+                            test => 1,
+                        }}}};
+        });
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    is $result->{authentication}->{identity}->{status},                       'pending', 'status is pending';
+    is $result->{authentication}->{identity}->{services}->{manual}->{status}, 'pending', 'status is pending';
+
+    # fully auth
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_pending => 0,
+                    documents  => {
+                        test => {
+                            test => 1,
+                        }}}};
+        });
+    $client->set_authentication('ID_NOTARIZED', {status => 'pass'});
+    $result = $c->tcall('get_account_status', {token => $token});
+    is $result->{authentication}->{identity}->{status},                       'verified', 'status is verified';
+    is $result->{authentication}->{identity}->{services}->{manual}->{status}, 'verified', 'status is verified';
+
+    # expired
+    $client->aml_risk_classification('high');
+    $client->save;
+
+    @latest_poi_by = ('manual');
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_pending => 0,
+                    is_expired => 1,
+                    documents  => {
+                        test => {
+                            test => 1,
+                        }}}};
+        });
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    is $result->{authentication}->{identity}->{status},                       'expired', 'status is expired';
+    is $result->{authentication}->{identity}->{services}->{manual}->{status}, 'expired', 'status is expired';
+
+    # new doc sent
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_pending => 1,
+                    is_expired => 1,
+                    documents  => {
+                        test => {
+                            test => 1,
+                        }}}};
+        });
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    is $result->{authentication}->{identity}->{status},                       'pending', 'status is pending';
+    is $result->{authentication}->{identity}->{services}->{manual}->{status}, 'pending', 'status is pending';
+
+    # fully auth again
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_pending => 0,
+                    is_expired => 0,
+                    documents  => {
+                        test => {
+                            test => 1,
+                        }}}};
+        });
+    $result = $c->tcall('get_account_status', {token => $token});
+    is $result->{authentication}->{identity}->{status},                       'verified', 'status is verified';
+    is $result->{authentication}->{identity}->{services}->{manual}->{status}, 'verified', 'status is verified';
+
+};
+
 $documents_mock->unmock_all;
 $user_mock->unmock_all;
 done_testing();

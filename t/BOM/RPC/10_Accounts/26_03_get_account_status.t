@@ -86,7 +86,7 @@ subtest 'check legacy cfd_score' => sub {
                             status              => "none",
                             submissions_left    => 3,
                         },
-                        manual => {status => "none"},
+                        manual => {status => "verified"},
                         onfido => {
                             country_code         => "IDN",
                             documents_supported  => ["Driving Licence", "National Identity Card", "Passport", "Residence Permit",],
@@ -150,7 +150,7 @@ subtest 'check legacy cfd_score' => sub {
                             status              => "none",
                             submissions_left    => 3,
                         },
-                        manual => {status => "none"},
+                        manual => {status => "verified"},
                         onfido => {
                             country_code         => "IDN",
                             documents_supported  => ["Driving Licence", "National Identity Card", "Passport", "Residence Permit",],

@@ -557,7 +557,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -618,7 +618,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -1520,7 +1520,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -2276,7 +2276,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -2478,7 +2478,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'verified',
                                     }}
                             },
                             income => {
