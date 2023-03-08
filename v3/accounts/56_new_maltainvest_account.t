@@ -117,6 +117,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         $details{residence}                 = 'de';
         $details{phone}                     = '+442072343457';
         $details{tax_identification_number} = '11122233344';
+        $details{salutation}                = 'Mr';
         my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
@@ -360,6 +361,7 @@ subtest 'CR client can from low risk countries upgrade to MF' => sub {
         $details{first_name} = 'first name ID';
         $details{residence}  = 'za';
         $details{phone}      = '+442072343457';
+        $details{salutation} = 'Mrs';
 
         my $res = $t->await::new_account_real(\%details);
         ok($res->{new_account_real});
@@ -707,6 +709,7 @@ subtest 'validate phone field' => sub {
         $details{first_name} = 'dummy-phone';
         $details{last_name}  = 'ownerian';
         $details{phone}      = '+++1234-864116586523';
+        $details{salutation} = 'Miss';
 
         my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{msg_type}, 'new_account_maltainvest');

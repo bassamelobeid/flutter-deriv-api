@@ -191,6 +191,7 @@ subtest 'new_real_account with currency provided' => sub {
         residence       => 'au',
     });
     my %details = %client_details;
+    $details{salutation} = 'Mr';
 
     my $compiled_checks = sub {
         my ($res, $details) = @_;
@@ -251,6 +252,7 @@ subtest 'validate phone field' => sub {
         $details{residence}  = 'br';
         $details{first_name} = 'i dont have';
         $details{last_name}  = 'a phone number';
+        $details{salutation} = 'Miss';
         delete $details{phone};
 
         my $res = $t->await::new_account_real(\%details);
@@ -331,6 +333,7 @@ subtest 'Address validation' => sub {
     my $cli_details = {
         %client_details,
         residence      => 'br',
+        salutation     => 'Mrs',
         first_name     => 'Homer',
         last_name      => 'Thompson',
         address_state  => 'São Paulo',

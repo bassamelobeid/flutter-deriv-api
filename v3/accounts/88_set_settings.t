@@ -68,6 +68,7 @@ subtest 'Address validation' => sub {
         set_settings   => 1,
         address_line_1 => '8504° Lake of Terror',
         address_line_2 => '1122ºD',
+        salutation     => 'Ms'
     };
 
     $res = $t->await::set_settings($set_settings_params);
@@ -107,6 +108,7 @@ subtest 'Tax residence on restricted country' => sub {
     my $set_settings_params = {
         set_settings  => 1,
         tax_residence => 'my',
+        salutation    => 'Mr'
     };
 
     $res = $t->await::set_settings($set_settings_params);
@@ -117,6 +119,7 @@ subtest 'Tax residence on restricted country' => sub {
 
     $set_settings_params = {
         set_settings   => 1,
+        salutation     => 'Mrs',
         address_line_1 => 'Lake of Rage 123',
         address_state  => 'Amazonas'
     };

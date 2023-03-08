@@ -63,6 +63,7 @@ subtest 'new real wallet  account' => sub {
         subtest 'new wallet account' => sub {
             my $res = $t->await::new_account_wallet({
                     %details,
+                    salutation     => 'Ms',
                     payment_method => 'Skrill',
                     currency       => 'USD'
                 },
@@ -79,6 +80,7 @@ subtest 'new real wallet  account' => sub {
         subtest 'Personal details are optional in case real account exists' => sub {
             my $res = $t->await::new_account_wallet({
                     new_account_wallet => 1,
+                    salutation         => 'Mr',
                     payment_method     => 'Zingpay',
                     currency           => 'USD'
                 },
@@ -95,6 +97,7 @@ subtest 'new real wallet  account' => sub {
 
         my $res = $t->await::new_account_wallet({
                 %details,
+                salutation     => 'Miss',
                 currency       => 'USD',
                 payment_method => 'fiat'
             },
