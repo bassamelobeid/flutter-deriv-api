@@ -851,8 +851,23 @@ sub prepare_bet_data_for_buy {
         $bet_params->{barrier}     = $contract->barrier->as_absolute;
         $bet_params->{entry_spot}  = $contract->entry_spot;
         $bet_params->{entry_epoch} = Date::Utility->new($contract->entry_tick->epoch)->db_timestamp;
-        $bet_params->{commission}  = $contract->_user_input_stake *
+
+        if ($contract->can('take_profit') and defined $contract->take_profit) {
+            $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
+            $bet_params->{take_profit_order_date}   = $contract->take_profit->{date}->db_timestamp;
+        }
+
+        $bet_params->{commission} = $contract->_user_input_stake *
             (($contract->ask_probability->amount - $contract->theo_probability->amount) / $contract->ask_probability->amount);
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TURBOS) {
+        $bet_params->{barrier}     = $contract->barrier->as_absolute;
+        $bet_params->{entry_spot}  = $contract->entry_spot;
+        $bet_params->{entry_epoch} = Date::Utility->new($contract->entry_tick->epoch)->db_timestamp;
+
+        if ($contract->can('take_profit') and defined $contract->take_profit) {
+            $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
+            $bet_params->{take_profit_order_date}   = $contract->take_profit->{date}->db_timestamp;
+        }
     } else {
         return Error::Base->cuss(
             -quiet             => 1,
@@ -1184,19 +1199,17 @@ sub batch_buy {
     my ($self, %options) = @_;
 
     # we do not support batch buy for multiplier and accumulator
-    if ($self->contract->category_code eq 'multiplier') {
+    if ($self->contract->category_code =~ m/^(multiplier|accumulator|turbos)$/i) {
+        my $message_to_client = {
+            multiplier  => localize('MULTUP and MULTDOWN are not supported.'),
+            accumulator => localize('ACCU is not supported.'),
+            turbos      => localize('TURBOSLONG and TURBOSPUT are not supported.'),
+        }->{$self->contract->category_code};
         return Error::Base->cuss(
             -quiet             => 1,
-            -type              => 'UnsupportedBatchBuy',
-            -mesg              => "Multiplier not supported in batch_buy",
-            -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
-        );
-    } elsif ($self->contract->category_code eq 'accumulator') {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'UnsupportedBatchBuy',
-            -mesg              => "Accumulator not supported in batch_buy",
-            -message_to_client => localize('ACCU is not supported.'),
+            -type              => 'UnsupportedBatchSell',
+            -mesg              => ucfirst($self->contract->category_code) . " not supported in batch_buy",
+            -message_to_client => $message_to_client,
         );
     }
 
@@ -1584,19 +1597,17 @@ sub sell_by_shortcode {
     $self->action_type('sell');
     my $stats_data = $self->stats_start('sell');
 
-    if ($self->contract->category_code eq 'multiplier') {
+    if ($self->contract->category_code =~ m/^(multiplier|accumulator|turbos)$/i) {
+        my $message_to_client = {
+            multiplier  => localize('MULTUP and MULTDOWN are not supported.'),
+            accumulator => localize('ACCU is not supported.'),
+            turbos      => localize('TURBOSLONG and TURBOSPUT are not supported.'),
+        }->{$self->contract->category_code};
         return Error::Base->cuss(
             -quiet             => 1,
             -type              => 'UnsupportedBatchSell',
-            -mesg              => "Multiplier not supported in sell_by_shortcode",
-            -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
-        );
-    } elsif ($self->contract->category_code eq 'accumulator') {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'UnsupportedBatchSell',
-            -mesg              => "Accumulator not supported in sell_by_shortcode",
-            -message_to_client => localize('ACCU is not supported.'),
+            -mesg              => ucfirst($self->contract->category_code) . " not supported in sell_by_shortcode",
+            -message_to_client => $message_to_client,
         );
     }
 
@@ -2300,7 +2311,7 @@ sub sell_expired_contracts {
         my $failure = {fmb_id => $bet->{id}};
         try {
             my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
-            if ($bet->{bet_class} =~ /^(multiplier|accumulator)$/) {
+            if ($bet->{bet_class} =~ /^(multiplier|accumulator|turbos)$/) {
                 # for multiplier and accumulator, we need to combine information on the child table to complete a contract
                 $bet_params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
             }
@@ -2585,7 +2596,15 @@ sub _get_params_for_expiryqueue {
     $hash->{settlement_epoch} = $contract->date_settlement->epoch if $contract->enqueue_settlement_epoch;
     # if we were to enable back the intraday path dependent, the barrier saved
     # in expiry queue might be wrong, since barrier is set based on next tick.
-    if ($contract->category_code eq 'accumulator') {
+    if ($contract->category_code eq 'turbos') {
+        my $barrier_level = $contract->take_profit_side eq 'lower' ? 'up_level' : 'down_level';
+        $hash->{$barrier_level} = $contract->underlying->pipsized_value($contract->barrier->as_absolute);
+
+        if (defined $contract->take_profit) {
+            my $which_level = $contract->take_profit_side eq 'lower' ? 'down_level' : 'up_level';
+            $hash->{$which_level} = $contract->underlying->pipsized_value($contract->take_profit_barrier_value);
+        }
+    } elsif ($contract->category_code eq 'accumulator') {
         $hash->{accumulator_epoch} = $contract->date_start->{epoch};
         $hash->{growth_rate}       = $contract->growth_rate;
     } elsif ($contract->is_path_dependent) {

@@ -175,25 +175,22 @@ sub _validate_update_parameter {
             last;
         }
 
-        last if ($contract->category_code eq 'multiplier' and $error = $self->_validate_multiplier_update_parameter($order_name));
-
-        last if ($contract->category_code eq 'accumulator' and $error = $self->_validate_accumulator_update_parameter($order_name));
+        last if $error = $self->_validate_order_parameter($order_name);
     }
 
     return $error;
 }
 
-=head2 _validate_accumulator_update_parameter
-
-validate update parameter(take_profit) of a accumulator contract
-returns error if there is any
-
-=cut
-
-sub _validate_accumulator_update_parameter {
+sub _validate_order_parameter {
     my ($self, $order_name) = @_;
 
-    my $contract    = $self->contract;
+    my $contract = $self->contract;
+
+    if ($contract->category_code eq 'multiplier') {
+        # multiplier options has more limit orders and deal cancellation. Hence, it's handled separatedly
+        return $self->_validate_multiplier_update_parameter($order_name);
+    }
+
     my $order_date  = $contract->date_pricing;
     my $order_value = $self->update_params->{$order_name};
     # when it reaches this stage, if it is a cancel operation, let it through
@@ -241,6 +238,7 @@ sub _validate_accumulator_update_parameter {
         'amount' => $order_value,
         'date'   => $order_date
     });
+
     return;
 }
 
@@ -335,7 +333,7 @@ sub update {
             # in 0 to database function to perform cancellation
             if ($contract_category eq 'multiplier') {
                 $update_args->{$order_name} = $order->order_amount // 0;
-            } elsif ($contract_category eq 'accumulator') {    #accumulator contract
+            } elsif ($contract_category eq 'accumulator' or $contract_category eq 'turbos') {    # turbos and accumulator contract
                 $update_args->{$order_name} = $order->{amount} // 0;
             }
         }
@@ -381,7 +379,7 @@ sub build_contract_update_response {
             take_profit => $display->{take_profit} // {},
             stop_loss   => $display->{stop_loss}   // {},
         };
-    } elsif ($category eq 'accumulator') {
+    } elsif ($category eq 'accumulator' or $category eq 'turbos') {
         my $display_name = localize(BOM::Product::Static::get_generic_mapping()->{take_profit});
         my $order_amount = $self->update_params->{take_profit} // undef;
         my $order_date   = $contract->date_pricing->epoch;
