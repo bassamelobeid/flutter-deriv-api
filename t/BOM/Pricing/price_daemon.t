@@ -126,7 +126,8 @@ subtest 'process_job' => sub {
         'tick_count'                 => '5',
         'tick_stream'                => [],
         'underlying'                 => 'R_10',
-        'validation_error'           => ignore()};
+        'validation_error'           => ignore(),
+        'validation_error_code'      => ignore()};
 
     cmp_deeply($result, $expected, 'process_job result matches');
 

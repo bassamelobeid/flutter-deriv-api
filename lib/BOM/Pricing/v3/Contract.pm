@@ -388,15 +388,16 @@ sub get_bid {
             });
         } else {
             $response = _build_bid_response({
-                contract           => $contract,
-                contract_id        => $contract_id,
-                is_valid_to_sell   => $valid_to_sell->{is_valid_to_sell},
-                is_valid_to_cancel => $contract->is_valid_to_cancel,
-                is_sold            => $is_sold,
-                is_expired         => $is_expired,
-                sell_price         => $sell_price,
-                sell_time          => $sell_time,
-                validation_error   => $valid_to_sell->{validation_error},
+                contract              => $contract,
+                contract_id           => $contract_id,
+                is_valid_to_sell      => $valid_to_sell->{is_valid_to_sell},
+                is_valid_to_cancel    => $contract->is_valid_to_cancel,
+                is_sold               => $is_sold,
+                is_expired            => $is_expired,
+                sell_price            => $sell_price,
+                sell_time             => $sell_time,
+                validation_error      => $valid_to_sell->{validation_error},
+                validation_error_code => $valid_to_sell->{validation_error_code},
             });
 
             # (M)oved from bom-rpc populate_proposal_open_contract_response
@@ -436,6 +437,7 @@ sub get_bid {
             code              => "GetProposalFailure"
         });
     }
+
     return $response;
 }
 
@@ -682,7 +684,7 @@ Returns a hashref is_valid_to_sell = boolean , validation_error = String (valida
 sub _is_valid_to_sell {
     my ($contract, $validation_params, $country_code) = @_;
     my $is_valid_to_sell = 1;
-    my $validation_error;
+    my ($validation_error, $validation_code);
 
     if (
         not $contract->is_expired
@@ -696,13 +698,21 @@ sub _is_valid_to_sell {
     {
         $is_valid_to_sell = 0;
         $validation_error = localize($cve->{error}{message_to_client});
-    } elsif (!$contract->is_valid_to_sell($validation_params->{validation_params})) {
+        $validation_code  = 'Offerings';                                  # this is not coming from MooseX::Role::Validatable::Error
+    } elsif (
+        !$contract->is_valid_to_sell({
+                landing_company         => $validation_params->{landing_company},
+                country_code            => $country_code,
+                skip_barrier_validation => $validation_params->{skip_barrier_validation}}))
+    {
         $is_valid_to_sell = 0;
         $validation_error = localize($contract->primary_validation_error->message_to_client);
+        $validation_code  = $contract->primary_validation_error->code;
     }
     return {
-        is_valid_to_sell => $is_valid_to_sell,
-        validation_error => $validation_error
+        is_valid_to_sell      => $is_valid_to_sell,
+        validation_error      => $validation_error,
+        validation_error_code => $validation_code,
     };
 }
 
@@ -771,11 +781,14 @@ sub _build_bid_response {
         $response->{barrier_count} = 0;
         $response->{barrier}       = undef;
     }
-    $response->{reset_time}       = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
-    $response->{multiplier}       = $contract->multiplier            if $contract->can('multiplier');
-    $response->{validation_error} = localize($params->{validation_error}) unless $params->{is_valid_to_sell};
-    $response->{current_spot}     = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-    $response->{tick_count}       = $contract->tick_count   if $contract->expiry_type eq 'tick';
+    $response->{reset_time} = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
+    $response->{multiplier} = $contract->multiplier            if $contract->can('multiplier');
+    unless ($params->{is_valid_to_sell}) {
+        $response->{validation_error}      = localize($params->{validation_error});
+        $response->{validation_error_code} = $params->{validation_error_code};
+    }
+    $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+    $response->{tick_count}   = $contract->tick_count   if $contract->expiry_type eq 'tick';
 
     if ($contract->is_binary) {
         $response->{payout} = $contract->payout;
