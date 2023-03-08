@@ -68,8 +68,8 @@ use BOM::Product::Contract::Resetput;
 use BOM::Product::Contract::Runhigh;
 use BOM::Product::Contract::Runlow;
 use BOM::Product::Contract::Accu;
-use BOM::Product::Contract::Turboscall;
-use BOM::Product::Contract::Turbosput;
+use BOM::Product::Contract::Turboslong;
+use BOM::Product::Contract::Turbosshort;
 use BOM::Product::Contract::Vanillalongcall;
 use BOM::Product::Contract::Vanillalongput;
 

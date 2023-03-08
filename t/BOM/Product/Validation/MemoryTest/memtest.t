@@ -232,7 +232,7 @@ subtest 'memory cycle test' => sub {
         foreach my $type (@contract_types) {
             next
                 if $type =~
-                /^(LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW|RUNHIGH|RUNLOW|MULTUP|MULTDOWN|VANILLALONGCALL|VANILLALONGPUT|TURBOSCALL|TURBOSPUT)/;
+                /^(LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW|RUNHIGH|RUNLOW|MULTUP|MULTDOWN|VANILLALONGCALL|VANILLALONGPUT|TURBOSLONG|TURBOSSHORT)/;
 
             foreach my $start_type (
                 $offerings_obj->query({

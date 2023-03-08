@@ -128,6 +128,7 @@ my $config = {
         InvalidStopLoss               => 'Please enter a stop loss amount that\'s higher than [_1].',
         InvalidInitialStopLoss        => 'Invalid stop loss. Stop loss must be higher than commission ([_1]).',
         InvalidMinStake               => 'Please enter a stake amount that\'s at least [_1].',
+        InvalidMaxStake               => 'Please enter a stake amount that\'s less than [_1].',
         InvalidMinPayout              => 'Please enter a payout amount that\'s at least [_1].',
         StopLossTooHigh               => 'Invalid stop loss. Stop loss cannot be more than [_1].',
         CommissionNotDefined          => 'This symbol is not available.',
@@ -154,6 +155,8 @@ my $config = {
         OfferingsInvalidLandingCompany => 'Landing company is invalid.',
         OfferingsInvalidSymbol         => 'There\'s no contract available for this symbol.',
         OfferingsSymbolRequired        => 'Symbol is required.',
+        TurbosContractNumberMaxLimit   => 'Maximum stake allowed is [_1].',
+        TurbosContractNumberMinLimit   => 'Minimum stake allowed is [_1].',
     },
     generic => {
         # use it audit details

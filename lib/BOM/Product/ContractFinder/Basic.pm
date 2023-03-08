@@ -5,6 +5,7 @@ use warnings;
 
 use POSIX qw(floor);
 use Date::Utility;
+use Format::Util::Numbers qw/financialrounding/;
 use Time::Duration::Concise;
 use VolSurface::Utils   qw(get_strike_for_spot_delta);
 use Number::Closest::XS qw(find_closest_numbers_around);
@@ -18,13 +19,15 @@ use List::Util    qw(max);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Contract::Strike;
+use BOM::Product::Contract::Strike::Turbos;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
 use BOM::Product::Contract::Strike::Vanilla;
 
-my $cache = Cache::LRU->new(size => 500);
+my $cache         = Cache::LRU->new(size => 500);
+my $turbos_config = LoadFile('/home/git/regentmarkets/bom/config/files/turbos.yml');
 
 sub decorate {
     my $args = shift;
@@ -44,6 +47,7 @@ sub decorate {
         my $contract_category = $o->{contract_category};
         my $barrier_category  = $o->{barrier_category};
         my $contract_type     = $o->{contract_type};
+        my $sentiment         = $o->{sentiment};
 
         if ($o->{start_type} eq 'forward') {
             my $key = join '::', ($symbol, $to_date->date);
@@ -154,6 +158,30 @@ sub decorate {
             $o->{barrier_choices} = $barrier_choices;
             $o->{barrier}         = $mid_barrier_choices;
         }
+
+        if ($contract_category eq 'turbos') {
+            # latest available spot should be sufficient.
+            my $current_tick    = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
+            my $barrier_choices = _default_barrier_for_turbos({
+                underlying   => $underlying,
+                duration     => $o->{min_contract_duration},
+                sentiment    => $sentiment,
+                expiry       => $o->{expiry_type},
+                current_tick => $current_tick,
+            });
+
+            my $barrier_choices_length = scalar @{$barrier_choices};
+            my $mid_barrier_choices    = $barrier_choices->[floor($barrier_choices_length / 2)];
+
+            $o->{barrier_choices} = $barrier_choices;
+            $o->{barrier}         = $mid_barrier_choices;
+            my $config   = $turbos_config->{$underlying->symbol};
+            my $max      = $config->{max_multiplier} * $config->{max_multiplier_stake}{USD} / $current_tick->quote;
+            my $min      = $config->{min_multiplier} * $config->{min_multiplier_stake}{USD} / $current_tick->quote;
+            my $distance = abs($mid_barrier_choices);
+            $o->{min_stake} = financialrounding('price', 'USD', $min * $distance);
+            $o->{max_stake} = financialrounding('price', 'USD', $max * $distance);
+        }
     }
 
     my ($open, $close) = (0, 0);
@@ -208,6 +236,44 @@ sub _default_barrier_for_vanilla {
     };
 
     return BOM::Product::Contract::Strike::Vanilla::strike_price_choices($args);
+}
+
+=head2 _default_barrier_for_turbos
+
+calculates and return default barrier range for turbos options
+
+=cut
+
+sub _default_barrier_for_turbos {
+    my $args = shift;
+
+    my ($underlying, $duration, $sentiment, $current_tick) = @{$args}{'underlying', 'duration', 'sentiment', 'current_tick'};
+
+    return unless $current_tick;
+
+    my $symbol = $underlying->symbol;
+
+    my $sigma                  = $turbos_config->{$symbol}->{sigma}                  || undef;
+    my $num_of_barriers        = $turbos_config->{$symbol}->{num_of_barriers}        || undef;
+    my $min_distance_from_spot = $turbos_config->{$symbol}->{min_distance_from_spot} || undef;
+    my $max_stake              = $turbos_config->{$symbol}->{max_multiplier_stake}   || undef;
+    my $max_multiplier         = $turbos_config->{$symbol}->{max_multiplier}         || undef;
+
+    unless (defined $sigma && defined $min_distance_from_spot && defined $num_of_barriers) {
+        BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
+    }
+
+    $args = {
+        underlying             => $underlying,
+        current_spot           => $current_tick->quote,
+        sigma                  => $sigma,
+        n_max                  => ($max_stake * $max_multiplier / $current_tick->quote),
+        min_distance_from_spot => $min_distance_from_spot,
+        num_of_barriers        => $num_of_barriers,
+        sentiment              => $sentiment,
+    };
+
+    return BOM::Product::Contract::Strike::Turbos::strike_price_choices($args);
 }
 
 sub _default_barrier {

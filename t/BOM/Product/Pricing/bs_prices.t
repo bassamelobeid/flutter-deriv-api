@@ -108,7 +108,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
 
                     next
                         if $contract_type =~
-                        /^(RESETCALL|RESETPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW|RUNHIGH|RUNLOW|MULTUP|MULTDOWN|ACCU|VANILLALONGPUT|VANILLALONGCALL|TURBOSCALL|TURBOSPUT)/;
+                        /^(RESETCALL|RESETPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW|RUNHIGH|RUNLOW|MULTUP|MULTDOWN|ACCU|VANILLALONGPUT|VANILLALONGCALL|TURBOSLONG|TURBOSSHORT)/;
                     # Skipping vanilla as they are not binary contracts
 
                     lives_ok {

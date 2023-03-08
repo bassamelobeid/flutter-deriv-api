@@ -97,7 +97,7 @@ subtest 'test everything' => sub {
             # there's no pricing engine for multiplier and accumulator
             next
                 if $contract_args->{bet_type} =~
-                /\bMULTUP\b|\bMULTDOWN\b|\bACCU\b|\bVANILLALONGCALL\b|\bVANILLALONGPUT\b|\bTURBOSCALL\b|\bTURBOSPUT\b/;
+                /\bMULTUP\b|\bMULTDOWN\b|\bACCU\b|\bVANILLALONGCALL\b|\bVANILLALONGPUT\b|\bTURBOSLONG\b|\bTURBOSSHORT\b/;
 
             my $c = produce_contract($contract_args);
 

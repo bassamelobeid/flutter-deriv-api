@@ -1052,8 +1052,8 @@ sub extra_info {
 sub pricing_details {
     my ($self, $action) = @_;
 
-    # non of these information actually valid for multiplier and accumulator, skipping it here
-    return [] if ($self->category_code =~ /^(multiplier|accumulator)$/);
+    # non of these information actually valid for multiplier and accumulator and turbos, skipping it here
+    return [] if ($self->category_code =~ /^(multiplier|accumulator|turbos)$/);
 
     # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
     my $iv   = $self->is_after_expiry ? 0 : $self->pricing_vol;

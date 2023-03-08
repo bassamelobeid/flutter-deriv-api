@@ -1136,6 +1136,10 @@
         max: 10
         min: 5
         name: ticks
+      - display_name: Seconds
+        max: 86400
+        min: 15
+        name: s
       - display_name: Minutes
         max: 1440
         min: 1
