@@ -29,6 +29,7 @@ our $BET_CLASS_RUNS             = 'runs';
 our $BET_CLASS_MULTIPLIER       = 'multiplier';
 our $BET_CLASS_ACCUMULATOR      = 'accumulator';
 our $BET_CLASS_VANILLA          = 'vanilla';
+our $BET_CLASS_TURBOS           = 'turbos';
 
 # Constant reference to volatile hash
 our $BET_CLASS_TO_TYPE_MAP = {
@@ -56,6 +57,7 @@ our $BET_CLASS_TO_TYPE_MAP = {
     'multiplier'      => ['MULTUP',      'MULTDOWN'],
     'accumulator'     => ['ACCU'],
     'vanilla'         => ['VANILLALONGCALL', 'VANILLALONGPUT'],
+    'turbos'          => ['TURBOSLONG',      'TURBOSSHORT'],
     'INVALID'         => ['INVALID'],
 };
 

@@ -32,6 +32,7 @@ use BOM::Database::Model::FinancialMarketBet::Runs;
 use BOM::Database::Model::FinancialMarketBet::Multiplier;
 use BOM::Database::Model::FinancialMarketBet::Accumulator;
 use BOM::Database::Model::FinancialMarketBet::Vanilla;
+use BOM::Database::Model::FinancialMarketBet::Turbos;
 use Date::Utility;
 use Syntax::Keyword::Try;
 
@@ -111,7 +112,7 @@ sub get_fmb_by_id {
             $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET,        $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION,
             $BOM::Database::Model::Constants::BET_CLASS_RESET_BET,        $BOM::Database::Model::Constants::BET_CLASS_HIGH_LOW_TICK,
             $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER,       $BOM::Database::Model::Constants::BET_CLASS_ACCUMULATOR,
-            $BOM::Database::Model::Constants::BET_CLASS_VANILLA,
+            $BOM::Database::Model::Constants::BET_CLASS_VANILLA,          $BOM::Database::Model::Constants::BET_CLASS_TURBOS,
         ],
         query => [id => $bet_ids],
         db    => $self->db,
@@ -282,14 +283,15 @@ sub get_contract_details_with_transaction_ids {
 
     my $sql = q{
         SELECT fmb.*, m.*, t.id as transaction_id, t.action_type, t.app_markup,
-            COALESCE(m.take_profit_order_date, a.take_profit_order_date) as take_profit_order_date,
-            COALESCE(m.take_profit_order_amount, a.take_profit_order_amount) as take_profit_order_amount,
+            COALESCE(m.take_profit_order_date, a.take_profit_order_date, tb.take_profit_order_date) as take_profit_order_date,
+            COALESCE(m.take_profit_order_amount, a.take_profit_order_amount, tb.take_profit_order_amount) as take_profit_order_amount,
             COALESCE(m.financial_market_bet_id, a.financial_market_bet_id) AS financial_market_bet_id
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on t.financial_market_bet_id=fmb.id
             LEFT JOIN bet.multiplier m on m.financial_market_bet_id=fmb.id
             LEFT JOIN bet.accumulator a on a.financial_market_bet_id=fmb.id
+            LEFT JOIN bet.turbos tb on tb.financial_market_bet_id=fmb.id
         WHERE
             fmb.id = ?
     };
@@ -511,6 +513,9 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_VANILLA) {
         $param->{'vanilla_record'} = $rose_object->vanilla;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::Vanilla';
+    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_TURBOS) {
+        $param->{'turbos_record'} = $rose_object->turbos;
+        $model_class = 'BOM::Database::Model::FinancialMarketBet::Turbos';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
