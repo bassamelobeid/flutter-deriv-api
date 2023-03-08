@@ -108,8 +108,9 @@ subtest 'trading hours' => sub {
     $c                    = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
-        ['This market is presently closed. Try out the Synthetic Indices which are always open.']);
+        ['This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.', '2016-03-28 00:00:00']);
     is_deeply $c->primary_validation_error->{details}, {field => 'symbol'}, 'error detials is not correct';
+    is $c->primary_validation_error->code, 'MarketIsClosedTryVolatility', 'code is set correctly when market is closed';
 
     my $hsi_open         = $weekday->plus_time_interval('1h30m');
     my $hsi_time         = $hsi_open->plus_time_interval('11m');
@@ -128,8 +129,9 @@ subtest 'trading hours' => sub {
     $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
-        ['This market is presently closed. Try out the Synthetic Indices which are always open.']);
+        ['This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.']);
     is_deeply $c->primary_validation_error->{details}, {field => 'symbol'}, 'error detials is not correct';
+    is $c->primary_validation_error->code, 'MarketIsClosedTryVolatility', 'code is set correctly when market is closed';
 
     # for forward starting
     $args->{date_pricing} = $hsi_open->minus_time_interval('20m');
@@ -298,7 +300,8 @@ subtest 'sell multiday on weekend' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'invalid to sell';
     is $c->primary_validation_error->{message_to_client}->[0],
-        'This market is presently closed. Try out the Synthetic Indices which are always open.', 'market is presently closed';
+        'This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.',
+        'market is presently closed';
 
     $bet_params = {
         underlying   => 'frxUSDJPY',
@@ -320,5 +323,6 @@ subtest 'sell multiday on weekend' => sub {
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'invalid to sell';
     is $c->primary_validation_error->{message_to_client}->[0],
-        'This market is presently closed. Try out the Synthetic Indices which are always open.', 'market is presently closed';
+        'This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.',
+        'market is presently closed';
 };

@@ -574,17 +574,15 @@ sub _validate_trading_times {
             }
             $synthetic_index_flag = any { $_ eq 'synthetic_index' } @markets;
         }
-        my $error_code;
-        if ($synthetic_index_flag) {
-            $error_code = $self->is_forward_starting ? 'MarketNotOpenTryVolatility' : 'MarketIsClosedTryVolatility';
-        } else {
-            $error_code = $self->is_forward_starting ? 'MarketNotOpen' : 'MarketIsClosed';
-        }
+        my ($error_code, $set_code) = ($self->is_forward_starting) ? ('MarketNotOpen', 0) : ('MarketIsClosed', 1);
+        $error_code .= 'TryVolatility' if $synthetic_index_flag;
+        my $next_trading_time = $calendar->next_open_at($exchange, $effective_start);
 
         return {
             message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $effective_start->datetime . "]",
-            message_to_client => [$ERROR_MAPPING->{$error_code}],
+            message_to_client => [$ERROR_MAPPING->{$error_code}, ($next_trading_time ? $next_trading_time->datetime : ())],
             details           => {field => $self->is_forward_starting ? 'date_start' : 'symbol'},
+            $set_code ? (code => $error_code) : (),
         };
     }
 
