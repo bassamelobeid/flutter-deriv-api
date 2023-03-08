@@ -1114,7 +1114,8 @@ subtest 'batch buy forex after friday close' => sub {
         my $error = $txn->batch_buy;
         ok $error, 'invalid to buy';
         is $error->get_type, 'InvalidtoBuy', 'InvalidtoBuy';
-        is $error->{'-message_to_client'}, 'This market is presently closed. Try out the Synthetic Indices which are always open.';
+        is $error->{'-message_to_client'},
+            'This market is presently closed. Market will open at 2021-11-15 00:00:00. Try out the Synthetic Indices which are always open.';
 
     }
     'survived';

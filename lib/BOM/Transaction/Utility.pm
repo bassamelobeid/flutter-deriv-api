@@ -73,12 +73,8 @@ sub build_poc_parameters {
         transaction_ids       => $transaction_ids,
         symbol                => $fmb->{underlying_symbol},
         contract_type         => $fmb->{bet_type},
+        country_code          => $client->residence,
     };
-
-    # country code is required for china because we have special offerings conditions.
-    if ($client->residence eq 'cn') {
-        $contract_parameters->{country_code} = $client->residence;
-    }
 
     if ($fmb->{bet_class} =~ /\bmultiplier\b|\baccumulator\b/) {
         $contract_parameters->{limit_order} = extract_limit_orders($fmb);
