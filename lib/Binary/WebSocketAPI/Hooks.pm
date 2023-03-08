@@ -112,7 +112,7 @@ sub log_call_timing {
 
     my %tags = (
         rpc    => $req_storage->{method},
-        stream => $req_storage->{msg_group},
+        stream => $req_storage->{category},
         map { $_ => $c->stash($_) } qw/brand source_type/
     );
 
@@ -424,7 +424,7 @@ sub before_forward {
                     tags => [
                         $tag,
                         "category:$req_storage->{name}",
-                        "stream:" . ($req_storage->{msg_group} // Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME())]});
+                        "stream:" . ($req_storage->{category} // Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME())]});
 
             return Future->done;
         },
@@ -473,8 +473,8 @@ sub _check_auth {
 sub _rpc_suffix {
     my ($c, $req_storage) = @_;
 
-    my $group_suffix = $Binary::WebSocketAPI::DIVERT_MSG_GROUP{$req_storage->{msg_group} // ''} // '';
-    my $app_id       = $c->app_id                                                               // '';
+    my $group_suffix = $Binary::WebSocketAPI::DIVERT_CATEGORY{$req_storage->{category} // ''} // '';
+    my $app_id       = $c->app_id                                                             // '';
     my $app_suffix   = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
     my $processor    = join q{_} => (grep { $_ } ($group_suffix, $app_suffix));
 
@@ -878,16 +878,16 @@ Returns void
 sub ignore_queue_separations {
     my (undef, $req_storage) = @_;
 
-    $req_storage->{msg_group} = undef if $ENV{TEST_REDIRECT_RPC_QUEUES};
+    $req_storage->{category} = undef if $ENV{TEST_REDIRECT_RPC_QUEUES};
 
     # Default queue
-    return undef unless $req_storage->{msg_group};
+    return undef unless $req_storage->{category};
 
     # Queue is activated.
-    return undef if $Binary::WebSocketAPI::RPC_ACTIVE_QUEUES{$req_storage->{msg_group}};
+    return undef if $Binary::WebSocketAPI::RPC_ACTIVE_QUEUES{$req_storage->{category}};
 
     # Switch message to default queue.
-    $req_storage->{msg_group} = undef;
+    $req_storage->{category} = undef;
 
     return undef;
 }

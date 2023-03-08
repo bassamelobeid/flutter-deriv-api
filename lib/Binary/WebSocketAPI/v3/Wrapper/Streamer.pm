@@ -77,7 +77,7 @@ sub website_status {
         $c->call_rpc({
                 args        => $args,
                 method      => 'website_status',
-                msg_group   => $req_storage->{msg_group},
+                category    => $req_storage->{category},
                 call_params => {
                     country_code => $c->country_code,
                     residence    => $c->stash('residence'),
@@ -227,7 +227,7 @@ sub ticks {
                 method      => 'ticks',
                 msg_type    => 'tick',
                 symbol      => $symbol,
-                msg_group   => $req_storage->{msg_group},
+                category    => $req_storage->{category},
                 call_params => {
                     symbol => $symbol,
                 },
@@ -298,7 +298,7 @@ sub ticks_history {
                 args           => $args,
                 origin_args    => $req_storage->{origin_args},
                 method         => 'ticks_history',
-                msg_group      => $req_storage->{msg_group},
+                category       => $req_storage->{category},
                 rpc_failure_cb => sub {
                     if ($worker) {
                         stats_inc('bom_websocket_api.v_3.ticks_history.rpc_failure.kill_sub');

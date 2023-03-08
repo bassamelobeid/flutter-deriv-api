@@ -21,7 +21,7 @@ sub actions_config {
             {
                 stash_params => [qw/ ua_fingerprint client_ip user_agent /],
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::login_success,
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
@@ -29,7 +29,7 @@ sub actions_config {
             {
                 stash_params => [qw/ token token_type email client_ip user_agent /],
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
-                msg_group    => 'account',
+                category     => 'account',
             },
         ],
         ['trading_times'],
@@ -44,21 +44,21 @@ sub actions_config {
             'ticks',
             {
                 instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks,
-                msg_group          => 'tick',
+                category           => 'tick',
             }
         ],
         [
             'ticks_history',
             {
                 instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks_history,
-                msg_group          => 'tick',
+                category           => 'tick',
             }
         ],
         [
             'proposal',
             {
                 instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal,
-                msg_group          => 'pricing'
+                category           => 'pricing'
             }
         ],
         ['forget',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
@@ -78,14 +78,14 @@ sub actions_config {
                 stash_params => [qw/ token_type /],
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
                 response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_response_handler,
-                msg_group    => 'mt5_hybrid',
+                category     => 'mt5_hybrid',
             }
         ],
 
         [
             'statement',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             }
         ],
 
@@ -93,7 +93,7 @@ sub actions_config {
         [
             'account_statistics',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         ['identity_verification_document_add'],
@@ -102,7 +102,7 @@ sub actions_config {
         [
             'get_account_status',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             }
         ],
 
@@ -110,61 +110,61 @@ sub actions_config {
             'change_password',
             {
                 stash_params => [qw/ token_type client_ip /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
             'get_settings',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         [
             'mt5_get_settings',
             {
-                msg_group => 'mt5',
+                category => 'mt5',
             }
         ],
         [
             'set_settings',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
             'mt5_password_check',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'mt5',
+                category     => 'mt5',
             }
         ],
         [
             'mt5_password_change',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'mt5',
+                category     => 'mt5',
             }
         ],
         [
             'mt5_password_reset',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'mt5',
+                category     => 'mt5',
             }
         ],
         [
             'get_self_exclusion',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
 
         [
             'set_self_exclusion',
             {
-                response  => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler,
-                msg_group => 'mt5_hybrid',
+                response => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler,
+                category => 'mt5_hybrid',
             }
         ],
 
@@ -172,85 +172,85 @@ sub actions_config {
             'api_token',
             {
                 stash_params => [qw/ account_id client_ip /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
             'tnc_approval',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         [
             'login_history',
             {
-                response  => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler,
-                msg_group => 'account',
+                response => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler,
+                category => 'account',
             }
         ],
         [
             'set_account_currency',
             {
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler,
-                msg_group      => 'mt5_hybrid',
+                category       => 'mt5_hybrid',
             }
         ],
         [
             'set_financial_assessment',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         [
             'get_financial_assessment',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         [
             'reality_check',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         [
             'verify_email',
             {
                 stash_params => [qw/ server_name token /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
             'verify_email_cellxpert',
             {
                 stash_params => [qw/ server_name token /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
             'new_account_virtual',
             {
                 stash_params => [qw/ token server_name client_ip user_agent /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
             'reset_password',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         [
             'change_email',
             {
                 stash_params => [qw/ token_type client_ip /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
             'unsubscribe_email',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
 
@@ -266,7 +266,7 @@ sub actions_config {
         [
             'sell',
             {
-                msg_group => 'trading',
+                category => 'trading',
             }
         ],
 
@@ -275,7 +275,7 @@ sub actions_config {
         [
             'buy',
             {
-                msg_group      => 'trading',
+                category       => 'trading',
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
                 success        => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_single_contract,
                 response       => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_set_poc_subscription_id,
@@ -285,7 +285,7 @@ sub actions_config {
         [
             'buy_contract_for_multiple_accounts',
             {
-                msg_group      => 'trading',
+                category       => 'trading',
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
             }
         ],
@@ -293,7 +293,7 @@ sub actions_config {
         [
             'sell_contract_for_multiple_accounts',
             {
-                msg_group => 'trading',
+                category => 'trading',
             }
         ],
 
@@ -301,7 +301,7 @@ sub actions_config {
             'transaction',
             {
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction,
-                msg_group      => 'pricing',
+                category       => 'pricing',
             },
 
         ],
@@ -310,14 +310,14 @@ sub actions_config {
             'proposal_open_contract',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
-                msg_group       => 'pricing'
+                category        => 'pricing'
             }
         ],
 
         [
             'sell_expired',
             {
-                msg_group => 'trading',
+                category => 'trading',
             }
         ],
 
@@ -337,20 +337,20 @@ sub actions_config {
         [
             'topup_virtual',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         [
             'get_limits',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             }
         ],
         [
             'paymentagent_list',
             {
                 stash_params => [qw/ token /],
-                msg_group    => 'payment',
+                category     => 'payment',
             }
         ],
         ['payment_methods', {stash_params => [qw/ token /]}],
@@ -360,7 +360,7 @@ sub actions_config {
                 error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_withdraw'),
                 stash_params => [qw/ server_name /],
-                msg_group    => 'payment',
+                category     => 'payment',
             }
         ],
         [
@@ -375,7 +375,7 @@ sub actions_config {
                 error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_transfer'),
                 stash_params => [qw/ server_name /],
-                msg_group    => 'payment',
+                category     => 'payment',
             }
         ],
         [
@@ -384,26 +384,26 @@ sub actions_config {
                 stash_params => [qw/ token_type /],
                 error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
-                msg_group    => 'mt5_hybrid',
+                category     => 'mt5_hybrid',
             }
         ],
         [
             'paymentagent_details',
             {
-                msg_group => 'payment',
+                category => 'payment',
             },
         ],
         [
             'paymentagent_create',
             {
-                msg_group => 'payment',
+                category => 'payment',
             },
         ],
         [
             'cashier',
             {
                 stash_params => [qw/ server_name domain /],
-                msg_group    => 'payment',
+                category     => 'payment',
             }
         ],
         [
@@ -411,14 +411,14 @@ sub actions_config {
             {
                 stash_params    => [qw/ server_name domain /],
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::CashierPayments::subscribe_cashier_payments,
-                msg_group       => 'payment',
+                category        => 'payment',
             },
         ],
         [
             'cashier_withdrawal_cancel',
             {
                 stash_params => [qw/ server_name domain /],
-                msg_group    => 'payment',
+                category     => 'payment',
             },
         ],
         [
@@ -438,7 +438,7 @@ sub actions_config {
             'affiliate_add_company',
             {
                 stash_params => [qw/ token server_name client_ip user_agent /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
@@ -450,21 +450,21 @@ sub actions_config {
         [
             'account_closure',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             },
         ],
         [
             'mt5_login_list',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'mt5',
+                category     => 'mt5',
             }
         ],
         [
             'mt5_new_account',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'mt5',
+                category     => 'mt5',
             }
         ],
         [
@@ -472,7 +472,7 @@ sub actions_config {
             {
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_deposit'),
                 stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'mt5',
+                category     => 'mt5',
             }
         ],
         [
@@ -480,13 +480,13 @@ sub actions_config {
             {
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_withdrawal'),
                 stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'mt5',
+                category     => 'mt5',
             }
         ],
         [
             'trading_servers',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             }
         ],
         [
@@ -494,7 +494,7 @@ sub actions_config {
             {
                 stash_params    => [qw/ token /],
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_info,
-                msg_group       => 'account',
+                category        => 'account',
             }
         ],
 
@@ -508,7 +508,7 @@ sub actions_config {
         [
             'account_security',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         ['notification_event'],
@@ -522,134 +522,134 @@ sub actions_config {
         [
             'p2p_advert_create',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_advert_update',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_advert_info',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_adverts,
-                msg_group       => 'p2p',
+                category        => 'p2p',
             },
         ],
         [
             'p2p_advert_list',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_order_cancel',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_order_confirm',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_order_create',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
-                msg_group       => 'p2p',
+                category        => 'p2p',
             }
         ],
         [
             'p2p_order_info',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
-                msg_group       => 'p2p',
+                category        => 'p2p',
             }
         ],
         [
             'p2p_order_list',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
-                msg_group       => 'p2p',
+                category        => 'p2p',
             }
         ],
         [
             'p2p_advertiser_create',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_advertisers,
-                msg_group       => 'p2p',
+                category        => 'p2p',
             }
         ],
         [
             'p2p_advertiser_info',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_advertisers,
-                msg_group       => 'p2p',
+                category        => 'p2p',
             }
         ],
         [
             'p2p_advertiser_update',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_advertiser_adverts',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_chat_create',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_order_dispute',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_payment_methods',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_advertiser_payment_methods',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_advertiser_relations',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_order_review',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         [
             'p2p_ping',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         ['trading_platform_asset_listing', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::trading_platform_asset_listing}],
         [
             'p2p_advertiser_list',
             {
-                msg_group => 'p2p',
+                category => 'p2p',
             },
         ],
         ['trading_platform_product_listing'],
@@ -661,25 +661,25 @@ sub actions_config {
         [
             'trading_platform_password_change',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             }
         ],
         [
             'trading_platform_password_reset',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             }
         ],
         [
             'trading_platform_investor_password_change',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             }
         ],
         [
             'trading_platform_investor_password_reset',
             {
-                msg_group => 'mt5_hybrid',
+                category => 'mt5_hybrid',
             }
         ],
 
@@ -688,13 +688,13 @@ sub actions_config {
         [
             'get_account_types',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
         [
             'get_available_accounts_to_transfer',
             {
-                msg_group => 'account',
+                category => 'account',
             }
         ],
     ];

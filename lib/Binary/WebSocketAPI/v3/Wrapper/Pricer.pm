@@ -54,7 +54,7 @@ sub proposal {
             args              => $args,
             method            => 'send_ask',
             msg_type          => 'proposal',
-            msg_group         => $req_storage->{msg_group},
+            category          => $req_storage->{category},
             call_params       => {
                 token                 => $c->stash('token'),
                 language              => $c->stash('language'),

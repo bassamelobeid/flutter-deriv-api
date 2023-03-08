@@ -38,7 +38,7 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription>
         type        => $type,
         contract_id => $contract_id,
         args        => $args,
-        msg_group   => $msg_group
+        category   => $category
     );
 
     $worker->unsubscribe;
@@ -62,13 +62,13 @@ has type => (
         die "type can only be buy, balance, transaction, sell" unless $allowed_types->{$_[0]};
     });
 
-=head2 msg_group
+=head2 category
 
-The msg_group set in Binary::WebSocketAPI::Actions;
+The category set in Binary::WebSocketAPI::Actions;
 
 =cut
 
-has msg_group => (
+has category => (
     is       => 'ro',
     required => 0,
 
@@ -236,7 +236,7 @@ sub _update_transaction {
             args        => $args,
             msg_type    => 'transaction',
             method      => 'get_contract_details',
-            msg_group   => $self->msg_group // 'general',
+            category    => $self->category // 'general',
             call_params => {
                 token           => $c->stash('token'),
                 short_code      => $payload->{short_code},

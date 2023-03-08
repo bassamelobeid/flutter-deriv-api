@@ -50,7 +50,7 @@ use constant DEFAULT_BRAND => 'deriv';
 # These are the apps that are hardcoded to point to a different server pool.
 # This list is overwritten by Redis.
 our %DIVERT_APP_IDS;
-our %DIVERT_MSG_GROUP = (mt5 => 'mt5');
+our %DIVERT_CATEGORY = (mt5 => 'mt5');
 
 # These apps are blocked entirely.
 # This list is also overwritten by Redis.
@@ -471,8 +471,8 @@ sub startup {
                             sprintf("rpc:%s",        $req_storage->{method}),
                             sprintf("source:%s",     $c->stash('source')),
                             sprintf("error_type:%s", ($error->{type} // 'UnhandledErrorType')),
-                            sprintf("stream:%s",
-                                ($req_storage->{msg_group} // Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME()))]});
+                            sprintf(
+                                "stream:%s", ($req_storage->{category} // Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME()))]});
                 return undef;
             },
         });
