@@ -236,13 +236,19 @@ sub _build_uploaded {
 
     # set document status for authentication
     # status - needs_action and under_review
+    my $fully_authenticated = $self->client->fully_authenticated;
 
     if (scalar(keys %documents) and exists $documents{proof_of_address}) {
         if (($self->client->authentication_status // '') eq 'needs_action') {
             $documents{proof_of_address}{is_rejected} = 1;
-        } elsif (not $self->client->fully_authenticated) {
+        } elsif (not $fully_authenticated) {
             $documents{proof_of_address}{is_pending} = 1;
         }
+    }
+
+    # remove POI is_pending flag under fully authenticated scenario
+    if (scalar(keys %documents) and exists $documents{proof_of_identity}) {
+        $documents{proof_of_identity}{is_pending} = 0 if $fully_authenticated && !$documents{proof_of_identity}{is_expired};
     }
 
     return \%documents;

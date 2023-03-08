@@ -178,4 +178,99 @@ subtest 'uploaded by IDV' => sub {
         'Expected uploaded documents, IDV is a separate category';
 };
 
+subtest 'Manual docs uploaded at BO' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $user = BOM::User->create(
+        email    => $client->loginid . '@binary.com',
+        password => 'Abcd1234'
+    );
+
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+    $client->user($user);
+    $client->save;
+
+    is $client->get_manual_poi_status, 'none', 'None Manual POI status';
+    is $client->get_poi_status,        'none', 'None POI status';
+    cmp_deeply [$client->latest_poi_by], [], 'No POI attempted';
+
+    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin)';
+    my $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 1234, 'z33z', 'none', 'front', 'bo');
+
+    my $id1 = $sth_doc_new->fetch()->[0];
+    $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
+
+    my $sth_doc_info = $dbh->prepare($SQL);
+    $sth_doc_info->execute($client->loginid);
+
+    $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    my $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client->documents->_clear_uploaded;
+    $client->documents->_clear_latest;
+
+    is $client->get_manual_poi_status, 'pending', 'Pending Manual POI status';
+    is $client->get_poi_status,        'pending', 'Pending POI status';
+    cmp_deeply [$client->latest_poi_by], ['manual', ignore(), ignore()], 'Manual POI attempted';
+
+    # fully auth
+    $client->set_authentication('ID_NOTARIZED', {status => 'pass'});
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+    is $client->get_manual_poi_status, 'verified', 'Verified Manual POI status';
+    is $client->get_poi_status,        'verified', 'Verified POI status';
+    cmp_deeply [$client->latest_poi_by], ['manual', ignore(), ignore()], 'Manual POI attempted';
+
+    # making expired a necessity
+    $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    my $sth_doc_verified = $dbh->prepare($SQL);
+    $sth_doc_verified->execute($id1);
+
+    $client->aml_risk_classification('high');
+    $client->save;
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+    is $client->get_manual_poi_status, 'expired', 'Expired Manual POI status';
+    is $client->get_poi_status,        'expired', 'Expired POI status';
+    cmp_deeply [$client->latest_poi_by], ['manual', ignore(), ignore()], 'Manual POI attempted';
+
+    # new doc is uploaded
+
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', Date::Utility->new()->plus_time_interval('1y')->date_yyyymmdd,
+        1234, 'aaaaa', 'none', 'front', 'bo');
+
+    $id1 = $sth_doc_new->fetch()->[0];
+    $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
+
+    $sth_doc_info = $dbh->prepare($SQL);
+    $sth_doc_info->execute($client->loginid);
+
+    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+    $client->documents->_clear_uploaded;
+    $client->documents->_clear_latest;
+    is $client->get_manual_poi_status, 'pending', 'Pending Manual POI status';
+    is $client->get_poi_status,        'pending', 'Pending POI status';
+    cmp_deeply [$client->latest_poi_by], ['manual', ignore(), ignore()], 'Manual POI attempted';
+
+    # verified once again
+    $SQL              = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    $sth_doc_verified = $dbh->prepare($SQL);
+    $sth_doc_verified->execute($id1);
+
+    $client->aml_risk_classification('high');
+    $client->save;
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+    is $client->get_manual_poi_status, 'verified', 'Verified Manual POI status';
+    is $client->get_poi_status,        'verified', 'Verified POI status';
+    cmp_deeply [$client->latest_poi_by], ['manual', ignore(), ignore()], 'Manual POI attempted';
+
+};
+
 done_testing();

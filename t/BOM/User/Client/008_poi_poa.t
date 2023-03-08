@@ -2909,4 +2909,130 @@ subtest 'Jurisdiction POI status' => sub {
     $mocked_client->unmock_all;
 };
 
+subtest 'fully auth at BO scenario' => sub {
+    my @latest_poi_by;
+    my $is_expired = 0;
+    my $is_pending = 0;
+    my $fully_authenticated;
+    my $age_verification;
+    my $is_document_expiry_check_required;
+    my $documents = {};
+
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    $mocked_client->mock('latest_poi_by',                     sub { return @latest_poi_by });
+    $mocked_client->mock('fully_authenticated',               sub { return $fully_authenticated });
+    $mocked_client->mock('is_document_expiry_check_required', sub { return $is_document_expiry_check_required });
+
+    my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
+    $mocked_status->mock('age_verification', sub { return $age_verification });
+
+    my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $mocked_documents->mock(
+        'uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_expired => $is_expired,
+                    is_pending => $is_pending,
+                    documents  => $documents,
+                },
+            };
+        });
+
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'br',
+        citizen     => 'br',
+        email       => 'fa-BO-status@email.com',
+        loginid     => 'CR1317184'
+    );
+    my $user = BOM::User->create(
+        email          => 'fa-BO-status@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
+    $test_client->binary_user_id($user->id);
+
+    is $test_client->get_poi_status,        'none', 'None status';
+    is $test_client->get_manual_poi_status, 'none', 'None status';
+
+    # fake some pending doc
+
+    $documents     = {test => {}};
+    $is_pending    = 1;
+    @latest_poi_by = ('manual');
+
+    is $test_client->get_poi_status,        'pending', 'Pending status';
+    is $test_client->get_manual_poi_status, 'pending', 'Pending status';
+
+    # fully auth at BO
+    # note when fully auth at BO the age verified status is not set by staff (maybe a trigger disrupting?)
+
+    $documents           = {test => {}};
+    $is_pending          = 0;
+    $fully_authenticated = 1;
+    $age_verification    = {
+        staff_name => 'system',
+        reason     => 'why not'
+    };
+    @latest_poi_by = ('manual');
+
+    is $test_client->get_poi_status,        'verified', 'Verified status';
+    is $test_client->get_manual_poi_status, 'verified', 'Verified status';
+
+    # important to test!
+    # expired flow
+    $documents                         = {test => {}};
+    $is_expired                        = 1;
+    $is_document_expiry_check_required = 1;
+    $fully_authenticated               = 1;
+    $age_verification                  = {
+        staff_name => 'system',
+        reason     => 'why not'
+    };
+    @latest_poi_by = ('manual');
+
+    is $test_client->get_poi_status,        'expired', 'Expired status';
+    is $test_client->get_manual_poi_status, 'expired', 'Expired status';
+
+    # the client uploads a non expired document
+    $documents = {
+        test => {},
+    };
+    $is_expired                        = 1;
+    $is_pending                        = 1;
+    $is_document_expiry_check_required = 1;
+    $fully_authenticated               = 1;
+    $age_verification                  = {
+        staff_name => 'system',
+        reason     => 'why not'
+    };
+    @latest_poi_by = ('manual');
+
+    is $test_client->get_poi_status,        'pending', 'Pending status';
+    is $test_client->get_manual_poi_status, 'pending', 'Pending status';
+
+    # document is verified
+    $documents = {
+        test => {},
+    };
+    $is_expired                        = 0;
+    $is_pending                        = 0;
+    $is_document_expiry_check_required = 1;
+    $fully_authenticated               = 1;
+    $age_verification                  = {
+        staff_name => 'system',
+        reason     => 'why not'
+    };
+    @latest_poi_by = ('manual');
+
+    is $test_client->get_poi_status,        'verified', 'Verified status';
+    is $test_client->get_manual_poi_status, 'verified', 'Verified status';
+
+    $mocked_documents->unmock_all;
+    $mocked_client->unmock_all;
+    $mocked_status->unmock_all;
+};
+
 done_testing();

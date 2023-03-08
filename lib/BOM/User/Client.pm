@@ -7671,9 +7671,15 @@ sub get_manual_poi_status {
     return 'expired' if $is_poi_expired;
 
     if ($self->status->age_verification) {
-        my $staff = $self->status->age_verification->{staff_name} // '';
+        if (!$self->ignore_age_verification) {
+            my $staff = $self->status->age_verification->{staff_name} // '';
 
-        return 'verified' unless $self->ignore_age_verification || $staff eq 'system';
+            # if set by staff at BO
+            return 'verified' if $staff ne 'system';
+
+            # return verified if fully authenticated
+            return 'verified' if $self->fully_authenticated;
+        }
     }
 
     # Return pending when the documents are verified, but the age is not verified yet.
