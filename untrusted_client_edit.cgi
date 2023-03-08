@@ -130,6 +130,11 @@ foreach my $login_id (@login_ids) {
         push @invalid_logins, encode_entities($login_id);
         next LOGIN;
     }
+
+    my $old_db = $client->get_db();
+    # assign write access to db_operation to perform client_status delete/copy operation
+    $client->set_db('write') if 'write' ne $old_db;
+
     my %common_args_for_execute_method = (
         client    => $client,
         clerk     => $clerk,
@@ -230,6 +235,8 @@ foreach my $login_id (@login_ids) {
             untrusted_action_type => $client_status_type,
             reason                => $reason
         });
+    # once db operation is done, set back db_operation to replica
+    $client->set_db($old_db) if 'write' ne $old_db;
 
     print $status_op_summary if $status_op_summary;
 }
