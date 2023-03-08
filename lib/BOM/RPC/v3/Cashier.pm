@@ -71,6 +71,7 @@ use constant {
     DERIVEZ                       => 'derivez',
     PA_JUSTIFICATION_PREFIX       => 'PA_WITHDRAW_JUSTIFICATION_SUBMIT::',
     PA_JUSTIFICATION_TTL          => 60 * 60 * 24,                           # 24 hours in sec
+    CTRADER                       => 'ctrader',
 };
 
 my $payment_limits = BOM::Config::payment_limits;
@@ -498,6 +499,10 @@ rpc get_limits => sub {
             derivez => {
                 config  => DERIVEZ,
                 counter => DERIVEZ,
+            },
+            ctrader => {
+                config  => CTRADER,
+                counter => CTRADER,
             },
         };
         my $is_daily_cumulative_limit_enabled =

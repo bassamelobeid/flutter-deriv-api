@@ -71,6 +71,10 @@ my $transfer_limits       = {
     derivez => {
         allowed   => $transfer_limit_config->derivez,
         available => $transfer_limit_config->derivez
+    },
+    ctrader => {
+        allowed   => $transfer_limit_config->ctrader,
+        available => $transfer_limit_config->ctrader
     }};
 
 my $transfer_daily_cumulative_limit_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit;
