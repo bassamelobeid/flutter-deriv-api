@@ -19,7 +19,7 @@ jobs:
       - run: |
           echo "${{ github.event_name}} ${{ github.ref_name }}"
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.ref_name }}" != "master" ]]; then
-            GIT_COMMIT_DESC="$(git log --format=oneline -n 1)";
+            GIT_COMMIT_DESC="$(git log --format=oneline -n 1 ${{ github.sha }})";
             echo "commit message: $GIT_COMMIT_DESC";
             if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else echo "need tag [ci] to trigger tests"; exit 1; fi
           else
