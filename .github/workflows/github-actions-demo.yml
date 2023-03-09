@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v3
       - run: |
           echo "${{ github.event_name}} ${{ github.ref_name }}"
-          git fetch --depth 5 origin HEAD
+          git fetch --depth 1 origin ${{ github.event.pull_request.head.sha }}
           echo "log>>>>"
           git log -n 5 | cat
           echo "log <<<<"
