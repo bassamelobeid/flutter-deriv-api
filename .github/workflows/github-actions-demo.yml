@@ -1,0 +1,119 @@
+name: GitHub Actions Demo
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+  schedule:
+    - cron: '30 1 * * 6'
+jobs:
+  check-git-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - run: |
+          echo "${{ github.event_name}} ${{ github.ref_name }}"
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.ref_name }}" != "master" ]]; then
+            GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)";
+            if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else echo "need tag [ci] to trigger tests"; exit 1; fi
+          else
+            echo "This is not a pull request, Branch: $CIRCLE_BRANCH"
+            exit 0
+          fi
+        name: Check git message if it contains the keyword [ci]
+        # TODO maybe not work, should check again
+  container-test-job:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: set env
+        # TODO remove it in other repo
+        # we have no github-test yet, so before creating this dir, we use /tmp as working directory
+        working-directory: /tmp
+        run: |
+          if [[ '${{ github.event_name }}' = 'tag' ]]
+          then
+            CIRCLE_TAG=${{ github.ref_name }}
+          fi
+          CIRCLE_PR_USERNAME=${{github.event.pull_request.user.login}}
+          CIRCLE_PR_REPONAME=${{github.event.pull_request.head.repo.name}}
+          CIRCLE_JOB=${{github.job}}
+          if [[ '${{github.event_name}}' = 'pull_request' ]]
+          then
+            CIRCLE_PULL_REQUEST=${{github.event.pull_request.html_url}}
+            CIRCLE_BRANCH="pull/${{github.event.pull_request.number}}"
+          else
+            CIRCLE_BRANCH=${{ github.ref_name }}
+          fi
+          CIRCLE_PROJECT_USERNAME=${{github.repository_owner}}
+          CIRCLE_PROJECT_REPONAME=$(basename ${{github.repository}})
+          set | grep CIRCLE | sudo tee -a $GITHUB_ENV
+          echo HOME=/home/git | sudo tee -a $GITHUB_ENV
+          # We can't set HOME directly by `env`
+          # Please see https://github.com/actions/runner/issues/863
+      - name: add ssh key
+        # TODO remove it in other repo
+        # we have no github-test yet, so before creating this dir, we use /tmp as working directory
+        working-directory: /tmp
+        run: |
+          eval $(ssh-agent)
+          echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK | sudo tee -a $GITHUB_ENV
+          echo SSH_AGENT_PID=$SSH_AGENT_PID | sudo tee -a $GITHUB_ENV
+      - name: create ssh file
+        # TODO remove it in other repo
+        # we have no github-test yet, so before creating this dir, we use /tmp as working directory
+        working-directory: /tmp
+        run: |
+          mkdir ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.READ_GITHUB_SSH_KEY }}" >> ~/.ssh/github.com.rsa
+          chmod 600 ~/.ssh/github.com.rsa
+          cat ~/.ssh/github.com.rsa
+          md5sum ~/.ssh/github.com.rsa
+      - run: |
+          ssh-add ~/.ssh/github.com.rsa
+          # TODO set .ssh/config
+          # TODO remove it in other repo
+          # we have no github-test yet, so before creating this dir, we use /tmp as working directory
+        working-directory: /tmp
+      - name: prepare-test
+        # TODO remove it in other repo
+        # we have no github-test yet, so before creating this dir, we use /tmp as working directory
+        working-directory: /tmp
+        run: |
+          # TODO move this line to set env
+          git clone git@github.com:${{github.repository}} /home/git/${{github.repository}}
+          cd /home/git/${{github.repository}}
+          /opt/circle/prepare-test.sh
+      - name: Start services
+        run: |
+          start_services
+          touch /tmp/services.ready
+      - run: |
+          count=0
+          while [ ! -f /tmp/services.ready ]; do
+              echo 'Still waiting for services...'
+              (( count++ )) && (( count >= 20 )) && break
+              sleep 1
+          done
+        name: Wait for services to start up
+      - name: Run tests
+        run: |
+          make test_all
