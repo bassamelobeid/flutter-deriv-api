@@ -46,9 +46,6 @@ jobs:
       LOG_LEVEL: debug
     steps:
       - name: set env
-        # TODO remove it in other repo
-        # we have no github-test yet, so before creating this dir, we use /tmp as working directory
-        working-directory: /tmp
         run: |
           if [[ '${{ github.event_name }}' = 'tag' ]]
           then
@@ -71,17 +68,11 @@ jobs:
           # We can't set HOME directly by `env`
           # Please see https://github.com/actions/runner/issues/863
       - name: add ssh key
-        # TODO remove it in other repo
-        # we have no github-test yet, so before creating this dir, we use /tmp as working directory
-        working-directory: /tmp
         run: |
           eval $(ssh-agent)
           echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK | sudo tee -a $GITHUB_ENV
           echo SSH_AGENT_PID=$SSH_AGENT_PID | sudo tee -a $GITHUB_ENV
       - name: create ssh file
-        # TODO remove it in other repo
-        # we have no github-test yet, so before creating this dir, we use /tmp as working directory
-        working-directory: /tmp
         run: |
           mkdir ~/.ssh
           chmod 700 ~/.ssh
@@ -92,17 +83,8 @@ jobs:
       - run: |
           ssh-add ~/.ssh/github.com.rsa
           # TODO set .ssh/config
-          # TODO remove it in other repo
-          # we have no github-test yet, so before creating this dir, we use /tmp as working directory
-        working-directory: /tmp
       - name: prepare-test
-        # TODO remove it in other repo
-        # we have no github-test yet, so before creating this dir, we use /tmp as working directory
-        working-directory: /tmp
         run: |
-          # TODO move this line to set env
-          git clone git@github.com:${{github.repository}} /home/git/${{github.repository}}
-          cd /home/git/${{github.repository}}
           /opt/circle/prepare-test.sh
       - name: Start services
         run: |
