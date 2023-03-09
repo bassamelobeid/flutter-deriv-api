@@ -19,9 +19,6 @@ jobs:
       - run: |
           echo "${{ github.event_name}} ${{ github.ref_name }}"
           git fetch --depth 1 origin ${{ github.event.pull_request.head.sha }}
-          echo "log>>>>"
-          git log -n 5 | cat
-          echo "log <<<<"
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.ref_name }}" != "master" ]]; then
             GIT_COMMIT_DESC="$(git log --format=oneline -n 1 ${{ github.event.pull_request.head.sha }})";
             echo "commit message: $GIT_COMMIT_DESC";
