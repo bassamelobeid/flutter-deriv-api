@@ -8,7 +8,6 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Date::Utility;
 use Test::MockModule;
 use Test::MockObject;
-use Test::Deep;
 use Test::More;
 
 $ENV{CLIENTIP_PLUGGABLE_ALLOW_LOOPBACK} = 1;
@@ -389,9 +388,7 @@ $res = $t->await::reset_password({
     new_password      => 'Abcd33!@'
 });
 is($res->{reset_password}, 1);
-
-%$rpc_response = (notification => undef);
-$res           = $t->await::set_settings({
+$res = $t->await::set_settings({
     set_settings     => 1,
     address_line_1   => "Test Address Line 1",
     address_line_2   => "Test Address Line 2",
@@ -400,29 +397,12 @@ $res           = $t->await::set_settings({
     address_postcode => "123456",
     phone            => "+15417543010"
 });
-
-cmp_deeply $res,
-    {
-    'set_settings' => {'notification' => undef},
-    'msg_type'     => 'set_settings',
-    'req_id'       => 1000024,
-    'echo_req'     => {
-        'address_postcode' => '123456',
-        'address_state'    => '01',
-        'req_id'           => 1000024,
-        'phone'            => '<not shown>',
-        'address_city'     => 'Test City',
-        'address_line_1'   => 'Test Address Line 1',
-        'address_line_2'   => 'Test Address Line 2',
-        'set_settings'     => 1
-    }};
+is($res->{set_settings},     1);
 is($call_params->{language}, 'EN');
 is($call_params->{token},    $token);
 ok($call_params->{server_name});
 ok($call_params->{client_ip});
 ok($call_params->{user_agent});
-
-%$rpc_response = (status => 1);
 
 $res = $t->await::set_self_exclusion({
     set_self_exclusion => 1,
