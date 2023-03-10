@@ -122,25 +122,6 @@ my $poi_status_reason = $input{poi_reason} // $client->status->reason('allow_poi
 # Add a comment about kyc email checkbox
 $poi_status_reason = join(' ', $poi_status_reason, $input{kyc_email_checkbox} ? 'kyc_email' : ()) unless $poi_status_reason =~ /\skyc_email$/;
 
-# POA address mismatch
-if ($input{address_mismatch}) {
-    my $expected_address = $input{expected_address};
-
-    # Remove non alphanumeric
-    $expected_address =~ s/[^a-zA-Z0-9 ]//g;
-
-    unless ($expected_address) {
-        print "<p class=\"notify notify--warning\">You must specify the expected address.</p>";
-        code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
-    }
-
-    $client->documents->poa_address_mismatch({
-        expected_address => $expected_address,
-        staff            => $clerk,
-        reason           => 'Client POA address mismatch found in BO',
-    });
-}
-
 # POI resubmission logic
 if ($input{allow_onfido_resubmission} or $input{poi_reason}) {
     #this also allows the client only 1 time to resubmit the documents
@@ -1285,13 +1266,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                     and not $input{tax_identification_number});
                 $cli->tax_identification_number($input{tax_identification_number});
             }
-        }
-    }
-
-    # Check if expected address has been updated
-    if ($input{'address_1'} || $input{'address_2'}) {
-        if ($client->documents->is_poa_address_fixed()) {
-            $client->documents->poa_address_fix({staff => $clerk});
         }
     }
 

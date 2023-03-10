@@ -618,17 +618,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </span>
         </td>
     </tr>
-    [% IF broker_code == 'CR' %]
-    <tr>
-        <td class="label" style="vertical-align:middle">Address Mismatch</td>     
-           <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="address_mismatch" value="1" [% IF poa_address_mismatch %] checked="checked" [% END %]/>
-            <span id="address_mismatch_toggle" [% IF poa_address_mismatch %] style="display:inline" [% ELSE %] style="display:none" [% END %]>
-                <input name="expected_address" type="text" [% IF poa_address_mismatch %] display="inline" value="[% expected_address %]" [% END %]/>
-            </span>
-        </td>
-    </tr>
-    [% END %]
-
     <tr title="if poi/poa resubmission is checked by checking this and after clicking the save button, an email will be sent to the client to resubmit documents">
         <td class="label" style="vertical-align:middle">KYC EMAIL</td>
         <td>:<input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
