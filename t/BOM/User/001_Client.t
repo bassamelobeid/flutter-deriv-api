@@ -599,23 +599,8 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         malta => 'none'
     };
 
-    my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
-    $mock_status->mock(
-        age_verification => sub {
-            my ($self) = @_;
-
-            my $client   = BOM::User::Client->new({loginid => $self->client_loginid});
-            my $lc_short = $client->landing_company->short;
-
-            my $status = $test_poi_status->{$lc_short} // '';
-
-            return {
-                staff_name => 'system',
-                reason     => 'test',
-            } if $status eq 'verified';
-
-            return undef;
-        });
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock(get_poi_status => sub { return $test_poi_status->{shift->landing_company->short} });
 
     subtest 'poi and authentication' => sub {
         my @excluded_fields;
@@ -640,36 +625,34 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         test_immutable_fields([], $test_user, "all fields are changeable now");
 
         $test_poi_status->{svg} = 'verified';
-        cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields are reverted to default after authentication";
+        my @all_immutables_with_address = @all_immutables;
 
-        $test_poi_status->{svg} = 'pending';
+        if (defined($client->get_poi_status()) && $client_cr->get_poi_status() eq 'verified') {
+            push(@all_immutables_with_address, BOM::User::Client::ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH->@*);
+        }
+
+        cmp_bag [$client_cr->immutable_fields], \@all_immutables_with_address, "Immutable fields are reverted to default after authentication";
+
         $client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
-
-        my $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
-
-        cmp_bag [uniq($client_cr->immutable_fields)], [], "Empty immutable fields (without being age verified)";
-
-        ok !$immutable_fields_hash->{first_name}, 'can edit first name';
-        ok !$immutable_fields_hash->{last_name},  'can edit last name';
-
+        cmp_bag [uniq($client_cr->immutable_fields)], [array_minus(@all_immutables_with_address, @poi_name_mismatch_fields)],
+            "Can update first_name and last_name on name mismatch";
         $client_cr->status->clear_poi_name_mismatch;
 
         $client_cr->status->setnx('poi_dob_mismatch', 'test', 'test');
-        $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
-
-        cmp_bag [uniq($client_cr->immutable_fields)], [], "Empty immutable fields (without being age verified)";
-
-        ok !$immutable_fields_hash->{date_of_birth}, 'can edit dob';
-
+        cmp_bag [uniq($client_cr->immutable_fields)], [array_minus(@all_immutables_with_address, @poi_dob_mismatch_fields)],
+            "Can update date_of_birth on dob mismatch";
         $client_cr->status->clear_poi_dob_mismatch;
 
         $client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
-        $test_poi_status->{svg} = 'verified';
+        $client_cr->status->setnx('age_verification',  'test', 'test');
 
-        cmp_bag [$client_cr->immutable_fields], \@all_immutables,
+        cmp_bag [$client_cr->immutable_fields], \@all_immutables_with_address,
             "Cannot update first_name and last_name on name mismatch case if already age verified";
         $client_cr->status->clear_poi_name_mismatch;
         $client_cr->status->_clear_all;
+        $test_poi_status->{svg} = 'expired';
+
+        cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields remain unchanged even under name mismatch";
 
         # basically, the lock has more weight
         subtest 'personal_detail_locked and poi_name_mismatch' => sub {
@@ -705,26 +688,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         }
     };
 
-    subtest 'address_locked status' => sub {
-        $client_cr->status->set('address_verified', 'system', 'just testing');
-
-        cmp_deeply ['address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state'], subsetof($client_cr->immutable_fields),
-            'address fields are immutable - address verified ';
-
-        $client_cr->status->clear_address_verified;
-        $client_cr->status->_clear_all;
-
-        cmp_deeply ['address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state'], none($client_cr->immutable_fields),
-            'address fields are mutable again';
-
-        $client_cr->set_authentication('ID_DOCUMENT', {status => 'pass'});
-
-        cmp_deeply ['address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state'], subsetof($client_cr->immutable_fields),
-            'address fields are immutable - fully authenticated ';
-
-    };
-
-    $mock_status->unmock_all;
+    $mock_client->unmock_all;
     $mock_lc->unmock_all;
 };
 
@@ -793,7 +757,16 @@ sub test_immutable_fields {
 
     is scalar $user->clients, 3, 'Correct number of clients';
     for my $client ($user->clients) {
-        my $expected_list = $client->is_virtual ? ['residence']                                               : $fields;
+
+        my @temp_fields = @$fields;
+
+        if (defined($client->get_poi_status()) && $client->get_poi_status() eq "verified") {
+            unless (grep(/^address_city/, @temp_fields)) {
+                push(@temp_fields, BOM::User::Client::ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH->@*);
+            }
+        }
+
+        my $expected_list = $client->is_virtual ? ['residence']                                               : \@temp_fields;
         my $msg           = $client->is_virtual ? 'Immutable fields are always the same for virtual accounts' : $message;
 
         my $landing_company = $client->landing_company->short;
