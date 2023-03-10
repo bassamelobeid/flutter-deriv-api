@@ -5,7 +5,6 @@ use Test::Deep;
 use Test::MockModule;
 
 use BOM::Backoffice::IdentityVerification;
-use Locale::Country;
 use BOM::Config;
 use Brands::Countries;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
@@ -41,7 +40,7 @@ subtest 'Get Filters data' => sub {
                 dni
                 /
         },
-        countries => +{map { ($_ => Locale::Country::code2country($_)) } qw/br gh ke ng ug za zw in ar mx/},
+        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx cl pe vn/},
         providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) } qw/zaig smile_identity derivative_wealth data_zoo metamap/},
         statuses  => +{map { ($_ => $idv_config->{statuses}->{$_}) } qw/pending failed refuted verified/},
         messages  => $idv_config->{messages},
