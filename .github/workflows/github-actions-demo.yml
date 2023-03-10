@@ -69,8 +69,6 @@ jobs:
           echo HOME=/home/git | sudo tee -a $GITHUB_ENV
           # We can't set HOME directly by `env`
           # Please see https://github.com/actions/runner/issues/863
-      - name: add ssh key
-        run: |
           eval $(ssh-agent)
           echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK | sudo tee -a $GITHUB_ENV
           echo SSH_AGENT_PID=$SSH_AGENT_PID | sudo tee -a $GITHUB_ENV
@@ -82,7 +80,8 @@ jobs:
           chmod 600 ~/.ssh/github.com.rsa
           cat ~/.ssh/github.com.rsa
           md5sum ~/.ssh/github.com.rsa
-      - run: |
+      - name: add ssh key
+        run: |
           ssh-add ~/.ssh/github.com.rsa
           # TODO set .ssh/config
       - name: prepare-test
