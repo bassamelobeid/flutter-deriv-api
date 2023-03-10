@@ -8,7 +8,6 @@ use Test::MockModule;
 use Test::MockTime qw(set_fixed_time restore_time);
 use Test::Exception;
 use Test::Mojo;
-use Test::Deep;
 
 use BOM::User::Client;
 
@@ -369,19 +368,7 @@ sub set_allow_copiers {
             %default_call_params
         })->result;
 
-    cmp_deeply(
-        $res,
-        {
-            stash => {
-                source_bypass_verification => 0,
-                app_markup_percentage      => '0',
-                source_type                => 'official',
-                valid_source               => 1
-            },
-            notification => undef
-        },
-        "allow_copiers set successfully"
-    );
+    is($res->{status}, 1, "allow_copiers set successfully");
 }
 
 sub start_copy_trade {
