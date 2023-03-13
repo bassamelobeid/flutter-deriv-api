@@ -1,71 +1,34 @@
-name: Daily master test
-run-name: Daily test on master branch
+name: Build workflow
+run-name: Build workflow
 on:
-  schedule:
-    - cron: '33 30 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
 jobs:
-  syntax_unit:
+  check-git-message:
     runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      LOG_LEVEL: debug
     steps:
-      - name: set env
-        run: |
-          if [[ '${{ github.event_name }}' = 'tag' ]]
-          then
-            CIRCLE_TAG=${{ github.ref_name }}
-          fi
-          # TODO uncomment next line and remove next next line
-          #CIRCLE_PR_USERNAME=${{github.event.pull_request.user.login}}
-          CIRCLE_PR_USERNAME=regentmarkets
-          CIRCLE_PR_REPONAME=${{github.event.pull_request.head.repo.name}}
-          CIRCLE_JOB=${{github.job}}
-          if [[ '${{github.event_name}}' = 'pull_request' ]]
-          then
-            CIRCLE_PULL_REQUEST=${{github.event.pull_request.html_url}}
-            CIRCLE_BRANCH="pull/${{github.event.pull_request.number}}"
+      - name: Checkout
+        uses: actions/checkout@v3
+      - run: |
+          echo "${{ github.event_name}} ${{ github.ref_name }}"
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.ref_name }}" != "master" ]]; then
+            git fetch --depth 1 origin ${{ github.event.pull_request.head.sha }}
+            GIT_COMMIT_DESC="$(git log --format=oneline -n 1 ${{ github.event.pull_request.head.sha }})";
+            echo "commit message: $GIT_COMMIT_DESC";
+            if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else echo "need tag [ci] to trigger tests"; exit 1; fi
           else
-            CIRCLE_BRANCH=${{ github.ref_name }}
+            echo "This is not a pull request, Branch: $CIRCLE_BRANCH"
+            exit 0
           fi
-          CIRCLE_PROJECT_USERNAME=${{github.repository_owner}}
-          CIRCLE_PROJECT_REPONAME=$(basename ${{github.repository}})
-          set | grep CIRCLE | sudo tee -a $GITHUB_ENV
-          echo HOME=/home/git | sudo tee -a $GITHUB_ENV
-          # We can't set HOME directly by `env`
-          # Please see https://github.com/actions/runner/issues/863
-          eval $(ssh-agent)
-          echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK | sudo tee -a $GITHUB_ENV
-          echo SSH_AGENT_PID=$SSH_AGENT_PID | sudo tee -a $GITHUB_ENV
-      - name: create ssh file
-        run: |
-          mkdir ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${{ secrets.READ_GITHUB_SSH_KEY }}" >> ~/.ssh/github.com.rsa
-          chmod 600 ~/.ssh/github.com.rsa
-          cat ~/.ssh/github.com.rsa
-          md5sum ~/.ssh/github.com.rsa
-      - name: add ssh key
-        run: |
-          ssh-add ~/.ssh/github.com.rsa
-          # TODO set .ssh/config
-      - name: Update git repositories
-        run: |
-          /opt/circle/prepare-test.sh
-      - name: Run tests
-        run: |
-          make syntax
-
-  core:
+        name: Check git message if it contains the keyword [ci]
+        # TODO maybe not work, should check again
+  container-test-job:
+    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -136,4 +99,4 @@ jobs:
         name: Wait for services to start up
       - name: Run tests
         run: |
-          make test
+          make test_all

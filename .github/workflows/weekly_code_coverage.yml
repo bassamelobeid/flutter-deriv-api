@@ -1,13 +1,6 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+name: Weekly code coverage workflow
+run-name: Weekly code coverage workflow
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - master
-    tags:
-      - '*'
-  pull_request:
   schedule:
     - cron: '30 1 * * 6'
 jobs:
