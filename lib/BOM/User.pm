@@ -1041,8 +1041,8 @@ sub _save_login_detail_redis {
     my $auth_redis = BOM::Config::Redis::redis_auth_write();
     try {
         $auth_redis->hset($key, $entry, $entry_time);
-    } catch {
-        $log->warnf("Failed to store user login entry in redis, error: %s", shift);
+    } catch ($e) {
+        $log->warnf("Failed to store user login entry in redis, error: %s", $e);
     }
 }
 
@@ -1083,8 +1083,8 @@ sub logged_in_before_from_same_location {
         $entry =~ s/::$current_attempt_ip//ig if ($current_attempt_ip && !$last_attempt_ip);
 
         return 1 if $last_attempt_entry eq $entry;
-    } catch {
-        $log->warnf("Failed to get user login entry from redis, error: %s", shift);
+    } catch ($e) {
+        $log->warnf("Failed to get user login entry from redis, error: %s", $e);
     }
 
     return $attempt_known;
