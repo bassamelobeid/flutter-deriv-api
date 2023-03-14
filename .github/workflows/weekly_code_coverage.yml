@@ -3,27 +3,9 @@ run-name: Weekly code coverage workflow
 on:
   schedule:
     - cron: '30 1 * * 6'
+  push:
 jobs:
-  check-git-message:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - run: |
-          echo "${{ github.event_name}} ${{ github.ref_name }}"
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.ref_name }}" != "master" ]]; then
-            git fetch --depth 1 origin ${{ github.event.pull_request.head.sha }}
-            GIT_COMMIT_DESC="$(git log --format=oneline -n 1 ${{ github.event.pull_request.head.sha }})";
-            echo "commit message: $GIT_COMMIT_DESC";
-            if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else echo "need tag [ci] to trigger tests"; exit 1; fi
-          else
-            echo "This is not a pull request, Branch: $CIRCLE_BRANCH"
-            exit 0
-          fi
-        name: Check git message if it contains the keyword [ci]
-        # TODO maybe not work, should check again
-  container-test-job:
-    needs: check-git-message
+  code_coverage:
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -92,6 +74,5 @@ jobs:
               sleep 1
           done
         name: Wait for services to start up
-      - name: Run tests
-        run: |
-          make test_all
+      - name: code coverage tests
+        run: make cover

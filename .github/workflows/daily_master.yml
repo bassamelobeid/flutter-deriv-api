@@ -3,7 +3,6 @@ run-name: Daily test on master branch
 on:
   schedule:
     - cron: '33 20 * * *'
-  push:
 jobs:
   syntax_unit:
     runs-on: ubuntu-latest
