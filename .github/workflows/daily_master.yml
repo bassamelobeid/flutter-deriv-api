@@ -2,7 +2,7 @@ name: Daily master test
 run-name: Daily test on master branch
 on:
   schedule:
-    - cron: '33 30 * * *'
+    - cron: '33 20 * * *'
 jobs:
   syntax_unit:
     runs-on: ubuntu-latest
