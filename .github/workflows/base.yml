@@ -27,7 +27,7 @@ jobs:
           fi
         name: Check git message if it contains the keyword [ci]
         # TODO maybe not work, should check again
-  container-test-job:
+  core_syntax_diff:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
@@ -97,6 +97,10 @@ jobs:
               sleep 1
           done
         name: Wait for services to start up
-      - name: Run tests
+      - name: Core tests
         run: |
-          make test_all
+          make test
+      - name: Code structure and syntax
+        run: make syntax_diff
+      - name: unit tests
+        run: make unit
