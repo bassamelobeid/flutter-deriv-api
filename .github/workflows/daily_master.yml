@@ -3,6 +3,7 @@ run-name: Daily test on master branch
 on:
   schedule:
     - cron: '33 20 * * *'
+  push:
 jobs:
   syntax_unit:
     runs-on: ubuntu-latest
@@ -61,9 +62,10 @@ jobs:
       - name: Update git repositories
         run: |
           /opt/circle/prepare-test.sh
-      - name: Run tests
-        run: |
-          make syntax
+      - name: Code structure and syntax
+        run: make syntax
+      - name: unit tests
+        run: make unit
 
   core:
     runs-on: ubuntu-latest
@@ -134,6 +136,6 @@ jobs:
               sleep 1
           done
         name: Wait for services to start up
-      - name: Run tests
+      - name: Coer tests
         run: |
           make test

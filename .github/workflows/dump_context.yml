@@ -1,5 +1,5 @@
-name: This is workflow name
-run-name: This is workflow run name
+name: Dump context
+run-name: Dump context
 on: pull_request
 
 jobs:
