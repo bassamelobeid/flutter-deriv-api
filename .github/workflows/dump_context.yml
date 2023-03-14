@@ -1,3 +1,5 @@
+name: This is workflow name
+run-name: This is workflow run name
 on: pull_request
 
 jobs:
