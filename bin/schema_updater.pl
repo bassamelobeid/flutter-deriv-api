@@ -82,8 +82,8 @@ sub actions_update {
         my @unique = uniq @{$cfg->{stash_params}};
         $cfg->{stash_params} = \@unique;
 
-        $cfg->{msg_group} = $action_cfg->{msg_group} // '';
-        $cfg->{priority}  = $priority++;
+        $cfg->{category} = $action_cfg->{category} // '';
+        $cfg->{priority} = $priority++;
 
         my $cfg_data = $json->encode($cfg);
 

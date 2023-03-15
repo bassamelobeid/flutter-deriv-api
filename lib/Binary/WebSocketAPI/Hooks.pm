@@ -140,7 +140,7 @@ sub log_response_latency_timing {
 
     my %tags = (
         rpc    => $req_storage->{method},
-        stream => $req_storage->{msg_group},
+        stream => $req_storage->{category},
         map { $_ => $c->stash($_) } qw/brand source_type/
     );
 

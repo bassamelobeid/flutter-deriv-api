@@ -366,7 +366,7 @@ sub actions_config {
         [
             'paymentagent_withdraw_justification',
             {
-                msg_group => 'payment',
+                category => 'payment',
             }
         ],
         [
@@ -431,7 +431,7 @@ sub actions_config {
             'affiliate_add_person',
             {
                 stash_params => [qw/ token server_name client_ip user_agent /],
-                msg_group    => 'account',
+                category     => 'account',
             }
         ],
         [
