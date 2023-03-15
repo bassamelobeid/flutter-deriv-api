@@ -232,7 +232,7 @@ rpc "cashier", sub {
             );
         }
 
-        if (my @error_fields = ($errortext =~ /(province|country|city|street|pcode|phone|email)/g)) {
+        if (my @error_fields = ($errortext =~ /\b(province|country|city|street|pcode|phone|email)\b/g)) {
 
             # map to our form fields
             my %mapping = (
