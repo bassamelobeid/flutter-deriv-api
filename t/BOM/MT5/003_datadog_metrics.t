@@ -19,7 +19,7 @@ use BOM::Config;
 use BOM::Config::Runtime;
 
 my $mock_config  = Test::MockModule->new('BOM::Config');
-my $mock_http    = Test::MockModule->new('Net::Async::HTTP');
+my $mock_http    = Test::MockModule->new('HTTP::Tiny');
 my $mocked_async = Test::MockModule->new('BOM::MT5::User::Async');
 
 $mock_config->mock(
@@ -62,11 +62,11 @@ $mocked_async->mock(
     });
 
 $mock_http->mock(
-    'POST',
+    'post',
     sub {
-        my $headers  = HTTP::Headers->new('Content-Type', 'application/json');
-        my $response = HTTP::Response->new(200, 'Dummy', $headers, '{"result":"OK"}');
-        return Future->done($response);
+
+        my $response = {content => '{"user":{"login":40013070,"language":0}}'};
+        return $response;
     });
 
 my $cmd      = 'UserAdd';
@@ -102,9 +102,9 @@ subtest 'Sending http proxy successful count to DataDog' => sub {
 
 subtest 'Sending http proxy error count to DataDog' => sub {
     $mock_http->mock(
-        'POST',
+        'post',
         sub {
-            return Future->fail('Something unexpectedly wrong', 'mt5', 'details');
+            return 'Something unexpectedly wrong';
         });
     $key_inc = undef;
     $tags    = undef;

@@ -24,6 +24,8 @@ use BOM::TradingPlatform::Helper::HelperDerivEZ qw(is_derivez get_derivez_prefix
 use BOM::MT5::Utility::CircuitBreaker;
 use BOM::Config::Runtime;
 use BOM::Config;
+use HTTP::Tiny;
+use Data::Dump qw(pp);
 
 =head1 NAME 
 
@@ -48,6 +50,9 @@ our @MT5_WRAPPER_COMMAND = ('/usr/bin/php', '/home/git/regentmarkets/php-mt5-web
 
 # Register new users in this server by default
 our $DEFAULT_TRADING_SERVER_KEY = '01';
+
+# HTTP request timeout in seconds
+use constant HTTP_TIMEOUT_SECONDS => 10;
 
 my @common_fields = qw(
     email
@@ -495,16 +500,6 @@ sub _invoke_using_proxy {
 
     my $f             = $loop->new_future;
     my $request_start = [Time::HiRes::gettimeofday];
-    state $http;
-    unless ($http) {
-        $http = Net::Async::HTTP->new(
-            max_connections_per_host => 10,
-            decode_content           => 1,
-            fail_on_error            => 1,
-            timeout                  => 10,
-        );
-        $loop->add($http);
-    }
 
     if ($cmd eq "UserAdd") {
         $param->{pass_main}     = delete $param->{mainPassword};
@@ -517,86 +512,69 @@ sub _invoke_using_proxy {
     my $config        = BOM::Config::mt5_webapi_config();
     my $mt5_proxy_url = $config->{mt5_http_proxy_url};
 
-    my $result;
     my $url = $mt5_proxy_url . '/' . $srv_type . '_' . $srv_key . '/' . $cmd;
 
-    $result = $loop->later->then(sub { $http->POST($url, $in, content_type => 'application/json') })->then(
+    my $http_tiny = HTTP::Tiny->new(timeout => HTTP_TIMEOUT_SECONDS);
+    my $response;
+    my $success = 0;
 
-        sub {
-            my ($result) = @_;
-            stats_inc('mt5.call.proxy.successful', {tags => $dd_tags});
+    try {
+        my $result_http = $http_tiny->post($url, {content => $in});
+        stats_inc('mt5.call.proxy.successful', {tags => $dd_tags});
 
-            return $result;
-        }
-    )->else(
-        sub {
-            my $error = shift;
-            stats_inc('mt5.call.proxy.request_error', {tags => $dd_tags});
-            return $f->fail($error, mt5 => $cmd);
-        }
-    )->on_ready(
-        sub {
-            stats_timing('mt5.call.proxy.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
-        }
-    )->then(
-        sub {
-            my $result = shift;
+        my $out = $result_http->{content};
+        $out =~ s/[\x0D\x0A]//g;
+        $out = decode_json($out);
 
-            my $out = $result->content;
-            $out =~ s/[\x0D\x0A]//g;
-            $out = decode_json($out);
-
-            # Converting all keys down to 2nd level to lowercase in order to prevent case related key errors
-            if (ref $out eq ref {}) {
-                $out = {map { lc $_ => $out->{$_} } keys %$out};
-                foreach my $key (keys %$out) {
-                    if (ref $out->{$key} eq ref {}) {
-                        $out->{$key} = {map { lc $_ => $out->{$key}->{$_} } keys %{$out->{$key}}};
-                    }
+        # Converting all keys down to 2nd level to lowercase in order to prevent case related key errors
+        if (ref $out eq ref {}) {
+            $out = {map { lc $_ => $out->{$_} } keys %$out};
+            foreach my $key (keys %$out) {
+                if (ref $out->{$key} eq ref {}) {
+                    $out->{$key} = {map { lc $_ => $out->{$key}->{$_} } keys %{$out->{$key}}};
                 }
             }
+        }
 
-            if ($out->{error}) {
-                if ($out->{code} && !defined $out->{ret_code}) {
-                    $out->{ret_code} = $out->{code};
-                }
-                # needed as both of them return same code for different reason.
-                if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
-                    $out->{ret_code} .= $cmd;
-                }
-                stats_inc('mt5.call.proxy.error', {tags => $dd_tags});
-                return $f->fail(_future_error($out));
-            } else {
-                if ($cmd eq "UserAdd") {
-                    $out->{login} = $out->{user}->{login};
-                } elsif ($cmd eq "UserGet") {
-                    delete $out->{user}->{apidata};
-                }
+        if ($out->{error}) {
+            if ($out->{code} && !defined $out->{ret_code}) {
+                $out->{ret_code} = $out->{code};
+            }
+            # needed as both of them return same code for different reason.
+            if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
+                $out->{ret_code} .= $cmd;
+            }
+            stats_inc('mt5.call.proxy.error', {tags => $dd_tags});
+            return $f->fail(_future_error($out));
+        } else {
+            if ($cmd eq "UserAdd") {
+                $out->{login} = $out->{user}->{login};
+            } elsif ($cmd eq "UserGet") {
+                delete $out->{user}->{apidata};
+            }
 
-                # Append login prefixes for mt5 used id.
-                if ($out->{user} && $out->{user}{login}) {
-                    $out->{user}{login} = $prefix . $out->{user}{login};
-                }
+            # Append login prefixes for mt5 used id.
+            if ($out->{user} && $out->{user}{login}) {
+                $out->{user}{login} = $prefix . $out->{user}{login};
+            }
 
-                if ($out->{login}) {
-                    $out->{login} = $prefix . $out->{login};
-                }
-
-                return $f->done($out);
+            if ($out->{login}) {
+                $out->{login} = $prefix . $out->{login};
             }
         }
-    )->else(
-        sub {
-            my $error = shift;
 
-            return Future->fail($f->failure) if $f->is_failed;
+        $response = $out;
+        $success  = 1;
+    } catch ($e) {
+        stats_inc('mt5.call.proxy.request_error', {tags => $dd_tags});
+        $response = $e;
 
-            unless (ref $error eq 'HASH' && $error->{error}) {
-                stats_inc('mt5.call.proxy.payload_handling_error', {tags => $dd_tags});
-            }
+    }
 
-            return $f->fail($error, mt5 => $cmd);
-        });
+    stats_timing('mt5.call.proxy.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
+
+    $success ? return $f->done($response) : return $f->fail($response, mt5 => $cmd);
+
 }
 
 =head2 _invoke_using_php
