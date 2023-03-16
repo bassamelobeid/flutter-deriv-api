@@ -10,6 +10,7 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use List::UtilsBy qw( rev_nsort_by );
 use Log::Any      qw($log);
+use Email::Address::UseXS;
 use Email::Stuffer;
 
 use BOM::User::Client;
@@ -104,6 +105,7 @@ sub _send_email_statement {
             closed_trades   => $transactions->{closed_trades},
             payments        => $transactions->{payments},
             escrow          => $transactions->{escrow},
+            payment_agent   => $transactions->{payment_agent},
             is_mf_client    => ($company->short eq 'maltainvest') ? 1                                                                : 0,
             estimated_value => $account                           ? formatnumber('price', $account->currency_code, $estimated_value) : '',
             name            => $client->first_name . ' ' . $client->last_name,
@@ -177,7 +179,9 @@ sub _retrieve_transaction_history {
         $txn->{transaction_date} = $txn_time->datetime_yyyymmdd_hhmmss;
 
         # categorize transactions
-        if ($txn->{payment_id}) {
+        if (($txn->{payment_gateway_code} // '') eq 'payment_agent_transfer') {
+            push($transactions->{payment_agent}->@*, $txn);
+        } elsif ($txn->{payment_id}) {
             push($transactions->{payments}->@*, $txn);
         } elsif ($txn->{referrer_type} eq 'p2p') {
             push($transactions->{escrow}->@*, $txn);
@@ -186,10 +190,10 @@ sub _retrieve_transaction_history {
             if ($txn->{short_code}) {
                 try {
                     $txn->{long_code} = localize(shortcode_to_longcode($txn->{short_code}, $client->{currency}));
-                } catch {
+                } catch ($e) {
                     # we do not want to warn for known error like legacy underlying
-                    if ($_ !~ /unknown underlying/) {
-                        $log->warn("exception is thrown when executing shortcode_to_longcode, parameters: " . $txn->short_code . ' error: ' . $_);
+                    if (!ref $e && $e !~ /unknown underlying/) {
+                        $log->warnf('exception is thrown when executing shortcode_to_longcode, parameters: %s, error: %s', $txn->{short_code}, $e);
                     }
                     $txn->{long_code} = localize('No information is available for this contract.');
                     exception_logged();
@@ -239,6 +243,7 @@ sub _retrieve_transaction_history {
             }
         }
     }
+
     return $transactions;
 }
 

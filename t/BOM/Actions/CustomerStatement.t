@@ -339,6 +339,91 @@ subtest 'client with payments, trades and P2P' => sub {
     };
 };
 
+subtest 'payment agent' => sub {
+
+    my $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'pa@test.com',
+    });
+
+    BOM::User->create(
+        email    => $pa_client->email,
+        password => 'x',
+    )->add_client($pa_client);
+
+    $pa_client->account('USD');
+
+    $pa_client->payment_agent({
+        payment_agent_name    => 'Joe',
+        email                 => 'joe@example.com',
+        information           => 'Test Info',
+        summary               => 'Test Summary',
+        commission_deposit    => 0,
+        commission_withdrawal => 0,
+        status                => 'authorized',
+        currency_code         => 'USD',
+        is_listed             => 't',
+    });
+    $pa_client->save;
+    $pa_client->get_payment_agent->set_countries(['id']);
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'id',
+        email       => 'pa_cli@test.com',
+    });
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'x',
+    )->add_client($client);
+
+    $client->account('USD');
+
+    $pa_client->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    $pa_client->payment_account_transfer(
+        toClient           => $client,
+        currency           => 'USD',
+        amount             => 100,
+        fees               => 0,
+        is_agent_to_client => 1,
+        gateway_code       => 'payment_agent_transfer',
+    );
+
+    $client->payment_account_transfer(
+        toClient     => $pa_client,
+        currency     => 'USD',
+        amount       => 99,
+        fees         => 0,
+        gateway_code => 'payment_agent_transfer',
+    );
+
+    my $req_args = {
+        client    => $pa_client,
+        source    => 1,
+        date_from => $now->epoch() - 100,
+        date_to   => $now->epoch() + 100,
+    };
+
+    my $expected_content = {
+        profile       => [[$pa_client->first_name . ' ' . $pa_client->last_name, $pa_client->loginid, 'USD', 'Retail', '.+ to .+ \(inclusive\)'],],
+        overview      => [['^0\.00$', '^1099\.00$', '^-100.00', '^0\.00$', '^0\.00$', '999\.00$', '^999.00$']],
+        payments      => [['\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', '\d+', '^1000.00$', '^$', '^deposit$'],],
+        payment_agent => [
+            ['\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', '\d+', 'Transfer in',  '^99.00$',   'Transfer from ' . $client->loginid],
+            ['\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', '\d+', 'Transfer out', '^-100.00$', 'Transfer to ' . $client->loginid],
+        ],
+    };
+
+    test_email_statement($req_args, $expected_content);
+
+};
+
 sub test_email_statement {
     my ($args, $expected) = @_;
 
@@ -348,16 +433,17 @@ sub test_email_statement {
     is $status->{status_code}, 1, 'email has been sent';
 
     my @msgs = mailbox_search(
-        email   => $test_client->email,
+        email   => $args->{client}->email,
         subject => qr/Statement from .+ to .+/
     );
 
     ok @msgs == 1, 'only one email has been sent';
 
-    my @table_names = ('profile', 'overview', 'close_trades', 'open_trades', 'payments', 'escrow');
+    my @table_names = ('profile', 'overview', 'close_trades', 'open_trades', 'payments', 'escrow', 'payment_agent');
 
     my $body           = $msgs[0]->{body};
     my @matched_tables = $body =~ /<tbody>[<>="\/.*&;:\-\s\w()]*?<\/tbody>/g;
+
     is scalar @matched_tables, scalar keys %$expected, 'Number of tables in email body is correct: ' . scalar keys %$expected;
 
     my $tables = {};

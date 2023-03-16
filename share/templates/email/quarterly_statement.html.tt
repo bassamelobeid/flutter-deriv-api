@@ -206,6 +206,31 @@
      <td>[% tx.action_type %]</td>
      <td>[% tx.amount %]</td>
      <td style="text-align:left">[% tx.payment_remark %]</td>
+   </tr>
+  [% END -%]
+ </tbody>
+</table>
+[% END -%]
+
+[% IF client.payment_agent.size -%]
+<h2>Payment Agent Transactions</h2>
+<table>
+ <tbody>
+  <tr>
+     <th scope="col">Date</th>
+     <th scope="col">Reference ID</th>
+     <th scope="col">Type</th>
+     <th scope="col">Amount</th>
+     <th scope="col">Description</th>     
+  </tr>
+  [% FOREACH tx IN client.payment_agent -%]
+  <tr>
+     <td scope="row">[% tx.transaction_date %]</td>
+     <td>[% tx.id %]</td>
+     <td>[% IF tx.action_type == 'withdrawal' %]Transfer out[% ELSE %]Transfer in[% END %]</td>
+     <td>[% tx.amount %]</td>
+     <td style="text-align:left">[% tx.payment_remark %]</td>
+   </tr>
   [% END -%]
  </tbody>
 </table>
