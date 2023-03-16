@@ -216,7 +216,7 @@ sub update_document_check {
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
-    $photo_id = [$photo_id] if ref($photo_id) ne 'ARRAY';
+    $photo_id = [$photo_id] if $photo_id && ref($photo_id) ne 'ARRAY';
 
     $photo_id //= [];
 
