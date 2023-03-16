@@ -932,7 +932,7 @@ sub _detect_mime_type {
 
     my $sign = first { index($base64_photo, $_) == 0 } keys %signatures;
 
-    return "application/octet-stream" unless $sign;
+    return undef unless $sign;
 
     return $signatures{$sign};
 

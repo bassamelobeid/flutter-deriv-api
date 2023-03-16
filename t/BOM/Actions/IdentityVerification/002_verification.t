@@ -1888,7 +1888,7 @@ subtest 'testing _detect_mime_type' => sub {
 
     $result = BOM::Event::Actions::Client::IdentityVerification::_detect_mime_type('test');
 
-    is $result, 'application/octet-stream', 'base case returns properly';
+    is $result, undef, 'base case returns properly';
 
     $result = BOM::Event::Actions::Client::IdentityVerification::_detect_mime_type(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
