@@ -36,13 +36,6 @@ unless ($to_date > $from_date) {
     code_exit_BO('From date must be before To date for sending statement.');
 }
 
-# we do not allow payment agents to request for statement
-# as that may cause the statement queue to get stuck
-my $client = BOM::User::Client->new({loginid => uc($input->{client_id})});
-if ($client->payment_agent) {
-    code_exit_BO('Sending statements to payment agents is currently disabled.');
-}
-
 my $params = {
     source    => 1,
     loginid   => $input->{client_id},
