@@ -11,29 +11,9 @@ alias:
     name: Update git repositories
 - &3
   run:
-    background: true
-    no_output_timeout: 3h
     command: |
       start_services
-      touch /tmp/services.ready
     name: Start services
-- &4
-  run:
-    no_output_timeout: 3h
-    command: |
-      count=0
-      while [ ! -f /tmp/services.ready ]; do
-          echo 'Still waiting for services...'
-          (( count++ )) && (( count >= 20 )) && break
-          sleep 1
-      done
-    name: Wait for services to start up
-- &check_services
-  run:
-    background: true
-    no_output_timeout: 3h
-    command: /opt/circle/check_services
-    name: Check services are running
 - &environment
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
@@ -55,8 +35,6 @@ jobs:
     - *1
     - *2
     - *3
-    - *4
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -98,8 +76,6 @@ jobs:
     - *1
     - *2
     - *3
-    - *4
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -129,8 +105,6 @@ jobs:
     - *1
     - *2
     - *3
-    - *4
-    - *check_services
     - run:
         no_output_timeout: 3h
         command: make cover
