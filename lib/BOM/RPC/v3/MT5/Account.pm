@@ -1836,7 +1836,8 @@ async_rpc "mt5_deposit",
                     mt5_id        => $to_mt5,
                     action        => 'deposit',
                     amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
-                }) if ($response->{mt5_data}->{group} =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
+                    group         => $response->{mt5_data}->{group},
+                }) if ($response->{mt5_data}->{group} =~ /real(?:\\p\d{2}_ts)?\d{2}\\(financial|synthetic)\\vanuatu_std(-hr)?_usd/);
 
             my $txn_id = $txn->transaction_id;
             # 31 character limit for MT5 comments
@@ -1991,7 +1992,9 @@ async_rpc "mt5_withdrawal",
                                 mt5_id        => $fm_mt5,
                                 action        => 'withdraw',
                                 amount_in_USD => $amount,
-                            }) if ($mt5_group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
+                                account_type  => $account_type,
+                                group         => $mt5_group
+                            }) if ($mt5_group =~ /real(?:\\p\d{2}_ts)?\d{2}\\(financial|synthetic)\\vanuatu_std(-hr)?_usd/);
 
                         return Future->done({
                             status                => 1,
