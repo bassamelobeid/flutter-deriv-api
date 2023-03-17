@@ -476,7 +476,7 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 86,
+            count   => 96,
             comment => 'real groups'
         },
         {
@@ -756,7 +756,7 @@ subtest 'available_groups' => sub {
                 company     => 'vanuatu'
             },
             allow_multiple_subgroups => 1,
-            count                    => 1,
+            count                    => 11,
             comment                  => 'real vanuatu groups'
         },
         {
@@ -775,7 +775,7 @@ subtest 'available_groups' => sub {
                 company     => 'vanuatu',
                 market_type => 'synthetic'
             },
-            count   => 0,
+            count   => 10,
             comment => 'real vanuatu synthetic groups'
         },
         {
