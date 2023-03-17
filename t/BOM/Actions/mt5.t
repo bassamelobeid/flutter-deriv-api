@@ -1862,7 +1862,7 @@ subtest 'sync mt5 accounts status' => sub {
 
     my %bom_user_client_mock = (
         get_poi_status => sub {
-            $mocked_user_client->mock('get_poi_status', shift // sub { return 'verified'; });
+            $mocked_user_client->mock('get_poi_status_jurisdiction', shift // sub { return 'verified'; });
         },
         get_poa_status => sub {
             $mocked_user_client->mock('get_poa_status', shift // sub { return 'verified'; });
