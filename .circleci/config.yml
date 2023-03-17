@@ -26,19 +26,6 @@ alias:
     no_output_timeout: 3h
     command: |
       start_services
-      touch /tmp/services.ready
-    background: true
-- &wait_services
-  run:
-    name: Wait for services to start up
-    no_output_timeout: 3h
-    command: |
-      count=0
-      while [ ! -f /tmp/services.ready ]; do
-          echo 'Still waiting for services...'
-          (( count++ )) && (( count >= 20 )) && break
-          sleep 1
-      done
 - &tests
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
@@ -50,7 +37,6 @@ jobs:
     - *ssh_keys
     - *git
     - *services
-    - *wait_services
     - run:
         <<: *tests
         no_output_timeout: 3h
@@ -74,7 +60,6 @@ jobs:
     - *ssh_keys
     - *git
     - *services
-    - *wait_services
     - run:
         no_output_timeout: 3h
         command: make syntax
@@ -91,7 +76,6 @@ jobs:
     - *ssh_keys
     - *git
     - *services
-    - *wait_services
     - run:
         <<: *tests
         name: core tests
@@ -121,7 +105,6 @@ jobs:
     - *ssh_keys
     - *git
     - *services
-    - *wait_services
     - run:
         <<: *tests
         name: code coverage tests
