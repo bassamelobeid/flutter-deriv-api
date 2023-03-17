@@ -336,6 +336,42 @@ subtest 'mt5 track event' => sub {
         ok $result, 'Success mt5 color change result';
 
     };
+
+    subtest 'mt5 store tranactions' => sub {
+        my $args = {
+            loginid         => $test_client->loginid,
+            'group'         => 'real\p01_ts04\synthetic\vanuatu_std_usd',
+            'mt5_server'    => 'p01_ts04',
+            'mt5_id'        => 'MTR90301',
+            'action'        => 'deposit',
+            'amount_in_USD' => 400
+        };
+
+        mailbox_clear();
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{store_mt5_transaction};
+        my $result         = $action_handler->($args);
+        ok $result, 'Success mt5 store transactions result';
+        my $msg = mailbox_search(subject => qr/VN - International currency transfers reporting obligation/);
+        ok !$msg, 'no email was sent';
+
+        $args->{amount_in_USD} = 7800;
+        $action_handler        = BOM::Event::Process->new(category => 'generic')->actions->{store_mt5_transaction};
+        $result                = $action_handler->($args);
+        ok $result, 'Success mt5 store transactions result';
+        $msg = mailbox_search(subject => qr/VN - International currency transfers reporting obligation/);
+        cmp_deeply(
+            $msg->{to},
+            [BOM::Platform::Context::request()->brand()->emails('compliance_alert')],
+            qq/Email should send to the compliance team./
+        );
+        ok $msg, 'email was sent when total amount exceeded 8000';
+        mailbox_clear();
+        $args->{amount_in_USD} = 7800;
+        $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{store_mt5_transaction};
+        ok $result, 'Success mt5 store transactions result';
+        $msg = mailbox_search(subject => qr/VN - International currency transfers reporting obligation/);
+        ok !$msg, 'no email was sent, counter reset';
+    };
 };
 
 subtest 'sanctions' => sub {

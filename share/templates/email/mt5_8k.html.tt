@@ -31,6 +31,10 @@
    <td style="text-align:left">[% action %]</td>
   </tr>
   <tr>
+   <th scope="row">Group:</th>
+   <td style="text-align:left">[% group %]</td>
+  </tr>
+  <tr>
    <th scope="row">Total Amount (USD):</th>
    <td style="text-align:left">[% total_amount %]</td>
   </tr>
