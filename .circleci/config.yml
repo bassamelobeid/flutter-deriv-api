@@ -11,36 +11,16 @@ alias:
     name: Update git repositories
 - &start_services
   run:
-    background: true
-    no_output_timeout: 3h
     command: |
       sudo mkdir -p /var/lib/binary && sudo chown nobody:nogroup /var/lib/binary # this line should be dropped when we switch json schema v3 to v4
       start_services
       touch /tmp/services.ready
     name: Start services
-- &wait_services
-  run:
-    no_output_timeout: 3h
-    command: |
-      count=0
-      while [ ! -f /tmp/services.ready ]; do
-          echo 'Still waiting for services...'
-          (( count++ )) && (( count >= 20 )) && break
-          sleep 1
-      done
-    name: Wait for services to start up
 - &environment
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
     WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
-- &check_services
-  run:
-    no_output_timeout: 3h
-    command: |
-      /opt/circle/check_services
-    name: Check services are running
-
 - &debian-ci
   auth:
     password: $DOCKERHUB_PASSWORD
@@ -61,8 +41,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -78,8 +56,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -95,8 +71,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -112,8 +86,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -129,8 +101,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -146,8 +116,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -163,8 +131,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -184,8 +150,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -201,8 +165,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         <<: *environment
         no_output_timeout: 3h
@@ -230,8 +192,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *start_services
-    - *wait_services
-    - *check_services
     - run:
         no_output_timeout: 3h
         command: make cover
