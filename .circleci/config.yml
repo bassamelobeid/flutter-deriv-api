@@ -25,22 +25,8 @@ alias:
 - &services
   run:
     name: Start services
-    no_output_timeout: 3h
     command: |
       start_services
-      touch /tmp/services.ready
-    background: true
-- &wait_services
-  run:
-    name: Wait for services to start up
-    no_output_timeout: 3h
-    command: |
-      count=0
-      while [ ! -f /tmp/services.ready ]; do
-          echo 'Still waiting for services...'
-          (( count++ )) && (( count >= 20 )) && break
-          sleep 1
-      done
 - &test_output
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
@@ -106,7 +92,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: Product contract test
@@ -122,7 +107,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: Validation
@@ -138,7 +122,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: MemoryTest
@@ -154,7 +137,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: Pricing
@@ -170,7 +152,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: Product extended
@@ -207,7 +188,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: Merlin Benchmark
@@ -233,7 +213,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         name: SDFX benchmark major
         no_output_timeout: 3h
@@ -277,7 +256,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-European-Digital-Slope
@@ -380,7 +358,6 @@ jobs:
     - *ssh_keys
     - *update_git
     - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: code coverage tests
