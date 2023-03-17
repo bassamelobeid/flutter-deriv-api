@@ -899,44 +899,24 @@ Does not takes or returns any parameters
                 . " accounts form the DB with status ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending'] with the newest created at: "
                 . $now->datetime_ddmmmyy_hhmmss_TZ);
 
+        my %processed_binary_user;
         foreach my $data (@combined) {
             my $mt5_client = $self->parse_user($data);
             next if ($mt5_client->{error});
-            my $group          = $mt5_client->{group};
-            my $creation_stamp = $mt5_client->{creation_stamp};
-            my $user_data      = $self->load_all_user_data($mt5_client->{binary_user_id});
-            my $client         = $user_data->{client};
+            my $binary_user_id = $mt5_client->{binary_user_id};
+            next if $processed_binary_user{$binary_user_id};
 
-            if ($group =~ m{bvi} or $group =~ m{vanuatu}) {
-                my $poi_status = $client->get_poi_status;
-                my $poa_status = $client->get_poa_status;
+            my $user_data = $self->load_all_user_data($binary_user_id);
+            my $client    = $user_data->{client};
 
-                if ($client->fully_authenticated) {
-                    $self->status_transition($mt5_client);
-                    next;
-                } elsif ($poi_status eq 'pending' and ($poa_status eq 'pending' or $poa_status eq 'verified')) {
-                    $self->status_transition({%$mt5_client, to_status => 'verification_pending'});
-                    next;
-                } elsif ($poi_status eq 'pending' and $poa_status eq 'failed' or $poa_status eq 'none') {
-                    if (   ($group =~ m{vanuatu} and $creation_stamp->days_since_epoch < $vanuatu_expiration_timestamp->days_since_epoch)
-                        or ($group =~ m{bvi} and $creation_stamp->days_since_epoch < $bvi_expiration_timestamp->days_since_epoch))
+            unless ($processed_binary_user{$binary_user_id}) {
+                BOM::Platform::Event::Emitter::emit(
+                    'sync_mt5_accounts_status',
                     {
-                        $self->status_transition({%$mt5_client, to_status => 'poa_failed'});
-                        next;
-                    } else {
-                        $self->status_transition({%$mt5_client, to_status => 'verification_pending'});
-                        next;
-                    }
-                } elsif ($poi_status eq 'failed' or $poi_status eq 'rejected') {
-                    $self->status_transition({%$mt5_client, to_status => 'proof_failed'});
-                    next;
-                } elsif ($poi_status eq 'verified' and $poa_status eq 'pending') {
-                    $self->status_transition({%$mt5_client, to_status => 'poa_pending'});
-                    next;
-                } elsif ($poi_status eq 'verified' and (($poa_status eq 'failed') or ($poa_status eq 'rejected'))) {
-                    $self->status_transition({%$mt5_client, to_status => 'poa_failed'});
-                    next;
-                }
+                        binary_user_id => $client->binary_user_id,
+                    });
+
+                $processed_binary_user{$binary_user_id} = 1;
             }
         }
 
