@@ -1902,6 +1902,114 @@ subtest 'testing _detect_mime_type' => sub {
 
 };
 
+subtest 'testing photo being sent as paramter - undef file type' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_photo_unfef_file_type@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '666.456.789-33',
+        type            => 'cpf',
+    });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+    my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
+    my $track_args;
+
+    $services_track_mock->mock(
+        'document_upload',
+        sub {
+            $track_args = shift;
+            return Future->done(1);
+        });
+
+    my $s3_client_mock = Test::MockModule->new('BOM::Platform::S3Client');
+    $s3_client_mock->mock(
+        'upload_binary',
+        sub {
+            return Future->done(1);
+        });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1996-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'verified',
+                    messages => ['NAME_MISMATCH'],
+                    report   => {
+                        full_name => "John Mary Doe",
+                        photo     => "Not Available",
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+    my $check = $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+        });
+
+    cmp_deeply $check, [{photo_id => []}], 'photo id is not existant';
+
+    is $track_args, undef, 'No track was sent';
+
+    $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '666.456.789-33',
+            'status'                   => 'verified',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["NAME_MISMATCH"]',
+            'id'                       => re('\d+'),
+            'document_type'            => 'cpf'
+        },
+        'Document has verified from pass'
+    );
+};
+
 sub _reset_submissions {
     my $user_id = shift;
     my $redis   = BOM::Config::Redis::redis_events();

@@ -803,6 +803,8 @@ async sub _upload_photo {
 
     my $file_type = _detect_mime_type($photo);
 
+    return undef unless $file_type;
+
     my @file_type_array = split('/', $file_type);
 
     $file_type = pop(@file_type_array);
