@@ -1980,6 +1980,12 @@ rpc set_settings => sub {
 
         BOM::Platform::Event::Emitter::emit('check_name_changes_after_first_deposit', {loginid => $current_client->loginid})
             if any { $_ eq 'first_name' or $_ eq 'last_name' } keys %$updated_fields_for_track;
+
+        BOM::Platform::Event::Emitter::emit(
+            'sync_mt5_accounts_status',
+            {
+                binary_user_id => $current_client->binary_user_id,
+            });
     }
 
     return {status => 1};

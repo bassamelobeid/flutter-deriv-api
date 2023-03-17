@@ -1876,8 +1876,8 @@ subtest 'MT5' => sub {
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
-    $mock_client->mock(get_poi_status => sub { return 'verified' });
-    $mock_client->mock(get_poa_status => sub { return 'verified' });
+    $mock_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
+    $mock_client->mock(get_poa_status              => sub { return 'verified' });
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
     $params->{args}{account_to}   = $test_client->loginid;

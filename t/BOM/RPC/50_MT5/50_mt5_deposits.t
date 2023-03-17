@@ -575,8 +575,8 @@ subtest 'labuan withdrawal' => sub {
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     my $mocked_client = Test::MockModule->new(ref($test_client));
-    $mocked_client->mock(get_poi_status => sub { return 'verified' });
-    $mocked_client->mock(get_poa_status => sub { return 'verified' });
+    $mocked_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
+    $mocked_client->mock(get_poa_status              => sub { return 'verified' });
 
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
@@ -826,7 +826,7 @@ subtest 'bvi withdrawal' => sub {
 
     my $user_client_mock = Test::MockModule->new('BOM::User::Client');
     $user_client_mock->mock(
-        'get_poi_status',
+        'get_poi_status_jurisdiction',
         sub {
             return 'verified';
         });
@@ -991,7 +991,7 @@ subtest 'bvi withdrawal' => sub {
         ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
 
     $manager_module->unmock('get_user', 'get_group');
-    $user_client_mock->unmock('get_poi_status', 'get_poa_status');
+    $user_client_mock->unmock('get_poi_status_jurisdiction', 'get_poa_status');
     $bom_user_mock->unmock('loginid_details');
 };
 
@@ -1032,7 +1032,7 @@ subtest 'vanuatu withdrawal' => sub {
 
     my $user_client_mock = Test::MockModule->new('BOM::User::Client');
     $user_client_mock->mock(
-        'get_poi_status',
+        'get_poi_status_jurisdiction',
         sub {
             return 'verified';
         });
@@ -1197,7 +1197,7 @@ subtest 'vanuatu withdrawal' => sub {
         ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
 
     $manager_module->unmock('get_user', 'get_group');
-    $user_client_mock->unmock('get_poi_status', 'get_poa_status');
+    $user_client_mock->unmock('get_poi_status_jurisdiction', 'get_poa_status');
     $bom_user_mock->unmock('loginid_details');
 };
 
