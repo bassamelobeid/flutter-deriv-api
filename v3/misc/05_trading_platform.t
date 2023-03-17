@@ -401,6 +401,18 @@ subtest 'trading_platform_available_accounts' => sub {
             'linkable_landing_companies' => ['svg'],
         },
         {
+            'sub_account_type' => 'standard',
+            'requirements'     => {
+                'compliance'          => {'mt5' => ['fully_authenticated', 'expiration_check']},
+                'signup'              => ['citizen', 'place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
+                'after_first_deposit' => {'financial_assessment' => ['financial_information']}
+            },
+            'shortcode'                  => 'vanuatu',
+            'market_type'                => 'gaming',
+            'name'                       => 'Deriv (V) Ltd',
+            'linkable_landing_companies' => ['svg'],
+        },
+        {
             'requirements' => {
                 'after_first_deposit' => {'financial_assessment' => ['financial_information', 'trading_experience']},
                 'compliance'          => {
