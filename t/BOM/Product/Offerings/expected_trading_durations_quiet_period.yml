@@ -307,7 +307,7 @@
     name: minor_pairs
 - data:
   - symbol:
-    - display_name: Japanese Index
+    - display_name: Japan 225
       name: OTC_N225
     trade_durations:
     - durations:
@@ -371,9 +371,9 @@
         display_name: Stays Between/Goes Outside
         name: staysinout
   - symbol:
-    - display_name: Australian Index
+    - display_name: Australia 200
       name: OTC_AS51
-    - display_name: Hong Kong Index
+    - display_name: Hong Kong 50
       name: OTC_HSI
     trade_durations:
     - durations:
@@ -440,19 +440,19 @@
     display_name: Stock Indices
     name: indices
   submarket:
-    display_name: Asia/Oceania
+    display_name: Asian indices
     name: asia_oceania_OTC
 - data:
   - symbol:
-    - display_name: French Index
+    - display_name: France 40
       name: OTC_FCHI
-    - display_name: UK Index
+    - display_name: UK 100
       name: OTC_FTSE
-    - display_name: German Index
+    - display_name: Germany 40
       name: OTC_GDAXI
     - display_name: Spanish Index
       name: OTC_IBEX35
-    - display_name: Swiss Index
+    - display_name: Swiss 20
       name: OTC_SSMI
     trade_durations:
     - durations:
@@ -516,9 +516,9 @@
         display_name: Stays Between/Goes Outside
         name: staysinout
   - symbol:
-    - display_name: Dutch Index
+    - display_name: Netherlands 25
       name: OTC_AEX
-    - display_name: Euro 50 Index
+    - display_name: Euro 50
       name: OTC_SX5E
     trade_durations:
     - durations:
@@ -585,15 +585,15 @@
     display_name: Stock Indices
     name: indices
   submarket:
-    display_name: Europe
+    display_name: European indices
     name: europe_OTC
 - data:
   - symbol:
-    - display_name: Wall Street Index
+    - display_name: Wall Street 30
       name: OTC_DJI
-    - display_name: US Tech Index
+    - display_name: US Tech 100
       name: OTC_NDX
-    - display_name: US Index
+    - display_name: US 500
       name: OTC_SPC
     trade_durations:
     - durations:
@@ -660,7 +660,7 @@
     display_name: Stock Indices
     name: indices
   submarket:
-    display_name: Americas
+    display_name: American indices
     name: americas_OTC
 - data:
   - symbol:

@@ -328,7 +328,7 @@ subtest 'longcode of index daily contracts' => sub {
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is daily contract';
     is_deeply($c2->longcode,
-        ['Win payout if [_1] is strictly lower than [_4] at [_3].', ['German Index'], [], ['close on [_1]', '2016-07-27'], ['entry spot']]);
+        ['Win payout if [_1] is strictly lower than [_4] at [_3].', ['Germany 40'], [], ['close on [_1]', '2016-07-27'], ['entry spot']]);
     is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c2->longcode;
     $c2 = make_similar_contract($c, {date_pricing => $c->date_start->plus_time_interval('8h')});
