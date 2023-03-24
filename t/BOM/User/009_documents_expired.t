@@ -517,8 +517,9 @@ subtest 'has valid documents' => sub {
         subtest 'Enforce' => sub {
             $docs = {
                 'proof_of_identity' => {
-                    'is_expired' => 1,
-                    'documents'  => {},
+                    'is_expired'  => 1,
+                    'is_verified' => 1,
+                    'documents'   => {},
                 }};
 
             ok $client_cr->documents->valid('proof_of_identity'), 'Expire check not enforced';
@@ -526,8 +527,9 @@ subtest 'has valid documents' => sub {
 
             $docs = {
                 'proof_of_identity' => {
-                    'is_expired' => 1,
-                    'documents'  => {},
+                    'is_expired'  => 1,
+                    'is_verified' => 1,
+                    'documents'   => {},
                 }};
 
             ok !$client_cr->documents->valid($docs, 'proof_of_identity', 1), 'Expire check was enforced';
@@ -1097,8 +1099,9 @@ subtest 'Lifetime Valid Documents' => sub {
     ok $client->documents->expired(), 'Client has expired docs still';
     ok !$client->documents->valid(),  'Client does not have valid docs still';
 
-    ok $documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI has expiry_date reported';
-    ok $documents_uploaded->{proof_of_identity}->{is_expired},  'POI has is_expired reported';
+    ok $documents_uploaded->{proof_of_identity}->{expiry_date},     'POI has expiry_date reported';
+    ok $documents_uploaded->{proof_of_identity}->{is_expired},      'POI has is_expired reported';
+    ok !$documents_uploaded->{proof_of_identity}->{lifetime_valid}, 'Lifetime valid flag not set';
 
     ok upload_new_doc(
         $client,
@@ -1121,10 +1124,103 @@ subtest 'Lifetime Valid Documents' => sub {
     ok $client->documents->valid(),    'Client has valid docs';
 
     $documents_uploaded = $client->documents->uploaded();
-    ok !$documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI does not have expiry_date reported';
-    ok !$documents_uploaded->{proof_of_identity}->{is_expired},  'POI does not have is_expired reported';
+    ok !$documents_uploaded->{proof_of_identity}->{expiry_date},   'POI does not have expiry_date reported';
+    ok !$documents_uploaded->{proof_of_identity}->{is_expired},    'POI does not have is_expired reported';
+    ok $documents_uploaded->{proof_of_identity}->{lifetime_valid}, 'Lifetime valid flag set';
 
     $mock_client->unmock_all;
+};
+
+subtest 'manual & onfido' => sub {
+    my $user_client1 = BOM::User->create(
+        email          => 'test+manual+onfido@binary.com',
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+    my $client_cr = create_client('CR');
+
+    $user_client1->add_client($client_cr);
+    $client_cr->set_default_account('USD');
+    $client_cr->save();
+
+    ok !$client_cr->documents->expired, 'does not have expired documents';
+    ok upload_new_doc(
+        $client_cr,
+        {
+            document_type   => 'passport',
+            document_format => 'PNG',
+            expiration_date => Date::Utility->new()->minus_time_interval('10y')->date_yyyymmdd,
+            document_id     => '1363135',
+            checksum        => 'ger332583',
+            comments        => 'text',
+            page_type       => 'back',
+            issue_date      => undef,
+            origin          => 'legacy',
+        }
+        ),
+        'Expired document uploaded';
+
+    ok !$client_cr->documents->expired, 'does not have expired documents';
+
+    $client_cr->aml_risk_classification('high');
+
+    ok $client_cr->documents->expired, 'does have expired documents';
+
+    my $onfido_id = upload_new_doc(
+        $client_cr,
+        {
+            document_type   => 'passport',
+            document_format => 'PNG',
+            expiration_date => Date::Utility->new()->plus_time_interval('1y')->date_yyyymmdd,
+            document_id     => '1363135',
+            checksum        => '3232332',
+            comments        => 'text',
+            page_type       => 'back',
+            issue_date      => undef,
+            origin          => 'onfido',
+            status          => 'rejected',
+        });
+
+    ok $onfido_id, 'Uploaded expired onfido in rejected status';
+
+    ok $client_cr->documents->expired, 'does have expired documents (onfido is not yet verified)';
+
+    # verify the onfido
+    my $dbh            = $client_cr->db->dbic->dbh;
+    my $sth_doc_finish = $dbh->prepare('SELECT * FROM betonmarkets.finish_document_upload(?, ?)');
+    $sth_doc_finish->execute($onfido_id, 'verified');
+
+    ok !$client_cr->documents->expired, 'does not have expired documents';
+
+    subtest 'lifetime valid' => sub {
+        # reject the onfido
+        $sth_doc_finish->execute($onfido_id, 'rejected');
+
+        ok $client_cr->documents->expired, 'does have expired documents (onfido is rejected)';
+
+        $onfido_id = upload_new_doc(
+            $client_cr,
+            {
+                document_type   => 'passport',
+                document_format => 'PNG',
+                expiration_date => undef,
+                document_id     => '34645',
+                checksum        => 'thrt',
+                comments        => 'text',
+                page_type       => 'back',
+                issue_date      => undef,
+                origin          => 'onfido',
+                status          => 'rejected',
+                lifetime_valid  => 1,
+            });
+
+        ok $client_cr->documents->expired, 'does have expired documents (onfido is rejected)';
+
+        # verify the onfido
+        $sth_doc_finish->execute($onfido_id, 'verified');
+
+        ok !$client_cr->documents->expired, 'does not have expired documents';
+    };
 };
 
 sub upload_new_doc {

@@ -222,6 +222,7 @@ sub _build_uploaded {
     for my $category_key (keys $has_lifetime_valid->%*) {
         delete $documents{$category_key}->{expiry_date};
         delete $documents{$category_key}->{is_expired};
+        $documents{$category_key}->{lifetime_valid} = 1;
     }
 
     for my $origin (qw/onfido idv proof_of_identity/) {
@@ -294,22 +295,42 @@ It may take the following argument:
 
 =item * enforce, (optional) activate this flag to always check for expired docs no matter the context
 
-=item * category, (optional) defaults to proof_of_identity
+=item * categories, (optional) defaults to [onfido, proof_of_identity]
 
 =back
+
+Clients needs at least 1 category to pass to not be considered expired.
 
 It returns the computed flag.
 
 =cut
 
 sub expired {
-    my ($self, $enforce, $category) = @_;
+    my ($self, $enforce, $categories) = @_;
 
-    $category //= 'proof_of_identity';
+    $categories //= ['onfido', 'proof_of_identity'];
 
-    return 0 unless defined $self->uploaded->{$category}{documents};
+    $categories = [$categories] if ref($categories) ne 'ARRAY';
 
-    return $self->valid($category, $enforce) ? 0 : 1;
+    my $has_expirable_docs;
+
+    for my $cat ($categories->@*) {
+        my $category = $self->uploaded->{$cat} // {};
+
+        next unless defined $category->{documents};
+
+        return 0 if defined $category->{lifetime_valid};
+
+        next unless defined $category->{is_expired};
+
+        $has_expirable_docs = 1;
+
+        return 0 if $self->valid($cat, $enforce);
+    }
+
+    return 1 if $has_expirable_docs;
+
+    return 0;
 }
 
 =head2 valid
