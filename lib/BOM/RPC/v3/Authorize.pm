@@ -298,14 +298,19 @@ rpc(
             my $verify = BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
             return _create_error('InvalidOTP', BOM::Platform::Context::localize('OTP verification failed')) unless ($otp and $verify);
 
+            my $ua_fingerprint = $params->{token_details}->{ua_fingerprint};
             if ($totp_action eq 'enable') {
                 # enable 2FA
-                $user->update_totp_fields(is_totp_enabled => 1);
+                $user->update_totp_fields(
+                    is_totp_enabled => 1,
+                    ua_fingerprint  => $ua_fingerprint
+                );
             } elsif ($totp_action eq 'disable') {
                 # disable 2FA and reset secret key. Next time a new secret key should be generated
                 $user->update_totp_fields(
                     is_totp_enabled => 0,
-                    secret_key      => ''
+                    secret_key      => '',
+                    ua_fingerprint  => $ua_fingerprint
                 );
             }
 
