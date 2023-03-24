@@ -18,6 +18,7 @@ use BOM::OAuth::Helper;
 use BOM::Platform::Context qw( localize );
 use BOM::OAuth::Static     qw( get_message_mapping );
 use BOM::OAuth::Common;
+use Log::Any qw($log);
 
 sub callback {
     my $c = shift;
@@ -162,7 +163,6 @@ sub callback {
             # initialize user_id and link account to social login.
             stats_inc('login.oneall.new_user_created', {tags => ["brand:$brand_name", "provider:$provider_name"]});
         }
-
 # login client to the system
         $c->session(_oneall_user_id => $user->{id});
         stats_inc('login.oneall.success', {tags => ["brand:$brand_name"]});
@@ -180,6 +180,76 @@ sub _get_provider_token {
     my $request = URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0]);
 
     return $request->query_param('provider_connection_token');
+}
+
+=head2 _delete_user
+
+User delete request to oneall
+
+=over 4
+
+=item * C<brand_name> The brand name. This is either 'deriv' or 'binary'
+
+=item * C<user_token> The user token of the user. This is fetched from users.binary_user_connects table
+
+=back
+
+Returns the result of the http request.
+
+=cut
+
+sub _delete_user {
+    my ($brand_name, $user_token) = @_;
+    my $res;
+    try {
+        my $oneall = WWW::OneAll->new(
+            subdomain   => $brand_name,
+            public_key  => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{public_key},
+            private_key => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{private_key},
+        );
+
+        $res = $oneall->request('DELETE', "/users/" . $user_token, (query_params => ["confirm_deletion=true"]));
+    } catch ($e) {
+        $log->errorf('Failed to delete one all data for the user: %s', $e);
+    }
+    return $res;
+}
+
+=head2 anonymize_user
+
+Anonymize the user from oneall
+
+=over 4
+
+=item * C<oneall_user_data> This contains the user's binary_user_id, oneall user_token and the provider (google, facebook etc)
+
+=back
+
+Retuns 1, if the anonymization is successful. 0 otherwise.
+
+=cut
+
+sub anonymize_user {
+    my ($oneall_user_data) = @_;
+
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my $count        = 0;
+    for my $user_data (@$oneall_user_data) {
+        my $res = _delete_user("deriv", $user_data->{user_token});
+        # If the above request fails, check and delete if the user is in the binary sub domain
+        if (exists $res->{response}->{request}->{status}->{code} && $res->{response}->{request}->{status}->{code} == 404) {
+            $res = _delete_user("binary", $user_data->{user_token});
+        }
+
+        # if the request was successful then delete the binary_user_connects data
+        if (exists $res->{response}->{request}->{status}->{code} && $res->{response}->{request}->{status}->{code} == 200) {
+            $log->info("Removed oneall profile data for the user id: " . $user_data->{binary_user_id});
+            $user_connect->remove_connect($user_data->{binary_user_id}, $user_data->{provider});
+            $count++;
+        }
+    }
+    return 1 if $count == scalar(@$oneall_user_data);
+    return 0;
 }
 
 1;

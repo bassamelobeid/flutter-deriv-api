@@ -226,6 +226,27 @@ subtest "User sing up with social login, app_id is saved" => sub {
     ok $emitted{"signup"}, "signup event emitted";
 };
 
+subtest "anonymize_user" => sub {
+
+    # Bypass BOM::OAuth::OneAll->_delete_user function and mock successful reponse
+    my $mock_user_delete = Test::MockModule->new('BOM::OAuth::OneAll');
+    $mock_user_delete->mock('_delete_user', {response => {request => {status => {code => 200}}}});
+    my $user_data = [{
+            binary_user_id => 1,
+            user_token     => "dummy",
+            provider       => "dummy"
+        }];
+
+    my $result = BOM::OAuth::OneAll::anonymize_user($user_data);
+    is $result, 1, 'Successfully delete the user data from oneall';
+
+    # Bypass BOM::OAuth::OneAll->_delete_user function and mock failed reponse
+    $mock_user_delete->mock('_delete_user', {response => {request => {status => {code => 404}}}});
+
+    $result = BOM::OAuth::OneAll::anonymize_user($user_data);
+    is $result, 0, 'Failed to delete the user data';
+};
+
 done_testing();
 
 1;
