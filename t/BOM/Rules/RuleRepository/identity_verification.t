@@ -522,6 +522,7 @@ subtest 'rule idv.check_service_availibility' => sub {
     my $mock_country_config   = Test::MockModule->new('Brands::Countries');
     my $mock_platform_utility = Test::MockModule->new('BOM::Platform::Utility');
     my $mock_idv_model        = Test::MockModule->new('BOM::User::IdentityVerification');
+    my $mock_qa               = Test::MockModule->new('BOM::Config');
 
     my $test_cases = [{
             input => {
@@ -597,6 +598,39 @@ subtest 'rule idv.check_service_availibility' => sub {
             idv_config          => {document_types => {passport => 1}},
             error               => 'InvalidDocumentType',
         },
+        {
+            input => {
+                issuing_country => 'qq',
+                type            => 'passport',
+            },
+            idv_submission_left => 1,
+            has_idv             => 0,
+            idv_config          => undef,
+            error               => undef,
+            qa_provider         => 1,
+        },
+        {
+            input => {
+                issuing_country => 'qq',
+                type            => 'passport',
+            },
+            idv_submission_left => 1,
+            has_idv             => 0,
+            idv_config          => undef,
+            error               => 'NotSupportedCountry',
+            qa_provider         => 0,
+        },
+        {
+            input => {
+                issuing_country => 'wrong country',
+                type            => 'passport',
+            },
+            idv_submission_left => 1,
+            has_idv             => 0,
+            idv_config          => undef,
+            error               => 'NotSupportedCountry',
+            qa_provider         => 1,
+        },
     ];
 
     for my $case ($test_cases->@*) {
@@ -614,6 +648,7 @@ subtest 'rule idv.check_service_availibility' => sub {
         $mock_idv_model->mock('submissions_left' => $case->{idv_submission_left});
         $mock_idv_model->mock('status'           => $case->{idv_status} // 'none');
         $mock_idv_model->mock('has_expired_document_chance', $case->{has_expired_document_chance});
+        $mock_qa->mock('on_qa' => $case->{qa_provider});
 
         my %args = (
             loginid         => $client_cr->loginid,
@@ -635,6 +670,7 @@ subtest 'rule idv.check_service_availibility' => sub {
         $mock_platform_utility->unmock_all();
         $mock_country_config->unmock_all();
         $mock_idv_model->unmock_all();
+        $mock_qa->unmock_all();
     }
 };
 
@@ -649,6 +685,7 @@ subtest 'rule idv.valid_document_number' => sub {
         'document_number is required for this rule';
 
     my $mock_country_config = Test::MockModule->new('Brands::Countries');
+    my $mock_qa             = Test::MockModule->new('BOM::Config');
 
     my $test_cases = [{
             input => {
@@ -712,10 +749,41 @@ subtest 'rule idv.valid_document_number' => sub {
             },
             error => undef,
         },
+        {
+            input => {
+                issuing_country => 'qq',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            idv_config  => {document_types => {passport => {format => '^E'}}},
+            error       => undef,
+            qa_provider => 1,
+        },
+        {
+            input => {
+                issuing_country => 'qq',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            idv_config  => {document_types => {passport => {format => 'E$'}}},
+            error       => 'InvalidDocumentNumber',
+            qa_provider => 0,
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            idv_config  => {document_types => {passport => {format => 'E$'}}},
+            error       => 'InvalidDocumentNumber',
+            qa_provider => 1,
+        },
     ];
 
     for my $case ($test_cases->@*) {
         $mock_country_config->mock('get_idv_config' => $case->{idv_config});
+        $mock_qa->mock('on_qa' => $case->{qa_provider});
 
         my %args = (
             issuing_country     => $case->{input}->{issuing_country},
@@ -735,6 +803,7 @@ subtest 'rule idv.valid_document_number' => sub {
         }
 
         $mock_country_config->unmock_all();
+        $mock_qa->unmock_all();
     }
 };
 

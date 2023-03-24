@@ -132,21 +132,25 @@ rule 'idv.check_service_availibility' => {
 
         my $countries = Brands::Countries->new;
         my $configs   = $countries->get_idv_config($issuing_country);
-
-        $self->fail('NotSupportedCountry') unless $countries->is_idv_supported($issuing_country);
-
         my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
-        $self->fail('IdentityVerificationDisabled')
-            unless BOM::Platform::Utility::has_idv(
-            country  => $issuing_country,
-            provider => $configs->{provider});
+        my $qq_bypass = BOM::Config::on_qa() && $issuing_country eq 'qq';
+
+        unless ($qq_bypass) {
+            $self->fail('NotSupportedCountry') unless $countries->is_idv_supported($issuing_country);
+            $self->fail('IdentityVerificationDisabled')
+                unless BOM::Platform::Utility::has_idv(
+                country  => $issuing_country,
+                provider => $configs->{provider});
+        }
 
         my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
 
         $self->fail('NoSubmissionLeft') if $idv_model->submissions_left($client) == 0 && !$expired_bypass;
 
-        $self->fail('InvalidDocumentType') unless exists $configs->{document_types}->{$document_type};
+        unless ($qq_bypass) {
+            $self->fail('InvalidDocumentType') unless exists $configs->{document_types}->{$document_type};
+        }
 
         return undef;
     }
@@ -165,14 +169,19 @@ rule 'idv.valid_document_number' => {
         my $configs   = $countries->get_idv_config($issuing_country);
         my $regex     = $configs->{document_types}->{$document_type}->{format};
 
-        $self->fail('InvalidDocumentNumber') if $document_number !~ m/$regex/;
+        my $qq_bypass = BOM::Config::on_qa() && $issuing_country eq 'qq';
 
-        my $additional_config = $configs->{document_types}->{$document_type}->{additional};
-        if ($additional_config) {
-            my $additional = $args->{document_additional} // '';
-            $regex = $additional_config->{format};
-            $self->fail('InvalidDocumentAdditional') if $additional !~ m/$regex/;
+        unless ($qq_bypass) {
+            $self->fail('InvalidDocumentNumber') if $document_number !~ m/$regex/;
+
+            my $additional_config = $configs->{document_types}->{$document_type}->{additional};
+            if ($additional_config) {
+                my $additional = $args->{document_additional} // '';
+                $regex = $additional_config->{format};
+                $self->fail('InvalidDocumentAdditional') if $additional !~ m/$regex/;
+            }
         }
+
         return undef;
     }
 };
