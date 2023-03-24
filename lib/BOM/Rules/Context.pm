@@ -257,7 +257,11 @@ sub get_real_sibling {
     die 'Client loginid is missing' unless $args->{loginid};
 
     my $client = $self->client($args);
+
     return $client unless ($client and $client->user and not $client->is_virtual);
+
+    #return current client if not virtual
+    return $client unless $client->is_virtual;
 
     my @real_siblings = sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0);
     return $real_siblings[0] // $client;
