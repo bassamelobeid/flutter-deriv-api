@@ -163,37 +163,23 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="bg-lightgrey" colspan="2">#AML SCREENING</td>
     </tr>
-    [% IF lexis_nexis %]
-        <tr>
-            <td class="label">Client Login ID</td>
-            <td>: 
-            [% lexis_nexis.client_loginid %]
-            </td>
-        </tr>
-        <tr><td class="label">Status</td><td>:                [% lexis_nexis.alert_status %]<td></tr>
-        <tr><td class="label">Update date</td><td>: [% lexis_nexis.date_updated %] </td></tr>
-        <tr><td class="label">Date added </td><td>: [% lexis_nexis.date_added %] </td></tr>
-        <tr><td class="label">Screening Reason (Custom Note)</td><td>: [% lexis_nexis.note %] </td></tr>
-    [% END %]
-    [% IF NOT lexis_nexis OR lexis_nexis.alert_status == 'requested' %]
-        <tr>
-        <td class="label"></td>
-        <td>
-            Screening reason (custom text): 
-            <select id='screening_reason_select' name='screening_reason_select'>
-                <option value=""></option>
-                [% FOREACH reason IN screening_reasons%]
-                    <option value="[% reason %]" [% IF reason == lexis_nexis.note %] selected [% END %]>
-                        [% reason %]
-                    </option>
-                [% END %]
-            </select>
-            <button name="request_risk_screen" type="submit" class="btn btn--primary" value="1"
-                [% IF !is_compliance || client.is_virtual %] disabled=1 [% END %]
-            > Request Screening </button>
-        </td>
-        </tr>
-    [% END %]
+    <tr>
+    <td class="label"></td>
+    <td>
+        Screening reason (custom text): 
+        <select id='screening_reason_select' name='screening_reason_select'>
+            <option value=""></option>
+            [% FOREACH reason IN screening_reasons%]
+                <option value="[% reason %]"> [% reason %] </option>
+            [% END %]
+        </select>
+        <button name="request_risk_screen" type="submit" class="btn btn--primary" value="1"
+            [% IF !is_compliance || client.is_virtual %] disabled=1 [% END %]
+        > Request Screening </button>
+        <button name="show_aml_screen_table" type="submit" class="btn btn--primary" value="1">Show All Screenings</button>
+
+    </td>
+    </tr>
     <tr>
         <td class="bg-lightgrey" colspan="2">#Identity</td>
     </tr>

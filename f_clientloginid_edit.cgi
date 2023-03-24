@@ -247,9 +247,42 @@ if (defined $input{request_risk_screen}) {
         client_loginid => $client->loginid,
         alert_status   => 'requested',
         note           => $input{screening_reason_select} || undef,
+        date_added     => Date::Utility->new->datetime
     );
 
     print "<p class=\"notify\">Screening requested. It will be enabled within 24 hours.</p>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
+}
+
+sub find_risk_screen {
+    my (%args) = @_;
+
+    my @search_fields = qw/binary_user_id client_entity_id status/;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    my $rows = $dbic->run(
+        fixup => sub {
+            return $_->selectall_arrayref('select * from users.get_risk_screen(?,?,?)', {Slice => {}}, @args{@search_fields});
+        });
+
+    return @$rows;
+}
+
+if (defined $input{show_aml_screen_table}) {
+    my ($risk_screen) = find_risk_screen(binary_user_id => $client->user->id);
+
+    $risk_screen->{flags_str} = join(',', $risk_screen->{flags}->@*) if $risk_screen && $risk_screen->{flags};
+
+    my $lexis_nexis = $client->user->lexis_nexis;
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_edit_aml_screening_table.html.tt',
+        {
+            risk_screen => $risk_screen,
+            lexis_nexis => $lexis_nexis,
+        },
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
+
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
