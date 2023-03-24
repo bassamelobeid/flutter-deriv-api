@@ -570,7 +570,6 @@ sub _prepare_params_for_update {
     $updated_userinfo->{address} = "deleted";
     $updated_userinfo->{city}    = "deleted";
     $updated_userinfo->{phone}   = "deleted";
-    $updated_userinfo->{country} = "deleted";
     $updated_userinfo->{state}   = "deleted";
     $updated_userinfo->{zipCode} = "deleted";
     $updated_userinfo->{id}      = "deleted";
