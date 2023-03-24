@@ -188,4 +188,125 @@ subtest 'check legacy cfd_score' => sub {
     );
 };
 
+subtest 'expired docs account' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+expired+docs@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+
+    $client->status->set('financial_risk_approval', 'system', 'Accepted approval');
+    $client->status->set('crs_tin_information',     'test',   'test');
+    $client->status->set('age_verification',        'test',   'test');
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $client->aml_risk_classification('high');
+    $client->set_default_account('EUR');
+    $client->financial_assessment({
+        data => encode_json_utf8($fa_data),
+    });
+    $client->save();
+
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    my $documents;
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            $self->_clear_uploaded;
+            return $documents // {};
+        });
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    ok !$result->{cashier_validation}, 'cashier validation passes';
+
+    $documents = {
+        proof_of_identity => {
+            is_expired => 1,
+            documents  => {test => {test => 1}}}};
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{cashier_validation}, ['documents_expired'], 'cashier validation has errors';
+
+    $documents = {
+        proof_of_identity => {
+            is_expired => 1,
+            documents  => {test => {test => 1}}
+        },
+        onfido => {
+            documents => {
+                hola => {
+                    tarola => 1,
+                }
+            },
+            is_expired => 0,
+        }};
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    ok !$result->{cashier_validation}, 'cashier validation passes';
+
+    $documents = {
+        proof_of_identity => {
+            is_expired => 1,
+            documents  => {test => {test => 1}}
+        },
+        # no exp date onfido doc!
+        onfido => {
+            documents => {
+                hola => {
+                    tarola => 1,
+                }
+            },
+        }};
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{cashier_validation}, ['documents_expired'], 'cashier validation has errors';
+
+    $documents = {
+        proof_of_identity => {
+            is_expired => 1,
+            documents  => {test => {test => 1}}
+        },
+        onfido => {
+            documents => {
+                hola => {
+                    tarola => 1,
+                }
+            },
+            lifetime_valid => 1,
+        }};
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    ok !$result->{cashier_validation}, 'cashier validation passes';
+
+    $documents = {
+        proof_of_identity => {
+            is_expired => 1,
+            documents  => {test => {test => 1}}
+        },
+        onfido => {
+            documents => {
+                hola => {
+                    tarola => 1,
+                }
+            },
+            is_expired => 1,
+        }};
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{cashier_validation}, ['documents_expired'], 'cashier validation has errors';
+
+    $documents_mock->unmock_all;
+};
+
 done_testing();
