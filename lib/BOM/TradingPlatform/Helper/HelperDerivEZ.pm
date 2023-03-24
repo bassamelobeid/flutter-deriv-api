@@ -621,7 +621,7 @@ sub _get_settings {
         sub {
             my ($settings) = @_;
 
-            return create_error({code => 'MT5AccountInactive'}) if !$settings->{active};
+            return create_error('MT5AccountInactive') if !$settings->{active};
 
             $settings = _filter_settings($settings,
                 qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state zipCode server server_info/
