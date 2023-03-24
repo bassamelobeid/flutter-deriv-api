@@ -33,6 +33,7 @@ $client->save;
 
 my $idv_model         = BOM::User::IdentityVerification->new(user_id => $client->user->id);
 my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+my $mock_qa           = Test::MockModule->new('BOM::Config');
 
 my $mock_config_service = Test::MockModule->new('BOM::Config::Services');
 my $idv_service_enabled = 1;
@@ -126,6 +127,17 @@ subtest 'microservice is disabled' => sub {
         'Exception thrown when microservice is disabled through configs';
 
     $mock_config_service->unmock_all;
+};
+
+subtest 'get provider' => sub {
+    $mock_qa->mock('on_qa' => 1);
+    is BOM::Event::Actions::Client::IdentityVerification::_get_provider('qq'), 'qa', 'Expected provider for qq country';
+
+    $mock_qa->mock('on_qa' => 0);
+    is BOM::Event::Actions::Client::IdentityVerification::_get_provider('qq'), undef, 'Expected undef for unsupported country';
+
+    is BOM::Event::Actions::Client::IdentityVerification::_get_provider('br'), 'zaig', 'Expected provider for br country';
+    $mock_qa->unmock_all;
 };
 
 $idv_mock->unmock_all;

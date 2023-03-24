@@ -48,6 +48,7 @@ use constant RESULT_STATUS => {
     failed   => \&idv_failed,
     refuted  => \&idv_refuted,
     callback => \&idv_callback,
+    pending  => \&idv_pending,
 };
 
 use constant DOCUMENT_UPLOAD_STATUS => {
@@ -386,6 +387,28 @@ async sub idv_failed {
     $log->infof('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, $messages);
 }
 
+=head2 idv_pending
+
+Pending Result Status, left the check hanging in the pending status.
+
+=cut
+
+async sub idv_pending {
+    my ($args) = @_;
+
+    my ($client, $provider, $document, $messages, $response_hash) = @{$args}{qw/client provider document messages response_hash/};
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
+    $idv_model->update_document_check({
+        document_id  => $document->{id},
+        status       => 'pending',
+        messages     => $messages,
+        provider     => $provider,
+        request_body => encode_json_text($response_hash->{request_body} // {}),
+    });
+}
+
 =head2 idv_pass
 
 Pass Result Status, when there is no failure when calling IDV
@@ -672,6 +695,8 @@ Returns string.
 
 sub _get_provider {
     my ($issuing_country) = @_;
+
+    return 'qa' if BOM::Config::on_qa() && $issuing_country eq 'qq';
 
     my $country_configs = Brands::Countries->new();
     my $idv_config      = $country_configs->get_idv_config($issuing_country);

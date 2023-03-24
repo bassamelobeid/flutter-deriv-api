@@ -2010,6 +2010,95 @@ subtest 'testing photo being sent as paramter - undef file type' => sub {
     );
 };
 
+subtest 'testing pending status (QA Provider special case)' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+    my $mock_qa           = Test::MockModule->new('BOM::Config');
+    $mock_qa->mock('on_qa' => 1);
+
+    my $email = 'test_verify_pending@binary.com';
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'qq',
+        number          => 'A000000000',
+        type            => 'passport',
+    });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1997-03-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status        => 'pending',
+                    messages      => [],
+                    response_body => {
+                        full_name => "John Doe",
+                        birthdate => "1997-03-12",
+                    },
+                    report => {
+                        full_name => "John Doe",
+                        birthdate => "1997-03-12",
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    ok !$client->status->age_verification, 'not age verification';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => 'A000000000',
+            'status'                   => 'pending',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'qq',
+            'status_messages'          => '[]',
+            'id'                       => re('\d+'),
+            'document_type'            => 'passport'
+        },
+        'Document has left hanging in the pending status'
+    );
+
+    $mock_qa->unmock_all();
+};
+
 sub _reset_submissions {
     my $user_id = shift;
     my $redis   = BOM::Config::Redis::redis_events();
