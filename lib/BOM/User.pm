@@ -886,7 +886,7 @@ sub update_totp_fields {
     # revoke tokens if 2FA is updated
     if ($user_is_totp_enabled xor $new_is_totp_enabled) {
         my $oauth = BOM::Database::Model::OAuth->new;
-        $oauth->revoke_tokens_by_loginid($_->loginid) for ($self->clients);
+        $oauth->revoke_tokens_by_loignid_and_ua_fingerprint($_->loginid, $args{ua_fingerprint}) for ($self->clients);
         $oauth->revoke_refresh_tokens_by_user_id($self->id);
     }
 

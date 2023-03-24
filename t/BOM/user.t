@@ -92,11 +92,11 @@ sub create_apps {
 }
 
 sub create_tokens {
-    my ($user, $client, @app_ids) = @_;
+    my ($user, $client, $app_ids, $ua_fingerprint) = @_;
 
-    $oauth->store_access_token_only(1, $client->loginid);
+    $oauth->store_access_token_only(1, $client->loginid, $ua_fingerprint);
 
-    foreach (@app_ids) {
+    foreach (@$app_ids) {
         $oauth->generate_refresh_token($user->id, $_, 29, 60 * 60 * 24);
     }
 }
@@ -601,23 +601,24 @@ subtest 'test update totp' => sub {
 
     subtest 'enable 2FA' => sub {
         my $new_secret_key = 'test enable';
-        create_tokens($user, $client_vr, @app_ids);
+        my $ua_fingerprint = 'a1-test_finger_print';
+        create_tokens($user, $client_vr, \@app_ids, $ua_fingerprint);
 
         ok $oauth->has_other_login_sessions($client_vr->loginid), 'There are open login sessions';
         my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
         is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
 
         # tokens are revoked when 2FA is enabled
-        lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => $new_secret_key) } 'do update';
+        lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => $new_secret_key, ua_fingerprint => $ua_fingerprint) } 'do update';
         is($user->secret_key,      $new_secret_key, 'secret_key updated');
         is($user->is_totp_enabled, 1,               'is_totp_enabled was updated');
-        ok !$oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are revoked';
+        ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are revoked';
         is scalar $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 0, 'refresh tokens have been revoked correctly';
 
-        create_tokens($user, $client_vr, @app_ids);
+        create_tokens($user, $client_vr, \@app_ids, $ua_fingerprint);
 
         # secret key is not updated if enable again - tokens are not revoked
-        lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => 'xyz') } 'do reenable and update';
+        lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => 'xyz', ua_fingerprint => $ua_fingerprint) } 'do reenable and update';
         is($user->secret_key, $new_secret_key, 'secret_key is not changed becuase 2FA was already enabled');
         ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
         ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*,  'refresh tokens are not revoked';
@@ -630,16 +631,16 @@ subtest 'test update totp' => sub {
 
     subtest 'disable 2FA' => sub {
         my $new_secret_key = 'test disable';
-        create_tokens($user, $client_vr, @app_ids);
+        create_tokens($user, $client_vr, \@app_ids);
 
         # tokens are revoked when 2FA is enabled
         lives_ok { $user->update_totp_fields(is_totp_enabled => 0, secret_key => $new_secret_key) } 'disable and set secret at the same time';
         is($user->secret_key,      $new_secret_key, 'secret_key updated');
         is($user->is_totp_enabled, 0,               'is_totp_enabled was updated');
-        ok !$oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are revoked';
+        ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are revoked';
         is scalar $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 0, 'refresh tokens have been revoked correctly';
 
-        create_tokens($user, $client_vr, @app_ids);
+        create_tokens($user, $client_vr, \@app_ids);
 
         # secret key is not updated if enable again - tokens are not revoked
         lives_ok { $user->update_totp_fields(is_totp_enabled => 0, secret_key => 'xyz') } 'do reenable and update';
@@ -1036,7 +1037,7 @@ subtest 'update user password' => sub {
     my $user_id = $user->{id};
 
     my @app_ids = create_apps($user->id);
-    create_tokens($user, $client_vr, @app_ids);
+    create_tokens($user, $client_vr, \@app_ids);
 
     ok $oauth->has_other_login_sessions($client_vr->loginid), 'There are open login sessions';
     my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
@@ -1055,7 +1056,7 @@ subtest 'update email' => sub {
 
     $client_vr->status->set('disabled', 'system', 'testing');
     my @app_ids = create_apps($user->id);
-    create_tokens($user, $client_vr, @app_ids);
+    create_tokens($user, $client_vr, \@app_ids);
 
     ok $oauth->has_other_login_sessions($client_vr->loginid), 'There are open login sessions';
     my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
