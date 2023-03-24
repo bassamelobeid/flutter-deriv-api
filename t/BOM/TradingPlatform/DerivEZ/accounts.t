@@ -227,7 +227,40 @@ subtest "able to show derivez account using get_accounts (demo)" => sub {
         }];
 
     # Derivez get_accounts test
-    cmp_deeply($derivez->get_accounts(%params), $response, 'can create new derivez accounts (real)');
+    cmp_deeply($derivez->get_accounts(%params), $response, 'can get derivez accounts (demo)');
+
+    subtest "should show error if demo_01_ts04 is suspended" => sub {
+        # Suspending the demo_p01_ts04 server
+        $app_config->system->mt5->suspend->demo->p01_ts04->all(1);
+
+        # Preparing the expected error response
+        my $error_response = [{
+                'error' => {
+                    'details' => {
+                        'account_type' => 'demo',
+                        'login'        => 'EZD40100000',
+                        'server'       => 'p01_ts04',
+                        'server_info'  => {
+                            'environment' => 'Deriv-Demo',
+                            'geolocation' => {
+                                'location' => 'Frankfurt',
+                                'sequence' => 1,
+                                'group'    => 'derivez',
+                                'region'   => 'Europe'
+                            },
+                            'id' => 'p01_ts04'
+                        },
+                    },
+                    'code'              => 'MT5AccountInaccessible',
+                    'message_to_client' => 'MT5 is currently unavailable. Please try again later.',
+                }}];
+
+        # Run the test with exception
+        my $result = cmp_deeply($derivez->get_accounts(%params), $error_response, 'receive error when get derivez accounts (demo)');
+
+        # Finish test and unsuspeding the server
+        $app_config->system->mt5->suspend->demo->p01_ts04->all(0);
+    };
 
     $mock_mt5->unmock_all();
 };
@@ -315,7 +348,40 @@ subtest "able to show derivez account using get_accounts (real)" => sub {
         }];
 
     # Derivez get_accounts test
-    cmp_deeply($derivez->get_accounts(%params), $response, 'can create new derivez accounts (real)');
+    cmp_deeply($derivez->get_accounts(%params), $response, 'can get derivez accounts (real)');
+
+    subtest "should show error if real_02_ts01 is suspended" => sub {
+        # Suspending the real_p02_ts01 server
+        $app_config->system->mt5->suspend->real->p02_ts01->all(1);
+
+        # Preparing the expected error response
+        my $error_response = [{
+                'error' => {
+                    'details' => {
+                        'account_type' => 'real',
+                        'login'        => 'EZR80000000',
+                        'server'       => 'p02_ts01',
+                        'server_info'  => {
+                            'environment' => 'Deriv-Server-02',
+                            'geolocation' => {
+                                'region'   => 'Africa',
+                                'location' => 'South Africa',
+                                'sequence' => 2,
+                                'group'    => 'africa_derivez'
+                            },
+                            'id' => 'p02_ts01'
+                        },
+                    },
+                    'code'              => 'MT5AccountInaccessible',
+                    'message_to_client' => 'MT5 is currently unavailable. Please try again later.',
+                }}];
+
+        # Run the test with exception
+        my $result = cmp_deeply($derivez->get_accounts(%params), $error_response, 'receive error when get derivez accounts (real)');
+
+        # Finish test and unsuspeding the server
+        $app_config->system->mt5->suspend->real->p02_ts01->all(0);
+    };
 
     $mock_mt5->unmock_all();
 };

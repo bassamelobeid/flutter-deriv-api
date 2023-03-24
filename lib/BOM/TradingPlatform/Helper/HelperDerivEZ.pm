@@ -5,7 +5,7 @@ use warnings;
 no indirect;
 
 use Digest::SHA            qw(sha384_hex);
-use BOM::Platform::Context qw (request);
+use BOM::Platform::Context qw (localize request);
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
 use BOM::MT5::User::Async;
