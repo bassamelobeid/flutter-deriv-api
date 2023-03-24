@@ -233,7 +233,7 @@ sub generate_settings_branch {
         $ds_leaf->{description}   = $description;
         $ds_leaf->{type}          = $data_type;
         $ds_leaf->{value}         = $value_text;
-        $ds_leaf->{default}       = $value_text eq $default_text;
+        $ds_leaf->{default}       = $value_text eq $default_text if $default_text;
         $ds_leaf->{default_value} = $default_text;
         $ds_leaf->{disabled}      = $key_type ne 'dynamic' ? 1 : 0;
         $space->{leaf}            = $ds_leaf;
