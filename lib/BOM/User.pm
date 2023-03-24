@@ -2022,4 +2022,36 @@ sub unlink_social {
     return 1;
 }
 
+=head2 oneall_data
+
+Fetch oneall data for an user in users.binary_user_connects
+
+=cut
+
+sub oneall_data {
+    my ($self) = shift;
+
+    my $oneall_data = $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT * FROM users.get_user_oneall_provider_data(?)", {Slice => {}}, $self->id);
+        });
+
+    my @user_data;
+
+    for my $data (@$oneall_data) {
+        try {
+            my $json_obj = decode_json($data->{provider_data});
+            push(
+                @user_data,
+                {
+                    binary_user_id => $self->id,
+                    user_token     => $json_obj->{user}->{user_token},
+                    provider       => $data->{provider}});
+        } catch ($e) {
+            $log->errorf('Failed to decode provider_data: %s', $e);
+        }
+    }
+    return \@user_data;
+}
+
 1;
