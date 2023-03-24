@@ -461,6 +461,31 @@ sub revoke_tokens_by_loginid {
     return 1;
 }
 
+=head2 revoke_tokens_by_loignid_and_ua_fingerprint
+
+Delete all the access tokens for given loginids and ua_fingerprints
+
+=over 4
+
+=item * C<loginid>
+
+=item * C<ua_fingerprint>
+
+=back
+
+=cut
+
+sub revoke_tokens_by_loignid_and_ua_fingerprint {
+    my ($self, $p_loginid, $p_ua_fingerprint) = @_;
+
+    $self->dbic->run(
+        ping => sub {
+            $_->do("SELECT FROM oauth.delete_access_token(?::TEXT, ?::TEXT)", undef, $p_loginid, $p_ua_fingerprint);
+        });
+
+    return 1;
+}
+
 sub revoke_tokens_by_loginid_app {
     my ($self, $loginid, $app_id) = @_;
     $self->dbic->run(

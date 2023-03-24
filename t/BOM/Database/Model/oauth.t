@@ -197,6 +197,34 @@ subtest 'revoke tokens by loginid and app_id' => sub {
     }
 };
 
+subtest 'revoke_tokens_by_loignid_and_ua_fingerprint' => sub {
+    my $sql = 'INSERT INTO oauth.apps (id, name, binary_user_id, redirect_uri, scopes) VALUES (?,?,?,?,?)';
+    $m->dbic->dbh->do($sql, undef, 1, 'temp app', 1, 'https://www.binary.com/en/logged_inws.html', '{read}');
+
+    my @loginids      = ('CR123456',       'VRTC123456');
+    my @finger_prints = ('a1-fp123456789', 'a1-fp0000000');
+
+    for my $loginid (@loginids) {
+        $m->store_access_token_only(1, $loginid, $finger_prints[0]);
+        $m->store_access_token_only(1, $loginid, $finger_prints[1]);
+    }
+
+    my @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginids[0]);
+    is $cnt[0], 2, "Total of 2 entries are added for loginid: $loginids[0]";
+    @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginids[1]);
+    is $cnt[0], 2, "Total of 2 entries are added for loginid: $loginids[1]";
+
+    is $m->revoke_tokens_by_loignid_and_ua_fingerprint($loginids[0], $finger_prints[0]), 1,
+        'Revoke the access token for user ' . $loginids[0] . ' and finger print ' . $finger_prints[1];
+    @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ? AND ua_fingerprint = ?",
+        undef, $loginids[0], $finger_prints[1]);
+    is $cnt[0], 0, "Total of zero entries are found for $loginids[0] and $finger_prints[1]";
+    @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginids[0]);
+    is $cnt[0], 1, "$loginids[0] and $finger_prints[0] isn't removed from the db";
+    @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginids[1]);
+    is $cnt[0], 2, "No entries were removed for the user $loginids[0]";
+};
+
 subtest 'remove user confirm on scope changes' => sub {
     my $app1 = $m->create_app({
         name         => 'App 1 Change',
