@@ -8,6 +8,7 @@ use Locale::Country;
 use Syntax::Keyword::Try;
 use List::MoreUtils qw(any none);
 use Text::Trim      qw(trim);
+use Log::Any        qw($log);
 
 use BOM::User::Client;
 use BOM::User::Phone;
@@ -55,43 +56,92 @@ sub create_account {
     return $response;
 }
 
+=head2 copy_status_from_siblings
+
+copy statuses from client siblings
+
+=over 4
+
+=item C<cur_client> current client object.
+
+=item C<sibling> sibling object.
+
+=item C<status_list> list of statuses to be copied.
+
+=back
+
+=cut
+
 sub copy_status_from_siblings {
-    my ($cur_client, $user, $status_list) = @_;
+    my ($cur_client, $client, $status_list) = @_;
     my @allowed_lc_to_sync;
 
     # We should sync age verification for allowed landing companies and other statuses to all siblings
     # Age verification sync if current client is one of existing client allowed landing companies for age verification
-    for my $client ($user->clients) {
-        @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
-        for my $status (@$status_list) {
-            next unless $client->status->$status;
-            next if $client->status->$status && $cur_client->status->$status;
 
-            if ($status eq 'age_verification') {
-                my $cur_client_lc = $cur_client->landing_company->short;
-                next if none { $_ eq $cur_client_lc } @allowed_lc_to_sync;
-                my $poi_status = $client->get_poi_status({landing_company => $cur_client->landing_company->short});
-                next unless $poi_status =~ /verified|expired/;
-            }
+    @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
+    for my $status (@$status_list) {
+        next unless $client->status->$status;
+        next if $client->status->$status && $cur_client->status->$status;
 
-            my $reason = $client->status->$status ? $client->status->$status->{reason} : 'Sync upon signup';
-
-            # For the poi/poa flags the reason should match otherwise the BO dropdown will be unselected
-            if ($status =~ /allow_po(i|a)_resubmission/) {
-                $cur_client->status->set($status, 'system', $reason);
-            } else {
-                $cur_client->status->set($status, 'system', $reason . ' - copied from ' . $client->loginid);
-            }
-
-            my $config = request()->brand->countries_instance->countries_list->{$cur_client->residence};
-            if (    $config->{require_age_verified_for_synthetic}
-                and $status eq 'age_verification')
-            {
-                my $vr_acc = BOM::User::Client->new({loginid => $cur_client->user->bom_virtual_loginid});
-                $vr_acc->status->clear_unwelcome;
-                $vr_acc->status->setnx('age_verification', 'system', $reason . ' - copied from ' . $client->loginid);
-            }
+        if ($status eq 'age_verification') {
+            my $cur_client_lc = $cur_client->landing_company->short;
+            next if none { $_ eq $cur_client_lc } @allowed_lc_to_sync;
+            my $poi_status = $client->get_poi_status({landing_company => $cur_client->landing_company->short});
+            next unless $poi_status =~ /verified|expired/;
         }
+
+        my $reason = $client->status->$status ? $client->status->$status->{reason} : 'Sync upon signup';
+
+        # For the poi/poa flags the reason should match otherwise the BO dropdown will be unselected
+        if ($status =~ /allow_po(i|a)_resubmission/) {
+            $cur_client->status->set($status, 'system', $reason);
+        } else {
+            $cur_client->status->set($status, 'system', $reason . ' - copied from ' . $client->loginid);
+        }
+
+        my $config = request()->brand->countries_instance->countries_list->{$cur_client->residence};
+        if (    $config->{require_age_verified_for_synthetic}
+            and $status eq 'age_verification')
+        {
+            my $vr_acc = BOM::User::Client->new({loginid => $cur_client->user->bom_virtual_loginid});
+            $vr_acc->status->clear_unwelcome;
+            $vr_acc->status->setnx('age_verification', 'system', $reason . ' - copied from ' . $client->loginid);
+        }
+    }
+
+}
+
+=head2 copy_data_to_siblings
+
+Back populate data to client siblings if new data is added
+
+=over 4
+
+=item C<cur_client> current client object.
+
+=item C<sibling> sibling object.
+
+=back
+
+=cut
+
+sub copy_data_to_siblings {
+    my ($cur_client, $sibling) = @_;
+    try {
+        unless ($sibling->is_virtual) {
+            my @fields_to_back_populate =
+                qw(residence address_line_1 address_line_2 address_city address_state address_postcode phone place_of_birth date_of_birth citizen salutation first_name last_name account_opening_reason secret_answer secret_question tax_residence tax_identification_number);
+            for my $field (@fields_to_back_populate) {
+
+                if (!$sibling->$field && $cur_client->$field) {
+                    $sibling->$field($cur_client->$field);
+                }
+            }
+            $sibling->save();
+        }
+    } catch ($e) {
+        $log->errorf("Error caught when back-populating data back to siblings: ", $e);
     }
 }
 
@@ -101,12 +151,16 @@ sub after_register_client {
 
     unless ($client->is_virtual) {
         $client->user->set_tnc_approval;
-        copy_status_from_siblings(
-            $client, $user,
-            [
-                'no_trading',             'withdrawal_locked',      'age_verification', 'transfers_blocked',
-                'allow_poi_resubmission', 'allow_poa_resubmission', 'potential_fraud'
-            ]);
+        for my $sibling ($user->clients) {
+            copy_status_from_siblings(
+                $client, $sibling,
+                [
+                    'no_trading',             'withdrawal_locked',      'age_verification', 'transfers_blocked',
+                    'allow_poi_resubmission', 'allow_poa_resubmission', 'potential_fraud'
+                ]);
+            copy_data_to_siblings($client, $sibling);
+        }
+
     }
 
     BOM::Platform::Client::Sanctions->new({
