@@ -164,6 +164,8 @@ async sub get_dx_accounts {
             try {
                 await process_account($derivx_account);
             } catch ($e) {
+                # Reset the status in case of any errors so that the account
+                # can be picked up in the next run
                 $user_db->dbic->run(
                     fixup => sub {
                         $_->do(
@@ -220,11 +222,17 @@ async sub process_account {
 
     $log->debugf("Will archive '%s'", $dx_account);
 
-    await $dxweb_client{$type}->account_update(
-        clearing_code => $clearing_code,
-        account_code  => $dx_account,
-        status        => 'TERMINATED'
-    );
+    try {
+        await $dxweb_client{$type}->account_update(
+            clearing_code => $clearing_code,
+            account_code  => $dx_account,
+            status        => 'TERMINATED'
+        );
+    } catch ($e) {
+        # 404 means account was not found on DerivX,
+        # therefore we proceed in archiving it
+        die $e unless @$e[2] = '404';
+    }
 
     $user_db->dbic->run(
         fixup => sub {
@@ -277,9 +285,13 @@ async sub check_balance_and_open_positions {
     my $account_balance  = 0;
     my $account_currency = 'USD';
 
-    if ($client_portfolio->[0]->balances->[0]) {
-        $account_balance  = $client_portfolio->[0]->balances->[0]->value;
-        $account_currency = $client_portfolio->[0]->balances->[0]->currency;
+    if (scalar @$client_portfolio) {
+        if ($client_portfolio->[0]->balances->[0]) {
+            $account_balance  = $client_portfolio->[0]->balances->[0]->value;
+            $account_currency = $client_portfolio->[0]->balances->[0]->currency;
+        }
+    } else {
+        return 0;
     }
 
     my $open_positions = $client_portfolio->[0]->positions;
