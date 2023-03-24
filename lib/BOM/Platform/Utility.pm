@@ -433,15 +433,23 @@ sub rejected_identity_verification_reasons {
     no warnings 'redefine';
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     return {
-        'UNDERAGE'           => localize("You're under legal age."),
-        'NAME_MISMATCH'      => localize("The name retrieved from your document doesn't match your profile."),
-        'DOB_MISMATCH'       => localize("The date of birth retrieved from your document doesn't match your profile."),
-        'EMPTY_STATUS'       => localize("The verification status was empty, rejected for lack of information."),
-        'INFORMATION_LACK'   => localize("The verification is passed but the personal info is not available to compare."),
-        'DOCUMENT_REJECTED'  => localize("Document was rejected by the provider."),
-        'UNAVAILABLE_STATUS' => localize("The verification status is not available, provider says: N/A."),
-        'UNAVAILABLE_ISSUER' => localize("The verification status is not available, provider says: Issuer Unavailable."),
-        'EXPIRED'            => localize("The document's validity has been expired."),
+        'UNDERAGE'                      => localize("You're under legal age."),
+        'NAME_MISMATCH'                 => localize("The name retrieved from your document doesn't match your profile."),
+        'DOB_MISMATCH'                  => localize("The date of birth retrieved from your document doesn't match your profile."),
+        'EMPTY_STATUS'                  => localize("The verification status was empty, rejected for lack of information."),
+        'INFORMATION_LACK'              => localize("The verification is passed but the personal info is not available to compare."),
+        'DOCUMENT_REJECTED'             => localize("Document was rejected by the provider."),
+        'UNAVAILABLE_STATUS'            => localize("The verification status is not available, provider says: N/A."),
+        'UNAVAILABLE_ISSUER'            => localize("The verification status is not available, provider says: Issuer Unavailable."),
+        'EXPIRED'                       => localize("The document's validity has been expired."),
+        'PROVIDER_UNAVAILABLE'          => localize("The verification status is not available, provider says: Provider Unavailable."),
+        'REJECTED_BY_PROVIDER'          => localize("The document was rejected by the Provider."),
+        'MALFORMED_JSON'                => localize("The verification status is not available, provider says: Malformed JSON."),
+        'VERIFICATION_STARTED'          => localize("The document's verification has started."),
+        'UNEXPECTED_ERROR'              => localize("The verification status is not available, provider says: Unexpected Error."),
+        'UNDESIRED_HTTP_CODE'           => localize("The verification status is not available, provider says: Undesired HTTP code."),
+        'TIMEOUT'                       => localize("The verification status is not available, provider says: Timeout."),
+        'NEEDS_TECHNICAL_INVESTIGATION' => localize("The verification status is not available, provider says: Needs Technical Investigation."),
     };
 }
 
