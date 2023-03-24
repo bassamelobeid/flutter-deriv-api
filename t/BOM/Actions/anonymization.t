@@ -136,6 +136,10 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
     $mock_anonymization->mock('_send_anonymization_report', sub { return 1 });
 
+    # Bypass Oneall API calling and mock error response
+    my $mock_oneall = Test::MockModule->new('BOM::OAuth::OneAll');
+    $mock_oneall->mock('anonymize_user', 0);
+
     # Bypass CloseIO API calling and mock error response
     my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
     $mock_closeio->mock('anonymize_user', 0);
@@ -160,6 +164,9 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     my @anonymized_clients = $user->clients(include_disabled => 1);
 
     isnt $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was NOT anonymized' for @anonymized_clients;
+
+    # Bypass oneall API call and mock the success response
+    $mock_oneall->mock('anonymize_user', 1);
 
     # Bypass CloseIO API calling and mock success response
     $mock_closeio->mock('anonymize_user', 1);
@@ -260,6 +267,10 @@ subtest bulk_anonymization => sub {
 
     $mock_user_module->mock('valid_to_anonymize', sub { return 1 });
 
+    # Bypass Oneall API call and mock error response
+    my $mock_oneall = Test::MockModule->new('BOM::OAuth::OneAll');
+    $mock_oneall->mock('anonymize_user', 0);
+
     # Bypass CloseIO API calling and mock error response
     my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
     $mock_closeio->mock('anonymize_user', 0);
@@ -282,6 +293,9 @@ subtest bulk_anonymization => sub {
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance report including failures and successes./);
     like($msg->{body},    qr/Anonymization failed for \d+ clients/,       qq/Failure reason is correct/);
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
+
+    # Bypass oneall API call and mock success response
+    $mock_oneall->mock('anonymize_user', 1);
 
     $mock_closeio->mock('anonymize_user', 1);
 
@@ -404,6 +418,10 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
     my @user_clients = ();
     $mock_client_module->mock('get_user_loginids_list', sub { return @user_clients });
 
+    # Bypass Oneall API call and mock success response
+    my $mock_oneall = Test::MockModule->new('BOM::OAuth::OneAll');
+    $mock_oneall->mock('anonymize_user', 1);
+
     # Bypass CloseIO API calling and mock success response
     my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
     $mock_closeio->mock('anonymize_user', 1);
@@ -485,6 +503,10 @@ subtest 'Anonymization disabled accounts' => sub {
     my $mock_client_module = Test::MockModule->new('BOM::User::Client');
     $mock_client_module->mock(remove_client_authentication_docs_from_S3 => 1);
 
+    # Bypass Oneall API call and mock success response
+    my $mock_oneall = Test::MockModule->new('BOM::OAuth::OneAll');
+    $mock_oneall->mock('anonymize_user', 1);
+
     # Bypass CloseIO API calling and mock success response
     my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
     $mock_closeio->mock('anonymize_user', 1);
@@ -547,6 +569,10 @@ subtest 'DF Anonymization skips crypto accounts' => sub {
     # Mock BOM::User::Client module
     my $mock_client_module = Test::MockModule->new('BOM::User::Client');
     $mock_client_module->mock(remove_client_authentication_docs_from_S3 => 1);
+
+    # Bypass Oneall API call and mock success response
+    my $mock_oneall = Test::MockModule->new('BOM::OAuth::OneAll');
+    $mock_oneall->mock('anonymize_user', 1);
 
     # Bypass CloseIO API calling and mock success response
     my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
