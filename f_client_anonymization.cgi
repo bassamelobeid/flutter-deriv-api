@@ -71,6 +71,7 @@ print "<b class='error'>WARNING : THIS WILL RESULT IN PERMANENT DATA LOSS</b><br
     <li>Remove user record from customer.io</li>
     <li>Obfuscate the client records from Doughflow</li>
     <li>Remove all user desk and zendesk related files from S3</li>
+    <li>Remove all user data from Oneall</li>
     </ul>
     <hr>";
 my $loginid  = $input->{clientloginid} // '';
