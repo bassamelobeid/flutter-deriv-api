@@ -1886,21 +1886,21 @@ rpc set_settings => sub {
     foreach my $loginid (@loginids) {
         my $client = $loginid eq $current_client->loginid ? $current_client : BOM::User::Client->new({loginid => $loginid});
 
-        $client->address_1($address1);
-        $client->address_2($address2);
-        $client->city($addressTown);
-        $client->state($addressState)       if defined $addressState;
-        $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
-        $client->phone($phone)              if length $phone;
-        $client->citizen($citizen);
-        $client->place_of_birth($birth_place);
-        $client->account_opening_reason($account_opening_reason);
-        $client->date_of_birth($date_of_birth);
-        $client->salutation($salutation);
-        $client->first_name($first_name);
-        $client->last_name($last_name);
-        $client->secret_answer($secret_answer)     if $secret_answer;
-        $client->secret_question($secret_question) if $secret_question;
+        $client->address_1($address1)                            if $address1;
+        $client->address_2($address2)                            if $address2;
+        $client->city($addressTown)                              if $addressTown;
+        $client->state($addressState)                            if defined $addressState;
+        $client->postcode($addressPostcode)                      if defined $args->{'address_postcode'};
+        $client->phone($phone)                                   if length $phone;
+        $client->citizen($citizen)                               if $citizen;
+        $client->place_of_birth($birth_place)                    if $birth_place;
+        $client->account_opening_reason($account_opening_reason) if $account_opening_reason;
+        $client->date_of_birth($date_of_birth)                   if $date_of_birth;
+        $client->salutation($salutation)                         if $salutation;
+        $client->first_name($first_name)                         if $first_name;
+        $client->last_name($last_name)                           if $last_name;
+        $client->secret_answer($secret_answer)                   if $secret_answer;
+        $client->secret_question($secret_question)               if $secret_question;
 
         $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 

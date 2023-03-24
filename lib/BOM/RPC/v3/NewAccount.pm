@@ -790,7 +790,7 @@ sub _new_account_pre_process {
     unless ($client->is_virtual) {
         # Lets populate all sensitive data from current client, ignoring provided input
         # this logic should gone after we separate new_account with new_currency for account
-        foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1 citizen/) {
+        foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1 citizen place_of_birth/) {
             $args->{$_} = $client->$_ if $client->$_;
         }
     }

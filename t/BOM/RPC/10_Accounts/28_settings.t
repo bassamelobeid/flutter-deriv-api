@@ -1255,4 +1255,65 @@ subtest 'set_setting duplicate account' => sub {
     ok !exists $c->tcall('set_settings', $params)->{error}, 'can call set_settings even though the client is duplicating its own data';
 };
 
+subtest 'set_setting check salutuation not removed' => sub {
+
+    my $client_CR = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email                  => 'salutuation_1@test.com',
+        first_name             => "wqeqweq",
+        last_name              => "qweqweqwe",
+        phone                  => "+27123123123",
+        address_line_1         => "werwerwer",
+        address_line_2         => "rwerwerwe",
+        address_city           => "werwerwerw",
+        address_state          => "GT",
+        address_postcode       => "33424234",
+        residence              => "za",
+        broker_code            => 'CR',
+        account_opening_reason => 'pensioner'
+    });
+
+    my $client_MF = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code               => 'MF',
+        email                     => 'salutuation_1@test.com',
+        account_opening_reason    => "Hedging",
+        salutation                => "Mr",
+        first_name                => "wqeqweq",
+        last_name                 => "qweqweqwe",
+        date_of_birth             => "2000-01-04",
+        place_of_birth            => "al",
+        citizen                   => "za",
+        phone                     => "+27123123123",
+        tax_residence             => "al",
+        tax_identification_number => "5645645645",
+        address_line_1            => "werwerwer",
+        address_line_2            => "rwerwerwe",
+        address_city              => "werwerwerw",
+        address_state             => "GT",
+        address_postcode          => "33424234",
+        residence                 => "za"
+    });
+
+    my $user_1 = BOM::User->create(
+        email    => $client_MF->email,
+        password => 'x',
+    );
+    $user_1->add_client($client_MF);
+    $user_1->add_client($client_CR);
+
+    my $token_cr = $token_gen->create_token($client_CR->loginid, 'test token');
+    my $token_mf = $token_gen->create_token($client_MF->loginid, 'test token');
+
+    my $params = {
+        language  => 'EN',
+        token     => $token_cr,
+        client_ip => '127.0.0.1',
+        args      => {trading_hub => 1}};
+
+    cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with feature flag trading_hub has been set successfully');
+
+    $params->{token} = $token_mf;
+    my $result = $c->tcall('set_settings', $params);
+    cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with feature flag trading_hub has been set successfully');
+};
+
 done_testing();
