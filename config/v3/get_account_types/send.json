@@ -6,7 +6,7 @@
     "type": "object",
     "auth_required": 1,
     "auth_scopes": [
-        "admin"
+        "read"
     ],
     "additionalProperties": false,
     "required": [
@@ -19,6 +19,10 @@
             "enum": [
                 1
             ]
+        },
+        "company": {
+            "description": "[Optional] Set to landing company to get relevant account types. If not set, this defaults to current account landing company",
+            "type": "string"
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
