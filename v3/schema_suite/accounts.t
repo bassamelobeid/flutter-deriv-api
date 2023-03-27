@@ -212,9 +212,7 @@ test_sendrecv 'payment_methods/test_send_payment_methods_with_country.json', 'pa
 test_sendrecv_params 'link_wallet/test_send.json', 'link_wallet/test_receive.json';
 
 #  appstore webservices
-
-# TODO:  update test case for get_account_types. after refactoring this api call. For now it's broken.
-#test_sendrecv_params 'get_account_types/test_send.json', 'get_account_types/test_receive.json', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'get_account_types/test_send.json', 'get_account_types/test_receive.json', $suite->get_stashed('authorize/authorize/loginid');
 
 test_sendrecv_params 'get_available_accounts_to_transfer/test_send.json', 'get_available_accounts_to_transfer/test_receive.json',
     $suite->get_stashed('authorize/authorize/loginid');

@@ -20,7 +20,7 @@
             "wallet" : {
                "type" : "object",
                "properties" : {
-                  "fiat" : {
+                  "doughflow" : {
                      "type" : "object",
                      "properties" : {
                         "currencies" : {
@@ -52,7 +52,7 @@
             "trading" : {
                "type" : "object",
                "properties" : {
-                  "deriv" : {
+                  "standard" : {
                      "type" : "object",
                      "properties" : {
                         "linkable_wallet_types" : {
@@ -60,18 +60,11 @@
                            "items": {
                               "type": "string",
                               "items" : {
-                                 "pattern" : "^(fiat|crypto)$",
                                  "type" : "string"
                               }
                            }
                         },
                         "linkable_wallet_currencies" : {
-                           "type" : "array",
-                           "items": {
-                              "type": "string"
-                           }
-                        },
-                        "currencies_available" : {
                            "type" : "array",
                            "items": {
                               "type": "string"
@@ -83,7 +76,7 @@
                         }
                      }
                   },
-                  "derivx" : {
+                  "binary" : {
                      "type" : "object",
                      "properties" : {
                         "linkable_wallet_types" : {
@@ -91,7 +84,6 @@
                            "items": {
                               "type": "string",
                               "items" : {
-                                 "pattern" : "^(fiat|crypto)$",
                                  "type" : "string"
                               }
                            }
@@ -102,7 +94,25 @@
                               "type": "string"
                            }
                         },
-                        "currencies_available" : {
+                        "linkable_to_different_currency" : {
+                           "enum" : [1,0],
+                           "type" : "integer"
+                        }
+                     }
+                  },
+                  "dxtrade" : {
+                     "type" : "object",
+                     "properties" : {
+                        "linkable_wallet_types" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string",
+                              "items" : {
+                                 "type" : "string"
+                              }
+                           }
+                        },
+                        "linkable_wallet_currencies" : {
                            "type" : "array",
                            "items": {
                               "type": "string"
@@ -122,7 +132,6 @@
                            "items": {
                               "type": "string",
                               "items" : {
-                                 "pattern" : "^(fiat)$",
                                  "type" : "string"
                               }
                            }
@@ -133,7 +142,25 @@
                               "type": "string"
                            }
                         },
-                        "currencies_available" : {
+                        "linkable_to_different_currency" : {
+                           "enum" : [1,0],
+                           "type" : "integer"
+                        }
+                     }
+                  },
+                  "derivez" : {
+                     "type" : "object",
+                     "properties" : {
+                        "linkable_wallet_types" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string",
+                              "items" : {
+                                 "type" : "string"
+                              }
+                           }
+                        },
+                        "linkable_wallet_currencies" : {
                            "type" : "array",
                            "items": {
                               "type": "string"
