@@ -10,6 +10,6 @@ my $diff = diff './cpanfile', \$versions;
 
 ok(!$diff, 'Cpanfile is up to date. (If failed, pull latest changes to cpan and cpan-private repos and run make update_cpanfile)');
 
-warn $diff if $diff;
+diag($diff) if $diff;
 
 done_testing();
