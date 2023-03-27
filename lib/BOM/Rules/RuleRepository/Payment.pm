@@ -105,6 +105,30 @@ rule 'deposit.periodical_balance_limits' => {
     },
 };
 
+rule 'withdrawal.age_verification_limits' => {
+    description => "Checks the crypto amount to be withdrawn is not greater than the limit set",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $amount       = $args->{amount}       // die 'Amount is required';
+        my $payment_type = $args->{payment_type} // return 1;
+        my $action       = $args->{action};
+        my ($withdrawal_over_period, $USD_amount);
+        my $limit_amount = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->crypto_to_crypto;
+        return unless $payment_type eq 'crypto_cashier';
+        return unless $limit_amount > 0;
+        my $client         = $context->client($args);
+        my $from_currency  = $client->currency;
+        my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
+        $withdrawal_over_period = $payment_mapper->get_total_withdrawal({
+            exclude => ['account_transfer'],
+        });
+        $withdrawal_over_period = convert_currency($withdrawal_over_period, $from_currency, 'USD') if $from_currency ne 'USD';
+        $USD_amount             = convert_currency($amount,                 $from_currency, 'USD') if $from_currency ne 'USD';
+        $self->fail("CryptoLimitAgeVerified", params => [abs($amount), $from_currency, $limit_amount])
+            if (abs($withdrawal_over_period) + abs($USD_amount)) > $limit_amount && !$client->status->age_verification;
+    }
+};
+
 rule 'withdrawal.less_than_balance' => {
     description => "It check if withdrawal amount is less than client's balance; it fails otherwise.",
     code        => sub {

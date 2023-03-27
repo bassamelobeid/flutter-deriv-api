@@ -32,11 +32,27 @@ my $user = BOM::User->create(
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+
+my $crypto_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+
 $user->add_client($client);
+$user->add_client($crypto_client);
+
 $client->set_default_account('USD');
+$crypto_client->set_default_account('BTC');
+
 $client->payment_free_gift(
     currency     => 'USD',
     amount       => 1_000,
+    remark       => 'here is money',
+    payment_type => 'free_gift'
+);
+
+$crypto_client->payment_free_gift(
+    currency     => 'BTC',
+    amount       => 0.005,
     remark       => 'here is money',
     payment_type => 'free_gift'
 );
@@ -236,6 +252,65 @@ subtest $rule_name => sub {
 
     $args{amount} = 1000;
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule applies with amount <= balance';
+};
+
+$rule_name = 'withdrawal.age_verification_limits';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $crypto_client);
+    my %args        = (loginid => $crypto_client->loginid);
+    $crypto_client->payment_free_gift(
+        currency     => 'BTC',
+        amount       => 10,
+        remark       => 'here is money',
+        payment_type => 'free_gift'
+    );
+    $crypto_client->payment_bank_wire(
+        currency => 'BTC',
+        amount   => -0.01,
+        remark   => 'here is money',
+    );
+
+    my $dxtrader = BOM::TradingPlatform->new(
+        platform => 'dxtrade',
+        client   => $crypto_client
+    );
+
+    $dxtrader->client_payment(
+        payment_type => 'dxtrade_transfer',
+        amount       => -2,
+        remark       => 'legacy remark',
+        txn_details  => {
+            dxtrade_account_id => 'DXD001',
+            fees               => 0,
+        },
+    );
+    my %params = (
+        currency => $crypto_client->currency,
+    );
+
+    $crypto_client->payment_mt5_transfer(
+        %params,
+        remark      => 'blabla',
+        amount      => -2,
+        txn_details => {
+            mt5_account => '102',
+            fees        => 0,
+        },
+    );
+
+    $args{action}       = 'withdrawal';
+    $args{payment_type} = 'crypto_cashier';
+    $args{amount}       = 0.01;
+
+    is_deeply(exception { $rule_engine->apply_rules($rule_name, %args) }, exception {}, 'no exceptions for account_trasfer gateway code');
+    $args{amount} = 2;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'CryptoLimitAgeVerified',
+        params     => [2, 'BTC', 1000],
+        rule       => $rule_name,
+        },
+        'age verification required for withdrawal over limit';
 };
 
 $rule_name = 'withdrawal.only_unfrozen_balance';
