@@ -787,10 +787,10 @@ subtest 'get account status' => sub {
                                         is_country_supported => 1,
                                         documents_supported  => [
                                             'Asylum Registration Card',
-                                            'Certificate of Naturalisation',
                                             'Driving Licence',
-                                            'Home Office Letter',
                                             'Immigration Status Document',
+                                            'National Health Insurance Card',
+                                            'National Identity Card',
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'
@@ -2108,10 +2108,10 @@ subtest 'get account status' => sub {
                                     is_country_supported => 1,
                                     documents_supported  => [
                                         'Asylum Registration Card',
-                                        'Certificate of Naturalisation',
                                         'Driving Licence',
-                                        'Home Office Letter',
                                         'Immigration Status Document',
+                                        'National Health Insurance Card',
+                                        'National Identity Card',
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
@@ -2186,10 +2186,10 @@ subtest 'get account status' => sub {
                                     is_country_supported => 1,
                                     documents_supported  => [
                                         'Asylum Registration Card',
-                                        'Certificate of Naturalisation',
                                         'Driving Licence',
-                                        'Home Office Letter',
                                         'Immigration Status Document',
+                                        'National Health Insurance Card',
+                                        'National Identity Card',
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
@@ -2257,10 +2257,10 @@ subtest 'get account status' => sub {
                                     is_country_supported => 1,
                                     documents_supported  => [
                                         'Asylum Registration Card',
-                                        'Certificate of Naturalisation',
                                         'Driving Licence',
-                                        'Home Office Letter',
                                         'Immigration Status Document',
+                                        'National Health Insurance Card',
+                                        'National Identity Card',
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
@@ -2372,10 +2372,10 @@ subtest 'get account status' => sub {
                                         is_country_supported => 1,
                                         documents_supported  => [
                                             'Asylum Registration Card',
-                                            'Certificate of Naturalisation',
                                             'Driving Licence',
-                                            'Home Office Letter',
                                             'Immigration Status Document',
+                                            'National Health Insurance Card',
+                                            'National Identity Card',
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'

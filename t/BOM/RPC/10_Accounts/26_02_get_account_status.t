@@ -1014,7 +1014,7 @@ subtest 'backtest for Onfido disabled country' => sub {
                 country_code         => 'IRN',
                 reported_properties  => {},
                 status               => 'none',
-                documents_supported  => ['Passport'],
+                documents_supported  => ['Driving Licence', 'Passport'],
                 is_country_supported => $country_supported,
                 $test->{expected}->%*,
                 },
@@ -1097,7 +1097,7 @@ subtest 'backtest from onfido rejected to manual expired' => sub {
                 country_code         => 'COL',
                 reported_properties  => {},
                 last_rejected        => [],
-                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit (Cedula de Extrajeria)']}
+                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit']}
         },
         status => 'suspected'
         };
@@ -1138,7 +1138,7 @@ subtest 'backtest from onfido rejected to manual expired' => sub {
                 country_code         => 'COL',
                 reported_properties  => {},
                 last_rejected        => [],
-                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit (Cedula de Extrajeria)']}
+                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit']}
         },
         status => 'pending'
         };
@@ -1180,7 +1180,7 @@ subtest 'backtest from onfido rejected to manual expired' => sub {
                 country_code         => 'COL',
                 reported_properties  => {},
                 last_rejected        => [],
-                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit (Cedula de Extrajeria)']}
+                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit']}
         },
         status => 'expired'
         };

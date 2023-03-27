@@ -135,12 +135,11 @@ subtest 'residence_list' => sub {
                     onfido => {
                         is_country_supported => 1,
                         documents_supported  => {
-                            driving_licence                 => {display_name => 'Driving Licence'},
-                            'tax_id_(e-pan_card,_pan_card)' => {display_name => 'Tax Id (E-Pan Card, PAN Card)'},
-                            passport                        => {display_name => 'Passport'},
-                            national_identity_card          => {display_name => 'National Identity Card'},
-                            voter_id                        => {display_name => 'Voter Id'},
-                            visa                            => {display_name => 'Visa'}
+                            driving_licence        => {display_name => 'Driving Licence'},
+                            passport               => {display_name => 'Passport'},
+                            national_identity_card => {display_name => 'National Identity Card'},
+                            voter_id               => {display_name => 'Voter Id'},
+                            visa                   => {display_name => 'Visa'}
                         },
                     },
                 }
