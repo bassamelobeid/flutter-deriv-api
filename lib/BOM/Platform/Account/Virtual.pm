@@ -29,7 +29,7 @@ sub create_account {
     my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name)
         or return {error => {code => 'InvalidAccountType'}};
     # TODO: move it to rule engine
-    return {error => {code => 'InvalidDemoAccountType'}} unless any { $_ eq 'demo' } $account_type->account_opening->@*;
+    return {error => {code => 'InvalidDemoAccountType'}} unless $account_type->is_regulation_supported('virtual');
 
     my $category = $account_type->category->name;
 
