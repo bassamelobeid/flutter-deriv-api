@@ -2920,6 +2920,7 @@ rpc set_account_currency => sub {
         log_exception();
         warn "Error caught in set_account_currency: $e\n";
     }
+
     return {status => $status};
 };
 
@@ -3293,57 +3294,35 @@ rpc paymentagent_details => sub {
 };
 
 rpc get_account_types => sub {
-    my $params = shift;
+    my ($args, $client) = shift->@{qw(args client)};
 
-    my $residence            = $params->{client}->residence;
-    my $countries_instance   = request()->brand->countries_instance;
-    my $default_company_name = $countries_instance->real_company_for_country($residence);
+    my $country         = $client->residence;
+    my $landing_company = $args->{company} // $client->landing_company->short;
+    my $brand           = request()->brand;
 
-    return BOM::RPC::v3::Utility::create_error_by_code('PermissionDenied') unless $default_company_name;
+    if (request()->brand->countries_instance->restricted_country($country)) {
+        return {error => {code => 'RestrictedCountry'}};
+    }
 
-    my $default_landing_company = LandingCompany::Registry->by_name($default_company_name);
-    my $legal_currencies        = $default_landing_company->legal_allowed_currencies;
+    my %result = (
+        wallet  => +{},
+        trading => +{});
+    my $wallet_types =
+        BOM::Config::AccountType::Registry->category_by_name('wallet')->get_account_types_for_regulation($landing_company, $country, $brand);
 
-    my %categories = BOM::Config::AccountType::Registry->all_categories();
-    my %result;
-    for my $category_name (sort keys %categories) {
-        my $category = $categories{$category_name};
+    my %supported_wallets;
+    for my $type ($wallet_types->@*) {
+        $result{wallet}->{$type->name} = $type->get_details($landing_company);
+        $supported_wallets{$type->name} = 1;
+    }
 
-        for my $type_name (keys $category->account_types->%*) {
-            my $account_type        = $category->account_types->{$type_name};
-            my %account_type_result = (
-                is_demo  => $account_type->is_demo,
-                services => $account_type->services,
-            );
+    my $trading_types =
+        BOM::Config::AccountType::Registry->category_by_name('trading')->get_account_types_for_regulation($landing_company, $country, $brand);
+    for my $type ($trading_types->@*) {
+        $result{trading}->{$type->name} = $type->get_details($landing_company);
 
-            my @currencies_available = keys %$legal_currencies;
-            if ($account_type->currencies_by_landing_company->{$default_company_name}) {
-                @currencies_available = $account_type->currencies_by_landing_company->{$default_company_name}->@*;
-            }
-            if (scalar $account_type->currencies->@*) {
-                @currencies_available = intersect($account_type->currencies->@*, @currencies_available);
-            }
-            if (scalar $account_type->currency_types->@*) {
-                my @filtered_currencies;
-                for my $currency_type ($account_type->currency_types->@*) {
-                    push @filtered_currencies, grep { LandingCompany::Registry::get_currency_type($_) eq $currency_type } @currencies_available;
-                }
-                @currencies_available = @filtered_currencies;
-            }
-
-            # TODO: filter currencies already taken (NOTE: we've got to treat MT5 and DerivX account types differently)
-
-            $account_type_result{currencies_available} = \@currencies_available;
-
-            if ($category_name ne 'wallet') {
-                $account_type_result{linkable_wallet_types}          = $account_type->linkable_wallet_types // [];
-                $account_type_result{linkable_to_different_currency} = $account_type->linkable_to_different_currency;
-                $account_type_result{linkable_wallet_currencies} =
-                    (!$account_type->is_demo && $account_type->linkable_to_different_currency) ? [keys %$legal_currencies] : \@currencies_available;
-            }
-
-            $result{$category_name}->{$type_name} = \%account_type_result;
-        }
+        $result{trading}{$type->name}{linkable_wallet_types} =
+            [grep { $supported_wallets{$_} } $result{trading}{$type->name}{linkable_wallet_types}->@*];
     }
 
     return \%result;

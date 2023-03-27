@@ -102,7 +102,6 @@ sub _get_professional_details_clients {
 
 rpc new_account_real => sub {
     my $params = shift;
-
     my ($client, $args) = @{$params}{qw/client args/};
 
     $client->residence($args->{residence}) unless $client->residence;
@@ -120,7 +119,9 @@ rpc new_account_real => sub {
 
     my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // 'binary')
         or die "Invalid account type $args->{account_type}";
-    die "Account type $account_type does not support real account opening" unless any { $_ eq 'real' } $account_type->account_opening->@*;
+
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
+        unless $account_type->is_supported(request()->brand, $client->residence, $company);
 
     my $broker = $account_type->get_single_broker_code($company);
 
@@ -172,7 +173,8 @@ rpc new_account_maltainvest => sub {
 
     my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // 'binary')
         or die "Invalid account type $args->{account_type}";
-    die "Account type $account_type does not support real account opening" unless any { $_ eq 'real' } $account_type->account_opening->@*;
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
+        unless $account_type->is_supported(request()->brand, $client->residence, $company);
 
     my $broker = $account_type->get_single_broker_code($company);
 
@@ -229,11 +231,14 @@ rpc "new_account_virtual",
 
     $args->{token_details} = delete $params->{token_details};
 
-    my $category          = delete $args->{type}  // 'trading';
+    my $category = delete $args->{type} // 'trading';
+    #TODO: At some point in time instead of binary here should be standard...
+    # We need to define conditions when we stop creating legacy accounts
+    # Maybe check if virtual wallet already created?
     my $account_type_name = $args->{account_type} // ($category eq 'trading' ? 'binary' : 'virtual');
     my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name);
-    die "Invalid account type $account_type"                               unless $account_type;
-    die "Account type $account_type does not support demo account opening" unless any { $_ eq 'demo' } $account_type->account_opening->@*;
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
+        unless $account_type && $account_type->is_regulation_supported('virtual');
 
     my $broker = $account_type->get_single_broker_code('virtual');
     $args->{broker} = $broker;
@@ -329,7 +334,6 @@ rpc new_account_wallet => sub {
     my $company_name       = $countries_instance->wallet_company_for_country($client->residence, 'real') // '';
 
     my $is_maltainvest = $company_name eq 'maltainvest';
-    my $wallet_lc      = LandingCompany::Registry->by_name($company_name // '');
 
     my $currency_type = LandingCompany::Registry::get_currency_type($args->{currency} // '');
     return BOM::RPC::v3::Utility::create_error({
@@ -346,9 +350,9 @@ rpc new_account_wallet => sub {
             message_to_client => localize('Invalid request parameters.'),
             details           => {field => 'payment_method'}}) unless $account_type && $account_type->category->name eq 'wallet';
 
-    die "Account type $account_type does not support real account opening" unless any { $_ eq 'real' } $account_type->account_opening->@*;
-
-    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $wallet_lc;
+    my $wallet_lc = LandingCompany::Registry->by_name($company_name // '');
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
+        unless $wallet_lc && $account_type->is_supported(request()->brand, $client->residence, $company_name);
 
     my $broker = $account_type->get_single_broker_code($company_name);
 
@@ -1233,7 +1237,7 @@ sub _do_affiliate {
     $args->{token_details}  = delete $params->{token_details};
     $args->{type} //= 'trading';    # affiliate demo account will always be trading if not specified.
 
-    if ($args->{type} eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
             message_to_client => localize("Wallet account creation is currently suspended."),
