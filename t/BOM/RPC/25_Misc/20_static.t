@@ -102,6 +102,22 @@ subtest 'residence_list' => sub {
                         is_country_supported => 1,
                         has_visual_sample    => 0,
                         documents_supported  => {
+                            aadhaar => {
+                                display_name => 'Aadhaar Card',
+                                format       => '^[0-9]{12}$',
+                                additional   => {
+                                    display_name => 'PAN Card',
+                                    format       => '^.{10}$',
+                                },
+                            },
+                            passport => {
+                                display_name => 'Passport',
+                                format       => '^.{8}$',
+                                additional   => {
+                                    display_name => 'File Number',
+                                    format       => '^.{15}$',
+                                },
+                            },
                             drivers_license => {
                                 display_name => 'Drivers License',
                                 format       => '^.{5,255}$',
