@@ -1,9 +1,16 @@
 ---
+- country_code: ABW
+  country_grouping: Americas
+  country_name: Aruba
+  doc_types_list:
+  - Driving Licence
+  - National Identity Card
 - country_code: AFG
   country_grouping: Asia
   country_name: Afghanistan
   disabled: 1
   doc_types_list:
+  - National Identity Card
   - Passport
 - country_code: AGO
   country_grouping: Africa
@@ -17,6 +24,12 @@
   country_name: Anguilla
   doc_types_list:
   - Passport
+- country_code: ALA
+  country_grouping: Europe
+  country_name: "Ã\Nland Islands"
+  disabled: 1
+  doc_types_list:
+  - Driving Licence
 - country_code: ALB
   country_grouping: Europe
   country_name: Albania
@@ -46,6 +59,7 @@
   - Driving Licence
   - National Identity Card
   - Passport
+  - Residence Permit
 - country_code: ARM
   country_grouping: Asia
   country_name: Armenia
@@ -58,6 +72,16 @@
   country_name: American Samoa
   doc_types_list:
   - Driving Licence
+- country_code: ATA
+  country_grouping: ''
+  country_name: Antarctica
+  disabled: 1
+  doc_types_list: []
+- country_code: ATF
+  country_grouping: ''
+  country_name: French Southern Territories
+  disabled: 1
+  doc_types_list: []
 - country_code: ATG
   country_grouping: Americas
   country_name: Antigua and Barbuda
@@ -72,6 +96,7 @@
   - National Health Insurance Card
   - National Identity Card
   - Passport
+  - Visa
 - country_code: AUT
   country_grouping: Europe
   country_name: Austria
@@ -94,6 +119,7 @@
   country_grouping: Africa
   country_name: Burundi
   doc_types_list:
+  - Driving Licence
   - Passport
 - country_code: BEL
   country_grouping: Europe
@@ -112,6 +138,11 @@
   - Driving Licence
   - National Identity Card
   - Passport
+- country_code: BES
+  country_grouping: Americas
+  country_name: Bonaire, Sint Eustatius and Saba
+  disabled: 1
+  doc_types_list: []
 - country_code: BFA
   country_grouping: Africa
   country_name: Burkina Faso
@@ -130,6 +161,7 @@
   country_grouping: Europe
   country_name: Bulgaria
   doc_types_list:
+  - Asylum Registration Card
   - Driving Licence
   - National Health Insurance Card
   - National Identity Card
@@ -142,11 +174,13 @@
   - Driving Licence
   - National Identity Card
   - Passport
+  - Residence Permit
 - country_code: BHS
   country_grouping: Americas
   country_name: Bahamas
   doc_types_list:
   - Driving Licence
+  - National Identity Card
   - Passport
 - country_code: BIH
   country_grouping: Europe
@@ -166,6 +200,7 @@
   disabled: 1
   doc_types_list:
   - Driving Licence
+  - National Identity Card
   - Passport
   - Visa
 - country_code: BLZ
@@ -212,6 +247,11 @@
   country_name: Bhutan
   doc_types_list:
   - Passport
+- country_code: BVT
+  country_grouping: ''
+  country_name: Bouvet Island
+  disabled: 1
+  doc_types_list: []
 - country_code: BWA
   country_grouping: Africa
   country_name: Botswana
@@ -230,14 +270,17 @@
   country_name: Canada
   doc_types_list:
   - Driving Licence
-  - Indigenous Card
   - National Health Insurance Card
   - National Identity Card
   - Passport
-  - Proof of Citizenship
   - Residence Permit
-  - Service ID Card
   - Visa
+- country_code: CCK
+  country_grouping: Oceania
+  country_name: Cocos (Keeling) Islands
+  disabled: 1
+  doc_types_list:
+  - Driving Licence
 - country_code: CHE
   country_grouping: Europe
   country_name: Switzerland
@@ -285,12 +328,22 @@
   country_name: Congo (The Democratic Republic of the)
   disabled: 1
   doc_types_list:
+  - Driving Licence
   - Passport
 - country_code: COG
   country_grouping: Africa
   country_name: Congo
   doc_types_list:
+  - Driving Licence
+  - National Identity Card
   - Passport
+  - Residence Permit
+- country_code: COK
+  country_grouping: Oceania
+  country_name: Cook Islands
+  disabled: 1
+  doc_types_list:
+  - Driving Licence
 - country_code: COL
   country_grouping: Americas
   country_name: Colombia
@@ -298,7 +351,7 @@
   - Driving Licence
   - National Identity Card
   - Passport
-  - Residence Permit (Cedula de Extrajeria)
+  - Residence Permit
 - country_code: COM
   country_grouping: Africa
   country_name: Comoros
@@ -309,6 +362,8 @@
   country_grouping: Africa
   country_name: Cabo Verde
   doc_types_list:
+  - Driving Licence
+  - National Identity Card
   - Passport
 - country_code: CRI
   country_grouping: Americas
@@ -323,7 +378,21 @@
   country_name: Cuba
   doc_types_list:
   - Driving Licence
+  - National Identity Card
   - Passport
+- country_code: CUW
+  country_grouping: Americas
+  country_name: CuraÃ§ao
+  disabled: 1
+  doc_types_list:
+  - Driving Licence
+  - National Identity Card
+- country_code: CXR
+  country_grouping: Oceania
+  country_name: Christmas Island
+  disabled: 1
+  doc_types_list:
+  - Driving Licence
 - country_code: CYM
   country_grouping: Americas
   country_name: Cayman Islands
@@ -343,6 +412,7 @@
   country_name: Czechia
   doc_types_list:
   - Driving Licence
+  - National Health Insurance Card
   - National Identity Card
   - Passport
   - Residence Permit
@@ -353,7 +423,7 @@
   doc_types_list:
   - Driving Licence
   - National Health Insurance Card
-  - National Identity Card (2010 label variation)
+  - National Identity Card
   - Passport
   - Residence Permit
   - Visa
@@ -361,6 +431,7 @@
   country_grouping: Africa
   country_name: Djibouti
   doc_types_list:
+  - Driving Licence
   - Passport
 - country_code: DMA
   country_grouping: Americas
@@ -408,6 +479,11 @@
   country_name: Eritrea
   doc_types_list:
   - Passport
+- country_code: ESH
+  country_grouping: Africa
+  country_name: Western Sahara
+  disabled: 1
+  doc_types_list: []
 - country_code: ESP
   country_grouping: Europe
   country_name: Spain
@@ -422,6 +498,7 @@
   country_grouping: Europe
   country_name: Estonia
   doc_types_list:
+  - Asylum Registration Card
   - Driving Licence
   - National Health Insurance Card
   - National Identity Card
@@ -451,6 +528,11 @@
   doc_types_list:
   - Driving Licence
   - Passport
+- country_code: FLK
+  country_grouping: Americas
+  country_name: Falkland Islands (Malvinas)
+  disabled: 1
+  doc_types_list: []
 - country_code: FRA
   country_grouping: Europe
   country_name: France
@@ -460,9 +542,7 @@
   - National Health Insurance Card
   - National Identity Card
   - Passport
-  - Private Operators Card
   - Residence Permit
-  - Vehicle Registration Card
   - Visa
 - country_code: FRO
   country_grouping: Europe
@@ -485,10 +565,10 @@
   country_name: United Kingdom of Great Britain and Northern Ireland
   doc_types_list:
   - Asylum Registration Card
-  - Certificate of Naturalisation
   - Driving Licence
-  - Home Office Letter
   - Immigration Status Document
+  - National Health Insurance Card
+  - National Identity Card
   - Passport
   - Residence Permit
   - Visa
@@ -520,12 +600,18 @@
   - Driving Licence
   - National Identity Card
   - Passport
+  - Residence Permit
 - country_code: GIN
   country_grouping: Africa
   country_name: Guinea
   doc_types_list:
   - Driving Licence
   - Passport
+- country_code: GLP
+  country_grouping: Americas
+  country_name: Guadeloupe
+  disabled: 1
+  doc_types_list: []
 - country_code: GMB
   country_grouping: Africa
   country_name: Gambia
@@ -561,6 +647,7 @@
   country_grouping: Americas
   country_name: Greenland
   doc_types_list:
+  - Driving Licence
   - Passport
 - country_code: GTM
   country_grouping: Americas
@@ -569,6 +656,12 @@
   - Driving Licence
   - National Identity Card
   - Passport
+  - Residence Permit
+- country_code: GUF
+  country_grouping: Americas
+  country_name: French Guiana
+  disabled: 1
+  doc_types_list: []
 - country_code: GUM
   country_grouping: Oceania
   country_name: Guam
@@ -586,12 +679,17 @@
   doc_types_list:
   - Driving Licence
   - National Identity Card
-  - Passport
+- country_code: HMD
+  country_grouping: ''
+  country_name: Heard Island and McDonald Islands
+  disabled: 1
+  doc_types_list: []
 - country_code: HND
   country_grouping: Americas
   country_name: Honduras
   doc_types_list:
   - Driving Licence
+  - National Identity Card
   - Passport
 - country_code: HRV
   country_grouping: Europe
@@ -606,6 +704,7 @@
   country_grouping: Americas
   country_name: Haiti
   doc_types_list:
+  - Driving Licence
   - National Identity Card
   - Passport
   - Residence Permit
@@ -640,19 +739,21 @@
   - Driving Licence
   - National Identity Card
   - Passport
-  - Tax Id (E-Pan Card, PAN Card)
   - Visa
   - Voter Id
+- country_code: IOT
+  country_grouping: Africa
+  country_name: British Indian Ocean Territory
+  disabled: 1
+  doc_types_list: []
 - country_code: IRL
   country_grouping: Europe
   country_name: Ireland
   doc_types_list:
-  - Birth Certificate*
   - Driving Licence
   - National Health Insurance Card
   - National Identity Card
   - Passport
-  - Passport Card
   - Residence Permit
   - Visa
 - country_code: IRN
@@ -660,12 +761,14 @@
   country_name: Iran (Islamic Republic of)
   disabled: 1
   doc_types_list:
+  - Driving Licence
   - Passport
 - country_code: IRQ
   country_grouping: Asia
   country_name: Iraq
   disabled: 1
   doc_types_list:
+  - Driving Licence
   - Passport
 - country_code: ISL
   country_grouping: Europe
@@ -681,6 +784,7 @@
   country_name: Israel
   doc_types_list:
   - Driving Licence
+  - National Identity Card
   - Passport
   - Visa
 - country_code: ITA
@@ -718,11 +822,9 @@
   country_name: Japan
   doc_types_list:
   - Driving Licence
-  - National Identity Card (Individual Number Card)
+  - National Identity Card
   - Passport
-  - Postal Identity Card (Juminhyo)
   - Residence Permit
-  - Social Security Card (Individual Number Paper Slip)
 - country_code: KAZ
   country_grouping: Asia
   country_name: Kazakhstan
@@ -748,7 +850,9 @@
   country_grouping: Asia
   country_name: Cambodia
   doc_types_list:
+  - National Identity Card
   - Passport
+  - Visa
 - country_code: KIR
   country_grouping: Oceania
   country_name: Kiribati
@@ -782,6 +886,7 @@
   country_grouping: Asia
   country_name: Lebanon
   doc_types_list:
+  - Driving Licence
   - Passport
   - Residence Permit
 - country_code: LBR
@@ -848,6 +953,7 @@
   country_grouping: Europe
   country_name: Latvia
   doc_types_list:
+  - Asylum Registration Card
   - Driving Licence
   - National Health Insurance Card
   - National Identity Card
@@ -859,7 +965,6 @@
   country_name: Macao
   doc_types_list:
   - Driving Licence
-  - Passport
   - Residence Permit
 - country_code: MAF
   country_grouping: Americas
@@ -898,8 +1003,8 @@
   country_grouping: Asia
   country_name: Maldives
   doc_types_list:
+  - National Identity Card
   - Passport
-  - Passport Card
 - country_code: MEX
   country_grouping: Americas
   country_name: Mexico
@@ -908,7 +1013,7 @@
   - National Identity Card
   - Passport
   - Residence Permit
-  - Voter Id (INE, IFE)
+  - Voter Id
 - country_code: MHL
   country_grouping: Oceania
   country_name: Marshall Islands
@@ -954,6 +1059,7 @@
   country_name: Mongolia
   doc_types_list:
   - Driving Licence
+  - National Identity Card
   - Passport
 - country_code: MNP
   country_grouping: Oceania
@@ -968,11 +1074,22 @@
   - National Identity Card
   - Passport
   - Residence Permit
+- country_code: MRT
+  country_grouping: Africa
+  country_name: Mauritania
+  doc_types_list:
+  - National Identity Card
+  - Passport
 - country_code: MSR
   country_grouping: Americas
   country_name: Montserrat
   doc_types_list:
   - Passport
+- country_code: MTQ
+  country_grouping: Americas
+  country_name: Martinique
+  disabled: 1
+  doc_types_list: []
 - country_code: MUS
   country_grouping: Africa
   country_name: Mauritius
@@ -991,10 +1108,15 @@
   country_name: Malaysia
   doc_types_list:
   - Driving Licence
-  - National Identity Card (MyKAD, MyTentera)
+  - National Identity Card
   - Passport
   - Residence Permit
   - Visa
+- country_code: MYT
+  country_grouping: Africa
+  country_name: Mayotte
+  disabled: 1
+  doc_types_list: []
 - country_code: NAM
   country_grouping: Africa
   country_name: Namibia
@@ -1003,11 +1125,21 @@
   - National Identity Card
   - Passport
   - Residence Permit
+- country_code: NCL
+  country_grouping: Oceania
+  country_name: New Caledonia
+  disabled: 1
+  doc_types_list: []
 - country_code: NER
   country_grouping: Africa
   country_name: Niger
   doc_types_list:
   - Passport
+- country_code: NFK
+  country_grouping: Oceania
+  country_name: Norfolk Island
+  disabled: 1
+  doc_types_list: []
 - country_code: NGA
   country_grouping: Africa
   country_name: Nigeria
@@ -1023,6 +1155,12 @@
   - Driving Licence
   - National Identity Card
   - Passport
+  - Residence Permit
+- country_code: NIU
+  country_grouping: Oceania
+  country_name: Niue
+  disabled: 1
+  doc_types_list: []
 - country_code: NLD
   country_grouping: Europe
   country_name: Netherlands
@@ -1038,6 +1176,7 @@
   country_grouping: Europe
   country_name: Norway
   doc_types_list:
+  - Asylum Registration Card
   - Driving Licence
   - National Health Insurance Card
   - National Identity Card
@@ -1061,7 +1200,6 @@
   doc_types_list:
   - Driving Licence
   - Passport
-  - Proof of Citizenship
 - country_code: OMN
   country_grouping: Asia
   country_name: Oman
@@ -1088,8 +1226,7 @@
 - country_code: PCN
   country_grouping: Oceania
   country_name: Pitcairn
-  doc_types_list:
-  - Passport
+  doc_types_list: []
 - country_code: PER
   country_grouping: Americas
   country_name: Peru
@@ -1106,17 +1243,13 @@
   - National Health Insurance Card
   - National Identity Card
   - Passport
-  - Postal Identity Card
-  - Professional Qualification Card
-  - Social Security Card
-  - Tax Id
   - Visa
   - Voter Id
-  - Work Permit
 - country_code: PLW
   country_grouping: Oceania
   country_name: Palau
   doc_types_list:
+  - National Identity Card
   - Passport
 - country_code: PNG
   country_grouping: Oceania
@@ -1127,6 +1260,7 @@
   country_grouping: Europe
   country_name: Poland
   doc_types_list:
+  - Asylum Registration Card
   - Driving Licence
   - National Health Insurance Card
   - National Identity Card
@@ -1139,6 +1273,7 @@
   doc_types_list:
   - Driving Licence
   - National Identity Card
+  - Voter Id
 - country_code: PRK
   country_grouping: Asia
   country_name: Korea, The Democratic People's Republic of
@@ -1172,6 +1307,7 @@
   country_name: French Polynesia
   doc_types_list:
   - Driving Licence
+  - Residence Permit
 - country_code: QAT
   country_grouping: Asia
   country_name: Qatar
@@ -1180,6 +1316,11 @@
   - National Identity Card
   - Passport
   - Residence Permit
+- country_code: REU
+  country_grouping: Africa
+  country_name: RÃ©union
+  disabled: 1
+  doc_types_list: []
 - country_code: ROU
   country_grouping: Europe
   country_name: Romania
@@ -1195,7 +1336,7 @@
   disabled: 1
   doc_types_list:
   - Driving Licence
-  - National Identity Card (Internal Passport)
+  - National Identity Card
   - Passport
 - country_code: RWA
   country_grouping: Africa
@@ -1204,6 +1345,7 @@
   - Driving Licence
   - National Identity Card
   - Passport
+  - Residence Permit
 - country_code: SAU
   country_grouping: Asia
   country_name: Saudi Arabia
@@ -1216,6 +1358,7 @@
   country_grouping: Africa
   country_name: Sudan
   doc_types_list:
+  - Driving Licence
   - Passport
 - country_code: SEN
   country_grouping: Africa
@@ -1231,7 +1374,22 @@
   - Driving Licence
   - National Identity Card
   - Passport
-  - Work Permit (FIN card, Employment Pass, S Pass)
+- country_code: SGS
+  country_grouping: Americas
+  country_name: South Georgia and the South Sandwich Islands
+  disabled: 1
+  doc_types_list: []
+- country_code: SHN
+  country_grouping: Africa
+  country_name: Saint Helena, Ascension and Tristan da Cunha
+  disabled: 1
+  doc_types_list:
+  - Passport
+- country_code: SJM
+  country_grouping: Europe
+  country_name: Svalbard and Jan Mayen
+  disabled: 1
+  doc_types_list: []
 - country_code: SLB
   country_grouping: Oceania
   country_name: Solomon Islands
@@ -1254,13 +1412,20 @@
   country_grouping: Europe
   country_name: San Marino
   doc_types_list:
+  - Driving Licence
   - National Identity Card
   - Passport
 - country_code: SOM
   country_grouping: Africa
   country_name: Somalia
   doc_types_list:
+  - National Identity Card
   - Passport
+- country_code: SPM
+  country_grouping: Americas
+  country_name: Saint Pierre and Miquelon
+  disabled: 1
+  doc_types_list: []
 - country_code: SRB
   country_grouping: Europe
   country_name: Serbia
@@ -1272,6 +1437,7 @@
   country_grouping: Africa
   country_name: South Sudan
   doc_types_list:
+  - National Identity Card
   - Passport
 - country_code: STP
   country_grouping: Africa
@@ -1313,7 +1479,6 @@
   - National Identity Card
   - Passport
   - Residence Permit
-  - Tax Id
   - Visa
 - country_code: SWZ
   country_grouping: Africa
@@ -1321,6 +1486,13 @@
   doc_types_list:
   - National Identity Card
   - Passport
+- country_code: SXM
+  country_grouping: Americas
+  country_name: Sint Maarten (Dutch part)
+  disabled: 1
+  doc_types_list:
+  - Driving Licence
+  - National Identity Card
 - country_code: SYC
   country_grouping: Africa
   country_name: Seychelles
@@ -1333,6 +1505,8 @@
   country_name: Syrian Arab Republic
   disabled: 1
   doc_types_list:
+  - Driving Licence
+  - National Identity Card
   - Passport
 - country_code: TCA
   country_grouping: Americas
@@ -1363,13 +1537,26 @@
   country_grouping: Asia
   country_name: Tajikistan
   doc_types_list:
+  - National Identity Card
   - Passport
+- country_code: TKL
+  country_grouping: Oceania
+  country_name: Tokelau
+  disabled: 1
+  doc_types_list: []
 - country_code: TKM
   country_grouping: Asia
   country_name: Turkmenistan
   doc_types_list:
   - Driving Licence
   - Passport
+- country_code: TLS
+  country_grouping: Asia
+  country_name: Timor-Leste
+  disabled: 1
+  doc_types_list:
+  - Passport
+  - Residence Permit
 - country_code: TON
   country_grouping: Oceania
   country_name: Tonga
@@ -1387,6 +1574,7 @@
   country_name: Tunisia
   doc_types_list:
   - Driving Licence
+  - National Identity Card
   - Passport
 - country_code: TUR
   country_grouping: Asia
@@ -1433,6 +1621,11 @@
   - National Identity Card
   - Passport
   - Residence Permit
+- country_code: UMI
+  country_grouping: Americas
+  country_name: United States Minor Outlying Islands
+  disabled: 1
+  doc_types_list: []
 - country_code: URY
   country_grouping: Americas
   country_name: Uruguay
@@ -1444,21 +1637,18 @@
   country_grouping: Americas
   country_name: United States of America
   doc_types_list:
-  - Certificate of Naturalisation
   - Driving Licence
-  - Municipality Identity Card (NYCID, IDNYC)
+  - Immigration Status Document
   - National Identity Card
   - Passport
-  - Passport Card
-  - Residence Permit (Green Card)
-  - Service ID Card
+  - Residence Permit
   - Visa
-  - Work Permit
 - country_code: UZB
   country_grouping: Asia
   country_name: Uzbekistan
   doc_types_list:
   - Driving Licence
+  - National Identity Card
   - Passport
 - country_code: VAT
   country_grouping: Europe
@@ -1469,6 +1659,7 @@
   country_grouping: Americas
   country_name: Saint Vincent and the Grenadines
   doc_types_list:
+  - National Identity Card
   - Passport
 - country_code: VEN
   country_grouping: Americas
@@ -1486,6 +1677,7 @@
   country_grouping: Americas
   country_name: Virgin Islands (U.S.)
   doc_types_list:
+  - Driving Licence
   - National Identity Card
 - country_code: VNM
   country_grouping: Asia
@@ -1494,11 +1686,17 @@
   - Driving Licence
   - National Identity Card
   - Passport
+  - Residence Permit
 - country_code: VUT
   country_grouping: Oceania
   country_name: Vanuatu
   doc_types_list:
   - Passport
+- country_code: WLF
+  country_grouping: Oceania
+  country_name: Wallis and Futuna
+  disabled: 1
+  doc_types_list: []
 - country_code: WSM
   country_grouping: Oceania
   country_name: Samoa
@@ -1528,298 +1726,5 @@
   country_grouping: Africa
   country_name: Zimbabwe
   doc_types_list:
-  - Driving Licence
   - National Identity Card
-- country_code: BES
-  country_grouping: Americas
-  country_name: Bonaire, Sint Eustatius and Saba
-  disabled: 1
-  doc_types_list: ~
-- country_code: BVT
-  country_grouping: ''
-  country_name: Bouvet Island
-  disabled: 1
-  doc_types_list: ~
-- country_code: IOT
-  country_grouping: Africa
-  country_name: British Indian Ocean Territory
-  disabled: 1
-  doc_types_list: ~
-- country_code: CXR
-  country_grouping: Oceania
-  country_name: Christmas Island
-  disabled: 1
-  doc_types_list:
-  - Driving Licence
-- country_code: CCK
-  country_grouping: Oceania
-  country_name: Cocos (Keeling) Islands
-  disabled: 1
-  doc_types_list:
-  - Driving Licence
-- country_code: COK
-  country_grouping: Oceania
-  country_name: Cook Islands
-  disabled: 1
-  doc_types_list: ~
-- country_code: CUW
-  country_grouping: Americas
-  country_name: CuraÃ§ao
-  disabled: 1
-  doc_types_list: ~
-- country_code: FLK
-  country_grouping: Americas
-  country_name: Falkland Islands (Malvinas)
-  disabled: 1
-  doc_types_list: ~
-- country_code: GUF
-  country_grouping: Americas
-  country_name: French Guiana
-  disabled: 1
-  doc_types_list: ~
-- country_code: ATF
-  country_grouping: ''
-  country_name: French Southern Territories
-  disabled: 1
-  doc_types_list: ~
-- country_code: GLP
-  country_grouping: Americas
-  country_name: Guadeloupe
-  disabled: 1
-  doc_types_list: ~
-- country_code: HMD
-  country_grouping: ''
-  country_name: Heard Island and McDonald Islands
-  disabled: 1
-  doc_types_list: ~
-- country_code: MTQ
-  country_grouping: Americas
-  country_name: Martinique
-  disabled: 1
-  doc_types_list: ~
-- country_code: MRT
-  country_grouping: Africa
-  country_name: Mauritania
-  doc_types_list:
   - Passport
-- country_code: MYT
-  country_grouping: Africa
-  country_name: Mayotte
-  disabled: 1
-  doc_types_list: ~
-- country_code: NCL
-  country_grouping: Oceania
-  country_name: New Caledonia
-  disabled: 1
-  doc_types_list: ~
-- country_code: NIU
-  country_grouping: Oceania
-  country_name: Niue
-  disabled: 1
-  doc_types_list: ~
-- country_code: NFK
-  country_grouping: Oceania
-  country_name: Norfolk Island
-  disabled: 1
-  doc_types_list: ~
-- country_code: REU
-  country_grouping: Africa
-  country_name: RÃ©union
-  disabled: 1
-  doc_types_list: ~
-- country_code: SHN
-  country_grouping: Africa
-  country_name: Saint Helena, Ascension and Tristan da Cunha
-  disabled: 1
-  doc_types_list: ~
-- country_code: SPM
-  country_grouping: Americas
-  country_name: Saint Pierre and Miquelon
-  disabled: 1
-  doc_types_list: ~
-- country_code: SXM
-  country_grouping: Americas
-  country_name: Sint Maarten (Dutch part)
-  disabled: 1
-  doc_types_list: ~
-- country_code: SGS
-  country_grouping: Americas
-  country_name: South Georgia and the South Sandwich Islands
-  disabled: 1
-  doc_types_list: ~
-- country_code: SJM
-  country_grouping: Europe
-  country_name: Svalbard and Jan Mayen
-  disabled: 1
-  doc_types_list: ~
-- country_code: TLS
-  country_grouping: Asia
-  country_name: Timor-Leste
-  disabled: 1
-  doc_types_list:
-  - Passport
-- country_code: ATA
-  country_grouping: ''
-  country_name: Antarctica
-  disabled: 1
-  doc_types_list: ~
-- country_code: ABW
-  country_grouping: Americas
-  country_name: Aruba
-  doc_types_list:
-  - Driving Licence
-  - National Identity Card
-- country_code: BES
-  country_grouping: Americas
-  country_name: Bonaire, Sint Eustatius and Saba
-  disabled: 1
-  doc_types_list: ~
-- country_code: BVT
-  country_grouping: ''
-  country_name: Bouvet Island
-  disabled: 1
-  doc_types_list: ~
-- country_code: IOT
-  country_grouping: Africa
-  country_name: British Indian Ocean Territory
-  disabled: 1
-  doc_types_list: ~
-- country_code: CXR
-  country_grouping: Oceania
-  country_name: Christmas Island
-  disabled: 1
-  doc_types_list:
-  - Driving Licence
-- country_code: CCK
-  country_grouping: Oceania
-  country_name: Cocos (Keeling) Islands
-  disabled: 1
-  doc_types_list:
-  - Driving Licence
-- country_code: COK
-  country_grouping: Oceania
-  country_name: Cook Islands
-  disabled: 1
-  doc_types_list: ~
-- country_code: CUW
-  country_grouping: Americas
-  country_name: CuraÃ§ao
-  disabled: 1
-  doc_types_list: ~
-- country_code: FLK
-  country_grouping: Americas
-  country_name: Falkland Islands (Malvinas)
-  disabled: 1
-  doc_types_list: ~
-- country_code: GUF
-  country_grouping: Americas
-  country_name: French Guiana
-  disabled: 1
-  doc_types_list: ~
-- country_code: ATF
-  country_grouping: ''
-  country_name: French Southern Territories
-  disabled: 1
-  doc_types_list: ~
-- country_code: GLP
-  country_grouping: Americas
-  country_name: Guadeloupe
-  disabled: 1
-  doc_types_list: ~
-- country_code: HMD
-  country_grouping: ''
-  country_name: Heard Island and McDonald Islands
-  disabled: 1
-  doc_types_list: ~
-- country_code: MTQ
-  country_grouping: Americas
-  country_name: Martinique
-  disabled: 1
-  doc_types_list: ~
-- country_code: MRT
-  country_grouping: Africa
-  country_name: Mauritania
-  doc_types_list:
-  - Passport
-- country_code: MYT
-  country_grouping: Africa
-  country_name: Mayotte
-  disabled: 1
-  doc_types_list: ~
-- country_code: NCL
-  country_grouping: Oceania
-  country_name: New Caledonia
-  disabled: 1
-  doc_types_list: ~
-- country_code: NIU
-  country_grouping: Oceania
-  country_name: Niue
-  disabled: 1
-  doc_types_list: ~
-- country_code: NFK
-  country_grouping: Oceania
-  country_name: Norfolk Island
-  disabled: 1
-  doc_types_list: ~
-- country_code: REU
-  country_grouping: Africa
-  country_name: RÃ©union
-  disabled: 1
-  doc_types_list: ~
-- country_code: SHN
-  country_grouping: Africa
-  country_name: Saint Helena, Ascension and Tristan da Cunha
-  disabled: 1
-  doc_types_list: ~
-- country_code: SPM
-  country_grouping: Americas
-  country_name: Saint Pierre and Miquelon
-  disabled: 1
-  doc_types_list: ~
-- country_code: SXM
-  country_grouping: Americas
-  country_name: Sint Maarten (Dutch part)
-  disabled: 1
-  doc_types_list: ~
-- country_code: SGS
-  country_grouping: Americas
-  country_name: South Georgia and the South Sandwich Islands
-  disabled: 1
-  doc_types_list: ~
-- country_code: SJM
-  country_grouping: Europe
-  country_name: Svalbard and Jan Mayen
-  disabled: 1
-  doc_types_list: ~
-- country_code: TLS
-  country_grouping: Asia
-  country_name: Timor-Leste
-  disabled: 1
-  doc_types_list:
-  - Passport
-  - Residence Permit
-- country_code: TKL
-  country_grouping: Oceania
-  country_name: Tokelau
-  disabled: 1
-  doc_types_list: ~
-- country_code: UMI
-  country_grouping: Americas
-  country_name: United States Minor Outlying Islands
-  disabled: 1
-  doc_types_list: ~
-- country_code: WLF
-  country_grouping: Oceania
-  country_name: Wallis and Futuna
-  disabled: 1
-  doc_types_list: ~
-- country_code: ESH
-  country_grouping: Africa
-  country_name: Western Sahara
-  disabled: 1
-  doc_types_list: ~
-- country_code: ALA
-  country_grouping: Europe
-  country_name: "Ã\Nland Islands"
-  disabled: 1
-  doc_types_list: ~
