@@ -266,7 +266,9 @@ sub error_map {
         CryptoWithdrawalBalanceExceeded => localize('Withdrawal amount of [_1] [_2] exceeds your account balance of [_3] [_2].'),
         CryptoWithdrawalError           => localize('Error validating your transaction, please try again in a few minutes.'),
         CryptoWithdrawalLimitExceeded   => localize('Withdrawal amount of [_1] [_2] exceeds your account withdrawal limit of [_3] [_2].'),
-        CryptoWithdrawalMaxReached      =>
+        CryptoLimitAgeVerified          => localize(
+            'Withdrawal request of [_1] [_2] exceeds cumulative limit for transactions. To continue, you will need to verify your identity.'),
+        CryptoWithdrawalMaxReached =>
             localize('You have reached the maximum withdrawal limit of [_1] [_2]. Please authenticate your account to make unlimited withdrawals.'),
         CryptoWithdrawalNotAuthenticated => localize('Please authenticate your account to proceed with withdrawals.'),
         InternalClient                   => localize('This feature is not allowed for internal clients.'),

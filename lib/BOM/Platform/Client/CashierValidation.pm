@@ -86,7 +86,7 @@ my %error_to_status_mapping = (
 
 # error codes passed through for crypto_cashier
 use constant CRYPTO_PASSTHROUGH_ERROR_CODES => qw(
-    PACommisionWithdrawalLimit
+    PACommisionWithdrawalLimit CryptoLimitAgeVerified
 );
 
 =head2 validate
@@ -471,7 +471,6 @@ Returns C<undef> in case of successful, otherwise a hashref for error details.
 
 sub validate_payment_error {
     my ($client, $amount, $rule_engine) = @_;
-
     my $currency_code = $client->default_account->currency_code;
     my $cashier_validation_failure;
 
