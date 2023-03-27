@@ -11,7 +11,8 @@ use BOM::Platform::Event::Emitter;
 use BOM::RPC::v3::Utility qw(log_exception);
 use Syntax::Keyword::Try;
 use feature 'state';
-use base qw(Exporter);
+use base                       qw(Exporter);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -22,6 +23,10 @@ use BOM::User::Client;
 our @EXPORT_OK = qw(MAX_FILE_SIZE);
 
 use constant MAX_FILE_SIZE => 10 * 2**20;
+
+use constant MAX_UPLOAD_TRIES_PER_DAY => 20;
+use constant MAX_UPLOADS_TRIES_TTL    => 86400;                 # one day in second
+use constant MAX_UPLOADS_KEY          => 'MAX_UPLOADS_KEY::';
 
 requires_auth('trading', 'wallet');
 
@@ -118,6 +123,18 @@ sub successful_upload {
     try {
         my $finish_upload_result = $client->finish_document_upload($args->{file_id});
 
+        my $redis = BOM::Config::Redis::redis_replicated_write();
+        my $key   = MAX_UPLOADS_KEY . $client->binary_user_id;
+
+        $redis->set(
+            $key,
+            0,
+            'EX' => MAX_UPLOADS_TRIES_TTL,
+            'NX'
+        );
+        $redis->incrby($key, 1);
+        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.doc_upload_counter', {tags => ["loginid:" . $client->loginid]});
+
         # We set this status so CS agents can see documents where uploaded in sibling acc CR/MF
         $client->status->setnx('poi_poa_uploaded', 'system', 'Documents uploaded by ' . $client->broker_code);
 
@@ -168,15 +185,19 @@ sub successful_upload {
 }
 
 sub validate_input {
-    my $params    = shift;
-    my $args      = $params->{args};
-    my $client    = $params->{client};
-    my $file_size = $args->{file_size};
-    my $status    = $args->{status};
+    my $params       = shift;
+    my $args         = $params->{args};
+    my $client       = $params->{client};
+    my $file_size    = $args->{file_size};
+    my $status       = $args->{status};
+    my $redis        = BOM::Config::Redis::redis_replicated_write();
+    my $key          = MAX_UPLOADS_KEY . $client->binary_user_id;
+    my $upload_tries = $redis->get($key) // 0;
 
-    return 'max_size'      if $file_size and $file_size > MAX_FILE_SIZE;
-    return $args->{reason} if $status    and $status eq 'failure';
-    return 'virtual'       if $client->is_virtual;
+    return 'max_upload_attempts_exceeded' if $upload_tries and $upload_tries > MAX_UPLOAD_TRIES_PER_DAY;
+    return 'max_size'                     if $file_size    and $file_size > MAX_FILE_SIZE;
+    return $args->{reason}                if $status       and $status eq 'failure';
+    return 'virtual'                      if $client->is_virtual;
 
     my $error = validate_expiration_date($args->{expiration_date}) // validate_id_and_exp_date({$args->%*, client => $client})
         // validate_proof_of_ownership({%$args{qw/proof_of_ownership document_type/}, %$params{qw/client/}});
@@ -276,11 +297,13 @@ sub create_upload_error {
     state $default_error_code = 'UploadDenied';
     state $default_error_msg  = localize('Sorry, an error occurred while processing your request.');
     state $errors             = {
-        virtual            => {message => localize("Virtual accounts don't require document uploads.")},
-        already_expired    => {message => localize('Expiration date cannot be less than or equal to current date.')},
-        missing_exp_date   => {message => localize('Expiration date is required.')},
-        missing_doc_id     => {message => localize('Document ID is required.')},
-        max_size           => {message => localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)},
+        virtual                      => {message => localize("Virtual accounts don't require document uploads.")},
+        already_expired              => {message => localize('Expiration date cannot be less than or equal to current date.')},
+        missing_exp_date             => {message => localize('Expiration date is required.')},
+        missing_doc_id               => {message => localize('Document ID is required.')},
+        max_size                     => {message => localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)},
+        max_upload_attempts_exceeded =>
+            {message => localize("Maximum upload attempts per day reached. Maximum allowed is [_1]", MAX_UPLOAD_TRIES_PER_DAY)},
         duplicate_document => {
             message    => localize('Document already uploaded.'),
             error_code => 'DuplicateUpload'

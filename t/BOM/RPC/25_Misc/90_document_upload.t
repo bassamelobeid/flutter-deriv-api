@@ -4,6 +4,8 @@ use warnings;
 use Test::More;
 use Test::Mojo;
 use Test::Warn;
+use Test::Fatal;
+use Test::Deep                                 qw/cmp_deeply/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
@@ -163,6 +165,59 @@ subtest 'Basic upload test sequence' => sub {
 
 subtest 'Attempt to upload file with same checksum as "Basic upload test sequence"' => sub {
     call_and_check_error({}, 'Document already uploaded.', 'error if same document is uploaded twice');
+};
+
+#########################################################
+## Tests for limit of uploaded documents reached per day
+#########################################################
+
+subtest 'Limit of uploaded documents reached' => sub {
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $key   = 'MAX_UPLOADS_KEY::' . $real_client->binary_user_id;
+
+    $redis->set($key, 21,);
+
+    my $error_params = +{%default_params};
+
+    call_and_check_error($error_params, 'Maximum upload attempts per day reached. Maximum allowed is 20', 'Upload limit reached');
+};
+
+#########################################################
+## Tests for datadog metrics on number of uploaded docs
+#########################################################
+
+subtest 'DD metrics for docs uploaded' => sub {
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $key   = 'MAX_UPLOADS_KEY::' . $real_client->binary_user_id;
+    $redis->del($key);
+
+    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @metrics;
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            push @metrics, @_;
+
+            return 1;
+        });
+
+    my $file_id = start_successful_upload(
+        $real_client,
+        {
+            args => {
+                expected_checksum => 'test1111',
+                document_id       => '12341234',
+            }});
+    finish_successful_upload($real_client, $file_id, 'test1111', 1);
+
+    ok $redis->ttl($key) > 0, 'there is a ttl';
+
+    cmp_deeply + {@metrics},
+        +{
+        'bom_rpc.v_3.call.count'     => {tags => ['rpc:document_upload', 'stream:general']},
+        'bom_rpc.doc_upload_counter' => {tags => ['loginid:' . $real_client->loginid]},
+        },
+        'Expected dd metrics';
 };
 
 #########################################################
