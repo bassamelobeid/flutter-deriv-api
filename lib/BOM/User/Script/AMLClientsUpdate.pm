@@ -144,7 +144,7 @@ sub _send_risk_report_email {
             $row->{$_} //= 'low' for (qw/aml_risk_classification withdraw deposit jurisdiction/);
 
             $content .=
-                "<tr><td>AML Risk Updated</td><td>$row->{loginids}</td><td>$row->{aml_risk_classification}</td><td>withdraw: $row->{withdraw} Deposit:$row->{withdraw}, Jurisdiction: $row->{jurisdiction}</td></tr>";
+                "<tr><td>AML Risk Updated</td><td>$row->{loginids}</td><td>$row->{aml_risk_classification}</td><td>withdraw: $row->{withdraw}, Deposit: $row->{deposit}, Jurisdiction: $row->{jurisdiction}</td></tr>";
         } catch ($e) {
             warn $e;
             $log->errorf("Failed to load user info for AML risk update report: %s", $e);
