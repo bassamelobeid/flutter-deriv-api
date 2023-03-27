@@ -206,22 +206,24 @@ foreach my $login_id (@login_ids) {
         print '<br/><br/>';
         my $status_code = get_untrusted_type_by_linktype($client_status_type)->{code};
 
-        if ($action eq 'insert_data') {
-            print link_for_copy_status_status_to_siblings(
-                $login_id,
-                $status_code,
-                {
-                    enabled  => 'Do you need to set the status to the remaining landing company siblings? Click here.',
-                    disabled => ''
-                });
-        } elsif ($action eq 'remove_status') {
-            print link_for_remove_status_from_all_siblings(
-                $login_id,
-                $status_code,
-                {
-                    enabled  => 'Do you need to remove the status from the remaining landing company siblings? Click here.',
-                    disabled => ''
-                });
+        if (!($operation eq 'sync_accounts' || $operation eq 'sync')) {
+            if ($action eq 'insert_data') {
+                print link_for_copy_status_status_to_siblings(
+                    $login_id,
+                    $status_code,
+                    {
+                        enabled  => 'Do you need to set the status to the remaining landing company siblings? Click here.',
+                        disabled => ''
+                    });
+            } elsif ($action eq 'remove_status') {
+                print link_for_remove_status_from_all_siblings(
+                    $login_id,
+                    $status_code,
+                    {
+                        enabled  => 'Do you need to remove the status from the remaining landing company siblings? Click here.',
+                        disabled => ''
+                    });
+            }
         }
     }
 
