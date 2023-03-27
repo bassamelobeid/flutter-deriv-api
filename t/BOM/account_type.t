@@ -8,6 +8,7 @@ use Test::MockModule;
 use LandingCompany::Registry;
 
 use BOM::Config::AccountType::Registry;
+use Brands;
 
 subtest 'registry' => sub {
 
@@ -217,11 +218,9 @@ subtest 'account type class' => sub {
     $args{category} = BOM::Config::AccountType::Registry->category_by_name('wallet');
     ok $account_type = BOM::Config::AccountType->new(%args), 'Account type created with the minimum args required';
 
-    is $account_type->name,          'my_type',                                                      'Name is correct';
-    is $account_type->category_name, 'wallet',                                                       'Category name is correct';
-    is $account_type->category,      BOM::Config::AccountType::Registry->category_by_name('wallet'), 'Category object is correct';
-    is_deeply $account_type->account_opening, [qw/demo real/], 'Default account opening opetions returned';
-    is_deeply $account_type->market_types,    [],              'default market type is returned';
+    is $account_type->name,                           'my_type',                                                      'Name is correct';
+    is $account_type->category_name,                  'wallet',                                                       'Category name is correct';
+    is $account_type->category,                       BOM::Config::AccountType::Registry->category_by_name('wallet'), 'Category object is correct';
     is $account_type->linkable_to_different_currency, 0, 'it is not linkable to a different currency';
 
     is_deeply $account_type->brands,   ['deriv'], 'Brands are the same as the category';
@@ -230,7 +229,9 @@ subtest 'account type class' => sub {
     is_deeply $account_type->broker_codes,
         {
         svg         => ['CRW'],
-        maltainvest => ['MFW']
+        maltainvest => ['MFW'],
+        virtual     => ['VRW'],
+        dsl         => ['CRA'],
         },
         'Broker codes are the same as the category';
     is_deeply $account_type->linkable_wallet_types,             [], 'No linkable wallet types';
@@ -274,8 +275,6 @@ subtest 'account type class' => sub {
         'Correct error for currency not supported by landing company';
 
     $args{currencies_by_landing_company}  = {svg => ['BTC']};
-    $args{account_opening}                = [qw/demo real/];
-    $args{market_types}                   = [qw/gaming financial/];
     $args{linkable_wallet_types}          = ['virtual'];
     $args{linkable_to_different_currency} = 1;
     ok $account_type = BOM::Config::AccountType->new(%args), 'Account type created with full args';
@@ -305,6 +304,108 @@ subtest 'validate landing companies and broker codes' => sub {
             }
         }
     }
+};
+
+subtest 'Method is_regulation_supported' => sub {
+    my $p2p = BOM::Config::AccountType::Registry->account_type_by_name('p2p');
+
+    is $p2p->is_regulation_supported('maltainvest'), 0, 'It should return false if account type doesnt support regulation';
+
+    is $p2p->is_regulation_supported('svg'), 1, 'It should return false if account type supports regulation';
+};
+
+subtest 'Method is_regulation_supported' => sub {
+    my $p2p = BOM::Config::AccountType::Registry->account_type_by_name('p2p');
+
+    is $p2p->is_regulation_supported('maltainvest'), 0, 'It should return false if account type doesnt support regulation';
+
+    is $p2p->is_regulation_supported('svg'), 1, 'It should return false if account type supports regulation';
+};
+
+subtest 'Method is_supported for p2p' => sub {
+    my $brand = Brands->new();
+
+    my $mock_countries = Test::MockModule->new('Brands::Countries');
+    $mock_countries->mock(wallet_company_for_country => 'svg');
+
+    my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+
+    my $p2p = BOM::Config::AccountType::Registry->account_type_by_name('p2p');
+
+    $p2p_config->available(0);
+    $p2p_config->restricted_countries([]);
+    is $p2p->is_supported($brand, 'id', 'svg'), 0, 'It should return false if p2p is diabled';
+
+    $p2p_config->available(1);
+    $p2p_config->restricted_countries(['id']);
+    is $p2p->is_supported($brand, 'id', 'svg'), 0, 'It should return false if contry is restricted';
+
+    $p2p_config->restricted_countries([]);
+
+    is $p2p->is_supported($brand, 'id', 'svg'), 1, 'It should return true p2p is available for the country';
+};
+
+subtest 'Method is_supported for mt5 and dxtrade' => sub {
+    my $brand = Brands->new();
+
+    my $mt5 = BOM::Config::AccountType::Registry->account_type_by_name('mt5');
+    is $mt5->is_supported($brand, 'my', 'svg'), 0, 'It should return false if country doesnt support mt5';
+    is $mt5->is_supported($brand, 'id', 'svg'), 1, 'It should return true if country supports mt5';
+
+    my $dxtrade = BOM::Config::AccountType::Registry->account_type_by_name('dxtrade');
+    is $dxtrade->is_supported($brand, 'es', 'svg'), 0, 'It should return false if country doesnt support dxtrade';
+    is $dxtrade->is_supported($brand, 'id', 'svg'), 1, 'It should return true if country supports dxtrade';
+};
+
+subtest 'Method is_supported for standard' => sub {
+    my $brand = Brands->new();
+
+    my $standard = BOM::Config::AccountType::Registry->account_type_by_name('standard');
+    is $standard->is_supported($brand, 'my', 'svg'), 0, 'it should return false for restricted country';
+    is $standard->is_supported($brand, 'id', 'svg'), 1, 'it should return true for supported country';
+};
+
+subtest 'Method get_currencies' => sub {
+    my $p2p = BOM::Config::AccountType::Registry->account_type_by_name('p2p');
+    is_deeply $p2p->get_currencies('svg'), ['USD'], 'It should filter based currencies supported by account type';
+
+    my $mt5 = BOM::Config::AccountType::Registry->account_type_by_name('mt5');
+    is_deeply $mt5->get_currencies('svg'), ['AUD', 'EUR', 'GBP', 'USD'], 'It should filter based currencies type supported by account type';
+
+    my @all_currencies = sort keys LandingCompany::Registry->by_name('svg')->legal_allowed_currencies->%*;
+
+    my $crypto_config = Test::MockModule->new('BOM::Config::CurrencyConfig');
+
+    my $standard = BOM::Config::AccountType::Registry->account_type_by_name('standard');
+
+    $crypto_config->mock(is_crypto_currency_suspended => 0);
+    is_deeply $standard->get_currencies('svg'), \@all_currencies, 'it should return all currencies if none of crypto currecies is suspended';
+
+    $crypto_config->mock(is_crypto_currency_suspended => 1);
+    is_deeply $standard->get_currencies('svg'), ['AUD', 'EUR', 'GBP', 'USD'],
+        'it should return only fiat currencies if all of crypto currecies is suspended';
+
+};
+
+subtest 'Method get_details' => sub {
+    my $brand = Brands->new();
+
+    my $p2p = BOM::Config::AccountType::Registry->account_type_by_name('p2p');
+
+    use Data::Dumper;
+
+    is_deeply $p2p->get_details('svg'), {currencies => ['USD']}, 'It should return correct structure for wallet account';
+
+    my $mt5 = BOM::Config::AccountType::Registry->account_type_by_name('mt5');
+
+    cmp_deeply
+        $mt5->get_details('svg'),
+        {
+        linkable_wallet_types          => bag('doughflow', 'paymentagent_client', 'p2p', 'virtual'),
+        allowed_wallet_currencies      => ['AUD', 'EUR', 'GBP', 'USD'],
+        linkable_to_different_currency => 1
+        },
+        'It should return correct structure for trading account';
 };
 
 done_testing;

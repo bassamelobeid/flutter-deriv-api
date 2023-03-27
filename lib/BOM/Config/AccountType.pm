@@ -12,9 +12,11 @@ A class representing a an account type. Each account type belongs to a specific 
 
 =cut
 
-use List::Util qw(any uniq);
+use List::Util   qw(any uniq);
+use Array::Utils qw( intersect );
 use LandingCompany::Registry;
 use BOM::Config;
+use BOM::Config::Runtime;
 
 =head1 METHODS - Accessors
 
@@ -59,22 +61,6 @@ Note: It's created for speeding up service lookups needed within internal method
 =cut
 
 has $services_lookup : reader;
-
-=head2 account_opening
-
-Returns a list of account opening options available (I<demo> and/or I<real>)
-
-=cut
-
-has $account_opening : reader;
-
-=head2 market_types
-
-Returns a list of market types available (I<gaming> and/or I<financial>)
-
-=cut
-
-has $market_types : reader;
 
 =head2 linkable_to_different_currency
 
@@ -132,6 +118,14 @@ Return platform defined at account type level
 =cut
 
 has $type_platform : reader;
+
+=head2 regulations
+
+Return list of supported regulations by account type
+
+=cut
+
+has $regulations : reader;
 
 =head1 METHODS
 
@@ -212,9 +206,7 @@ Takes the following parameters:
 
 =item * C<category> - a L<BOM::config::AccountType::Category> object that represent category
 
-=item * C<account_opening> - a list of account type opetions, I<demo> and/or I<real> (default = ['demo', 'real'])
-
-=item * C<market_types> - a list of supported market types, I<gaming> and/or I<finnacial> 
+=item * C<supported_regulation> - a list of supported regulation by account type, for example: virtual, svg, maltainvest
 
 =item * C<linkable_to_different_currency> - a bool that indicate it is linkable to a wallet with a different currency
 
@@ -240,7 +232,7 @@ BUILD {
     my %args = @_;
 
     $args{$_} //= 0  for (qw/linkable_to_different_currency/);
-    $args{$_} //= [] for (qw/groups linkable_wallet_types currency_types currencies market_types/);
+    $args{$_} //= [] for (qw/groups linkable_wallet_types currency_types currencies supported_regulation/);
     $args{$_} //= {} for (qw/broker_codes currencies_by_landing_company/);
     $args{account_opening} //= [qw/demo real/];
 
@@ -267,9 +259,6 @@ BUILD {
     $services        = [sort { $a cmp $b } uniq map { $_->services->@* } $args{groups}->@*];
     $services_lookup = +{map { $_ => 1 } @$services};
 
-    my @all_real_wallets =
-        grep { $_ ne 'virtual' } keys BOM::Config->account_types->{categories}->{wallet}->{account_types}->%*;
-
     my @linkable_wallet_types = ($args{linkable_wallet_types} // [])->@*;
 
     for my $wallet_type ($args{linkable_wallet_types}->@*) {
@@ -279,7 +268,6 @@ BUILD {
             unless $wallet_type eq 'all'
             || $wallet_config->{account_types}->{$wallet_type};
     }
-    @linkable_wallet_types = @all_real_wallets if any { $_ eq 'all' } $args{linkable_wallet_types}->@*;
 
     $args{linkable_wallet_types} = \@linkable_wallet_types;
 
@@ -304,17 +292,19 @@ BUILD {
         }
     }
 
+    $regulations = +{map { $_ => 1 } $args{regulations}->@*};
+
     (
-        $groups,                         $type_broker_codes,     $account_opening, $market_types,
-        $linkable_to_different_currency, $linkable_wallet_types, $currency_types,  $currencies,
-        $currencies_by_landing_company,  $type_platform,
+        $groups, $type_broker_codes, $linkable_to_different_currency,
+        $linkable_wallet_types, $currency_types, $currencies, $currencies_by_landing_company,
+        $type_platform,
         )
         = @args{
-        qw/groups broker_codes account_opening market_types
+        qw/groups broker_codes
             linkable_to_different_currency linkable_wallet_types currency_types
             currencies currencies_by_landing_company platform/
         };
-};
+}
 
 =head2 get_single_broker_code
 
@@ -342,6 +332,204 @@ method get_single_broker_code ($landing_company) {
     die "Multiple broker codes found in account type $name for $landing_company" if scalar(@$broker_codes) > 1;
 
     return $broker_codes->[0];
+}
+
+=head2 is_regulation_supported
+
+Predicate checks that regulation is supported by account type
+
+=over 4
+
+=item * C<landing_company> the short code of a landing company
+
+=back
+
+
+Returns 1 if regulation is supported, otherwise 0
+
+=cut
+
+method is_regulation_supported ($landing_company) {
+    return $self->regulations->{$landing_company} ? 1 : 0;
+}
+
+=head2 is_supported
+
+Predicate checks that account type for requested country and regulation
+
+=over 4
+
+=item * C<brand> instance of C<Brands> object
+=item * C<country> 2-letter country code
+=item * C<landing_company> the short code of a landing company
+
+=back
+
+
+Returns 1 if regulation is supported, otherwise 0
+
+=cut
+
+method is_supported ($brand, $country, $landing_company) {
+    my $countries = $brand->countries_instance;
+
+    return 0 if $countries->restricted_country($country);
+
+    return 0 unless $self->is_regulation_supported($landing_company);
+
+    my $name = $self->name;
+
+    ### Handlig wallet category ###
+    if ($category->name eq 'wallet') {
+        if ($name eq 'p2p') {
+            my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+            return 0 unless $p2p_config->available;
+
+            return 0 if any { $_ eq $country } $p2p_config->restricted_countries->@*;
+        }
+
+        return 1 if $countries->wallet_company_for_country($country, 'real') eq $landing_company;
+        return 1 if $countries->wallet_company_for_country($country, 'virtual') eq $landing_company;
+
+        return 0;
+    }
+
+    ### Handling trading category ###
+
+    my $config_key = +{
+        mt5     => 'mt',
+        dxtrade => 'dx',
+        derivez => 'derivez',
+    }->{$name};
+    if ($config_key) {
+        my $config = $countries->countries_list->{$country}{$config_key};
+
+        # For some wonderful reason we're using real landing companies for real accounts,
+        # just looking for any offering for the country, if any we support virtual accounts there
+        my $check = $landing_company eq 'virtual' ? sub { shift ne 'none' } : sub { shift eq $landing_company };
+
+        return 0 unless ref $config eq 'HASH';
+
+        MARKET:
+        for my $market (values $config->%*) {
+            next MARKET unless ref $market eq 'HASH';
+
+            TYPE:
+            for my $type (values $market->%*) {
+                next TYPE unless $type;
+
+                if (ref $type eq 'ARRAY') {
+                    return 1 if any { $check->($_) } $type->@*;
+                    next TYPE;
+                }
+
+                return 1 if $check->($type);
+            }
+        }
+
+        return 0;
+    }
+
+    if ($name eq 'standard' || $name eq 'binary') {
+        return 1 if ($countries->virtual_company_for_country($country)   // '') eq $landing_company;
+        return 1 if ($countries->financial_company_for_country($country) // '') eq $landing_company;
+        return 1 if ($countries->gaming_company_for_country($country)    // '') eq $landing_company;
+    }
+
+    return 0;
+}
+
+=head2 get_details
+
+Returns essencial information for account creation with this account type
+
+=over 4
+
+=item * C<landing_company> the short code of a landing company
+
+=item * C<country> the short code of a landing company
+
+=item * C<supported_wallet> Hashref which contains wallet type as a key and any true value as value 
+
+=back
+
+
+Return hash ref with account type specifc response, for trading types: 
+
+=over 4
+
+=item * C<linkable_to_different_currency> boolean flag, 1 - the account type can be link to wallet with different currency, 0 - if currency must be the same
+
+=item * C<linkable_wallet_types> ArrayRef wich contains supported wallet types
+
+=item * C<allowed_wallet_currencies> ArrayRef which contains currency codes of wallet accounts which the trading account can be linked to
+
+=back
+
+for wallet types: 
+
+=over 4
+
+=item * C<currencies> ArrayRef which contains currencies supported by this wallet type
+
+=back
+
+=cut
+
+method get_details ($landing_company) {
+    if ($category->name eq 'trading') {
+        return {
+            linkable_to_different_currency => $self->linkable_to_different_currency,
+            linkable_wallet_types          => $self->linkable_wallet_types,
+            allowed_wallet_currencies      => $self->get_currencies($landing_company),
+        };
+    }
+
+    if ($category->name eq 'wallet') {
+        return {currencies => $self->get_currencies($landing_company)};
+    }
+
+    die 'Unexpected category: ' . $category->name;
+}
+
+=head2 get_currencies
+
+Getter which return list of supported currencies for specific landing company. 
+in case of wallet account it's list of currencies which can be used for account creation. 
+in case of trading account it's a list of wallet currencies to which account can be linked to.
+
+=over 4
+
+=item * C<company> the short code of a landing company
+
+=back
+
+=cut
+
+method get_currencies ($company) {
+
+    my $lc = LandingCompany::Registry->by_name($company);
+
+    my %allowed_currency       = map { $_ => 1 } $self->currencies->@*;
+    my %allowed_currency_types = map { $_ => 1 } $self->currency_types->@*;
+
+    my @currencies;
+    for my $currency (sort keys $lc->legal_allowed_currencies->%*) {
+        # Hide unsupported currencies
+        next if %allowed_currency && !$allowed_currency{$currency};
+
+        my $currency_type = LandingCompany::Registry::get_currency_type($currency);
+
+        # Hide all curencies of unsupported type(fiat/crypto)
+        next if %allowed_currency_types && !$allowed_currency_types{$currency_type};
+
+        # Hide suspended crypto currencies
+        next if $currency_type eq 'crypto' && BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency);
+
+        push @currencies, $currency;
+    }
+
+    return \@currencies;
 }
 
 1;

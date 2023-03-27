@@ -123,4 +123,33 @@ BUILD {
     ($brands, $broker_codes, $account_types, $groups, $platform) = @args{qw/brands broker_codes account_types groups platform/};
 }
 
+=head2 get_account_types_for_regulation
+
+Method return list of supported account types for specifc landing company and country
+
+=over 4
+
+=item * C<landing_company> the short code of a landing company
+
+=item * C<country> 2-letter country code
+
+=item * C<brand> instance of C<Brands> object
+
+=back
+
+=cut 
+
+method get_account_types_for_regulation ($landing_company, $country, $brand) {
+    my @supported_account_types;
+
+    my $account_types = $self->account_types;
+
+    for my $type (values $account_types->%*) {
+        next unless $type->is_supported($brand, $country, $landing_company);
+        push @supported_account_types, $type;
+    }
+
+    return \@supported_account_types;
+}
+
 1;

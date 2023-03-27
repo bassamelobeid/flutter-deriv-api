@@ -46,13 +46,25 @@ categories:
     account_types:
       standard:
         platform: dtrade
-        linkable_wallet_types:
-          - all
+        linkable_wallet_types: &all_wallets_for_trading
+          - virtual
+          - doughflow
+          - crypto
+          - p2p
+          - paymentagent_client
         linkable_to_different_currency: 0
+        regulations:
+          - svg
+          - maltainvest 
+          - virtual
       binary:
         platform: dtrade
-        linkable_wallet_types: []
+        linkable_wallet_types: *all_wallets_for_trading
         linkable_to_different_currency: 0
+        regulations:
+          - svg
+          - maltainvest
+          - virtual
         groups:
           - legacy
           - trader
@@ -64,30 +76,58 @@ categories:
           - affiliate 
       mt5:
         platform: mt5
-        linkable_wallet_types: []
-        linkable_to_different_currency: 0
-        currencies:
-          - USD
-        market_types:
-          - gaming
-          - financial
+        linkable_wallet_types:
+          - virtual
+          - doughflow
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 1
+        regulations:
+          - svg
+          - maltainvest
+          - virtual
+        currency_types:
+          - fiat
+        broker_codes: {}
+
+      derivez:
+        platform: derivez
+        linkable_wallet_types:
+          - virtual
+          - doughflow
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 1
+        regulations:
+          - svg
+          - virtual
+        currency_types:
+          - fiat
         broker_codes: {}
       dxtrade:
         platform: dxtrade
-        linkable_wallet_types: []
-        linkable_to_different_currency: 0
-        currencies:
-          - USD
-        market_types:
-          - gaming
-          - financial
+        linkable_wallet_types:
+          - virtual
+          - doughflow
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 1
+        regulations:
+          - svg
+          - virtual
+        currency_types:
+          - fiat
         broker_codes: {}
   wallet:
     broker_codes:
-      svg: 
+      svg:
         - CRW
       maltainvest:
         - MFW
+      dsl:
+        - CRA
+      virtual:
+        - VRW
     platform: dwallet
     brands:
       - deriv
@@ -95,12 +135,18 @@ categories:
       - wallet
     account_types:
       doughflow:
-        account_opening:
-          - real
         currency_types:
           - fiat
         groups:
           - fiat_cashier
+        regulations:
+          - svg
+          - maltainvest 
+        broker_codes:
+          svg:
+            - CRW
+          maltainvest:
+            - MFW
       crypto:
         account_opening:
           - real
@@ -108,32 +154,42 @@ categories:
           - crypto
         groups:
           - crypto_cashier
+        regulations:
+          - svg 
       p2p:
-        account_opening:
-          - real
+        currencies:
+          - USD
+        regulations:
+          - svg
         groups:
           - p2p
       paymentagent:
         groups:
-          - paymentagent 
+          - paymentagent
+        regulations:
+          - svg
       paymentagent_client:
         account_opening:
           - real
         groups:
           - paymentagent_client
+        regulations:
+          - svg
       affiliate:
         account_opening:
           - real
         groups:
           - affiliate
+        regulations:
+          - dsl
         broker_codes:
           dsl:
             - CRA
       virtual:
-        account_opening:
-          - demo
         currencies:
           - USD
+        regulations:
+          - virtual
         broker_codes:
           virtual:
             - VRW
