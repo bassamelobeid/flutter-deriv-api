@@ -214,6 +214,17 @@ sub add_submarkets {
         }
     }
 
+    foreach
+        my $subgroup (sort { $a->{subgroup}->{display_name} cmp $b->{subgroup}->{display_name} } grep { $_->{subgroup}->{display_name} } @sub_markets)
+    {
+        my $msgid = $self->msg_id($subgroup->{subgroup}->{display_name});
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+    }
+
     return;
 }
 
