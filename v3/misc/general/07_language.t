@@ -26,7 +26,14 @@ is_deeply $res->{residence_list}->[104], {
                 has_visual_sample    => 0,
             },
             onfido => {
-                documents_supported  => {passport => {display_name => 'Passport'}},
+                documents_supported  => {
+                    driving_licence => {
+                        display_name => 'Driving Licence',
+                    },
+                    passport => {
+                        display_name => 'Passport',
+                    },
+                },
                 is_country_supported => 0,
             }}}};
 
@@ -64,6 +71,9 @@ is_deeply $res->{residence_list}->[0],
                     national_identity_card => {
                         display_name => 'National Identity Card',
                     },
+                    visa => {
+                        display_name => 'Visa',
+                    },
                 },
                 is_country_supported => 1,
             }}}};
@@ -81,13 +91,19 @@ is_deeply $res->{residence_list}->[104], {
         services => {
             idv => {
                 documents_supported => {
-
                 },
                 is_country_supported => 0,
                 has_visual_sample    => 0,
             },
             onfido => {
-                documents_supported  => {passport => {display_name => 'Passport'}},
+                documents_supported  => {
+                    driving_licence => {
+                        display_name => 'Driving Licence',
+                    },
+                    passport => {
+                        display_name => 'Passport',
+                    },
+                },
                 is_country_supported => 0,
             }}}};
 
