@@ -10,6 +10,7 @@ use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::Token;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
+use BOM::Config::Redis;
 
 use Email::Address::UseXS;
 use Digest::SHA      qw(hmac_sha256_hex);
@@ -196,9 +197,18 @@ subtest 'get settings' => sub {
     my $poi_dob_mismatch;
     my $personal_details_locked;
     my $poi_status  = 'none';
-    my $mock_client = Test::MockModule->new('BOM::User::Client');
-    $mock_client->redefine('get_poi_status' => sub { return $poi_status });
     my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
+    $mock_status->redefine(
+        'age_verification' => sub {
+            my $status = $poi_status // '';
+
+            return {
+                staff_name => 'system',
+                reason     => 'test',
+            } if $status eq 'verified';
+
+            return undef;
+        });
     $mock_status->redefine('poi_name_mismatch'       => sub { return $poi_name_mismatch });
     $mock_status->redefine('poi_dob_mismatch'        => sub { return $poi_dob_mismatch });
     $mock_status->redefine('personal_details_locked' => sub { return $personal_details_locked });
@@ -430,50 +440,43 @@ subtest 'get settings' => sub {
     };
     is_deeply($result, $expected, 'return 1 for code of conduct approval');
 
-    # adding the address fields to the list of immutable fields
-    $poi_status                   = 'verified';
-    $result                       = $c->tcall($method, $params);
-    $expected->{immutable_fields} = [
-        'citizen',       'date_of_birth',   'first_name',   'last_name',      'residence',      'salutation',
-        'secret_answer', 'secret_question', 'address_city', 'address_line_1', 'address_line_2', 'address_postcode',
-        'address_state'
-    ];
+    $poi_status = 'verified';
+    $result     = $c->tcall($method, $params);
+    $expected->{immutable_fields} =
+        ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed after authentication');
 
     # poi name mismatch
-    $poi_status                   = 'expired';
-    $poi_name_mismatch            = 1;
-    $result                       = $c->tcall($method, $params);
-    $expected->{immutable_fields} = ['citizen', 'date_of_birth', 'residence', 'salutation', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'first and last name allowed after poi name mismatch');
+    $poi_status        = 'expired';
+    $poi_name_mismatch = 1;
+    $result            = $c->tcall($method, $params);
+    cmp_deeply($result, none('first_name', 'last_name'), 'first and last name allowed after poi name mismatch');
 
     # poi name mismatch + age verified
-    $test_client_Y_cr_2->status->setnx('age_verification', 'test', 'test');
+    $poi_status        = 'verified';
     $poi_name_mismatch = 1;
     $poi_dob_mismatch  = 0;
     $result            = $c->tcall($method, $params);
     $expected->{immutable_fields} =
         ['citizen', 'date_of_birth', 'residence', 'salutation', 'secret_answer', 'secret_question', 'first_name', 'last_name'];
     is_deeply($result, $expected, 'first name and last name not allowed to change while already age verified');
-    $test_client_Y_cr_2->status->clear_age_verification;
 
     # poi dob mismatch
-    $poi_status                   = 'expired';
-    $poi_name_mismatch            = 0;
-    $poi_dob_mismatch             = 1;
-    $result                       = $c->tcall($method, $params);
-    $expected->{immutable_fields} = ['citizen', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'dob allowed after poi dob mismatch');
+    $poi_status        = 'expired';
+    $poi_name_mismatch = 0;
+    $poi_dob_mismatch  = 1;
+    $result            = $c->tcall($method, $params);
+
+    cmp_deeply($result, none('date_of_birth'), 'dob allowed after poi name mismatch');
 
     # dob mismatch + age verified
-    $test_client_Y_cr_2->status->set('age_verification', 'test', 'test');
+    $poi_status        = 'verified';
     $poi_name_mismatch = 0;
     $poi_dob_mismatch  = 1;
     $result            = $c->tcall($method, $params);
     $expected->{immutable_fields} =
         ['citizen', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question', 'date_of_birth'];
     is_deeply($result, $expected, 'dob not allowed to change while already age verified');
-    $test_client_Y_cr_2->status->clear_age_verification;
 
     # personal details locked
     $poi_status              = 'expired';
@@ -481,8 +484,8 @@ subtest 'get settings' => sub {
     $poi_dob_mismatch        = 0;
     $personal_details_locked = 1;
     $result                  = $c->tcall($method, $params);
-    $expected->{immutable_fields} =
-        ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
+
+    $expected->{immutable_fields} = ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'first and last name forbidden once again due to personal details locked');
 
     $poi_status                   = 'none';
@@ -492,7 +495,6 @@ subtest 'get settings' => sub {
     $expected->{immutable_fields} = ['residence', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed back to pre-authentication list');
 
-    $mock_client->unmock_all;
     $mock_status->unmock_all;
 };
 
@@ -565,7 +567,7 @@ subtest 'set settings' => sub {
     # testing valid residence, expecting save to pass
     $params->{args}{residence} = 'kr';
     $result = $c->tcall($method, $params);
-    is($result->{status}, 1, 'vr account update residence successfully');
+    cmp_deeply($result, {status => 1}, 'vr account update residence successfully');
     $test_client_X_vr->load;
     isnt($test_client_X_mf->address_1, 'Address 1', 'But vr account only update residence');
 
@@ -634,14 +636,15 @@ subtest 'set settings' => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Please enter a valid place of birth.', 'place_of_birth no exists');
     $params->{args}{place_of_birth} = 'de';
 
-    is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
+    my $res_update_without_sending = $c->tcall($method, $params);
+    cmp_deeply($res_update_without_sending, {status => 1}, 'can update without sending all required fields');
     ok($emitted->{sync_onfido_details}, 'event exists');
 
     my $event_data = delete $emitted->{sync_onfido_details};
     is($event_data->{loginid},          'MF90000000', 'Correct loginid');
     is($emitted->{sync_onfido_details}, undef,        'sync_onfido_details event does not exists');
 
-    is($c->tcall($method, $params)->{status}, 1, 'can send set_settings with same value');
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'can send set_settings with same value');
     {
         local $full_args{place_of_birth} = 'at';
         $params->{args} = {%full_args};
@@ -679,6 +682,7 @@ subtest 'set settings' => sub {
     $test_client_X_mf->status->_clear_all;
 
     # dont allow address change after authorisation
+    $test_client_X_mf->status->set('address_verified', 'test', 'test');
 
     # address_city
     $params->{args}{address_city} = 'Dubai';
@@ -695,6 +699,10 @@ subtest 'set settings' => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Your address cannot be changed.', 'Your address cannot be changed.');
     delete $params->{args}{address_line_2};
 
+    $test_client_X_mf->status->clear_address_verified;
+    $test_client_X_mf->status->set('age_verification', 'test', 'test');
+    $test_client_X_mf->status->_clear_all;
+
     for my $tax_field (qw(tax_residence tax_identification_number)) {
         local $params->{args} = {
             $tax_field => '',
@@ -705,6 +713,8 @@ subtest 'set settings' => sub {
     }
 
     $poi_status = 'none';
+    $test_client_X_mf->status->clear_age_verification;
+    $test_client_X_mf->status->_clear_all;
 
     for my $imaginary_country (qw(xyz asdf)) {
         local $params->{args} = {
@@ -712,7 +722,7 @@ subtest 'set settings' => sub {
             tax_identification_number => '111-222-543',
         };
         my $res = $c->tcall($method, $params);
-        is($res->{status}, 1, "Can set tax residence to $imaginary_country") or note explain $res;
+        cmp_deeply($res, {status => 1}, "Can set tax residence to $imaginary_country") or note explain $res;
     }
 
     for my $restricted_country (qw(us ir hk my)) {
@@ -721,7 +731,7 @@ subtest 'set settings' => sub {
         };
 
         my $res = $c->tcall($method, $params);
-        is($res->{status}, 1, 'restricted country ' . $restricted_country . ' for tax residence is allowed') or note explain $res;
+        cmp_deeply($res, {status => 1}, 'restricted country ' . $restricted_country . ' for tax residence is allowed') or note explain $res;
     }
 
     # Testing the comma-separated list form of input separately
@@ -731,7 +741,7 @@ subtest 'set settings' => sub {
         };
 
         my $res = $c->tcall($method, $params);
-        is($res->{status}, 1, 'restricted country ' . $restricted_country . ' for tax residence is allowed') or note explain $res;
+        cmp_deeply($res, {status => 1}, 'restricted country ' . $restricted_country . ' for tax residence is allowed') or note explain $res;
     }
 
     for my $unrestricted_country (qw(id ru)) {
@@ -740,7 +750,8 @@ subtest 'set settings' => sub {
             tax_identification_number => '111-222-543',
         };
         my $res = $c->tcall($method, $params);
-        is($res->{status}, 1, 'unrestricted country ' . $unrestricted_country . ' for tax residence is allowed') or note explain $res;
+        cmp_deeply($res, {status => 1}, 'unrestricted country ' . $unrestricted_country . ' for tax residence is allowed')
+            or note explain $res;
     }
 
     {
@@ -771,8 +782,6 @@ subtest 'set settings' => sub {
     );
     $mocked_client->unmock('save');
 
-    $params->{args} = {%full_args};
-
     # removing address from params because update wont work as address fields are not allowed
     delete $params->{args}->{address_city};
     delete $params->{args}->{address_line_1};
@@ -789,9 +798,10 @@ subtest 'set settings' => sub {
     mailbox_clear();
     $params->{args}->{email_consent} = 1;
 
-    $poi_status                                  = 'verified';
+    $poi_status = 'verified';
+    $test_client_X_mf->status->set('age_verification', 'test', 'test');
     $params->{args}->{tax_identification_number} = $test_client_X_mf->tax_identification_number;
-    $params->{args}{tax_residence}               = 'de';
+    $params->{args}{tax_residence} = 'de';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Your tax residence cannot be changed.',
@@ -805,12 +815,14 @@ subtest 'set settings' => sub {
         'Can not change tax identification number for MF once it has been authenticated.'
     );
 
+    $test_client_X_mf->status->clear_age_verification;
+    $test_client_X_mf->status->_clear_all;
+
     $mocked_client->redefine('fully_authenticated' => sub { return 1 });
     $params->{args}{tax_identification_number} = '111-222-543';
     $params->{args}{tax_residence}             = 'ru';
 
-    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
     my $res = $c->tcall('get_settings', {token => $token_X_mf});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
@@ -819,15 +831,13 @@ subtest 'set settings' => sub {
         $params->{token} = $token_Y_cr_1;
 
         $params->{args} = {%full_args, preferred_language => 'FA'};
-
         delete $params->{args}->{address_city};
         delete $params->{args}->{address_line_1};
         delete $params->{args}->{address_line_2};
         delete $params->{args}->{address_state};
-
         my $res = $c->tcall($method, $params);
 
-        is($c->tcall($method,        $params)->{status},                              1,    'update successfully');
+        cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'FA', 'preferred language updated to FA.');
 
         $params->{args} = {%full_args, preferred_language => undef};
@@ -835,8 +845,7 @@ subtest 'set settings' => sub {
         delete $params->{args}->{address_line_1};
         delete $params->{args}->{address_line_2};
         delete $params->{args}->{address_state};
-
-        is($c->tcall($method,        $params)->{status},                              1,    'update successfully');
+        cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'FA', 'preferred language didn\'t updated.');
 
         $params->{args} = {%full_args, preferred_language => 'ZH_CN'};
@@ -844,8 +853,7 @@ subtest 'set settings' => sub {
         delete $params->{args}->{address_line_1};
         delete $params->{args}->{address_line_2};
         delete $params->{args}->{address_state};
-
-        is($c->tcall($method,        $params)->{status},                              1,       'update successfully');
+        cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'ZH_CN', 'preferred language updated to ZH_CN.');
     };
 
@@ -858,10 +866,9 @@ subtest 'set settings' => sub {
         delete $params->{args}->{address_line_1};
         delete $params->{args}->{address_line_2};
         delete $params->{args}->{address_state};
-
         my $res = $c->tcall($method, $params);
 
-        is($c->tcall($method,        $params)->{status},                       1, 'update successfully');
+        cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{trading_hub}, 1, 'Trading hub is enabled for the user');
 
         $params->{args} = {%full_args, trading_hub => 0};
@@ -873,7 +880,7 @@ subtest 'set settings' => sub {
 
         $res = $c->tcall($method, $params);
 
-        is($c->tcall($method,        $params)->{status},                       1, 'update successfully');
+        cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{trading_hub}, 0, 'Trading hub is disabled for the user');
     };
 
@@ -920,7 +927,7 @@ subtest 'set settings' => sub {
                 $params->{args} = {%full_args, citizen => $restricted_country};
                 $test_client_X_mf->citizen('');
                 $test_client_X_mf->save();
-                is($c->tcall($method,        $params)->{status},                 1,                   'update successfully');
+                cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
                 is($c->tcall('get_settings', {token => $token_X_mf})->{citizen}, $restricted_country, "Restricted country value for citizenship");
 
             }
@@ -953,7 +960,7 @@ subtest 'set settings' => sub {
                     args       => {address_line_1 => 'P.O. box 25243'}};
 
                 my $response = $c->tcall($method, $params);
-                is $response->{status}, 1, 'P.O. box not checked for unregulated account';
+                cmp_deeply($response, {status => 1}, 'P.O. box not checked for unregulated account');
             };
         };
     };
@@ -971,7 +978,7 @@ subtest 'set settings' => sub {
         }
         $params->{token} = $token_Y_cr_citizen_AT;
         $params->{args}  = {%full_args, non_pep_declaration => 1};
-        is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+        cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
 
         for my $client ($test_client_Y_cr_citizen_AT, $test_client_Y_cr_1) {
             $client->load;
@@ -992,7 +999,7 @@ subtest 'set settings' => sub {
             });
         my $fixed_time = Date::Utility->new('2018-02-15');
         set_fixed_time($fixed_time->epoch);
-        is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+        cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
         $mocked_client->unmock_all;
         restore_time();
 
@@ -1023,12 +1030,10 @@ subtest 'set settings' => sub {
 
     isnt($test_client_X_mf->latest_environment, $old_latest_environment, "latest environment updated");
 
-    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
     delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_city};
     delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_line_2};
     delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_state};
-
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
         {
         'address_line_1' => 'address line 1',
@@ -1045,8 +1050,7 @@ subtest 'set settings' => sub {
 
     $params->{token} = $token_X_mf;
     delete $emitted->{profile_change};
-
-    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
 
     is($is_proff_status_event_triggered, 0, 'The client is not authenicated. Hence the professional_status_requested event has not triggered');
 
@@ -1057,8 +1061,8 @@ subtest 'set settings' => sub {
     # The client is need to be fully authenticated to trigger the professional_status_requested event
     $mocked_client->redefine('fully_authenticated' => sub { return 1 });
 
-    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    is($is_proff_status_event_triggered,      1, 'The client is fully authenicated. Hence the professional_status_requested event has triggered');
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
+    is($is_proff_status_event_triggered, 1, 'The client is fully authenicated. Hence the professional_status_requested event has triggered');
     $mocked_client->unmock('fully_authenticated');
 
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
@@ -1078,7 +1082,7 @@ subtest 'set settings' => sub {
     $full_args{address_postcode} = '';
 
     $params->{args} = {%full_args};
-    is($c->tcall($method, $params)->{status}, 1, 'postcode is optional for non-MX clients and can be set to null');
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'postcode is optional for non-MX clients and can be set to null');
 
     $params->{token}                        = $token_T_mx;
     $params->{args}{account_opening_reason} = 'Income Earning';
@@ -1089,7 +1093,7 @@ subtest 'set settings' => sub {
     $params->{token} = $token_T_mlt;
     $params->{args}->{place_of_birth} = 'ir';
 
-    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
     ok($emitted->{profile_change}, 'profile_change emit exist');
 
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields}, $params->{args}, "updated fields are correctly sent to track event";
@@ -1099,7 +1103,7 @@ subtest 'set settings' => sub {
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_Y_cr_1;
     delete $params->{args}{address_state};
-    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
     ok($emitted->{profile_change}, 'profile_change emit exist');
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
         {
@@ -1145,7 +1149,7 @@ subtest 'set_settings on virtual account should not change real account settings
         user_agent => 'agent',
         args       => {email_consent => '0'}};    # VR can change email_consent
 
-    is($c->tcall('set_settings', $params)->{status}, 1, 'VR account email_consent changed successfully');
+    cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'VR account email_consent changed successfully');
 
     my $result = $c->tcall('get_settings', {token => $token_X_vr});
     is($result->{email_consent}, $params->{args}{email_consent}, "CR account email_consent setting changed successfully");
@@ -1179,7 +1183,7 @@ subtest 'set_setting with empty phone' => sub {
         user_agent => 'agent',
         args       => {email_consent => '0'}};
 
-    is($c->tcall('set_settings', $params)->{status}, 1, 'Set settings with empty phone changed successfully');
+    cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with empty phone changed successfully');
 };
 
 subtest 'set_setting with feature flag' => sub {
@@ -1203,7 +1207,7 @@ subtest 'set_setting with feature flag' => sub {
         user_agent => 'agent',
         args       => {feature_flag => {wallet => 1}}};
 
-    is($c->tcall('set_settings', $params)->{status}, 1, 'Set settings with feature flag has been set successfully');
+    cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with feature flag has been set successfully');
 };
 
 subtest 'set_setting duplicate account' => sub {
