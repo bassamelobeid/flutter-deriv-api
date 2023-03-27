@@ -478,7 +478,7 @@ sub status_op_processor {
 
                 if (scalar $updated_client_loginids->@*) {
                     $summary .=
-                        "<div class='notify'><b>SUCCESS :</b><&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b></div>";
+                        "<div class='notify'><b>SUCCESS :&nbsp;&nbsp;</b><b>$status</b>&nbsp;&nbsp;has been removed from siblings :<b>$siblings</b></div>";
                 }
             } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
                 $status = $status_map->{$status}       ? $status_map->{$status}           : $status;
