@@ -11,6 +11,7 @@ use Test::Fatal;
 use Test::Warn;
 use Test::MockModule;
 use Test::Warnings;
+use Test::Deep;
 
 use BOM::User;
 use BOM::User::Client;
@@ -22,6 +23,8 @@ use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Config;
+use BOM::Test::Helper::FinancialAssessment;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 my $on_production = 1;
 my $config_mocked = Test::MockModule->new('BOM::Config');
@@ -645,8 +648,11 @@ subtest 'create account' => sub {
             details     => \%t_details,
         });
         my ($real_client, $user) = @{$real_acc}{'client', 'user'};
-        $real_client->status->set('allow_poi_resubmission', 'system', 'hello world');
-        $real_client->status->set('allow_poa_resubmission', 'system', 'it is over 9000');
+        $real_client->status->set('allow_poi_resubmission',  'system', 'hello world');
+        $real_client->status->set('allow_poa_resubmission',  'system', 'it is over 9000');
+        $real_client->status->set('poi_name_mismatch',       'system', 'bad name');
+        $real_client->status->set('poi_dob_mismatch',        'system', 'bad dob');
+        $real_client->status->set('financial_risk_approval', 'system', 'Client accepted financial risk disclosure');
 
         my $real_acc_new = BOM::Platform::Account::Real::default::create_account({
             from_client => $vr_client,
@@ -657,11 +663,87 @@ subtest 'create account' => sub {
 
         ok $real_client_new->status->allow_poi_resubmission, "allow_poi_resubmission status copied to new real client upon creation";
         ok $real_client_new->status->allow_poa_resubmission, "allow_poa_resubmission status is copied to new real client upon creation";
+        ok $real_client_new->status->poi_name_mismatch,      "poi_name_mismatch status is copied to new real client upon creation";
+        ok $real_client_new->status->poi_dob_mismatch,       "poi_dob_mismatch status is copied to new real client upon creation";
 
         is $real_client_new->status->reason('allow_poi_resubmission'), 'hello world',
             "allow_poi_resubmission reason should not have the copied from part";
         is $real_client_new->status->reason('allow_poa_resubmission'), 'it is over 9000',
             "allow_poa_resubmission reason should not have the copied from part";
+        is $real_client_new->status->reason('poi_name_mismatch'), 'bad name', "poi_name_mismatch reason should not have the copied from part";
+        is $real_client_new->status->reason('poi_dob_mismatch'),  'bad dob',  "poi_dob_mismatch reason should not have the copied from part";
+        ok !$real_client_new->status->financial_risk_approval, "financial_risk_approval not copied";
+
+        my $client_vr_new = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+        $user->add_client($client_vr_new);
+
+        ok !$client_vr_new->status->allow_poi_resubmission, 'allow_poi_resubmission status must not set or copied for virtual accounts';
+        ok !$client_vr_new->status->allow_poa_resubmission, 'allow_poa_resubmission status must not set or copied for virtual accounts';
+    };
+
+    subtest 'sync status from duplicated siblings' => sub {
+        my ($vr_client, $user);
+
+        lives_ok {
+            my $vr_acc = create_vr_acc({
+                email     => 'supertest+du@binary.com',
+                password  => 'okcomputer',
+                residence => 'br',
+            });
+            ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+        }
+        'create VR acc';
+
+        my $real_acc = BOM::Platform::Account::Real::default::create_account({
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+        });
+
+        my ($real_client) = @{$real_acc}{'client'};
+        $real_client->status->set('allow_poi_resubmission',  'system', 'hello world');
+        $real_client->status->set('allow_poa_resubmission',  'system', 'it is over 9000');
+        $real_client->status->set('poi_name_mismatch',       'system', 'bad name');
+        $real_client->status->set('poi_dob_mismatch',        'system', 'bad dob');
+        $real_client->status->set('duplicate_account',       'system', 'Duplicate account - currency change');
+        $real_client->status->set('financial_risk_approval', 'system', 'Client accepted financial risk disclosure');
+
+        my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+        $real_client->financial_assessment({
+            data => encode_json_utf8($data),
+        });
+        $real_client->save();
+
+        my $real_acc_new = BOM::Platform::Account::Real::default::create_account({
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+        });
+        my $real_client_new = @{$real_acc_new}{'client'};
+
+        ok $real_client_new->status->allow_poi_resubmission,  "allow_poi_resubmission status copied to new real client upon creation";
+        ok $real_client_new->status->allow_poa_resubmission,  "allow_poa_resubmission status is copied to new real client upon creation";
+        ok $real_client_new->status->poi_name_mismatch,       "poi_name_mismatch status is copied to new real client upon creation";
+        ok $real_client_new->status->poi_dob_mismatch,        "poi_dob_mismatch status is copied to new real client upon creation";
+        ok $real_client_new->status->financial_risk_approval, "financial_risk_approval status is copied to new real client upon creation";
+
+        ok $real_client_new->is_financial_assessment_complete, 'Financial assessment completed';
+
+        my $fa = $real_client_new->financial_assessment();
+        $fa = decode_fa($fa);
+
+        cmp_deeply $data, $fa, 'Copied the FA from dup client';
+
+        is $real_client_new->status->reason('allow_poi_resubmission'), 'hello world',
+            "allow_poi_resubmission reason should not have the copied from part";
+        is $real_client_new->status->reason('allow_poa_resubmission'), 'it is over 9000',
+            "allow_poa_resubmission reason should not have the copied from part";
+        is $real_client_new->status->reason('poi_name_mismatch'), 'bad name', "poi_name_mismatch reason should not have the copied from part";
+        is $real_client_new->status->reason('poi_dob_mismatch'),  'bad dob',  "poi_dob_mismatch reason should not have the copied from part";
+        is $real_client_new->status->reason('financial_risk_approval'), 'Client accepted financial risk disclosure',
+            "financial_risk_approval reason should not have the copied from part";
 
         my $client_vr_new = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code  => 'VRTC',

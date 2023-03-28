@@ -35,9 +35,9 @@ sub create_account {
     # after_register_client sub save client so no need to call it here
     $client->status->set('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     if ($accept_risk) {
-        $client->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+        $client->status->setnx('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
     } elsif (not $should_warn) {
-        $client->status->set('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
+        $client->status->setnx('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
     }
 
     return $register;
