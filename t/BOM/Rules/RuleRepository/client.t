@@ -6,11 +6,17 @@ use Test::Fatal;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::Client;
 use BOM::Rules::Engine;
+use BOM::User::Client;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
+});
+my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
 });
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -22,6 +28,7 @@ my $user = BOM::User->create(
 );
 $user->add_client($client);
 $user->add_client($client_vr);
+$user->add_client($client_mf);
 
 subtest 'rule profile.address_postcode_mandatory' => sub {
     my $rule_name   = 'profile.address_postcode_mandatory';
@@ -134,8 +141,9 @@ subtest 'rule client.residence_is_not_empty' => sub {
 };
 
 subtest 'rule client.signup_immitable_fields_not_changed' => sub {
-    my $rule_name   = 'client.signup_immitable_fields_not_changed';
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    my $rule_name      = 'client.signup_immitable_fields_not_changed';
+    my $rule_engine    = BOM::Rules::Engine->new(client => $client);
+    my $rule_engine_vr = BOM::Rules::Engine->new(client => $client_vr);
 
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
     my %args = (loginid => $client->loginid);
@@ -143,9 +151,19 @@ subtest 'rule client.signup_immitable_fields_not_changed' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule applies with no fields.';
 
     for my $field (qw/citizen place_of_birth residence/) {
-        $client->$field('');
+        $args{loginid} = $client->loginid;
+        $client->status->clear_duplicate_account;
+        $client->status->_build_all;
+        $client->$field('asdf');
         $client->save;
-        lives_ok { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') } "Rule applies if client's $field is empty.";
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') },
+            {
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]},
+            rule       => $rule_name
+            },
+            "Rule fails when empty immutable field $field is different";
 
         $client->$field('af');
         $client->save;
@@ -155,9 +173,68 @@ subtest 'rule client.signup_immitable_fields_not_changed' => sub {
             details    => {changed => [$field]},
             rule       => $rule_name
             },
-            "Rule fails when non-empty immutalbe fiel $field is different";
+            "Rule fails when non-empty immutable field $field is different";
+
+        $args{loginid} = $client_vr->loginid;
+
+        lives_ok { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') } "Virtual is ok.";
+
+        $client->status->setnx('duplicate_account', 'test', 'Duplicate account - currency change');
+
+        is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') },
+            {
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]},
+            rule       => $rule_name
+            },
+            "Rule fails when non-empty immutable field $field is different for a vr with duplicated sibling";
+
+        $client->status->upsert('duplicate_account', 'test', 'any reason');
+
+        is exception { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') }, undef,
+            "Rule does not fail when non-empty immutable field $field is different for a vr without duplicated sibling";
     }
 
+    for my $field (BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*) {
+        $args{loginid} = $client->loginid;
+        $client_mf->status->clear_duplicate_account;
+        $client_mf->status->_build_all;
+        $client_mf->db->dbic->run(
+            fixup => sub {
+                $_->do('DELETE FROM betonmarkets.financial_assessment WHERE client_loginid = ?', undef, $client_mf->loginid);
+            });
+        $client_mf->save;
+
+        lives_ok { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') }
+        "Rule passes when account is not duplicated";
+
+        my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+        $client_mf->financial_assessment({
+            data => encode_json_utf8($data),
+        });
+        $client_mf->save;
+        lives_ok { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') }
+        "Rule passes when account is not dup even if there is a change in the $field";
+
+        $args{loginid} = $client_vr->loginid;
+
+        lives_ok { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') } "Virtual is ok.";
+
+        $client_mf->status->setnx('duplicate_account', 'test', 'Duplicate account - currency change');
+
+        is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') },
+            {
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]},
+            rule       => $rule_name
+            },
+            "Rule fails when non-empty immutable field $field is different for a vr with duplicated sibling";
+
+        $client_mf->status->upsert('duplicate_account', 'test', 'any reason');
+
+        is exception { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') }, undef,
+            "Rule does not fail when non-empty immutable field $field is different for a vr without duplicated sibling";
+    }
 };
 
 subtest 'rule client.is_not_virtual' => sub {

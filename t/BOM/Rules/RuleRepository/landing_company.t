@@ -12,13 +12,22 @@ use BOM::Rules::Engine;
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
 my $user = BOM::User->create(
     email    => 'rules_lc@test.deriv',
     password => 'TEST PASS',
 );
 $user->add_client($client);
+$user->add_client($client_vr);
+$client->user($user);
+$client_vr->user($user);
+$client->save;
+$client_vr->save;
 
-my $rule_engine = BOM::Rules::Engine->new(client => $client);
+my $rule_engine    = BOM::Rules::Engine->new(client => $client);
+my $rule_engine_vr = BOM::Rules::Engine->new(client => $client_vr);
 
 subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     my $rule_name = 'landing_company.accounts_limit_not_reached';
@@ -100,6 +109,79 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
         },
         'Error with missing client data';
 
+    is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %args, loginid => $client_vr->loginid) },
+        {
+        error_code => 'InsufficientAccountDetails',
+        details    => {missing => [qw(first_name last_name)]},
+        rule       => $rule_name
+        },
+        'Error with missing client data (vr)';
+
+    %args = (
+        loginid => $client_vr->loginid,
+    );
+
+    my $client_mock = Test::MockModule->new(ref($client_vr));
+    my $names       = {
+        $client_vr->{loginid} => {
+            first_name => undef,
+            last_name  => undef,
+        },
+        $client->{loginid} => {
+            first_name => undef,
+            last_name  => undef,
+        },
+    };
+
+    $client_mock->mock(
+        'duplicate_sibling_from_vr',
+        sub {
+            return $client;
+        });
+
+    $client_mock->mock(
+        'first_name',
+        sub {
+            my ($self) = @_;
+
+            return $names->{$self->loginid}->{first_name};
+        });
+
+    $client_mock->mock(
+        'last_name',
+        sub {
+            my ($self) = @_;
+
+            return $names->{$self->loginid}->{last_name};
+        });
+
+    %args = (
+        loginid => $client_vr->loginid,
+    );
+
+    is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %args) },
+        {
+        error_code => 'InsufficientAccountDetails',
+        details    => {missing => [qw(first_name last_name)]},
+        rule       => $rule_name
+        },
+        'Error with missing client data (vr)';
+
+    $client->status->setnx('duplicate_account', 'test', 'test');
+
+    $names = {
+        $client_vr->{loginid} => {
+            first_name => undef,
+            last_name  => undef,
+        },
+        $client->{loginid} => {
+            first_name => 'BRAD',
+            last_name  => 'PITT',
+        },
+    };
+
+    lives_ok { $rule_engine_vr->apply_rules($rule_name, %args) } 'Test passes when client has the data';
+
     %args = (
         loginid    => $client->loginid,
         first_name => 'Master',
@@ -121,6 +203,7 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes when client has the data';
 
     $mock_lc->unmock_all;
+    $client_mock->unmock_all;
 };
 
 subtest 'rule landing_company.currency_is_allowed' => sub {

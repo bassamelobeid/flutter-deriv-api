@@ -55,6 +55,9 @@ rule 'landing_company.required_fields_are_non_empty' => {
 
         my $client          = $context->get_real_sibling($args);
         my $landing_company = $context->landing_company_object($args);
+        my $duplicated      = $client->duplicate_sibling_from_vr;
+
+        $client = $duplicated if $duplicated;
 
         my @required_fields = ($landing_company->requirements->{signup} // [])->@*;
 

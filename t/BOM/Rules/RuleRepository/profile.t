@@ -14,12 +14,18 @@ use BOM::Rules::Engine;
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
 my $user = BOM::User->create(
     email    => 'rules_profile@test.deriv',
     password => 'TEST PASS',
 );
 $user->add_client($client_cr);
-my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+$user->add_client($client_vr);
+
+my $rule_engine    = BOM::Rules::Engine->new(client => $client_cr);
+my $rule_engine_vr = BOM::Rules::Engine->new(client => $client_vr);
 
 subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
     my $rule_name = 'profile.date_of_birth_complies_minimum_age';
@@ -27,9 +33,14 @@ subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
     my $mock_countries = Test::MockModule->new('Brands::Countries');
     $mock_countries->redefine(minimum_age_for_country => sub { return $minimum_age });
 
+    my $args = {residence => 'af'};
+
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Either residence or loginid is required/, 'Rersidence is required';
 
-    my $args = {residence => 'af'};
+    like exception { $rule_engine->apply_rules($rule_name, %$args) }, qr/Client loginid is missing/, 'Loginid is required';
+
+    $args->{loginid} = $client_cr->loginid;
+
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
         error_code => 'InvalidDateOfBirth',
@@ -69,27 +80,78 @@ subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
         },
         'correct error when client is younger than minimum age';
 
+    $client_cr->status->setnx('duplicate_account', 'test', 'Duplicate account - currency change');
+
+    delete $args->{date_of_birth};
+    $args->{loginid} = $client_vr->loginid;
+
+    lives_ok { $rule_engine_vr->apply_rules($rule_name, %$args) }
+    'No error with valid args';
+
+    $client_cr->date_of_birth(Date::Utility->new(time)->minus_time_interval('10y')->plus_time_interval('1d')->date_yyyymmdd);
+    $client_cr->save;
+
+    is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'BelowMinimumAge',
+        rule       => $rule_name
+        },
+        'correct error when client is younger than minimum age (vr dup)';
+
+    $args->{date_of_birth} = Date::Utility->new(time)->minus_time_interval('10y')->minus_time_interval('1d')->date_yyyymmdd;
+
+    lives_ok { $rule_engine_vr->apply_rules($rule_name, %$args) } 'rule apples if date of birth matches the allowed minimum age (dup vr)';
+
+    $client_cr->status->clear_duplicate_account;
+    $client_cr->status->_build_all;
     $mock_countries->unmock_all;
 };
 
 subtest 'rule profile.both_secret_question_and_answer_required' => sub {
     my $rule_name = 'profile.both_secret_question_and_answer_required';
 
-    lives_ok { $rule_engine->apply_rules($rule_name) } 'rule apples with empty args.';
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Loginid is required';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name, secret_answer => 'dummy') },
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) } 'rule apples with empty args.';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, secret_answer => 'dummy') },
         {
         error_code => 'NeedBothSecret',
         rule       => $rule_name
         },
         'Secret answer without question will fail.';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name, secret_question => 'dummy') },
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, secret_question => 'dummy') },
         {
         error_code => 'NeedBothSecret',
         rule       => $rule_name
         },
         'Secret question without answer will fail.';
+
+    is_deeply exception { $rule_engine_vr->apply_rules($rule_name, loginid => $client_vr->loginid, secret_answer => 'dummy') },
+        {
+        error_code => 'NeedBothSecret',
+        rule       => $rule_name
+        },
+        'Secret answer without question will fail.';
+
+    is_deeply exception { $rule_engine_vr->apply_rules($rule_name, loginid => $client_vr->loginid, secret_question => 'dummy') },
+        {
+        error_code => 'NeedBothSecret',
+        rule       => $rule_name
+        },
+        'Secret answer without answer will fail.';
+
+    $client_cr->status->setnx('duplicate_account', 'test', 'Duplicate account - currency change');
+
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, secret_question => 'dummy', secret_answer => 'dummy') }
+    'rule apples with both values (from dup).';
+
+    lives_ok { $rule_engine_vr->apply_rules($rule_name, loginid => $client_vr->loginid, secret_question => 'dummy', secret_question => 'dummy') }
+    'rule apples with both values (from dup).';
+
+    $client_cr->status->clear_duplicate_account;
+    $client_cr->status->_build_all;
 };
 
 subtest 'rule profile.valid_profile_countries' => sub {

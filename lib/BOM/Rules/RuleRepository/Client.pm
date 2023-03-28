@@ -16,6 +16,10 @@ use warnings;
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
+use List::MoreUtils qw(uniq);
+use BOM::User::Client;
+use List::Util qw(any);
+use BOM::User::FinancialAssessment;
 
 rule 'client.check_duplicate_account' => {
     description => "Performs a duplicate check on the target client and the action args",
@@ -63,13 +67,42 @@ rule 'client.signup_immitable_fields_not_changed' => {
 
         my $client = $context->get_real_sibling($args);
 
-        return 1 if $client->is_virtual;
+        my @check_fields = qw/citizen place_of_birth residence/;
+        my $duplicated   = $client->duplicate_sibling_from_vr;
+        my $financial_assessment;
 
+        if ($duplicated) {
+            push @check_fields, $duplicated->immutable_fields();
+
+            $client = $duplicated;
+
+            $financial_assessment = $client->financial_assessment() // '';
+
+            $financial_assessment = BOM::User::FinancialAssessment::decode_fa($financial_assessment) if $financial_assessment;
+
+        } elsif ($client->is_virtual) {
+            return 1;
+        }
         my @changed;
-        for my $field (qw /citizen place_of_birth residence/) {
-            next unless $client->$field and exists $args->{$field};
+        for my $field (uniq @check_fields) {
+            next unless exists $args->{$field};
 
-            push(@changed, $field) if $client->$field ne ($args->{$field} // '');
+            my $arg_value = $args->{$field} // '';
+            my $cli_value;
+
+            if (any { $_ eq $field } BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*) {
+                $cli_value = $financial_assessment ? $financial_assessment->{$field} // '' : '';
+            } else {
+                next unless $client->$field;
+                $cli_value = $client->$field // '';
+            }
+
+            if ($field eq 'secret_answer') {
+                $cli_value = BOM::User::Utility::decrypt_secret_answer($cli_value);
+                $arg_value = BOM::User::Utility::decrypt_secret_answer($arg_value);
+            }
+
+            push(@changed, $field) if $cli_value ne ($arg_value // '');
         }
 
         $self->fail('CannotChangeAccountDetails', details => {changed => [@changed]}) if @changed;

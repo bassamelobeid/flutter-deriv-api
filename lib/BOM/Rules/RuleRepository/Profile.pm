@@ -25,9 +25,14 @@ rule 'profile.date_of_birth_complies_minimum_age' => {
         my ($self, $context, $args) = @_;
         my $residence = $context->residence($args);
 
-        $self->fail('InvalidDateOfBirth') unless $args->{date_of_birth};
+        my $dup_dob;
+        my $client     = $context->client($args);
+        my $duplicated = $client->duplicate_sibling_from_vr;
 
-        my $dob_date = eval { Date::Utility->new($args->{date_of_birth}) };
+        $dup_dob = $duplicated->date_of_birth if $duplicated;
+        $self->fail('InvalidDateOfBirth') unless $args->{date_of_birth} // $dup_dob;
+
+        my $dob_date = eval { Date::Utility->new($args->{date_of_birth} // $dup_dob) };
         $self->fail('InvalidDateOfBirth') unless $dob_date;
 
         my $countries_instance = $context->brand($args)->countries_instance;
@@ -47,8 +52,19 @@ rule 'profile.both_secret_question_and_answer_required' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
+        my $client = $context->client($args);
+        my $dup_secret_answer;
+        my $dup_secret_question;
+
+        my $duplicated = $client->duplicate_sibling_from_vr;
+
+        if ($duplicated) {
+            $dup_secret_answer   = $duplicated->secret_answer;
+            $dup_secret_question = $duplicated->secret_question;
+        }
+
         $self->fail("NeedBothSecret")
-            if !$args->{secret_question} ^ !$args->{secret_answer};
+            if !($args->{secret_question} // $dup_secret_question) ^ !($args->{secret_answer} // $dup_secret_answer);
 
         return 1;
     },

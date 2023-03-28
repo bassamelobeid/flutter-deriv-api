@@ -3,6 +3,7 @@ new_account:
   ruleset:
     - user.email_is_verified
     - client.residence_is_not_empty
+    - client.signup_immitable_fields_not_changed
     - profile.residence_cannot_be_changed
     - residence.is_signup_allowed
     - residence.market_type_is_available
@@ -15,7 +16,6 @@ new_account:
     - user.has_no_real_clients_without_currency
     - landing_company.required_fields_are_non_empty
     - landing_company.p2p_availability
-    - client.signup_immitable_fields_not_changed
     - profile.date_of_birth_complies_minimum_age
     - profile.both_secret_question_and_answer_required
     - profile.valid_profile_countries
