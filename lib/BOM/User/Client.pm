@@ -89,6 +89,11 @@ use constant {
         sort
             qw/account_opening_reason citizen date_of_birth first_name last_name place_of_birth residence salutation secret_answer secret_question tax_residence tax_identification_number /
     ],
+    PROFILE_FIELDS_IMMUTABLE_DUPLICATED =>
+        [sort qw/first_name last_name date_of_birth address_city address_line_1 address_line_2 address_postcode address_state phone/],
+    FA_FIELDS_IMMUTABLE_DUPLICATED => [
+        qw/employment_status risk_tolerance source_of_experience cfd_experience cfd_frequency trading_experience_financial_instruments trading_frequency_financial_instruments cfd_trading_definition leverage_impact_trading leverage_trading_high_risk_stop_loss required_initial_margin/
+    ],
     ADDRESS_FIELDS      => [qw/address_city address_line_1 address_line_2 address_postcode address_state /],
     SR_UNWELCOME_REASON => 'Social responsibility thresholds breached - Pending financial assessment',
 
@@ -2194,7 +2199,17 @@ Returns a list of profile fields that cannot be changed regarding client's statu
 sub immutable_fields {
     my $self = shift;
 
-    return qw/residence/ if $self->is_virtual;
+    if ($self->is_virtual) {
+        my @virtual_immutable_fields = qw/residence/;
+
+        my $duplicated = $self->duplicate_sibling_from_vr;
+
+        # note: we check for is_virtual only to address the potential infinite recursion concern
+        # `duplicate_sibling_from_vr` should never return VR account!!
+        push @virtual_immutable_fields, $duplicated->immutable_fields if $duplicated && !$duplicated->is_virtual;
+
+        return uniq @virtual_immutable_fields;
+    }
 
     my @immutable = grep { $self->$_ } PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH->@*;
 
@@ -2211,6 +2226,19 @@ sub immutable_fields {
         if ($self->status->poa_address_mismatch) {
             @immutable = grep { $_ !~ qr/(address_city|address_line_1|address_line_2|address_postcode|address_state)/ } @immutable;
         }
+    }
+
+    # make a duplicate account very immutable
+    if ($self->status->duplicate_account) {
+        my $financial_assessment = $self->financial_assessment() // '';
+
+        $financial_assessment = BOM::User::FinancialAssessment::decode_fa($financial_assessment) if $financial_assessment;
+
+        push @immutable,
+            grep { $financial_assessment && $financial_assessment->{$_} && $self->landing_company->short eq 'maltainvest' }
+            FA_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+        return uniq(@immutable, PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*);
     }
 
     my $return;
@@ -8684,6 +8712,38 @@ sub payment_type_totals {
 
     $self->set_db($old_db) unless 'replica' eq $old_db;
     return $result;
+}
+
+=head2 duplicate_sibling_from_vr
+
+Gets the real duplicated sibling of a VR account.
+
+Only applicable for Duplicate account - currency change reason, otherwise the client should be forsaken.
+
+=cut
+
+sub duplicate_sibling_from_vr {
+    my ($self) = @_;
+
+    if ($self->is_virtual) {
+        my @clients = $self->user->clients(include_duplicated => 1);
+
+        my @dup_candidates = grep {
+            $_->status->duplicate_account && !$_->is_virtual && $_->status->reason('duplicate_account') =~ /Duplicate account - currency change/
+        } @clients;
+
+        my $duplicated = first { $_->landing_company->short eq 'maltainvest' } @dup_candidates;
+
+        # mf will have higer prio
+
+        return $duplicated if $duplicated;
+
+        ($duplicated) = @dup_candidates;
+
+        return $duplicated;
+    }
+
+    return undef;
 }
 
 =head2 ignore_age_verification

@@ -18,7 +18,7 @@ use base qw (Exporter);
 use constant ONE_DAY                                  => 86400;                                           # In seconds
 use constant APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD => 'APPROPRIATENESS_TESTS::COOLING_OFF_PERIOD::';
 our @EXPORT_OK = qw(update_financial_assessment build_financial_assessment is_section_complete decode_fa
-    should_warn format_to_new appropriateness_tests calculate_cfd_score APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD);
+    should_warn format_to_new appropriateness_tests calculate_cfd_score APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD copy_financial_assessment);
 
 my $config = BOM::Config::financial_assessment_fields();
 
@@ -379,6 +379,40 @@ sub _calculate_appropriateness_sections {
         $result->{final}   = $result->{group_1} && $result->{group_2} ? 1 : 0;
     }
     return $result->{final};
+}
+
+=head2 copy_financial_assessment
+
+Copies the financial assessment info from one client to another.
+
+It takes the following arguments as hashref keys:
+
+=over 4
+
+=item * C<from> - the client whose financial assessment info will be copied from
+
+=item * C<to> - the client that will get the financial assessment info
+
+=back
+
+Returns undef.
+
+=cut
+
+sub copy_financial_assessment {
+    my ($from, $to) = @_;
+
+    my $fa = $from->financial_assessment();
+
+    if ($fa) {
+        $fa = decode_fa($fa);
+
+        $to->financial_assessment({data => encode_json_utf8($fa)});
+        $to->save;
+        $to->update_status_after_auth_fa();
+    }
+
+    return undef;
 }
 
 1;

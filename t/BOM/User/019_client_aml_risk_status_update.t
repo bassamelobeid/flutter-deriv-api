@@ -14,7 +14,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::User::Script::AMLClientsUpdate;
 use BOM::User::Password;
-use BOM::User::FinancialAssessment   qw(update_financial_assessment);
+use BOM::User::FinancialAssessment   qw(update_financial_assessment copy_financial_assessment);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 populate_exchange_rates();
 
@@ -408,6 +408,53 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok !$client_cr->status->financial_assessment_required, 'financial_assessment_required removed because FA completed';
     ok !$client_cr->status->withdrawal_locked,             'withdrawal_locked with "FA needs to be completed" message removed because FA completed';
+    undef @called_for_clients;
+
+    my $client_copy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'copyme@test.com',
+        residence   => 'id',
+    });
+    my $user_copy = BOM::User->create(
+        email    => 'copyme@test.com',
+        password => 'Abcd1234',
+    );
+
+    $user_copy->add_client($client_copy);
+    $client_copy->binary_user_id($user_copy->id);
+    $client_copy->user($user_copy);
+    $client_copy->save;
+
+    $client_copy->status->set('financial_assessment_required', 'test', 'test');
+    $client_copy->status->set('withdrawal_locked',             'test', 'Pending authentication or FA');
+
+    undef @called_for_clients;
+
+    $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $client_cr->financial_assessment({
+        data => encode_json_utf8($data),
+    });
+    $client_cr->save();
+
+    copy_financial_assessment($client_cr, $client_copy);
+
+    $client_copy->status->_build_all;
+
+    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok !$client_copy->status->financial_assessment_required, 'financial_assessment_required removed because FA completed';
+    ok $client_copy->status->withdrawal_locked,              'withdrawal_locked not gone yet (required fully auth)';
+
+    $client_copy->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    undef @called_for_clients;
+
+    $mocked_documents->mock('expired' => sub { return 0 });
+    copy_financial_assessment($client_cr, $client_copy);
+
+    $client_copy = BOM::User::Client->new({loginid => $client_copy->loginid});
+
+    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok !$client_copy->status->financial_assessment_required, 'financial_assessment_required removed because FA completed';
+    ok !$client_copy->status->withdrawal_locked,             'withdrawal_locked gone';
     undef @called_for_clients;
 
     $mocked_client->unmock_all;

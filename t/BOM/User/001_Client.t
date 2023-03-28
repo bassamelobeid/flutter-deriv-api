@@ -797,6 +797,7 @@ sub test_immutable_fields {
         my $msg           = $client->is_virtual ? 'Immutable fields are always the same for virtual accounts' : $message;
 
         my $landing_company = $client->landing_company->short;
+
         cmp_bag [$client->immutable_fields], $expected_list, "$msg - $landing_company";
     }
 }

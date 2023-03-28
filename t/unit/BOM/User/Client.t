@@ -6,6 +6,7 @@ use Test::Exception;
 use Test::MockModule;
 use Test::MockObject;
 use Test::MockTime qw( :all );
+use Scalar::Util   qw(refaddr);
 
 use BOM::User::Client;
 use LandingCompany;
@@ -244,6 +245,83 @@ subtest validate_common_account_details => sub {
             }
         }
     };
+};
+
+subtest 'duplicate_sibling_from_vr' => sub {
+    my $user_mock = Test::MockModule->new('BOM::User');
+    $user_mock->mock(
+        'new',
+        sub {
+            return bless({}, 'BOM::User');
+        });
+
+    my $user        = BOM::User->new;
+    my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+    my $duplicate_account;
+    my @siblings;
+
+    $status_mock->mock(
+        'duplicate_account',
+        sub {
+            return $duplicate_account;
+        });
+
+    $user_mock->mock(
+        'clients',
+        sub {
+            return @siblings;
+        });
+
+    my $client = BOM::User::Client->rnew;
+    $client->user($user);
+
+    $client->broker('MX');
+    $client->residence('gb');
+
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a real client';
+
+    $client->broker('VRTC');
+
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client wihtout siblings';
+
+    my $sibling = BOM::User::Client->rnew;
+    push @siblings, $sibling;
+    $sibling->broker('VRTC');
+    $sibling->residence('gb');
+
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client wihtout real siblings';
+
+    $sibling->broker('MX');
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client wihtout real duplicated siblings';
+
+    $duplicate_account = {
+        staff  => 'test',
+        reason => 'any reason'
+    };
+
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings for any reason';
+
+    $duplicate_account = {
+        staff  => 'test',
+        reason => 'Duplicate account - currency change'
+    };
+
+    is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling), 'Got a duplicated sibling';
+
+    my $sibling2 = BOM::User::Client->rnew;
+    push @siblings, $sibling2;
+    $sibling2->broker('MX');
+    $sibling2->residence('gb');
+
+    $sibling->broker('VRTC');
+    is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling2), 'Got a duplicated sibling';
+
+    # give sibling1 landing company = mf
+    $sibling->broker('MF');
+    is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling), 'Got a duplicated sibling which is MF';
+
+    $user_mock->unmock_all;
+    $status_mock->unmock_all;
 };
 
 done_testing;
