@@ -13,6 +13,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Utility;
 use BOM::User;
 use BOM::Platform::Token;
+use BOM::Test::Helper::FinancialAssessment;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 my $c = Test::BOM::RPC::QueueClient->new();
 my $m = BOM::Platform::Token::API->new;
@@ -1551,6 +1553,173 @@ subtest 'poi name mismatch on age verified scenario' => sub {
     $result = $c->tcall('get_account_status', {token => $token});
 
     ok(!(grep { $_ eq 'poi_name_mismatch' } $result->{status}->@*), 'Poi name mismatch not reported under fully auth scenario');
+};
+
+subtest 'duplicated account FA related statuses' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $user = BOM::User->create(
+        email    => 'dup+fa@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $user->add_client($virtual);
+
+    $client->aml_risk_classification('high');
+    $client->save;
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status},
+        supersetof('financial_assessment_not_complete', 'trading_experience_not_complete', 'financial_information_not_complete'), 'fa statuses set';
+
+    # complete the FA
+
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $client->financial_assessment({
+        data => encode_json_utf8($data),
+    });
+    $client->save();
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, none('financial_assessment_not_complete', 'trading_experience_not_complete', 'financial_information_not_complete'),
+        'fa statuses gone';
+
+    # make the account duplicated
+    $client->status->set('duplicate_account', 'system', 'currency');
+
+    $token = $m->create_token($virtual->loginid, 'virtual token');
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, none('financial_assessment_not_complete', 'trading_experience_not_complete', 'financial_information_not_complete'),
+        'fa statuses gone for virtual';
+};
+
+subtest 'duplicated account age verification status' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $user = BOM::User->create(
+        email    => 'dup+age@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $user->add_client($virtual);
+
+    $client->status->set('age_verification', 'test', 'test');
+    $client->status->_clear_all;
+    $client->aml_risk_classification('high');
+    $client->save;
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status},
+        supersetof('age_verification', 'financial_assessment_not_complete', 'trading_experience_not_complete', 'financial_information_not_complete'),
+        'expected statuses';
+
+    # make the account duplicated
+    $client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+
+    $token = $m->create_token($virtual->loginid, 'virtual token');
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status},
+        supersetof('skip_idv', 'financial_assessment_not_complete', 'trading_experience_not_complete', 'financial_information_not_complete'),
+        'skip idv is injected';
+
+    $client->status->clear_age_verification;
+    $client->status->_clear_all;
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, none('skip_idv'), 'skip idv is gone';
+};
+
+subtest 'duplicated account IDV submission left = 0 status' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $user = BOM::User->create(
+        email    => 'dup+idv+zero@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $user->add_client($virtual);
+
+    my $idv_mock         = Test::MockModule->new('BOM::User::IdentityVerification');
+    my $submissions_left = 0;
+    $idv_mock->mock(
+        'submissions_left',
+        sub {
+            return $submissions_left;
+        });
+
+    $client->status->_clear_all;
+    $client->save;
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, none('idv_disallowed'), 'idv_disallowed not provided';
+
+    # make the account duplicated
+    $client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+
+    $token = $m->create_token($virtual->loginid, 'virtual token');
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, supersetof('skip_idv'), 'skip idv is injected';
+
+    $submissions_left = 1;
+
+    $client->status->clear_age_verification;
+    $client->status->_clear_all;
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, none('skip_idv'), 'skip idv is gone';
+
+    $idv_mock->unmock_all;
+};
+
+subtest 'duplicated account idv disallowed' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $user = BOM::User->create(
+        email    => 'dup+idv+disallowed@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $user->add_client($virtual);
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, none('idv_disallowed'), 'IDV is not disallowed';
+
+    #make the account duplicated
+    $client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+
+    $token = $m->create_token($virtual->loginid, 'virtual token');
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, none('idv_disallowed'), 'IDV is still not disallowed for VR';
+
+    # high risk makes the client idv_disallowed
+    $client->aml_risk_classification('high');
+    $client->save;
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{status}, supersetof('idv_disallowed'), 'IDV is disallowed for VR';
 };
 
 subtest 'poi dob mismatch on age verified scenario' => sub {

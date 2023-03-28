@@ -886,7 +886,16 @@ rpc get_account_status => sub {
         push @$status, 'allow_document_upload';
     }
 
-    push @$status, 'idv_disallowed' if BOM::User::IdentityVerification::is_idv_disallowed($client);
+    # check if there is a dup client to grab the financial assessment from
+    # and also idv_disallowed flag
+
+    my $duplicated;
+
+    $duplicated = $client->duplicate_sibling_from_vr if $client->is_virtual;
+
+    my $idv_client = $duplicated // $client;
+
+    push @$status, 'idv_disallowed' if BOM::User::IdentityVerification::is_idv_disallowed($idv_client);
 
     my $user = $client->user;
 
@@ -896,16 +905,22 @@ rpc get_account_status => sub {
         my $user_connect = BOM::Database::Model::UserConnect->new;
         $provider = $user_connect->get_connects_by_user_id($client->user->{id})->[0];
     }
+    my $fa_client = $duplicated // $client;
+
+    # push age verification status if the duplicated has got it
+    push @$status, 'skip_idv' if $duplicated && $duplicated->status->age_verification;
+    push @$status, 'skip_idv' if $duplicated && !BOM::User::IdentityVerification->new(user_id => $duplicated->binary_user_id)->submissions_left;
 
     # check whether the user need to perform financial assessment
-    my $client_fa = decode_fa($client->financial_assessment());
+    my $client_fa = decode_fa($fa_client->financial_assessment());
 
     push(@$status, 'financial_information_not_complete')
-        unless $client->is_financial_information_complete();
+        unless $fa_client->is_financial_information_complete();
 
-    push(@$status, 'trading_experience_not_complete') unless is_section_complete($client_fa, "trading_experience", $client->landing_company->short);
+    push(@$status, 'trading_experience_not_complete')
+        unless is_section_complete($client_fa, "trading_experience", $fa_client->landing_company->short);
 
-    push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
+    push(@$status, 'financial_assessment_not_complete') unless $fa_client->is_financial_assessment_complete();
 
     push(@$status, 'mt5_password_not_set') unless $client->user->trading_password;
 
@@ -914,6 +929,8 @@ rpc get_account_status => sub {
     push(@$status, 'needs_affiliate_coc_approval') if $client->user->affiliate_coc_approval_required;
 
     push(@$status, 'p2p_blocked_for_pa') if $client->payment_agent && !$client->get_payment_agent->service_is_allowed('p2p');
+
+    my $age_verif_client = $duplicated // $client;
 
     my $rule_engine = BOM::Rules::Engine->new(
         client          => $client,
@@ -1690,7 +1707,14 @@ rpc get_settings => sub {
     my $cooling_off_period =
         BOM::Config::Redis::redis_replicated_read()->ttl(APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD . $client->{binary_user_id});
 
-    my $financial_assessment = $client->financial_assessment() // '';
+    # grab from dup account if virtual
+    my $duplicated;
+
+    $duplicated = $client->duplicate_sibling_from_vr if $client->is_virtual;
+
+    my $fa_client = $duplicated // $client;
+
+    my $financial_assessment = $fa_client->financial_assessment() // '';
     $financial_assessment = decode_fa($financial_assessment) if $financial_assessment;
 
     my $settings = {
@@ -1710,16 +1734,18 @@ rpc get_settings => sub {
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
             : ())};
 
+    my @clients = grep { $_ and not $_->is_virtual } $user->clients(include_disabled => 0), $client->duplicate_sibling_from_vr;
+
     if ($cooling_off_period > 0) {
         $settings->{cooling_off_expiration_date} = time + $cooling_off_period;
     }
-    if ($financial_assessment && $financial_assessment->{employment_status} && $client->landing_company->short eq 'maltainvest') {
+
+    if ($financial_assessment && $financial_assessment->{employment_status} && $fa_client->landing_company->short eq 'maltainvest') {
         $settings->{employment_status} = $financial_assessment->{employment_status};
     }
 
     my $dxtrade_suspend = BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend;
-    my @clients         = grep { not $_->is_virtual } $user->clients(include_disabled => 0);
-    my ($real_client)   = sort { $b->date_joined cmp $a->date_joined } @clients;
+    my ($real_client) = sort { $b->date_joined cmp $a->date_joined } @clients;
 
     if ($real_client) {
         # We should pick the information from the first created account for
@@ -3072,9 +3098,10 @@ rpc get_financial_assessment => sub {
     my @siblings = grep { not $_->is_virtual } $client->user->clients(include_disabled => 0);
 
     if ($client->is_virtual and not @siblings) {
-        @siblings = grep {
-            (not $_->is_virtual) && $_->status->duplicate_account && $_->status->duplicate_account->{reason} =~ /Duplicate account - currency change/
-        } $client->user->clients(include_duplicated => 1);
+        # grab from dup account
+        my $duplicated = $client->duplicate_sibling_from_vr;
+
+        push @siblings, $duplicated if $duplicated;
 
         return BOM::RPC::v3::Utility::permission_error() unless @siblings;
     }

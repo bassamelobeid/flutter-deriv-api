@@ -11,6 +11,8 @@ use BOM::Platform::Token::API;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email                           qw(:no_event);
 use BOM::Test::Helper::Token;
+use BOM::Test::Helper::FinancialAssessment;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
@@ -384,6 +386,36 @@ subtest $method => sub {
         });
 
     is($res->{error}->{code}, 'PermissionDenied', "Not allowed for Duplicate account");
+};
+
+subtest 'MF duplicated account' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $user = BOM::User->create(
+        email    => 'dup+get+fa@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $user->add_client($virtual);
+
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $client->financial_assessment({
+        data => encode_json_utf8($data),
+    });
+    $client->save();
+
+    $token = $m->create_token($virtual->loginid, 'virtual token');
+    my $result = $c->tcall('get_financial_assessment', {token => $token});
+
+    $client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+
+    my $result2 = $c->tcall('get_financial_assessment', {token => $token});
+
+    cmp_deeply $result, $result2, 'Same result before and after the dup';
 };
 
 done_testing();

@@ -825,6 +825,11 @@ sub _new_account_pre_process {
     my @fields_to_duplicate =
         qw(citizen salutation first_name last_name date_of_birth residence address_line_1 address_line_2 address_city address_state address_postcode phone secret_question secret_answer place_of_birth tax_residence tax_identification_number account_opening_reason);
 
+    # copy data from the duplicate sibling if any
+    my $duplicated = $client->duplicate_sibling_from_vr;
+
+    $client = $duplicated if $duplicated;
+
     unless ($client->is_virtual) {
         for my $field (@fields_to_duplicate) {
             if ($field eq "secret_answer") {

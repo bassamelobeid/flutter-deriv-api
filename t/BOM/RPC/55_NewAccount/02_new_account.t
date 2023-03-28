@@ -490,7 +490,7 @@ subtest $method => sub {
         is $resp_loginid, $new_loginid, 'correct oauth token';
 
         my $new_client = BOM::User::Client->new({loginid => $new_loginid});
-        $new_client->status->set('duplicate_account', 'system', 'reason');
+        $new_client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
@@ -520,13 +520,32 @@ subtest $method => sub {
             ->error_message_is("Please set the currency for your existing account $new_loginid, in order to create more accounts.",
             'It should return expected error message');
 
+        # cannot change immutable fields (coming from the dup account)
+        $params->{args}->{secret_answer} = 'asdf';
         $new_client->set_default_account("USD");
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CannotChangeAccountDetails', 'correct error code.')
+            ->error_message_is("You may not change these account details.", 'It should return expected error message')
+            ->error_details_is({changed => [qw/secret_answer/]});
+
+        delete $params->{args}->{secret_answer};
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error;
         is $rpc_ct->result->{refresh_token}, undef, 'No refresh token generated for the second account';
         ok $rpc_ct->result->{oauth_token} =~ /^a1-.*/, 'OAuth token generated for the second account';
+
+        $new_loginid = $rpc_ct->result->{client_id};
+        $new_client  = BOM::User::Client->new({loginid => $new_loginid});
+        $new_client->set_default_account("GBP");
+
+        $params->{args}->{secret_answer} = 'test';
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error;
+        is $rpc_ct->result->{refresh_token}, undef, 'No refresh token generated for the third account';
+        ok $rpc_ct->result->{oauth_token} =~ /^a1-.*/, 'OAuth token generated for the third account';
     };
 
     subtest 'Create multiple accounts in CR' => sub {
+        $params->{args}->{secret_answer} = 'test';
         $email = 'new_email' . rand(999) . '@binary.com';
 
         delete $params->{token};
@@ -932,6 +951,7 @@ subtest $method => sub {
         delete $params->{args}->{secret_question};
         delete $params->{args}->{secret_answer};
         delete $params->{args}->{residence};
+        delete $params->{args}->{place_of_birth};
         my $result = $rpc_ct->call_ok($method, $params)->result;
         ok my $new_loginid = $result->{client_id}, 'New loginid is returned';
 
@@ -1881,6 +1901,269 @@ subtest 'Italian TIN test' => sub {
             $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('it mf account created successfully')->result;
         ok $result->{client_id}, 'got a client id';
     };
+};
+
+subtest 'MF under Duplicated account' => sub {
+    my $password = 'Abcd1234!!';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'test+mf+dup+' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'it',
+    });
+
+    $user->add_client($client_vr);
+    $client_vr->binary_user_id($user->id);
+    $client_vr->save;
+
+    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+    $params->{country}                 = 'it';
+    $params->{args}->{residence}       = 'it';
+    $params->{args}->{address_line_1}  = 'sus';
+    $params->{args}->{address_city}    = 'sus';
+    $params->{args}->{client_password} = $hash_pwd;
+    $params->{args}->{subtype}         = 'real';
+    $params->{args}->{first_name}      = 'Not her';
+    $params->{args}->{last_name}       = 'not';
+    $params->{args}->{date_of_birth}   = '1997-01-02';
+    $params->{args}->{email}           = $email;
+    $params->{args}->{phone}           = '+393678916703';
+    $params->{args}->{salutation}      = 'hey';
+    $params->{args}->{citizen}         = 'it';
+    $params->{args}->{accept_risk}     = 1;
+    $params->{token}                   = $auth_token;
+
+    $params->{args} = {
+        $params->{args}->%*,
+        "set_financial_assessment"                 => 1,
+        "risk_tolerance"                           => "Yes",
+        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+        "cfd_experience"                           => "Less than a year",
+        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+        "trading_experience_financial_instruments" => "Less than a year",
+        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+        "cfd_trading_definition"                   => "Speculate on the price movement.",
+        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+        "employment_industry"                      => "Finance",                                                                                 # +15
+        "education_level"                          => "Secondary",                                                                               # +1
+        "income_source"                            => "Self-Employed",                                                                           # +0
+        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
+        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
+        "occupation"                               => 'Managers',                                                                                # +0
+        "employment_status"                        => "Self-Employed",                                                                           # +0
+        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
+        "account_turnover"                         => 'Less than $25,000',
+        'tax_residence'                            => 'it',
+        'tax_identification_number'                => 'MRTSVT79M29F8_9P',
+        'account_opening_reason'                   => 'Hedging',
+    };
+
+    my $result =
+        $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('it mf account created successfully')->result;
+    ok $result->{client_id}, 'got a client id';
+
+    my $new_client = BOM::User::Client->new({loginid => $result->{client_id}});
+    $new_client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+
+    $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('it mf account created successfully')->result;
+    ok $result->{client_id}, 'got a second id';
+};
+
+subtest 'MF under Duplicated account - DIEL country' => sub {
+    my $password = 'Abcd1234!!';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'test+mf+dup+za' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'za',
+    });
+
+    $user->add_client($client_vr);
+    $client_vr->binary_user_id($user->id);
+    $client_vr->save;
+
+    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+    $params->{country}                 = 'za';
+    $params->{args}->{residence}       = 'za';
+    $params->{args}->{address_line_1}  = 'sus';
+    $params->{args}->{address_city}    = 'sus';
+    $params->{args}->{client_password} = $hash_pwd;
+    $params->{args}->{subtype}         = 'real';
+    $params->{args}->{first_name}      = 'Not him';
+    $params->{args}->{last_name}       = 'yes';
+    $params->{args}->{date_of_birth}   = '1997-01-02';
+    $params->{args}->{email}           = $email;
+    $params->{args}->{phone}           = '+393678916703';
+    $params->{args}->{salutation}      = 'hey';
+    $params->{args}->{citizen}         = 'za';
+    $params->{args}->{accept_risk}     = 1;
+    $params->{token}                   = $auth_token;
+
+    $params->{args} = {
+        $params->{args}->%*,
+        "set_financial_assessment"                 => 1,
+        "risk_tolerance"                           => "Yes",
+        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+        "cfd_experience"                           => "Less than a year",
+        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+        "trading_experience_financial_instruments" => "Less than a year",
+        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+        "cfd_trading_definition"                   => "Speculate on the price movement.",
+        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+        "employment_industry"                      => "Finance",                                                                                 # +15
+        "education_level"                          => "Secondary",                                                                               # +1
+        "income_source"                            => "Self-Employed",                                                                           # +0
+        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
+        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
+        "occupation"                               => 'Managers',                                                                                # +0
+        "employment_status"                        => "Self-Employed",                                                                           # +0
+        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
+        "account_turnover"                         => 'Less than $25,000',
+        'tax_residence'                            => 'it',
+        'tax_identification_number'                => 'MRTSVT79M29F8_9P',
+        'account_opening_reason'                   => 'Hedging',
+    };
+
+    my $result =
+        $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('za mf account created successfully')->result;
+    ok $result->{client_id}, 'got a client id';
+
+    my $settings = $rpc_ct->call_ok('get_settings', $params)->has_no_system_error->has_no_error('get za account status')->result;
+
+    cmp_bag $settings->{immutable_fields}, [qw/residence/], 'Expected immutable fields';
+
+    my $new_client = BOM::User::Client->new({loginid => $result->{client_id}});
+    $new_client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+
+    $settings = $rpc_ct->call_ok('get_settings', $params)->has_no_system_error->has_no_error('get za account status')->result;
+
+    cmp_bag $settings->{immutable_fields},
+        [
+        qw/residence account_opening_reason citizen date_of_birth first_name last_name salutation tax_identification_number tax_residence employment_status risk_tolerance source_of_experience cfd_experience cfd_frequency trading_experience_financial_instruments trading_frequency_financial_instruments cfd_trading_definition leverage_impact_trading leverage_trading_high_risk_stop_loss required_initial_margin address_city address_line_1 address_line_2 address_postcode address_state phone/
+        ], 'Expected immutable fields';
+
+    my $fa = $rpc_ct->call_ok('get_financial_assessment', $params)->has_no_system_error->has_no_error('get za fa')->result;
+
+    my $fa_values = [map { $_ } grep { $fa->{$_} } $settings->{immutable_fields}->@*];
+    cmp_bag $fa_values,
+        [
+        qw/cfd_trading_definition risk_tolerance cfd_frequency leverage_trading_high_risk_stop_loss required_initial_margin trading_frequency_financial_instruments leverage_impact_trading source_of_experience employment_status trading_experience_financial_instruments cfd_experience/
+        ], 'Expected FA values across the immutable fields';
+
+    $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('za mf account created successfully')->result;
+    ok $result->{client_id}, 'got a second id';
+};
+
+subtest 'MF under Duplicated account - Spain' => sub {
+    my $password = 'Abcd1234!!';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'test+mf+dup+es' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'es',
+    });
+
+    $user->add_client($client_vr);
+    $client_vr->binary_user_id($user->id);
+    $client_vr->save;
+
+    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+    $params->{country}                 = 'es';
+    $params->{args}->{residence}       = 'es';
+    $params->{args}->{address_line_1}  = 'sus';
+    $params->{args}->{address_city}    = 'sus';
+    $params->{args}->{client_password} = $hash_pwd;
+    $params->{args}->{subtype}         = 'real';
+    $params->{args}->{first_name}      = 'Not ES';
+    $params->{args}->{last_name}       = 'spain is all I feel';
+    $params->{args}->{date_of_birth}   = '1997-01-02';
+    $params->{args}->{email}           = $email;
+    $params->{args}->{phone}           = '+393678916703';
+    $params->{args}->{salutation}      = 'hey';
+    $params->{args}->{citizen}         = 'es';
+    $params->{args}->{accept_risk}     = 1;
+    $params->{token}                   = $auth_token;
+
+    $params->{args} = {
+        $params->{args}->%*,
+        "set_financial_assessment"                 => 1,
+        "risk_tolerance"                           => "Yes",
+        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+        "cfd_experience"                           => "Less than a year",
+        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+        "trading_experience_financial_instruments" => "Less than a year",
+        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+        "cfd_trading_definition"                   => "Speculate on the price movement.",
+        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+        "employment_industry"                      => "Finance",                                                                                 # +15
+        "education_level"                          => "Secondary",                                                                               # +1
+        "income_source"                            => "Self-Employed",                                                                           # +0
+        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
+        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
+        "occupation"                               => 'Managers',                                                                                # +0
+        "employment_status"                        => "Self-Employed",                                                                           # +0
+        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
+        "account_turnover"                         => 'Less than $25,000',
+        'tax_residence'                            => 'es',
+        'tax_identification_number'                => 'MRTSVT79M29F8_9P',
+        'account_opening_reason'                   => 'Hedging',
+    };
+
+    my $result =
+        $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('es mf account created successfully')->result;
+    ok $result->{client_id}, 'got a client id';
+
+    my $settings = $rpc_ct->call_ok('get_settings', $params)->has_no_system_error->has_no_error('get es account status')->result;
+
+    cmp_bag $settings->{immutable_fields}, [qw/residence/], 'Expected immutable fields';
+
+    my $new_client = BOM::User::Client->new({loginid => $result->{client_id}});
+    $new_client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+
+    $settings = $rpc_ct->call_ok('get_settings', $params)->has_no_system_error->has_no_error('get es account status')->result;
+
+    cmp_bag $settings->{immutable_fields},
+        [
+        qw/residence account_opening_reason citizen date_of_birth first_name last_name salutation tax_identification_number tax_residence employment_status risk_tolerance source_of_experience cfd_experience cfd_frequency trading_experience_financial_instruments trading_frequency_financial_instruments cfd_trading_definition leverage_impact_trading leverage_trading_high_risk_stop_loss required_initial_margin address_city address_line_1 address_line_2 address_postcode address_state phone/
+        ], 'Expected immutable fields';
+
+    my $fa = $rpc_ct->call_ok('get_financial_assessment', $params)->has_no_system_error->has_no_error('get es fa')->result;
+
+    my $fa_values = [map { $_ } grep { $fa->{$_} } $settings->{immutable_fields}->@*];
+    cmp_bag $fa_values,
+        [
+        qw/cfd_trading_definition risk_tolerance cfd_frequency leverage_trading_high_risk_stop_loss required_initial_margin trading_frequency_financial_instruments leverage_impact_trading source_of_experience employment_status trading_experience_financial_instruments cfd_experience/
+        ], 'Expected FA values across the immutable fields';
+
+    $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('es mf account created successfully')->result;
+    ok $result->{client_id}, 'got a second id';
 };
 
 done_testing();

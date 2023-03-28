@@ -19,6 +19,7 @@ use Scalar::Util     qw/looks_like_number/;
 use JSON::MaybeUTF8  qw(encode_json_utf8);
 use BOM::Platform::Token::API;
 use Guard;
+use List::Util qw/uniq/;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
@@ -1318,6 +1319,97 @@ subtest 'set_setting check salutuation not removed' => sub {
     $params->{token} = $token_mf;
     my $result = $c->tcall('set_settings', $params);
     cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with feature flag trading_hub has been set successfully');
+};
+
+subtest 'get settings from virtual with a dup account' => sub {
+    my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'client+dup+900000009@test.com',
+        broker_code   => 'VRTC',
+        first_name    => 'test',
+        last_name     => 'dup',
+        date_of_birth => '2000-01-01',
+    });
+    my $user = BOM::User->create(
+        email    => $vrtc_client->email,
+        password => 'x',
+    );
+
+    $user->add_client($vrtc_client);
+    $vrtc_client->user($user);
+    $vrtc_client->binary_user_id($user->id);
+    $vrtc_client->save;
+
+    my $token  = $token_gen->create_token($vrtc_client->loginid, 'test token');
+    my $params = {
+        language  => 'EN',
+        token     => $token,
+        client_ip => '127.0.0.1'
+    };
+
+    my $vr_only_result = $c->tcall('get_settings', $params);
+
+    cmp_bag $vr_only_result->{immutable_fields}, [map { exists $vr_only_result->{$_} ? $_ : () } $vr_only_result->{immutable_fields}->@*],
+        'All immutable fields are included in the response';
+
+    my $dup_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'client+dup+900000009@test.com',
+        broker_code   => 'MF',
+        first_name    => 'test',
+        last_name     => 'dup',
+        date_of_birth => '2000-01-01',
+    });
+
+    my $dup_token = $token_gen->create_token($dup_client->loginid, 'test token for a dup');
+    $user->add_client($dup_client);
+    $dup_client->user($user);
+    $dup_client->binary_user_id($user->id);
+    $dup_client->save;
+    # this will make immutable fields more interesting
+    $dup_client->status->setnx('age_verification', 'test', 'test');
+    $dup_client->status->_build_all;
+
+    my $dupless_result = $c->tcall('get_settings', {$params->%*, token => $dup_token});
+
+    cmp_bag $dupless_result->{immutable_fields},
+        [map { exists $dupless_result->{$_} || /^secret_/ ? $_ : () } $dupless_result->{immutable_fields}->@*],
+        'All immutable fields are included in the response (minus the secrets)';
+
+    $dup_client->status->setnx('duplicate_account', 'test', 'Duplicate account - currency change');
+    $dup_client->status->_build_all;
+
+    my $dup_result           = $c->tcall('get_settings', $params);
+    my @dup_immutable_fields = BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+    cmp_deeply $dup_result, +{$dupless_result->%*, immutable_fields => bag(uniq($dupless_result->{immutable_fields}->@*, @dup_immutable_fields))},
+        'Expected immutable fields';
+
+    cmp_bag $dup_result->{immutable_fields}, [map { exists $dup_result->{$_} || /^secret_/ ? $_ : () } $dup_result->{immutable_fields}->@*],
+        'All immutable fields are included in the response (minus the secrets)';
+
+    ok scalar $vr_only_result->{immutable_fields}->@* < scalar $dup_result->{immutable_fields}->@*, 'VR only response has less immutable fields';
+    ok scalar keys $vr_only_result->%* < scalar keys $dup_result->%*,                               'VR only response is way shorter';
+
+    $vr_only_result = $c->tcall('get_settings', $params);
+    ok !$vr_only_result->{employment_status}, 'it does not have an employment status';
+
+    cmp_bag $vr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields)],
+        'All immutable fields are included in the response (minus the secrets)';
+
+    # complete the FA
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $dup_client->financial_assessment({
+        data => encode_json_utf8($data),
+    });
+    $dup_client->save();
+
+    my @fa_duplicated_fields = BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+    $vr_only_result = $c->tcall('get_settings', $params);
+
+    ok $vr_only_result->{employment_status}, 'employment status is present';
+
+    cmp_bag $vr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields, @fa_duplicated_fields)],
+        'All immutable fields are included in the response (minus the secrets)';
 };
 
 done_testing();
