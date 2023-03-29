@@ -171,8 +171,8 @@ sub asset_index {
 
     my $token_details = $params->{token_details};
 
-    # Set landing company with logged in client details if no arg passed
-    if ($token_details and exists $token_details->{loginid} and not $landing_company_name) {
+    # Set landing company with logged in client
+    if ($token_details and exists $token_details->{loginid}) {
         ($landing_company_name, $country_code) = _get_info_from_token($token_details);
     }
 
@@ -192,8 +192,8 @@ sub trading_durations {
     my $country_code         = $params->{country_code}                // '';
 
     my $token_details = $params->{token_details};
-    # Set landing company with logged in client details if no arg passed
-    if ($token_details and exists $token_details->{loginid} and not $landing_company_name) {
+    # Set landing company with logged in client details
+    if ($token_details and exists $token_details->{loginid}) {
         ($landing_company_name, $country_code) = _get_info_from_token($token_details);
     }
 
