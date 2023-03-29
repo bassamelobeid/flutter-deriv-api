@@ -170,6 +170,12 @@ sub _build_records {
             closed_weight => 0.05,
         });
 
+        # I hate to do this, but delta needs spot tick, and Mocking this method will disappear out of scope
+        no warnings 'redefine';
+        *Quant::Framework::Underlying::spot_tick = sub {
+            return Postgres::FeedDB::Spot::Tick->new({epoch => Date::Utility->new($record{date_start})->epoch, quote => $record{current_spot}});
+        };
+
         my @smile_data   = map { $line->{$_ . ':T Days ATM 25RR 10RR 25BF 10BF'} } (1 .. 36);
         my $surface_data = $self->_set_surface_data([@smile_data]);
         my $surface_date = Date::Utility->new($record{date_start}->truncate_to_day->epoch + 14 * 3600);

@@ -48,7 +48,7 @@ jobs:
     - run:
         <<: *5
         command: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          for i in $(seq 1 12); do echo -n "."; sleep 300; done &
           make OVRA_benchmark
         name: OVRA benchmark
     - store_test_results:
