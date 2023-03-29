@@ -89,8 +89,15 @@ sub _build_max_stake {
         financialrounding('price', $self->currency, $self->maximum_number_of_implied_contracts() * $self->ask_probability->amount);
 
     # return the smaller max stake
-    return $max_stake_risk_profile if $max_stake_theoretical <= 0;
-    return ($max_stake_risk_profile < $max_stake_theoretical) ? $max_stake_risk_profile : $max_stake_theoretical;
+    my $max_stake;
+    my $min_stake = $self->min_stake;
+    $max_stake = ($max_stake_risk_profile < $max_stake_theoretical) ? $max_stake_risk_profile : $max_stake_theoretical;
+
+    # in extreme cases, min stake could be bigger than max stake
+    # though it should never happen with the right BO settings
+    # but adding validation here just in case
+    return $min_stake if $min_stake > $max_stake;
+    return $max_stake;
 }
 
 =head2 _build_number_of_contracts
@@ -309,14 +316,10 @@ validate maximum stake based on financial underlying risk profile defined in bac
 sub _validate_stake {
     my $self = shift;
 
-    my $per_symbol_config = $self->per_symbol_config();
-    my $risk_profile      = $per_symbol_config->{risk_profile};
-    my $max_stake         = JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.risk_profile.$risk_profile"));
-
-    if ($self->_user_input_stake > $max_stake->{$self->currency}) {
+    if ($self->_user_input_stake > $self->max_stake) {
         return {
             message           => 'maximum stake limit',
-            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $max_stake->{$self->currency})],
+            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $self->max_stake)],
             details           => {
                 field           => 'amount',
                 min_stake       => $self->min_stake,
@@ -340,52 +343,6 @@ sub _validate_stake {
     }
 }
 
-=head2 _validate_number_of_contracts
-
-validate number of contracts for vanilla options.
-min and max number of contracts are from backoffice
-
-=cut
-
-sub _validate_number_of_contracts {
-    my $self = shift;
-
-    my $number_of_contracts = $self->number_of_contracts;
-
-    # we don't tell client about number of contracts, as we don't reveal it in FE
-    # instead we tell them to reduce stake
-
-    if ($number_of_contracts < $self->minimum_number_of_implied_contracts()) {
-        # due to precision issues, we allow 1% flexibility
-        return undef unless (abs($number_of_contracts - $self->minimum_number_of_implied_contracts()) / $number_of_contracts > 0.01);
-        return {
-            message           => 'minimum stake limit exceeded',
-            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
-            details           => {
-                field           => 'amount',
-                min_stake       => $self->min_stake,
-                max_stake       => $self->max_stake,
-                barrier_choices => $self->strike_price_choices
-            },
-        };
-    }
-
-    if ($number_of_contracts > $self->maximum_number_of_implied_contracts()) {
-        return {
-            message           => 'maximum stake limit exceeded',
-            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $self->max_stake)],
-            details           => {
-                field           => 'amount',
-                min_stake       => $self->min_stake,
-                max_stake       => $self->max_stake,
-                barrier_choices => $self->strike_price_choices
-            },
-        };
-    }
-
-    return undef;
-}
-
 =head2 _validation_methods
 
 all validation methods needed for vanilla
@@ -405,8 +362,7 @@ sub _validation_methods {
 
     # add vanilla specific validations
     push @validation_methods, '_validate_barrier_choice' unless $self->for_sale;
-    push @validation_methods, '_validate_number_of_contracts';
-    push @validation_methods, '_validate_stake';
+    push @validation_methods, '_validate_stake'          unless $self->for_sale;
 
     return \@validation_methods;
 }

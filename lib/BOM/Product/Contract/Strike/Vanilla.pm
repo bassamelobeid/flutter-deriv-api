@@ -7,6 +7,7 @@ use POSIX     qw(ceil floor);
 use Math::CDF qw( qnorm );
 
 use List::Util            qw(max min);
+use List::MoreUtils       qw(uniq);
 use POSIX                 qw(ceil floor);
 use Format::Util::Numbers qw/roundnear roundcommon/;
 use Math::Round           qw(round);
@@ -122,6 +123,7 @@ calculate strike price choices for intraday
 sub intraday_strike_price_choices {
     my $args = shift;
 
+    my $ul                = $args->{underlying};
     my $current_spot      = $args->{current_spot};
     my $per_symbol_config = $args->{per_symbol_config};
 
@@ -131,11 +133,15 @@ sub intraday_strike_price_choices {
     for my $delta (@{$delta_array}) {
         $args->{delta} = $delta;
         my $strike_price = calculate_implied_strike($args);
-        $strike_price = $strike_price - $current_spot;
-        $delta > 0.5 ? $strike_price = round($strike_price) : $strike_price = round($strike_price);   #round up when delta > 0.5, round down otherwise
+        $strike_price = roundnear($ul->pip_size * 10, ($strike_price - $current_spot));
+        $strike_price = roundcommon($ul->pip_size, $strike_price);
         $strike_price = $strike_price >= 0 ? "+" . $strike_price : "" . $strike_price;
+
         push @strike_price_choices, $strike_price;
     }
+
+    @strike_price_choices = uniq(@strike_price_choices);
+
     return \@strike_price_choices;
 }
 
@@ -175,6 +181,8 @@ sub daily_strike_price_choices {
         $args->{factor} = $factor;
         return daily_strike_price_choices($args);
     }
+
+    @strike_price_choices = uniq(@strike_price_choices);
 
     return \@strike_price_choices;
 

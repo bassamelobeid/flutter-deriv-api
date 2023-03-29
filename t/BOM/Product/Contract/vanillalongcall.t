@@ -284,7 +284,7 @@ subtest 'risk management tools' => sub {
     lives_ok {
         $args->{date_start}   = $now;
         $args->{date_pricing} = $now;
-        $args->{barrier}      = '+1';
+        $args->{barrier}      = '+0.60';
         $args->{stake}        = '1000';
 
         $per_symbol_config                            = JSON::MaybeXS::decode_json($per_symbol_config);
@@ -295,7 +295,7 @@ subtest 'risk management tools' => sub {
         my $c = produce_contract($args);
 
         ok !$c->is_valid_to_buy, 'invalid to buy';
-        is $c->primary_validation_error->message,                'maximum stake limit exceeded',   'correct error message';
+        is $c->primary_validation_error->message,                'maximum stake limit',            'correct error message';
         is $c->primary_validation_error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'correct message to client';
     }
     'number of contracts validation';
@@ -305,7 +305,7 @@ subtest 'strike price choices intraday' => sub {
     $args->{duration} = '10h';
     my $c = produce_contract($args);
 
-    my @expected_strike_price_choices = ('+3061', '+1260', '+39', '-1160', '-2855');
+    my @expected_strike_price_choices = ('+3061.20', '+1259.80', '+39.00', '-1160.50', '-2855.20');
     cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
 };
 
@@ -351,11 +351,11 @@ subtest 'strike price choice validation' => sub {
 
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message, 'InvalidBarrier', 'correct error message';
-    is $c->primary_validation_error->message_to_client->[0], 'Barriers available are +3061, +1260, +39, -1160, -2855',
+    is $c->primary_validation_error->message_to_client->[0], 'Barriers available are +3061.20, +1259.80, +39.00, -1160.50, -2855.20',
         'correct error message to client';
 
     $args->{duration} = '10h';
-    $args->{barrier}  = '+39';
+    $args->{barrier}  = '+39.00';
     $args->{stake}    = '10';
     $c                = produce_contract($args);
 
@@ -373,7 +373,7 @@ subtest 'risk profile max stake per trade validation' => sub {
 
     $args->{stake}    = 200;
     $args->{duration} = '10h';
-    $args->{barrier}  = '+39';
+    $args->{barrier}  = '+39.00';
     my $c = produce_contract($args);
 
     ok !$c->is_valid_to_buy, 'invalid to buy';
@@ -382,7 +382,7 @@ subtest 'risk profile max stake per trade validation' => sub {
 
     $args->{stake}    = 10;
     $args->{duration} = '10h';
-    $args->{barrier}  = '+39';
+    $args->{barrier}  = '+39.00';
     $c                = produce_contract($args);
 
     ok $c->is_valid_to_buy, 'valid to buy now';
