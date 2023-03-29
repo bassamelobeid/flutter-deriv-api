@@ -166,7 +166,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol         => 'OTC_GDAXI',
         recorded_date  => $an_hour_earlier,
         spot_reference => $tick->quote,
-    });
+        spot_tick      => Postgres::FeedDB::Spot::Tick->new({epoch => $an_hour_earlier->epoch, quote => '15413.2'})});
 
 subtest 'valid bet passing and stuff' => sub {
 
@@ -309,7 +309,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $mocked_contract->unmock_all;
 
     $bet_params->{duration} = '11d';
-    $bet_params->{barrier}  = '99.88';
+    $bet_params->{barrier}  = '99.86';
     $bet_params->{bet_type} = 'ONETOUCH';
 
     $bet = produce_contract($bet_params);

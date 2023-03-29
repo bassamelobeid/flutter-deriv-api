@@ -165,6 +165,7 @@ sub get_barrier_range {
     my ($underlying, $duration, $spot, $vol) =
         @{$args}{'underlying', 'duration', 'spot', 'volatility'};
     my $premium_adjusted = $underlying->market_convention->{delta_premium_adjusted};
+    my $time_in_years    = $duration / (86400 * 365);
     my @barriers;
     if ($args->{type} eq 'double') {
         my $ref = {
@@ -178,11 +179,12 @@ sub get_barrier_range {
                     delta            => $delta / 100,
                     option_type      => $ref->{$type},
                     atm_vol          => $vol,
-                    t                => $duration / (86400 * 365),
+                    t                => $time_in_years,
                     r_rate           => 0,
                     q_rate           => 0,
                     spot             => $spot,
                     premium_adjusted => $premium_adjusted,
+                    forward          => $time_in_years >= 1 ? 1 : 0
                 });
             }
             push @barriers, $highlow;
@@ -194,11 +196,12 @@ sub get_barrier_range {
                         delta            => ($delta * 5) / 100,
                         option_type      => 'VANILLA_CALL',
                         atm_vol          => $vol,
-                        t                => $duration / (86400 * 365),
+                        t                => $time_in_years,
                         r_rate           => 0,
                         q_rate           => 0,
                         spot             => $spot,
                         premium_adjusted => $premium_adjusted,
+                        forward          => $time_in_years >= 1 ? 1 : 0
                     }
                 ),
             };

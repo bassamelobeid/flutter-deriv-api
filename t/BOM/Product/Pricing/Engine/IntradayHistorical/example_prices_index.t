@@ -687,14 +687,14 @@ my $data = [{
         bet_type   => 'CALL',
         date_start => 1428458885,
         duration   => 60,
-        prob       => '0.51',
+        prob       => '0.52',
     },
     {
         underlying => 'OTC_AS51',
         bet_type   => 'CALL',
         date_start => 1428458885,
         duration   => 30,
-        prob       => '0.50',
+        prob       => '0.52',
     },
 ];
 
@@ -708,21 +708,23 @@ foreach my $d (@$data) {
         {
             symbol        => $_,
             recorded_date => Date::Utility->new($d->{date_start}),
-        }) for (qw/USD GBP EUR AUD CHF/);
+        }) for (qw/USD GBP EUR AUD CHF AUD-USD/);
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             symbol        => $_->symbol,
             recorded_date => Date::Utility->new($d->{date_start}),
-        }) for @symbols;
+            spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => Date::Utility->new($d->{date_start})->epoch, quote => '1.00'})}
+    ) for @symbols;
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => $_,
             recorded_date => Date::Utility->new($d->{date_start}),
-        }) for qw(frxEURUSD frxAUDUSD frxUSDCHF);
+            spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => Date::Utility->new($d->{date_start})->epoch, quote => '1.00'})}
+    ) for qw(frxEURUSD frxAUDUSD frxUSDCHF);
 
     my $params = {
         bet_type     => $d->{bet_type},

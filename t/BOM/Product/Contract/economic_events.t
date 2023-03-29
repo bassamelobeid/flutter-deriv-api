@@ -34,7 +34,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => 'frxUSDJPY',
         recorded_date => $now->minus_time_interval('10m'),
-    });
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $now->epoch, quote => '132.10'})});
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -64,11 +64,7 @@ my $params = {
 my $bet = produce_contract($params);
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
 
-my $amount;
-warning_like {
-    $amount = $bet->pricing_engine->event_markup->amount;
-}
-qr/basis tick/, 'warns';
+my $amount = $bet->pricing_engine->event_markup->amount;
 
 is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.01, 'correct spot risk markup');
 cmp_ok($amount, '<', $bet->pricing_engine->economic_events_spot_risk_markup->amount, 'vol risk markup is lower than higher range');

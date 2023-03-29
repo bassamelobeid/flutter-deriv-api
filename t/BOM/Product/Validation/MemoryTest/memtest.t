@@ -22,6 +22,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Market::DataDecimate;
 use Cache::RedisDB;
+use Postgres::FeedDB::Spot::Tick;
 
 my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
 $redis_exchangerates->hmset(
@@ -103,8 +104,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     $volsurfaces{$_},
     {
         symbol        => $_,
-        recorded_date => $now
-    }) for keys %volsurfaces;
+        recorded_date => $now,
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $now->epoch, quote => '1.00'})}) for keys %volsurfaces;
 my %correlations = map {
     $_->symbol => {
         GBP => {

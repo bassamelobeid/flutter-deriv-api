@@ -36,7 +36,7 @@ for my $date ($weekend, $weekday) {
         {
             symbol        => $_,
             recorded_date => $date
-        }) for qw(USD AUD HKD AUD-USD);
+        }) for qw(USD AUD HKD AUD-USD HKD-USD);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
@@ -53,9 +53,19 @@ for my $date ($weekend, $weekday) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            symbol        => $_,
-            recorded_date => $date
-        }) for qw(frxAUDUSD frxAUDUSD frxUSDHKD);
+            symbol        => 'frxAUDUSD',
+            recorded_date => $date,
+            spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $date, quote => '0.75'}),
+        });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDKHD',
+            recorded_date => $date,
+            spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $date, quote => '7.76'}),
+        });
+
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {

@@ -31,7 +31,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => Date::Utility->new($date_pricing),
-    }) for qw( frxUSDJPY frxGBPJPY frxGBPUSD );
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $date_pricing, quote => '1.00'})}) for qw( frxUSDJPY frxGBPJPY frxGBPUSD );
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

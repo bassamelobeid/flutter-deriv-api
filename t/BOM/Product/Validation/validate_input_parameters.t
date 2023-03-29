@@ -168,13 +168,14 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
 
     my $forex = create_underlying('frxUSDJPY');
 
-    Quant::Framework::Utils::Test::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            underlying       => $forex,
+            symbol           => $forex->symbol,
             chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
             chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
             recorded_date    => $now,
+            spot_tick        => Postgres::FeedDB::Spot::Tick->new({epoch => $now, quote => '132.25'}),
             surface_data     => {
                 1 => {
                     smile => {

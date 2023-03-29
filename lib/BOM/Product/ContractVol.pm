@@ -67,9 +67,9 @@ sub _vols_at_point {
     my ($self, $end_date, $days_attr) = @_;
 
     my $vol_args = {
-        delta => 50,
-        from  => $self->effective_start,
-        to    => $self->date_expiry,
+        market => "ATM",
+        from   => $self->effective_start,
+        to     => $self->date_expiry,
     };
 
     my $market_name = $self->underlying->market->name;
@@ -79,6 +79,8 @@ sub _vols_at_point {
         $pair_ref->{volsurface} //= $self->_volsurface_fetcher->fetch_surface({
             underlying => $pair_ref->{underlying},
         });
+        delete $vol_args->{market} if $pair_ref->{volsurface}->{type} eq 'moneyness';
+        $vol_args->{delta} = 50    if $pair_ref->{volsurface}->{type} eq 'moneyness';
         $pair_ref->{vol} //= $pair_ref->{volsurface}->get_volatility($vol_args);
         $vols_to_use{$pair} = $pair_ref->{vol};
     }
@@ -139,11 +141,19 @@ sub _build_pricing_vol {
         $volatility_error = $self->empirical_volsurface->validation_error if $self->empirical_volsurface->validation_error;
     } else {
         if ($self->pricing_engine_name =~ /VannaVolga/) {
-            $vol = $self->volsurface->get_volatility({
-                delta => 50,
-                from  => $self->effective_start->epoch,
-                to    => $self->date_expiry->epoch,
-            });
+            if ($self->volsurface->type eq 'moneyness') {
+                $vol = $self->volsurface->get_volatility({
+                    delta => 50,
+                    from  => $self->effective_start->epoch,
+                    to    => $self->date_expiry->epoch,
+                });
+            } else {
+                $vol = $self->volsurface->get_volatility({
+                    market => "ATM",
+                    from   => $self->effective_start->epoch,
+                    to     => $self->date_expiry->epoch,
+                });
+            }
         } else {
             $vol = $self->vol_at_strike;
         }

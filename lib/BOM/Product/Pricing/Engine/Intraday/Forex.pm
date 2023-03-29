@@ -237,6 +237,7 @@ sub _build_intraday_vanilla_delta {
         r_rate           => 0,
         q_rate           => 0,
         premium_adjusted => $bet->underlying->market_convention->{delta_premium_adjusted},
+        forward          => 0
     });
 
     return Math::Util::CalculatedValue::Validatable->new({

@@ -18,6 +18,40 @@ use Quant::Framework::VolSurface::Delta;
 
 my $now = Date::Utility->new('2020-09-21 00:00:01');
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        rates => {
+            365 => 3.4368,
+            181 => 3.1785,
+            14  => 2.4375,
+            7   => 2.2947,
+            89  => 2.7814,
+            28  => 2.4795,
+            60  => 2.6675,
+            1   => 4.8545,
+            273 => 3.3408
+        },
+        recorded_date => $now,
+        symbol        => 'EUR-JPY',
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        rates => {
+            7   => 0.001,
+            30  => -0.052,
+            90  => -0.008,
+            180 => 0.024,
+            365 => 0.13
+        },
+        recorded_date => $now,
+        symbol        => 'JPY',
+    });
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {

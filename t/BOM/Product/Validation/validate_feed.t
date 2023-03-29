@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use Test::MockModule;
 use Postgres::FeedDB::Spot;
+use Postgres::FeedDB::Spot::Tick;
 
 my $now   = Date::Utility->new('2016-03-15 01:00:00');
 my $delay = $now->minus_time_interval('901s');
@@ -87,6 +88,13 @@ subtest 'open contracts - missing current tick & quote too old' => sub {
             quote      => 100
         });
         $bet_params->{current_tick} = $old_tick;
+        my $ul      = Test::MockModule->new('Quant::Framework::Underlying');
+        my $pg_tick = Postgres::FeedDB::Spot::Tick->new({
+            underlying => 'frxUSDJPY',
+            epoch      => $now->epoch,
+            quote      => 100
+        });
+        $ul->mock('spot_tick', sub { return $pg_tick });
         $c = produce_contract($bet_params);
         ok !$c->is_valid_to_buy, 'not valid to buy';
         like($c->primary_validation_error->{message}, qr/Quote too old/, 'no realtime data message');

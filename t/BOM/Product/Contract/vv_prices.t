@@ -63,7 +63,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 },
                 vol_spread => {50 => 0.01}
             },
-        }});
+            spot_tick => Postgres::FeedDB::Spot::Tick->new({epoch => $now->epoch, quote => '100'})}});
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
@@ -94,8 +94,8 @@ $c = produce_contract({
     low_barrier  => 99,
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundcommon(0.0001, $c->pricing_engine->bs_probability->amount),    0.1081, 'correct bs probability for FX contract';
-is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), 0.0276, 'correct market supplement';
+is roundcommon(0.0001, $c->pricing_engine->bs_probability->amount),    0.1081,   'correct bs probability for FX contract';
+is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), '0.0276', 'correct market supplement';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',

@@ -31,7 +31,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => $now
+        recorded_date => $now,
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $now, quote => '132.25'}),
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

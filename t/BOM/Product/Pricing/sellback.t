@@ -34,6 +34,20 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $start_time
     });
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'OTC_AEX',
+        recorded_date => $start_time,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxEURUSD',
+        recorded_date => $start_time,
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $start_time->epoch, quote => '100'})});
+
 for my $type (qw(CALL PUT)) {
     for my $underlying (qw(R_100 R_25 OTC_AEX WLDEUR)) {
         for my $duration (qw(2m 5m 10m 2h 6h)) {

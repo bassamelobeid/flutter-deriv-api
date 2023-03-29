@@ -306,13 +306,15 @@ SKIP: {
     subtest 'take profit cap and precision' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
         my $args = {
-            bet_type    => 'MULTUP',
-            underlying  => 'R_100',
-            amount_type => 'stake',
-            amount      => 10,
-            multiplier  => 10,
-            currency    => 'USD',
-            limit_order => {
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            amount_type  => 'stake',
+            amount       => 10,
+            multiplier   => 10,
+            date_start   => $now,
+            date_pricing => $now,
+            currency     => 'USD',
+            limit_order  => {
                 take_profit => 10000 + 0.01,
             },
         };
@@ -332,13 +334,15 @@ SKIP: {
     subtest 'stop loss cap' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
         my $args = {
-            bet_type    => 'MULTUP',
-            underlying  => 'R_100',
-            amount_type => 'stake',
-            amount      => 10,
-            multiplier  => 10,
-            currency    => 'USD',
-            limit_order => {
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            amount_type  => 'stake',
+            amount       => 10,
+            date_start   => $now,
+            date_pricing => $now,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
                 stop_loss => 11,
             },
         };

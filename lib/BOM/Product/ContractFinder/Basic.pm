@@ -315,6 +315,7 @@ sub _default_barrier {
         q_rate           => 0,
         spot             => $current_tick->quote,
         premium_adjusted => 0,
+        forward          => 1
     });
 
     my $strike = BOM::Product::Contract::Strike->new(

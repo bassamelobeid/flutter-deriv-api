@@ -33,6 +33,18 @@ my @underlying_symbols = ('OTC_AEX');
 my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_obj      = LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg);
+
+my $ul = Test::MockModule->new('Quant::Framework::Underlying');
+
+$ul->mock(
+    'spot_tick',
+    sub {
+        Postgres::FeedDB::Spot::Tick->new({
+            epoch => Date::Utility->new('2019-02-18 18:02:00'),
+            quote => 100
+        });
+    });
+
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

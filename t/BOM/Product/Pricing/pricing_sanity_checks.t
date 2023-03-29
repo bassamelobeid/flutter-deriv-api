@@ -18,8 +18,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
-        recorded_date => $now
-    }) for qw(frxUSDJPY frxAUDJPY frxAUDUSD);
+        recorded_date => $now,
+    }) for qw(frxUSDJPY frxAUDUSD);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxAUDJPY',
+        recorded_date => $now,
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $now->epoch, quote => '80.53'})});
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {

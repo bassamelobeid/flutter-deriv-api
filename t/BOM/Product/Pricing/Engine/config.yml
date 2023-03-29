@@ -162,9 +162,9 @@ expected_result:
       commission_markup: 0.025
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.0073
+      risk_markup: 0.0075
       spot: 6685.31
-      theo_prob: 0.536771308479828
+      theo_prob: 0.5370
       total_markup: 0.0328
     EXPIRYRANGE:
       ask_prob: 0.7824
@@ -173,9 +173,9 @@ expected_result:
       commission_markup: 0.025
       duration: 120d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.00806072233433393
+      risk_markup: 0.0080
       spot: 6688.93
-      theo_prob: 0.760588870422066
+      theo_prob: 0.7605
       total_markup: 0.0281
     NOTOUCH:
       ask_prob: 0.8705
@@ -185,7 +185,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0944528863336886
       spot: 6685.31
-      theo_prob: 0.8048
+      theo_prob: 0.8050
       total_markup: 0.147
     RANGE:
       ask_prob: 0.1
@@ -260,7 +260,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0071
       spot: 1.3803
-      theo_prob: 0.4262
+      theo_prob: 0.4263
       total_markup: 0.0291
     EXPIRYRANGE:
       ask_prob: 0.8056
@@ -303,7 +303,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.00613906651850605
       spot: 102.471
-      theo_prob: 0.505502529510933
+      theo_prob: 0.5057
       total_markup: 0.0288
     EXPIRYRANGE:
       ask_prob: 0.5772
@@ -314,7 +314,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0296
       spot: 102.454
-      theo_prob: 0.5814
+      theo_prob: 0.5819
       total_markup: 0.0489
     NOTOUCH:
       ask_prob: 0.3544

@@ -47,6 +47,17 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         underlying => $ul,
         for_date   => $now
     });
+
+    my $qf_ul = Test::MockModule->new('Quant::Framework::Underlying');
+    $qf_ul->mock(
+        'spot_tick',
+        sub {
+            Postgres::FeedDB::Spot::Tick->new({
+                epoch => $now->epoch,
+                quote => $spot
+            });
+        });
+
     foreach my $contract_category (grep { not $skip_category{$_} } $offerings_obj->query({underlying_symbol => $ul->symbol}, ['contract_category'])) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         next if not $category_obj->is_path_dependent;

@@ -229,9 +229,9 @@ sub _get_callputspread_barrier_calculation {
 
         # Retrieve the Annualised volatility
         my $vol_args = {
-            delta => 50,
-            from  => $self->effective_start,
-            to    => $self->date_expiry,
+            market => "ATM",
+            from   => $self->effective_start,
+            to     => $self->date_expiry,
         };
         my $vol = $self->volsurface->get_volatility($vol_args);
 

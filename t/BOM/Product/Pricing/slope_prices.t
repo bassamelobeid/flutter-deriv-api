@@ -21,6 +21,7 @@ use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use Postgres::FeedDB::Spot::Tick;
 
 my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 my $now           = Date::Utility->new('2016-02-01');
@@ -40,6 +41,14 @@ my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_obj      = LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg);
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
+        recorded_date => $now,
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $now, quote => $spot}),
+    });
+
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -56,11 +65,16 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                 underlying => $ul,
                 for_date   => $now
             });
-            my $vol = $volsurface->get_volatility({
-                delta => 50,
-                from  => $volsurface->creation_date,
-                to    => $volsurface->creation_date->plus_time_interval($duration),
-            });
+
+            my $vol_args = {
+                market => "ATM",
+                from   => $volsurface->creation_date,
+                to     => $volsurface->creation_date->plus_time_interval($duration),
+            };
+            delete $vol_args->{market} if $volsurface->{type} eq 'moneyness';
+            $vol_args->{delta} = 50    if $volsurface->{type} eq 'moneyness';
+
+            my $vol      = $volsurface->get_volatility($vol_args);
             my @barriers = @{
                 Test::BOM::UnitTestPrice::get_barrier_range({
                         type       => ($category_obj->two_barriers ? 'double' : 'single'),
@@ -108,7 +122,6 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
-
                         ok abs($c->theo_probability->amount - $expectation->{$code}) < 1e-5,
                             'theo probability matches [' . $code . '] exp [' . $expectation->{$code} . '] got [' . $c->theo_probability->amount . ']';
                     }

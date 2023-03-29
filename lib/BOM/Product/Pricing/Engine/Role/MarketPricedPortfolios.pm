@@ -226,16 +226,21 @@ sub _build_priced_portfolios {
 
     my %priced_portfolios;
 
-    my $from    = $self->bet->effective_start;
-    my $to      = $self->bet->date_expiry;
-    my $atm_vol = $self->bet->volsurface->get_volatility({
-        from  => $from,
-        to    => $to,
-        delta => 50,
-    });
+    my $from = $self->bet->effective_start;
+    my $to   = $self->bet->date_expiry;
+
+    my $duration = ($to->epoch - $from->epoch);
+
+    if ($duration > (365 * 24 * 60 * 60)) {
+        # we only offer max 1 year contract
+        $to = $from->plus_time_interval('365d')->truncate_to_day;
+    }
+
+    my $strike_smile = $self->bet->volsurface->get_strike_smile($from->epoch, $to->epoch);
+    my $atm_vol      = $strike_smile->{50}->{vol};
 
     foreach my $portfolio_name (keys %{$self->portfolios}) {
-        $priced_portfolios{$portfolio_name} = $self->portfolio_hedge($portfolio_name, $atm_vol, $from, $to);
+        $priced_portfolios{$portfolio_name} = $self->portfolio_hedge($portfolio_name, $atm_vol, $from, $to, $strike_smile);
     }
 
     return \%priced_portfolios;
@@ -250,18 +255,15 @@ Determine the hedge for a given portfolio name for the given ATM vol and expiry 
 =cut
 
 sub portfolio_hedge {
-    my ($self, $portfolio_name, $atm_vol, $from, $to) = @_;
+    my ($self, $portfolio_name, $atm_vol, $from, $to, $strike_smile) = @_;
 
     my $bet       = $self->bet;
     my $portfolio = $self->portfolios->{$portfolio_name};
 
-    my $mu               = $bet->mu;
-    my $discount_rate    = $bet->discount_rate;
-    my $hedge_tiy        = $self->hedge_tiy->amount;
-    my $r_rate           = $bet->r_rate;
-    my $q_rate           = $bet->q_rate;
-    my $S                = $bet->pricing_spot;
-    my $premium_adjusted = $bet->underlying->{market_convention}->{delta_premium_adjusted};
+    my $mu            = $bet->mu;
+    my $discount_rate = $bet->discount_rate;
+    my $hedge_tiy     = $self->hedge_tiy->amount;
+    my $S             = $bet->pricing_spot;
 
     my %values = (
         cost   => 0,
@@ -274,33 +276,11 @@ sub portfolio_hedge {
 
     foreach my $option (@{$portfolio->{options}}) {
         my $delta = $option->{delta};
+        $delta = 100 - $option->{delta} if $option->{type} eq 'VANILLA_PUT';
 
-        my $vv_vol = $bet->volsurface->get_volatility({
-            from  => $from,
-            to    => $to,
-            delta => ($option->{type} eq 'VANILLA_CALL' ? $delta : 100 - $delta),
-        });
-
-        my $strike =
-            ($delta == 50)
-            ? get_ATM_strike_for_spot_delta({
-                atm_vol          => $atm_vol,
-                t                => $hedge_tiy,
-                r_rate           => $r_rate,
-                q_rate           => $q_rate,
-                spot             => $S,
-                premium_adjusted => $premium_adjusted
-            })
-            : get_strike_for_spot_delta({
-                delta            => $delta / 100,
-                option_type      => $option->{type},
-                atm_vol          => $atm_vol,
-                t                => $hedge_tiy,
-                r_rate           => $r_rate,
-                q_rate           => $q_rate,
-                spot             => $S,
-                premium_adjusted => $premium_adjusted
-            });
+        # Retrieve requisite strike & vol
+        my $strike = $strike_smile->{$delta}->{strike};
+        my $vv_vol = $strike_smile->{$delta}->{vol};
 
         my $function = $analytic_functions{uc $option->{type}};
 
@@ -359,3 +339,4 @@ sub _build_on_equities {
 }
 
 1;
+

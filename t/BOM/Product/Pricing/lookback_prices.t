@@ -70,9 +70,9 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                 for_date   => $now
             });
             my $vol = $volsurface->get_volatility({
-                delta => 50,
-                from  => $volsurface->recorded_date,
-                to    => $volsurface->recorded_date->plus_time_interval($duration),
+                market => "ATM",
+                from   => $volsurface->recorded_date,
+                to     => $volsurface->recorded_date->plus_time_interval($duration),
             });
             my @barriers = @{
                 Test::BOM::UnitTestPrice::get_barrier_range({

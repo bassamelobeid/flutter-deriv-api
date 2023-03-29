@@ -104,6 +104,7 @@ sub _build_minimum_allowable_move {
             r_rate           => 0,
             q_rate           => 0,
             premium_adjusted => $self->underlying->{market_convention}->{delta_premium_adjusted},
+            forward          => $self->timeinyears->amount >= 1 ? 1 : 0
         });
 
         # represents the minimum number of pips that the strike must move for a valid bet

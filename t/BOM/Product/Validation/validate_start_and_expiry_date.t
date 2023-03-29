@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Config::Chronicle;
+use Postgres::FeedDB::Spot::Tick;
 use Quant::Framework;
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
@@ -38,7 +39,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $weekday
-    }) for qw(USD JPY HKD AUD-USD);
+    }) for qw(USD JPY HKD AUD-USD HKD-USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
@@ -55,8 +56,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'OTC_HSI',
-        recorded_date => $weekday
-    });
+        recorded_date => $weekday,
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $weekday->epoch, quote => '21755.56'})});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {

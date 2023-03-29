@@ -152,7 +152,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         rates         => $interest_rate->{$_}->{rates},
         recorded_date => Date::Utility->new($date_pricing),
-    }) for qw( GBP JPY USD EUR JPY-USD EUR-USD GBP-USD);
+    }) for qw( GBP JPY USD EUR JPY-USD USD-JPY EUR-USD USD-EUR GBP-USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {

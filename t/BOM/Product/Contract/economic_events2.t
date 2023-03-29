@@ -39,7 +39,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now->minus_time_interval('10m'),
-    }) for qw(frxUSDJPY frxGBPJPY frxGBPUSD);
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $now->epoch, quote => '1.00'})}) for qw(frxUSDJPY frxGBPJPY frxGBPUSD);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -84,8 +84,7 @@ sub test_economic_events_markup {
     is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex',           'uses Intraday Historical pricing engine');
     is($bet->pricing_engine->economic_events_spot_risk_markup->amount, $expected_ee_srmarkup, 'correct spot risk markup');
 
-    my $amount;
-    like(warning { $amount = $bet->pricing_engine->event_markup->amount }, qr/No basis tick for/, 'Got warning for no basis tick');
+    my $amount = $bet->pricing_engine->event_markup->amount;
     cmp_ok($amount, '<', $bet->pricing_engine->economic_events_spot_risk_markup->amount, 'vol risk markup is lower than higher range');
     is($bet->pricing_engine->economic_events_markup->amount, $expected_ee_markup, 'economic events markup is max of spot or vol risk markup');
 }

@@ -29,6 +29,15 @@ Quant::Framework::Utils::Test::create_doc(
     'currency',
     {
         symbol           => $_,
+        recorded_date    => Date::Utility->new('2016-02-18'),
+        chronicle_reader => $chronicle_r,
+        chronicle_writer => $chronicle_w,
+    }) for (qw/AUD USD AUD-USD USD-AUD/);
+
+Quant::Framework::Utils::Test::create_doc(
+    'currency',
+    {
+        symbol           => $_,
         recorded_date    => $date,
         chronicle_reader => $chronicle_r,
         chronicle_writer => $chronicle_w,
@@ -124,6 +133,18 @@ subtest 'economic event with non 5-minute interval starting date' => sub {
         release_date => Date::Utility->new('2019-02-18 18:01:00')->epoch
     };
 
+    my $ul = Test::MockModule->new('Quant::Framework::Underlying');
+
+    $ul->mock(
+        'spot_tick',
+        sub {
+            Postgres::FeedDB::Spot::Tick->new({
+                underlying => 'frxAUDUSD',
+                epoch      => Date::Utility->new('2019-02-18 18:02:00'),
+                quote      => 100
+            });
+        });
+
     my $surface = _get_surface({}, $event);
 
     my $from = Date::Utility->new('2019-02-18 18:02:00');
@@ -150,6 +171,8 @@ sub _get_surface {
             for_date              => Date::Utility->new('2019-02-18 17:52:04'),
             default_interest_rate => 0.5,
             default_dividend_rate => 0.5,
+            chronicle_reader      => $chronicle_r,
+            chronicle_writer      => $chronicle_w,
         });
 
     my $surface = Quant::Framework::VolSurface::Delta->new(

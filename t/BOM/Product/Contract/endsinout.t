@@ -53,7 +53,7 @@ subtest 'expiry miss' => sub {
         is $c->code,         'EXPIRYMISS';
         is $c->pricing_code, 'EXPIRYMISS';
         is $c->sentiment,    'high_vol';
-        cmp_ok $c->ask_price, '==', 6.75;
+        cmp_ok $c->ask_price, '==', 6.65;
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
@@ -61,11 +61,11 @@ subtest 'expiry miss' => sub {
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
-        cmp_ok roundcommon(0.001, $call->{amount}), '==', 0.585, 'correct tv for CALL';
+        cmp_ok roundcommon(0.001, $call->{amount}), '==', 0.589, 'correct tv for CALL';
         cmp_ok roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.176,
             'correct vol for call';
-        cmp_ok roundcommon(0.001, $put->{amount}), '==', 0.053, 'correct tv for PUT';
-        cmp_ok roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.243,
+        cmp_ok roundcommon(0.001, $put->{amount}), '==', 0.038, 'correct tv for PUT';
+        cmp_ok roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.247,
             'correct vol for put';
     }
     'generic';
@@ -115,7 +115,7 @@ subtest 'expiry range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Expiryrange';
         is $c->code,         'EXPIRYRANGE';
         is $c->pricing_code, 'EXPIRYRANGE';
-        is $c->ask_price,    '4.20';
+        is $c->ask_price,    '4.30';
         ok $c->sentiment, 'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
@@ -123,11 +123,11 @@ subtest 'expiry range' => sub {
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
-        cmp_ok roundcommon(0.001, $call->{amount}), '==', 0.566, 'correct tv for CALL';
+        cmp_ok roundcommon(0.001, $call->{amount}), '==', 0.57, 'correct tv for CALL';
         cmp_ok roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.175,
             'correct vol for call';
-        cmp_ok roundcommon(0.001, $put->{amount}), '==', 0.053, 'correct tv for PUT';
-        cmp_ok roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.243,
+        cmp_ok roundcommon(0.001, $put->{amount}), '==', 0.038, 'correct tv for PUT';
+        cmp_ok roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.247,
             'correct vol for put';
 
     }

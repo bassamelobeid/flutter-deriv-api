@@ -27,6 +27,21 @@ set_absolute_time($datetime->epoch);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
+        rates => {
+            1   => -0.0273,
+            7   => -0.4626,
+            30  => -0.8753,
+            90  => -0.5304,
+            180 => -0.5374,
+            365 => -0.5863
+        },
+        recorded_date => $datetime,
+        symbol        => 'JPY-USD',
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
         symbol        => 'USD',
         recorded_date => $datetime
     });
