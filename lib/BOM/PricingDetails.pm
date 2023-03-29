@@ -539,9 +539,9 @@ sub _get_overview {
 
     # Delta for Strike
     my $atm_vol = $bet->volsurface->get_volatility({
-        delta => 50,
-        from  => $bet->effective_start,
-        to    => $bet->date_expiry,
+        market => "ATM",
+        from   => $bet->effective_start,
+        to     => $bet->date_expiry,
     });
     my ($delta_strike1, $delta_strike2) = (0, 0);
     # contracts that doesn't have a financial barrier or does not have barrier at start.
@@ -555,6 +555,7 @@ sub _get_overview {
                 r_rate           => $bet->r_rate,
                 q_rate           => $bet->q_rate,
                 premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+                forward          => 0
             });
             $delta_strike2 = 100 * get_delta_for_strike({
                 strike           => $bet->low_barrier->as_absolute,
@@ -564,6 +565,7 @@ sub _get_overview {
                 r_rate           => $bet->r_rate,
                 q_rate           => $bet->q_rate,
                 premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+                forward          => 0
             });
         } elsif ($bet->can('barrier')) {
             $delta_strike1 = 100 * get_delta_for_strike({
@@ -574,6 +576,7 @@ sub _get_overview {
                 r_rate           => $bet->r_rate,
                 q_rate           => $bet->q_rate,
                 premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+                forward          => 0
             });
         }
     }
