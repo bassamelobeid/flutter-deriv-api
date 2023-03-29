@@ -1079,6 +1079,7 @@ subtest 'batch buy forex after friday close' => sub {
             {
                 symbol        => $_,
                 recorded_date => $date->minus_time_interval('1h'),
+                spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $date->epoch, quote => '132.25'}),
             }) for ('frxUSDJPY');
 
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

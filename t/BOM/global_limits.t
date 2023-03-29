@@ -57,7 +57,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => $now
+        recorded_date => $now,
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $now->epoch, quote => '133.34'}),
     });
 
 BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(1);

@@ -37,6 +37,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new,
+        spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => Date::Utility->new->epoch, quote => '15506.34'}),
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -206,7 +207,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => Date::Utility->new($start_time_5),
-    }) for qw(EUR USD);
+    }) for qw(EUR USD EUR-USD USD-EUR);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
