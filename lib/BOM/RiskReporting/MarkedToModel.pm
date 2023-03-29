@@ -34,6 +34,7 @@ use BOM::Transaction;
 use BOM::Transaction::Utility;
 use List::Util qw(max);
 use Log::Any   qw($log);
+use Data::Dump qw(pp);
 
 use constant SECONDS_PAST_CONTRACT_EXPIRY => 15;
 
@@ -147,7 +148,7 @@ sub check_open_bets {
                         }
                     } catch ($e) {
                         $error_count++;
-                        push @mail_content, "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $e ]";
+                        push @mail_content, "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", " . pp($e) . " ]";
                     }
                 }
 
