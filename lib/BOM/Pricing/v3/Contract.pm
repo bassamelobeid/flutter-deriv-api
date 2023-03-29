@@ -625,7 +625,7 @@ sub _get_error_message {
     return $reason->message_to_client if (blessed($reason) && $reason->isa('BOM::Product::Exception'));
 
     if ($log_exception) {
-        _log_exception(_get_ask => $reason);
+        _log_exception(_get_ask => $reason . "parameters: " . $json->encode($args_copy));
     } else {
         warn __PACKAGE__ . " _get_ask produce_contract failed: $reason, parameters: " . $json->encode($args_copy);
     }
