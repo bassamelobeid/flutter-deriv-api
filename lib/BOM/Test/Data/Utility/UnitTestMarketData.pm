@@ -167,6 +167,9 @@ sub create_doc {
         if ($yaml_db eq 'volsurface_delta' or $yaml_db eq 'volsurface_moneyness') {
             if (exists($data_mod->{symbol}) and not exists($data_mod->{underlying})) {
                 $data_mod->{underlying} = create_underlying($data_mod->{symbol});
+                no warnings 'redefine';
+                *Quant::Framework::Underlying::spot_tick = sub { return $data_mod->{spot_tick} }
+                    if defined $data_mod->{spot_tick};
                 delete $data_mod->{symbol};
             }
         }
