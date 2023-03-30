@@ -745,12 +745,6 @@ sub is_financial_information_complete {
 
     my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information', $lc);
 
-    if ($lc ne 'maltainvest') {
-        return 0 unless $is_FI;
-    }
-
-    return 1 if $self->risk_level_aml() =~ /low/;
-
     return 0 unless $is_FI;
 
     return 1;
