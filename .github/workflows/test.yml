@@ -8,4 +8,4 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Use the secret
-      run: echo ${{ secrets.DOCKE_PASSWORD }}
+      run: echo ${{ secrets.DOCKER_PASSWORD }}
