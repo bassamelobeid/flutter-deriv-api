@@ -57,10 +57,9 @@ jobs:
           if [[ '${{github.event_name}}' = 'pull_request' ]]
           then
             CIRCLE_PULL_REQUEST=${{github.event.pull_request.html_url}}
-            CIRCLE_BRANCH="pull/${{github.event.pull_request.number}}"
-          else
-            CIRCLE_BRANCH=${{ github.ref_name }}
+            #CIRCLE_BRANCH="pull/${{github.event.pull_request.number}}"
           fi
+          CIRCLE_BRANCH=${{ github.ref_name }}
           CIRCLE_PROJECT_USERNAME=${{github.repository_owner}}
           CIRCLE_PROJECT_REPONAME=$(basename ${{github.repository}})
           set | grep CIRCLE | sudo tee -a $GITHUB_ENV
