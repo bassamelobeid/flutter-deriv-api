@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-
 use Test::More;
 use RedisDB;
 use BOM::Config::Redis;
@@ -22,6 +21,9 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
     amount    => 100
 );
 
+my $client_id = $client->{_p2p_advertiser_cached}{id};
+delete $client->{_p2p_advertiser_cached};    # delete cache
+
 my $proc = BOM::Event::Process->new(category => 'generic');
 
 my $connection_config = BOM::Config::redis_p2p_config()->{p2p}{write};
@@ -30,6 +32,11 @@ my $advertiser_id = $advertiser->{_p2p_advertiser_cached}{id};
 $client->p2p_advertiser_relations(add_blocked => [$advertiser_id]);
 
 delete $advertiser->{_p2p_advertiser_cached};    # delete cache
+my $client_order     = $client->p2p_order_info(id => $order->{id});
+my $advertiser_order = $advertiser->p2p_order_info(id => $order->{id});
+
+delete $client_order->{subscription_info};
+delete $advertiser_order->{subscription_info};
 
 my @data_for_notification_tests = ({
         name  => 'order created',
@@ -39,8 +46,30 @@ my @data_for_notification_tests = ({
             order_id       => $order->{id},
         },
         expected => {
-            'P2P::ORDER::NOTIFICATION::' . uc($client->broker) . '::' . $client->loginid         => [$client->p2p_order_info(id => $order->{id})],
-            'P2P::ORDER::NOTIFICATION::' . uc($advertiser->broker) . '::' . $advertiser->loginid => [$advertiser->p2p_order_info(id => $order->{id})],
+            'P2P::ORDER::NOTIFICATION::'
+                . uc($client->broker)
+                . '::'
+                . $client->loginid
+                . '::'
+                . $client_id
+                . '::'
+                . -1
+                . '::'
+                . -1
+                . '::'
+                . -1 => [$client_order],
+            'P2P::ORDER::NOTIFICATION::'
+                . uc($advertiser->broker)
+                . '::'
+                . $advertiser->loginid
+                . '::'
+                . $advertiser_id
+                . '::'
+                . -1
+                . '::'
+                . -1
+                . '::'
+                . -1 => [$advertiser_order],
         }
     },
     {
@@ -51,8 +80,25 @@ my @data_for_notification_tests = ({
             order_id       => $order->{id},
         },
         expected => {
-            'P2P::ORDER::NOTIFICATION::' . uc($client->broker) . '::' . $client->loginid         => [$client->p2p_order_info(id => $order->{id})],
-            'P2P::ORDER::NOTIFICATION::' . uc($advertiser->broker) . '::' . $advertiser->loginid => [$advertiser->p2p_order_info(id => $order->{id})],
+            'P2P::ORDER::NOTIFICATION::'
+                . uc($client->broker)
+                . '::'
+                . $client->loginid
+                . '::'
+                . $client_id
+                . '::'
+                . -1
+                . '::'
+                . -1
+                . '::'
+                . -1 => [$client_order],
+            'P2P::ORDER::NOTIFICATION::'
+                . uc($advertiser->broker) . '::'
+                . $advertiser->loginid . '::'
+                . $advertiser_id . '::'
+                . -1 . '::'
+                . -1 . '::'
+                . -1 => [$advertiser_order],
         }
     },
     {
@@ -64,7 +110,13 @@ my @data_for_notification_tests = ({
             self_only      => 1,
         },
         expected => {
-            'P2P::ORDER::NOTIFICATION::' . uc($client->broker) . '::' . $client->loginid => [$client->p2p_order_info(id => $order->{id})],
+                  'P2P::ORDER::NOTIFICATION::'
+                . uc($client->broker) . '::'
+                . $client->loginid . '::'
+                . $client_id . '::'
+                . -1 . '::'
+                . -1 . '::'
+                . -1 => [$client_order],
         }
     },
     {
@@ -76,7 +128,13 @@ my @data_for_notification_tests = ({
             self_only      => 1,
         },
         expected => {
-            'P2P::ORDER::NOTIFICATION::' . uc($advertiser->broker) . '::' . $advertiser->loginid => [$advertiser->p2p_order_info(id => $order->{id})],
+                  'P2P::ORDER::NOTIFICATION::'
+                . uc($advertiser->broker) . '::'
+                . $advertiser->loginid . '::'
+                . $advertiser_id . '::'
+                . -1 . '::'
+                . -1 . '::'
+                . -1 => [$advertiser_order],
         }
     },
     {
@@ -117,8 +175,8 @@ my @data_for_notification_tests = ({
 );
 
 for my $test_data (@data_for_notification_tests) {
-    subtest $test_data->{name} => sub {
 
+    subtest $test_data->{name} => sub {
         my $redis = RedisDB->new(
             host => $connection_config->{host},
             port => $connection_config->{port},
@@ -138,11 +196,9 @@ for my $test_data (@data_for_notification_tests) {
         );
 
         $redis->get_reply for map { $test_data->{expected}->{$_} } keys $test_data->{expected}->%*;
-
         is_deeply(\%msgs, $test_data->{expected}, 'Got expected payload');
     };
 }
-
 BOM::Test::Helper::P2P::reset_escrow();
 
 done_testing()

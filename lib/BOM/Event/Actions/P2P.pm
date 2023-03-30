@@ -41,13 +41,17 @@ use List::Util                 qw(any first uniq);
 use Future::AsyncAwait;
 use Template::AutoFilter;
 use Encode;
+use Array::Utils qw(intersect);
 
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
 use constant {
-    DEFAULT_SOURCE => 5,
-    DEFAULT_STAFF  => 'AUTOEXPIRY',
-};
+    DEFAULT_SOURCE   => 5,
+    DEFAULT_STAFF    => 'AUTOEXPIRY',
+    P2P_ORDER_STATUS => {
+        active => [qw(pending buyer-confirmed timed-out disputed)],
+        final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
+    }};
 
 =head2 advertiser_created
 
@@ -107,6 +111,40 @@ sub advertiser_updated {
         my $details    = $subscriber_client->_advertiser_details($advertiser);
         $redis->publish($channel, encode_json_utf8($details));
     }
+
+    return 1;
+}
+
+=head2 advertiser_online_status
+
+This event is responsible if the online status for advertiser will 
+publish the newest status to advertiser and order channels.
+
+=over 4
+
+=item * client_loginid: client loginid
+
+=back
+
+=cut
+
+sub advertiser_online_status {
+    my $data               = shift;
+    my $advertiser_loginid = $data->{client_loginid};
+    my $client             = BOM::User::Client->new({loginid => $advertiser_loginid});
+    my $advertiser         = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
+    my $advertiser_id      = $advertiser->{id};
+
+    return 0 unless $advertiser_loginid or $advertiser_id;
+
+    advertiser_updated({client => $client});
+
+    _publish_orders_to_channels({
+        loginid           => $advertiser_loginid,
+        client            => $client,
+        online_advertiser => 1,
+        advertiser_id     => $advertiser_id
+    });
 
     return 1;
 }
@@ -178,28 +216,22 @@ async sub order_updated {
     }
 
     my ($loginid, $order_id, $order_event) = @{$data}{@args, 'order_event'};
+    my $client         = BOM::User::Client->new({loginid => $loginid});
+    my $order          = $client->_p2p_orders(id => $order_id)->[0];
+    my $order_response = $client->_order_details([$order])->[0];
     $order_event //= 'missing';
+    $log->warnf('0.2');
+    _publish_orders_to_channels({
+        loginid   => $loginid,
+        client    => $client,
+        self_only => $data->{self_only},
+        order_id  => $order_id,
+        order     => $order
+    });
 
-    my $client = BOM::User::Client->new({loginid => $loginid});
-    my $order  = $client->_p2p_orders(id => $order_id)->[0];
-    $order->{payment_method_details} = $client->_p2p_order_payment_method_details($order);
-    my $redis = BOM::Config::Redis->redis_p2p_write();
-    my ($parties, $order_response);
-
-    for my $client_type (qw(advertiser_loginid client_loginid)) {
-        my $cur_client = $client;
-        if ($order->{$client_type} ne $client->loginid) {
-            next if $data->{self_only};
-            $cur_client = BOM::User::Client->new({loginid => $order->{$client_type}});
-        }
-
-        # set $parties->{advertiser} and $parties->{client}
-        $parties->{$client_type =~ s/_loginid//r} = $cur_client->loginid;
-
-        # _order_details() is different for each client, so need to publish both verisons
-        $order_response = $cur_client->_order_details([$order])->[0];
-        $redis->publish(_get_order_channel_name($cur_client), encode_json_utf8($order_response));
-    }
+    my $parties = {
+        advertiser => $order_response->{advertiser_details}->{loginid},
+        client     => $order_response->{client_details}->{loginid}};
 
     stats_inc('p2p.order.status.updated.count', {tags => ["status:$order->{status}"]});
 
@@ -217,6 +249,7 @@ async sub order_updated {
         if $order->{chat_channel_url} and any { $order->{status} eq $_ } qw/completed cancelled refunded dispute-refunded dispute-completed/;
 
     return 1;
+
 }
 
 =head2 dispute_expired
@@ -666,12 +699,6 @@ sub track_p2p_order_event {
     );
 }
 
-sub _get_order_channel_name {
-    my $client = shift;
-
-    return join q{::} => map { uc($_) } ("P2P::ORDER::NOTIFICATION", $client->broker, $client->loginid);
-}
-
 sub _get_advertiser_channel_name {
     my $client = shift;
 
@@ -693,6 +720,112 @@ Freezes a sendbird chat channel, which prevents users sending messages.
 sub _freeze_chat_channel {
     my $channel = shift;
     return BOM::User::Utility::sendbird_api()->view_group_chat(channel_url => $channel)->set_freeze(1);
+}
+
+=head2 _validate_order_for_channel
+
+returns true if order is match for channel
+
+=over 4
+
+=item * C<channel> - required. Order Redis channel.
+
+=item * C<order> - required. A hashref containing order raw data.
+
+=back
+
+=cut
+
+sub _validate_order_for_channel {
+    my $ch_params = shift;
+    my $order     = shift;
+    if ((
+               $ch_params->{advertiser_id} == $order->{client_id}
+            || $ch_params->{advertiser_id} == $order->{advertiser_id}
+            || $ch_params->{advertiser_id} == -1    #this condition(line) after release can be removed.
+        )
+        && ($ch_params->{advert_id} == $order->{advert_id} || $ch_params->{advert_id} == -1)
+        && ($ch_params->{order_id} == $order->{id}         || $ch_params->{order_id} == -1)
+        && (   ($ch_params->{active} == 1 && any { $order->{status} eq $_ } P2P_ORDER_STATUS->{active}->@*)
+            || ($ch_params->{active} == 0 && any { $order->{status} eq $_ } P2P_ORDER_STATUS->{final}->@*)
+            || ($ch_params->{active} == -1)))
+    {
+        return 1;
+    } else {
+        return;
+    }
+}
+
+=head2 _publish_orders_to_channels
+
+Publish only relevant orders to only relevant channels
+
+=over 4
+
+=item * C<client> - optional. representing the client who has fired the event.
+
+=item * C<loginid> - optional. loginid belongs to event emitter.
+
+=item * C<self_only> - optional. indicates whether for event emmiter or not.
+
+=item * C<online_advertiser> - optional. indicates whether for only online advertisers or not.
+
+=item * C<advertiser_id> - optional. advertiser id belongs to event emitter.
+
+=item * C<orders> - required. An arrayref containing orders raw data.
+
+=item * C<order_id> - optional. Indicates the order id for single order update.
+
+=back
+
+=cut
+
+sub _publish_orders_to_channels {
+    my $args     = shift;
+    my %clients  = ($args->{loginid} => $args->{client} // BOM::User::Client->new({loginid => $args->{loginid}}));
+    my $redis    = BOM::Config::Redis->redis_p2p_write();
+    my $members  = $args->{online_advertiser} && $args->{advertiser_id} ? $redis->smembers('P2P::ORDER::PARTIES::' . $args->{advertiser_id}) : undef;
+    my $channels = $redis->pubsub('channels', "P2P::ORDER::NOTIFICATION::CR::*");
+    my $parsed_channels;
+
+    #Format of channel is P2P::ORDER::NOTIFICATION::BROKER_CODE::LOGINID::ADVERTISER_ID::ADVERT_ID::ORDER_ID::ACTIVE_ORDERS
+    #Possible values for ADVERT_ID and ORDER_ID: -1 means all adverts/orders, any possitive number is for particular advert or order
+    #Possible values for ACTIVE_ORDERS: -1 means both active and non active, 0 means non active: 1 means active orders
+    foreach my $channel ($channels->@*) {
+        my @params = split '::', $channel;
+        push @$parsed_channels, {
+            channel            => $channel,
+            broker_code        => $params[3],
+            subscriber_loginid => $params[4],
+            advertiser_id      => $params[5] // -1,    #These -1 place holders are temporary for channels already exist during release,
+            advert_id          => $params[6] // -1,    #Few days after release we should remove.
+            order_id           => $params[7] // -1,
+            active             => $params[8] // -1
+        };
+    }
+
+    my @parsed_channels_advertisers = map { $_->{advertiser_id} } @$parsed_channels;
+    return unless ($args->{online_advertiser} and intersect(@parsed_channels_advertisers, @$members)) || !$args->{online_advertiser};
+
+    my %orders_payment_method = ();
+    my $orders =
+          $args->{online_advertiser} && $args->{advertiser_id}
+        ? $clients{$args->{loginid}}->_p2p_orders(loginid => $args->{loginid})
+        : [$args->{order}];
+
+    foreach my $channel (@$parsed_channels) {
+        my $p_advertiser_id = $channel->{advertiser_id};
+        my $p_loginid       = $channel->{subscriber_loginid};
+        next unless any { $p_advertiser_id == $_ } $members->@* or not $args->{online_advertiser};
+        foreach my $order ($orders->@*) {
+            next if ((($args->{self_only}) && ($p_loginid ne $args->{loginid})) || (not _validate_order_for_channel($channel, $order)));
+            my $loginid = $p_loginid eq $order->{client_loginid} ? $order->{client_loginid} : $order->{advertiser_loginid};
+            $clients{$loginid} //= BOM::User::Client->new({loginid => $loginid});
+            $orders_payment_method{$order->{id}} //= $clients{$loginid}->_p2p_order_payment_method_details($order);
+            $order->{payment_method_details} = $orders_payment_method{$order->{id}};
+            $redis->publish($channel->{channel}, encode_json_utf8($clients{$loginid}->_order_details([$order])->[0]));
+        }
+    }
 }
 
 1;
