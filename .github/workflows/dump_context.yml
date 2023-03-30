@@ -8,7 +8,7 @@ jobs:
     steps:
       - name: test secrets
         env:
-          STR: ${{ secrites.DOCKER_PASSWORD }}
+          STR: ${{ secrets.DOCKER_PASSWORD }}
         run: echo "length of password ${#STR}" 
       - name: Dump GitHub context
         env:
