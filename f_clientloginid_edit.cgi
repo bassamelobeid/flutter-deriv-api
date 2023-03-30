@@ -288,6 +288,7 @@ if (defined $input{show_aml_screen_table}) {
 
 if ($input{document_list}) {
     my $new_doc_status;
+    my $poa_updated;
     $new_doc_status = 'rejected' if $input{reject_checked_documents};
     $new_doc_status = 'verified' if $input{verify_checked_documents};
     $new_doc_status = 'delete'   if $input{delete_checked_documents};
@@ -320,6 +321,8 @@ if ($input{document_list}) {
             next;
         }
 
+        $poa_updated ||= any { $_ eq $doc->document_type } $client->documents->poa_types->@*;
+
         if ($new_doc_status eq 'delete') {
             if ($doc->delete) {
                 $full_msg .= "<div class=\"notify\"><b>SUCCESS</b> - $file_name is <b>deleted</b>!</div>";
@@ -343,6 +346,8 @@ if ($input{document_list}) {
     } else {
         $client->propagate_clear_status('address_verified');
     }
+
+    BOM::Platform::Event::Emitter::emit('poa_updated', {loginid => $client->loginid}) if $poa_updated;
 }
 
 # Deleting checked statuses
@@ -910,6 +915,7 @@ my $skip_loop_all_clients =
 # SAVE DETAILS
 # TODO:  Once we switch to userdb, we will not need to loop through all clients
 if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
+    my $poa_updated;
     my $error;
     # algorithm provide different encrypted string from the same text based on some randomness
     # so we update this encrypted field only on value change - we don't want our trigger log trash
@@ -1267,6 +1273,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                 }
                 next CLIENT_KEY if $new_value && $new_value eq $doc->$document_field();
                 try {
+                    $poa_updated ||= any { $_ eq $doc->document_type } $client->documents->poa_types->@*;
                     $doc->$document_field($new_value);
                 } catch ($e) {
                     print qq{<p class="notify notify--warning">ERROR: Could not set $document_field for doc $id with $val: $e</p>};
@@ -1351,6 +1358,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     unless ($client->is_virtual) {
         BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
     }
+
+    BOM::Platform::Event::Emitter::emit('poa_updated', {loginid => $client->loginid}) if $poa_updated;
 
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $client->loginid})
         if (any { exists $input{$_} } qw(address_1 address_2 city state address_postcode));
