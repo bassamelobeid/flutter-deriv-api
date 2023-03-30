@@ -98,6 +98,7 @@ subtest 'Creating new buy order' => sub {
         advert_id   => $advert_info->{id},
         amount      => $order_amount,
         expiry      => 7200,
+        subscribe   => 1,
         rule_engine => $rule_engine,
     );
 
@@ -183,13 +184,32 @@ subtest 'Creating new buy order' => sub {
             dispute_reason   => undef,
             disputer_loginid => undef,
         },
-        is_reviewable => 0,
-        is_seen       => 1,
-    };
+        is_reviewable     => 0,
+        is_seen           => 1,
+        subscription_info => {
+            advertiser_id => re('\d+'),
+            order_id      => $new_order->{id}}};
     cmp_deeply($new_order, $expected_order, 'order_create expected response');
     $expected_order->{advertiser_details}{is_recommended} = undef;    # not returned from p2p.order_create db function yet,
-    cmp_deeply($client->p2p_order_info(id => $new_order->{id}), $expected_order,   'order_info() returns correct info');
-    cmp_deeply($client->p2p_order_list,                         [$expected_order], 'order_list() returns correct info');
+    cmp_deeply(
+        $client->p2p_order_info(
+            id        => $new_order->{id},
+            subscribe => 1
+        ),
+        $expected_order,
+        'order_info() returns correct info'
+    );
+    delete $expected_order->{subscription_info};
+
+    my $expected_order_list = {
+        subscription_info => {
+            advertiser_id => re('\d+'),
+            advert_id     => undef,
+            active        => undef
+        },
+        list => [$expected_order]};
+
+    cmp_deeply($client->p2p_order_list(subscribe => 1), $expected_order_list, 'order_list() returns correct info');
 
     lives_ok { $client->p2p_order_info(id => $new_order->{id} . '.') } 'trailing period in id';
 
@@ -885,8 +905,8 @@ subtest 'Order view permissions' => sub {
     ok $client1->p2p_order_info(id  => $order->{id}), "order_info: cannot see own order";
     ok !$client2->p2p_order_info(id => $order->{id}), "order_info: cannot see other client's orders";
 
-    ok $client1->p2p_order_list(id  => $order->{id}),     "order_list: cannot see own order";
-    ok !$client2->p2p_order_list(id => $order->{id})->@*, "order_list: cannot see other client's orders";
+    ok $client1->p2p_order_list(id  => $order->{id}),             "order_list: cannot see own order";
+    ok !$client2->p2p_order_list(id => $order->{id})->{list}->@*, "order_list: cannot see other client's orders";
 
     BOM::Test::Helper::P2P::reset_escrow();
 };

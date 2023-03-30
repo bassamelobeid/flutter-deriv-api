@@ -135,8 +135,6 @@ sub on_sec {
     my $start_tv = [gettimeofday];
     $self->{in_progress} = $self->{loop}->new_future;
     $self->{app_config}->check_for_update;
-    $self->{advertisers_updated} = [];
-
     $self->process_expired_orders;
     $self->refund_timedout_orders;
     $self->process_disputes;
@@ -145,13 +143,6 @@ sub on_sec {
     $self->process_advertisers_online;
     $self->notify_unreviewable_orders;
     $self->process_verification_events;
-
-    for my $loginid (uniq $self->{advertisers_updated}->@*) {
-        BOM::Platform::Event::Emitter::emit(
-            p2p_advertiser_updated => {
-                client_loginid => $loginid,
-            });
-    }
 
     $self->{in_progress}->done;
     stats_timing('p2p.daemon.processing_time_sec', 1000 * tv_interval($start_tv));
@@ -280,14 +271,17 @@ sub process_advertiser_blocks_ending {
     my @blocks_ending = $redis->exec->[0]->@*;
 
     for my $loginid (@blocks_ending) {
-        push $self->{advertisers_updated}->@*, $loginid;
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_updated => {
+                client_loginid => $loginid,
+            });
         $log->debugf('Block for %s has ended', $loginid);
     }
 }
 
 =head2 find_active_ad_subscriptions
 
-Fires p2p_advertiser_updated events for advertisers who came online or went offline.
+Checks for active p2p_advert_info subscriptions.
 
 =cut
 
@@ -335,7 +329,10 @@ sub process_advertisers_online {
 
     $log->debugf('users new online: %s',  [keys %new_online])  if %new_online;
     $log->debugf('users new offline: %s', [keys %new_offline]) if %new_offline;
-    push $self->{advertisers_updated}->@*, map { $_ =~ /^(\w+?)::/ } keys %new_online, keys %new_offline;
+
+    foreach my $loginid (uniq map { $_ =~ /^(\w+?)::/ } keys %new_online, keys %new_offline) {
+        BOM::Platform::Event::Emitter::emit(p2p_advertiser_online_status => {client_loginid => $loginid});
+    }
 }
 
 =head2 notify_unreviewable_orders

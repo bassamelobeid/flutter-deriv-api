@@ -100,10 +100,10 @@ subtest "check active orders" => sub {
         active    => 1,
     );
 
-    my @correct_statuses = grep { $_->{status} =~ $active_statuses } $orders->@*;
+    my @correct_statuses = grep { $_->{status} =~ $active_statuses } $orders->{list}->@*;
 
-    ok scalar $orders->@* == scalar @created_orders,   "Active orders number is correct";
-    ok scalar $orders->@* == scalar @correct_statuses, "All active order have correct status";
+    ok scalar $orders->{list}->@* == scalar @created_orders,   "Active orders number is correct";
+    ok scalar $orders->{list}->@* == scalar @correct_statuses, "All active order have correct status";
 };
 
 my $expected_inactive = 1;
@@ -113,9 +113,9 @@ subtest "check inactive orders" => sub {
         active    => 0,
     );
 
-    my @correct_statuses = grep { $_->{status} =~ $active_statuses } $orders->@*;
+    my @correct_statuses = grep { $_->{status} =~ $active_statuses } $orders->{list}->@*;
 
-    ok scalar $orders->@* == 0, "Inactive orders number is correct as 0";
+    ok scalar $orders->{list}->@* == 0, "Inactive orders number is correct as 0";
 
     $fourth_client->p2p_order_cancel(id => $new_order4->{id});
 
@@ -124,10 +124,10 @@ subtest "check inactive orders" => sub {
         active    => 0,
     );
 
-    @correct_statuses = grep { $_->{status} =~ $inactive_statuses } $orders->@*;
+    @correct_statuses = grep { $_->{status} =~ $inactive_statuses } $orders->{list}->@*;
 
-    ok scalar $orders->@* == $expected_inactive,       "Inactive orders number is correct";
-    ok scalar $orders->@* == scalar @correct_statuses, "All active order have correct status";
+    ok scalar $orders->{list}->@* == $expected_inactive,       "Inactive orders number is correct";
+    ok scalar $orders->{list}->@* == scalar @correct_statuses, "All active order have correct status";
 };
 
 subtest "check all orders" => sub {
@@ -135,7 +135,7 @@ subtest "check all orders" => sub {
         advert_id => $advert_info->{id},
     );
 
-    ok scalar $orders->@* == scalar @created_orders, "All orders number is correct when active parameter is absent.";
+    ok scalar $orders->{list}->@* == scalar @created_orders, "All orders number is correct when active parameter is absent.";
 };
 
 subtest 'dispute statuses' => sub {
@@ -177,9 +177,9 @@ subtest 'dispute statuses' => sub {
     # We added 1 active order but good old algebra suffices
     my $expected_active = $expected_total - $expected_inactive;
 
-    is scalar $orders->@*,          $expected_total,    "Total orders number is correct";
-    is scalar $orders_active->@*,   $expected_active,   "Active orders number is correct";
-    is scalar $orders_inactive->@*, $expected_inactive, "Inactive orders number is correct";
+    is scalar $orders->{list}->@*,          $expected_total,    "Total orders number is correct";
+    is scalar $orders_active->{list}->@*,   $expected_active,   "Active orders number is correct";
+    is scalar $orders_inactive->{list}->@*, $expected_inactive, "Inactive orders number is correct";
 
 };
 

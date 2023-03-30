@@ -516,7 +516,7 @@ subtest 'Returning dispute fields' => sub {
         id => $new_order->{id},
     );
 
-    cmp_deeply($response->[0]->{dispute_details}, $expected_response, 'order_list expected response after dispute');
+    cmp_deeply($response->{list}->[0]->{dispute_details}, $expected_response, 'order_list expected response after dispute');
 
     $response = $client->p2p_order_info(
         id => $new_order->{id},

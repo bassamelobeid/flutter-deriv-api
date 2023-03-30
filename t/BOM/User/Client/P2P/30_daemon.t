@@ -221,7 +221,7 @@ subtest 'advertisers online/offline' => sub {
     cmp_deeply(
         $emitted_events,
         {
-            p2p_advertiser_updated => bag({
+            p2p_advertiser_online_status => bag({
                     client_loginid => 'CR001',
                 },
                 {
@@ -242,7 +242,7 @@ subtest 'advertisers online/offline' => sub {
     cmp_deeply(
         $emitted_events,
         {
-            p2p_advertiser_updated => bag({
+            p2p_advertiser_online_status => bag({
                     client_loginid => 'CR001',
                 },
             ),
@@ -257,7 +257,7 @@ subtest 'advertisers online/offline' => sub {
     cmp_deeply(
         $emitted_events,
         {
-            p2p_advertiser_updated => bag({
+            p2p_advertiser_online_status => bag({
                     client_loginid => 'CR004',
                 },
             ),

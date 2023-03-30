@@ -2358,6 +2358,7 @@ use constant {
     P2P_ORDER_EXPIRES_AT                => 'P2P::ORDER::EXPIRES_AT',
     P2P_ORDER_TIMEDOUT_AT               => 'P2P::ORDER::TIMEDOUT_AT',
     P2P_ORDER_REVIEWABLE_START_AT       => 'P2P::ORDER::REVIEWABLE_START_AT',
+    P2P_ORDER_PARTIES                   => 'P2P::ORDER::PARTIES',                 # as soon as order created the party will be added to this set
     P2P_ADVERTISER_BLOCK_ENDS_AT        => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
     P2P_STATS_REDIS_PREFIX              => 'P2P::ADVERTISER_STATS',
     P2P_STATS_TTL_IN_DAYS               => 120,                                   # days after which to prune redis stats
@@ -3208,6 +3209,7 @@ sub p2p_order_create {
         });
 
     $self->_p2p_db_error_handler($order);
+    $self->_p2p_record_order_partners($order);
 
     my $redis = BOM::Config::Redis->redis_p2p_write();
 
@@ -3250,7 +3252,12 @@ sub p2p_order_create {
         order_id => $order->{id},
         loginid  => $order->{client_loginid},
         status   => $order->{status});
-    return $self->_order_details([$order])->[0];
+    my $order_info = $self->_order_details([$order])->[0];
+    $order_info->{subscription_info} = {    # will be removed in websocket (we need this for building channel name)
+        advertiser_id => $client_info->{id},
+        order_id      => $order->{id}} if $param{subscribe};
+
+    return $order_info;
 }
 
 =head2 p2p_order_info
@@ -3262,7 +3269,8 @@ Return a single order of $param{id}
 sub p2p_order_info {
     my ($self, %param) = @_;
 
-    my $id = $param{id} // return;
+    my $id              = $param{id}                    // return;
+    my $advertiser_info = $self->_p2p_advertiser_cached // die +{error_code => 'AdvertiserNotFound'};
 
     # ensure client can only see their orders
     my $order = $self->_p2p_orders(
@@ -3277,8 +3285,13 @@ sub p2p_order_info {
             loginid  => $self->loginid,
             status   => $order->{status});
     }
+    my $order_info = $self->_order_details([$order])->[0];
+    $order_info->{subscription_info} = {    # will be removed in websocket (we need this for building channel name)
+        advertiser_id => $advertiser_info->{id},
+        order_id      => $id
+    } if $param{subscribe};
 
-    return $self->_order_details([$order])->[0];
+    return $order_info;
 }
 
 =head2 p2p_order_list
@@ -3291,9 +3304,17 @@ sub p2p_order_list {
     my ($self, %param) = @_;
 
     $param{loginid} = $self->loginid;
+    my $advertiser_info = $self->_p2p_advertiser_cached // die +{error_code => 'AdvertiserNotFound'};
 
-    my $list = $self->_p2p_orders(%param);
-    return $self->_order_details($list);
+    my $list        = $self->_p2p_orders(%param);
+    my $orders_info = {list => $self->_order_details($list)};
+
+    $orders_info->{subscription_info} = {    # will be removed in websocket (we need this for building channel name)
+        advertiser_id => $advertiser_info->{id},
+        advert_id     => $param{advert_id},
+        active        => $param{active}} if $param{subscribe};
+
+    return $orders_info;
 }
 
 =head2 p2p_order_confirm
@@ -5332,6 +5353,29 @@ sub _p2p_record_partners {
     my $redis = BOM::Config::Redis->redis_p2p_write();
     $redis->sadd(join('::', P2P_STATS_REDIS_PREFIX, $order->{client_loginid},     'ORDER_PARTNERS'), $order->{advertiser_id});
     $redis->sadd(join('::', P2P_STATS_REDIS_PREFIX, $order->{advertiser_loginid}, 'ORDER_PARTNERS'), $order->{client_id});
+    return;
+}
+
+=head2 _p2p_record_order_partners
+
+Records order partners for a created order.
+
+Takes the following arguments:
+
+=over
+
+=item * C<order> - order hashref
+
+=back
+
+=cut
+
+sub _p2p_record_order_partners {
+    my ($self, $order) = @_;
+
+    my $redis = BOM::Config::Redis->redis_p2p_write();
+    $redis->sadd(join('::', P2P_ORDER_PARTIES, $order->{client_id}),     $order->{advertiser_id});
+    $redis->sadd(join('::', P2P_ORDER_PARTIES, $order->{advertiser_id}), $order->{client_id});
     return;
 }
 
