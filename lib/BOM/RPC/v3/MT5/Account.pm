@@ -832,13 +832,16 @@ async_rpc "mt5_new_account",
     my $mt5_create_with_status = '';
 
     my %mt5_compliance_requirements = map { ($_ => 1) } $compliance_requirements->{mt5}->@*;
+
     if ($account_type ne 'demo' && $mt5_compliance_requirements{fully_authenticated}) {
-        if ($client->fully_authenticated) {
-            if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
-                $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
-                return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
-            }
-        } else {
+        # always check for expired docs if the LC requires so
+
+        if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
+            $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+            return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
+        }
+
+        if (!$client->fully_authenticated) {
             if (any { $landing_company_short eq $_ } qw/bvi vanuatu labuan maltainvest/) {
                 my $rule_engine = BOM::Rules::Engine->new(client => $client);
                 try {

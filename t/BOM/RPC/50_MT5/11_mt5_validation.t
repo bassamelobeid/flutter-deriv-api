@@ -8,6 +8,7 @@ use Test::MockModule;
 use Locale::Country::Extra;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::RPC::QueueClient;
@@ -1121,6 +1122,494 @@ foreach my $broker_code (keys %lc_company_specific_details) {
         $client->save;
     };
 }
+
+subtest 'High risk, POI expired scenario (fa complete)' => sub {
+    my $user = BOM::User->create(
+        email    => 'cr+so+risky@binary.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->account_opening_reason('Speculative');
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->aml_risk_classification('high');
+    $client->binary_user_id($user->id);
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    $client->save();
+    $user->add_client($client);
+
+    my $mf = create_client('MF');
+    $mf->set_default_account('GBP');
+    $mf->account_opening_reason('Speculative');
+    $mf->place_of_birth('at');
+    $mf->residence('at');
+    $mf->aml_risk_classification('low');
+    $mf->binary_user_id($user->id);
+    $mf->tax_residence('at');
+    $mf->tax_identification_number('1234');
+    $mf->save();
+    $user->add_client($mf);
+
+    financial_assessment($mf,     'full');
+    financial_assessment($client, 'full');
+
+    my $tests = [{
+            description      => 'Labuan is not allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp',
+            company          => 'labuan',
+            error            => 'ExpiredDocumentsMT5',
+            status           => {on => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'DBVI is not allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'bvi',
+            error            => 'ExpiredDocumentsMT5',
+            status           => {on => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'Vanuatu is not allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'vanuatu',
+            error            => 'ExpiredDocumentsMT5',
+            status           => {on => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'Malatainvest is not allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'maltainvest',
+            error            => 'ExpiredDocumentsMT5',
+            status           => {on => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'SVG is allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'svg',
+            error            => undef,
+            status           => {off => [qw/allow_document_upload/]},
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($description, $error, $status, $country) = @{$test}{qw/description error status country/};
+        my $cli = $client;
+        $cli = $mf if $test->{company} eq 'maltainvest';
+
+        my $on  = $status->{on}  // [];
+        my $off = $status->{off} // [];
+
+        $cli->status->_clear($_) for $on->@*;
+        $cli->status->_clear($_) for $off->@*;
+
+        my $token = BOM::Platform::Token::API->new->create_token($cli->loginid, 'test token');
+
+        $documents_expired = 1;
+
+        create_mt5_account->($c, $token, $cli, {%{$test}{qw/account_type mt5_account_type company/}}, $error, $description,);
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});    # avoid cache hits
+        ok $client->status->$_,  "Expected status: $_"         for $on->@*;
+        ok !$client->status->$_, "Expected not set status: $_" for $off->@*;
+    }
+};
+
+subtest 'High risk, POI expired scenario (fa incomplete)' => sub {
+    my $user = BOM::User->create(
+        email    => 'cr+so+risky+nofa@binary.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->account_opening_reason('Speculative');
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->aml_risk_classification('high');
+    $client->binary_user_id($user->id);
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    $client->save();
+    $user->add_client($client);
+
+    my $mf = create_client('MF');
+    $mf->set_default_account('GBP');
+    $mf->account_opening_reason('Speculative');
+    $mf->place_of_birth('at');
+    $mf->residence('at');
+    $mf->aml_risk_classification('low');
+    $mf->binary_user_id($user->id);
+    $mf->tax_residence('at');
+    $mf->tax_identification_number('1234');
+    $mf->save();
+    $user->add_client($mf);
+
+    my $tests = [{
+            description      => 'Labuan requires FA',
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp',
+            company          => 'labuan',
+            error            => 'FinancialAssessmentRequired',
+            status           => {off => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'DBVI requires FA',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'bvi',
+            error            => 'FinancialAssessmentRequired',
+            status           => {off => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'Vanuatu requires FA',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'vanuatu',
+            error            => 'FinancialAssessmentRequired',
+            status           => {off => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'Malatainvest requires FA',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'maltainvest',
+            error            => 'FinancialAssessmentRequired',
+            status           => {off => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'SVG requires FA',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'svg',
+            error            => 'FinancialAssessmentRequired',
+            status           => {off => [qw/allow_document_upload/]},
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($description, $error, $status, $country) = @{$test}{qw/description error status country/};
+        my $cli = $client;
+        $cli = $mf if $test->{company} eq 'maltainvest';
+
+        my $on  = $status->{on}  // [];
+        my $off = $status->{off} // [];
+
+        $cli->status->_clear($_) for $on->@*;
+        $cli->status->_clear($_) for $off->@*;
+
+        my $token = BOM::Platform::Token::API->new->create_token($cli->loginid, 'test token');
+
+        $documents_expired = 1;
+
+        create_mt5_account->($c, $token, $cli, {%{$test}{qw/account_type mt5_account_type company/}}, $error, $description,);
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});    # avoid cache hits
+        ok $client->status->$_,  "Expected status: $_"         for $on->@*;
+        ok !$client->status->$_, "Expected not set status: $_" for $off->@*;
+    }
+};
+
+subtest 'Low risk, POI expired scenario' => sub {
+    my $user = BOM::User->create(
+        email    => 'any+not+so+risky@binary.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->account_opening_reason('Speculative');
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->aml_risk_classification('low');
+    $client->binary_user_id($user->id);
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    $client->save();
+    $user->add_client($client);
+
+    my $mf = create_client('MF');
+    $mf->set_default_account('GBP');
+    $mf->account_opening_reason('Speculative');
+    $mf->place_of_birth('at');
+    $mf->residence('at');
+    $mf->aml_risk_classification('low');
+    $mf->binary_user_id($user->id);
+    $mf->tax_residence('at');
+    $mf->tax_identification_number('1234');
+    $mf->save();
+    $user->add_client($mf);
+
+    financial_assessment($mf, 'full');
+
+    my $tests = [{
+            description      => 'Labuan is not allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp',
+            company          => 'labuan',
+            error            => 'ExpiredDocumentsMT5',
+            status           => {on => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'DBVI is not allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'bvi',
+            error            => 'ExpiredDocumentsMT5',
+            status           => {on => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'Vanuatu is not allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'vanuatu',
+            error            => 'ExpiredDocumentsMT5',
+            status           => {on => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'Malatainvest is not allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'maltainvest',
+            error            => 'ExpiredDocumentsMT5',
+            status           => {on => [qw/allow_document_upload/]},
+        },
+        {
+            description      => 'SVG is allowed to open carrying expired documents',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'svg',
+            error            => undef,
+            status           => {off => [qw/allow_document_upload/]},
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($description, $error, $status) = @{$test}{qw/description error status/};
+        my $cli = $client;
+        $cli = $mf if $test->{company} eq 'maltainvest';
+
+        my $on  = $status->{on}  // [];
+        my $off = $status->{off} // [];
+
+        $cli->status->_clear($_) for $on->@*;
+        $cli->status->_clear($_) for $off->@*;
+
+        my $token = BOM::Platform::Token::API->new->create_token($cli->loginid, 'test token');
+
+        $documents_expired = 1;
+
+        create_mt5_account->($c, $token, $cli, {%{$test}{qw/account_type mt5_account_type company/}}, $error, $description,);
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});    # avoid cache hits
+        ok $client->status->$_,  "Expected status: $_"         for $on->@*;
+        ok !$client->status->$_, "Expected not set status: $_" for $off->@*;
+    }
+
+    $documents_expired = 0;
+};
+
+subtest 'Any client, TIN is mandatory' => sub {
+    my $user = BOM::User->create(
+        email    => 'tin+mandatory+test@binary.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->account_opening_reason('Speculative');
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->aml_risk_classification('low');
+    $client->binary_user_id($user->id);
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    $client->save();
+    $user->add_client($client);
+
+    my $mf = create_client('MF');
+    $mf->set_default_account('GBP');
+    $mf->account_opening_reason('Speculative');
+    $mf->place_of_birth('at');
+    $mf->residence('at');
+    $mf->aml_risk_classification('low');
+    $mf->binary_user_id($user->id);
+    $mf->tax_residence('at');
+    $mf->tax_identification_number('1234');
+    $mf->save();
+    $user->add_client($mf);
+
+    financial_assessment($mf, 'full');
+
+    my $tests = [{
+            description      => 'Labuan is not allowed to open without TIN details',
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp',
+            company          => 'labuan',
+            error            => 'TINDetailsMandatory',
+        },
+        {
+            description      => 'DBVI is not allowed to open without TIN details',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'bvi',
+            error            => 'TINDetailsMandatory',
+        },
+        {
+            description      => 'Vanuatu is not allowed to open without TIN details',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'vanuatu',
+            error            => 'TINDetailsMandatory',
+        },
+        {
+            description      => 'Malatainvest is allowed to open without TIN details',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'maltainvest',
+            error            => undef,
+        },
+        {
+            description      => 'SVG is allowed to open without TIN details',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'svg',
+            error            => undef,
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($description, $error) = @{$test}{qw/description error/};
+        my $cli = $client;
+        $cli = $mf if $test->{company} eq 'maltainvest';
+
+        $cli->status->_clear('crs_tin_information');
+
+        my $token = BOM::Platform::Token::API->new->create_token($cli->loginid, 'test token');
+
+        create_mt5_account->($c, $token, $cli, {%{$test}{qw/account_type mt5_account_type company/}}, $error, $description,);
+
+    }
+};
+
+subtest 'Any client, POA is outdated' => sub {
+    # this naughy mock was blocking the status update, muk use acid!
+    $mocked_user->mock(
+        'update_loginid_status' => sub {
+            return $mocked_user->original('update_loginid_status')->(@_);
+        });
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+
+    $client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'expired';
+        });
+
+    my $user = BOM::User->create(
+        email    => 'poa+outdated@binary.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->account_opening_reason('Speculative');
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->aml_risk_classification('low');
+    $client->binary_user_id($user->id);
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    $client->save();
+    $user->add_client($client);
+
+    my $mf = create_client('MF');
+    $mf->set_default_account('GBP');
+    $mf->account_opening_reason('Speculative');
+    $mf->place_of_birth('at');
+    $mf->residence('at');
+    $mf->aml_risk_classification('low');
+    $mf->binary_user_id($user->id);
+    $mf->tax_residence('at');
+    $mf->tax_identification_number('1234');
+    $mf->save();
+    $user->add_client($mf);
+
+    financial_assessment($mf, 'full');
+
+    my $tests = [{
+            description      => 'Labuan',
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp',
+            company          => 'labuan',
+            status           => 'proof_failed',
+        },
+        {
+            description      => 'DBVI',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'bvi',
+            status           => 'poa_outdated',
+        },
+        {
+            description      => 'Vanuatu',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'vanuatu',
+            status           => 'poa_outdated',
+        },
+        {
+            description      => 'Malatainvest',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'maltainvest',
+            status           => undef,
+        },
+        {
+            description      => 'SVG',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'svg',
+            status           => undef,
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($description, $status) = @{$test}{qw/description status/};
+
+        subtest $description => sub {
+            my $cli = $client;
+            $cli = $mf if $test->{company} eq 'maltainvest';
+
+            my $token = BOM::Platform::Token::API->new->create_token($cli->loginid, 'test token');
+
+            my $loginid = create_mt5_account->($c, $token, $cli, {%{$test}{qw/account_type mt5_account_type company/}});
+
+            $user->{loginid_details} = undef;    # avoid the cache
+
+            my $loginid_details = $user->loginid_details;
+
+            my $mt5 = $loginid_details->{$loginid};
+
+            my $status_str = $status // 'undef';
+            is $mt5->{status}, $status, "Expected $status_str for the LC";
+        };
+    }
+
+    $client_mock->unmock_all;
+};
 
 sub create_mt5_account {
     my ($c, $token, $client, $args, $expected_error, $error_message) = @_;

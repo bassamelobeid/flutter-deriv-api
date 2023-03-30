@@ -1182,6 +1182,25 @@ subtest 'vanuatu withdrawal' => sub {
     $c->call_ok($method, $params)->has_error('Withdrawal failed.')
         ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
 
+    # outdated POA, poa_outdated, fail.
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'expired';
+        });
+    $mock_logindetails->{MTR1001020}->{creation_stamp} = '2018-02-13 07:13:52.94334';
+    $mock_logindetails->{MTR1001020}->{status}         = 'poa_outdated';
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
+        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'pending';
+        });
+    $c->call_ok($method, $params)
+        ->has_no_error('withdrawal - pending POA, mixed BVI and Vanuatu where vanuatu expired dont affect BVI within grace period, pass');
+
     $mock_logindetails->{MTR1001020}->{status} = 'poa_pending';
     # pending POA, mixed BVI and Vanuatu where vanuatu expired don't affect BVI within grace period, pass.
     $c->call_ok($method, $params)

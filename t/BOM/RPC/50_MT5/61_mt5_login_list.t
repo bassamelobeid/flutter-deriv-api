@@ -86,6 +86,21 @@ subtest 'country=za; creates financial account with existing gaming account whil
     is $login_list->[1]->{error}{message_to_client},                           'MT5 is currently unavailable. Please try again later.';
     is $login_list->[1]->{error}{details}{server_info}{geolocation}{location}, 'South Africa', 'location South Africa';
     is $login_list->[1]->{error}{details}{server_info}{geolocation}{region},   'Africa',       'region Africa';
+
+    subtest 'test with status' => sub {
+        my $mt5_id = $login_list->[0]->{login};
+        $user->update_loginid_status($mt5_id, 'migrated_single_email');    # this status does not work for mt5
+        $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        ok scalar(@$login_list) == 1, 'one account';
+        is $login_list->[0]->{error}{details}{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
+
+        $user->update_loginid_status($mt5_id, 'poa_outdated');             # this status should not filter out the account
+        $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        ok scalar(@$login_list) == 2, 'two accounts again';
+        is $login_list->[0]->{login},                 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'};
+        is $login_list->[1]->{error}{details}{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
+
+    };
 };
 
 done_testing();
