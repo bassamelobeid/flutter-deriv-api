@@ -1507,7 +1507,9 @@ async sub sync_mt5_accounts_status {
 
         next if not defined $mt5_jurisdiction;
         next if not defined $loginid_data->{status};
-        next unless any { $loginid_data->{status} eq $_ } ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending');
+        next
+            unless any { $loginid_data->{status} eq $_ }
+            ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated');
 
         push $jurisdiction_mt5_accounts{$mt5_jurisdiction}->@*, $loginid;
     }

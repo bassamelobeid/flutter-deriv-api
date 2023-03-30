@@ -2922,4 +2922,374 @@ subtest 'mt5 archive restore sync' => sub {
     $mocked_user->unmock_all;
 };
 
+subtest 'sync_mt5_accounts_status' => sub {
+    my $user = BOM::User->create(
+        email          => 'sync_mt5_accounts_status@binary.com',
+        password       => 'supahsus',
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'sync_mt5_accounts_status@binary.com',
+    });
+
+    my $args = {};
+
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{sync_mt5_accounts_status};
+
+    like exception { $action_handler->($args)->get; }, qr/Must provide binary_user_id/, 'correct exception when user id is missing';
+
+    $args->{binary_user_id} = -1;
+
+    like exception { $action_handler->($args)->get; }, qr/User not found/, 'correct exception when user is not found';
+
+    $args->{binary_user_id} = $user->id;
+
+    like exception { $action_handler->($args)->get; }, qr/Default client not found/, 'correct exception when user has no clients';
+
+    $user->add_client($client);
+
+    $client->binary_user_id($user->id);
+    $client->user($user);
+    $client->save;
+
+    my $result = $action_handler->($args)->get->get;    # async sub returns explicit Future->done !!
+
+    cmp_deeply $result,
+        {
+        processed_mt5  => {},
+        updated_status => {},
+        updated_color  => {}
+        },
+        'nothing to process';
+
+    my $user_mock      = Test::MockModule->new('BOM::User');
+    my $extra_loginids = {};
+
+    $user_mock->mock(
+        'loginid_details',
+        sub {
+            my $loginid_details = $user_mock->original('loginid_details')->(@_);
+
+            return {$extra_loginids->%*, $loginid_details->%*,};
+        });
+
+    # mt5 demo is skipped
+    # non mt5 is also skipped
+
+    $extra_loginids = {
+        MTD000001 => {
+            platform     => 'mt5',
+            account_type => 'demo'
+        },
+        DXR1000001 => {
+            account_type => 'real',
+            platform     => 'dxtrade'
+        },
+    };
+
+    $result = $action_handler->($args)->get->get;
+
+    cmp_deeply $result,
+        {
+        processed_mt5  => {},
+        updated_status => {},
+        updated_color  => {}
+        },
+        'nothing to process';
+
+    # mt5 real would get skipped if no group
+    # mt55 real would get skipped if the group is not bvi|vanuatu|labuan|maltainvest
+    # mt5 real would get skipped if no status
+    # mt5 real would get skipped if status not in 'poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated'
+
+    $extra_loginids = {
+        MTD000001 => {
+            platform     => 'mt5',
+            account_type => 'demo'
+        },
+        DXR1000001 => {
+            account_type => 'real',
+            platform     => 'dxtrade'
+        },
+        MTR000001 => {
+            platform     => 'mt5',
+            account_type => 'real',
+            attributes   => {
+                group => undef,
+            }
+        },
+        MTR000002 => {
+            platform     => 'mt5',
+            account_type => 'real',
+            attributes   => {group => 'sus'}
+        },
+        MTR000003 => {
+            platform     => 'mt5',
+            account_type => 'real',
+            attributes   => {group => 'maltainvest'},
+            status       => undef,
+        },
+        MTR000004 => {
+            platform     => 'mt5',
+            account_type => 'real',
+            attributes   => {group => 'maltainvest'},
+            status       => 'sus',
+        },
+    };
+
+    $result = $action_handler->($args)->get->get;
+
+    cmp_deeply $result,
+        {
+        processed_mt5  => {},
+        updated_status => {},
+        updated_color  => {}
+        },
+        'nothing to process';
+
+    ## mock the update status fn
+    my $status_updates = {};
+
+    $user_mock->mock(
+        'update_loginid_status',
+        sub {
+            my (undef, $mt5_id, $status) = @_;
+
+            $status_updates->{$mt5_id} = $status;
+        });
+
+    ## mock the event emitter
+
+    my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions    = [];
+
+    $emitter_mock->mock(
+        'emit',
+        sub {
+            push $emissions->@*, {@_};
+        });
+
+    ## mock the rule engine to throw with undef proof_failed_with_status
+
+    my $rule_engine_mock = Test::MockModule->new('BOM::Rules::Engine');
+    my $mt5_status;
+    my $rule_fail;
+
+    $rule_engine_mock->mock(
+        'verify_action',
+        sub {
+            if ($rule_fail) {
+                die +{
+                    params => {
+                        mt5_status => $mt5_status,
+                    }};
+            }
+
+            return 1;
+        });
+
+    $rule_fail  = 1;
+    $mt5_status = undef;
+
+    for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
+        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated') {
+            $emissions      = [];
+            $status_updates = {};
+            $log->clear;
+
+            $extra_loginids = {
+                MTR000005 => {
+                    platform     => 'mt5',
+                    account_type => 'real',
+                    attributes   => {
+                        group => $jurisdiction,
+                    },
+                    status => $status,
+                },
+            };
+
+            $result = $action_handler->($args)->get->get;
+
+            cmp_deeply $result,
+                {
+                processed_mt5 => {
+                    $jurisdiction => ['MTR000005'],
+                },
+                updated_status => {},
+                updated_color  => {}
+                },
+                "expected results $jurisdiction $status (undef mt5_status thrown)";
+
+            cmp_deeply $status_updates, {}, 'no status changed';
+            cmp_deeply $emissions, [], 'Empty emissions';
+
+            cmp_deeply $log->msgs,
+                [{
+                    message  => 'Unexpected behavior. MT5 accounts sync rule failed without mt5 status',
+                    level    => 'warning',
+                    category => 'BOM::Event::Actions::MT5'
+                }
+                ],
+                'Expected warnings';
+        }
+    }
+
+    ## test the statuses across jurisdictions
+    ## expected result = proof_failed
+    ## no color swap expected
+
+    $rule_fail  = 1;
+    $mt5_status = 'proof_failed';
+
+    for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
+        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated') {
+            $emissions      = [];
+            $status_updates = {};
+            $log->clear;
+
+            $extra_loginids = {
+                MTR000005 => {
+                    platform     => 'mt5',
+                    account_type => 'real',
+                    attributes   => {
+                        group => $jurisdiction,
+                    },
+                    status => $status,
+                },
+            };
+
+            $result = $action_handler->($args)->get->get;
+
+            cmp_deeply $result,
+                {
+                processed_mt5 => {
+                    $jurisdiction => ['MTR000005'],
+                },
+                updated_status => {
+                    $jurisdiction => 'proof_failed',
+                },
+                updated_color => {}
+                },
+                "expected results $jurisdiction $status => proof_failed";
+
+            cmp_deeply $emissions,                                     [], 'Empty emissions';
+            cmp_deeply $status_updates, {MTR000005 => 'proof_failed'}, 'status changed';
+            cmp_deeply $log->msgs,                                     [], 'No warnings';
+        }
+    }
+
+    ## test the statuses across jurisdictions
+    ## expected result = poa_failed
+    ## color swap to COLOR_RED expected
+
+    $rule_fail  = 1;
+    $mt5_status = 'poa_failed';
+
+    for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
+        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated') {
+            $emissions      = [];
+            $status_updates = {};
+            $log->clear;
+
+            $extra_loginids = {
+                MTR000005 => {
+                    platform     => 'mt5',
+                    account_type => 'real',
+                    attributes   => {
+                        group => $jurisdiction,
+                    },
+                    status => $status,
+                },
+            };
+
+            $result = $action_handler->($args)->get->get;
+
+            cmp_deeply $result,
+                {
+                processed_mt5 => {
+                    $jurisdiction => ['MTR000005'],
+                },
+                updated_status => {
+                    $jurisdiction => 'poa_failed',
+                },
+                updated_color => {
+                    $jurisdiction => +BOM::Event::Actions::MT5::COLOR_RED,
+                }
+                },
+                "expected results $jurisdiction $status => poa_failed";
+
+            cmp_deeply $emissions,
+                [{
+                    mt5_change_color => {
+                        loginid => 'MTR000005',
+                        color   => +BOM::Event::Actions::MT5::COLOR_RED,
+                    }}
+                ],
+                'Expected change color emission';
+
+            cmp_deeply $status_updates, {MTR000005 => 'poa_failed'}, 'status changed';
+            cmp_deeply $log->msgs, [], 'No warnings';
+        }
+    }
+
+    ## test the statuses across jurisdictions
+    ## expected result = undef status
+    ## color swap to COLOR_NONE expected if current status is poa_failed
+
+    $rule_fail  = 0;
+    $mt5_status = undef;
+
+    for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
+        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated') {
+            $emissions      = [];
+            $status_updates = {};
+            $log->clear;
+
+            $extra_loginids = {
+                MTR000005 => {
+                    platform     => 'mt5',
+                    account_type => 'real',
+                    attributes   => {
+                        group => $jurisdiction,
+                    },
+                    status => $status,
+                },
+            };
+
+            $result = $action_handler->($args)->get->get;
+
+            cmp_deeply $result,
+                {
+                processed_mt5 => {
+                    $jurisdiction => ['MTR000005'],
+                },
+                updated_status => {
+                    $jurisdiction => undef,
+                },
+                updated_color => {$status eq 'poa_failed' ? ($jurisdiction => +BOM::Event::Actions::MT5::COLOR_NONE) : (),}
+                },
+                "expected results $jurisdiction $status => undef";
+
+            cmp_deeply $emissions,
+                [
+                $status eq 'poa_failed'
+                ? {
+                    mt5_change_color => {
+                        loginid => 'MTR000005',
+                        color   => +BOM::Event::Actions::MT5::COLOR_NONE,
+                    }}
+                : ()
+                ],
+                'Expected change color emission';
+
+            cmp_deeply $status_updates, {MTR000005 => undef}, 'status changed';
+            cmp_deeply $log->msgs, [], 'No warnings';
+        }
+    }
+    $rule_engine_mock->unmock_all;
+    $user_mock->unmock_all;
+};
+
 done_testing();

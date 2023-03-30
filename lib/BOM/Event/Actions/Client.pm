@@ -507,6 +507,47 @@ async sub _upload_pow_document {
     await _send_complaince_email_pow_uploaded(client => $client) unless $uploaded_by_staff;
 }
 
+=head2 poa_updated
+
+This event is triggered on POA document update, this can only over happen from the BO.
+New uploads from RPC/BP should be handled at `document_upload`.
+
+Side effects:
+
+=over 4
+
+=item  * populate the `users.poa_issuance` table
+
+=back
+
+Resolves to C<undef>.
+
+=cut
+
+async sub poa_updated {
+    my ($args) = @_;
+
+    my $loginid = $args->{loginid}
+        or die 'No client login ID supplied?';
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die 'Could not instantiate client for login ID ' . $loginid;
+
+    if (my $best_poa_date = $client->documents->best_issue_date('proof_of_address')) {
+        $client->user->dbic->run(
+            fixup => sub {
+                $_->do('SELECT * FROM users.upsert_poa_issuance(?::BIGINT, ?::DATE)', undef, $client->binary_user_id, $best_poa_date->date_yyyymmdd);
+            });
+    } else {
+        $client->user->dbic->run(
+            fixup => sub {
+                $_->do('SELECT * FROM users.delete_poa_issuance(?::BIGINT)', undef, $client->binary_user_id);
+            });
+    }
+
+    return undef;
+}
+
 =head2 ready_for_authentication
 
 This event is triggered once we think we have enough information to do

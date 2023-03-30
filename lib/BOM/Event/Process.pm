@@ -112,6 +112,7 @@ my $action_mapping = {
         idv_webhook_received                        => \&BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay,
         sync_mt5_accounts_status                    => \&BOM::Event::Actions::MT5::sync_mt5_accounts_status,
         mt5_archive_restore_sync                    => \&BOM::Event::Actions::MT5::mt5_archive_restore_sync,
+        poa_updated                                 => \&BOM::Event::Actions::Client::poa_updated,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,
