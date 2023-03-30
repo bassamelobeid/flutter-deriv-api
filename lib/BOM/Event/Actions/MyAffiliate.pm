@@ -123,7 +123,7 @@ async sub affiliate_loginids_sync {
     send_email({
             from    => '<no-reply@binary.com>',
             to      => $data->{email},
-            subject => "Affliate $affiliate_id synchronization to mt5",
+            subject => "Affliate $affiliate_id " . ($data->{untag} ? 'untagging operation' : 'synchronization to mt5'),
             message => [
                 ($data->{untag} ? 'Untag operation' : 'Synchronization to mt5') . " for Affiliate $affiliate_id is finished.",
                 'Action: ' . ($action eq 'clear' ? 'remove agent from all clients.' : 'sync agent with all clients.'),
