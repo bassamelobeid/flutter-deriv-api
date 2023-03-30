@@ -6,9 +6,13 @@ use Moo;
 
 use List::Util   qw(first any min max);
 use Array::Utils qw(intersect);
+
 use Path::Tiny;
 use YAML::XS;
 use Dir::Self;
+
+use BOM::User::Client::AuthenticationDocuments::Config;
+use BOM::Config::Redis;
 
 =head1 NAME
 
@@ -89,9 +93,7 @@ Returns a hashref for the document categories
 sub _build_categories {
     my ($self) = @_;
 
-    my $path                     = Path::Tiny::path(__DIR__)->parent(4)->child('share', 'document_type_categories.yml');
-    my $document_type_categories = YAML::XS::LoadFile($path);
-    return $document_type_categories;
+    return BOM::User::Client::AuthenticationDocuments::Config::categories();
 }
 
 =head2 uploaded
@@ -179,6 +181,31 @@ sub _build_uploaded {
 
             if ($category eq 'proof_of_income' || $category eq 'proof_of_identity') {
                 $documents{$category_key}{'is_' . $doc_status} += 1;
+            }
+
+            if (my $ttl = $category_config->{time_to_live}) {
+                if ($doc_status eq 'verified') {
+                    if ($single_document->lifetime_valid || $has_lifetime_valid->{$category_key}) {
+                        $documents{$category_key}->{is_outdated}     = 0;
+                        $documents{$category_key}->{best_issue_date} = undef;
+                        $has_lifetime_valid->{$category_key}         = 1;
+                    } elsif (my $issue_date = $single_document->issue_date) {
+                        my $now               = Date::Utility->new;
+                        my $issuance_validity = Date::Utility->new($issue_date)->plus_time_interval($ttl);
+
+                        my $days_outdated = $now->days_between($issuance_validity);
+                        $days_outdated = 0 if $days_outdated < 0;
+
+                        $documents{$category_key}->{is_outdated} //= $days_outdated;
+                        # the less days outdated the better
+                        $documents{$category_key}->{is_outdated} = $days_outdated if $days_outdated < $documents{$category_key}->{is_outdated};
+
+                        my $issue_du = Date::Utility->new($issue_date);
+                        $documents{$category_key}->{best_issue_date} //= $issue_du;
+                        $documents{$category_key}->{best_issue_date} = $issue_du
+                            if $documents{$category_key}->{best_issue_date}->is_before($issue_du);
+                    }
+                }
             }
 
             # The expiration analysis starts right here
@@ -281,6 +308,53 @@ sub get_category_config {
     }
 
     return undef;
+}
+
+=head2 best_issue_date
+
+Gets the best issue date from the given category, this is the most future issue data from
+a verified document
+
+Returns a C<Date::Utility> or C<undef> if there is no such date.
+
+=cut
+
+sub best_issue_date {
+    my ($self, $type) = @_;
+    my $uploaded = $self->uploaded;
+    $type //= 'proof_of_address';
+
+    my $category = $uploaded->{$type} // {};
+
+    my $best_issue_date = $category->{best_issue_date};
+
+    return undef unless $best_issue_date;
+
+    return Date::Utility->new($best_issue_date);
+}
+
+=head2 outdated
+
+Determines wether the client has outdated documents in the given category.
+
+Driven by `time_to_live` field. If not defined the category does not apply.
+
+Ignores documents without issuance date.
+
+Returns an integer for the number of days in the outdated status.
+
+C<0> if not outdated.
+
+=cut
+
+sub outdated {
+    my ($self, $type) = @_;
+    my $uploaded = $self->uploaded;
+    $type //= 'proof_of_address';
+
+    my $category = $uploaded->{$type} // {};
+
+    return $category->{is_outdated} // 0;
 }
 
 =head2 expired
@@ -391,7 +465,7 @@ Get an arrayref of POA doctypes.
 
 sub _build_poa_types {
     my $self = shift;
-    return [keys $self->categories->{POA}->{types}->%*];
+    return BOM::User::Client::AuthenticationDocuments::Config::poa_types();
 }
 
 =head2 poi_types
@@ -793,6 +867,8 @@ Otherwise it will return C<0>.
 
 sub _build_is_poa_verified {
     my ($self) = @_;
+
+    return 0 if $self->outdated('proof_of_address');
 
     for my $doc (values $self->uploaded->{proof_of_address}->{documents}->%*) {
         return 1 if $doc->{status} eq 'verified';

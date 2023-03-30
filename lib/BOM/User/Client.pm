@@ -7514,12 +7514,17 @@ sub get_poa_status {
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents->uploaded();
 
-    my ($is_poa_pending, $is_rejected) =
-        @{$documents->{proof_of_address}}{qw/is_pending is_rejected/};
+    my ($is_poa_pending, $is_rejected, $is_outdated) =
+        @{$documents->{proof_of_address}}{qw/is_pending is_rejected is_outdated/};
 
     return 'pending' if $is_poa_pending;
 
     return 'rejected' if $is_rejected;
+
+    # note: POA documents do not expire, but they can get outdated by compliance rules
+    # for our state machine this is "expired" to avoid adding extra statuses
+
+    return 'expired' if $is_outdated;
 
     return 'verified' if $self->fully_authenticated;
 

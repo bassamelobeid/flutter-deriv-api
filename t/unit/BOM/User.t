@@ -136,4 +136,78 @@ subtest 'get_mt5_loginids' => sub {
     $user_mock->unmock('loginids');
 };
 
+subtest 'filter_active_ids with status' => sub {
+    my $loginid_details = {};
+    my $expected;
+
+    $user_mock->mock(
+        'loginid_details',
+        sub {
+            return $loginid_details;
+        });
+
+    my $tests = [{
+            loginids => {MTR1000 => {status => 'poa_outdated'}},
+            expected => [qw/MTR1000/],
+        },
+        {
+            loginids => {MTR1000 => {status => 'xxx'}},
+            expected => [qw//],
+        },
+        {
+            loginids => {MTR1001 => {status => 'poa_pending'}},
+            expected => [qw/MTR1001/],
+        },
+        {
+            loginids => {MTR1002 => {status => 'poa_rejected'}},
+            expected => [qw/MTR1002/],
+        },
+        {
+            loginids => {MTR1003 => {status => 'poa_failed'}},
+            expected => [qw/MTR1003/],
+        },
+        {
+            loginids => {MTR1004 => {status => 'proof_failed'}},
+            expected => [qw/MTR1004/],
+        },
+        {
+            loginids => {MTR1005 => {status => 'verification_pending'}},
+            expected => [qw/MTR1005/],
+        },
+        {
+            loginids => {
+                MTR1006 => {
+                    status => undef,
+                }
+            },
+            expected => [qw/MTR1006/],
+        },
+        {
+            loginids => {MTR1007 => {}},
+            expected => [qw/MTR1007/],
+        },
+        {
+            loginids => {
+                MTD1000 => {
+
+                },
+                MTD1001 => {
+                    status => undef,
+                },
+                MTD1002 => {status => 'dunno'},
+                MTD1003 => {status => 'poa_outdated'},
+            },
+            expected => [qw/MTD1000 MTD1001 MTD1003/],
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        $loginid_details         = $test->{loginids};
+        $user->{loginid_details} = $loginid_details;
+        $expected                = $test->{expected};
+
+        cmp_bag $user->filter_active_ids([keys $loginid_details->%*]), $expected, "Expected test MT5 loginid list";
+    }
+};
+
 done_testing();

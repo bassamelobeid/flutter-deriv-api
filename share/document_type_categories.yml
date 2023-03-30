@@ -112,6 +112,7 @@ POA:
   side_required: 0
   document_id_required: 0
   priority: 2
+  time_to_live: 1y
   types:
     utility_bill:
       preferred: 1

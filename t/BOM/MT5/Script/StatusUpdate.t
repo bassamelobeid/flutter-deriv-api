@@ -69,7 +69,14 @@ my @test_pending_users = (
     [
         'MTR100000003', '10000003', $creation_stamp->minus_time_interval('2d')->db_timestamp,
         'poa_rejected', 'mt5', 'real', 'USD', $bvi_group_attributes
-    ]);
+    ],
+    ['MTR100000004', '10000004', $creation_stamp->db_timestamp, 'poa_outdated', 'mt5', 'real', 'USD', $bvi_group_attributes],
+    [
+        'MTR100000005', '10000005', $creation_stamp->minus_time_interval('2d')->db_timestamp,
+        'poa_outdated', 'mt5', 'real', 'USD', $bvi_group_attributes
+    ],
+    ['MTR100000006', '10000006', $creation_stamp->minus_time_interval('2d')->db_timestamp, 'poa_outdated', 'mt5', 'real', 'USD', 'svg'],
+);
 
 my $status_update_mock = Test::MockModule->new('BOM::MT5::Script::StatusUpdate');
 my $date_mock          = Test::MockModule->new('Date::Utility');
@@ -143,10 +150,18 @@ subtest 'grace_period_actions' => sub {
     my $verification_status = BOM::MT5::Script::StatusUpdate->new;
     $verification_status->grace_period_actions;
 
-    is $users_loaded,                        3, 'correct number of clients loaded';
-    is $restricted_clients,                  2, 'correct number restrictions';
-    is $restricted_loginids{'MTR100000002'}, 1, 'correct first loginid';
-    is $restricted_loginids{'MTR100000003'}, 1, 'correct second loginid';
+    is $users_loaded,       5, 'correct number of clients loaded';
+    is $restricted_clients, 3, 'correct number restrictions';
+
+    cmp_deeply(
+        \%restricted_loginids,
+        {
+            MTR100000002 => 1,
+            MTR100000003 => 1,
+            MTR100000005 => 1,
+        },
+        'expected restricted loginids'
+    );
 
     # rare case if status is verified but not displayed in db
     $status_update_mock->mock(
@@ -696,5 +711,218 @@ subtest 'send_reminder_emails' => sub {
 
     is %sent_reminder_loginids, 0, 'reminder loginids list must not contain any other loginids';
 };
+
+subtest 'check_poa_issuance' => sub {
+    my $verification_status = BOM::MT5::Script::StatusUpdate->new;
+    my $user                = BOM::User->create(
+        email    => 'poa+issuance@binary.com',
+        password => 'Test12345',
+    );
+
+    $user->add_loginid('MTR10000001', 'mt5', 'real', 'USD', {test => 'test'});
+    $user->update_loginid_status('MTR10000001', 'proof_failed');
+
+    $user->add_loginid('MTD10000001', 'mt5', 'demo', 'USD', {test => 'test'});
+    $user->update_loginid_status('MTD10000001', 'proof_failed');
+
+    $user->add_loginid('MTR10000002', 'mt5', 'real', 'USD', {test => 'test'});
+
+    $user->add_loginid('MTD10000002', 'mt5', 'demo', 'USD', {test => 'test'});
+
+    $user->dbic->run(
+        fixup => sub {
+            $_->do('select users.upsert_poa_issuance(?,?)', undef, $user->id, '2020-10-10');
+        });
+
+    my $mock_docs = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments::Config');
+    my $boundary;
+
+    $mock_docs->mock(
+        'outdated_boundary',
+        sub {
+            my $category = shift;
+
+            is $category, 'POA', 'category is proof of address';
+
+            return Date::Utility->new($boundary) if $boundary;
+            return undef;
+        });
+
+    $verification_status->check_poa_issuance();
+
+    cmp_deeply get_loginids_status($user),
+        +{
+        MTR10000001 => 'proof_failed',
+        MTD10000001 => 'proof_failed',
+        MTD10000002 => undef,
+        MTR10000002 => undef,
+        },
+        'Nothing changed as the boundary is undef';
+
+    $boundary = '2019-10-10';
+    $verification_status->check_poa_issuance();
+
+    cmp_deeply get_loginids_status($user),
+        +{
+        MTR10000001 => 'proof_failed',
+        MTD10000001 => 'proof_failed',
+        MTD10000002 => undef,
+        MTR10000002 => undef,
+        },
+        'Nothing changed as the boundary is in the past';
+
+    $boundary = '2020-10-10';
+    $verification_status->check_poa_issuance();
+
+    cmp_deeply get_loginids_status($user),
+        +{
+        MTR10000001 => 'proof_failed',
+        MTD10000001 => 'proof_failed',
+        MTD10000002 => undef,
+        MTR10000002 => undef,
+        },
+        'Nothing changed as the boundary is in the limit';
+
+    $boundary = '2020-10-11';
+    $verification_status->check_poa_issuance();
+
+    cmp_deeply get_loginids_status($user),
+        +{
+        MTR10000001 => 'proof_failed',
+        MTD10000001 => 'proof_failed',
+        MTD10000002 => 'poa_outdated',
+        MTR10000002 => 'poa_outdated',
+        },
+        'status updated';
+};
+
+subtest 'sync_status_actions' => sub {
+    my $test_client = create_client('CR');
+    $test_client->email('sync_status_actions@test.co');
+    $test_client->set_default_account('USD');
+    $test_client->binary_user_id('10000007');
+    $test_client->save;
+
+    my $statuses = ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'poa_outdated'];
+    my $dog_logs = [];
+
+    $status_update_mock->mock(
+        'stats_event',
+        sub {
+            push $dog_logs->@*, [@_];
+        });
+
+    $status_update_mock->mock(
+        'load_all_user_data',
+        sub {
+            my (undef, $binary_user_id) = @_;
+            $test_client->binary_user_id($binary_user_id);
+            return +{
+                client      => $test_client,
+                user        => $binary_user_id,
+                cr_currency => 'USD',
+                bom_loginid => $test_client->loginid
+            };
+        });
+
+    my $event_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions  = [];
+
+    $event_mock->mock(
+        'emit',
+        sub {
+            push $emissions->@*, {@_};
+        });
+
+    for my $status ($statuses->@*) {
+        $dog_logs  = [];
+        $emissions = [];
+
+        $status_update_mock->mock(
+            'gather_users',
+            sub {
+                return ([
+                        'MTR100000007', 10000007, Date::Utility->new('2022-09-24 1000')->db_timestamp,
+                        $status, 'mt5', 'real', 'USD', $bvi_group_attributes
+                    ],
+                    [
+                        'MTR100000008', 10000007, Date::Utility->new('2022-09-24 1000')->db_timestamp,
+                        $status, 'mt5', 'real', 'USD', $bvi_group_attributes
+                    ],
+                    [
+                        'MTR100000007', 10000008, Date::Utility->new('2022-09-24 1000')->db_timestamp,
+                        $status, 'mt5', 'real', 'USD', $bvi_group_attributes
+                    ],
+                    [
+                        'MTR100000008', 10000008, Date::Utility->new('2022-09-24 1000')->db_timestamp,
+                        $status, 'mt5', 'real', 'USD', $bvi_group_attributes
+                    ]);
+            });
+
+        my $verification_status = BOM::MT5::Script::StatusUpdate->new;
+
+        $status_update_mock->mock(
+            'parse_user',
+            sub {
+                return {error => 'test'};
+            });
+
+        $verification_status->sync_status_actions;
+
+        cmp_deeply $dog_logs,
+            [[
+                'StatusUpdate.sync_status_actions',
+                'Info: Gathered 4 accounts form the DB with status [\'poa_failed\', \'proof_failed\', \'verification_pending\', \'poa_rejected\', \'poa_pending\'] with the newest created at: '
+                    . Date::Utility->new('2022-11-3 1245')->datetime_ddmmmyy_hhmmss_TZ,
+                {alert_type => 'info'}]
+            ],
+            'Expected DD log';
+
+        cmp_deeply $emissions, [], 'No emission for an errored mt5 client';
+
+        $status_update_mock->unmock('parse_user');
+
+        $dog_logs  = [];
+        $emissions = [];
+
+        $verification_status->sync_status_actions;
+
+        cmp_deeply $dog_logs,
+            [[
+                'StatusUpdate.sync_status_actions',
+                'Info: Gathered 4 accounts form the DB with status [\'poa_failed\', \'proof_failed\', \'verification_pending\', \'poa_rejected\', \'poa_pending\'] with the newest created at: '
+                    . Date::Utility->new('2022-11-3 1245')->datetime_ddmmmyy_hhmmss_TZ,
+                {alert_type => 'info'}]
+            ],
+            'Expected DD log';
+
+        cmp_deeply $emissions,
+            [{
+                sync_mt5_accounts_status => {
+                    binary_user_id => 10000007,
+                }
+            },
+            {
+                sync_mt5_accounts_status => {
+                    binary_user_id => 10000008,
+                }}
+            ],
+            'Event emitted once per binary user id';
+    }
+
+    $status_update_mock->unmock_all;
+    $event_mock->unmock_all;
+};
+
+sub get_loginids_status {
+    my ($user) = @_;
+
+    my $loginids = $user->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT loginid, status FROM users.loginid WHERE binary_user_id=?', {Slice => {}}, $user->id);
+        });
+
+    return +{map { ($_->{loginid} => $_->{status}) } $loginids->@*};
+}
 
 done_testing();

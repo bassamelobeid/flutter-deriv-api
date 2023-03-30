@@ -20,6 +20,7 @@ use Format::Util::Numbers            qw(financialrounding);
 use Future;
 use Future::AsyncAwait;
 use Time::Moment;
+use BOM::User::Client::AuthenticationDocuments::Config;
 use DataDog::DogStatsd::Helper qw(stats_event);
 use Data::Dump                 qw(pp);
 
@@ -48,6 +49,7 @@ disable_users_actions
 sync_status_actions
 send_reminder_emails
 send_expiration_emails
+check_poa_issuance
 
 =cut 
 
@@ -718,13 +720,13 @@ Does not takes or returns any parameters
 
         my @combined = $self->gather_users({
             newest_created_at => $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd'),
-            statuses          => ['poa_pending', 'poa_rejected'],
+            statuses          => ['poa_pending', 'poa_rejected', 'poa_outdated'],
         });
 
         $self->dd_log_info('grace_period_actions',
                   "Gathered "
                 . scalar(@combined)
-                . " accounts form the DB with status ['poa_pending', 'poa_rejected'] with the newest created at: "
+                . " accounts form the DB with status ['poa_pending', 'poa_rejected', 'poa_outdated'] with the newest created at: "
                 . $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd')->datetime_ddmmmyy_hhmmss_TZ);
 
         foreach my $data (@combined) {
@@ -880,6 +882,7 @@ checks their latest POI and POA status and updates user.loginid table with the a
 # failed	    successful		    proof_failed                                #
 # successful	pending		        poa_pending                                 #
 # successful	failed		        poa_failed                                  #
+# successful	expired 		    poa_outdated                                #
 # successful	successful		    ''                                          #
 #-------------------------------------------------------------------------------#
 
@@ -890,7 +893,7 @@ Does not takes or returns any parameters
     method sync_status_actions {
         my @combined = $self->gather_users({
             newest_created_at => $now,
-            statuses          => ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending'],
+            statuses          => ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'poa_outdated'],
         });
 
         $self->dd_log_info('sync_status_actions',
@@ -1070,9 +1073,26 @@ Does not takes or returns any parameters
             } catch ($e) {
                 $self->return_error("send_warning_emails", "The script ran into an error while processing client $loginid: $e");
             }
-
         }
+    }
 
+=head2 check_poa_issuance
+
+It checks the `users.poa_issuance` table for outdated POAs (1 year after issuance date).
+
+Set the status of the MT5 accounts as `poa_outdated` on outdated POAs scenario.
+
+=cut
+
+    method check_poa_issuance {
+        my $boundary = BOM::User::Client::AuthenticationDocuments::Config::outdated_boundary('POA');
+
+        return undef unless $boundary;
+
+        $userdb->dbic->run(
+            fixup => sub {
+                $_->do('SELECT users.update_outdated_poa_mt5_loginids(?::DATE)', undef, $boundary->date_yyyymmdd);
+            });
     }
 }
 

@@ -90,6 +90,67 @@ subtest 'get_poa_status' => sub {
             is $test_client_cr->get_poa_status, 'verified', 'Client POA status is verified';
             $mocked_client->unmock_all;
         };
+
+        subtest 'POA status outdated (expired)' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    is_outdated => 1,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'expired', 'Client POA status is expired';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status pending over outdated' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 1,
+                    is_rejected => 0,
+                    is_outdated => 1,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'pending', 'Client POA status is pending';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status rejected over outdated' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 1,
+                    is_outdated => 1,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'rejected', 'Client POA status is rejected';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status outdated over verified' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    is_outdated => 1,
+                    is_verified => 1,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'expired', 'Client POA status is outdated';
+            $mocked_client->unmock_all;
+        };
     };
 
     subtest 'Regulated account' => sub {

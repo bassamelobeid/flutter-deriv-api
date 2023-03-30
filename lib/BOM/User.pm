@@ -947,7 +947,9 @@ sub filter_active_ids {
     # contain status of 'undef'.
     my $filter_active = sub {
         my $status = shift;
-        return 1 if not defined($status) or any { $status eq $_ } qw/poa_pending poa_rejected poa_failed proof_failed verification_pending/;
+        return 1
+            if not defined($status)
+            or any { $status eq $_ } qw/poa_outdated poa_pending poa_rejected poa_failed proof_failed verification_pending/;
         return 0;
     };
     return [grep { $filter_active->($self->{loginid_details}{$_}{status}) } @$loginids];

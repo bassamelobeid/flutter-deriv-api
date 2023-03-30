@@ -16,6 +16,7 @@ use warnings;
 use BOM::MT5::Script::StatusUpdate;
 
 my $verification_status = BOM::MT5::Script::StatusUpdate->new;
+$verification_status->check_poa_issuance;
 $verification_status->grace_period_actions;
 $verification_status->disable_users_actions;
 $verification_status->sync_status_actions;
