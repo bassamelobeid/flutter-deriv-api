@@ -3786,6 +3786,7 @@ subtest 'deposit limits breached' => sub {
 
     $df_mock->unmock_all;
 };
+
 subtest 'new account opening' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -5107,7 +5108,7 @@ subtest 'request edd document upload' => sub {
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_edd_document_upload};
     my $result  = $handler->($args)->get;
-    ok $handler->($args);
+    ok $handler->($args)->get;
     my ($customer, %args) = @track_args;
     is $args{event}, 'request_edd_document_upload', "event name";
     ok $result, 'Success result';
@@ -5148,6 +5149,59 @@ subtest 'account disabled event for the sideoffice' => sub {
     $result = $handler->($args);
     ok $result,                    'Success result';
     ok !$client->status->disabled, 'Disabled status was not set if there is contracts are open';
+};
+
+subtest '[Payops] Update account status' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'abcd1234@example.com',
+        first_name  => 'ABCD'
+    });
+
+    my @statuses = qw/
+        age_verification  cashier_locked  disabled  unwelcome  withdrawal_locked
+        mt5_withdrawal_locked  ukgc_funds_protection  financial_risk_approval
+        crs_tin_information  max_turnover_limit_not_set
+        professional_requested  professional  professional_rejected  tnc_approval
+        migrated_single_email  duplicate_account
+        require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
+        social_signup  trusted  pa_withdrawal_explicitly_allowed  financial_assessment_required
+        address_verified  no_withdrawal_or_trading no_trading  allow_document_upload internal_client
+        closed  transfers_blocked  shared_payment_method  personal_details_locked
+        allow_poi_resubmission  allow_poa_resubmission migrated_universal_password
+        poi_name_mismatch crypto_auto_reject_disabled crypto_auto_approve_disabled potential_fraud
+        deposit_attempt df_deposit_requires_poi smarty_streets_validated trading_hub poi_dob_mismatch
+        allow_poinc_resubmission cooling_off_period poi_poa_uploaded
+        /;
+
+    for my $status (@statuses) {
+        my $args = {
+            status  => $status,
+            loginid => $client->loginid,
+            reason  => 'Attempted to deposit into account using more than one credit card'
+        };
+
+        my $handler = BOM::Event::Process->new(category => 'generic')->actions->{payops_event_update_account_status};
+        $handler->($args);
+
+        delete $client->{status};    #clear status cache
+                                     # check the results
+        ok $client->status->$status, "The $status status is set on the client";
+        is $client->status->$status->{reason}, 'Attempted to deposit into account using more than one credit card', "Correct reason for $status";
+
+        delete $client->{status};    #clear status cache
+                                     # ensure we dont override the existing result
+        $client->status->$status->{reason} = 'Old reason';
+        $handler->($args);
+        is $client->status->$status->{reason}, 'Old reason', "Status reason was not changed for $status";
+
+        delete $client->{status};    #clear status cache
+                                     # ensure we can clear it
+        delete $args->{reason};
+        $args->{clear} = 1;
+        $handler->($args);
+        is $client->status->$status, undef, "The $status status is clear on the client";
+    }
 };
 
 subtest 'payops event email' => sub {
@@ -5202,7 +5256,6 @@ subtest 'payops event email' => sub {
         loginid => $client->loginid,
         },
         'Expected track event triggered';
-
 };
 
 done_testing();

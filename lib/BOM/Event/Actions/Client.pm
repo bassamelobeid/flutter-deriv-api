@@ -2653,6 +2653,27 @@ sub withdrawal_limit_reached {
     return;
 }
 
+=head2 payops_event_update_account_status
+
+Set or clear status on a client account
+
+=cut
+
+sub payops_event_update_account_status {
+    my $args    = shift;
+    my $loginid = $args->{loginid} // die 'No loginid provided';
+    my $status  = $args->{status}  // die 'No status provided';
+    my $clear   = $args->{clear};
+    my $reason  = $args->{reason} // "Requested by PayOps";
+    my $client  = BOM::User::Client->new({loginid => $loginid}) or die "$loginid does not exists";
+    if ($clear) {
+        my $method = "clear_$status";
+        $client->status->$method;
+    } else {
+        $client->status->setnx($status, "system", $reason);
+    }
+}
+
 =head2 check_or_store_onfido_applicant
 
 Check if applicant exists in database. Store applicant info if client loginid is valid.
