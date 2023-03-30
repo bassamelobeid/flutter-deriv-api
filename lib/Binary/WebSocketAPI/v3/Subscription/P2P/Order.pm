@@ -35,20 +35,31 @@ has loginid => (
 
 has order_id => (is => 'ro');
 
+has advertiser_id => (is => 'ro');
+
+has advert_id => (is => 'ro');
+
+has active => (is => 'ro');
+
 sub subscription_manager {
     return Binary::WebSocketAPI::v3::SubscriptionManager->redis_p2p_manager();
 }
 
 sub _build_channel {
     my $self = shift;
-    return join q{::} => map { uc($_) } ('P2P::ORDER::NOTIFICATION', $self->broker, $self->loginid);
+    return join q{::} => map { uc($_) } (
+        'P2P::ORDER::NOTIFICATION', $self->broker, $self->loginid, $self->advertiser_id,
+        $self->advert_id // -1,
+        $self->order_id  // -1,
+        $self->active    // -1
+    );
 }
 
 # This method is used to find a subscription.
 # Class name + _unique_key will be a unique per context index of the subscription objects.
 sub _unique_key {
     my $self = shift;
-    return join q{::} => ($self->channel, $self->order_id // '');
+    return $self->channel;
 }
 
 sub handle_message {
@@ -58,9 +69,6 @@ sub handle_message {
         $self->unregister;
         return;
     }
-
-    # If subscribed to a single order, discard other orders for this advertiser
-    return if $self->order_id && $self->order_id ne $payload->{id};
 
     my $args = $self->args;
     $c->send({

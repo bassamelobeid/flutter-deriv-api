@@ -38,7 +38,7 @@ my $allowed_naked_packages = {
     'Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract' => 1,
     'Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser'              => 6,
     'Binary::WebSocketAPI::v3::Subscription::P2P::Advert'                  => 7,
-    'Binary::WebSocketAPI::v3::Subscription::P2P::Order'                   => 7,
+    'Binary::WebSocketAPI::v3::Subscription::P2P::Order'                   => 10,
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);

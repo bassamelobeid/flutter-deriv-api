@@ -20,10 +20,10 @@ use Binary::WebSocketAPI::v3::Subscription;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Advert;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Order;
+use Log::Any qw($log);
 
 sub subscribe_orders {
     my ($c, $rpc_response, $req_storage) = @_;
-
     my $args     = $req_storage->{args};
     my $msg_type = $req_storage->{msg_type};
 
@@ -31,7 +31,8 @@ sub subscribe_orders {
         return $c->new_error($msg_type, $rpc_response->{error}{code}, $rpc_response->{error}{message_to_client});
     }
 
-    my $result = {
+    my $subscription_info = delete $rpc_response->{subscription_info};    # needed for subscription, not part of response
+    my $result            = {
         msg_type  => $msg_type,
         $msg_type => $rpc_response,
         defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
@@ -49,7 +50,7 @@ sub subscribe_orders {
         args    => $args,
         loginid => $c->stash('loginid'),
         broker  => $c->stash('broker'),
-        ($order_id ? (order_id => $order_id) : ()),
+        %$subscription_info
     );
 
     if ($order_id && $sub->already_registered) {
