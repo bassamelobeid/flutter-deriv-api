@@ -44,7 +44,32 @@ jobs:
       LOG_LEVEL: debug
     steps:
       - name: set env
-        uses: './.github/actions/ci-setup'
+        run: |
+          if [[ '${{ github.event_name }}' = 'tag' ]]
+          then
+            CIRCLE_TAG=${{ github.ref_name }}
+          fi
+          # TODO uncomment next line and remove next next line
+          #CIRCLE_PR_USERNAME=${{github.event.pull_request.user.login}}
+          CIRCLE_PR_USERNAME=regentmarkets
+          CIRCLE_PR_REPONAME=${{github.event.pull_request.head.repo.name}}
+          CIRCLE_JOB=${{github.job}}
+          if [[ '${{github.event_name}}' = 'pull_request' ]]
+          then
+            CIRCLE_PULL_REQUEST=${{github.event.pull_request.html_url}}
+            CIRCLE_BRANCH="pull/${{github.event.pull_request.number}}"
+          else
+            CIRCLE_BRANCH=${{ github.ref_name }}
+          fi
+          CIRCLE_PROJECT_USERNAME=${{github.repository_owner}}
+          CIRCLE_PROJECT_REPONAME=$(basename ${{github.repository}})
+          set | grep CIRCLE | sudo tee -a $GITHUB_ENV
+          echo HOME=/home/git | sudo tee -a $GITHUB_ENV
+          # We can't set HOME directly by `env`
+          # Please see https://github.com/actions/runner/issues/863
+          eval $(ssh-agent)
+          echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK | sudo tee -a $GITHUB_ENV
+          echo SSH_AGENT_PID=$SSH_AGENT_PID | sudo tee -a $GITHUB_ENV
       - name: create ssh file
         run: |
           mkdir ~/.ssh
