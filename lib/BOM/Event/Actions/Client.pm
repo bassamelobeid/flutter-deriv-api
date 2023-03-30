@@ -1749,8 +1749,10 @@ Returns undef
 =cut
 
 sub authenticated_with_scans {
-    my ($args) = @_;
-    my $client = BOM::User::Client->new($args);
+    my ($args)          = @_;
+    my $client          = BOM::User::Client->new($args);
+    my ($latest_poi_by) = $client->latest_poi_by({only_verified => 1});
+
     return BOM::Event::Services::Track::authenticated_with_scans({
         %$args,
         live_chat_url => request->brand->live_chat_url,
@@ -1758,6 +1760,7 @@ sub authenticated_with_scans {
         loginid       => $client->loginid,
         email         => $client->email,
         first_name    => $client->first_name,
+        latest_poi_by => $latest_poi_by,
     });
 }
 

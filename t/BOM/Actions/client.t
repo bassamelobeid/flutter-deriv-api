@@ -4832,12 +4832,47 @@ subtest 'authenticated_with_scans event' => sub {
         'lang'          => 'EN',
         'brand'         => 'deriv',
         'contact_url'   => 'https://deriv.com/en/contact-us',
-        'loginid'       => $client->loginid
+        'loginid'       => $client->loginid,
         },
         'event properties are ok';
 
     is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+
+    # give a latest_poi_by
+
+    my $mocked_cli = Test::MockModule->new('BOM::User::Client');
+    $mocked_cli->mock(
+        'latest_poi_by',
+        sub {
+            return ('idv');
+        });
+    undef @track_args;
+
+    BOM::Event::Actions::Client::authenticated_with_scans({
+            loginid => $client->loginid,
+        })->get;
+
+    ($customer, %args) = @track_args;
+
+    is $args{event}, 'authenticated_with_scans', "got correct event name";
+
+    cmp_deeply $args{properties},
+        {
+        'email'         => $client->email,
+        'first_name'    => $client->first_name,
+        'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
+        'lang'          => 'EN',
+        'brand'         => 'deriv',
+        'contact_url'   => 'https://deriv.com/en/contact-us',
+        'loginid'       => $client->loginid,
+        'latest_poi_by' => 'idv',
+        },
+        'event properties are ok';
+
+    is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+
 };
 
 subtest 'request payment withdraw' => sub {
