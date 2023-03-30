@@ -372,7 +372,7 @@ subtest 'get account status' => sub {
             }
 
             # 'financial_assessment_not_complete' should not present when everything is complete
-            test_financial_assessment($data, 0, 0, 'financial_assessment_not_complete should not be present when low risk and no fa');
+            test_financial_assessment($data, 0, 1, 'financial_assessment_not_complete should be present when low risk and no fa');
 
             $test_client->aml_risk_classification('high');
             $test_client->save();
