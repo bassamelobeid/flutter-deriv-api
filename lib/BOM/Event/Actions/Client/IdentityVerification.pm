@@ -234,26 +234,31 @@ async sub verify_process {
 
     my @common_datadog_tags = (sprintf('provider:%s', $provider), sprintf('country:%s', $document->{issuing_country}));
 
-    my $report = $response_hash->{report} // {};
-
-    my $photo = delete $report->{photo};
-    my $photo_file_id;
-
+    my $report          = $response_hash->{report} // {};
     my $response_status = $response_hash->{status} // '';
+    my $selfie          = delete $report->{selfie};
+    my $document_pic    = delete $report->{document};
+    my $selfie_file_id;
+    my $document_file_id;
 
-    if ($photo) {
-        $photo_file_id = await _upload_photo({
-            photo  => $photo,
+    $selfie_file_id = await _upload_photo({
+            photo  => $selfie,
             client => $client,
             status => $response_status,
-        });
-    }
+        }) if $selfie;
+
+    $document_file_id = await _upload_photo({
+            photo  => $document_pic,
+            client => $client,
+            status => $response_status,
+        }) if $document_pic;
 
     my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message // ());
 
     @messages = uniq @messages;
 
     my $callback = RESULT_STATUS->{$status} // RESULT_STATUS->{failed};
+    my $pictures = [grep { $_ } ($document_file_id, $selfie_file_id)];
 
     await $callback->({
         client              => $client,
@@ -263,7 +268,7 @@ async sub verify_process {
         response_hash       => $response_hash,
         common_datadog_tags => \@common_datadog_tags,
         errors              => _messages_to_hashref(@messages),
-        photo               => $photo_file_id,
+        pictures            => scalar @$pictures ? $pictures : undef,
     });
 
     return 1;
@@ -278,8 +283,8 @@ Verified Result Status for IDV, when the document was cleared
 async sub idv_verified {
     my ($args) = @_;
 
-    my ($client, $messages, $document, $provider, $response_hash, $photo_file_id) =
-        @{$args}{qw/client messages document provider response_hash photo/};
+    my ($client, $messages, $document, $provider, $response_hash, $pictures) =
+        @{$args}{qw/client messages document provider response_hash pictures/};
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
     $client->propagate_clear_status('poi_name_mismatch');
@@ -303,7 +308,7 @@ async sub idv_verified {
         expiration_date => $response_hash->{report}->{expiry_date},
         request_body    => encode_json_text($response_hash->{request_body}  // {}),
         response_body   => encode_json_text($response_hash->{response_body} // {}),
-        photo           => $photo_file_id
+        photo           => $pictures
     });
 }
 
@@ -316,8 +321,8 @@ Refuted Result Status for IDV, when the document was rejected
 async sub idv_refuted {
     my ($args) = @_;
 
-    my ($client, $document, $provider, $messages, $response_hash, $errors, $photo_file_id) =
-        @{$args}{qw/client document provider messages response_hash errors photo/};
+    my ($client, $document, $provider, $messages, $response_hash, $errors, $pictures) =
+        @{$args}{qw/client document provider messages response_hash errors pictures/};
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
     push $messages->@*,
@@ -341,7 +346,7 @@ async sub idv_refuted {
         provider        => $provider,
         request_body    => encode_json_text($response_hash->{request_body}  // {}),
         response_body   => encode_json_text($response_hash->{response_body} // {}),
-        photo           => $photo_file_id,
+        photo           => $pictures,
     });
 
     BOM::Platform::Event::Emitter::emit(

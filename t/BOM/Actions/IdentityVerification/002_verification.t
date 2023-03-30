@@ -1345,280 +1345,442 @@ subtest 'testing refuted status and name mismatch' => sub {
 
 };
 
-subtest 'testing photo being sent as paramter - refuted' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+subtest 'pictures collected from IDV' => sub {
+    for my $what (qw/selfie document/) {
+        subtest "testing $what being sent as paramter - refuted" => sub {
+            my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
-    my $email = 'test_refuted_photo@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
+            my $email = "test_refuted_photo$what\@binary.com";
+            my $user  = BOM::User->create(
+                email          => $email,
+                password       => "pwd123",
+                email_verified => 1,
+            );
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code    => 'CR',
+                email          => $email,
+                binary_user_id => $user->id,
+            });
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+            $client->user($user);
+            $client->binary_user_id($user->id);
+            $user->add_client($client);
+            $client->save;
 
-    my $args = {
-        loginid => $client->loginid,
+            my $args = {
+                loginid => $client->loginid,
+            };
+
+            my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+            $updates  = 0;
+            @requests = ();
+
+            $idv_model->add_document({
+                issuing_country => 'br',
+                number          => '123.456.789-33',
+                type            => 'cpf',
+            });
+
+            my $redis = BOM::Config::Redis::redis_events();
+            $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+            my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
+            my $track_args;
+
+            $services_track_mock->mock(
+                'document_upload',
+                sub {
+                    $track_args = shift;
+                    return Future->done(1);
+                });
+
+            my $s3_client_mock = Test::MockModule->new('BOM::Platform::S3Client');
+            $s3_client_mock->mock(
+                'upload_binary',
+                sub {
+                    return Future->done(1);
+                });
+
+            $client->address_line_1('Fake St 123');
+            $client->address_line_2('apartamento 22');
+            $client->address_postcode('12345900');
+            $client->residence('br');
+            $client->first_name('John');
+            $client->last_name('Doe');
+            $client->date_of_birth('1996-02-12');
+            $client->save();
+
+            $resp = Future->done(
+                HTTP::Response->new(
+                    200, undef, undef,
+                    encode_json_utf8({
+                            status   => 'refuted',
+                            messages => ['NAME_MISMATCH'],
+                            report   => {
+                                full_name => "John Mary Doe",
+                                $what     => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                            }})));
+
+            ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+            my $document = $idv_model->get_last_updated_document;
+
+            my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+            my $check = $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+                });
+
+            cmp_deeply $check , [{photo_id => [re('\d+')]}], 'photo id returned is non null';
+            is $track_args->{loginid}, $client->loginid, 'Correct loginid sent';
+
+            cmp_deeply(
+                $track_args->{properties},
+                {
+                    'upload_date'     => re('.*'),
+                    'file_name'       => re('.*'),
+                    'id'              => re('.*'),
+                    'lifetime_valid'  => re('.*'),
+                    'document_id'     => '',
+                    'comments'        => '',
+                    'expiration_date' => undef,
+                    'document_type'   => 'photo'
+                },
+                'Document info was populated correctly'
+            );
+
+            $document = $idv_model->get_last_updated_document;
+
+            cmp_deeply(
+                $document,
+                {
+                    'document_number'          => '123.456.789-33',
+                    'status'                   => 'refuted',
+                    'document_expiration_date' => undef,
+                    'is_checked'               => 1,
+                    'issuing_country'          => 'br',
+                    'status_messages'          => '["NAME_MISMATCH"]',
+                    'id'                       => re('\d+'),
+                    'document_type'            => 'cpf'
+                },
+                'Document has refuted from pass -  status underage'
+            );
+
+            my ($photo) = $check->@*;
+
+            my ($doc) = $client->find_client_authentication_document(query => [id => $photo->{photo_id}]);
+
+            is $doc->{status}, 'rejected', 'status in BO reflects idv status - rejected';
+
+        };
+
+        subtest "testing $what being sent as paramter - verified" => sub {
+            my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+            my $email = "test_verify_photo$what\@binary.com";
+            my $user  = BOM::User->create(
+                email          => $email,
+                password       => "pwd123",
+                email_verified => 1,
+            );
+
+            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code    => 'CR',
+                email          => $email,
+                binary_user_id => $user->id,
+            });
+
+            $client->user($user);
+            $client->binary_user_id($user->id);
+            $user->add_client($client);
+            $client->save;
+
+            my $args = {
+                loginid => $client->loginid,
+            };
+
+            my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+            $updates  = 0;
+            @requests = ();
+
+            $idv_model->add_document({
+                issuing_country => 'br',
+                number          => '123.456.789-33',
+                type            => 'cpf',
+            });
+
+            my $redis = BOM::Config::Redis::redis_events();
+            $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+            my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
+            my $track_args;
+
+            $services_track_mock->mock(
+                'document_upload',
+                sub {
+                    $track_args = shift;
+                    return Future->done(1);
+                });
+
+            my $s3_client_mock = Test::MockModule->new('BOM::Platform::S3Client');
+            $s3_client_mock->mock(
+                'upload_binary',
+                sub {
+                    return Future->done(1);
+                });
+
+            $client->address_line_1('Fake St 123');
+            $client->address_line_2('apartamento 22');
+            $client->address_postcode('12345900');
+            $client->residence('br');
+            $client->first_name('John');
+            $client->last_name('Doe');
+            $client->date_of_birth('1996-02-12');
+            $client->save();
+
+            $resp = Future->done(
+                HTTP::Response->new(
+                    200, undef, undef,
+                    encode_json_utf8({
+                            status   => 'verified',
+                            messages => ['NAME_MISMATCH'],
+                            report   => {
+                                full_name => "John Mary Doe",
+                                $what     => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                            }})));
+
+            ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+            my $document = $idv_model->get_last_updated_document;
+
+            my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+            my $check = $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+                });
+
+            cmp_deeply $check , [{photo_id => [re('\d+')]}], 'photo id returned is non null';
+
+            cmp_deeply(
+                $track_args->{properties},
+                {
+                    'upload_date'     => re('.*'),
+                    'file_name'       => re('.*'),
+                    'id'              => re('.*'),
+                    'lifetime_valid'  => re('.*'),
+                    'document_id'     => '',
+                    'comments'        => '',
+                    'expiration_date' => undef,
+                    'document_type'   => 'photo'
+                },
+                'Document info was populated correctly'
+            );
+
+            $document = $idv_model->get_last_updated_document;
+
+            cmp_deeply(
+                $document,
+                {
+                    'document_number'          => '123.456.789-33',
+                    'status'                   => 'verified',
+                    'document_expiration_date' => undef,
+                    'is_checked'               => 1,
+                    'issuing_country'          => 'br',
+                    'status_messages'          => '["NAME_MISMATCH"]',
+                    'id'                       => re('\d+'),
+                    'document_type'            => 'cpf'
+                },
+                'Document has verified from pass'
+            );
+
+            $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+            $idv_model->add_document({
+                issuing_country => 'br',
+                number          => '123.456.789-34',
+                type            => 'cpf',
+            });
+
+            ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+            my $check_two = $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+                });
+
+            cmp_deeply $check , $check_two, 'photo id returned is the same';
+
+            my ($photo) = $check->@*;
+
+            my ($doc) = $client->find_client_authentication_document(query => [id => $photo->{photo_id}]);
+
+            is $doc->{status}, 'verified', 'status in BO reflects idv status - verified';
+            is $doc->{origin}, 'idv',      'IDV is the origin of the doc';
+        };
+    }
+
+    subtest "selfie & document are provided" => sub {
+        my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+        my $email = "test_verify_photoboth\@binary.com";
+        my $user  = BOM::User->create(
+            email          => $email,
+            password       => "pwd123",
+            email_verified => 1,
+        );
+
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code    => 'CR',
+            email          => $email,
+            binary_user_id => $user->id,
+        });
+
+        $client->user($user);
+        $client->binary_user_id($user->id);
+        $user->add_client($client);
+        $client->save;
+
+        my $args = {
+            loginid => $client->loginid,
+        };
+
+        my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+        $updates  = 0;
+        @requests = ();
+
+        $idv_model->add_document({
+            issuing_country => 'br',
+            number          => '123.456.789-33',
+            type            => 'cpf',
+        });
+
+        my $redis = BOM::Config::Redis::redis_events();
+        $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+        my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
+        my $track_args          = [];
+
+        $services_track_mock->mock(
+            'document_upload',
+            sub {
+                push $track_args->@*, shift;
+                return Future->done(1);
+            });
+
+        my $s3_client_mock = Test::MockModule->new('BOM::Platform::S3Client');
+        $s3_client_mock->mock(
+            'upload_binary',
+            sub {
+                return Future->done(1);
+            });
+
+        $client->address_line_1('Fake St 123');
+        $client->address_line_2('apartamento 22');
+        $client->address_postcode('12345900');
+        $client->residence('br');
+        $client->first_name('John');
+        $client->last_name('Doe');
+        $client->date_of_birth('1996-02-12');
+        $client->save();
+
+        $resp = Future->done(
+            HTTP::Response->new(
+                200, undef, undef,
+                encode_json_utf8({
+                        status   => 'verified',
+                        messages => ['NAME_MISMATCH'],
+                        report   => {
+                            full_name => "John Mary Doe",
+                            selfie    => 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAD0lEQVR42mNk+P+/ngEIAA+AAn9nd0gSAAAAAElFTkSuQmCC',
+                            document  => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                        }})));
+
+        ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+        my $document = $idv_model->get_last_updated_document;
+
+        my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+        my $check = $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+            });
+
+        cmp_deeply $check , [{photo_id => [re('\d+'), re('\d+')]}], 'photo id returned is non null (2 ids)';
+
+        cmp_deeply(
+            [map { $_->{properties} } $track_args->@*],
+            [{
+                    'upload_date'     => re('.*'),
+                    'file_name'       => re('.*'),
+                    'id'              => re('.*'),
+                    'lifetime_valid'  => re('.*'),
+                    'document_id'     => '',
+                    'comments'        => '',
+                    'expiration_date' => undef,
+                    'document_type'   => 'photo'
+                },
+                {
+                    'upload_date'     => re('.*'),
+                    'file_name'       => re('.*'),
+                    'id'              => re('.*'),
+                    'lifetime_valid'  => re('.*'),
+                    'document_id'     => '',
+                    'comments'        => '',
+                    'expiration_date' => undef,
+                    'document_type'   => 'photo'
+                }
+            ],
+            'Document info was populated correctly'
+        );
+
+        $document = $idv_model->get_last_updated_document;
+
+        cmp_deeply(
+            $document,
+            {
+                'document_number'          => '123.456.789-33',
+                'status'                   => 'verified',
+                'document_expiration_date' => undef,
+                'is_checked'               => 1,
+                'issuing_country'          => 'br',
+                'status_messages'          => '["NAME_MISMATCH"]',
+                'id'                       => re('\d+'),
+                'document_type'            => 'cpf'
+            },
+            'Document has verified from pass'
+        );
+
+        $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+        $idv_model->add_document({
+            issuing_country => 'br',
+            number          => '123.456.789-34',
+            type            => 'cpf',
+        });
+
+        ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+        my $check_two = $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+            });
+
+        cmp_deeply $check , $check_two, 'photo id returned is the same';
+
+        my ($photo) = $check->@*;
+
+        my ($doc1, $doc2) = $client->find_client_authentication_document(query => [id => $photo->{photo_id}]);
+
+        is $doc1->{status}, 'verified', 'status in BO reflects idv status - verified';
+        is $doc1->{origin}, 'idv',      'IDV is the origin of the doc';
+
+        is $doc2->{status}, 'verified', 'status in BO reflects idv status - verified';
+        is $doc2->{origin}, 'idv',      'IDV is the origin of the doc';
     };
-
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
-    $updates  = 0;
-    @requests = ();
-
-    $idv_model->add_document({
-        issuing_country => 'br',
-        number          => '123.456.789-33',
-        type            => 'cpf',
-    });
-
-    my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
-    my $track_args;
-
-    $services_track_mock->mock(
-        'document_upload',
-        sub {
-            $track_args = shift;
-            return Future->done(1);
-        });
-
-    my $s3_client_mock = Test::MockModule->new('BOM::Platform::S3Client');
-    $s3_client_mock->mock(
-        'upload_binary',
-        sub {
-            return Future->done(1);
-        });
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1996-02-12');
-    $client->save();
-
-    $resp = Future->done(
-        HTTP::Response->new(
-            200, undef, undef,
-            encode_json_utf8({
-                    status   => 'refuted',
-                    messages => ['NAME_MISMATCH'],
-                    report   => {
-                        full_name => "John Mary Doe",
-                        photo     => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-                    }})));
-
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
-
-    my $document = $idv_model->get_last_updated_document;
-
-    my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
-
-    my $check = $dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
-        });
-
-    cmp_deeply $check , [{photo_id => re('\d+')}], 'photo id returned is non null';
-
-    is $track_args->{loginid}, $client->loginid, 'Correct loginid sent';
-
-    cmp_deeply(
-        $track_args->{properties},
-        {
-            'upload_date'     => re('.*'),
-            'file_name'       => re('.*'),
-            'id'              => re('.*'),
-            'lifetime_valid'  => re('.*'),
-            'document_id'     => '',
-            'comments'        => '',
-            'expiration_date' => undef,
-            'document_type'   => 'photo'
-        },
-        'Document info was populated correctly'
-    );
-
-    $document = $idv_model->get_last_updated_document;
-
-    cmp_deeply(
-        $document,
-        {
-            'document_number'          => '123.456.789-33',
-            'status'                   => 'refuted',
-            'document_expiration_date' => undef,
-            'is_checked'               => 1,
-            'issuing_country'          => 'br',
-            'status_messages'          => '["NAME_MISMATCH"]',
-            'id'                       => re('\d+'),
-            'document_type'            => 'cpf'
-        },
-        'Document has refuted from pass -  status underage'
-    );
-
-    my ($photo) = $check->@*;
-
-    my ($doc) = $client->find_client_authentication_document(query => [id => $photo->{photo_id}]);
-
-    is $doc->{status}, 'rejected', 'status in BO reflects idv status - rejected';
-
-};
-
-subtest 'testing photo being sent as paramter - verified' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
-
-    my $email = 'test_verify_photo@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
-
-    my $args = {
-        loginid => $client->loginid,
-    };
-
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
-    $updates  = 0;
-    @requests = ();
-
-    $idv_model->add_document({
-        issuing_country => 'br',
-        number          => '123.456.789-33',
-        type            => 'cpf',
-    });
-
-    my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
-    my $track_args;
-
-    $services_track_mock->mock(
-        'document_upload',
-        sub {
-            $track_args = shift;
-            return Future->done(1);
-        });
-
-    my $s3_client_mock = Test::MockModule->new('BOM::Platform::S3Client');
-    $s3_client_mock->mock(
-        'upload_binary',
-        sub {
-            return Future->done(1);
-        });
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1996-02-12');
-    $client->save();
-
-    $resp = Future->done(
-        HTTP::Response->new(
-            200, undef, undef,
-            encode_json_utf8({
-                    status   => 'verified',
-                    messages => ['NAME_MISMATCH'],
-                    report   => {
-                        full_name => "John Mary Doe",
-                        photo     => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-                    }})));
-
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
-
-    my $document = $idv_model->get_last_updated_document;
-
-    my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
-
-    my $check = $dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
-        });
-
-    cmp_deeply $check , [{photo_id => re('\d+')}], 'photo id returned is non null';
-
-    cmp_deeply(
-        $track_args->{properties},
-        {
-            'upload_date'     => re('.*'),
-            'file_name'       => re('.*'),
-            'id'              => re('.*'),
-            'lifetime_valid'  => re('.*'),
-            'document_id'     => '',
-            'comments'        => '',
-            'expiration_date' => undef,
-            'document_type'   => 'photo'
-        },
-        'Document info was populated correctly'
-    );
-
-    $document = $idv_model->get_last_updated_document;
-
-    cmp_deeply(
-        $document,
-        {
-            'document_number'          => '123.456.789-33',
-            'status'                   => 'verified',
-            'document_expiration_date' => undef,
-            'is_checked'               => 1,
-            'issuing_country'          => 'br',
-            'status_messages'          => '["NAME_MISMATCH"]',
-            'id'                       => re('\d+'),
-            'document_type'            => 'cpf'
-        },
-        'Document has verified from pass'
-    );
-
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $idv_model->add_document({
-        issuing_country => 'br',
-        number          => '123.456.789-34',
-        type            => 'cpf',
-    });
-
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
-
-    my $check_two = $dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
-        });
-
-    cmp_deeply $check , $check_two, 'photo id returned is the same';
-
-    my ($photo) = $check->@*;
-
-    my ($doc) = $client->find_client_authentication_document(query => [id => $photo->{photo_id}]);
-
-    is $doc->{status}, 'verified', 'status in BO reflects idv status - verified';
-    is $doc->{origin}, 'idv',      'IDV is the origin of the doc';
-
 };
 
 subtest 'testing callback status' => sub {
