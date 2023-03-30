@@ -823,7 +823,8 @@ subtest 'P2P Order Info' => sub {
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     $params->{token} = $client_token;
     $params->{args}  = {
-        id => $order->{id},
+        id        => $order->{id},
+        subscribe => 1
     };
 
     my $res = $c->call_ok(p2p_order_info => $params)->has_no_system_error->has_no_error->result;
@@ -875,8 +876,12 @@ subtest 'P2P Order Info' => sub {
             disputer_loginid => undef,
             dispute_reason   => undef
         },
-        is_reviewable => 0,
-        stash         => {
+        is_reviewable     => 0,
+        subscription_info => {
+            advertiser_id => re('\d+'),
+            order_id      => re('\d+'),
+        },
+        stash => {
             source_bypass_verification => 0,
             app_markup_percentage      => '0',
             valid_source               => 1,

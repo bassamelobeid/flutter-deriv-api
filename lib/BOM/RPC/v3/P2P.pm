@@ -673,7 +673,7 @@ p2p_rpc p2p_order_list => readonly => 1 => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return {list => $client->p2p_order_list($args{params}{args}->%*)};
+    return $client->p2p_order_list($args{params}{args}->%*);
 };
 
 =head2 p2p_order_info
