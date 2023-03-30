@@ -391,7 +391,10 @@ subtest 'trading_platform_available_accounts' => sub {
         {
             'sub_account_type' => 'standard',
             'requirements'     => {
-                'compliance'          => {'mt5' => ['fully_authenticated', 'expiration_check']},
+                'compliance' => {
+                    'mt5'             => ['fully_authenticated', 'expiration_check'],
+                    'tax_information' => ['tax_residence',       'tax_identification_number'],
+                },
                 'signup'              => ['citizen', 'place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information']}
             },
@@ -403,7 +406,10 @@ subtest 'trading_platform_available_accounts' => sub {
         {
             'sub_account_type' => 'standard',
             'requirements'     => {
-                'compliance'          => {'mt5' => ['fully_authenticated', 'expiration_check']},
+                'compliance' => {
+                    'mt5'             => ['fully_authenticated', 'expiration_check'],
+                    'tax_information' => ['tax_residence',       'tax_identification_number']
+                },
                 'signup'              => ['citizen', 'place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information']}
             },
