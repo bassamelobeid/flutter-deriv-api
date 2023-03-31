@@ -41,6 +41,10 @@
                                 "description": "[Optional] The transaction amount. Not present when deposit transaction still unconfirmed.",
                                 "type": "number"
                             },
+                            "confirmations": {
+                                "description": "[Optional] The number of confirmations for pending deposits or withdrawals",
+                                "type": "integer"
+                            },
                             "id": {
                                 "description": "The unique identifier for the transaction.",
                                 "type": "string"
