@@ -14,7 +14,7 @@ my $auto_reject_obj = BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->n
 
 subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity' => sub {
 
-    subtest "HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO" => sub {
+    subtest "HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO" => sub {
 
         $mock->mock(
             user_payment_details => sub {
@@ -90,14 +90,14 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
             ),
             {
                 auto_reject                          => 1,
-                tag                                  => 'HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO',
+                tag                                  => 'HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO',
                 total_withdrawal_amount_today_in_usd => 4,
                 reject_reason                        => 'highest_deposit_method_is_not_crypto',
                 reject_remark                        => 'AutoRejected - highest deposit method is not crypto, request payout via Webmoney',
                 meta_data                            => 'Webmoney',
                 fiat_account                         => 'USD'
             },
-            "returns tag: HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO as net deposit of Webmoney payment method is greater than ETH net deposit"
+            "returns tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO as net deposit of Webmoney payment method is greater than ETH net deposit"
         );
 
         $mock->mock(
@@ -134,14 +134,14 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
             ),
             {
                 auto_reject                          => 1,
-                tag                                  => 'HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO',
+                tag                                  => 'HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO',
                 total_withdrawal_amount_today_in_usd => 4,
                 reject_reason                        => 'highest_deposit_method_is_not_crypto',
                 reject_remark                        => 'AutoRejected - highest deposit method is not crypto, request payout via Payment Agent',
                 meta_data                            => 'Payment Agent',
                 fiat_account                         => 'USD'
             },
-            "returns tag: HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO if there are no crypto deposits for any currency"
+            "returns tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO if there are no crypto deposits for any currency"
         );
 
         $mock->mock(
@@ -191,14 +191,14 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
             ),
             {
                 auto_reject                          => 1,
-                tag                                  => 'HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO',
+                tag                                  => 'HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO',
                 total_withdrawal_amount_today_in_usd => 4,
                 reject_reason                        => 'highest_deposit_method_is_not_crypto',
                 reject_remark                        => 'AutoRejected - highest deposit method is not crypto, request payout via Skrill',
                 meta_data                            => 'Skrill',
                 fiat_account                         => 'USD'
             },
-            "returns tag: HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO if there are no crypto deposits for the withdrawal currency"
+            "returns tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO if there are no crypto deposits for the withdrawal currency"
         );
 
         $mock->unmock_all();
@@ -402,7 +402,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
             ),
             {
                 auto_reject                          => 1,
-                tag                                  => 'HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO',
+                tag                                  => 'HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO',
                 total_withdrawal_amount_today_in_usd => 4,
                 reject_reason                        => 'highest_deposit_method_is_not_crypto',
                 reject_remark                        => 'AutoRejected - highest deposit method is not crypto, request payout via Skrill',
@@ -414,7 +414,53 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
 
         $mock->unmock_all();
 
-    }
+    };
+    subtest 'CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE' => sub {
+        $mock->mock(
+            user_payment_details => sub {
+                return {
+                    count                             => 2,
+                    currency_wise_crypto_net_deposits => {
+                        BTC => -1,
+                        ETH => -1
+                    },
+                    payments => [{
+                            total_deposit_in_usd    => 15.00,
+                            total_withdrawal_in_usd => 0.00,
+                            net_deposit             => 15.00,
+                            currency_code           => "USD",
+                            is_reversible           => 1,
+                            p_method                => 'Skrill',
+                            payment_time            => "2020-10-20 21:36:31",
+                            is_stable_method        => 1
+                        },
+                    ],
+                    has_stable_method_deposits => 1,
+                    method_wise_net_deposits   => {
+                        Skrill => -15,
+                    }};
+            },
+            is_client_auto_reject_disabled => sub {
+                return 0;
+            });
+
+        is_deeply(
+            $auto_reject_obj->user_activity(
+                binary_user_id                => 1,
+                client_loginid                => 'CR90000000',
+                total_withdrawal_amount       => 1,
+                total_withdrawal_amount_today => 1,
+                currency_code                 => 'BTC'
+            ),
+            {
+                auto_reject                          => 0,
+                tag                                  => 'CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE',
+                total_withdrawal_amount_today_in_usd => 1,
+            },
+            "returns tag: CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE as user's net crypto deposit amount & highest deposited amount are both negative values"
+        );
+        $mock->unmock_all();
+    };
 
 };
 

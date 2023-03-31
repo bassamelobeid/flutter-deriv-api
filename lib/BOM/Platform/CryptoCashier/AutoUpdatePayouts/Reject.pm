@@ -12,7 +12,7 @@ BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject;
 This script aims to automatically reject cryptocurrency withdrawal requests for the following rules defined by payments:
 
 1. Reject cryptocurrency withdrawal requests if the highest net deposit method is not `crypto` within the limit of six months (limit is configurable via BO).
-Tag: HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO
+Tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO
 
 =cut
 
@@ -37,11 +37,11 @@ use constant {
         }
     },
     TAGS => {
-        no_non_crypto_deposits         => 'NO_NON_CRYPTO_DEPOSITS_RECENTLY',
-        highest_deposit_not_crypto     => 'HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO',
-        high_crypto_deposit            => 'HIGH_CRYPTOCURRENCY_DEPOSIT',
-        auto_reject_disable_for_client => 'AUTO_REJECT_IS_DISABLED_FOR_CLIENT'
-
+        no_non_crypto_deposits                  => 'NO_NON_CRYPTO_DEPOSITS_RECENTLY',
+        highest_deposit_not_crypto              => 'HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO',
+        high_crypto_deposit                     => 'HIGH_CRYPTOCURRENCY_DEPOSIT',
+        auto_reject_disable_for_client          => 'AUTO_REJECT_IS_DISABLED_FOR_CLIENT',
+        crypto_non_crypto_net_deposits_negative => 'CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE'
     }};
 
 =head2 new
@@ -167,7 +167,13 @@ sub user_activity {
     my $highest_deposited_amount  = $self->find_highest_deposit($user_payments);
     my $fiat_account              = $self->find_fiat_account($user_payments->{payments}) // 'fiat';
 
-    if (%$highest_deposited_amount and $net_crypto_deposit_amount < $highest_deposited_amount->{net_amount_in_usd}) {
+    if (($highest_deposited_amount->{net_amount_in_usd} // 0) < 0 and $net_crypto_deposit_amount < 0) {
+        $log->debugf('User\'s net crypto deposit amount & highest deposited amount are both negative values since %s',
+            $start_date_to_inspect->to_string);
+        $response->{tag}         = TAGS->{crypto_non_crypto_net_deposits_negative};
+        $response->{auto_reject} = 0;
+
+    } elsif (%$highest_deposited_amount and $net_crypto_deposit_amount < $highest_deposited_amount->{net_amount_in_usd}) {
 
         $log->debugf('User has more Fiat deposits than crypto deposits since %s', $start_date_to_inspect->to_string);
         $response->{tag}           = TAGS->{highest_deposit_not_crypto};
