@@ -43,10 +43,8 @@ jobs:
     env:
       LOG_LEVEL: debug
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
       - name: setup CI step
-        uses: ./../.github/actions/setup-ci
+        uses: ./.github/actions/ci-setup
       - name: create ssh file
         run: |
           mkdir ~/.ssh
