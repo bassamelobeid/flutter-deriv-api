@@ -18,6 +18,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::Util                 qw(first uniq all);
 use BOM::Config::Redis;
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Utility;
 use Log::Any qw($log);
 
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
@@ -671,11 +672,12 @@ Returns,
 =cut
 
 sub submissions_left {
-    my $client = shift;
+    my $client  = shift;
+    my $country = $client->residence;
 
     my $redis            = BOM::Config::Redis::redis_events();
     my $request_per_user = $redis->get(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id) // 0;
-    my $submissions_left = limit_per_user() - $request_per_user;
+    my $submissions_left = limit_per_user($country) - $request_per_user;
     return $submissions_left;
 }
 
@@ -719,7 +721,9 @@ Returns,
 =cut
 
 sub limit_per_user {
-    return $ENV{ONFIDO_REQUEST_PER_USER_LIMIT} // 3;
+    my $country = shift;
+
+    return BOM::Platform::Utility::has_idv(('country' => $country)) ? 1 : 2;
 }
 
 =head2 timeout_per_user

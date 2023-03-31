@@ -7755,7 +7755,9 @@ sub get_onfido_status {
 
     my $submissions_left = BOM::User::Onfido::submissions_left($self);
 
-    return 'rejected' if $submissions_left < BOM::User::Onfido::limit_per_user();
+    my $country = $self->residence;
+
+    return 'rejected' if $submissions_left < BOM::User::Onfido::limit_per_user($country);
 
     return 'none';
 }

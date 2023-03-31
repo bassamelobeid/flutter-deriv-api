@@ -184,12 +184,21 @@ subtest 'store & fetch report' => sub {
 };
 
 subtest 'limits per user' => sub {
-    is BOM::User::Onfido::limit_per_user,   3,       'The allowed submissions counter is 3';
+    is BOM::User::Onfido::limit_per_user,   2,       'The allowed submissions counter is 2 by default';
     is BOM::User::Onfido::timeout_per_user, 1296000, '15 days to reset the counter';
 };
 
 subtest 'submissions left per user' => sub {
-    my $limit = BOM::User::Onfido::limit_per_user();
+    $test_client->residence('gh');
+    $test_client->save;
+    my $limit = BOM::User::Onfido::limit_per_user($test_client->residence);
+    is $limit, 1, '1 is the correct number of attempst for IDV supported countries';
+
+    $test_client->residence('id');
+    $test_client->save;
+    $limit = BOM::User::Onfido::limit_per_user($test_client->residence);
+    is $limit, 2, '2 is the correct number of attempst for non IDV supported countries';
+
     is BOM::User::Onfido::submissions_left($test_client), $limit, 'The client has all the submissions left';
 
     my $submissions_used = 0;
@@ -200,7 +209,7 @@ subtest 'submissions left per user' => sub {
             return $submissions_used;
         });
 
-    foreach my $i (1 .. 3) {
+    foreach my $i (1 .. 2) {
         $submissions_used++;
         is BOM::User::Onfido::submissions_left($test_client), $limit - $submissions_used, 'Submissions left are looking good';
 
