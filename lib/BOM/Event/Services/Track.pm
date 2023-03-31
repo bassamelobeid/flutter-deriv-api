@@ -164,6 +164,7 @@ my %EVENT_PROPERTIES = (
     payops_event_email            => [qw(contents subject loginid email_template properties)],
     p2p_limit_changed             => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
     p2p_limit_upgrade_available   => [qw(loginid advertiser_id)],
+    dp_successful_login           => [qw(timestamp)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -328,6 +329,33 @@ sub login {
 
     return track_event(
         event                => 'login',
+        loginid              => $args->{loginid},
+        properties           => $properties,
+        is_identify_required => 1,
+    );
+}
+
+=head2 dp_successful_login
+
+It is triggered for each B<dp_successful_login> event emitted, delivering it to Segment.
+It can be called with the following named parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub dp_successful_login {
+    my ($args) = @_;
+    my $properties = $args->{properties};
+
+    return track_event(
+        event                => 'dp_successful_login',
         loginid              => $args->{loginid},
         properties           => $properties,
         is_identify_required => 1,

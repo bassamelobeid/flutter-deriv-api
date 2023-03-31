@@ -190,6 +190,7 @@ my $action_mapping = {
         p2p_order_updated_handled                        => \&BOM::Event::Actions::P2P::track_p2p_order_event,
         risk_disclaimer_resubmission                     => \&BOM::Event::Actions::Email::send_client_email_track_event,
         unknown_login                                    => \&BOM::Event::Actions::Email::send_client_email_track_event,
+        dp_successful_login                              => \&BOM::Event::Services::Track::dp_successful_login,
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,
