@@ -124,6 +124,7 @@ subtest 'Crypto cashier calls' => sub {
                 transaction_type => 'deposit',
                 transaction_hash => 'deposit_transaction_hash',
                 transaction_url  => 'https://blockchain.url/tx/',
+                confirmations    => 0,
             },
             {
                 address_hash     => 'withdrawal_address_hash',
