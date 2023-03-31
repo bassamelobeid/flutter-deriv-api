@@ -28,7 +28,7 @@ jobs:
         name: Check git message if it contains the keyword [ci]
         # TODO maybe not work, should check again
   core_syntax_diff:
-    needs: check-git-message
+    #needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
