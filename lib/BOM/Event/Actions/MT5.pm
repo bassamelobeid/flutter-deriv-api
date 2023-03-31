@@ -492,41 +492,43 @@ async sub link_myaff_token_to_mt5 {
 
     my $ib_affiliate_id = _get_ib_affiliate_id_from_token($myaffiliates_token);
 
-    my $agent_login = _get_mt5_agent_account_id({
-        affiliate_id => $ib_affiliate_id,
-        loginid      => $client_loginid,
-        server       => $server,
-    });
+    if ($ib_affiliate_id) {
+        my $agent_login = _get_mt5_agent_account_id({
+            affiliate_id => $ib_affiliate_id,
+            loginid      => $client_loginid,
+            server       => $server,
+        });
 
-    my $agent_id = 'MTR' . $agent_login;
+        my $agent_id = 'MTR' . $agent_login;
 
-    try {
-        $user_details = await BOM::MT5::User::Async::get_user($client_mt5_login);
-    } catch ($e) {
-        if ($e->{error} =~ m/Not found/i) {
-            $log->errorf("An error occured while retrieving user '%s' from MT5 : %s", $client_mt5_login, $e);
-            return 1;
+        try {
+            $user_details = await BOM::MT5::User::Async::get_user($client_mt5_login);
+        } catch ($e) {
+            if ($e->{error} =~ m/Not found/i) {
+                $log->errorf("An error occured while retrieving user '%s' from MT5 : %s", $client_mt5_login, $e);
+                return 1;
+            }
+
+            die $e;
         }
 
-        die $e;
+        die "Could not get details for client $client_mt5_login while linking to affiliate $ib_affiliate_id" unless $user_details;
+
+        # MT5 has problem updating the color to None (4278190080) , let's remove the color from user update
+        delete $user_details->{color};
+
+        # Assign the affiliate token in the MT5 API
+        my $updated_user = await BOM::MT5::User::Async::update_user({
+            %{$user_details},
+            login => $client_mt5_login,
+            agent => $agent_id
+        });
+
+        die "Could not link client $client_mt5_login to agent $ib_affiliate_id" unless $updated_user;
+        die $updated_user->{error} if $updated_user->{error};
+
+        $log->debugf("Successfully linked client %s to affiliate %s", $client_mt5_login, $ib_affiliate_id);
     }
-
-    die "Could not get details for client $client_mt5_login while linking to affiliate $ib_affiliate_id" unless $user_details;
-
-    # MT5 has problem updating the color to None (4278190080) , let's remove the color from user update
-    delete $user_details->{color};
-
-    # Assign the affiliate token in the MT5 API
-    my $updated_user = await BOM::MT5::User::Async::update_user({
-        %{$user_details},
-        login => $client_mt5_login,
-        agent => $agent_id
-    });
-
-    die "Could not link client $client_mt5_login to agent $ib_affiliate_id" unless $updated_user;
-    die $updated_user->{error} if $updated_user->{error};
-
-    $log->debugf("Successfully linked client %s to affiliate %s", $client_mt5_login, $ib_affiliate_id);
 }
 
 =head2 _get_ib_affiliate_id_from_token
@@ -576,8 +578,11 @@ sub _get_ib_affiliate_id_from_token {
         map { $_->{VALUE} =~ s/\s//rg; } grep { $_->{NAME} =~ s/\s//rg eq 'mt5_account' } $affiliate_user->{USER_VARIABLES}{VARIABLE}->@*;
     $ib_affiliate_id = $myaffiliate_id if $mt5_custom_var[0];
 
-    # If we are receiving anything other than the affiliate id then the token was not parsed successfully
-    die "Unable to get Affiliate ID for $myaffiliate_id" unless $ib_affiliate_id;
+    # If we are receiving anything other than the affiliate id then the token was not parsed successfully or not IB type.
+    unless ($ib_affiliate_id) {
+        DataDog::DogStatsd::Helper::stats_inc('myaffiliates.not_ib', {tags => ['myaffiliate_id:' . $myaffiliate_id]});
+        return 0;
+    }
 
     die "Affiliate ID is not a number, getting '$ib_affiliate_id' instead"
         if ($ib_affiliate_id && !Scalar::Util::looks_like_number($ib_affiliate_id));
