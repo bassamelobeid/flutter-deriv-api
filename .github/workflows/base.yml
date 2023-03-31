@@ -44,7 +44,7 @@ jobs:
       LOG_LEVEL: debug
     steps:
       - name: setup CI step
-        uses: ./actions/setup-ci
+        uses: ./.github/actions/setup-ci
       - name: create ssh file
         run: |
           mkdir ~/.ssh
