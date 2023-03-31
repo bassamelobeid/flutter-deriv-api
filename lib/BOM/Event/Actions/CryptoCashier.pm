@@ -62,7 +62,17 @@ The transaction data contains the following:
 
 =item * C<transaction_url>    - [Optional] The URL of the transaction on blockchain
 
-=item * C<metadata>           - The client app metadata e.g: client_loginid.
+=item * C<confirmations>      - [Optional] number of confirmations for the pending transactions
+
+=item * C<metadata>           - The client app metadata e.g: loginid, send_client_email (optional)
+
+=over 4
+
+=item * C<loginid>           - The client's loginid
+
+=item * C<send_client_email> - [Optional] bool variable to prevent processing TRANSACTION_HANDLERS.
+
+=back
 
 =back
 
@@ -71,8 +81,9 @@ The transaction data contains the following:
 sub crypto_cashier_transaction_updated {
     my $txn_info = shift;
 
-    my $tx_metadata = delete $txn_info->{metadata};
-    my $loginid     = $tx_metadata->{loginid};
+    my $tx_metadata       = delete $txn_info->{metadata};
+    my $loginid           = $tx_metadata->{loginid};
+    my $send_client_email = $tx_metadata->{send_client_email};
 
     my $redis     = BOM::Config::Redis->redis_transaction_write();
     my $redis_key = REDIS_TRANSACTION_NAMESPACE . $loginid;
@@ -83,6 +94,7 @@ sub crypto_cashier_transaction_updated {
                 client_loginid => $loginid,
             }));
 
+    return if defined $send_client_email && $send_client_email == 0;
     my $tx_status_handler = TRANSACTION_HANDLERS->{$txn_info->{transaction_type}}{$txn_info->{status_code}};
     $tx_status_handler->($txn_info, $tx_metadata) if $tx_status_handler;
 }
