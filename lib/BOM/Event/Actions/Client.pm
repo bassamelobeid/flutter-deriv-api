@@ -82,7 +82,6 @@ use constant VERIFICATION_TIMEOUT => 60;
 
 # Redis key namespace to store onfido applicant id
 use constant ONFIDO_REQUEST_PER_USER_PREFIX  => 'ONFIDO::REQUEST::PER::USER::';
-use constant ONFIDO_REQUEST_PER_USER_LIMIT   => BOM::User::Onfido::limit_per_user();
 use constant ONFIDO_REQUEST_PER_USER_TIMEOUT => BOM::User::Onfido::timeout_per_user();
 use constant ONFIDO_PENDING_REQUEST_PREFIX   => 'ONFIDO::PENDING::REQUEST::';
 use constant ONFIDO_PENDING_REQUEST_TIMEOUT  => 20 * 60;
@@ -611,15 +610,17 @@ async sub ready_for_authentication {
         $request_count      //= 0;
         $user_request_count //= 0;
 
-        if (!$args->{is_pending} && $user_request_count > ONFIDO_REQUEST_PER_USER_LIMIT) {
+        my $limit_for_user = BOM::User::Onfido::limit_per_user($country);
+
+        if (!$args->{is_pending} && $user_request_count > $limit_for_user) {
             DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.user_limit', {tags => $tags});
-            $log->debugf('No check performed as client %s exceeded daily limit of %d requests.', $loginid, ONFIDO_REQUEST_PER_USER_LIMIT);
+            $log->debugf('No check performed as client %s exceeded daily limit of %d requests.', $loginid, $limit_for_user);
             my $time_to_live = await $redis_events_write->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
 
             await $redis_events_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, ONFIDO_REQUEST_PER_USER_TIMEOUT)
                 if ($time_to_live < 0);
 
-            die "Onfido authentication requests limit ${\ONFIDO_REQUEST_PER_USER_LIMIT} is hit by $loginid (to be expired in $time_to_live seconds).";
+            die "Onfido authentication requests limit $limit_for_user is hit by $loginid (to be expired in $time_to_live seconds).";
         }
         my $app_config = BOM::Config::Runtime->instance->app_config;
         $app_config->check_for_update;
