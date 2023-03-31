@@ -220,7 +220,7 @@ async sub order_updated {
     my $order          = $client->_p2p_orders(id => $order_id)->[0];
     my $order_response = $client->_order_details([$order])->[0];
     $order_event //= 'missing';
-    $log->warnf('0.2');
+
     _publish_orders_to_channels({
         loginid   => $loginid,
         client    => $client,
