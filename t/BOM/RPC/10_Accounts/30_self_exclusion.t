@@ -357,7 +357,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply($msg->{to}, ['compliance@deriv.com'], "msg sent to marketing and compliance email");
     like($msg->{body}, qr/.*Exclude from website until/s, 'email content is ok');
     unlike($msg->{body}, qr/.*Client's account balance is:.*\d+/s, 'email content is ok, no balance in body');
-    ok($emitted->{self_exclude}, 'self_exclude event emitted');
+    ok($emitted->{email_subscription}, 'email_subscription event emitted');
 
     like(
         $c->tcall($method, $params)->{error}->{message_to_client},
@@ -429,14 +429,14 @@ subtest 'get and set self_exclusion' => sub {
         max_open_bets          => 50,
         session_duration_limit => 1440,
     };
-    delete $emitted->{self_exclude};
+    delete $emitted->{email_subscription};
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     $msg = mailbox_search(
         email   => 'compliance@deriv.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok(!$msg, 'No email for MLT client limits without MT5 accounts');
-    is($emitted->{self_exclude}, undef, 'self_exclude event not emitted');
+    is($emitted->{email_subscription}, undef, 'email_subscription event not emitted');
 
     my $update_mt5_params = {
         language   => 'EN',

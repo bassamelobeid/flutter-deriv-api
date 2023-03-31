@@ -2320,7 +2320,7 @@ rpc set_self_exclusion => sub {
             unsubscribed => 1,
         };
 
-        BOM::Platform::Event::Emitter::emit('self_exclude', $data_subscription);
+        BOM::Platform::Event::Emitter::emit('email_subscription', $data_subscription);
     }
 
 # Need to send email in 1 circumstance:
@@ -3385,13 +3385,10 @@ rpc "unsubscribe_email",
         $user = BOM::User->new(id => $binary_user_id);
     } catch {
         log_exception();
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidUser',
-                message_to_client => localize('Your User ID appears to be invalid.')});
     }
 
     return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidUserid',
+            code              => 'InvalidUser',
             message_to_client => localize('Your User ID appears to be invalid.')}) unless $user;
 
     my $generated_checksum = BOM::User::Utility::generate_email_unsubscribe_checksum($binary_user_id, $user->email);
@@ -3401,13 +3398,21 @@ rpc "unsubscribe_email",
             message_to_client => localize('The security hash used in your request appears to be invalid.')}) unless $generated_checksum eq $checksum;
 
     # Remove email consents for the user on request
+
     $user->update_email_fields(email_consent => 0);
+    my @all_loginid = $user->loginids();
+
+    # after update notify customer io
+    my $data_subscription = {
+        loginid      => $all_loginid[0],
+        unsubscribed => 1,
+    };
+    BOM::Platform::Event::Emitter::emit('email_subscription', $data_subscription);
 
     return {
         email_unsubscribe_status => $user->email_consent ? 0 : 1,
-        binary_user_id           => $binary_user_id,
+        binary_user_id           => $binary_user_id
     };
 
     };
-
 1;

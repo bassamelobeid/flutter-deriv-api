@@ -7,7 +7,6 @@ use Test::Deep;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
-
 # init db
 my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
@@ -32,11 +31,14 @@ $test_client->save;
 is $user->email_consent, 1, 'email concent is accepted by default';
 
 my $c = Test::BOM::RPC::QueueClient->new();
-
-my @emitted;
-my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_emitter->mock('emit' => sub { push @emitted, [@_]; });
-
+my $emitted;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        $emitted->{$type} = $data;
+    });
 my $mocked_thirdparty = Test::MockModule->new('BOM::Config');
 $mocked_thirdparty->mock(
     'third_party',
@@ -100,10 +102,14 @@ subtest 'unsubscribe email' => sub {
             binary_user_id    => $fake_user_id,
             unsubscribe_email => 1
         }};
-    $result   = $c->tcall($method, $params);
+
+    $result = $c->tcall($method, $params);
+
+    ok($emitted->{email_subscription}, 'email_subscription event emitted');
+
     $response = {
         'error' => {
-            'code'              => 'InvalidUserid',
+            'code'              => 'InvalidUser',
             'message_to_client' => 'Your User ID appears to be invalid.'
         }};
     is_deeply($result, $response, 'unsubscribe_email returns invalid user error for fake user');
