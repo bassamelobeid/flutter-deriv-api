@@ -17,8 +17,8 @@ use Syntax::Keyword::Try;
 use BOM::Platform::Event::Emitter;
 use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 use BOM::User::Utility               qw(parse_mt5_group);
-use BOM::User::FinancialAssessment   qw(decode_fa);
 use Log::Any                         qw($log);
+use BOM::User::FinancialAssessment;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(
@@ -816,11 +816,11 @@ sub _is_financial_assessment_complete {
 
     # this case doesn't follow the general rule (labuan are exclusively mt5 landing companies).
     if (my $financial_assessment_requirements = $args{financial_assessment_requirements}) {
-        my $financial_assessment = decode_fa($client->financial_assessment());
+        my $financial_assessment = BOM::User::FinancialAssessment::decode_fa($client->financial_assessment());
 
         my $is_FI =
             (first { $_ eq 'financial_information' } @{$args{financial_assessment_requirements}})
-            ? is_section_complete($financial_assessment, 'financial_information')
+            ? BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information')
             : 1;
 
         # The `financial information` section is enough for `CR (svg)` clients. No need to check `trading_experience` section
@@ -828,7 +828,7 @@ sub _is_financial_assessment_complete {
 
         my $is_TE =
             (first { $_ eq 'trading_experience' } @{$args{financial_assessment_requirements}})
-            ? is_section_complete($financial_assessment, 'trading_experience')
+            ? BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience')
             : 1;
 
         ($is_FI and $is_TE) ? return 1 : return 0;
