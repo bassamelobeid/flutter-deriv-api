@@ -45,33 +45,6 @@ jobs:
     steps:
       - name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
-      - name: create ssh file
-        run: |
-          mkdir ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${{ secrets.READ_GITHUB_SSH_KEY }}" >> ~/.ssh/github.com.rsa
-          chmod 600 ~/.ssh/github.com.rsa
-          cat ~/.ssh/github.com.rsa
-          md5sum ~/.ssh/github.com.rsa
-      - name: add ssh key
-        run: |
-          ssh-add ~/.ssh/github.com.rsa
-          # TODO set .ssh/config
-      - name: prepare-test
-        run: |
-          /opt/circle/prepare-test.sh
-      - name: Start services
-        run: |
-          start_services
-          touch /tmp/services.ready
-      - run: |
-          count=0
-          while [ ! -f /tmp/services.ready ]; do
-              echo 'Still waiting for services...'
-              (( count++ )) && (( count >= 20 )) && break
-              sleep 1
-          done
-        name: Wait for services to start up
       - name: Core tests
         run: |
           make test
