@@ -151,6 +151,7 @@ sub notify_login {
     my $brand        = $c->stash('brand');
     my $request      = $c->stash('request');
     my $ip           = $request->client_ip || '';
+    my $time         = time();
 
     if (!$c->session('_is_social_signup')) {
         BOM::Platform::Event::Emitter::emit(
@@ -194,6 +195,14 @@ sub notify_login {
                 properties => $email_data,
             });
     }
+    BOM::Platform::Event::Emitter::emit(
+        'dp_successful_login',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                timestamp => $time,
+            },
+        });
 }
 
 sub is_reset_password_allowed {
