@@ -45,6 +45,9 @@ jobs:
     steps:
       - name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
       - name: Core tests
         run: |
           make test
