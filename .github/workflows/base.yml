@@ -44,7 +44,7 @@ jobs:
       LOG_LEVEL: debug
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup
+        uses: regentmarkets/github-actions/ci-setup@master
       - name: create ssh file
         run: |
           mkdir ~/.ssh
