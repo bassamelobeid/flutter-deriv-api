@@ -19,6 +19,8 @@ use JSON::MaybeUTF8 qw(:v1);
 use BOM::Platform::Context qw(localize);
 use BOM::Rules::Comparator::Text;
 use BOM::Rules::Registry qw(rule);
+use Text::Unidecode;
+use Text::Trim qw(trim);
 
 rule 'onfido.check_name_comparison' => {
     description => "Checks if the context client first and last names match with the last Onfido report data",
@@ -29,14 +31,24 @@ rule 'onfido.check_name_comparison' => {
         die 'Onfido report is missing' unless my $report = $args->{report};
         die 'Onfido report api_name is invalid' unless ($report->{api_name} // '') eq 'document';
 
-        my @fields = qw/first_name last_name/;
+        my $properties        = eval { decode_json_utf8($report->{properties} // '{}') };
+        my $client_first_name = lc unidecode(trim($client->first_name       // ''));
+        my $client_last_name  = lc unidecode(trim($client->last_name        // ''));
+        my $onfido_first_name = lc unidecode(trim($properties->{first_name} // ''));
+        my $onfido_last_name  = lc unidecode(trim($properties->{last_name}  // ''));
+        my $client_full_name  = $client_first_name . ' ' . $client_last_name;
+        my $onfido_full_name  = $onfido_first_name . ' ' . $onfido_last_name;
+        return undef if $onfido_full_name eq $client_full_name;
 
-        my $properties = eval { decode_json_utf8($report->{properties} // '{}') };
+        $self->fail('NameMismatch') unless BOM::Rules::Comparator::Text::check_words_similarity($client_first_name, $onfido_first_name);
+        $self->fail('NameMismatch') unless BOM::Rules::Comparator::Text::check_words_similarity($client_last_name,  $onfido_last_name);
 
-        my $actual_full_name   = join ' ', map { $client->$_       // '' } @fields;
-        my $expected_full_name = join ' ', map { $properties->{$_} // '' } @fields;
+        #additionaly first words must match
 
-        $self->fail('NameMismatch') unless BOM::Rules::Comparator::Text::check_words_similarity($actual_full_name, $expected_full_name);
+        my ($first_word_actual)   = split(/\s+/, $client_first_name);
+        my ($first_word_expected) = split(/\s+/, $onfido_first_name);
+
+        $self->fail('NameMismatch') unless $first_word_actual eq $first_word_expected;
 
         return undef;
     },

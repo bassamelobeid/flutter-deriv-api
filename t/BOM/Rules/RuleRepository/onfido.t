@@ -87,7 +87,7 @@ subtest 'rule onfido.check_name_comparison' => sub {
                 first_name => 'test',
                 last_name  => 'de lima'
             },
-            error => undef
+            error => undef,
         },
         {
             properties => {
@@ -110,7 +110,52 @@ subtest 'rule onfido.check_name_comparison' => sub {
                 last_name  => 'àèìòùç ÀÈÌÒÙÇ'
             },
             error => undef
-        }];
+        },
+        {
+            properties => {
+                first_name => 'A B',
+                last_name  => 'C'
+            },
+            client => {
+                first_name => 'B',
+                last_name  => 'A'
+            },
+            error => 'NameMismatch'
+        },
+        {
+            properties => {
+                first_name => 'A B',
+                last_name  => 'C'
+            },
+            client => {
+                first_name => 'A',
+                last_name  => 'C'
+            },
+            error => undef    # no error
+        },
+        {
+            properties => {
+                first_name => 'A',
+                last_name  => 'A'
+            },
+            client => {
+                first_name => 'A',
+                last_name  => 'B'
+            },
+            error => 'NameMismatch'
+        },
+        {
+            properties => {
+                first_name => 'A',
+                last_name  => 'A'
+            },
+            client => {
+                first_name => 'B',
+                last_name  => 'A'
+            },
+            error => 'NameMismatch'
+        },
+    ];
 
     for my $case ($tests->@*) {
         $client_cr->first_name($case->{client}->{first_name});
