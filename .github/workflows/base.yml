@@ -43,11 +43,8 @@ jobs:
     env:
       LOG_LEVEL: debug
     steps:
-      - name: print path
-        run: |
-          pwd
       - name: setup CI step
-        uses: /home/runner/work/bom-config/bom-config/.github/actions/ci-setup
+        uses: '/home/runner/work/bom-config/bom-config/.github/actions/ci-setup'
       - name: create ssh file
         run: |
           mkdir ~/.ssh
