@@ -53,16 +53,16 @@ sub app_deleted {
     return BOM::Event::Services::Track::app_deleted(@args);
 }
 
-=head2 self_exclude
+=head2 email_subscription
 
-It is triggered when client B<self_exclude> event emitted.
+It is triggered when client B<email_subscription> event emitted.
 
 =cut
 
-sub self_exclude {
+sub email_subscription {
     my @args = @_;
 
-    return BOM::Event::Services::Track::self_exclude(@args);
+    return BOM::Event::Services::Track::email_subscription(@args);
 }
 
 1;

@@ -333,7 +333,7 @@ subtest 'General event validation - filtering by brand' => sub {
         is $customer->{traits}->{unsubscribed}, 'true', '\'unsubscribed\' is set to true';
     };
 
-    subtest 'Set unsubscribed to true on `self_exclude` event' => sub {
+    subtest 'Set unsubscribed to true on `email_subscription` event' => sub {
         undef @track_args;
         undef @identify_args;
 
@@ -341,7 +341,7 @@ subtest 'General event validation - filtering by brand' => sub {
         $test_client->set_exclusion->exclude_until($exclude_until);
         $test_client->save;
         ok BOM::Event::Services::Track::track_event(
-            event      => 'self_exclude',
+            event      => 'email_subscription',
             loginid    => $test_client->loginid,
             properties => {
                 unsubscribed => 1,
@@ -360,7 +360,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     app    => {name => "deriv"},
                     locale => "id"
                 },
-                event      => "self_exclude",
+                event      => "email_subscription",
                 properties => {
                     brand        => 'deriv',
                     unsubscribed => 1,
@@ -368,7 +368,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     loginid      => $test_client->loginid,
                 },
             },
-            'identify context is properly set for self_exclude event'
+            'identify context is properly set for email_subscription event'
         );
 
         test_segment_customer($customer, \%args);
@@ -642,7 +642,7 @@ subtest 'General event validation - filtering by brand' => sub {
         $test_client->user->update_preferred_language("RU");
 
         ok BOM::Event::Services::Track::track_event(
-            event      => 'self_exclude',
+            event      => 'email_subscription',
             loginid    => $test_client->loginid,
             properties => {
                 unsubscribed => 1,
@@ -661,7 +661,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     app    => {name => "deriv"},
                     locale => "id"
                 },
-                event      => "self_exclude",
+                event      => "email_subscription",
                 properties => {
                     unsubscribed => 1,
                     brand        => 'deriv',

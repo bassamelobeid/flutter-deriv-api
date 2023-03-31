@@ -75,7 +75,7 @@ my %EVENT_PROPERTIES = (
             other_instruments_trading_frequency source_of_wealth cfd_experience cfd_experience trading_experience_financial_instruments trading_frequency_financial_instruments
             cfd_trading_definition leverage_impact_trading leverage_trading_high_risk_stop_loss required_initial_margin)
     ],
-    self_exclude            => [qw(unsubscribed)],
+    email_subscription      => [qw(unsubscribed)],
     p2p_advertiser_approved => [],
     p2p_order_created       => [
         qw(user_role order_type  order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
@@ -542,17 +542,17 @@ sub document_upload {
     );
 }
 
-=head2 self_exclude
+=head2 email_subscription
 
-It is triggered for each B<self_exclude> event emitted, delivering it to Segment.
+It is triggered for each B<email_subscription> event emitted, delivering it to Segment.
 
 =cut
 
-sub self_exclude {
+sub email_subscription {
     my ($args) = @_;
 
     return track_event(
-        event                => 'self_exclude',
+        event                => 'email_subscription',
         loginid              => $args->{loginid},
         properties           => $args,
         is_identify_required => 1
