@@ -19,59 +19,10 @@ jobs:
     env:
       LOG_LEVEL: debug
     steps:
-      - name: set env
-        run: |
-          if [[ '${{ github.event_name }}' = 'tag' ]]
-          then
-            CIRCLE_TAG=${{ github.ref_name }}
-          fi
-          # TODO uncomment next line and remove next next line
-          #CIRCLE_PR_USERNAME=${{github.event.pull_request.user.login}}
-          CIRCLE_PR_USERNAME=regentmarkets
-          CIRCLE_PR_REPONAME=${{github.event.pull_request.head.repo.name}}
-          CIRCLE_JOB=${{github.job}}
-          if [[ '${{github.event_name}}' = 'pull_request' ]]
-          then
-            CIRCLE_PULL_REQUEST=${{github.event.pull_request.html_url}}
-            CIRCLE_BRANCH="pull/${{github.event.pull_request.number}}"
-          else
-            CIRCLE_BRANCH=${{ github.ref_name }}
-          fi
-          CIRCLE_PROJECT_USERNAME=${{github.repository_owner}}
-          CIRCLE_PROJECT_REPONAME=$(basename ${{github.repository}})
-          set | grep CIRCLE | sudo tee -a $GITHUB_ENV
-          echo HOME=/home/git | sudo tee -a $GITHUB_ENV
-          # We can't set HOME directly by `env`
-          # Please see https://github.com/actions/runner/issues/863
-          eval $(ssh-agent)
-          echo SSH_AUTH_SOCK=$SSH_AUTH_SOCK | sudo tee -a $GITHUB_ENV
-          echo SSH_AGENT_PID=$SSH_AGENT_PID | sudo tee -a $GITHUB_ENV
-      - name: create ssh file
-        run: |
-          mkdir ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${{ secrets.READ_GITHUB_SSH_KEY }}" >> ~/.ssh/github.com.rsa
-          chmod 600 ~/.ssh/github.com.rsa
-          cat ~/.ssh/github.com.rsa
-          md5sum ~/.ssh/github.com.rsa
-      - name: add ssh key
-        run: |
-          ssh-add ~/.ssh/github.com.rsa
-          # TODO set .ssh/config
-      - name: prepare-test
-        run: |
-          /opt/circle/prepare-test.sh
-      - name: Start services
-        run: |
-          start_services
-          touch /tmp/services.ready
-      - run: |
-          count=0
-          while [ ! -f /tmp/services.ready ]; do
-              echo 'Still waiting for services...'
-              (( count++ )) && (( count >= 20 )) && break
-              sleep 1
-          done
-        name: Wait for services to start up
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
       - name: code coverage tests
         run: make cover
