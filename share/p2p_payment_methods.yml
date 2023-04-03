@@ -589,6 +589,12 @@ transferwise:
     account:
       display_name: TransferWise account
   type: ewallet
+upi:
+  display_name: Unified Payments Interface (UPI)
+  fields:
+    account :
+      display_name: UPI ID 
+  type: bank
 united_bank_of_zambia_ewallet:
   display_name: United Bank of Zambia E-wallet
   fields:
