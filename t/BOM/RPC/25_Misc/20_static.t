@@ -151,6 +151,41 @@ subtest 'residence_list' => sub {
         'in is correct'
     );
 
+    is_deeply(
+        $index->{ug},
+        {
+            identity => {
+                services => {
+                    idv => {
+                        is_country_supported => 1,
+                        has_visual_sample    => 1,
+                        documents_supported  => {
+                            national_id_no_photo => {
+                                display_name => 'National ID no photo',
+                                format       => '^[a-zA-Z0-9]{14}$',
+                                additional   => {
+                                    display_name => 'Secondary ID number',
+                                    format       => '^[a-zA-Z0-9]+$',
+                                },
+                            },
+                        },
+                    },
+                    onfido => {
+                        is_country_supported => 1,
+                        documents_supported  => {
+                            driving_licence        => {display_name => 'Driving Licence'},
+                            passport               => {display_name => 'Passport'},
+                            national_identity_card => {display_name => 'National Identity Card'}
+                        },
+                    },
+                }
+            },
+            text      => 'Uganda',
+            phone_idd => '256',
+        },
+        'ug is correct'
+    );
+
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
     $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
     $index  = +{map { (delete $_->{value} => $_) } $result->@*};
