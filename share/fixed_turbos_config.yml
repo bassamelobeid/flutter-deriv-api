@@ -1,0 +1,60 @@
+---
+1HZ10V:
+  sigma: 0.1
+  average_tick_size_up: 1.7807243465445342e-05
+  average_tick_size_down: 1.7807243465445342e-05
+
+1HZ25V:
+  sigma: 0.25
+  average_tick_size_up: 4.4518108663613355e-05
+  average_tick_size_down: 4.4518108663613355e-05
+
+1HZ50V:
+  sigma: 0.5
+  average_tick_size_up: 8.903621732722671e-05
+  average_tick_size_down: 8.903621732722671e-05
+
+1HZ75V:
+  sigma: 0.75
+  average_tick_size_up: 0.00013355432599084006
+  average_tick_size_down: 0.00013355432599084006
+
+1HZ100V:
+  sigma: 1.0
+  average_tick_size_up: 0.00017807243465445342
+  average_tick_size_down: 0.00017807243465445342
+
+1HZ150V:
+  sigma: 1.5
+  average_tick_size_up: 0.00026710865198168
+  average_tick_size_down: 0.00026710865198168
+
+1HZ250V:
+  sigma: 2.5
+  average_tick_size_up: 0.000445181086636133
+  average_tick_size_down: 0.000445181086636133
+
+R_10:
+  sigma: 0.1
+  average_tick_size_up: 2.5183245217312475e-05
+  average_tick_size_down: 2.5183245217312475e-05
+
+R_25:
+  sigma: 0.25
+  average_tick_size_up: 6.295811304328119e-05
+  average_tick_size_down: 6.295811304328119e-05
+
+R_50:
+  sigma: 0.50
+  average_tick_size_up: 0.00012591622608656237
+  average_tick_size_down: 0.00012591622608656237
+
+R_75:
+  sigma: 0.75
+  average_tick_size_up: 0.00018887433912984357
+  average_tick_size_down: 0.00018887433912984357
+
+R_100:
+  sigma: 1.0
+  average_tick_size_up: 0.00025183245217312475
+  average_tick_size_down: 0.00025183245217312475

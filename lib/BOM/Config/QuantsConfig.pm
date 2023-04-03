@@ -68,27 +68,50 @@ has contract_category => (
     is => 'rw',
 );
 
-=head2 _redis_replicated
+=head2 redis_write
 
-redis replicated instance
+redis write instance
 
 =cut
 
-has _redis_replicated => (
+has redis_write => (
     is      => 'ro',
     lazy    => 1,
-    builder => '_build__redis_replicated',
+    builder => '_build_redis_write',
 );
 
-=head2 _build_redis_replicated
+=head2 _build_redis_write
 
-Building a redis replicated instance
+Building a redis write instance
 
 =cut
 
-sub _build__redis_replicated {
+sub _build_redis_write {
 
     return BOM::Config::Redis::redis_replicated_write();
+}
+
+=head2 redis_read
+
+redis read instance
+
+=cut
+
+has redis_read => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_redis_read',
+);
+
+=head2 _build_redis_read
+
+Building a redis read instance
+
+=cut
+
+sub _build_redis_read {
+
+    return BOM::Config::Redis::redis_replicated_read();
 }
 
 =head2 save_config
@@ -114,6 +137,8 @@ sub save_config {
     } elsif ($config_type =~ /callputspread_barrier_multiplier/) {
         $config = $args;
     } elsif ($config_type =~ /deal_cancellation/) {
+        $config = $args;
+    } elsif ($config_type =~ /turbos/) {
         $config = $args;
     } elsif ($config_type =~ /accumulator/) {
         $config = $self->_process_accumulator_config($config_type, $args);
@@ -304,13 +329,13 @@ sub _process_accumulator_config {
         my $cached_redis_key =
             join('::', CONFIG_NAMESPACE, $self->contract_category, 'cached_per_symbol_conifg', $landing_company, $underlying_symbol);
 
-        my $sorted_set_len = $self->_redis_replicated->execute('zcard', $cached_redis_key);
+        my $sorted_set_len = $self->redis_read->execute('zcard', $cached_redis_key);
 
         if ($sorted_set_len and $sorted_set_len >= 10) {
-            $self->_redis_replicated->execute('zpopmin', $cached_redis_key);
-            $self->_redis_replicated->execute('zadd', $cached_redis_key, 'NX', $self->recorded_date->epoch, $config);
+            $self->redis_write->execute('zpopmin', $cached_redis_key);
+            $self->redis_write->execute('zadd', $cached_redis_key, 'NX', $self->recorded_date->epoch, $config);
         } else {
-            $self->_redis_replicated->execute('zadd', $cached_redis_key, 'NX', $self->recorded_date->epoch, $config);
+            $self->redis_write->execute('zadd', $cached_redis_key, 'NX', $self->recorded_date->epoch, $config);
         }
     }
 
@@ -342,7 +367,7 @@ sub get_per_symbol_config {
         return $last_cache if $args->{need_latest_cache};
 
         #look into a Redis sorted set to see if the required config is cached inside it.
-        my $cached_configs = $self->_redis_replicated->execute('zrange', $cached_redis_key, '0', $self->for_date->epoch, 'byscore');
+        my $cached_configs = $self->redis_read->execute('zrange', $cached_redis_key, '0', $self->for_date->epoch, 'byscore');
         return decode_json(pop(@$cached_configs)) if $cached_configs and @$cached_configs;
 
         # in case of no Redis cache, we look for the config inside DB for the specific date.

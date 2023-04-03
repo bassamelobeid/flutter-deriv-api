@@ -1076,6 +1076,24 @@ quants:
               isa: Num
               default: 0.4
               global: 1
+    turbos:
+      description: "Turbos variables"
+      isa: section
+      contains:
+        affiliate_commission:
+          description: "Affiliate commission for turbos contracts"
+          isa: section
+          contains:
+            financial:
+              description: "Financial contracts turbos affiliate commission"
+              isa: Num
+              default: 0.4
+              global: 1
+            non_financial:
+              description: "Non-financial turbos contracts affiliate commission"
+              isa: Num
+              default: 0.4
+              global: 1
     multiplier_affiliate_commission:
       description: "Affiliate commission for multiplier contracts"
       isa: section
