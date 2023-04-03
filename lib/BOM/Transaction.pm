@@ -629,6 +629,25 @@ sub calculate_limits {
             $limits{volume} = $contract->risk_profile->get_client_volume_limits($client);
         }
 
+        if ($self->contract->category_code eq 'turbos') {
+            my $symbol = $self->contract->underlying->symbol;
+
+            my $per_symbol_config    = $self->contract->quants_config->get_per_symbol_config({underlying_symbol => $symbol, need_latest_cache => 1});
+            my $user_specific_limits = $self->get_contract_user_specific_limits($client);
+
+            my $currency = $self->contract->currency;
+
+            $limits{max_open_bets_per_bet_class} = $per_symbol_config->{max_open_position};
+
+            if ($user_specific_limits) {
+                $limits{max_open_bets_per_bet_class} = $user_specific_limits->{max_open_position};
+                $limits{max_pnl}                     = {
+                    'limit'     => convert_currency($user_specific_limits->{max_daily_pnl}, 'USD', $currency),
+                    'bet_class' => 'turbos'
+                };
+            }
+        }
+
         if ($self->contract->category_code eq 'vanilla') {
 
             my $vanilla_limits = $self->get_vanilla_per_symbol_config();
