@@ -13,9 +13,83 @@ use BOM::Config::Redis;
 use BOM::Product::Exception;
 use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Turbos;
+use BOM::Config::Quants qw(minimum_stake_limit);
 
-my $turbos_config = LoadFile('/home/git/regentmarkets/bom/config/files/turbos.yml');
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+
+=head2 quants_config
+
+QuantsConfig object attribute
+
+=head2 per_symbol_config
+
+Returns per symbol configuration that is configured from backoffice.
+
+=head2 fixed_config
+
+Returns fixed configurations that can't be changed from backoffice.
+which are sigma, average_tick_size_up, and average_tick_size_down
+
+=cut
+
+has [qw(quants_config per_symbol_config fixed_config)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 _build_quants_config
+
+Builds a QuantsConfig object
+
+=cut
+
+sub _build_quants_config {
+    my $self = shift;
+
+    my $qc = BOM::Config::QuantsConfig->new(
+        contract_category => $self->category_code,
+        for_date          => $self->date_start,
+        chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader($self->date_start));
+
+    return $qc;
+}
+
+=head2 _build_per_symbol_config
+
+initialize per_symbol_config
+
+=cut
+
+sub _build_per_symbol_config {
+    my $self = shift;
+
+    my $config = $self->quants_config->get_per_symbol_config({
+        underlying_symbol => $self->underlying->symbol,
+        need_latest_cache => 1
+    });
+
+    return $config if $config && %$config;
+
+    $self->_add_error({
+        message           => 'turbos config undefined for ' . $self->underlying->symbol,
+        message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
+    });
+}
+
+=head2 _build_fixed_config 
+
+initialize fixed_config
+
+=cut
+
+sub _build_fixed_config {
+    return LoadFile('/home/git/regentmarkets/bom-config/share/fixed_turbos_config.yml');
+}
+
+has [qw(per_symbol_config fixed_config)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
 
 =head2 _build_pricing_engine_name
 
@@ -99,10 +173,8 @@ Maximum number of contracts. For barrier choices calculation
 sub _build_n_max {
     my $self = shift;
 
-    my $max_multiplier_stake =
-        $turbos_config->{$self->underlying->symbol} ? $turbos_config->{$self->underlying->symbol}->{max_multiplier_stake}->{$self->currency} : undef;
-    my $max_multiplier =
-        $turbos_config->{$self->underlying->symbol} ? $turbos_config->{$self->underlying->symbol}->{max_multiplier} : undef;
+    my $max_multiplier_stake = $self->per_symbol_config->{max_multiplier_stake}{$self->currency};
+    my $max_multiplier       = $self->per_symbol_config->{max_multiplier};
 
     unless (defined $max_multiplier_stake && defined $max_multiplier) {
         BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
@@ -166,11 +238,11 @@ build spread charged on contract close
 sub _build_bid_spread {
     my $self = shift;
 
-    my $expiry = $self->expiry_type;
-    my $avg_tick_size_down =
-        $turbos_config->{$self->underlying->symbol} ? $turbos_config->{$self->underlying->symbol}->{average_tick_size_down} : undef;
-    my $ticks_commission_down =
-        $turbos_config->{$self->underlying->symbol} ? $turbos_config->{$self->underlying->symbol}->{"ticks_commission_down_${expiry}"} : undef;
+    my $expiry                = $self->expiry_type;
+    my $symbol                = $self->underlying->symbol;
+    my $ticks_commission_down = $self->per_symbol_config->{"ticks_commission_down_${expiry}"};
+    my $avg_tick_size_down    = $self->fixed_config->{$symbol} ? $self->fixed_config->{$symbol}{average_tick_size_down} : undef;
+
     unless (defined $avg_tick_size_down && defined $ticks_commission_down) {
         BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
     }
@@ -187,11 +259,11 @@ build spread charged on contract purchase
 sub _build_ask_spread {
     my $self = shift;
 
-    my $expiry = $self->expiry_type;
-    my $avg_tick_size_up =
-        $turbos_config->{$self->underlying->symbol} ? $turbos_config->{$self->underlying->symbol}->{average_tick_size_up} : undef;
-    my $ticks_commission_up =
-        $turbos_config->{$self->underlying->symbol} ? $turbos_config->{$self->underlying->symbol}->{"ticks_commission_up_${expiry}"} : undef;
+    my $expiry              = $self->expiry_type;
+    my $symbol              = $self->underlying->symbol;
+    my $ticks_commission_up = $self->per_symbol_config->{"ticks_commission_up_${expiry}"};
+    my $avg_tick_size_up    = $self->fixed_config->{$symbol} ? $self->fixed_config->{$symbol}{average_tick_size_up} : undef;
+
     unless (defined $avg_tick_size_up && defined $ticks_commission_up) {
         BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
     }
@@ -211,22 +283,7 @@ sub _build_number_of_contracts {
     my $self = shift;
 
     my $contract_price = $self->_contract_price;
-
-    my $number_of_contracts = $contract_price ? sprintf("%.10f", $self->_user_input_stake / $contract_price) : $self->_contracts_limit->{min};
-
-    if ($number_of_contracts > $self->_contracts_limit->{max}) {
-        BOM::Product::Exception->throw(
-            error_code => 'TurbosContractNumberMaxLimit',
-            error_args => [int($self->_contracts_limit->{max} * $self->_contract_price)]);
-    }
-
-    if ($number_of_contracts < $self->_contracts_limit->{min}) {
-        BOM::Product::Exception->throw(
-            error_code => 'TurbosContractNumberMinLimit',
-            error_args => [int($self->_contracts_limit->{min} * $self->_contract_price)]);
-    }
-
-    return $number_of_contracts;
+    return $contract_price ? sprintf("%.10f", $self->_user_input_stake / $contract_price) : $self->_contracts_limit->{min};
 }
 
 =head2 _contracts_limit
@@ -249,11 +306,11 @@ The minimum and maximum number of contracts for a specifc symbol.
 sub _build__contracts_limit {
     my $self = shift;
 
-    my $symbol               = $self->underlying->symbol;
-    my $max_multiplier       = $turbos_config->{$symbol}{max_multiplier};
-    my $max_multiplier_stake = $turbos_config->{$symbol}{max_multiplier_stake}->{$self->currency};
-    my $min_multiplier       = $turbos_config->{$symbol}{min_multiplier};
-    my $min_multiplier_stake = $turbos_config->{$symbol}{min_multiplier_stake}->{$self->currency};
+    my $currency             = $self->currency;
+    my $max_multiplier       = $self->per_symbol_config->{max_multiplier};
+    my $max_multiplier_stake = $self->per_symbol_config->{max_multiplier_stake}{$currency};
+    my $min_multiplier       = $self->per_symbol_config->{min_multiplier};
+    my $min_multiplier_stake = $self->per_symbol_config->{min_multiplier_stake}{$currency};
 
     unless (defined $max_multiplier and defined $max_multiplier_stake and defined $min_multiplier and defined $min_multiplier_stake) {
         BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
@@ -307,8 +364,9 @@ get current min stake
 sub _build_min_stake {
     my $self = shift;
 
-    my $distance  = abs($self->entry_tick->quote - $self->barrier->as_absolute);
-    my $min_stake = $self->_contracts_limit->{min} * $distance;
+    my $min_default_stake = minimum_stake_limit(($self->currency, $self->landing_company, $self->underlying->market->name, 'turbos'));
+    my $distance          = abs($self->entry_tick->quote - $self->barrier->as_absolute);
+    my $min_stake         = max($min_default_stake, $self->_contracts_limit->{min} * $distance);
 
     return financialrounding('price', $self->currency, $min_stake);
 }
@@ -408,15 +466,12 @@ sub _validation_methods {
 
     my @validation_methods = qw(_validate_offerings _validate_input_parameters _validate_start_and_expiry_date);
     push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
-    # push @validation_methods, '_validate_barrier'         unless $self->for_sale || $args->{skip_barrier_validation};
-    # push @validation_methods, '_validate_barrier_type' unless $self->for_sale;
     push @validation_methods, '_validate_feed';
     push @validation_methods, '_validate_price'      unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface' unless $self->underlying->volatility_surface_type eq 'flat';
     push @validation_methods, '_validate_rollover_blackout';
 
     # add turbos specific validations
-    # push @validation_methods, '_validate_number_of_contracts';
     push @validation_methods, '_validate_barrier_choice' unless $self->for_sale;
     push @validation_methods, '_validate_stake'          unless $self->for_sale;
 
@@ -432,13 +487,12 @@ calculates and return strike price choices based on delta and expiry
 sub strike_price_choices {
     my ($self)                 = @_;
     my $symbol                 = $self->underlying->symbol;
-    my $sigma                  = $turbos_config->{$symbol}->{sigma}                  || undef;
-    my $min_distance_from_spot = $turbos_config->{$symbol}->{min_distance_from_spot} || undef;
-    my $num_of_barriers        = $turbos_config->{$symbol}->{num_of_barriers}        || undef;
+    my $sigma                  = $self->fixed_config->{$symbol}{sigma}              || undef;
+    my $min_distance_from_spot = $self->per_symbol_config->{min_distance_from_spot} || undef;
+    my $num_of_barriers        = $self->per_symbol_config->{num_of_barriers}        || undef;
     unless (defined $sigma && defined $min_distance_from_spot && defined $num_of_barriers) {
         BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
     }
-
     my $args = {
         underlying             => $self->underlying,
         current_spot           => $self->current_spot,
@@ -450,7 +504,7 @@ sub strike_price_choices {
     };
 
     my $code = $self->code;
-    my $key  = "turbos:${code}:${symbol}";
+    my $key  = "turbos:${code}:${symbol}:${min_distance_from_spot}:${num_of_barriers}";
     my $r    = BOM::Config::Redis::redis_replicated_write();
 
     my $barrier_choises = [split(':', $r->get($key) || '')];
@@ -462,17 +516,12 @@ sub strike_price_choices {
             not(   $self->current_spot > (1 + $treshold_coef) * $last_spot
                 || $self->current_spot < (1 - $treshold_coef) * $last_spot))
         {
-            # warn 'cash hit';
             return $barrier_choises;
         }
-        # warn 'threshold hit';
-    } else {
-        # warn 'empty cash';
     }
 
     $barrier_choises = BOM::Product::Contract::Strike::Turbos::strike_price_choices($args);
 
-    # warn 'cash set';
     # using watch and multi to avoid race condition
     $r->watch($key);
     $r->multi();

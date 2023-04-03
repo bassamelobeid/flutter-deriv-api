@@ -63,6 +63,7 @@ subtest 'config' => sub {
     cmp_ok $c->barrier->as_absolute, '==', 351610, 'correct absolute barrier';
     is $c->ask_price, 20, 'ask_price is correct';
     ok $c->pricing_new, 'this is a new contract';
+    is $c->n_max, 2.84824818495384, 'correct n_max';
 
     my $barriers = $c->strike_price_choices;
     is $barriers->[0],                               '+270.72',   'correct first barrier';

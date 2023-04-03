@@ -80,7 +80,7 @@ sub BUILD {
 
         unless (($skip_contract_input_validation) or ($self->_parameters->{category}->code eq 'vanilla')) {
             $self->_validate_barrier;
-            $self->_validate_stake_min_max;
+            $self->_validate_stake_min_max unless ($self->_parameters->{category}->code eq 'turbos');
             $self->_validate_multiplier;
             $self->_validate_limit_order;
         }

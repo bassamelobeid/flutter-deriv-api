@@ -26,8 +26,7 @@ use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
 use BOM::Product::Contract::Strike::Vanilla;
 
-my $cache         = Cache::LRU->new(size => 500);
-my $turbos_config = LoadFile('/home/git/regentmarkets/bom/config/files/turbos.yml');
+my $cache = Cache::LRU->new(size => 500);
 
 sub decorate {
     my $args = shift;
@@ -159,15 +158,16 @@ sub decorate {
             $o->{barrier}         = $mid_barrier_choices;
         }
 
-        if ($contract_category eq 'turbos') {
+        if ($contract_category eq 'turbos' and my $config = _get_turbos_config($underlying->symbol)) {
             # latest available spot should be sufficient.
             my $current_tick    = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
             my $barrier_choices = _default_barrier_for_turbos({
-                underlying   => $underlying,
-                duration     => $o->{min_contract_duration},
-                sentiment    => $sentiment,
-                expiry       => $o->{expiry_type},
-                current_tick => $current_tick,
+                underlying        => $underlying,
+                duration          => $o->{min_contract_duration},
+                sentiment         => $sentiment,
+                expiry            => $o->{expiry_type},
+                current_tick      => $current_tick,
+                per_symbol_config => $config
             });
 
             my $barrier_choices_length = scalar @{$barrier_choices};
@@ -175,7 +175,6 @@ sub decorate {
 
             $o->{barrier_choices} = $barrier_choices;
             $o->{barrier}         = $mid_barrier_choices;
-            my $config   = $turbos_config->{$underlying->symbol};
             my $max      = $config->{max_multiplier} * $config->{max_multiplier_stake}{USD} / $current_tick->quote;
             my $min      = $config->{min_multiplier} * $config->{min_multiplier_stake}{USD} / $current_tick->quote;
             my $distance = abs($mid_barrier_choices);
@@ -247,17 +246,17 @@ calculates and return default barrier range for turbos options
 sub _default_barrier_for_turbos {
     my $args = shift;
 
-    my ($underlying, $duration, $sentiment, $current_tick) = @{$args}{'underlying', 'duration', 'sentiment', 'current_tick'};
+    my ($underlying, $duration, $sentiment, $current_tick, $per_symbol_config) =
+        @{$args}{'underlying', 'duration', 'sentiment', 'current_tick', 'per_symbol_config'};
 
     return unless $current_tick;
 
-    my $symbol = $underlying->symbol;
-
-    my $sigma                  = $turbos_config->{$symbol}->{sigma}                  || undef;
-    my $num_of_barriers        = $turbos_config->{$symbol}->{num_of_barriers}        || undef;
-    my $min_distance_from_spot = $turbos_config->{$symbol}->{min_distance_from_spot} || undef;
-    my $max_stake              = $turbos_config->{$symbol}->{max_multiplier_stake}   || undef;
-    my $max_multiplier         = $turbos_config->{$symbol}->{max_multiplier}         || undef;
+    my $fixed_config           = LoadFile('/home/git/regentmarkets/bom-config/share/fixed_turbos_config.yml');
+    my $sigma                  = $fixed_config->{$underlying->symbol}->{sigma} || undef;
+    my $num_of_barriers        = $per_symbol_config->{num_of_barriers}         || undef;
+    my $min_distance_from_spot = $per_symbol_config->{min_distance_from_spot}  || undef;
+    my $max_stake              = $per_symbol_config->{max_multiplier_stake}    || undef;
+    my $max_multiplier         = $per_symbol_config->{max_multiplier}          || undef;
 
     unless (defined $sigma && defined $min_distance_from_spot && defined $num_of_barriers) {
         BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
@@ -274,6 +273,27 @@ sub _default_barrier_for_turbos {
     };
 
     return BOM::Product::Contract::Strike::Turbos::strike_price_choices($args);
+}
+
+=head2 _turbos_per_symbol_config
+
+get turbos per symbol config
+
+=cut
+
+sub _turbos_per_symbol_config {
+    my $self = shift;
+
+    #config for different landing companies are the same. and it is set as 'default' in app_config
+    my $lc     = 'default';
+    my $symbol = $self->underlying->symbol;
+
+    if ($self->app_config->quants->turbos->symbol_config->can($lc) and $self->app_config->quants->turbos->symbol_config->$lc->can($symbol)) {
+        return JSON::MaybeXS::decode_json($self->app_config->get("quants.turbos.symbol_config.$lc.$symbol"));
+    } else {
+        # throw error because configuration is unsupported for the symbol and landing company pair.
+        BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
+    }
 }
 
 sub _default_barrier {
@@ -367,6 +387,22 @@ sub _get_accumulator_config {
 
     my $qc = _quants_config();
     $qc->contract_category('accumulator');
+    my $config = $qc->get_per_symbol_config({underlying_symbol => $symbol, need_latest_cache => 1}) // {};
+
+    return $config;
+}
+
+=head2 _get_turbos_config
+
+Gets accumulators's config
+
+=cut
+
+sub _get_turbos_config {
+    my $symbol = shift;
+
+    my $qc = _quants_config();
+    $qc->contract_category('turbos');
     my $config = $qc->get_per_symbol_config({underlying_symbol => $symbol, need_latest_cache => 1}) // {};
 
     return $config;
