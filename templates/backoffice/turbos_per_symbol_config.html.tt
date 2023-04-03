@@ -1,0 +1,84 @@
+<h3>EXISTING LIMITS</h3>
+<form id='per_symbol_config'>
+<div class="scrollable">
+<table class="small border hover alternate full-width">
+    <thead>
+    <tr align="center">
+        <th>Symbol</th>
+        <th>number of barriers</th>
+        <th>min distance from spot</th>
+        <th>ticks commission up tick</th>
+        <th>ticks commission up intraday</th>
+        <th>ticks commission up daily</th>
+        <th>ticks commission down tick</th>
+        <th>ticks commission down intraday</th>
+        <th>ticks commission down daily</th>
+        <th>max multiplier</th>
+        <th>max multiplier stake</th>
+        <th>min multiplier</th>
+        <th>min multiplier stake</th>
+        <th>max open position</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN existing_config %]
+    <tr align="center" id="[% data.symbol %]-turbos_config">
+        <td>[% data.symbol %]</td>
+        <td><input type="text" name="num_of_barriers" value="[% data.num_of_barriers %]" data-lpignore="true"/></td>
+        <td><input type="text" name="min_distance_from_spot" value="[% data.min_distance_from_spot %]" data-lpignore="true"/></td>
+        <td><input type="text" name="ticks_commission_up_tick" value="[% data.ticks_commission_up_tick %]" data-lpignore="true"/></td>
+        <td><input type="text" name="ticks_commission_up_intraday" value="[% data.ticks_commission_up_intraday %]" data-lpignore="true"/></td>
+        <td><input type="text" name="ticks_commission_up_daily" value="[% data.ticks_commission_up_daily %]" data-lpignore="true"/></td>
+        <td><input type="text" name="ticks_commission_down_tick" value="[% data.ticks_commission_down_tick %]" data-lpignore="true"/></td>
+        <td><input type="text" name="ticks_commission_down_intraday" value="[% data.ticks_commission_down_intraday %]" data-lpignore="true"/></td>
+        <td><input type="text" name="ticks_commission_down_daily" value="[% data.ticks_commission_down_daily %]" data-lpignore="true"/></td>
+        <td><input type="text" name="max_multiplier" value="[% data.max_multiplier %]" data-lpignore="true"/></td>
+        <td><input type="text" name="max_multiplier_stake" value="[% data.max_multiplier_stake %]" data-lpignore="true"/></td>
+        <td><input type="text" name="min_multiplier" value="[% data.min_multiplier %]" data-lpignore="true"/></td>
+        <td><input type="text" name="min_multiplier_stake" value="[% data.min_multiplier_stake %]" data-lpignore="true"/></td>
+        <td><input type="text" name="max_open_position" value="[% data.max_open_position %]" data-lpignore="true"/></td>
+        <td><button onClick="SaveTurbosConfig('[% data.symbol %]')" type="button" class="btn btn--primary">Save</button></td>
+        <td class="turbos_config_result"></td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
+
+
+<script>
+function SaveTurbosConfig(symbol) {
+    var el = \$('#per_symbol_config').find('tr#' + symbol + '-turbos_config');
+    var result = el.find('td.turbos_config_result');
+    result.text('processing ...');
+
+    \$.ajax({
+        url: turbos_upload_url,
+        data: {
+            save_turbos_per_symbol_config: 1,
+            symbol: symbol,
+            num_of_barriers: el.find('input[name="num_of_barriers"]').val(),
+            min_distance_from_spot: el.find('input[name="min_distance_from_spot"]').val(),
+            ticks_commission_up_tick: el.find('input[name="ticks_commission_up_tick"]').val(),
+            ticks_commission_up_intraday: el.find('input[name="ticks_commission_up_intraday"]').val(),
+            ticks_commission_up_daily: el.find('input[name="ticks_commission_up_daily"]').val(),
+            ticks_commission_down_tick: el.find('input[name="ticks_commission_down_tick"]').val(),
+            ticks_commission_down_intraday: el.find('input[name="ticks_commission_down_intraday"]').val(),
+            ticks_commission_down_daily: el.find('input[name="ticks_commission_down_daily"]').val(),
+            max_multiplier: el.find('input[name="max_multiplier"]').val(),  
+            max_multiplier_stake: el.find('input[name="max_multiplier_stake"]').val(),
+            min_multiplier: el.find('input[name="min_multiplier"]').val(),
+            min_multiplier_stake: el.find('input[name="min_multiplier_stake"]').val(),
+            max_open_position: el.find('input[name="max_open_position"]').val(),
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('saved').css('color', 'var(--color-green)');
+            }
+        }
+    });
+}
+</script>

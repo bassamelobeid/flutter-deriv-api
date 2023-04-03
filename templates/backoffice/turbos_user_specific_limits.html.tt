@@ -1,0 +1,111 @@
+<form id='turbos_user_specific_limits'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table>
+    <tr>
+        <td>Login ID: </td>
+        <td><input type="text" name="loginid"></input></td>
+    </tr>
+    <tr>
+        <td>Maximum Open Position: </td>
+        <td><input type="text" name="max_open_position"></input></td>
+    </tr>
+    <tr>
+        <td>Maximum Daily PnL: </td>
+        <td><input type="text" name="max_daily_pnl"></input></td>
+    </tr>
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveTurbosUserSpecificLimits()" value="Update User Specific Limits"></td>
+        <td class="save_turbos_user_specific_limits"></td>
+    </tr>
+</table>
+</form>
+
+<hr/>
+
+<h3>EXISTING LIMITS</h3>
+<form id='user_specific_limits'>
+<table class="small full-width hover alternate border">
+    <thead>
+    <tr align="center">
+        <th>Client Login ID</th>
+        <th>Max Open Position</th>
+        <th>Max Daily PnL</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN existing_config %]
+    <tr align="center" id="[% data.loginid %]-user_specific_limits_config">
+        <td>[% data.loginid %]</td>
+        <td>[% data.max_open_position %]</td>
+        <td>[% data.max_daily_pnl %]</td>
+        <td><button
+            onClick="DeleteCustomLimit('[% data.loginid %]')"
+            type="button" class="btn btn--secondary">Delete</button>
+        </td>
+        <td class='user_limit_result'>..</td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
+
+
+<script>
+var turbos_upload_url = "[% turbos_upload_url | none %]";
+
+function SaveTurbosUserSpecificLimits(){
+
+    var el = \$('#turbos_user_specific_limits');
+
+    var result = el.find('.save_turbos_user_specific_limits');
+    var loginid = el.find('input[name="loginid"]').val();
+    var max_open_position = el.find('input[name="max_open_position"]').val();
+    var max_daily_pnl = el.find('input[name="max_daily_pnl"]').val();
+
+    result.text('processing ...').css('color', 'black');
+
+    console.log(max_open_position);
+    console.log(loginid);
+    \$.ajax({
+        url: turbos_upload_url,
+        data: {
+            save_turbos_user_specific_limits: 1,
+            loginid: loginid,
+            max_open_position: max_open_position,
+            max_daily_pnl: max_daily_pnl,
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('User specific config for turbos is updated successfully. Please refresh the page to see the latest limits.').css('color', 'var(--green-2)');
+            }
+        }
+    });
+}
+
+function DeleteCustomLimit(loginid) {
+    var el = \$('#user_specific_limits').find('tr#' + loginid + '-user_specific_limits_config');
+    var result = el.find('.user_limit_result');
+    result.text('processing ...');
+
+    \$.ajax({
+        url: turbos_upload_url,
+        data: {
+            delete_turbos_user_specific_limit: 1,
+            loginid: loginid,
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('User specific limit removed. Please refresh the page to see latest limits').css('color', 'var(--color-green)');
+            }
+        }
+    });
+}
+
+
+</script>
