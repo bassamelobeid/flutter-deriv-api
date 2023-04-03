@@ -32,7 +32,7 @@ my $loginid     = encode_entities(request()->param('loginid')  // "");
 my $page        = request()->param('page')     || 0;
 my $pagesize    = request()->param('pagesize') || 40;
 my $offset      = $page * $pagesize;
-my @system_cols = qw/stamp staff_name operation remote_addr/;
+my @system_cols = qw/stamp staff_name pg_userid operation remote_addr/;
 my @noshow_cols = qw/client_port id client_addr client_loginid document_format tbl/;
 
 my $myself_args = {
@@ -182,9 +182,11 @@ for my $table (@tables) {
 
         my $changes = {};
 
-        my $data = {table => delete $row->{tbl} // $tabname};
+        my $data = {
+            table      => delete $row->{tbl} // $tabname,
+            staff_name => $row->{staff_name} // $row->{pg_userid}};
 
-        for my $col (qw/stamp operation remote_addr staff_name/) {
+        for my $col (qw/stamp operation remote_addr staff_name pg_userid/) {
             $data->{$col} = $row->{$col} if exists $row->{$col};
         }
 
