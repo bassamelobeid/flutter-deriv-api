@@ -235,13 +235,13 @@ Return list of accounts.
 rpc trading_platform_accounts => sub {
     my $params = shift;
     try {
-        my $accounts;
+        my $accounts = [];
         my $platform = BOM::TradingPlatform->new(
             platform => $params->{args}{platform},
             client   => $params->{client});
 
         # force param will raise an error if any accounts are inaccessible
-        $accounts = $platform->get_accounts             if $params->{args}{platform} eq 'mt5' or 'derivez';
+        $accounts = $platform->get_accounts             if $params->{args}{platform} eq 'mt5' or $params->{args}{platform} eq 'derivez';
         $accounts = $platform->get_accounts(force => 1) if $params->{args}{platform} eq 'dxtrade';
 
         return $accounts;
