@@ -123,6 +123,7 @@ sub _get_existing_vanilla_per_symbol_config {
             $config->{bs_markup}               = $all_config->{bs_markup};
             $config->{delta_config}            = encode_json_utf8($all_config->{delta_config});
             $config->{vol_markup}              = $all_config->{vol_markup};
+            $config->{spread_spot}             = $all_config->{spread_spot};
             $config->{max_strike_price_choice} = $all_config->{max_strike_price_choice};
             $config->{min_number_of_contracts} = encode_json_utf8($all_config->{min_number_of_contracts});
             $config->{max_number_of_contracts} = encode_json_utf8($all_config->{max_number_of_contracts});

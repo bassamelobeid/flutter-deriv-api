@@ -232,6 +232,7 @@ if ($r->param('save_vanilla_per_symbol_config')) {
     try {
         my $symbol                  = $r->param('symbol');
         my $vol_markup              = $r->param('vol_markup');
+        my $spread_spot             = $r->param('spread_spot');
         my $delta_config            = $r->param('delta_config');
         my $bs_markup               = $r->param('bs_markup');
         my $max_strike_price_choice = $r->param('max_strike_price_choice');
@@ -244,6 +245,7 @@ if ($r->param('save_vanilla_per_symbol_config')) {
 
         die "Symbol is not defined" if $symbol eq '';
         die "Vol markup must be a number"              unless looks_like_number($vol_markup);
+        die "Spread spot must be a number"             unless looks_like_number($spread_spot);
         die "BS markup must be a number"               unless looks_like_number($bs_markup);
         die "max strike price choice must be a number" unless looks_like_number($max_strike_price_choice);
         die "max open position must be a number"       unless looks_like_number($max_open_position);
@@ -257,6 +259,7 @@ if ($r->param('save_vanilla_per_symbol_config')) {
         my $vanilla_config = decode_json_utf8($app_config->get("quants.vanilla.per_symbol_config.$symbol"));
         $vanilla_config = {
             vol_markup              => $vol_markup,
+            spread_spot             => $spread_spot,
             delta_config            => decode_json_utf8($delta_config),
             bs_markup               => $bs_markup,
             max_strike_price_choice => $max_strike_price_choice,
