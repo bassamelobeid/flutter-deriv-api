@@ -11,7 +11,7 @@ on:
 jobs:
   check-git-message:
     steps:
-      - name check git message
+      - name: check git message
         uses: regentmarkets/github-actions/check-git-message@dev
   core_syntax_diff:
     needs: check-git-message
