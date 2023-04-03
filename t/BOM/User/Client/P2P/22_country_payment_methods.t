@@ -35,14 +35,26 @@ subtest p2p_payment_methods => sub {
                         display_name => 'Note',
                         type         => 'memo',
                         required     => 0
-                    }}}});
+                    }}
+            },
+            upi => {
+                display_name => 'Unified Payments Interface (UPI)',
+                type         => 'bank',
+                fields       => {account => {display_name => 'UPI ID'}}}});
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         residence   => 'id'
     });
 
-    cmp_deeply($client->p2p_payment_methods('id'), {}, 'no payment methods with empty bo config');
+    my $india_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'in'
+    });
+
+    cmp_deeply($client->p2p_payment_methods('id'),       {}, 'no payment methods with empty bo config');
+    cmp_deeply($india_client->p2p_payment_methods('in'), {}, 'no payment methods with empty bo config');
+
     $runtime_config->payment_method_countries($json->encode({bigpay => {countries => [qw(id mx)]}}));
 
     cmp_deeply(
@@ -65,6 +77,29 @@ subtest p2p_payment_methods => sub {
             },
         },
         'payment method shown when config has country, and correct field defaults'
+    );
+
+    $runtime_config->payment_method_countries($json->encode({upi => {countries => [qw(in)]}}));
+
+    cmp_deeply(
+        $india_client->p2p_payment_methods('in'),
+        {
+            upi => {
+                display_name => 'Unified Payments Interface (UPI)',
+                type         => 'bank',
+                fields       => {
+                    account => {
+                        display_name => 'UPI ID',
+                        type         => 'text',
+                        required     => 1,
+                    },
+                    instructions => {
+                        display_name => 'Instructions',
+                        type         => 'memo',
+                        required     => 0,
+                    }}}
+        },
+        'payment method shown when config updated for india, and correct field defaults'
     );
 
     $runtime_config->payment_method_countries(
