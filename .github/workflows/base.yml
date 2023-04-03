@@ -10,25 +10,11 @@ on:
   pull_request:
 jobs:
   check-git-message:
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - run: |
-          echo "${{ github.event_name}} ${{ github.ref_name }}"
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.ref_name }}" != "master" ]]; then
-            git fetch --depth 1 origin ${{ github.event.pull_request.head.sha }}
-            GIT_COMMIT_DESC="$(git log --format=oneline -n 1 ${{ github.event.pull_request.head.sha }})";
-            echo "commit message: $GIT_COMMIT_DESC";
-            if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else echo "need tag [ci] to trigger tests"; exit 1; fi
-          else
-            echo "This is not a pull request, Branch: $CIRCLE_BRANCH"
-            exit 0
-          fi
-        name: Check git message if it contains the keyword [ci]
-        # TODO maybe not work, should check again
+      - name check git message
+        uses: regentmarkets/github-actions/check-git-message@dev
   core_syntax_diff:
-    #needs: check-git-message
+    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -44,7 +30,7 @@ jobs:
       LOG_LEVEL: debug
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
+        uses: regentmarkets/github-actions/ci-setup@dev
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
