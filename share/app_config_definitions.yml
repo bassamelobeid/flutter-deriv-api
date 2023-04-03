@@ -854,7 +854,8 @@ quants:
                          "max_open_position": 10,
                          "max_daily_volume": 5000,
                          "max_daily_pnl": 3000,
-                         "risk_profile":"low_risk"
+                         "risk_profile":"low_risk",
+                         "spread_spot": 0
                         }'
               global: 1
             R_25_intraday: *vanilla_default_config
@@ -878,7 +879,8 @@ quants:
                          "max_open_position": 10,
                          "max_daily_volume": 5000,
                          "max_daily_pnl": 3000,
-                         "risk_profile":"low_risk"
+                         "risk_profile":"low_risk",
+                         "spread_spot": 0
                         }'
               global: 1
             R_25_daily: *vanilla_default_config_daily
