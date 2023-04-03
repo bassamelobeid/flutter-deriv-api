@@ -15,11 +15,23 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 BOM::Test::Helper::Client::top_up($client, $client->currency, 10);
 
-my $rule_engine               = BOM::Rules::Engine->new(client => $client);
-my $payment_validating_action = 'validate_affiliate_payment';
-my $currency                  = 'USD';
-my $signed_amount             = 1;
+my $client_manual_payment = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+BOM::Test::Helper::Client::top_up($client_manual_payment, $client_manual_payment->currency, 10);
 
+my $client_manual_payment_transfer = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+BOM::Test::Helper::Client::top_up($client_manual_payment_transfer, $client_manual_payment_transfer->currency, 10);
+
+my $rule_engine                         = BOM::Rules::Engine->new(client => $client);
+my $rule_engine_manual_payment          = BOM::Rules::Engine->new(client => $client_manual_payment);
+my $rule_engine_manual_payment_transfer = BOM::Rules::Engine->new(client => [$client_manual_payment, $client_manual_payment_transfer]);
+my $payment_validating_action           = 'validate_affiliate_payment';
+my $currency                            = 'USD';
+my $signed_amount                       = 1;
+my $payment_type                        = 'external_cashier';
 subtest 'validate_bypassing_rules' => sub {
     ##
     $client->status->set('cashier_locked', 'test', 'test');
@@ -131,6 +143,42 @@ subtest 'validate_bypassing_rules' => sub {
         params            => [$client->loginid]
         },
         'Error for disabled client';
+};
+
+subtest 'validate_manual_payment_rules' => sub {
+    ##
+    my $mock_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $mock_documents->redefine(expired => 0);
+    lives_ok {
+        $client_manual_payment->validate_payment(
+            #action_to_validate => $payment_validating_action,
+            currency           => $currency,
+            amount             => $signed_amount,
+            rule_engine        => $rule_engine_manual_payment,
+            payment_type       => $payment_type,
+            skip_cashier_check => 1
+        )
+    }
+    'credit manual payment works';
+    ##
+    lives_ok {
+        $client_manual_payment->validate_payment(
+            #action_to_validate => $payment_validating_action,
+            currency           => $currency,
+            amount             => -$signed_amount,
+            rule_engine        => $rule_engine_manual_payment,
+            payment_type       => $payment_type,
+            skip_cashier_check => 1
+        ),
+            $client_manual_payment_transfer->validate_payment(
+            #action_to_validate => $payment_validating_action,
+            currency           => $currency,
+            amount             => $signed_amount,
+            rule_engine        => $rule_engine_manual_payment_transfer,
+            payment_type       => $payment_type,
+            skip_cashier_check => 1
+            ) } 'Manual Transfer between client works';
+
 };
 
 done_testing();

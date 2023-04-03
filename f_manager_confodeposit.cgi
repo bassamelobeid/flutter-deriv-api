@@ -206,10 +206,10 @@ unless ($params{skip_validation}) {
 
     print qq[<p><em>You can override this with "Override Status Checks"</em></p>];
 
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $toClient]);
-    my $cli         = $client;
+    my $cli = $client;
     try {
         if ($ttype eq 'TRANSFER') {
+            my $rule_engine = BOM::Rules::Engine->new(client => [$client, $toClient]);
             $cli->validate_payment(
                 %params,
                 amount      => -$amount,
@@ -222,6 +222,7 @@ unless ($params{skip_validation}) {
                 rule_engine => $rule_engine
             );
         } else {
+            my $rule_engine = BOM::Rules::Engine->new(client => [$client]);
             $cli->validate_payment(
                 %params,
                 amount      => $signed_amount,
