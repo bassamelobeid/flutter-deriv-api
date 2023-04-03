@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -52,7 +52,8 @@ my $per_symbol_config = {
     'max_number_of_contracts' => {'USD' => 1000},
     'delta_config'            => [0.1, 0.3, 0.5, 0.7, 0.9],
     'max_strike_price_choice' => 10,
-    'risk_profile'            => 'low_risk'
+    'risk_profile'            => 'low_risk',
+    'spread_spot'             => 0
 };
 $per_symbol_config = JSON::MaybeXS::encode_json($per_symbol_config);
 $app_config->set({'quants.vanilla.per_symbol_config.R_100_intraday' => $per_symbol_config});
@@ -332,6 +333,24 @@ subtest 'risk profile max stake per trade validation' => sub {
     $c                = produce_contract($args);
 
     ok $c->is_valid_to_buy, 'valid to buy now';
+};
+
+subtest 'check if spread is applied properly' => sub {
+
+    my $c   = produce_contract($args);
+    my $bid = $c->bid_probability->amount;
+    my $ask = $c->ask_probability->amount;
+
+    $per_symbol_config                = JSON::MaybeXS::decode_json($per_symbol_config);
+    $per_symbol_config->{spread_spot} = 0.1;
+    $per_symbol_config                = JSON::MaybeXS::encode_json($per_symbol_config);
+    $app_config->set({'quants.vanilla.per_symbol_config.R_100_intraday' => $per_symbol_config});
+
+    $c = produce_contract($args);
+
+    ok $c->bid_probability->amount < $bid, 'spread applied properly';
+    ok $c->ask_probability->amount > $ask, 'spread applied properly';
+
 };
 
 done_testing;

@@ -5,6 +5,15 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Callputspread';
 
 use List::Util qw(min max);
+use BOM::Product::Pricing::Greeks::ZeroGreek;
+
+=head2 _build_greek_engine
+We don't have greeks for callspread defined. Overriding this
+=cut
+
+sub _build_greek_engine {
+    return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
+}
 
 sub check_expiry_conditions {
     my $self = shift;

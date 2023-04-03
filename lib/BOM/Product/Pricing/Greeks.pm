@@ -161,8 +161,6 @@ sub get_greek {
 
     my $vol_to_use = ($bet->category_code eq 'vanilla') ? $bet->vol_at_strike : $bet->atm_vols->{fordom};
 
-    return 0.0 if not $self->bet->is_binary;
-
     return $self->formulae->{$greek}
         ->($args->{spot}, @barrier_args, $args->{t}, $bet->discount_rate, $bet->mu, $vol_to_use, $args->{payouttime_code});
 }

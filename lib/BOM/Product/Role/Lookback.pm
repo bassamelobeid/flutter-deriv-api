@@ -11,6 +11,15 @@ use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::Product::Static;
 use BOM::Market::DataDecimate;
+use BOM::Product::Pricing::Greeks::ZeroGreek;
+
+=head2 _build_greek_engine
+We don't have greeks for lookbacks defined. Overriding this
+=cut
+
+sub _build_greek_engine {
+    return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
+}
 
 use constant {
     MINIMUM_ASK_PRICE_PER_UNIT  => 0.50,

@@ -168,13 +168,13 @@ sub maximum_number_of_strike_price {
     return $self->per_symbol_config()->{max_number_of_strike_price};
 }
 
-=head2 vol_markup
+=head2 vol_charge
 
 get vol markup from app_config (set from backoffice)
 
 =cut
 
-sub vol_markup {
+sub vol_charge {
     my $self = shift;
 
     return $self->per_symbol_config()->{vol_markup};
@@ -222,6 +222,19 @@ sub strike_price_choices {
 
 }
 
+=head2 base_commission
+
+commission we charged
+
+=cut
+
+sub base_commission {
+    my $self = shift;
+
+    return ($self->bid_probability->amount - $self->theo_probability->amount) if $self->for_sale;
+    return ($self->ask_probability->amount - $self->theo_probability->amount);
+}
+
 =head2 _build_theo_probability
 
 Calculates the theoretical blackscholes option price (no markup)
@@ -233,7 +246,6 @@ sub _build_theo_probability {
 
     $self->clear_pricing_engine;
     my $bs_prob = $self->pricing_engine->probability;
-    $bs_prob->include_adjustment('add', $self->bs_markup);
     return $bs_prob;
 }
 
@@ -260,15 +272,19 @@ Used in calculating number of contracts
 sub initial_ask_probability {
     my $self = shift;
 
+    my $delta_charge = $self->delta_charge;
+    $delta_charge = (-$delta_charge) if $self->code eq 'VANILLALONGPUT';
+
     my $ask_probability = do {
-        local $self->_pricing_args->{iv} = $self->pricing_vol + $self->vol_markup;
+        local $self->_pricing_args->{iv} = $self->pricing_vol + $self->vol_charge;
 
         # don't wrap them in one scope as the changes will be reverted out of scope
-        local $self->_pricing_args->{spot} = $self->entry_tick->quote                                        unless $self->pricing_new;
+        local $self->_pricing_args->{spot} = $self->entry_tick->quote + $delta_charge                        unless $self->pricing_new;
         local $self->_pricing_args->{t}    = $self->calculate_timeindays_from($self->date_start)->days / 365 unless $self->pricing_new;
 
         $self->_build_theo_probability;
     };
+    $ask_probability->include_adjustment('add', $self->bs_markup);
     return $ask_probability;
 }
 
@@ -281,12 +297,17 @@ Adds markup to theoretical blackscholes option price
 sub _build_ask_probability {
     my $self = shift;
 
+    my $delta_charge = $self->delta_charge;
+    $delta_charge = (-$delta_charge) if $self->code eq 'VANILLALONGPUT';
+
     my $ask_probability = do {
-        local $self->_pricing_args->{iv} = $self->pricing_vol + $self->vol_markup;
+        local $self->_pricing_args->{spot} = $self->current_spot + $delta_charge;
+        local $self->_pricing_args->{iv}   = $self->pricing_vol + $self->vol_charge;
 
         # don't wrap them in one scope as the changes will be reverted out of scope
         $self->_build_theo_probability;
     };
+    $ask_probability->include_adjustment('add', $self->bs_markup);
     return $ask_probability;
 }
 
@@ -299,12 +320,32 @@ Adds markup to theoretical blackscholes option price
 sub _build_bid_probability {
     my $self = shift;
 
+    my $delta_charge = $self->delta_charge;
+    $delta_charge = (-$delta_charge) if $self->code eq 'VANILLALONGPUT';
+
     my $bid_probability = do {
-        local $self->_pricing_args->{iv} = $self->pricing_vol - $self->vol_markup;
+        local $self->_pricing_args->{spot} = $self->current_spot - $delta_charge;
+        local $self->_pricing_args->{iv}   = $self->pricing_vol - $self->vol_charge;
         $self->_build_theo_probability;
     };
-
+    $bid_probability->include_adjustment('subtract', $self->bs_markup);
     return $bid_probability;
+}
+
+=head2 delta_charge
+
+Delta charge on vanilla options.
+Values (spread_spot) come from backoffice
+
+=cut
+
+sub delta_charge {
+    my $self = shift;
+
+    my $spread_spot = $self->per_symbol_config()->{spread_spot};
+    $spread_spot = abs($self->delta) * $spread_spot / 2;
+
+    return $spread_spot;
 }
 
 =head2 _validate_stake

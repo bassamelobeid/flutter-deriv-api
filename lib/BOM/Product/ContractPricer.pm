@@ -677,6 +677,11 @@ sub _build_risk_markup {
 sub _build_base_commission {
     my $self = shift;
 
+    unless ($self->is_binary) {
+        die "Using binary option slippage on non binary products (" . $self->category->code . ")"
+            if (($self->category->code ne 'multiplier') and ($self->category->code ne 'accumulator'));
+    }
+
     my $market_name        = $self->market->name;
     my $per_market_scaling = BOM::Config::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
     my $args               = {underlying_symbol => $self->underlying->symbol};
