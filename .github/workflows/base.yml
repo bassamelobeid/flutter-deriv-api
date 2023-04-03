@@ -10,6 +10,7 @@ on:
   pull_request:
 jobs:
   check-git-message:
+    runs-on: ubuntu-latest
     steps:
       - name: check git message
         uses: regentmarkets/github-actions/check-git-message@dev
