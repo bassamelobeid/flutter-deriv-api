@@ -271,7 +271,7 @@ subtest 'duplicate_sibling_from_vr' => sub {
         sub {
             return @siblings;
         });
-    
+
     my $client_mock = Test::MockModule->new('BOM::User::Client');
     $client_mock->mock(
         'status',
