@@ -510,7 +510,7 @@ subtest 'get account status' => sub {
                             history => []
                         },
                     },
-                    cashier_validation => ['ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
+                    cashier_validation => ['ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                     p2p_status         => "none",
                 },
                 'prompt for non authenticated MF client'
