@@ -272,6 +272,13 @@ subtest 'duplicate_sibling_from_vr' => sub {
             return @siblings;
         });
 
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    $client_mock->mock(
+        'status',
+        sub {
+            return bless +{}, 'BOM::User::Client::Status';
+        });
+
     my $client = BOM::User::Client->rnew;
     $client->user($user);
 
@@ -322,6 +329,7 @@ subtest 'duplicate_sibling_from_vr' => sub {
 
     $user_mock->unmock_all;
     $status_mock->unmock_all;
+    $client_mock->unmock_all;
 };
 
 done_testing;
