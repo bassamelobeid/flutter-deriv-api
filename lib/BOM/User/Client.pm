@@ -724,7 +724,7 @@ sub is_financial_assessment_complete {
     return 0 if (!$is_TE);
 
     # for withdrwals we are using withdrwawl lock status
-    return 0 if ($self->risk_level_aml() =~ /standard|high/ && $is_withdrwals && !$is_FI);
+    return 0 if ($is_withdrwals && !$is_FI);
 
     return 1;
 }
