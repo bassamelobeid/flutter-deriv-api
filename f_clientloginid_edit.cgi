@@ -1447,11 +1447,13 @@ my @statuses;
 ###############################################
 my %client_statuses =
     map { $_ => $client->status->$_ } @{$client->status->all};
+my $withdrawal_lock_found = 0;
 for my $type (get_untrusted_types()->@*) {
     my $code             = $type->{code};
     my $siblings_summary = siblings_status_summary($client, $code) =~ s/(<span>|<\/span>)//gr;
     if (my $status = $client->status->$code) {
         delete $client_statuses{$type->{code}};
+        $withdrawal_lock_found = 1 if ($code eq 'withdrawal_locked');
         push(
             @statuses,
             {
@@ -1464,6 +1466,17 @@ for my $type (get_untrusted_types()->@*) {
                 last_modified_date => $status->{last_modified_date} // ''
             });
     }
+}
+
+# Inject the status only if FA is incomplete for withdrawals
+if (!$withdrawal_lock_found && !$client->is_financial_assessment_complete(1)) {
+    $client_statuses{'Withdrawal Locked'} = {
+        last_modified_date => Date::Utility->new->datetime_yyyymmdd_hhmmss,
+        reason             => "FA needs to be completed",
+        staff_name         => "SYSTEM",
+        status_code        => "withdrawal_locked",
+        warning            => 'var(--color-red)',
+    };
 }
 
 BOM::Backoffice::Request::template()->process(

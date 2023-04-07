@@ -59,7 +59,11 @@
                         <td> 
                         </td>
                         <td align="left">
-                              <b> [% key %] <b>
+                            [% IF client_statuses_readonly.$key.warning %]
+                            <b style="font-size: 1.3rem !important; color:[% client_statuses_readonly.$key.warning %]"> [% key %] <b>
+                            [% ELSE %]
+                            <b> [% key %] <b>
+                            [% END %]
                         </td>
                         <td>
                             <b>
