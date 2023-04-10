@@ -165,6 +165,7 @@ my %EVENT_PROPERTIES = (
     p2p_limit_changed             => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
     p2p_limit_upgrade_available   => [qw(loginid advertiser_id)],
     dp_successful_login           => [qw(timestamp)],
+    pa_first_time_approved        => [qw(first_name contact_email tnc_url)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -214,6 +215,7 @@ my @COMMON_EVENT_METHODS = qw(
     p2p_limit_changed
     p2p_limit_upgrade_available
     identity_verification_rejected
+    pa_first_time_approved
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1498,6 +1500,12 @@ It is triggered for each B<identity_verification_rejected> event emitted, delive
 =head2 derivx_account_deactivated
 
 It is triggered for each B<derivx_account_deactivated> event emitted, delivering it to Segment.
+
+=cut
+
+=head2 pa_first_time_approved
+
+It is triggered for each B<pa_first_time_approved> event emitted, delivering it to Rudderstack.
 
 =cut
 

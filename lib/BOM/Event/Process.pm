@@ -191,6 +191,7 @@ my $action_mapping = {
         risk_disclaimer_resubmission                     => \&BOM::Event::Actions::Email::send_client_email_track_event,
         unknown_login                                    => \&BOM::Event::Actions::Email::send_client_email_track_event,
         dp_successful_login                              => \&BOM::Event::Services::Track::dp_successful_login,
+        pa_first_time_approved                           => \&BOM::Event::Services::Track::pa_first_time_approved,
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,
