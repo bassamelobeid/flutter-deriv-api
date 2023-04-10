@@ -274,14 +274,12 @@ sub _get_ask {
                 $response->{contract_details}->{last_tick_epoch} = $last_tick_processed->{tick_epoch} if $last_tick_processed;
             }
 
-            if ($contract->category_code eq 'turbos') {
-                if ($contract->take_profit) {
-                    $response->{limit_order} = {
-                        'take_profit' => {
-                            'display_name' => 'Take profit',
-                            'order_date'   => $contract->take_profit->{date}->epoch,
-                            'order_amount' => $contract->take_profit->{amount}}};
-                }
+            if ($contract->category_code eq 'turbos' && $contract->take_profit) {
+                $response->{limit_order} = {
+                    'take_profit' => {
+                        'display_name' => 'Take profit',
+                        'order_date'   => $contract->take_profit->{date}->epoch,
+                        'order_amount' => $contract->take_profit->{amount}}};
             }
 
             # On websocket, we are setting 'basis' to payout and 'amount' to 1000 to increase the collission rate.
@@ -907,7 +905,17 @@ sub _build_bid_response {
                     'order_amount' => $contract->take_profit->{amount}}};
         }
         $response->{barrier} = $contract->display_barrier;
+
+        # status of turbos is determined differently from other non-binary contracts
+        if ($params->{is_sold} and $params->{is_expired}) {
+            $response->{status} = ($contract->pnl >= 0 ? "won" : "lost");
+        } elsif ($params->{is_sold} and not $params->{is_expired}) {
+            $response->{status} = 'sold';
+        } else {
+            $response->{status} = 'open';
+        }
     }
+
     if ($contract->category_code eq 'vanilla') {
         $response->{number_of_contracts} = $contract->number_of_contracts;
     }
