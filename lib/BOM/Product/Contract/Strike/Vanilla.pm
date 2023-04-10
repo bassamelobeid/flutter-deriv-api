@@ -104,6 +104,7 @@ sub strike_price_choices {
 
     $args->{expected_move}    = $expected_move;
     $args->{number_of_digits} = $number_of_digits;
+    $args->{current_spot}     = roundnear(10**(-$args->{number_of_digits}), $args->{current_spot});
     $args->{per_symbol_config} =
         JSON::MaybeXS::decode_json(BOM::Config::Runtime->instance->app_config->get("quants.vanilla.per_symbol_config.$symbol" . "_$expiry"));
 
@@ -158,11 +159,9 @@ sub daily_strike_price_choices {
     my $per_symbol_config = $args->{per_symbol_config};
     my $number_of_digits  = $args->{number_of_digits};
     my $n_max             = $per_symbol_config->{max_strike_price_choice};
-    my $factor            = $args->{factor} // 1;
 
     my @strike_price_choices;
     my $delta_array = $per_symbol_config->{delta_config};
-    my $strike_step = $factor * 10**(-$number_of_digits);
 
     $args->{delta} = min @{$delta_array};
     my $max_strike = rounddown(calculate_implied_strike($args), 10**(-$number_of_digits));
@@ -170,22 +169,31 @@ sub daily_strike_price_choices {
     $args->{delta} = max @{$delta_array};
     my $min_strike = roundup(calculate_implied_strike($args), 10**(-$number_of_digits));
 
-    my $number_of_available_strikes = int(($max_strike - $min_strike) / $strike_step) + 1;
+    ($min_strike, $max_strike) = ($max_strike, $min_strike) if $min_strike > $max_strike;
 
-    foreach my $n (1 .. $number_of_available_strikes) {
-        push @strike_price_choices, roundcommon($ul->pip_size, $min_strike + $strike_step * ($n - 1));
+    my $central_strike = roundnear(10**(-$number_of_digits), $args->{current_spot});
+
+    my $adjusted_n      = ($n_max - 3) / 2;
+    my $strike_step_one = roundnear(10, ($central_strike - $min_strike) / ($adjusted_n + 1));
+    my $strike_step_two = roundnear(10, ($max_strike - $central_strike) / ($adjusted_n + 1));
+
+    push @strike_price_choices, roundcommon($ul->pip_size, $central_strike);
+    push @strike_price_choices, roundcommon($ul->pip_size, $min_strike);
+    push @strike_price_choices, roundcommon($ul->pip_size, $max_strike);
+
+    foreach my $n (1 .. $adjusted_n) {
+        my $strike_price = $min_strike + $strike_step_one * $n;
+        push @strike_price_choices, roundcommon($ul->pip_size, $strike_price);
     }
 
-    if ($number_of_available_strikes > $n_max) {
-        my $factor = ceil($number_of_available_strikes / $n_max);
-        $args->{factor} = $factor;
-        return daily_strike_price_choices($args);
+    foreach my $n (1 .. $adjusted_n) {
+        my $strike_price = $central_strike + $strike_step_two * $n;
+        push @strike_price_choices, roundcommon($ul->pip_size, $strike_price);
     }
 
+    @strike_price_choices = sort { $a <=> $b } @strike_price_choices;
     @strike_price_choices = uniq(@strike_price_choices);
-
     return \@strike_price_choices;
-
 }
 
 1;

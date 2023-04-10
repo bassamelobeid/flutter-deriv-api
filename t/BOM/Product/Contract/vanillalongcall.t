@@ -18,6 +18,13 @@ use BOM::Config::Runtime;
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-03-2015');
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => 'USD',
+        recorded_date => $now
+    });
+
 BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
     [68258.19, $now->epoch,       'R_100'],
     [68261.32, $now->epoch + 1,   'R_100'],
@@ -306,7 +313,7 @@ subtest 'strike price choices intraday' => sub {
     $args->{duration} = '10h';
     my $c = produce_contract($args);
 
-    my @expected_strike_price_choices = ('+3061.20', '+1259.80', '+39.00', '-1160.50', '-2855.20');
+    my @expected_strike_price_choices = ('+3049.60', '+1255.10', '+38.80', '-1156.10', '-2844.40');
     cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
 };
 
@@ -322,27 +329,7 @@ subtest 'strike price choices >intraday' => sub {
     $args->{duration} = '25h';
     my $c = produce_contract($args);
 
-    my @expected_strike_price_choices =
-        ('64000.00', '65000.00', '66000.00', '67000.00', '68000.00', '69000.00', '70000.00', '71000.00', '72000.00', '73000.00');
-
-    cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
-};
-
-subtest 'strike price choices ultra long duration' => sub {
-
-    $per_symbol_config                            = JSON::MaybeXS::decode_json($per_symbol_config);
-    $per_symbol_config->{min_number_of_contracts} = {'USD' => 0};
-    $per_symbol_config->{max_number_of_contracts} = {'USD' => 1000};
-    $per_symbol_config->{bs_markup}               = 0;
-    $per_symbol_config                            = JSON::MaybeXS::encode_json($per_symbol_config);
-    $app_config->set({'quants.vanilla.per_symbol_config.R_100_daily' => $per_symbol_config});
-
-    $args->{duration} = '69d';
-    my $c = produce_contract($args);
-
-    my @expected_strike_price_choices =
-        ('43000.00', '52000.00', '61000.00', '70000.00', '79000.00', '88000.00', '97000.00', '106000.00', '115000.00', '124000.00');
-
+    my @expected_strike_price_choices = ('64000.00', '64890.00', '65780.00', '66670.00', '68000.00', '68890.00', '69780.00', '70670.00', '72000.00');
     cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
 };
 
@@ -352,11 +339,11 @@ subtest 'strike price choice validation' => sub {
 
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message, 'InvalidBarrier', 'correct error message';
-    is $c->primary_validation_error->message_to_client->[0], 'Barriers available are +3061.20, +1259.80, +39.00, -1160.50, -2855.20',
+    is $c->primary_validation_error->message_to_client->[0], 'Barriers available are +3049.60, +1255.10, +38.80, -1156.10, -2844.40',
         'correct error message to client';
 
     $args->{duration} = '10h';
-    $args->{barrier}  = '+39.00';
+    $args->{barrier}  = '+38.80';
     $args->{stake}    = '10';
     $c                = produce_contract($args);
 
@@ -374,7 +361,7 @@ subtest 'risk profile max stake per trade validation' => sub {
 
     $args->{stake}    = 200;
     $args->{duration} = '10h';
-    $args->{barrier}  = '+39.00';
+    $args->{barrier}  = '+38.80';
     my $c = produce_contract($args);
 
     ok !$c->is_valid_to_buy, 'invalid to buy';
@@ -383,10 +370,54 @@ subtest 'risk profile max stake per trade validation' => sub {
 
     $args->{stake}    = 10;
     $args->{duration} = '10h';
-    $args->{barrier}  = '+39.00';
+    $args->{barrier}  = '+38.80';
     $c                = produce_contract($args);
 
     ok $c->is_valid_to_buy, 'valid to buy now';
+};
+
+subtest 'symmetryic strike price choices ultra long duration' => sub {
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([5224.25, $now->epoch, 'R_100']);
+
+    $per_symbol_config = JSON::MaybeXS::decode_json($per_symbol_config);
+    $per_symbol_config->{max_strike_price_choice} = 5, $per_symbol_config = JSON::MaybeXS::encode_json($per_symbol_config);
+    $app_config->set({'quants.vanilla.per_symbol_config.R_100_daily' => $per_symbol_config});
+
+    $args->{duration} = '364d';
+    my $c                             = produce_contract($args);
+    my @expected_strike_price_choices = ('2400.00', '3800.00', '5200.00', '18000.00', '30800.00');
+    cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
+
+    $args->{duration}              = '25h';
+    $c                             = produce_contract($args);
+    @expected_strike_price_choices = ('4900.00', '5050.00', '5200.00', '5350.00', '5500.00');
+    cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
+
+    $args->{duration}              = '29d';
+    $c                             = produce_contract($args);
+    @expected_strike_price_choices = ('3800.00', '4500.00', '5200.00', '6500.00', '7800.00');
+    cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
+
+    $per_symbol_config = JSON::MaybeXS::decode_json($per_symbol_config);
+    $per_symbol_config->{max_strike_price_choice} = 13, $per_symbol_config = JSON::MaybeXS::encode_json($per_symbol_config);
+    $app_config->set({'quants.vanilla.per_symbol_config.R_100_daily' => $per_symbol_config});
+
+    $args->{duration}              = '364d';
+    $c                             = produce_contract($args);
+    @expected_strike_price_choices = (
+        '2400.00',  '2870.00',  '3340.00',  '3810.00',  '4280.00', '4750.00', '5200.00', '9470.00',
+        '13740.00', '18010.00', '22280.00', '26550.00', '30800.00'
+    );
+    cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
+
+    $args->{duration}              = '182d';
+    $c                             = produce_contract($args);
+    @expected_strike_price_choices = (
+        '2700.00', '3120.00',  '3540.00',  '3960.00',  '4380.00', '4800.00', '5200.00', '7080.00',
+        '8960.00', '10840.00', '12720.00', '14600.00', '16500.00'
+    );
+    cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
 };
 
 subtest 'check if spread is applied properly' => sub {
@@ -398,7 +429,7 @@ subtest 'check if spread is applied properly' => sub {
     $per_symbol_config                = JSON::MaybeXS::decode_json($per_symbol_config);
     $per_symbol_config->{spread_spot} = 0.1;
     $per_symbol_config                = JSON::MaybeXS::encode_json($per_symbol_config);
-    $app_config->set({'quants.vanilla.per_symbol_config.R_100_intraday' => $per_symbol_config});
+    $app_config->set({'quants.vanilla.per_symbol_config.R_100_daily' => $per_symbol_config});
 
     $c = produce_contract($args);
 

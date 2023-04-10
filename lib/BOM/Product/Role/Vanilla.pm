@@ -112,7 +112,7 @@ We need to use entry tick to calculate this figure.
 sub _build_number_of_contracts {
     my $self = shift;
 
-    # limit to 5 decimal points
+    # limit to 10 decimal points
     return sprintf("%.10f", $self->_user_input_stake / $self->initial_ask_probability->amount);
 }
 
@@ -276,7 +276,7 @@ sub initial_ask_probability {
     $delta_charge = (-$delta_charge) if $self->code eq 'VANILLALONGPUT';
 
     my $ask_probability = do {
-        local $self->_pricing_args->{iv} = $self->pricing_vol + $self->vol_charge;
+        local $self->_pricing_args->{iv} = $self->pricing_vol * (1 + $self->vol_charge);
 
         # don't wrap them in one scope as the changes will be reverted out of scope
         local $self->_pricing_args->{spot} = $self->entry_tick->quote + $delta_charge                        unless $self->pricing_new;
@@ -302,7 +302,7 @@ sub _build_ask_probability {
 
     my $ask_probability = do {
         local $self->_pricing_args->{spot} = $self->current_spot + $delta_charge;
-        local $self->_pricing_args->{iv}   = $self->pricing_vol + $self->vol_charge;
+        local $self->_pricing_args->{iv}   = $self->pricing_vol * (1 + $self->vol_charge);
 
         # don't wrap them in one scope as the changes will be reverted out of scope
         $self->_build_theo_probability;
@@ -325,7 +325,7 @@ sub _build_bid_probability {
 
     my $bid_probability = do {
         local $self->_pricing_args->{spot} = $self->current_spot - $delta_charge;
-        local $self->_pricing_args->{iv}   = $self->pricing_vol - $self->vol_charge;
+        local $self->_pricing_args->{iv}   = $self->pricing_vol * (1 - $self->vol_charge);
         $self->_build_theo_probability;
     };
     $bid_probability->include_adjustment('subtract', $self->bs_markup);
