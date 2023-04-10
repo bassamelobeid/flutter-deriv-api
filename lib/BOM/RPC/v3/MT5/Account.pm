@@ -264,15 +264,17 @@ Returns a Future holding list of MT5 account information (or undef) or a failed 
 sub mt5_accounts_lookup {
     my ($client, $account_type) = @_;
     my %allowed_error_codes = (
-        ConnectionTimeout           => 1,
-        MT5AccountInactive          => 1,
-        NetworkError                => 1,
-        NoConnection                => 1,
-        NotFound                    => 1,
-        ERR_NOSERVICE               => 1,
-        'Service is not available.' => 1,
-        'Timed out'                 => 1,
-        'Connection closed'         => 1
+        ConnectionTimeout                                                => 1,
+        MT5AccountInactive                                               => 1,
+        NetworkError                                                     => 1,
+        NoConnection                                                     => 1,
+        NotFound                                                         => 1,
+        ERR_NOSERVICE                                                    => 1,
+        'Service is not available.'                                      => 1,
+        'Timed out'                                                      => 1,
+        'Connection closed'                                              => 1,
+        "Could not connect to 'localhost:80': Connection refused"        => 1,
+        "Timed out while waiting for socket to become ready for reading" => 1
     );
 
     my @futures;
