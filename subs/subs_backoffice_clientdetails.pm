@@ -676,6 +676,7 @@ SQL
     my $proof_of_ownership_list = $client->proof_of_ownership->list();
 
     my $poo_access = BOM::Backoffice::Auth0::has_authorisation(['AntiFraud', 'CS']);
+    my ($latest_poi_by) = $client->latest_poi_by({only_verified => 1});
 
     my $template_param = {
         balance              => $balance,
@@ -762,6 +763,10 @@ SQL
         idv_submissions_left     => $idv_submissions_left,
         doughflow_methods        => $doughflow_methods,
         poo_access               => $poo_access,
+        latest_poi_by            => $latest_poi_by,
+        idv_status               => $client->get_idv_status,
+        onfido_status            => $client->get_onfido_status,
+        manual_status            => $client->get_manual_poi_status
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

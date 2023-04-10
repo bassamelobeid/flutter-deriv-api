@@ -394,9 +394,28 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td>:
             <select name="age_verification" id="age_verification" [% IF client.is_virtual %]disabled[% END %]>
                 [% client_age_verified = client.status.age_verification %]
-                <option value="yes" [% IF client_age_verified %]selected="selected"[% END %]>YES</option>
+                [% IF client_age_verified %]
+                    <option value="yes" selected="selected">YES BY ([% latest_poi_by %])</option>
+                [% ELSE %]
+                    <option value="yes" selected="selected">YES</option>
+                [% END %]
                 <option value="no" [% UNLESS client_age_verified %]selected="selected"[% END %]>NO</option>
             </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="label top">Age Verified Status</td>
+            <td style='display:inline-flex;'>:&nbsp;<table class="collapsed hover alternate">
+            <tr>
+                <th>IDV</th>
+                <th>Onfido</th>
+                <th>Manual</th>
+            </tr>
+                <td>[% idv_status %]</td>
+                <td>[% onfido_status %]</td>
+                <td>[% manual_status %]</td>
+        </table>
         </td>
     </tr>
 
