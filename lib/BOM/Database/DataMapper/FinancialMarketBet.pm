@@ -427,6 +427,56 @@ sub get_accumulator_audit_details_by_transaction_id {
     return $results;
 }
 
+=head2 get_turbos_audit_details_by_contract_id
+
+Fetch historical updates for turbos for a specific financial market bet id
+
+=cut
+
+sub get_turbos_audit_details_by_contract_id {
+    my $self        = shift;
+    my $contract_id = shift;
+    my $limit       = shift;
+
+    my $sql = q{
+        SELECT * from bet_v1.get_turbos_audit_details_by_contract_id(?, ?)
+    };
+
+    my $results = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($contract_id, $limit);
+            return $sth->fetchall_arrayref({});
+        });
+
+    return $results;
+}
+
+=head2 get_turbos_audit_details_by_transaction_id
+
+Fetch historical updates for turbos for a specific transaction id
+
+=cut
+
+sub get_turbos_audit_details_by_transaction_id {
+    my $self           = shift;
+    my $transaction_id = shift;
+    my $limit          = shift;
+
+    my $sql = q{
+        SELECT * from bet_v1.get_turbos_audit_details_by_transaction_id(?, ?)
+    };
+
+    my $results = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($transaction_id, $limit);
+            return $sth->fetchall_arrayref({});
+        });
+
+    return $results;
+}
+
 sub get_contract_by_account_id_transaction_id {
     my ($self, $account_id, $transaction_id) = @_;
 
