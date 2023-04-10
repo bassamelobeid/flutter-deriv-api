@@ -1458,7 +1458,7 @@ for my $type (get_untrusted_types()->@*) {
             @statuses,
             {
                 clerk              => $status->{staff_name},
-                reason             => $status->{reason},
+                reason             => get_detailed_status_reason($status->{reason}),
                 warning            => 'var(--color-red)',
                 code               => $code,
                 section            => $type->{comments},

@@ -976,7 +976,7 @@ sub build_client_warning_message {
                 . (uc $output_rows->{'section'})
                 . '</strong></td>'
                 . '<td><b>'
-                . _get_detailed_reason($output_rows->{'reason'})
+                . get_detailed_status_reason($output_rows->{'reason'})
                 . '</b></td>'
                 . '<td><b>'
                 . $output_rows->{'clerk'}
@@ -2277,14 +2277,14 @@ sub p2p_advertiser_approval_check {
     }
 }
 
-=head2 _get_detailed_resaon
+=head2 get_detailed_status_reason
 
 Maps reason code to a detailed reasoning message
 Returns the code back if there's no detailed version present
 
 =cut
 
-sub _get_detailed_reason {
+sub get_detailed_status_reason {
     my $status_reason = shift;
 
     # Mapping of status reason code to detailed reason
@@ -2296,6 +2296,8 @@ sub _get_detailed_reason {
         P2P_ADVERTISER_CREATED              => 'Client applied to P2P',
         BECOME_HIGH_RISK                    => 'Client become high risk',
         MT5_ACCOUNT_IS_CREATED              => 'Client created MT5 account',
+        MT5_DBVI_ACCOUNT_IS_CREATED         => 'MT5 DBVI account created (full authentication required within 10 days)',
+        MT5_DVL_ACCOUNT_IS_CREATED          => 'MT5 DVL account created (full authentication required within 5 days)',
         WITHDRAWAL_LIMIT_REACHED            => 'Client reached withdrawal limit',
         MARKED_AS_NEEDS_ACTION              => 'Client was marked as Needs Action',
         POTENTIAL_FRAUD                     => 'Client was identified as potential fraud',
