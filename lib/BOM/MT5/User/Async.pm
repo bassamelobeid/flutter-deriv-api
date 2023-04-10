@@ -89,6 +89,11 @@ my $error_category_mapping = {
     10019                      => 'NoMoney'
 };
 
+use constant MT5_ERROR_MESSAGE_CODE_MAPPING => {
+    "Could not connect to 'localhost:80': Connection refused"        => "NoConnection",
+    "Timed out while waiting for socket to become ready for reading" => "ConnectionTimeout"
+};
+
 my $MAIN_TRADING_SERVER_KEY = 'p01_ts01';
 
 # Mapping from trade server name to BOM::MT5::Utility::CircuitBreaker instances
@@ -356,8 +361,9 @@ sub _invoke_mt5 {
             my $f = shift;
             $circuit_breaker->circuit_reset() if $f->is_done;
 
-            if ($f->is_failed && (ref $f->failure eq "HASH")) {
+            if ($f->is_failed && (ref $f->failure eq "HASH") && defined $f->failure->{code}) {
                 my $error_code = $f->failure->{code} // '';
+
                 if ($error_code eq $error_category_mapping->{9} || $error_code eq $error_category_mapping->{10}) {
                     stats_inc('mt5.call.connection_fail', {tags => $dd_tags});
                     $circuit_breaker->record_failure();
@@ -514,15 +520,17 @@ sub _invoke_using_proxy {
 
     my $url = $mt5_proxy_url . '/' . $srv_type . '_' . $srv_key . '/' . $cmd;
 
-    my $http_tiny = HTTP::Tiny->new(timeout => HTTP_TIMEOUT_SECONDS);
+    state $http_tiny = HTTP::Tiny->new(timeout => HTTP_TIMEOUT_SECONDS);
     my $response;
     my $success = 0;
+    my $out;
+    my $result_http;
 
     try {
-        my $result_http = $http_tiny->post($url, {content => $in});
+        $result_http = $http_tiny->post($url, {content => $in});
         stats_inc('mt5.call.proxy.successful', {tags => $dd_tags});
 
-        my $out = $result_http->{content};
+        $out = $result_http->{content};
         $out =~ s/[\x0D\x0A]//g;
         $out = decode_json($out);
 
@@ -567,7 +575,12 @@ sub _invoke_using_proxy {
         $success  = 1;
     } catch ($e) {
         stats_inc('mt5.call.proxy.request_error', {tags => $dd_tags});
-        $response = $e;
+        my $error_message = $result_http->{status} == 200 ? $e : $out;
+        $response = {
+            code              => MT5_ERROR_MESSAGE_CODE_MAPPING->{$error_message},
+            error             => MT5_ERROR_MESSAGE_CODE_MAPPING->{$error_message},
+            message_to_client => $error_message
+        };
 
     }
 
