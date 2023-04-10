@@ -1105,7 +1105,7 @@ async sub _mt5_cr_auto_rescind_transfer_process {
                     source => 1
                 );
 
-                my $result = _record_mt5_transfer($deriv_client->db->dbic, $txn->payment_id, $mt5_balance_before, $mt5_id, $currency);
+                my $result = _record_mt5_transfer($deriv_client->db->dbic, $txn->payment_id, $mt5_transfer_amount, $mt5_id, $currency);
 
                 unless ($result) {
                     _create_error($process_mt5_fail, $mt5_id, $deriv_account_id,
