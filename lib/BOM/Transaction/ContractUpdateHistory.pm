@@ -30,10 +30,10 @@ sub get_history_by_contract_id {
         return {error => localize('This contract was not found among your open positions.')};
     }
 
-    my $results =
-          $contract->category_code eq 'multiplier'
-        ? $dm->get_multiplier_audit_details_by_contract_id($args->{contract_id}, $args->{limit})
-        : $dm->get_accumulator_audit_details_by_contract_id($args->{contract_id}, $args->{limit});
+    my $results;
+    $results = $dm->get_multiplier_audit_details_by_contract_id($args->{contract_id}, $args->{limit})  if $contract->category_code eq 'multiplier';
+    $results = $dm->get_accumulator_audit_details_by_contract_id($args->{contract_id}, $args->{limit}) if $contract->category_code eq 'accumulator';
+    $results = $dm->get_turbos_audit_details_by_contract_id($args->{contract_id}, $args->{limit})      if $contract->category_code eq 'turbos';
 
     return $self->_get_history($results, $contract, $args->{limit});
 }
@@ -51,10 +51,11 @@ sub get_history_by_transaction_id {
         return {error => localize('This contract was not found among your open positions.')};
     }
 
-    my $results =
-          $contract->category_code eq 'multiplier'
-        ? $dm->get_multiplier_audit_details_by_transaction_id($args->{contract_id}, $args->{limit})
-        : $dm->get_accumulator_audit_details_by_transaction_id($args->{contract_id}, $args->{limit});
+    my $results;
+    $results = $dm->get_multiplier_audit_details_by_transaction_id($args->{contract_id}, $args->{limit}) if $contract->category_code eq 'multiplier';
+    $results = $dm->get_accumulator_audit_details_by_transaction_id($args->{contract_id}, $args->{limit})
+        if $contract->category_code eq 'accumulator';
+    $results = $dm->get_turbos_audit_details_by_transaction_id($args->{contract_id}, $args->{limit}) if $contract->category_code eq 'turbos';
 
     return $self->_get_history($results, $contract, $args->{limit});
 }
@@ -95,7 +96,7 @@ sub _get_history {
                         value        => $contract->new_order({$order_type => abs($order_amount)})->barrier_value,
                         order_type   => $order_type,
                         };
-                } elsif ($contract->category_code eq 'accumulator') {
+                } elsif ($contract->category_code =~ m/^(accumulator|turbos)$/i) {
                     push @history,
                         +{
                         display_name => $display_name,
