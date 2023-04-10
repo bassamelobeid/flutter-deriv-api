@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check git message
-        uses: regentmarkets/github-actions/check-git-message@dev
+        uses: regentmarkets/github-actions/check-git-message@master
   core_syntax_diff:
     needs: check-git-message
     runs-on: ubuntu-latest
@@ -31,7 +31,7 @@ jobs:
       LOG_LEVEL: debug
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
