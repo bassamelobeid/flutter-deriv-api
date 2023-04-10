@@ -389,13 +389,18 @@ sub _build_max_stake {
 override 'shortcode' => sub {
     my $self = shift;
 
+    my $shortcode_date_expiry =
+        ($self->tick_expiry)
+        ? $self->tick_count . 'T'
+        : $self->date_expiry->epoch;
+
     return join '_',
         (
         uc $self->code,
         uc $self->underlying->symbol,
         financialrounding('price', $self->currency, $self->_user_input_stake),
-        $self->date_start->epoch,
-        $self->date_expiry->epoch,
+        $self->entry_tick->epoch,
+        $shortcode_date_expiry,
         $self->_barrier_for_shortcode_string($self->supplied_barrier),
         $self->number_of_contracts
         );
@@ -403,10 +408,9 @@ override 'shortcode' => sub {
 
 override _build_entry_tick => sub {
     my $self = shift;
-    my $tick = $self->_tick_accessor->tick_at($self->date_start->epoch);
 
-    return $tick if defined($tick);
-    return $self->current_tick;
+    my $tick = $self->_tick_accessor->tick_at($self->date_start->epoch);
+    return defined($tick) ? $tick : $self->current_tick;
 };
 
 =head2 _build_hit_tick
