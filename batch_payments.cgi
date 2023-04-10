@@ -19,6 +19,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Utility;
+use BOM::Platform::Event::Emitter;
 use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
@@ -46,6 +47,7 @@ my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
 my $skip_validation   = $cgi->param('skip_validation')   || 0;
+my $notify_client     = $cgi->param('notify_client')     || 0;
 my $format            = $confirm                         || $preview || die "either preview or confirm";
 my $now               = Date::Utility->new;
 my $payments_csv      = $cgi->param('payments_csv');
@@ -241,6 +243,27 @@ read_csv_row_and_callback(
                         transaction_id    => $transaction_id,
                         ($skip_validation ? () : (rule_engine => $rule_engine)),
                     );
+
+                    if ($format eq 'doughflow' and $notify_client) {
+                        my $brand           = request()->brand;
+                        my $action_resolved = uc $action;
+                        $action_resolved = 'WITHDRAWAL_REVERSAL' if $action_resolved eq 'REVERSAL';
+                        BOM::Platform::Event::Emitter::emit(
+                            'payops_event_email',
+                            {
+                                event_name => 'payops_event_email',
+                                loginid    => $client->loginid,
+                                template   => 'doughflow_payment_status_update',
+                                properties => {
+                                    type          => $action_resolved,
+                                    statement_url => $brand->statement_url({language => $client->user->preferred_language}),
+                                    live_chat_url => $brand->live_chat_url({language => $client->user->preferred_language}),
+                                    amount        => $amount,
+                                    currency      => $currency,
+                                    clerk         => $clerk,
+                                    map { $_ => $client->{$_} } qw[first_name last_name salutation]
+                                }});
+                    }
                 }
             } catch ($e) {
                 my $msg = ref $e eq 'HASH' ? $e->{message_to_client} : $e;
@@ -325,6 +348,7 @@ if ($preview and @invalid_lines == 0) {
         <form onsubmit="confirm('Are you sure?')">
             <input type="hidden" name="payments_csv_file" value="$payments_csv_file"/>
             <input type="hidden" name="skip_validation" value="] . encode_entities($skip_validation) . qq["/>
+            <input type="hidden" name="notify_client" value="] . encode_entities($notify_client) . qq["/>
             <label>Control Code:</label><input type=text name=DCcode required size=16 data-lpignore='true' />
             <label>Type of transaction:</label>
             <select name="transtype">

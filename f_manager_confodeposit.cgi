@@ -74,9 +74,13 @@ if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
 
 # Why all the delete-params?  Because any remaining form params just get passed directly
 # to the new-style database payment-handlers.  There's no need to mention those in this module.
-my $loginID          = uc((delete $params{account}    || ''));
-my $toLoginID        = uc((delete $params{to_account} || ''));
+my $loginID   = uc((delete $params{account}    || ''));
+my $toLoginID = uc((delete $params{to_account} || ''));
+# Don't be confused with the C<$notifyclient>.
+# C<$informclient> is only set when the type is the cash transfer or bank transfer
+# Whilst the C<$notifyclient> PP is only set when it is doughflow
 my $informclient     = delete $params{informclientbyemail};
+my $notifyclient     = delete $params{notify_client};
 my $ttype            = delete $params{ttype};
 my $DCcode           = delete $params{DCcode};
 my $range            = delete $params{range};
@@ -426,6 +430,26 @@ if ($informclient) {
     } catch ($e) {
         code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $e");
     }
+} elsif ($notifyclient and $payment_type eq 'external_cashier') {
+    my $brand = request()->brand;
+    # DEPOSIT_REVERSAL is defined as DEBIT with the deposit_reversal inside the remark
+    $ttype = 'DEPOSIT_REVERSAL' if (uc $ttype) eq 'DEBIT' and $remark =~ /deposit_reversal/;
+
+    BOM::Platform::Event::Emitter::emit(
+        'payops_event_email',
+        {
+            event_name => 'payops_event_email',
+            loginid    => $client->loginid,
+            template   => 'doughflow_payment_status_update',
+            properties => {
+                type          => uc $ttype,
+                statement_url => $brand->statement_url({language => $client->user->preferred_language}),
+                live_chat_url => $brand->live_chat_url({language => $client->user->preferred_language}),
+                amount        => $amount,
+                currency      => $curr,
+                clerk         => $clerk,
+                map { $_ => $client->{$_} } qw[first_name last_name salutation]
+            }});
 }
 
 code_exit_BO();

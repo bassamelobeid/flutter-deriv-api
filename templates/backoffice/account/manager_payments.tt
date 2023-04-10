@@ -164,7 +164,10 @@
     </div>
 
     <div>
-        <label><input type="checkbox" name="skip_validation" value="on" id="skip_validation1" />Override status checks?</label>
+       <label><input type="checkbox" name="skip_validation" value="on" id="skip_validation1" />Override status checks?</label>
+       <span class="all_payment_types external_cashier">
+         <label><input type="checkbox" name="notify_client" value="on" id="notify_client_1" />Notify Client</label>
+       </span>
     </div>
 </div>
 
