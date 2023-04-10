@@ -204,6 +204,14 @@ subtest 'residence_list' => sub {
     $index  = +{map { (delete $_->{value} => $_) } $result->@*};
     is_deeply($index->{ng}->{identity}->{services}->{idv}->{is_country_supported}, 0, 'IDV disabled for smile_identity');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw//]);
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw/in:pan/]);
+    $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
+    $index  = +{map { (delete $_->{value} => $_) } $result->@*};
+    is_deeply($index->{in}->{identity}->{services}->{idv}->{is_country_supported}, 1, 'IDV not disabled for India');
+    ok !defined $index->{in}->{identity}->{services}->{idv}->{documents_supported}->{pan}, 'IDV disabled for India\'s PAN Card';
+    ok defined $index->{in}->{identity}->{services}->{idv}->{documents_supported}->{epic}, 'IDV enabled for India\'s Voter ID';
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw//]);
 };
 
 subtest 'states_list' => sub {
