@@ -19,6 +19,7 @@ use BOM::Backoffice::Utility;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
+use BOM::Platform::Event::Emitter;
 BOM::Backoffice::Sysinit::init();
 
 use constant MAP_FIELDS => {
@@ -160,6 +161,7 @@ if ($whattodo eq 'show') {
         $pa      = $client->set_payment_agent;
         $editing = 0;
     }
+    my $old_status = $pa->status;
 
     my $currency = $pa->currency_code // $client->default_account->currency_code;
 
@@ -196,6 +198,12 @@ if ($whattodo eq 'show') {
     $args{currency_code} = $currency;
 
     $args{skip_coc_validation} = 1 if $editing;
+
+    my ($is_pa_approved_before) = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM betonmarkets.paymentagent_approved_before_check(?)', undef, $loginid);
+        }) if $args{status} eq 'authorized';
+
     try {
         %args = $pa->validate_payment_agent_details(%args)->%*;
         $pa->$_($args{$_}) for keys %args;
@@ -228,6 +236,23 @@ if ($whattodo eq 'show') {
         unless ($client->get_payment_agent->set_countries(\@countries));
 
     print "<p class='success'>Successfully updated payment agent details for [$encoded_loginid]</p><br/>";
+
+    # $is_pa_approved_before will only be defined if $pa->status eq 'authorized' is TRUE
+    # however, !$is_pa_approved_before is safe to use because to reach here, $pa->status eq 'authorized' must be TRUE first
+    if ($pa->status eq 'authorized' && ($pa->status ne $old_status) && !$is_pa_approved_before) {
+        my $brand   = request()->brand;
+        my $lang    = $client->user->preferred_language // 'EN';
+        my $tnc_url = $brand->tnc_approval_url({language => uc($lang)});
+
+        BOM::Platform::Event::Emitter::emit(
+            pa_first_time_approved => {
+                loginid    => $loginid,
+                properties => {
+                    first_name    => $client->first_name,
+                    contact_email => $brand->emails('pa_business'),
+                    tnc_url       => $tnc_url,
+                }});
+    }
 
     my $auditt_href = request()->url_for(
         "backoffice/show_audit_trail.cgi",

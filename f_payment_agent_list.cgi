@@ -12,6 +12,7 @@ use BOM::Database::ClientDB;
 use BOM::User::Client;
 use BOM::Rules::Engine;
 use LandingCompany::Registry;
+use BOM::Platform::Event::Emitter;
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
@@ -55,10 +56,31 @@ if (request()->http_method eq 'POST') {
                         next;
                     }
 
+                    my ($is_pa_approved_before) = $client->db->dbic->run(
+                        fixup => sub {
+                            $_->selectrow_array('SELECT * FROM betonmarkets.paymentagent_approved_before_check(?)', undef, $loginid);
+                        });
+
                     $pa->status('authorized');
                     $pa->newly_authorized(1);    # set the 'newly_authorized' flag
                     $pa->save;
                     push $output{messages}->@*, "$loginid has been authorized.\n";
+
+                    if (!$is_pa_approved_before) {
+                        my $brand   = request()->brand;
+                        my $lang    = $client->user->preferred_language // 'EN';
+                        my $tnc_url = $brand->tnc_approval_url({language => uc($lang)});
+
+                        BOM::Platform::Event::Emitter::emit(
+                            pa_first_time_approved => {
+                                loginid    => $loginid,
+                                properties => {
+                                    first_name    => $client->first_name,
+                                    contact_email => $brand->emails('pa_business'),
+                                    tnc_url       => $tnc_url,
+                                }});
+                    }
+
                 }
 
                 if ($params{reject}) {
