@@ -829,6 +829,7 @@ async_rpc "mt5_new_account",
             and not $client->status->crs_tin_information);
     }
 
+    my $mt5_acc_reason         = _mt5_acc_opening_reason($landing_company_short);
     my $mt5_create_with_status = '';
 
     my %mt5_compliance_requirements = map { ($_ => 1) } $compliance_requirements->{mt5}->@*;
@@ -837,7 +838,7 @@ async_rpc "mt5_new_account",
         # always check for expired docs if the LC requires so
 
         if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
-            $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+            $client->status->upsert('allow_document_upload', 'system', $mt5_acc_reason);
             return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
         }
 
@@ -855,13 +856,13 @@ async_rpc "mt5_new_account",
                     my $failed_mt5_status = $error->{params}->{mt5_status};
 
                     if (defined $failed_mt5_status) {
-                        $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+                        $client->status->upsert('allow_document_upload', 'system', $mt5_acc_reason);
                         return create_error_future('AuthenticateAccountCreate', {params => $client->loginid}) if $failed_mt5_status eq 'poa_failed';
                         $mt5_create_with_status = $failed_mt5_status;
                     }
                 }
             } else {
-                $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+                $client->status->upsert('allow_document_upload', 'system', $mt5_acc_reason);
                 return create_error_future('AuthenticateAccount', {params => $client->loginid});
             }
         }
@@ -2536,6 +2537,22 @@ sub _get_market_type {
     }
 
     return $market_type;
+}
+
+=head2 _mt5_acc_opening_reason
+
+Assigns and returns the correct mt5 account opening reason message depending on the Landing Company received.
+
+=cut
+
+sub _mt5_acc_opening_reason {
+    my $mt5_landing_company = shift // '';
+
+    return 'MT5_DBVI_ACCOUNT_IS_CREATED' if $mt5_landing_company eq 'bvi';
+
+    return 'MT5_DVL_ACCOUNT_IS_CREATED' if $mt5_landing_company eq 'vanuatu';
+
+    return 'MT5_ACCOUNT_IS_CREATED';
 }
 
 1;

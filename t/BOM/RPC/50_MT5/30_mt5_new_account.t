@@ -322,6 +322,7 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
 
     $test_client->status->_build_all;
     ok $test_client->status->allow_document_upload, 'allow_document_upload status set';
+    is $test_client->status->reason('allow_document_upload'), 'MT5_ACCOUNT_IS_CREATED', 'allow_document_upload status set';
 
     $test_client->set_authentication('ID_DOCUMENT', {status => $ID_DOCUMENT});
     $test_client->save;

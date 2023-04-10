@@ -437,4 +437,122 @@ SKIP: {
     };
 }
 
+subtest 'check correct reason is assigned upon mt5 acc creation' => sub {
+    my $test_client = create_client('CR');
+    my $new_email   = 'topside+' . $DETAILS{email};
+
+    $test_client->email($new_email);
+    $test_client->set_default_account('USD');
+    $test_client->binary_user_id(1);
+
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'pending'});
+    $test_client->save;
+
+    my $password = 's3kr1t';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $user     = BOM::User->create(
+        email    => $new_email,
+        password => $hash_pwd,
+    );
+    $user->update_trading_password($DETAILS{password}{main});
+    $user->add_client($test_client);
+
+    my %basic_details = (
+        place_of_birth            => "af",
+        tax_residence             => "af",
+        tax_identification_number => "1122334455",
+        account_opening_reason    => "testing"
+    );
+
+    $test_client->$_($basic_details{$_}) for keys %basic_details;
+    $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $test_client->save;
+
+    my $token = $m->create_token($test_client->loginid, 'test token');
+
+    ok !$test_client->status->allow_document_upload, 'allow_document_upload status not present';
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'mt',
+            email            => $new_email,
+            name             => 'cat',
+            mainPassword     => 'Abcd1234',
+            leverage         => 100,
+            dry_run          => 1,
+            mt5_account_type => 'financial_stp',
+            company          => 'labuan'
+        },
+    };
+    my $doc_mock = Test::MockModule->new('BOM::User::Client');
+    $doc_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'pending';
+        });
+
+    $c->call_ok($method, $params);
+
+    $test_client->status->_build_all;
+    ok $test_client->status->allow_document_upload, 'allow_document_upload status set';
+    is $test_client->status->reason('allow_document_upload'), 'MT5_ACCOUNT_IS_CREATED', 'reason for landing company Labuan is set correctly ';
+
+    $params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'mt',
+            email            => $new_email,
+            name             => 'cat',
+            mainPassword     => 'Abcd1234',
+            leverage         => 100,
+            dry_run          => 1,
+            mt5_account_type => 'financial',
+            company          => 'vanuatu'
+        },
+    };
+
+    $doc_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'pending';
+        });
+
+    $c->call_ok($method, $params);
+
+    $test_client->status->_build_all;
+    ok $test_client->status->allow_document_upload, 'allow_document_upload status set';
+    is $test_client->status->reason('allow_document_upload'), 'MT5_DVL_ACCOUNT_IS_CREATED', 'reason for landing company Vanuatu is set correctly ';
+
+    $params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'mt',
+            email            => $new_email,
+            name             => 'cat',
+            mainPassword     => 'Abcd1234',
+            leverage         => 100,
+            dry_run          => 1,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    $doc_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'pending';
+        });
+
+    $c->call_ok($method, $params)->result;
+
+    $test_client->status->_build_all;
+    ok $test_client->status->allow_document_upload, 'allow_document_upload status set';
+    is $test_client->status->reason('allow_document_upload'), 'MT5_DBVI_ACCOUNT_IS_CREATED', 'reason for landing company BVI is set correctly ';
+};
+
 done_testing();
