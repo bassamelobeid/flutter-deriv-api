@@ -392,7 +392,7 @@ sub is_derivez {
     }
 
     if ($param->{group}) {
-        $result = 1 if $param->{group} =~ m/all/;
+        $result = 1 if ($param->{group} =~ /_ez/ and $param->{group} =~ /all/);
 
         return $result;
     }
@@ -435,18 +435,20 @@ Return the trading server for derivez
 sub get_trading_server {
     my ($account_type, $residence, $market_type) = @_;
 
-    my $server_routing_config = BOM::Config::mt5_server_routing();
-    my $server_type           = $server_routing_config->{$account_type}->{$residence}->{$market_type}->{servers}->[0];
+    my $server_routing_config = BOM::Config::derivez_server_routing_by_country();
+    my $server_type           = $server_routing_config->{$account_type}->{$residence}->{$market_type}->{servers}->{standard};
 
     if (not defined $server_type) {
         $log->warnf("Routing config is missing for %s %s-%s", uc($residence), $account_type, $market_type) if $account_type ne 'demo';
-        $server_type = 'p02_ts01';
+        $server_type = ['p02_ts01'];
     }
 
+    # We have already sorted the server based on their geolocation and offering in mt5_server_routing_by_country.yml
+    # We are not using symmetrical_servers anymore and just fetch the server info
     my $servers = BOM::Config::MT5->new(
         group_type  => $account_type,
         server_type => $server_type
-    )->symmetrical_servers();
+    )->get_server_webapi_info();
 
     # Flexible rollback plan for future new trade server
     my $mt5_app_config = BOM::Config::Runtime->instance->app_config->system->mt5;
@@ -532,6 +534,8 @@ sub derivez_accounts_lookup {
 
     my @futures;
     $account_type = $account_type ? $account_type : 'all';
+
+    # Getting filtered account to only status as undef
     my @clients = $client->user->get_derivez_loginids(type_of_account => $account_type);
     for my $login (@clients) {
         my $f = _get_settings($client, $login)->then(
