@@ -139,10 +139,11 @@ sub test_sanctions_email {
 
     my $expected_subject = "$loginid possible match in sanctions list";
     $expected_subject .= " - $triggered_by" if $triggered_by;
+    my $expected_to_email = join ", ", map { $brand->emails($_) } qw(compliance_regs compliance_ops);
 
-    is $email_args->{from},    $brand->emails('system'),     'Sending email address is corect';
-    is $email_args->{to},      $brand->emails('compliance'), 'Receiving email address is corect';
-    is $email_args->{subject}, $expected_subject,            'Emain subject is correct';
+    is $email_args->{from},    $brand->emails('system'), 'Sending email address is corect';
+    is $email_args->{to},      $expected_to_email,       'Receiving email address is corect';
+    is $email_args->{subject}, $expected_subject,        'Email subject is correct';
     like $email_args->{message}->[0], qr($loginid.*$name.*\n.*$sanction_result->{list}), 'Email body is correct';
     is $email_args->{message}->[1], $comment // '', 'Email comments are correct';
 }

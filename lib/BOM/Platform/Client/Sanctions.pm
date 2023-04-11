@@ -102,11 +102,12 @@ sub check {
 
     my $subject = $client->loginid . ' possible match in sanctions list';
     $subject .= " - $args{triggered_by}" if $args{triggered_by};
+    my $to_email = join ", " => map { $self->brand->emails($_) } qw(compliance_regs compliance_ops);
 
     # do not send notification if client is already disabled
     send_email({
             from    => $self->brand->emails('system'),
-            to      => $self->brand->emails('compliance'),
+            to      => $to_email,
             subject => $subject,
             message => [$message, $args{comments} // ''],
         }) unless ($self->skip_email or $client->status->disabled);
