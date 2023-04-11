@@ -109,6 +109,7 @@ sub _email_diffs_to_compliance {
     my $brand = request()->brand;
 
     # send seperate emails for financial assessment
+    my $to_email = $brand->emails('compliance_ops');
 
     if ($content->{financial_information}) {
         $subject = sprintf "%s has %s the financial assessment", $subj_ids, $is_new_mf_client ? "submitted" : "updated";
@@ -116,7 +117,7 @@ sub _email_diffs_to_compliance {
 
         send_email({
             from                  => $brand->emails('support'),
-            to                    => $brand->emails('compliance'),
+            to                    => $to_email,
             subject               => $subject,
             message               => [$message],
             email_content_is_html => 1
@@ -136,7 +137,7 @@ sub _email_diffs_to_compliance {
         }
         send_email({
             from                  => $brand->emails('support'),
-            to                    => $brand->emails('compliance'),
+            to                    => $to_email,
             subject               => $subject,
             message               => [$message],
             email_content_is_html => 1
