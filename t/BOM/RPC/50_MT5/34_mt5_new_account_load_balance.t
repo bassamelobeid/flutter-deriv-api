@@ -81,25 +81,6 @@ subtest 'new synthetic account' => sub {
     is($result->{login},           'MTD' . $accounts{'demo\p01_ts01\synthetic\svg_std_usd'}, 'result->{login}');
     is($result->{balance},         10000,                                                    'Balance is 10000 upon creation');
     is($result->{display_balance}, '10000.00',                                               'Display balance is "10000.00" upon creation');
-
-    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(100);
-    # set weight of p01_ts01 to 0
-    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts01(0);
-
-    $result = $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword')->result;
-    is($result->{login},           'MTD' . $accounts{'demo\p01_ts02\synthetic\svg_std_usd'}, 'result->{login}');
-    is($result->{balance},         10000,                                                    'Balance is 10000 upon creation');
-    is($result->{display_balance}, '10000.00',                                               'Display balance is "10000.00" upon creation');
-
-    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
-    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03(100);
-    # set weight of p01_ts01 to 0
-    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts01(0);
-
-    $result = $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword')->result;
-    is($result->{login},           'MTD' . $accounts{'demo\p01_ts03\synthetic\svg_std_usd'}, 'result->{login}');
-    is($result->{balance},         10000,                                                    'Balance is 10000 upon creation');
-    is($result->{display_balance}, '10000.00',                                               'Display balance is "10000.00" upon creation');
 };
 
 subtest 'new financial account' => sub {

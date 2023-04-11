@@ -197,15 +197,10 @@ subtest 'new account dry_run' => sub {
 
 subtest 'new account with account in highRisk groups' => sub {
     my $mock_mt5_rpc = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mock_mt5_rpc->mock(
-        get_mt5_logins => sub {
-            return Future->done({
-                login    => '1001014',
-                group    => 'real\p01_ts01\synthetic\svg_std-hr_usd',
-                balance  => 0,
-                currency => 'USD',
-            });
-        });
+    my $mock_mt5     = Test::MockModule->new('BOM::MT5::User::Async');
+
+    # Mocking get_user to return undef to make sure user dont have any derivez account yet
+    $mock_mt5->mock('get_user', sub { return 'undef'; });
 
     my $new_email  = 'highrisk' . $details{email};
     my $new_client = create_client('CR', undef, {residence => 'id'});
@@ -221,19 +216,28 @@ subtest 'new account with account in highRisk groups' => sub {
     $user->add_client($new_client);
 
     subtest 'corresponding high risk group exists' => sub {
+        # Mocking get_user to return undef to make sure user dont have any derivez account yet
+        $mock_mt5->mock('get_user', sub { return 'undef'; });
+
+        # Mocking create_user to create a new mt5 hr user
+        $mock_mt5->mock('create_user', sub { return Future->done({login => "MTR21000004"}); });
+
+        # We need to set auto_Bbook_bvi_financial to false to get the user as HR
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(1);
+
         my $method = 'mt5_new_account';
         my $params = {
             language => 'EN',
             token    => $token,
             args     => {
-                account_type => 'gaming',
-                country      => 'id',
-                email        => $details{email},
-                name         => $details{name},
-                mainPassword => $details{password}{main},
-                leverage     => 100,
-                server       => 'p01_ts02',
-                company      => 'svg'
+                account_type     => 'gaming',
+                country          => 'id',
+                email            => $details{email},
+                mt5_account_type => 'financial',
+                name             => $details{name},
+                mainPassword     => $details{password}{main},
+                leverage         => 100,
+                company          => 'svg'
             },
         };
 
@@ -256,24 +260,27 @@ subtest 'new account with account in highRisk groups' => sub {
             language => 'EN',
             token    => $token,
             args     => {
-                account_type => 'gaming',
-                country      => 'id',
-                email        => $details{email},
-                name         => $details{name},
-                mainPassword => $details{password}{main},
-                leverage     => 100,
-                server       => 'p01_ts03',
-                company      => 'svg'
+                account_type     => 'financial',
+                country          => 'id',
+                email            => $details{email},
+                name             => $details{name},
+                mainPassword     => $details{password}{main},
+                leverage         => 100,
+                mt5_account_type => 'financial',
+                company          => 'svg'
             },
         };
 
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
         $c->call_ok($method, $params)->has_error('high risk group does not exist for corresponding group')
-            ->error_code_is('MT5CreateUserError', 'error code for mt5_new_account with navailable high risk group')
-            ->error_message_is('An error occured while creating your account. Please check your information and try again.');
+            ->error_code_is('PermissionDenied', 'error code for mt5_new_account with navailable high risk group')
+            ->error_message_is('Permission denied.');
     };
 
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
+
     $mock_mt5_rpc->unmock_all();
+    $mock_mt5->unmock_all();
 };
 
 subtest 'status allow_document_upload is added upon mt5 create account dry_run advanced' => sub {
@@ -1373,8 +1380,37 @@ subtest 'countries restrictions, high-risk jurisdiction, onfido blocked' => sub 
 
 };
 
-# my $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created B book')->result;
-# is $result->{account_type}, 'financial', 'account_type=financial';
-# is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
+subtest 'country=id, mt5 swap free account' => sub {
+    my $new_email  = 'id' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'id'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type         => 'all',
+            email                => $new_email,
+            name                 => $details{name},
+            mainPassword         => $details{password}{main},
+            leverage             => 100,
+            company              => 'svg',
+            sub_account_category => 'swap_free'
+        },
+    };
+    my $result = $c->call_ok($method, $params)->has_no_error('real swap free account successfully created')->result;
+    $params->{args}->{account_type} = 'demo';
+    $result = $c->call_ok($method, $params)->has_no_error('demo swap free account successfully created')->result;
+};
 
 done_testing();

@@ -168,8 +168,10 @@ sub get_mt5_server_list {
     my $server_list = $mt5_config->server_by_country(
         $args{residence},
         {
-            group_type  => $args{account_type},
-            market_type => $args{market_type}});
+            group_type           => $args{account_type},
+            market_type          => $args{market_type},
+            sub_account_category => 'standard'
+        });
 
     my $mt5_account_count = $brand->mt_account_count_for_country(country => $args{residence});
     $mt5_account_count->{synthetic} = delete $mt5_account_count->{gaming};
@@ -290,7 +292,7 @@ sub mt5_accounts_lookup {
                     $setting->{status} = $client->user->loginid_details->{$setting->{login}}->{status};
                 }
                 $setting = _filter_settings($setting,
-                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type server server_info status/
+                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type sub_account_category server server_info status/
                 ) if !$setting->{error};
                 return Future->done($setting);
             }
@@ -391,8 +393,9 @@ mt5_account_category: conventional|empty for financial_stp
 sub _mt5_group {
     my $args = shift;
 
-    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $account_category, $country, $user_input_trade_server, $restricted_group)
-        = @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_type country server restricted_group)};
+    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $sub_account_category, $country, $user_input_trade_server,
+        $restricted_group)
+        = @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_category country server restricted_group)};
 
     my ($server_type, $sub_account_type, $group_type);
 
@@ -400,18 +403,21 @@ sub _mt5_group {
     my $lc = LandingCompany::Registry->by_name($landing_company_short);
     return 'real\p02_ts02\synthetic\seychelles_ib_usd' if $lc->is_for_affiliates();
 
-    my $market_type = _get_market_type($account_type, $mt5_account_type);
+    my $market_type = _get_market_type($account_type, $mt5_account_type, $sub_account_category);
 
     if ($account_type eq 'demo') {
         $group_type       = $account_type;
-        $server_type      = _get_server_type($account_type, $country, $market_type);
-        $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
+        $server_type      = _get_server_type($account_type, $country, $market_type, $sub_account_category);
+        $sub_account_type = _get_sub_account_type($mt5_account_type);
+
+        # Adding -sf tag for swap free account creation
+        $sub_account_type .= '-sf' if $sub_account_category eq 'swap_free';
     } else {
         # real group mapping
         $account_type     = 'real';
         $group_type       = $account_type;
-        $server_type      = _get_server_type($account_type, $country, $market_type);
-        $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
+        $server_type      = _get_server_type($account_type, $country, $market_type, $sub_account_category);
+        $sub_account_type = _get_sub_account_type($mt5_account_type);
 
         # All financial account will be B-book (put in hr[high-risk] upon sign-up. Decisions to A-book will be done
         # on a case by case basis manually
@@ -420,6 +426,9 @@ sub _mt5_group {
         my $apply_auto_b_book = (
             $market_type eq 'financial' and (($landing_company_short eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial)
                 or ($landing_company_short eq 'bvi' and not $app_config->system->mt5->suspend->auto_Bbook_bvi_financial)));
+
+        # Adding -sf tag for swap free account creation
+        $sub_account_type .= '-sf' if $sub_account_category eq 'swap_free';
 
         # as per requirements of mt5 operation team, australian financial account will not be categorised as high-risk (hr)
         $sub_account_type .= '-hr' if $market_type eq 'financial' and $country ne 'au' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
@@ -494,7 +503,7 @@ Returns a randomly selected trading server key in client's region
 =cut
 
 sub _get_server_type {
-    my ($account_type, $country, $market_type) = @_;
+    my ($account_type, $country, $market_type, $sub_account_category) = @_;
 
     my $server_routing_config = BOM::Config::mt5_server_routing();
 
@@ -503,18 +512,21 @@ sub _get_server_type {
         $country = country2code($country);
     }
 
-    # if it is not defined, set $server_type to $DEFAULT_TRADING_SERVER_KEY
-    # servers is an array reference arranged according to recommended priority
-    my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type}->{servers}->[0];
+    # We are currently using mt5_server_routing_by_country.yml as the source of truth for the available server
+    my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type}->{servers}->{$sub_account_category};
+
     if (not defined $server_type) {
         $log->warnf("Routing config is missing for %s %s-%s", uc($country), $account_type, $market_type) if $account_type ne 'demo';
-        $server_type = $DEFAULT_TRADING_SERVER_KEY;
+        $server_type = [$DEFAULT_TRADING_SERVER_KEY];
     }
 
+    # We have already sorted the server based on their geolocation and offering in mt5_server_routing_by_country.yml
+    # We are not using symmetrical_servers anymore and just fetch the server info
     my $servers = BOM::Config::MT5->new(
-        group_type  => $account_type,
-        server_type => $server_type
-    )->symmetrical_servers();
+        group_type           => $account_type,
+        server_type          => $server_type,
+        sub_account_category => $sub_account_category
+    )->get_server_webapi_info();
 
     return _select_server($servers, $account_type);
 }
@@ -560,7 +572,7 @@ sub _select_server {
 
     # just return if this is the only trade server available
     return $selected_servers[0][0] if @selected_servers == 1;
-    # if we have more than on trade servers, we distribute the load according to the weight specified
+    # if we have more than one trade servers, we distribute the load according to the weight specified
     # in the backoffice settings
     my @servers;
     foreach my $server (sort { $a->[1] <=> $b->[1] } @selected_servers) {
@@ -646,12 +658,13 @@ async_rpc "mt5_new_account",
     my $mt5_account_category    = delete $args->{mt5_account_category} // 'conventional';
     my $user_input_trade_server = delete $args->{server};
     my $landing_company_short   = delete $args->{company};
+    my $sub_account_category    = delete $args->{sub_account_category} // 'standard';
 
     # input validation
     return create_error_future('SetExistingAccountCurrency') unless $client->default_account;
 
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
-    return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+    return $invalid_account_type_error if (not $account_type or $account_type !~ /^all|demo|gaming|financial$/);
 
     # - demo account cannot select trade server
     # - financial account cannot select trade server
@@ -695,6 +708,9 @@ async_rpc "mt5_new_account",
     my $company_type     = $mt5_account_type eq '' ? 'gaming' : 'financial';
     my $sub_account_type = $mt5_account_type;
 
+    # Setting up company_type for swap free account
+    $company_type = $account_type eq 'all' ? $account_type : $company_type;
+
     my %mt_args = (
         country          => $residence,
         account_type     => $company_type,
@@ -711,6 +727,7 @@ async_rpc "mt5_new_account",
         $landing_company_short = _get_mt_landing_company($client, \%mt_args);
     }
 
+    # We do not allow malta and malta invest to choose server on FE
     if (defined $user_input_trade_server && ($landing_company_short eq 'malta' || $landing_company_short eq 'maltainvest')) {
         return create_error_future('InvalidServerInput');
     }
@@ -720,7 +737,7 @@ async_rpc "mt5_new_account",
         if not $countries_instance->is_mt_company_supported($residence, $company_type, $landing_company_short);
 
     # MT5 is not allowed in client country
-    return create_error_future($mt5_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
+    return create_error_future($sub_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
         if $landing_company_short eq 'none';
 
     my $binary_company_name = _get_landing_company($client, $landing_company_short);
@@ -803,7 +820,8 @@ async_rpc "mt5_new_account",
         account_type          => $account_type,
         mt5_account_type      => $mt5_account_type,
         currency              => $mt5_account_currency,
-        sub_account_type      => $mt5_account_category,
+        sub_account_category  => $sub_account_category,
+        sub_account_type      => $sub_account_type,
         server                => $user_input_trade_server,
         restricted_group      => $countries_instance->is_mt5_restricted_group($residence),
     });
@@ -1013,7 +1031,7 @@ async_rpc "mt5_new_account",
                     my $mt5_login    = $status->{login};
                     my $mt5_currency = $args->{currency};
                     my $mt5_leverage = $args->{leverage};
-                    my $market_type  = _get_market_type($account_type, $mt5_account_type);
+                    my $market_type  = _get_market_type($account_type, $mt5_account_type, $sub_account_category);
                     my $acc_type     = _is_account_demo($args->{group}) ? 'demo' : 'real';
 
                     my $mt5_attributes = {
@@ -1331,7 +1349,7 @@ async_rpc "mt5_get_settings",
             return create_error_future('MT5AccountInactive') if !$settings->{active};
 
             $settings = _filter_settings($settings,
-                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type zipCode server server_info/
+                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type sub_account_category zipCode server server_info/
             );
 
             return Future->done($settings);
@@ -1365,6 +1383,7 @@ sub set_mt5_account_settings {
     $settings->{market_type}           = $config->{market_type};
     $settings->{account_type}          = $config->{account_type};
     $settings->{sub_account_type}      = $config->{sub_account_type};
+    $settings->{sub_account_category}  = $config->{sub_account_category};
 
     if ($config->{server}) {
         my $server_config = BOM::Config::MT5->new(group => $group_name)->server_by_id();
@@ -2515,7 +2534,16 @@ sub _is_identical_group {
     my $group_config = get_mt5_account_type_config($group);
 
     foreach my $existing_group (map { get_mt5_account_type_config($_) } keys %$existing_groups) {
-        return $existing_group if defined $existing_group and all { $group_config->{$_} eq $existing_group->{$_} } keys %$group_config;
+        # Since our get_mt5_account_type_config is a state variable we need to make sure we dont remove it entirely
+        # Setting a temporary varaibles without 'server' keys in hash
+        my $group_temp;
+        my $existing_group_temp;
+        map { $_ eq 'server' ? () : ($group_temp->{$_}          = $group_config->{$_}) } keys %$group_config;
+        map { $_ eq 'server' ? () : ($existing_group_temp->{$_} = $existing_group->{$_}) } keys %$existing_group;
+
+        # Check if all varaibles have similar value except for 'server'
+        # We are skipping 'server' since client could not have same account in multiple server
+        return $existing_group if defined $existing_group_temp and all { $group_temp->{$_} eq $existing_group_temp->{$_} } keys %$group_temp;
     }
 
     return undef;
@@ -2528,10 +2556,12 @@ Return the market type for the mt5 account details
 =cut
 
 sub _get_market_type {
-    my ($account_type, $mt5_account_type) = @_;
+    my ($account_type, $mt5_account_type, $sub_account_category) = @_;
 
     my $market_type = '';
-    if ($account_type eq 'demo') {
+    if ($account_type eq 'all' or $sub_account_category eq 'swap_free') {
+        $market_type = 'all';
+    } elsif ($account_type eq 'demo') {
         # if $mt5_account_type is undefined, it maps to $market_type=synthetic, else $market_type=financial
         $market_type = $mt5_account_type ? 'financial' : 'synthetic';
     } else {

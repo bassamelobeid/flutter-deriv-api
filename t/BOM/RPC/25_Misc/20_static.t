@@ -365,14 +365,12 @@ subtest 'trading_servers' => sub {
             residence    => $test_client->residence,
             market_type  => 'synthetic',
         )->get;
-        is scalar(@$response),                      4,           'Correct number of servers for country';
+        is scalar(@$response),                      1,           'Correct number of servers for country';
         is $response->[0]->{id},                    'p01_ts03',  'correct id for the server';
         is $response->[0]->{recommended},           1,           'correct recommended';
         is $response->[0]->{geolocation}{region},   'Asia',      'correct region for the server';
         is $response->[0]->{geolocation}{location}, 'Singapore', 'correct location for the server';
         is $response->[0]->{geolocation}{sequence}, '1',         'correct sequence for the server';
-        is $response->[1]->{recommended},           0,           'Correctly set as not recommended';
-        is $response->[1]->{geolocation}{region},   'Africa',    'Correctly sorted';
     };
 
     $email       = 'sample+3@binary.com';
@@ -396,7 +394,7 @@ subtest 'trading_servers' => sub {
             market_type  => 'synthetic',
             residence    => $test_client->residence,
         )->get;
-        is scalar(@$response),                      4,              'Correct number of servers for country';
+        is scalar(@$response),                      2,              'Correct number of servers for country';
         is $response->[0]->{id},                    'p01_ts02',     'correct id for the server';
         is $response->[0]->{recommended},           1,              'correct recommended';
         is $response->[0]->{geolocation}{region},   'Africa',       'correct region for the server';
@@ -405,8 +403,6 @@ subtest 'trading_servers' => sub {
         is $response->[1]->{id},                    'p02_ts02',     'correct id for the server';
         is $response->[1]->{recommended},           0,              'Correctly set as not recommended';
         is $response->[1]->{geolocation}{region},   'Africa',       'Correctly sorted';
-        is $response->[2]->{recommended},           0,              'Correctly set as not recommended';
-        is $response->[2]->{geolocation}{region},   'Asia',         'Correctly sorted';
     };
 
     $email       = 'sample+4@binary.com';
@@ -431,14 +427,12 @@ subtest 'trading_servers' => sub {
             residence    => $test_client->residence,
         )->get;
 
-        is scalar(@$response),                      4,           'Correct number of servers for country';
+        is scalar(@$response),                      1,           'Correct number of servers for country';
         is $response->[0]->{id},                    'p01_ts04',  'correct id for the server';
         is $response->[0]->{recommended},           1,           'correct recommended';
         is $response->[0]->{geolocation}{region},   'Europe',    'correct region for the server';
         is $response->[0]->{geolocation}{location}, 'Frankfurt', 'correct location for the server';
         is $response->[0]->{geolocation}{sequence}, '1',         'correct sequence for the server';
-        is $response->[1]->{recommended},           0,           'Correctly set as not recommended';
-        is $response->[1]->{geolocation}{region},   'Africa',    'Correctly sorted';
     };
 };
 

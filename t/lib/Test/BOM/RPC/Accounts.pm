@@ -24,6 +24,7 @@ our %MT5_ACCOUNTS = (
     'demo\p01_ts01\synthetic\bvi_std_usd'            => '1010003',
     'demo\p01_ts02\synthetic\bvi_std_usd'            => '1001005',
     'demo\p01_ts03\synthetic\svg_std_usd'            => '1001018',
+    'demo\p01_ts03\all\svg_std-sf_usd'               => '1001019',
     'real\p01_ts01\synthetic\malta_std_eur'          => '1001010',
     'real\p01_ts01\financial\maltainvest_std-hr_eur' => '1001011',
     'real\p01_ts01\financial\maltainvest_std-hr_usd' => '1001017',
@@ -39,6 +40,7 @@ our %MT5_ACCOUNTS = (
     'real\p01_ts01\financial\svg_std_usd'            => '1001016',
     'real\p01_ts01\financial\bvi_std_usd'            => '1001018',
     'real\p01_ts01\synthetic\bvi_std_usd'            => '1010004',
+    'real\p01_ts01\all\svg_std-sf_usd'               => '1010004',
     'real\p01_ts02\synthetic\bvi_std_usd'            => '1010005',
     'real\p01_ts03\synthetic\bvi_std_usd'            => '1010006',
     'real\p01_ts04\synthetic\bvi_std_usd'            => '1010007',
@@ -70,6 +72,9 @@ our %MT5_ACCOUNTS = (
     'real\p01_ts04\synthetic\svg_std_usd\04' => '61000001',
     # seychelles
     'real\p02_ts02\synthetic\seychelles_ib_usd' => '999999',
+
+    # real p02_ts01
+    'real\p02_ts01\all\svg_std-sf_usd' => '80000020',
 );
 
 our $ADD_INACTIVE_ACCOUNT = 0;

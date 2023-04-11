@@ -250,8 +250,9 @@ rpc "landing_company",
     # we don't want to send "mt" as key so need to delete from structure
     my $mt5_landing_company_details = delete $landing_company{mt};
     my %output_map                  = (
-        stp      => 'financial_stp',
-        standard => 'financial',
+        stp       => 'financial_stp',
+        standard  => 'financial',
+        swap_free => 'swap_free',
     );
 
     foreach my $mt5_type (keys %{$mt5_landing_company_details}) {

@@ -91,12 +91,6 @@ subtest 'custom new account' => sub {
     is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00" upon creation');
 
-    $args->{server} = 'p01_ts02';
-    $c->call_ok($method, $params)->has_no_error('client from south africa can have multiple synthetic account');
-    is($c->result->{login},           'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'result->{login}');
-    is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
-    is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00" upon creation');
-
     $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
 };

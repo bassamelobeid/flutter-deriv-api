@@ -52,12 +52,10 @@ subtest 'trading servers for south africa' => sub {
     };
     my $result = $c->call_ok($method, $params)->has_no_error('returns all synthetic servers for real')->result;
 
-    ok @$result == 4, 'returns 4 trade servers';
+    ok @$result == 2, 'returns 2 trade servers';
 
     is $result->[0]->{id}, 'p01_ts02', 'first server p01_ts02';
     is $result->[1]->{id}, 'p02_ts02', 'first server p02_ts02';
-    is $result->[2]->{id}, 'p01_ts03', 'first server p01_ts03';
-    is $result->[3]->{id}, 'p01_ts04', 'first server p01_ts04';
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     my $new_account_params = {
@@ -79,17 +77,13 @@ subtest 'trading servers for south africa' => sub {
         $c->call_ok($method, $params)->has_no_error('returns all synthetic servers for real except p01_ts02 or p02_ts01 (since routing is random)')
         ->result;
 
-    ok @$result == 4, 'returns 4 trade servers';
+    ok @$result == 2, 'returns 2 trade servers';
     is $result->[0]->{id}, 'p01_ts02', 'first server p01_ts02';
     ok !$result->[0]->{disabled},          'first server p01_ts02 is not disabled';
     ok !$result->[0]->{message_to_client}, 'no error message';
     is $result->[1]->{id}, 'p02_ts02', 'first server p02_ts02';
     ok $result->[1]->{disabled}, 'first server p01_ts02 is disabled';
     is $result->[1]->{message_to_client}, 'Temporarily unavailable', 'correct error message';
-    is $result->[2]->{id},                'p01_ts03',                'first server p01_ts03';
-    ok !$result->[2]->{disabled};
-    is $result->[3]->{id}, 'p01_ts04', 'first server p01_ts04';
-    ok !$result->[3]->{disabled};
 
     $params->{args}{market_type} = 'financial';
     $result = $c->call_ok($method, $params)->has_no_error('returns all financial servers for real')->result;
@@ -128,11 +122,8 @@ subtest 'trading servers for Aland Islands' => sub {
     };
     my $result = $c->call_ok($method, $params)->has_no_error('returns all synthetic servers for real')->result;
 
-    ok @$result == 4, 'returns 4 trade servers';
+    ok @$result == 1, 'returns 1 trade servers';
     is $result->[0]->{id}, 'p01_ts04', 'first server p01_ts04';
-    is $result->[1]->{id}, 'p01_ts02', 'first server p01_ts02';
-    is $result->[2]->{id}, 'p02_ts02', 'first server p02_ts02';
-    is $result->[3]->{id}, 'p01_ts03', 'first server p01_ts03';
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     my $new_account_params = {
@@ -154,18 +145,10 @@ subtest 'trading servers for Aland Islands' => sub {
         $c->call_ok($method, $params)->has_no_error('returns all synthetic servers for real except p01_ts04 or p02_ts01 (since routing is random)')
         ->result;
 
-    ok @$result == 4, 'returns 4 trade servers';
+    ok @$result == 1, 'returns 2 trade servers';
     is $result->[0]->{id}, 'p01_ts04', 'first server p01_ts04';
     ok $result->[0]->{disabled}, 'first server p01_ts04 is disabled';
     is $result->[0]->{message_to_client}, 'Region added', 'no error message';
-    is $result->[2]->{id},                'p02_ts02',     'first server p02_ts02';
-    ok $result->[2]->{disabled}, 'first server p01_ts02 is disabled';
-    is $result->[2]->{message_to_client}, 'Temporarily unavailable', 'correct error message';
-    is $result->[3]->{id},                'p01_ts03',                'first server p01_ts03';
-    ok !$result->[3]->{disabled};
-    is $result->[1]->{id}, 'p01_ts02', 'first server p01_ts02';
-    ok !$result->[1]->{disabled};
-
 };
 
 done_testing();

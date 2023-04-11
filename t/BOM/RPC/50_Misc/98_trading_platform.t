@@ -741,7 +741,7 @@ subtest 'trading_platform_available_accounts' => sub {
         get_jurisdiction_risk_rating => sub { $jurisdiction });
     $result = $c->call_ok('trading_platform_available_accounts', $params)->has_no_system_error->has_no_error->result;
 
-    is scalar(@{$result}), 2, 'got correct number of platforms';
+    is scalar(@{$result}), 3, 'got correct number of platforms';
     foreach my $account ($result->@*) {
         like $account->{shortcode}, qr/^svg$/, 'response of trading_platform_accounts is as expected';
     }
