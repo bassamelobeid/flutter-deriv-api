@@ -830,7 +830,7 @@ sub send_email_notification {
     push @message, "By $staff on " . Date::Utility->new->datetime;
 
     my $brand      = request()->brand;
-    my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
+    my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance_regs cs marketing_x);
 
     send_email({
         from    => $brand->emails('system'),

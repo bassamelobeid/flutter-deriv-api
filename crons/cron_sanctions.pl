@@ -85,12 +85,15 @@ sub do_report {
 
     my $today_date           = Date::Utility::today()->date;
     my $last_sanction_update = $validator->last_updated();
+    my $to_email             = join ", ", map { $brand->emails($_) } qw(compliance_regs compliance_ops);
+
     if (($last_run > $last_sanction_update) && !$force) {
         my $last_date                 = Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ;
         my $last_sanction_update_date = Date::Utility->new($last_sanction_update)->datetime_ddmmmyy_hhmmss_TZ;
+
         send_email({
             from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
+            to      => $to_email,
             subject => "No sanctions changes for $today_date",
             message => ["Last sanction list update : $last_sanction_update_date \n" . "Last sanction cron ran : $last_date"],
         });
@@ -144,7 +147,7 @@ sub do_report {
 
         send_email({
             from       => $brand->emails('support'),
-            to         => $brand->emails('compliance'),
+            to         => $to_email,
             subject    => 'Sanction list for ' . $broker . ' at ' . $today_date,
             attachment => $filename->canonpath,
         });
