@@ -259,9 +259,8 @@ sub _get_ask {
                     ? $redis->lrange($stat_key, -1, -1)
                     : $redis->lrange($stat_key, 0,  -1);
 
-                #barriers in PP should be calculated based on the current tick
-                my $high_barrier = $contract->display_high_barrier($contract->get_high_barrier($contract->current_spot));
-                my $low_barrier  = $contract->display_low_barrier($contract->get_low_barrier($contract->current_spot));
+                my $high_barrier = $contract->display_high_barrier();
+                my $low_barrier  = $contract->display_low_barrier();
 
                 $response->{contract_details} = {
                     'maximum_payout'    => $contract->max_payout,
