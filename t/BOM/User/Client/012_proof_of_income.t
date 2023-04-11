@@ -85,6 +85,25 @@ subtest 'edd status pending with pending document' => sub {
     ok $test_client_cr->needs_pow_verification, 'POW is needed';
 };
 
+subtest 'edd status contacted' => sub {
+
+    $user->add_client($test_client_cr);
+    $uploaded = {
+        proof_of_income => {
+            documents   => 'something',
+            is_uploaded => 1
+        }};
+    $user->update_edd_status(
+        status           => 'contacted',
+        start_date       => '2021-05-30',
+        last_review_date => undef,
+        average_earnings => {},
+        comment          => 'hello',
+        reason           => 'card_deposit_monitoring'
+    );
+    ok $test_client_cr->needs_pow_verification, 'POW is needed';
+};
+
 $mocked_documents->unmock_all;
 
 done_testing();
