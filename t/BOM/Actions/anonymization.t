@@ -107,11 +107,11 @@ subtest client_anonymization => sub {
     $result     = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => 'MX009'})->get;
     $msg        = mailbox_search(subject => qr/Anonymization report for/);
 
-    # It should send an notification email to compliance
+    # It should send an notification email to compliance dpo team
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance receive an report of anonymization./);
     like($msg->{body},    qr/Getting client object failed. Please check if loginid is correct or client exist./, qq/user not found failure/);
 
-    cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
+    cmp_deeply($msg->{to}, [$BRANDS->emails('compliance_dpo')], qq/Email sent to the compliance dpo team./);
 
     cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
 
@@ -260,10 +260,10 @@ subtest bulk_anonymization => sub {
     $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines})->get;
     my $msg = mailbox_search(subject => qr/Anonymization report for/);
 
-    # It should send an notification email to compliance
+    # It should send an notification email to compliance dpo team
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance report including failures and successes./);
     like($msg->{body},    qr/has at least one active client/,             qq/Failure reason is correct/);
-    cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
+    cmp_deeply($msg->{to}, [$BRANDS->emails('compliance_dpo')], qq/Email should send to the compliance dpo team./);
 
     $mock_user_module->mock('valid_to_anonymize', sub { return 1 });
 
@@ -289,10 +289,10 @@ subtest bulk_anonymization => sub {
 
     $msg = mailbox_search(subject => qr/Anonymization report for/);
 
-    # It should send an notification email to compliance
+    # It should send an notification email to compliance dpo team
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance report including failures and successes./);
     like($msg->{body},    qr/Anonymization failed for \d+ clients/,       qq/Failure reason is correct/);
-    cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
+    cmp_deeply($msg->{to}, [$BRANDS->emails('compliance_dpo')], qq/Email should send to the compliance dpo team./);
 
     # Bypass oneall API call and mock success response
     $mock_oneall->mock('anonymize_user', 1);
@@ -667,6 +667,7 @@ subtest 'DF anonymization done' => sub {
     my $loginid = get_loginid('emailanon11111@binary.com');
 
     subtest 'DF result is OK' => sub {
+        my $BRANDS  = BOM::Platform::Context::request()->brand();
         my $payload = {
             $loginid => {
                 data => 'OK',
@@ -684,6 +685,7 @@ subtest 'DF anonymization done' => sub {
         my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report/);
         ok $msg,                 'DF anonymization report email sent';
         ok $msg->{body} =~ /OK/, 'OK message';
+        cmp_deeply($msg->{to}, [$BRANDS->emails('compliance_dpo')], qq/Email should send to the compliance dpo team./);
 
         cmp_deeply $stats_inc,
             {
@@ -695,6 +697,7 @@ subtest 'DF anonymization done' => sub {
     };
 
     subtest 'DF result is error' => sub {
+        my $BRANDS  = BOM::Platform::Context::request()->brand();
         my $payload = {
             $loginid => {
                 data => '3 - PIN has recent (12 months) transaction activity',
@@ -712,6 +715,7 @@ subtest 'DF anonymization done' => sub {
         my $msg = mailbox_search(subject => qr/Doughflow Anonymization/);
         ok $msg,                                                                     'DF anonymization report email sent';
         ok $msg->{body} =~ /3 \- PIN has recent \(12 months\) transaction activity/, 'Error message';
+        cmp_deeply($msg->{to}, [$BRANDS->emails('compliance_dpo')], qq/Email should send to the compliance dpo team./);
 
         cmp_deeply $stats_inc,
             {

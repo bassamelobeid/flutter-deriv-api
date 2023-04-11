@@ -254,7 +254,7 @@ sub _send_anonymization_report {
     my $email_subject       = ($title // 'Anonymization') . ' report for ' . Date::Utility->new->date;
 
     my $from_email = $BRANDS->emails('no-reply');
-    my $to_email   = $BRANDS->emails('compliance');
+    my $to_email   = $BRANDS->emails('compliance_dpo');
     my $success_clients;
     $success_clients = join(',', sort keys %$successes) if $number_of_successes > 0;
 
@@ -536,7 +536,7 @@ async sub df_anonymization_done {
 
     if (scalar $bulk->@*) {
         my $from_email = $BRANDS->emails('no-reply');
-        my $to_email   = $BRANDS->emails('compliance');
+        my $to_email   = $BRANDS->emails('compliance_dpo');
 
         # send the email with response from df api
         send_email({
