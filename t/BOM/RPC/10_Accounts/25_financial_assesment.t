@@ -11,6 +11,7 @@ use BOM::Platform::Token::API;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email                           qw(:no_event);
 use BOM::Test::Helper::Token;
+use BOM::Platform::Context qw (request);
 use BOM::Test::Helper::FinancialAssessment;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 
@@ -329,9 +330,9 @@ subtest $method => sub {
         'loginid' => 'MF90000000'
         },
         'event args are correct';
-
-    my $msg = mailbox_search(
-        email   => 'compliance@deriv.com',
+    my $brand = request->brand;
+    my $msg   = mailbox_search(
+        email   => $brand->emails('compliance_ops'),
         subject => qr/has updated the trading assessment/
     );
     ok($msg, 'send a email to compliance for MF after changing financial assessment');
@@ -347,7 +348,7 @@ subtest $method => sub {
         });
 
     $msg = mailbox_search(
-        email   => 'compliance@deriv.com',
+        email   => $brand->emails('compliance_ops'),
         subject => qr/has updated the trading assessment/
     );
 

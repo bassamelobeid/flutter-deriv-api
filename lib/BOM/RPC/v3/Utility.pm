@@ -832,7 +832,7 @@ sub send_professional_requested_email {
 
     return send_email({
         from    => $brand->emails('system_generated'),
-        to      => $brand->emails('compliance'),
+        to      => $brand->emails('compliance_ops'),
         subject => "$loginid requested for professional status, residence: " . ($residence // 'No residence provided'),
         message => ["$loginid has requested for professional status, please check and update accordingly"],
     });

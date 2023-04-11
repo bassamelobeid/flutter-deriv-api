@@ -967,11 +967,11 @@ subtest $method => sub {
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys %$result, 0, 'MF client has financial assessment set');
-        my $msg = mailbox_search(
-            email   => 'compliance@deriv.com',
+        my $compreg_msg = mailbox_search(
+            email   => 'x-compops@deriv.com',
             subject => qr/\Qhas submitted the trading assessment\E/
         );
-        ok($msg, "Risk disclosure email received");
+        ok($compreg_msg, "Risk disclosure email comliance register received");
         is $cl->get_authentication('ID_DOCUMENT')->status, "pass", 'authentication method should be updated upon signup between MLT and MF';
         ok $cl->status->age_verification, 'age verification synced between mlt and mf.';
         is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
