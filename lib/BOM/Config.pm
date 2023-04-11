@@ -701,6 +701,17 @@ sub mt5_server_routing {
     return $config;
 }
 
+=head2 derivez_server_routing_by_country
+
+Config for trade server routing for derivez for each countries.
+
+=cut
+
+sub derivez_server_routing_by_country {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/derivez_server_routing_by_country.yml');
+    return $config;
+}
+
 =head2 mt5_account_types
 
 Config for MT5 groups definition

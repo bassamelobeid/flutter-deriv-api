@@ -150,8 +150,15 @@ subtest 'server_by_country' => sub {
     $mocked_routing_config = {
         "real" => {
             "ao" => {
-                "synthetic" => {"servers" => ['p01_ts02', 'p02_ts02']},
-                "financial" => {"servers" => ['p01_ts01']}}}};
+                "synthetic" => {
+                    "servers" => {
+                        "standard" => ['p01_ts02', 'p02_ts02'],
+                    }
+                },
+                "financial" => {
+                    "servers" => {
+                        "standard" => ['p01_ts01'],
+                    }}}}};
     $mocked_webapi_config = {
         "real" => {
             "p01_ts01" => {
@@ -191,8 +198,18 @@ subtest 'server_by_country' => sub {
                     "geolocation"        => 'UK',
                     "id"                 => 'p01_ts01',
                     "recommended"        => 1,
-                    "supported_accounts" => ['gaming', 'financial', 'financial_stp']}]}};
-    is_deeply($mocked_MT5_object->server_by_country("ao", {group_type => 'real'}), $expected, "Valid country code is specified");
+                    "supported_accounts" => ['gaming', 'financial', 'financial_stp', 'all']}]}};
+    is_deeply(
+        $mocked_MT5_object->server_by_country(
+            "ao",
+            {
+                group_type           => 'real',
+                sub_account_category => 'standard'
+            }
+        ),
+        $expected,
+        "Valid country code is specified"
+    );
     $mocked_MT5->unmock_all();
 };
 

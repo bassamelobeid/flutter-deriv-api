@@ -244,229 +244,273 @@ subtest 'symmetrical servers' => sub {
 };
 
 subtest 'server by country' => sub {
-    my $mt5      = BOM::Config::MT5->new();
-    my $expected = {
-        'demo' => {
-            'all' => [{
-                    'geolocation' => {
-                        'group'    => 'derivez',
-                        'location' => 'Frankfurt',
-                        'region'   => 'Europe',
-                        'sequence' => 1
+    subtest 'mt5 swap_free demo servers' => sub {
+        my $mt5      = BOM::Config::MT5->new();
+        my $expected = {
+            'demo' => {
+                'all' => [{
+                        'geolocation' => {
+                            'group'    => 'all',
+                            'location' => 'Frankfurt',
+                            'region'   => 'Europe',
+                            'sequence' => 1
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp',, 'all'],
+                        'recommended'        => 1,
+                        'id'                 => 'p01_ts03',
+                        'disabled'           => 0,
+                        'environment'        => 'Deriv-Demo',
                     },
-                    'supported_accounts' => ['all'],
-                    'recommended'        => 1,
-                    'id'                 => 'p01_ts04',
-                    'disabled'           => 0,
-                    'environment'        => 'Deriv-Demo',
-                },
-            ],
-            'financial' => [{
-                    'geolocation' => {
-                        'sequence' => 1,
-                        'region'   => 'Europe',
-                        'location' => 'Ireland',
-                        group      => 'all',
-                    },
-                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
-                    'recommended'        => 1,
-                    'id'                 => 'p01_ts01',
-                    'disabled'           => 0,
-                    'environment'        => 'Deriv-Demo'
-                },
-                {
-                    'geolocation' => {
-                        'sequence' => 1,
-                        'region'   => 'Europe',
-                        'location' => 'Frankfurt',
-                        group      => 'all',
-                    },
-                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
-                    'recommended'        => 0,
-                    'id'                 => 'p01_ts03',
-                    'disabled'           => 0,
-                    'environment'        => 'Deriv-Demo'
-                },
-                {
-                    'geolocation' => {
-                        'sequence' => 1,
-                        'region'   => 'US East',
-                        'location' => 'N. Virginia',
-                        group      => 'all',
-                    },
-                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
-                    'recommended'        => 0,
-                    'id'                 => 'p01_ts02',
-                    'disabled'           => 0,
-                    'environment'        => 'Deriv-Demo'
-                },
-            ],
-            'synthetic' => [{
-                    'geolocation' => {
-                        'sequence' => 1,
-                        'region'   => 'Europe',
-                        'location' => 'Ireland',
-                        group      => 'all',
-                    },
-                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
-                    'recommended'        => 1,
-                    'id'                 => 'p01_ts01',
-                    'disabled'           => 0,
-                    'environment'        => 'Deriv-Demo',
-                },
-                {
-                    'geolocation' => {
-                        'sequence' => 1,
-                        'region'   => 'Europe',
-                        'location' => 'Frankfurt',
-                        group      => 'all',
-                    },
-                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
-                    'recommended'        => 0,
-                    'id'                 => 'p01_ts03',
-                    'disabled'           => 0,
-                    'environment'        => 'Deriv-Demo'
-                },
-                {
-                    'geolocation' => {
-                        'sequence' => 1,
-                        'region'   => 'US East',
-                        'location' => 'N. Virginia',
-                        group      => 'all',
-                    },
-                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
-                    'recommended'        => 0,
-                    'id'                 => 'p01_ts02',
-                    'disabled'           => 0,
-                    'environment'        => 'Deriv-Demo'
-                }]}};
-    my $result = $mt5->server_by_country('id', {group_type => 'demo'});
+                ],
+                'financial' => [],
+                'synthetic' => []}};
+        my $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'demo',
+                sub_account_category => 'swap_free'
+            });
 
-    is_deeply($result, $expected, 'output expected for demo server on Indonesia');
+        is_deeply($result, $expected, 'output expected for swap_free account demo server on Indonesia');
 
-    $result = $mt5->server_by_country(
-        'id',
-        {
-            group_type  => 'demo',
-            market_type => 'all'
-        });
-    is_deeply($result->{demo}{all}, $expected->{demo}{all}, 'output expected for demo derivez server on Indonesia');
+        delete $expected->{demo}{all};
+        delete $expected->{demo}{financial};
+        $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'demo',
+                market_type          => 'synthetic',
+                sub_account_category => 'swap_free'
+            });
 
-    delete $expected->{demo}{all};
-    delete $expected->{demo}{financial};
-    $result = $mt5->server_by_country(
-        'id',
-        {
-            group_type  => 'demo',
-            market_type => 'synthetic'
-        });
+        is_deeply($result, $expected, 'output expected for swap_free account demo synthetic server on Indonesia');
+    };
 
-    is_deeply($result, $expected, 'output expected for demo synthetic server on Indonesia');
-    $expected = {
-        'real' => {
-            'all' => [{
-                    'disabled'    => 0,
-                    'environment' => 'Deriv-Server-02',
-                    'geolocation' => {
-                        'group'    => 'africa_derivez',
-                        'location' => 'South Africa',
-                        'region'   => 'Africa',
-                        'sequence' => 2
+    subtest 'mt5 standard demo servers' => sub {
+        my $mt5      = BOM::Config::MT5->new();
+        my $expected = {
+            'demo' => {
+                'all'       => [],
+                'financial' => [{
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Ireland',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 1,
+                        'id'                 => 'p01_ts01',
+                        'disabled'           => 0,
+                        'environment'        => 'Deriv-Demo'
                     },
-                    'id'                 => 'p02_ts01',
-                    'recommended'        => 1,
-                    'supported_accounts' => ['all']
-                },
-            ],
-            'financial' => [{
-                    'environment' => 'Deriv-Server',
-                    'disabled'    => 0,
-                    'geolocation' => {
-                        'sequence' => 1,
-                        'region'   => 'Europe',
-                        'location' => 'Ireland',
-                        group      => 'all',
+                    {
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Frankfurt',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 0,
+                        'id'                 => 'p01_ts03',
+                        'disabled'           => 0,
+                        'environment'        => 'Deriv-Demo'
                     },
-                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
-                    'recommended'        => 1,
-                    'id'                 => 'p01_ts01'
-                }
-            ],
-            'synthetic' => [{
-                    'recommended' => 1,
-                    'id'          => 'p01_ts03',
-                    'geolocation' => {
-                        'sequence' => 1,
-                        'region'   => 'Asia',
-                        'location' => 'Singapore',
-                        group      => 'asia_synthetic'
+                    {
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'US East',
+                            'location' => 'N. Virginia',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 0,
+                        'id'                 => 'p01_ts02',
+                        'disabled'           => 0,
+                        'environment'        => 'Deriv-Demo'
                     },
-                    'supported_accounts' => ['gaming'],
-                    'environment'        => 'Deriv-Server',
-                    'disabled'           => 0
-                },
-                {
-                    'disabled'           => 0,
-                    'environment'        => 'Deriv-Server',
-                    'recommended'        => 0,
-                    'id'                 => 'p01_ts02',
-                    'supported_accounts' => ['gaming'],
-                    'geolocation'        => {
-                        'sequence' => 1,
-                        'location' => 'South Africa',
-                        'region'   => 'Africa',
-                        group      => 'africa_synthetic'
+                ],
+                'synthetic' => [{
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Ireland',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 1,
+                        'id'                 => 'p01_ts01',
+                        'disabled'           => 0,
+                        'environment'        => 'Deriv-Demo',
+                    },
+                    {
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Frankfurt',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 0,
+                        'id'                 => 'p01_ts03',
+                        'disabled'           => 0,
+                        'environment'        => 'Deriv-Demo'
+                    },
+                    {
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'US East',
+                            'location' => 'N. Virginia',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 0,
+                        'id'                 => 'p01_ts02',
+                        'disabled'           => 0,
+                        'environment'        => 'Deriv-Demo'
+                    }]}};
+        my $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'demo',
+                sub_account_category => 'standard'
+            });
+
+        is_deeply($result, $expected, 'output expected for standard mt5 account demo server on Indonesia');
+
+        delete $expected->{demo}{all};
+        delete $expected->{demo}{financial};
+        $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'demo',
+                market_type          => 'synthetic',
+                sub_account_category => 'standard'
+            });
+
+        is_deeply($result, $expected, 'output expected for demo synthetic server on Indonesia');
+    };
+
+    subtest 'mt5 swap_free real servers' => sub {
+        my $mt5      = BOM::Config::MT5->new();
+        my $expected = {
+            'real' => {
+                'all' => [{
+                        'environment' => 'Deriv-Server',
+                        'disabled'    => 0,
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Ireland',
+                            'group'    => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 1,
+                        'id'                 => 'p01_ts01'
+                    },
+                    {
+                        'disabled'    => 0,
+                        'environment' => 'Deriv-Server-02',
+                        'geolocation' => {
+                            'group'    => 'africa_derivez',
+                            'location' => 'South Africa',
+                            'region'   => 'Africa',
+                            'sequence' => 2
+                        },
+                        'id'                 => 'p02_ts01',
+                        'recommended'        => 0,
+                        'supported_accounts' => ['all']
+                    },
+                ],
+                'financial' => [],
+                'synthetic' => []}};
+
+        my $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'real',
+                sub_account_category => 'swap_free'
+            });
+
+        is_deeply($result, $expected, 'output expected for swap_free account real server on Indonesia');
+
+        delete $expected->{real}{all};
+        delete $expected->{real}{financial};
+        $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'real',
+                market_type          => 'synthetic',
+                sub_account_category => 'swap_free'
+            });
+        is_deeply($result, $expected, 'output expected for swap_free account real synthetic server on Indonesia');
+
+    };
+
+    subtest 'mt5 standard real server' => sub {
+        my $mt5      = BOM::Config::MT5->new();
+        my $expected = {
+            'real' => {
+                'all'       => [],
+                'financial' => [{
+                        'environment' => 'Deriv-Server',
+                        'disabled'    => 0,
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Ireland',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 1,
+                        'id'                 => 'p01_ts01'
                     }
-                },
-                {
-                    'supported_accounts' => ['gaming'],
-                    'geolocation'        => {
-                        'sequence' => 2,
-                        'location' => 'South Africa',
-                        'region'   => 'Africa',
-                        group      => 'africa_synthetic'
-                    },
-                    'id'          => 'p02_ts02',
-                    'recommended' => 0,
-                    'disabled'    => 1,
-                    'environment' => 'Deriv-Server-02'
-                },
-                {
-                    'environment' => 'Deriv-Server',
-                    'disabled'    => 0,
-                    'geolocation' => {
-                        'region'   => 'Europe',
-                        'location' => 'Frankfurt',
-                        'sequence' => 1,
-                        group      => 'europe_synthetic'
-                    },
-                    'supported_accounts' => ['gaming'],
-                    'recommended'        => 0,
-                    'id'                 => 'p01_ts04'
-                }]}};
+                ],
+                'synthetic' => [{
+                        'recommended' => 1,
+                        'id'          => 'p01_ts03',
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Asia',
+                            'location' => 'Singapore',
+                            group      => 'asia_synthetic'
+                        },
+                        'supported_accounts' => ['gaming'],
+                        'environment'        => 'Deriv-Server',
+                        'disabled'           => 0
+                    }]}};
 
-    $result = $mt5->server_by_country('id', {group_type => 'real'});
+        my $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'real',
+                sub_account_category => 'standard'
+            });
 
-    is_deeply($result, $expected, 'output expected for real server on Indonesia');
+        is_deeply($result, $expected, 'output expected for real server on Indonesia');
 
-    $result = $mt5->server_by_country(
-        'id',
-        {
-            group_type  => 'real',
-            market_type => 'all'
-        });
+        $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'real',
+                market_type          => 'all',
+                sub_account_category => 'standard'
+            });
 
-    is_deeply($result->{real}{all}, $expected->{real}{all}, 'output expected for demo derivez server on Indonesia');
+        is_deeply($result->{real}{all}, $expected->{real}{all}, 'output expected for demo derivez server on Indonesia');
 
-    delete $expected->{real}{all};
-    delete $expected->{real}{financial};
-    $result = $mt5->server_by_country(
-        'id',
-        {
-            group_type  => 'real',
-            market_type => 'synthetic'
-        });
-    is_deeply($result, $expected, 'output expected for real synthetic server on Indonesia');
+        delete $expected->{real}{all};
+        delete $expected->{real}{financial};
+        $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type           => 'real',
+                market_type          => 'synthetic',
+                sub_account_category => 'standard'
+            });
+        is_deeply($result, $expected, 'output expected for real synthetic server on Indonesia');
+    };
 };
 
 subtest 'available_groups' => sub {
@@ -476,12 +520,12 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 96,
+            count   => 100,
             comment => 'real groups'
         },
         {
             filter  => {server_type => 'demo'},
-            count   => 28,
+            count   => 29,
             comment => 'demo groups'
         },
         {
@@ -489,7 +533,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'svg'
             },
-            count   => 41,
+            count   => 45,
             comment => 'real svg groups'
         },
         {
@@ -515,7 +559,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'svg'
             },
-            count   => 10,
+            count   => 11,
             comment => 'demo svg groups'
         },
         {
@@ -862,7 +906,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'all'
             },
-            count   => 1,
+            count   => 2,
             comment => 'demo svg derivez groups'
         },
         {
@@ -871,7 +915,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'all'
             },
-            count   => 3,
+            count   => 7,
             comment => 'real svg derivez groups'
         },
 

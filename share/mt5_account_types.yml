@@ -3,6 +3,7 @@ demo\p01_ts01\financial\labuan_stp_usd:
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts01
 
 demo\p01_ts01\financial\bvi_stp_usd:
@@ -10,6 +11,7 @@ demo\p01_ts01\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts01
 
 demo\p01_ts01\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
@@ -17,6 +19,7 @@ demo\p01_ts01\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 demo\p01_ts01\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 demo\p01_ts01\financial\maltainvest_std_usd: *demo_maltainvest_financial_financial
@@ -26,6 +29,7 @@ demo\p01_ts01\financial\svg_std_usd: &demo_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 demo\p01_ts01\financial\svg_std-lim_usd: *demo_svg_financial_financial
 
@@ -34,6 +38,7 @@ demo\p01_ts01\financial\vanuatu_std_usd:
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 
 demo\p01_ts01\synthetic\svg_std_usd:
@@ -41,6 +46,7 @@ demo\p01_ts01\synthetic\svg_std_usd:
   landing_company_short: svg
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 
 demo\p01_ts01\synthetic\bvi_std_usd: 
@@ -48,6 +54,7 @@ demo\p01_ts01\synthetic\bvi_std_usd:
   landing_company_short: bvi
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 
 demo_bvi_financial_financial_stp: &demo_bvi_financial_financial_stp
@@ -55,6 +62,7 @@ demo_bvi_financial_financial_stp: &demo_bvi_financial_financial_stp
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts01
 demo\bvi_financial_stp: *demo_bvi_financial_financial_stp
 demo01\financial\bvi_stp_usd: *demo_bvi_financial_financial_stp
@@ -66,6 +74,7 @@ demo\p01_ts02\financial\labuan_stp_usd:
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts02
 
 demo\p01_ts02\financial\bvi_stp_usd:
@@ -73,6 +82,7 @@ demo\p01_ts02\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts02
 
 demo\p01_ts02\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
@@ -80,6 +90,7 @@ demo\p01_ts02\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 demo\p01_ts02\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 
@@ -88,6 +99,7 @@ demo\p01_ts02\financial\svg_std_usd: &demo_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 demo\p01_ts02\financial\svg_std-lim_usd: *demo_svg_financial_financial
 
@@ -96,6 +108,7 @@ demo\p01_ts02\financial\vanuatu_std_usd:
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 
 demo\p01_ts02\synthetic\svg_std_usd:
@@ -103,6 +116,7 @@ demo\p01_ts02\synthetic\svg_std_usd:
   landing_company_short: svg
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 
 demo\p01_ts02\financial\bvi_stp_usd:
@@ -110,6 +124,7 @@ demo\p01_ts02\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts02
   
 demo\p01_ts02\synthetic\bvi_std_usd: 
@@ -117,6 +132,7 @@ demo\p01_ts02\synthetic\bvi_std_usd:
   landing_company_short: bvi
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 
 # Demo trade server 03
@@ -126,6 +142,7 @@ demo\p01_ts03\financial\labuan_stp_usd:
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts03
 
 demo\p01_ts03\financial\bvi_stp_usd:
@@ -133,6 +150,7 @@ demo\p01_ts03\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts03
 
 demo\p01_ts03\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
@@ -140,6 +158,7 @@ demo\p01_ts03\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 demo\p01_ts03\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 
@@ -148,6 +167,7 @@ demo\p01_ts03\financial\svg_std_usd: &demo_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 demo\p01_ts03\financial\svg_std-lim_usd: *demo_svg_financial_financial
 
@@ -156,6 +176,7 @@ demo\p01_ts03\financial\vanuatu_std_usd:
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 
 demo\p01_ts03\synthetic\svg_std_usd:
@@ -163,6 +184,7 @@ demo\p01_ts03\synthetic\svg_std_usd:
   landing_company_short: svg
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 
 demo\p01_ts03\financial\bvi_stp_usd:
@@ -170,6 +192,7 @@ demo\p01_ts03\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts03
 
 # Real trade server
@@ -179,6 +202,7 @@ real\p01_ts01\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts01
 
 real\p01_ts02\financial\bvi_stp_usd:
@@ -186,6 +210,7 @@ real\p01_ts02\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts02
 
 real\p01_ts03\financial\bvi_stp_usd:
@@ -193,6 +218,7 @@ real\p01_ts03\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts03
 
 real\p01_ts04\financial\bvi_stp_usd:
@@ -200,6 +226,7 @@ real\p01_ts04\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts04
 
 real\p02_ts02\financial\bvi_stp_usd:
@@ -207,6 +234,7 @@ real\p02_ts02\financial\bvi_stp_usd:
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p02_ts02
 
 real\p01_ts01\financial\labuan_stp_usd:
@@ -214,6 +242,7 @@ real\p01_ts01\financial\labuan_stp_usd:
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts01
 
 real\p01_ts02\financial\labuan_stp_usd:
@@ -221,6 +250,7 @@ real\p01_ts02\financial\labuan_stp_usd:
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts02
 
 real\p01_ts03\financial\labuan_stp_usd:
@@ -228,6 +258,7 @@ real\p01_ts03\financial\labuan_stp_usd:
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts03
 
 real\p01_ts04\financial\labuan_stp_usd:
@@ -235,6 +266,7 @@ real\p01_ts04\financial\labuan_stp_usd:
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p01_ts04
 
 real\p02_ts02\financial\labuan_stp_usd:
@@ -242,6 +274,7 @@ real\p02_ts02\financial\labuan_stp_usd:
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
+  sub_account_category: stp
   server: p02_ts02
 
 real\p01_ts01\financial\maltainvest_std-hr_eur: &real_maltainvest_financial_financial
@@ -249,6 +282,7 @@ real\p01_ts01\financial\maltainvest_std-hr_eur: &real_maltainvest_financial_fina
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 real\p01_ts01\financial\maltainvest_std-hr_gbp: *real_maltainvest_financial_financial
 real\p01_ts01\financial\maltainvest_std-hr_usd: *real_maltainvest_financial_financial
@@ -258,6 +292,7 @@ real\p01_ts02\financial\maltainvest_std-hr_gbp: &real_p01ts02_maltainvest_financ
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 real\p01_ts02\financial\maltainvest_std-hr_eur: *real_p01ts02_maltainvest_financial_financial
 real\p01_ts02\financial\maltainvest_std-hr_usd: *real_p01ts02_maltainvest_financial_financial
@@ -267,6 +302,7 @@ real\p01_ts03\financial\maltainvest_std-hr_gbp: &real_p01ts03_maltainvest_financ
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 real\p01_ts03\financial\maltainvest_std-hr_eur: *real_p01ts03_maltainvest_financial_financial
 real\p01_ts03\financial\maltainvest_std-hr_usd: *real_p01ts03_maltainvest_financial_financial
@@ -276,6 +312,7 @@ real\p01_ts04\financial\maltainvest_std-hr_gbp: &real_p01ts04_maltainvest_financ
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts04
 real\p01_ts04\financial\maltainvest_std-hr_eur: *real_p01ts04_maltainvest_financial_financial
 real\p01_ts04\financial\maltainvest_std-hr_usd: *real_p01ts04_maltainvest_financial_financial
@@ -285,6 +322,7 @@ real\p02_ts02\financial\maltainvest_std-hr_gbp: &real_p02ts02_maltainvest_financ
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p02_ts02
 real\p02_ts02\financial\maltainvest_std-hr_eur: *real_p02ts02_maltainvest_financial_financial
 real\p02_ts02\financial\maltainvest_std-hr_usd: *real_p02ts02_maltainvest_financial_financial
@@ -294,6 +332,7 @@ real\p01_ts01\financial\svg_std-hr_usd: &real_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 real\p01_ts01\financial\svg_std_usd: *real_svg_financial_financial
 real\p01_ts01\financial\svg_std-lim_usd: *real_svg_financial_financial
@@ -303,6 +342,7 @@ real\p01_ts02\financial\svg_std-hr_usd: &real_p01ts02_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 real\p01_ts02\financial\svg_std_usd: *real_p01ts02_svg_financial_financial
 
@@ -311,6 +351,7 @@ real\p01_ts03\financial\svg_std-hr_usd: &real_p01ts03_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 real\p01_ts03\financial\svg_std_usd: *real_p01ts03_svg_financial_financial
 
@@ -319,6 +360,7 @@ real\p01_ts04\financial\svg_std-hr_usd: &real_p01ts04_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts04
 real\p01_ts04\financial\svg_std_usd: *real_p01ts04_svg_financial_financial
 
@@ -327,6 +369,7 @@ real\p02_ts02\financial\svg_std-hr_usd: &real_p02ts02_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p02_ts02
 real\p02_ts02\financial\svg_std_usd: *real_p02ts02_svg_financial_financial
 
@@ -335,6 +378,7 @@ real\p01_ts01\financial\vanuatu_std-hr_usd:
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 
 real\p01_ts01\financial\svg_std-ab_usd: &real_svg_financial_booking
@@ -342,6 +386,7 @@ real\p01_ts01\financial\svg_std-ab_usd: &real_svg_financial_booking
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 real\p01_ts01\financial\svg_std-ba_usd: *real_svg_financial_booking
 
@@ -350,6 +395,7 @@ real\p01_ts01\financial\bvi_std-hr_usd: &real_bvi_financial_financial
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 real\p01_ts01\financial\bvi_std_usd: *real_bvi_financial_financial
 
@@ -358,6 +404,7 @@ real\p01_ts01\financial\bvi_std-ab_usd: &real_bvi_financial_booking
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 real\p01_ts01\financial\bvi_std-ba_usd: *real_bvi_financial_booking
 
@@ -366,6 +413,7 @@ real\p01_ts01\synthetic\bvi_std_usd: &real_p01ts01_bvi_synthetics_financial
   landing_company_short: bvi
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 
 real\p01_ts02\synthetic\bvi_std_usd: &real_p01ts02_bvi_synthetics_financial
@@ -373,6 +421,7 @@ real\p01_ts02\synthetic\bvi_std_usd: &real_p01ts02_bvi_synthetics_financial
   landing_company_short: bvi
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 
 real\p01_ts03\synthetic\bvi_std_usd: &real_p01ts03_bvi_synthetics_financial
@@ -380,6 +429,7 @@ real\p01_ts03\synthetic\bvi_std_usd: &real_p01ts03_bvi_synthetics_financial
   landing_company_short: bvi
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 
 real\p01_ts04\synthetic\bvi_std_usd: &real_p01ts04_bvi_synthetics_financial
@@ -387,6 +437,7 @@ real\p01_ts04\synthetic\bvi_std_usd: &real_p01ts04_bvi_synthetics_financial
   landing_company_short: bvi
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts04
 
 real\p02_ts02\synthetic\bvi_std_usd: &real_p02ts02_bvi_synthetics_financial
@@ -394,6 +445,7 @@ real\p02_ts02\synthetic\bvi_std_usd: &real_p02ts02_bvi_synthetics_financial
   landing_company_short: bvi
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p02_ts02
 
 real\p01_ts01\synthetic\bvi_std-hr_usd: *real_p01ts01_bvi_synthetics_financial
@@ -448,6 +500,7 @@ real\p01_ts01\synthetic\svg_std-hr_usd: &real_svg_gaming_financial
   landing_company_short: svg
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 real\p01_ts01\synthetic\svg_std_usd\01: *real_svg_gaming_financial
 real\p01_ts01\synthetic\svg_std_usd\02: *real_svg_gaming_financial
@@ -459,6 +512,7 @@ real\p01_ts02\synthetic\svg_std-hr_usd: &real_p01ts02_svg_gaming_financial
   landing_company_short: svg
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 real\p01_ts02\synthetic\svg_std_usd\01: *real_p01ts02_svg_gaming_financial
 real\p01_ts02\synthetic\svg_std_usd\02: *real_p01ts02_svg_gaming_financial
@@ -470,6 +524,7 @@ real\p01_ts03\synthetic\svg_std-hr_usd: &real_p01ts03_svg_gaming_financial
   landing_company_short: svg
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 real\p01_ts03\synthetic\svg_std_usd\01: *real_p01ts03_svg_gaming_financial
 real\p01_ts03\synthetic\svg_std_usd\02: *real_p01ts03_svg_gaming_financial
@@ -481,6 +536,7 @@ real\p01_ts04\synthetic\svg_std-hr_usd: &real_p01ts04_svg_gaming_financial
   landing_company_short: svg
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts04
 real\p01_ts04\synthetic\svg_std_usd\01: *real_p01ts04_svg_gaming_financial
 real\p01_ts04\synthetic\svg_std_usd\02: *real_p01ts04_svg_gaming_financial
@@ -492,6 +548,7 @@ real\p02_ts02\synthetic\svg_std-hr_usd: &real_p02ts02_svg_gaming_financial
   landing_company_short: svg
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p02_ts02
 real\p02_ts02\synthetic\svg_std_usd\01: *real_p02ts02_svg_gaming_financial
 real\p02_ts02\synthetic\svg_std_usd\02: *real_p02ts02_svg_gaming_financial
@@ -505,6 +562,7 @@ real\p02_ts02\synthetic\seychelles_ib_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p02_ts02
 
 real\p01_ts02\synthetic\seychelles_ibt_usd:
@@ -512,6 +570,7 @@ real\p01_ts02\synthetic\seychelles_ibt_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 
 real\p01_ts03\synthetic\seychelles_ibt_usd:
@@ -519,6 +578,7 @@ real\p01_ts03\synthetic\seychelles_ibt_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 
 real\p01_ts04\synthetic\seychelles_ibt_usd:
@@ -526,6 +586,7 @@ real\p01_ts04\synthetic\seychelles_ibt_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts04
 
 real\p02_ts02\synthetic\seychelles_ibt_usd:
@@ -533,13 +594,18 @@ real\p02_ts02\synthetic\seychelles_ibt_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p02_ts02
+
+# DerivEZ Group
 
 real\p02_ts01\all\svg_ez_usd: &real_p02_ts01_svg_derivez
   account_type: real
   landing_company_short: svg
   market_type: all
   server: p02_ts01
+  sub_account_type: derivez
+  sub_account_category: ''
 real\p02_ts01\all\svg_ez-hr_usd: *real_p02_ts01_svg_derivez
 
 demo\p01_ts04\all\svg_ez_usd: &demo_p01_ts04_svg_derivez
@@ -547,4 +613,48 @@ demo\p01_ts04\all\svg_ez_usd: &demo_p01_ts04_svg_derivez
   landing_company_short: svg
   market_type: all
   server: p01_ts04
+  sub_account_type: derivez
+  sub_account_category: ''
 real\p01_ts04\all\svg_ez-hr_usd: *demo_p01_ts04_svg_derivez
+
+# Mt5 standard Swap Free Group
+
+real\p01_ts01\all\svg_std-sf_usd:
+  account_type: real
+  landing_company_short: svg
+  market_type: all
+  sub_account_type: standard
+  sub_account_category: swap_free
+  server: p01_ts01
+
+real\p01_ts01\all\svg_std-sf-hr_usd:
+  account_type: real
+  landing_company_short: svg
+  market_type: all
+  sub_account_type: standard
+  sub_account_category: swap_free_high_risk
+  server: p01_ts01
+
+real\p02_ts01\all\svg_std-sf_usd:
+  account_type: real
+  landing_company_short: svg
+  market_type: all
+  sub_account_type: standard
+  sub_account_category: swap_free
+  server: p02_ts01
+
+real\p02_ts01\all\svg_std-sf-hr_usd:
+  account_type: real
+  landing_company_short: svg
+  market_type: all
+  sub_account_type: standard
+  sub_account_category: swap_free_high_risk
+  server: p02_ts01
+
+demo\p01_ts03\all\svg_std-sf_usd:
+  account_type: demo
+  landing_company_short: svg
+  market_type: all
+  sub_account_type: standard
+  sub_account_category: swap_free
+  server: p01_ts03

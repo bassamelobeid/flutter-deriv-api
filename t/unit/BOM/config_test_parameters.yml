@@ -754,9 +754,14 @@
       demo:
         ad: &mt5_routing_details
           financial:
-            servers: []
+            servers: 
+              standard: []
           synthetic:
-            servers: []
+            servers: 
+              standard: []
+          all:
+            servers: 
+              standard: []
         af: *mt5_routing_details
         ag: *mt5_routing_details
         ai: *mt5_routing_details

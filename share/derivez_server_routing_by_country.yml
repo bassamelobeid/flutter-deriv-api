@@ -2,14 +2,10 @@
 demo:
   gb: &demo_financial_only # United Kingdom
     synthetic:
-      servers:
+      servers: 
         standard: []
     financial:
-      servers:
-        standard:
-          - 'p01_ts01'
-          - 'p01_ts02'
-          - 'p01_ts03'
+        standard: []
     all:
       servers:
         standard: []
@@ -26,21 +22,14 @@ demo:
   cy: &demo # Cyprus
     synthetic:
       servers:
-        standard:
-          - 'p01_ts01'
-          - 'p01_ts02'
-          - 'p01_ts03'
+        standard: []
     financial:
       servers:
-        standard:
-          - 'p01_ts01'
-          - 'p01_ts02'
-          - 'p01_ts03'
+        standard: []
     all:
       servers:
-        standard: []
-        swap_free:
-          - 'p01_ts03'
+        standard: 
+          - 'p01_ts04'
   cz: *demo # Czechia
   dk: *demo # Denmark
   ee: *demo # Estonia
@@ -60,10 +49,7 @@ demo:
   be: # Belgium
     synthetic:
       servers:
-        standard:
-          - 'p01_ts01'
-          - 'p01_ts02'
-          - 'p01_ts03'
+        standard: []
     financial:
       servers:
         standard: []
@@ -288,17 +274,14 @@ real:
         standard: []
     financial:
       servers:
-        standard:
-          - 'p01_ts01'
+        standard: []
     all:
       servers:
         standard: []
   im: &no_mt5_permission # Isle of Man
     synthetic:
-      servers:
         standard: []
     financial:
-      servers:
         standard: []
     all:
       servers:
@@ -306,17 +289,13 @@ real:
   at: &p01_ts01 # Austria
     synthetic:
       servers:
-        standard:
-          - 'p01_ts01'
+        standard: []
     financial:
       servers:
-        standard:
-          - 'p01_ts01'
+        standard: []
     all:
       servers:
-        standard: []
-        swap_free:
-          - 'p01_ts01'
+        standard:
           - 'p02_ts01'
   bg: *p01_ts01 # Bulgaria
   cy: *p01_ts01 # Cyprus
@@ -339,8 +318,7 @@ real:
   be:
     synthetic:
       servers:
-        standard:
-          - 'p01_ts01'
+        standard: []
     financial:
       servers:
         standard: []
@@ -360,18 +338,13 @@ real:
   ao: &p01_ts02 # Angola
     synthetic:
       servers:
-        standard:
-          - 'p01_ts02'
-          - 'p02_ts02'
+        standard: []
     financial:
       servers:
-        standard:
-          - 'p01_ts01'
+        standard: []
     all:
       servers:
-        standard: []
-        swap_free:
-          - 'p01_ts01'
+        standard: 
           - 'p02_ts01'
   bj: *p01_ts02 # Benin
   bf: *p01_ts02 # Burkina Faso
@@ -422,17 +395,13 @@ real:
   pk: &p01_ts03 # Pakistan
     synthetic:
       servers:
-        standard:
-          - 'p01_ts03'
+        standard: []
     financial:
       servers:
-        standard:
-          - 'p01_ts01'
+        standard: []
     all:
       servers:
-        standard: []
-        swap_free:
-          - 'p01_ts01'
+        standard: 
           - 'p02_ts01'
   in: *p01_ts03 # India
   nz: *p01_ts03 # New Zealand
@@ -462,17 +431,13 @@ real:
   ar: &p01_ts04 # Argentina
     synthetic:
       servers:
-        standard:
-          - 'p01_ts04'
+        standard: []
     financial:
       servers:
-        standard:
-          - 'p01_ts01'
+        standard: []
     all:
       servers:
-        standard: []
-        swap_free:
-          - 'p01_ts01'
+        standard:
           - 'p02_ts01'
   bo: *p01_ts04 # Bolivia
   br: *p01_ts04 # Brazil

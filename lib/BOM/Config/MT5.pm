@@ -144,7 +144,7 @@ Example:
     $self->server_by_country('id');
 
     # To get all real trade servers for Indonesia
-    $self->server_by_country('id', {group_type => 'real'});
+    $self->server_by_country('id', {group_type => 'real', sub_account_category => 'standard'});
 
 Returns a hash reference with server info for particular group / country.
 
@@ -156,14 +156,15 @@ sub server_by_country {
     die "country code is requird" unless $country_code;
 
     my $routing_config = $self->routing_config;
-    my ($group_type, $market_type) = @{$args}{'group_type', 'market_type'};
+    my ($group_type, $market_type, $sub_account_category) = @{$args}{'group_type', 'market_type', 'sub_account_category'};
     my $servers;
 
     foreach my $group (keys %$routing_config) {
         next if defined $group_type and $group_type ne $group;
         foreach my $market (keys %{$routing_config->{$group}{$country_code}}) {
             next if defined $market_type and $market_type ne $market;
-            $servers->{$group}{$market} = $self->_generate_server_info($group, $routing_config->{$group}{$country_code}{$market}{servers});
+            $servers->{$group}{$market} =
+                $self->_generate_server_info($group, $routing_config->{$group}{$country_code}{$market}{servers}{$sub_account_category});
         }
     }
 
@@ -185,7 +186,7 @@ sub _generate_server_info {
     my @response;
 
     foreach my $server (@$servers) {
-        my $supported_accounts = (any { $_ eq $server } @exclusive_servers) ? ['gaming', 'financial', 'financial_stp'] : ['gaming'];
+        my $supported_accounts = (any { $_ eq $server } @exclusive_servers) ? ['gaming', 'financial', 'financial_stp', 'all'] : ['gaming'];
         $supported_accounts = ['all'] if (($server eq 'p01_ts04' and $group_type eq "demo") or ($server eq 'p02_ts01'));
 
         push @response, {
@@ -394,6 +395,29 @@ sub available_groups {
 
     return grep { $_ =~ /^$params->{server_type}\\$params->{server_key}\\$params->{market_type}\\$params->{company}_$params->{sub_group}/ }
         sort { $a cmp $b } keys $self->groups_config->%*;
+}
+
+=head2 get_server_webapi_info
+
+Get the server webapi infomation from mt5webapi yaml file
+
+=cut
+
+sub get_server_webapi_info {
+    my $self = shift;
+
+    my %servers = ();
+    my $config  = $self->webapi_config->{$self->{group_type}};
+
+    # [Note] p01_ts01 is the only trade server with financial trading setup. Having it in other region that is further away from our feed introduces latency.
+    # some regulatory body require us to have trade server setup within their jurisdiction
+
+    # We are currently using mt5_server_routing_by_country.yml as the source of truth for the available server
+    foreach my $server (@{$self->{server_type}}) {
+        $servers{$server} = $config->{$server};
+    }
+
+    return \%servers;
 }
 
 1;
