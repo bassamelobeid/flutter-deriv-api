@@ -365,6 +365,17 @@ subtest 'trading_platform_available_accounts' => sub {
 
     my $expected_resp = [{
             'name'             => 'Deriv (SVG) LLC',
+            'market_type'      => 'all',
+            'shortcode'        => 'svg',
+            'sub_account_type' => 'swap_free',
+            'requirements'     => {
+                'withdrawal' => ['address_city', 'address_line_1'],
+                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
+            },
+            'linkable_landing_companies' => ['svg'],
+        },
+        {
+            'name'             => 'Deriv (SVG) LLC',
             'market_type'      => 'financial',
             'shortcode'        => 'svg',
             'sub_account_type' => 'standard',
@@ -476,6 +487,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'sub_account_type'           => 'standard',
             'linkable_landing_companies' => ['maltainvest'],
         }];
+
     $resp = $t->await::trading_platform_available_accounts({
         trading_platform_available_accounts => 1,
         platform                            => 'mt5'
