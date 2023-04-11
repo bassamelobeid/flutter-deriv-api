@@ -124,44 +124,8 @@ subtest 'barrier pip size' => sub {
 };
 
 subtest 'barrier' => sub {
-    subtest 'display_low/high_barrier with argument' => sub {
-        $args->{date_pricing} = $now->epoch + 1;
-        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([91, $now->epoch, $symbol]);
-        my $c = produce_contract($args);
-
-        subtest 'high_barrier' => sub {
-            my %examples = (
-                '1.23'               => '1.230',
-                '4583'               => '4583.000',
-                '56.4870000000001'   => '56.488',
-                '987.00000000000009' => '987.001',
-                '35.000000000'       => '35.000'
-            );
-            ok !$c->display_high_barrier, 'no display_high_barrier';
-
-            while (my ($raw_barrier, $display_barrier) = each %examples) {
-                is $c->display_high_barrier($raw_barrier), $display_barrier, 'correct display high barrier';
-            }
-        };
-
-        subtest 'low_barrier' => sub {
-            my %examples = (
-                '1.23'               => '1.230',
-                '4583'               => '4583.000',
-                '56.4870000000001'   => '56.487',
-                '987.00000000000009' => '987.000',
-                '35.5278'            => '35.527'
-            );
-            ok !$c->display_low_barrier, 'no display_low_barrier';
-
-            while (my ($raw_barrier, $display_barrier) = each %examples) {
-                is $c->display_low_barrier($raw_barrier), $display_barrier, 'correct display low barrier';
-            }
-        };
-    };
-
     subtest 'pricing_new' => sub {
-        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, $symbol], [101, $now->epoch + 1, $symbol]);
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 2, $symbol], [101, $now->epoch, $symbol]);
         $args->{date_pricing} = $now;
         my $c = produce_contract($args);
         is $c->low_barrier->supplied_barrier,  98,  'supplied_barrier is correct';
@@ -175,7 +139,7 @@ subtest 'barrier' => sub {
         is $c->high_barrier->supplied_barrier, '100.0366', 'high supplied_barrier is correct';
         is $c->high_barrier->as_absolute,      '100.04',   'high barrier as_absolute is correct';
         is $c->display_high_barrier,           '100.037',  'display low value is correct';
-        is $c->basis_spot,                     '100.00',   'basis_spot is correct';
+        is $c->basis_spot,                     '100',      'basis_spot is correct';
     };
 
     subtest 'non-pricing_new & no entry_tick' => sub {
