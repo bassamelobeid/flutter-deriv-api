@@ -46,6 +46,7 @@ subtest 'adverts' => sub {
                 method => 'method2',
                 tag    => 'm3'
             }])->%*;
+
     my %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
     my $advert = $client->p2p_advert_create(
@@ -807,6 +808,88 @@ subtest 'cross border ads' => sub {
         undef, 'can create buy order when pm is enabled in both countries');
 
     cmp_deeply([keys $order->{payment_method_details}->%*], [$method_ids{m3}], 'only enabled pm is returned in order details');
+
+};
+
+subtest 'ads visiblity to non-P2P clients' => sub {
+
+    my $client_id = BOM::Test::Helper::Client::create_client();
+    $client_id->account('USD');
+    $client_id->residence('id');
+
+    $runtime_config->payment_method_countries(
+        $json->encode({
+                method4 => {
+                    mode      => 'include',
+                    countries => ['id']
+                },
+                method5 => {
+                    mode      => 'include',
+                    countries => ['br']}}));
+
+    my $advertiser_id = BOM::Test::Helper::P2P::create_advertiser(
+        balance        => 1000,
+        client_details => {residence => 'id'});
+
+    my $advertiser_br = BOM::Test::Helper::P2P::create_advertiser(
+        balance        => 1000,
+        client_details => {residence => 'br'});
+
+    my (undef, $legacy_ad) = BOM::Test::Helper::P2P::create_advert(
+        client           => $advertiser_id,
+        amount           => 5,
+        min_order_amount => 2,
+        max_order_amount => 5,
+        type             => 'buy'
+    );
+
+    my $ads = $client_id->p2p_advert_list();
+    cmp_deeply([map { $_->{id} } @$ads], [$legacy_ad->{id}], 'legacy ad visible to non-p2p user due to matching local currency');
+
+    my (undef, $ad_id) = BOM::Test::Helper::P2P::create_advert(
+        client               => $advertiser_id,
+        amount               => 10,
+        min_order_amount     => 8,
+        max_order_amount     => 10,
+        type                 => 'buy',
+        rate                 => 2,
+        payment_method_names => ['method4']);
+
+    my (undef, $ad_br) = BOM::Test::Helper::P2P::create_advert(
+        client               => $advertiser_br,
+        type                 => 'buy',
+        payment_method_names => ['method5']);
+
+    $ads = $client_id->p2p_advert_list();
+
+    cmp_deeply(
+        [map { $_->{id} } $ads->@*],
+        bag($legacy_ad->{id}, $ad_id->{id}),
+        'non-P2P client can also view local ads in indonesia due to matching payment methods.'
+    );
+
+    $ads = $client_id->p2p_advert_list(payment_method => ['method4']);
+
+    cmp_deeply([map { $_->{id} } $ads->@*], [$ad_id->{id}], 'legacy ads not visible due to added filter for payment_method');
+
+    is $client_id->p2p_advert_list(payment_method => ['method5'])->@*, 0, 'No ads returned because no match for payment method';
+
+    is $client_id->p2p_advert_list(local_currency => 'BRL')->@*, 0, 'No ads returned because no match between payment method in BRL and ID';
+
+    $runtime_config->payment_method_countries(
+        $json->encode({
+                method4 => {
+                    mode      => 'include',
+                    countries => ['id']
+                },
+                method5 => {
+                    mode      => 'include',
+                    countries => ['br', 'id']}}));
+
+    $ads = $client_id->p2p_advert_list(local_currency => 'BRL');
+
+    cmp_deeply([map { $_->{id} } $ads->@*],
+        [$ad_br->{id}], "non-P2P client can also see ads from Brazil since method 5 is now available client's residence: Indonesia");
 
 };
 
