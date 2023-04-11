@@ -94,9 +94,12 @@ sub update_campaigns_and_snippets {
         push @snips_to_keep, @campaign_snips;
     }
 
+    # Delete all snippets, but:
+    #   - snippets in use (@snips_to_keep)
+    #   - snippets with 'custom_' prefix
     unless ($filter_campaign) {
         my %used_snips = map { $_ => 1 } @snips_to_keep;
-        for my $snip (grep { not exists $used_snips{$_} } keys %$current_snips) {
+        for my $snip (grep { (not exists $used_snips{$_}) && $_ !~ m/^custom_/ } keys %$current_snips) {
             $log->debugf("deleting unused snippet %s", $snip);
             $self->delete_snippet($snip);
         }
@@ -146,7 +149,7 @@ sub call_api {
     my $res = $self->http->request(@args);
     die "$res->{content}\n" unless $res->{success};
 
-    return $res->{headers}{'content-type'} =~ /application\/json/ ? decode_json_utf8($res->{content}) : 1;
+    return defined($res->{headers}{'content-type'}) && $res->{headers}{'content-type'} =~ /application\/json/ ? decode_json_utf8($res->{content}) : 1;
 }
 
 =head2 get_campaigns

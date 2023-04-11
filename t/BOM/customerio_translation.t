@@ -336,6 +336,21 @@ subtest 'update campaigns and snippets' => sub {
     $cio->update_campaigns_and_snippets;
 
     cmp_deeply(\%calls, {delete_snippet => 1}, 'unused snippets are deleted');
+
+    # Check if snippets with 'custom_' prefix are not being deleted
+    $campaign->{template} = {
+        type    => 'email',
+        subject => '',
+        body    => '',
+        layout  => ''
+    };
+
+    $mock_cio->redefine(get_snippets => {custom_123 => 'blah'});
+
+    %calls = ();
+    $cio->update_campaigns_and_snippets;
+
+    cmp_deeply(\%calls, {}, 'snippets with "custom_" prefix are kept');
 };
 
 done_testing;
