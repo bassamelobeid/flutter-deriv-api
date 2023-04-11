@@ -5,6 +5,7 @@
     <tr>
         <th>Login ID</th>
         <th>Token</th>
+        <th>Linked To</th>
         <th>Type</th>
         <th>Created</th>
         <th colspan="2">Details</th>
@@ -15,6 +16,13 @@
         <tr>
             <td class="tokencell">[% token.loginid %]</td>
             <td class="tokencell">[% token.token %]</td>
+            <td class="tokencell"><ul>
+            [% FOREACH login_id IN token.copiers %]
+                <li><a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID =>  login_id }) %]" > [% login_id %] 
+                </a></li>
+            [% END %]    
+            </ul>
+            </td>
             <td class="tokencell">[% token.type %]</td>
             <td class="tokencell">[% token.creation_time %]</td>
             <td class="tokencell" colspan="2">[% token.info %]</td>

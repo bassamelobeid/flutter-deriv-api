@@ -2135,37 +2135,6 @@ print qq{
     </form>
 } if $user->is_totp_enabled;
 
-Bar(
-    "$loginid Tokens",
-    {
-        collapsed => 1,
-        nav_link  => "Tokens"
-    });
-my $token_db = BOM::Database::Model::AccessToken->new();
-my (@all_tokens, @deleted_tokens);
-
-foreach my $l ($user_clients->@*) {
-    foreach my $t (@{$token_db->get_all_tokens_by_loginid($l->loginid)}) {
-        $t->{loginid} = $l->loginid;
-        $t->{token}   = obfuscate_token($t->{token});
-        push @all_tokens, $t;
-    }
-    foreach my $t (@{$token_db->token_deletion_history($l->loginid)}) {
-        $t->{loginid} = $l->loginid;
-        push @deleted_tokens, $t;
-    }
-}
-
-@all_tokens     = rev_sort_by { $_->{creation_time} } @all_tokens;
-@deleted_tokens = rev_sort_by { $_->{deleted} } @deleted_tokens;
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/access_tokens.html.tt',
-    {
-        tokens  => \@all_tokens,
-        deleted => \@deleted_tokens
-    }) || die BOM::Backoffice::Request::template()->error(), "\n";
-
 Bar("$loginid Copiers/Traders", {nav_link => "Copiers/Traders"});
 my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
     db             => $client->db,
@@ -2183,6 +2152,51 @@ BOM::Backoffice::Request::template()->process(
         traders   => $traders,
         loginid   => $encoded_loginid,
         self_post => $self_post
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
+
+Bar(
+    "$loginid Tokens",
+    {
+        collapsed => 1,
+        nav_link  => "Tokens"
+    });
+my $token_db = BOM::Database::Model::AccessToken->new();
+my (@all_tokens, @deleted_tokens);
+
+my $copiers_map = {};
+foreach my $c ($copiers->@*) {
+    if ($copiers_map->{$c->[2]}) {
+        push @{$copiers_map->{$c->[2]}}, $c->[0];
+    } else {
+        $copiers_map->{$c->[2]} = [$c->[0]];
+    }
+}
+
+foreach my $l ($user_clients->@*) {
+    my $tokens = $token_db->get_all_tokens_by_loginid($l->loginid);
+    foreach my $token (@{$tokens}) {
+        $token->{loginid} = $l->loginid;
+        # we will be passing the copiers list to the template which will
+        # be used to display the copiers list in the token table using the tag <token.copiers>
+        $token->{copiers} = $copiers_map->{$token->{token}};
+        $token->{token}   = obfuscate_token($token->{token});
+        push @all_tokens, $token;
+    }
+    my $deleted_tokens = $token_db->token_deletion_history($l->loginid);
+    foreach my $token (@{$deleted_tokens}) {
+        $token->{loginid} = $l->loginid;
+        push @deleted_tokens, $token;
+    }
+}
+
+@all_tokens     = rev_sort_by { $_->{creation_time} } @all_tokens;
+@deleted_tokens = rev_sort_by { $_->{deleted} } @deleted_tokens;
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/access_tokens.html.tt',
+    {
+        tokens  => \@all_tokens,
+        deleted => \@deleted_tokens
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 Bar('Send Client Statement', {nav_link => "Send statement"});
