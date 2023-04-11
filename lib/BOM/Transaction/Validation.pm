@@ -428,7 +428,8 @@ sub _get_rejected_contract_details {
         pricing_epoch      => $contract->date_pricing->epoch,
         option_type        => $contract->code,
         currency_pair      => $contract->underlying->symbol,
-        ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+        ($contract->two_barriers and $contract->low_barrier and $contract->high_barrier)
+        ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
         : ($contract->can('barrier') && $contract->barrier) ? (barriers => $contract->barrier->as_absolute)
         : (barriers => ''),
         $contract->can('available_orders') ? (limit_order => $contract->available_orders)

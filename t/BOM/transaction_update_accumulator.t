@@ -2,7 +2,6 @@
 
 use strict;
 use warnings;
-use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;
 use Test::Exception;
@@ -191,7 +190,6 @@ subtest 'update take profit' => sub {
     my $args = {
         bet_type    => 'ACCU',
         underlying  => $underlying,
-        date_start  => $now,
         amount_type => 'stake',
         amount      => 1,
         growth_rate => 0.01,
@@ -210,10 +208,7 @@ subtest 'update take profit' => sub {
         purchase_date => $contract->date_start,
     });
 
-    #TODO: For now we skip tnx validation because accumulator contract type is not yet
-    #implemented into our offerings.
-    my %options = (skip_validation => 1);
-    my $error   = $txn->buy(%options);
+    my $error = $txn->buy();
     ok !$error, 'buy without error';
 
     (undef, $fmb) = get_transaction_from_db accumulator => $txn->transaction_id;

@@ -259,11 +259,11 @@ subtest 'buy ACCU', sub {
 
 subtest 'sell a bet', sub {
     lives_ok {
-        $args->{date_pricing} = $args->{date_start}->epoch + 1;
+        $args->{date_pricing} = $args->{date_start}->epoch + 2;
         my $contract = produce_contract($args);
 
         my $txn = BOM::Transaction->new({
-            purchase_date => $contract->date_start->epoch + 1,
+            purchase_date => $contract->date_start->epoch,
             client        => $cl,
             contract      => $contract,
             contract_id   => $fmb->{id},
@@ -410,7 +410,7 @@ subtest 'buy ACCU with take profit', sub {
 
 subtest 'sell a bet with take profit', sub {
     lives_ok {
-        $args->{date_pricing} = $args->{date_start}->epoch + 1;
+        $args->{date_pricing} = $args->{date_start}->epoch + 2;
         $args->{limit_order}  = {
             take_profit => {
                 order_amount => 5,
@@ -419,7 +419,7 @@ subtest 'sell a bet with take profit', sub {
         my $contract = produce_contract($args);
 
         my $txn = BOM::Transaction->new({
-            purchase_date => $contract->date_start->epoch + 1,
+            purchase_date => $contract->date_start->epoch,
             client        => $cl,
             contract      => $contract,
             contract_id   => $fmb->{id},
