@@ -185,11 +185,11 @@ or a hashref with error field describing the failure
 
     method update_loginid_status ($params) {
         return $self->return_error("update_loginid_status", "No parameters passed") unless ($params);
-        $self->dd_log_info('update_loginid_status', "Updating status for " . pp($params));
         my $binary_user_id = $params->{binary_user_id};
         my $loginid        = $params->{loginid};
         my $to_status      = $params->{to_status};
 
+        $self->dd_log_info('update_loginid_status', "Updating status for $loginid");
         try {
             return BOM::Platform::Event::Emitter::emit(
                 'update_loginid_status',
@@ -295,20 +295,45 @@ cr_currency
 =cut
 
     method load_all_user_data ($binary_user_id) {
+
         return $self->return_error("load_all_user_data", "No parameters passed") unless ($binary_user_id);
         $self->dd_log_info('load_all_user_data', "Loading user data for user with binary_user_id: $binary_user_id");
+
+        # prefer fiat currencies
+        my %fiat_currencies = (
+            'USD' => 1,
+            'EUR' => 1,
+            'AUD' => 1,
+            'GBP' => 1
+        );
+
         my ($user, $bom_loginid, $client, $cr_currency);
         try {
             $user = BOM::User->new((id => $binary_user_id));
-            ($bom_loginid) = $user->bom_real_loginids;
-            ($client)      = grep { $_->loginid eq $bom_loginid } $user->clients;
-            $cr_currency = $client->currency;
+            my @bom_real_loginids = $user->bom_real_loginids;
+
+            foreach my $loginid (@bom_real_loginids) {
+                my $bom_client = BOM::User::Client->new({loginid => $loginid});
+
+                # active accounts only
+                if ($bom_client->is_available) {
+
+                    if ($fiat_currencies{$bom_client->currency}) {
+                        $client      = $bom_client;
+                        $bom_loginid = $client->loginid;
+                        $cr_currency = $client->currency;
+                        last;
+                    }
+
+                    $client      = $bom_client;
+                    $bom_loginid = $client->loginid;
+                    $cr_currency = $client->currency;
+                }
+            }
+
         } catch ($e) {
             return $self->return_error("load_all_user_data", "Cant load user data: $e")
         }
-
-        return $self->return_error("load_all_user_data", "BOM loginid is undefined")   unless ($bom_loginid);
-        return $self->return_error("load_all_user_data", "Client object is undefined") unless ($client);
 
         return +{
             user        => $user,
@@ -427,7 +452,7 @@ Returns a hashref with result => 1 if succeed, hashref with error field otherwis
 
                 my $transfer_amount =
                     $group_currency ne $cr_currency
-                    ? convert_currency($mt_user->{balance}, $cr_currency, $group_currency)
+                    ? convert_currency($mt_user->{balance}, $group_currency, $cr_currency)
                     : $mt_user->{balance};
 
                 $transfer_amount = financialrounding('price', $cr_currency, $transfer_amount);
@@ -534,7 +559,7 @@ or error field otherwise
             }
         } catch ($e) {
             return $self->return_error("check_activity_and_process_client",
-                "The script ran into an error while checking activity of a poa_failed client $loginid: $e");
+                "The script ran into an error while checking activity of a poa_failed client $loginid:" . pp($e));
         }
         return +{};
 
@@ -593,8 +618,9 @@ or error field otherwise
                         unless ($status_updated);
 
                     if ($color_changed and $status_updated) {
+
                         $self->dd_log_info("restrict_client_and_send_email",
-                            "Client $bom_loginid is restricted for $landing_company groups due to poa submit expiry")
+                            "Client $mt5_account is restricted for $landing_company groups due to poa submit expiry")
                             if $self->send_email_to_client({
                                 email_type   => 'poa_verification_expired',
                                 email_params => {
@@ -602,7 +628,7 @@ or error field otherwise
                                     mt5_account => $mt5_account
                                 }});
                     } else {
-                        $self->return_error("restrict_client_and_send_email", "The account $bom_loginid is restricted but failed to send the email");
+                        $self->return_error("restrict_client_and_send_email", "The account $mt5_account is restricted but failed to send the email");
                     }
 
                     $account_restricted = $color_changed && $status_updated;
@@ -729,21 +755,23 @@ Does not takes or returns any parameters
                 . " accounts form the DB with status ['poa_pending', 'poa_rejected', 'poa_outdated'] with the newest created at: "
                 . $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd')->datetime_ddmmmyy_hhmmss_TZ);
 
+        my $loginid;
+
         foreach my $data (@combined) {
-
-            my $mt5_client = $self->parse_user($data);
-            next if ($mt5_client->{error});
-            my $binary_user_id = $mt5_client->{binary_user_id};
-
-            next if $parsed_binary_user_id{$binary_user_id};
-
-            my $loginid        = $mt5_client->{loginid};
-            my $group          = $mt5_client->{group};
-            my $creation_stamp = $mt5_client->{creation_stamp};
-
-            my $user_data = $self->load_all_user_data($binary_user_id);
             try {
-                my $client = $user_data->{client};
+
+                my $mt5_client = $self->parse_user($data);
+                next if ($mt5_client->{error});
+                my $binary_user_id = $mt5_client->{binary_user_id};
+
+                next if $parsed_binary_user_id{$binary_user_id};
+
+                $loginid = $mt5_client->{loginid} // 'undef';
+                my $group          = $mt5_client->{group};
+                my $creation_stamp = $mt5_client->{creation_stamp};
+
+                my $user_data = $self->load_all_user_data($binary_user_id);
+                my $client    = $user_data->{client};
 
                 if ($client->get_poa_status eq 'verified') {
                     $mt5_client->{to_status} = undef;
@@ -751,19 +779,18 @@ Does not takes or returns any parameters
                     $self->dd_log_info("grace_period_actions",
                         "The client with loginid $loginid status is updated to clear, because his prove of address status is verified");
                     next;
-
                 }
+
+                if (   ($group =~ m{bvi} and $creation_stamp->days_since_epoch < $bvi_expiration_timestamp->days_since_epoch)
+                    or ($group =~ m{vanuatu} and $creation_stamp->days_since_epoch < $vanuatu_expiration_timestamp->days_since_epoch))
+                {
+                    $parsed_binary_user_id{$binary_user_id} = 1 if ($self->restrict_client_and_send_email({%$mt5_client, %$user_data}));
+                }
+
             } catch ($e) {
                 $self->return_error("grace_period_actions",
                     "The script ran into an error while checking/updating status for poa pending/rejected client $loginid: $e");
             }
-
-            if (   ($group =~ m{bvi} and $creation_stamp->days_since_epoch < $bvi_expiration_timestamp->days_since_epoch)
-                or ($group =~ m{vanuatu} and $creation_stamp->days_since_epoch < $vanuatu_expiration_timestamp->days_since_epoch))
-            {
-                $self->restrict_client_and_send_email({%$mt5_client, %$user_data});
-            }
-            $parsed_binary_user_id{$binary_user_id} = 1;
         }
     }
 
@@ -792,34 +819,39 @@ Does not takes or returns any parameters
                 . " accounts form the DB with status ['poa_failed'] with the newest created at: "
                 . $now->minus_time_interval(DISABLE_ACCOUNT_DAYS . 'd')->datetime_ddmmmyy_hhmmss_TZ);
 
+        my $loginid;
+
         foreach my $data (@combined) {
-            my $mt5_client = $self->parse_user($data);
-            $self->dd_log_info('disable_users_actions', 'Parsed client: ' . pp($mt5_client));
-
-            next if ($mt5_client->{error});
-            my $loginid        = $mt5_client->{loginid};
-            my $creation_stamp = $mt5_client->{creation_stamp};
-
             try {
+
+                my $mt5_client = $self->parse_user($data);
+                $self->dd_log_info('disable_users_actions', 'Parsed client: ' . pp($mt5_client));
+
+                next if ($mt5_client->{error});
+                $loginid = $mt5_client->{loginid} // 'undef';
+                my $creation_stamp = $mt5_client->{creation_stamp};
+
                 my $user_data = $self->load_all_user_data($mt5_client->{binary_user_id});
                 my $group     = $mt5_client->{group};
 
-                if ($group =~ m{bvi}) {
-                    if ($creation_stamp->days_since_epoch + BVI_EXPIRATION_DAYS + DISABLE_ACCOUNT_DAYS <= $now->days_since_epoch) {
-                        my $response = $self->check_activity_and_process_client({%$mt5_client, %$user_data})->get;
+                if ($group =~ m/(bvi|vanuatu)/) {
+                    my $expiration_days = $1 eq 'bvi' ? BVI_EXPIRATION_DAYS : VANUATU_EXPIRATION_DAYS;
 
-                        push @bvi_clients_to_compops, "<tr><td>$loginid</td><td>$group</td></tr>"
-                            if ($response->{send_to_compops});
+                    if ($creation_stamp->days_since_epoch + $expiration_days + DISABLE_ACCOUNT_DAYS <= $now->days_since_epoch) {
+                        if (not defined $user_data->{client}
+                            or $self->check_activity_and_process_client({%$mt5_client, %$user_data})->get->{send_to_compops})
+                        {
+                            my $client_info = "<tr><td>$loginid</td><td>$group</td></tr>";
 
-                    }
-                } elsif ($group =~ m{vanuatu}) {
-                    if ($creation_stamp->days_since_epoch + VANUATU_EXPIRATION_DAYS + DISABLE_ACCOUNT_DAYS <= $now->days_since_epoch) {
-                        my $response = $self->check_activity_and_process_client({%$mt5_client, %$user_data})->get;
-
-                        push @vanuatu_clients_to_compops, "<tr><td>$loginid</td><td>$group</td></tr>"
-                            if ($response->{send_to_compops});
+                            if ($1 eq 'bvi') {
+                                push @bvi_clients_to_compops, $client_info;
+                            } else {
+                                push @vanuatu_clients_to_compops, $client_info;
+                            }
+                        }
                     }
                 }
+
             } catch ($e) {
                 $self->return_error("disable_users_actions", "The script ran into an error while processing poa failed client $loginid: $e");
             }
@@ -949,11 +981,14 @@ Does not takes or returns any parameters
                 ->datetime_ddmmmyy_hhmmss_TZ);
 
         my $error_ocurred = 0;
+        my $bom_loginid;
+
         foreach my $data (@combined) {
-            my $mt5_client = $self->parse_user($data);
-            next if ($mt5_client->{error});
-            my $bom_loginid;
             try {
+
+                my $mt5_client = $self->parse_user($data);
+                next if ($mt5_client->{error});
+
                 my $user_data      = $self->load_all_user_data($mt5_client->{binary_user_id});
                 my $group          = $mt5_client->{group};
                 my $creation_stamp = $mt5_client->{creation_stamp};
@@ -1024,19 +1059,20 @@ Does not takes or returns any parameters
                 . " accounts form the DB with status ['poa_pending'] with the newest created at: "
                 . $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd')->datetime_ddmmmyy_hhmmss_TZ);
 
+        my $loginid;
         foreach my $data (@combined) {
-
-            my $mt5_client = $self->parse_user($data);
-            next if ($mt5_client->{error});
-            my $binary_user_id = $mt5_client->{binary_user_id};
-            my $loginid        = $mt5_client->{loginid};
-            my $creation_stamp = $mt5_client->{creation_stamp};
-
             try {
-                my $user_data   = $self->load_all_user_data($binary_user_id);
-                my $group       = $mt5_client->{group};
-                my $bom_loginid = $user_data->{bom_loginid};
-                my $client      = $user_data->{client};
+
+                my $mt5_client = $self->parse_user($data);
+                next if ($mt5_client->{error});
+                my $binary_user_id = $mt5_client->{binary_user_id};
+                $loginid = $mt5_client->{loginid};
+
+                my $creation_stamp = $mt5_client->{creation_stamp};
+                my $user_data      = $self->load_all_user_data($binary_user_id);
+                my $group          = $mt5_client->{group};
+                my $bom_loginid    = $user_data->{bom_loginid};
+                my $client         = $user_data->{client};
 
                 if ($client->get_poa_status eq 'verified') {
 
