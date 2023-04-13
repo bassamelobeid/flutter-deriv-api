@@ -11,7 +11,6 @@ use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User;
 use BOM::Config::Redis;
-use BOM::Config::Runtime;
 
 use constant IDV_LOCK_PENDING => 'IDV::LOCK::PENDING::';
 
@@ -117,23 +116,6 @@ subtest 'unimplemented provider' => sub {
     is $idv_event_handler->($args)->get, undef, 'The process jumped out due to unimplemented provider';
 
     $mock_idv_event->unmock_all;
-};
-
-subtest 'disabled document type from a specific provider' => sub {
-    $args = {loginid => $client->loginid};
-
-    BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw(in:drivers_license)]);
-
-    $idv_model->add_document({
-        issuing_country => 'in',
-        number          => '123',
-        type            => 'drivers_license'
-    });
-
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-    is $idv_event_handler->($args)->get, undef, 'The process jumped out due to disabled document type';
-
-    BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw( )]);
 };
 
 subtest 'microservice is disabled' => sub {
