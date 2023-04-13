@@ -140,10 +140,8 @@ rule 'idv.check_service_availibility' => {
             $self->fail('NotSupportedCountry') unless $countries->is_idv_supported($issuing_country);
             $self->fail('IdentityVerificationDisabled')
                 unless BOM::Platform::Utility::has_idv(
-                country       => $issuing_country,
-                provider      => $configs->{provider},
-                document_type => $document_type
-                );
+                country  => $issuing_country,
+                provider => $configs->{provider});
         }
 
         my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
