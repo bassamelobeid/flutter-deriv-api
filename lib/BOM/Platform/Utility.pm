@@ -293,33 +293,15 @@ sub is_idv_disabled {
     my %args = @_;
     # Is IDV disabled
     return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->idv;
-
-    my $disabled_idv_countries = BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries;
-    my $disabled_idv_providers = BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers;
-    my $disabled_idv_documents = BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types;
-
     # Is IDV country disabled
+    my $disabled_idv_countries = BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries;
     if (defined $args{country}) {
         return 1 if any { $args{country} eq $_ } @$disabled_idv_countries;
-
-        my $brand_countries_obj = Brands::Countries->new;
-        my $document_types      = $brand_countries_obj->get_idv_config($args{country})->{document_types};
-
-        my $disabled_documents = 0;
-        for my $document_type (keys $document_types->%*) {
-            if (any { $args{country} . ':' . $document_type eq $_ } @$disabled_idv_documents) {
-                $disabled_documents++;
-            }
-        }
-        return 1 if scalar keys $document_types->%* == $disabled_documents;
     }
     # Is IDV provider disabled
+    my $disabled_idv_providers = BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers;
     if (defined $args{provider}) {
         return 1 if any { $args{provider} eq $_ } @$disabled_idv_providers;
-    }
-    # Is IDV document type disabled for the specific country
-    if (defined $args{country} and defined $args{document_type}) {
-        return 1 if any { $args{country} . ':' . $args{document_type} eq $_ } @$disabled_idv_documents;
     }
     return 0;
 }
