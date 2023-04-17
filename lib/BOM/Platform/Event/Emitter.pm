@@ -46,7 +46,6 @@ my %event_stream_mapping = (
     onfido_doc_ready_for_upload         => 'DOCUMENT_AUTHENTICATION_STREAM',
     identity_verification_requested     => 'DOCUMENT_AUTHENTICATION_STREAM',
     affiliate_sync_initiated            => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
-    new_crypto_address                  => 'CRYPTO_EVENTS_STREAM',
     crypto_notify_external_deposit      => 'CRYPTO_EVENTS_STREAM',
     crypto_notify_external_withdrawal   => 'CRYPTO_EVENTS_STREAM',
     client_promo_codes_upload           => 'PROMO_CODE_IMPORT_LONG_RUNNING_STREAM',
