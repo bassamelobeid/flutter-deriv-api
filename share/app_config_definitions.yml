@@ -489,7 +489,7 @@ payments:
           description: 'Currency specific settings.'
           isa: json_string
           default: '{}'
-          global: 1        
+          global: 1
         float_rate_global_max_range:
           isa: Num
           description: 'Total range of floating rate allowed for adverts unless overridden per country. E.g. 10 means -5% to +5%.'
@@ -553,6 +553,23 @@ payments:
               description: "Enable this to start running auto reject service for crypto payouts"
               default: 0
               global: 1
+        stablecoin:
+          description: "Crypto stablecoins limits"
+          isa: section
+          contains:
+            bounds:
+              isa: section
+              contains:
+                min:
+                  isa: Num
+                  description: Stablecoins minimum bound limit
+                  default: 0.97
+                  global: 1
+                max:
+                  isa: Num
+                  description: Stablecoins maximum bound limit
+                  default: 1.03
+                  global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'
       isa: section
@@ -832,9 +849,9 @@ quants:
               contains:
                 stake_percentage_commission:
                   description: "The scaling factor for Turnover lookback commissions. (percent from Stake for Lookback to be paid to Affiliates. Our Expected Revenue from Lookback is roughly 2%, from Stake size on average. Hence assuming we are OK to pay 40% from our Expected Revenue, we will have the stake percentage as 0.8%.)"
-                  isa: Num 
+                  isa: Num
                   default: 0.008
-                  global: 1  
+                  global: 1
     vanilla:
       description: "Vanilla variables"
       isa: section
@@ -1963,11 +1980,11 @@ system:
               isa : Bool
               defaul: 0
               global: 1
-            real: 
+            real:
               description: "Enable all market type for DXTrade new real account creation"
               isa : Bool
               defaul: 0
-              global: 1          
+              global: 1
         suspend:
           description: "Suspend DXTrade features"
           isa: section
