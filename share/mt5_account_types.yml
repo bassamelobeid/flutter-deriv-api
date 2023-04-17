@@ -459,6 +459,7 @@ real\p01_ts01\synthetic\vanuatu_std_usd: &real_p01ts01_vanuatu_synthetics_financ
   landing_company_short: vanuatu
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts01
 
 real\p01_ts02\synthetic\vanuatu_std_usd: &real_p01ts02_vanuatu_synthetics_financial
@@ -466,6 +467,7 @@ real\p01_ts02\synthetic\vanuatu_std_usd: &real_p01ts02_vanuatu_synthetics_financ
   landing_company_short: vanuatu
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts02
 
 real\p01_ts03\synthetic\vanuatu_std_usd: &real_p01ts03_vanuatu_synthetics_financial
@@ -473,6 +475,7 @@ real\p01_ts03\synthetic\vanuatu_std_usd: &real_p01ts03_vanuatu_synthetics_financ
   landing_company_short: vanuatu
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts03
 
 real\p01_ts04\synthetic\vanuatu_std_usd: &real_p01ts04_vanuatu_synthetics_financial
@@ -480,6 +483,7 @@ real\p01_ts04\synthetic\vanuatu_std_usd: &real_p01ts04_vanuatu_synthetics_financ
   landing_company_short: vanuatu
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p01_ts04
 
 real\p02_ts02\synthetic\vanuatu_std_usd: &real_p02ts02_vanuatu_synthetics_financial
@@ -487,6 +491,7 @@ real\p02_ts02\synthetic\vanuatu_std_usd: &real_p02ts02_vanuatu_synthetics_financ
   landing_company_short: vanuatu
   market_type: synthetic
   sub_account_type: financial
+  sub_account_category: ''
   server: p02_ts02
 
 real\p01_ts01\synthetic\vanuatu_std-hr_usd: *real_p01ts01_vanuatu_synthetics_financial

@@ -5,6 +5,7 @@ use Test::Deep;
 use Test::Exception;
 use Test::MockModule;
 use Test::MockObject;
+use BOM::Config;
 use BOM::Config::MT5;
 use BOM::Config::Runtime;
 use Data::Printer;
@@ -474,6 +475,26 @@ subtest 'available_groups' => sub {
     @got = $mocked_MT5_object->available_groups($params);
     is_deeply(\@got, \@expected, "Filtered upto server_key");
     $mocked_MT5->unmock_all();
+};
+
+subtest 'check mt5 account types structure' => sub {
+    my $groups_configs = BOM::Config::mt5_account_types();
+
+    foreach my $groups_config (keys %$groups_configs) {
+        my $expected_keys = {
+            account_type          => 1,
+            landing_company_short => 1,
+            market_type           => 1,
+            sub_account_type      => 1,
+            sub_account_category  => 1,
+            server                => 1,
+        };
+
+        my $actual_keys = {};
+        $actual_keys->{$_} = 1 for keys %{$groups_configs->{$groups_config}};
+
+        is_deeply($actual_keys, $expected_keys, 'group configuration contains expected keys');
+    }
 };
 
 done_testing;
