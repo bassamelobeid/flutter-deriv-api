@@ -254,9 +254,10 @@ the maximum possible ticks that contract can be running
 =head2 basis_spot
 
 the spot that is used for barrier calculation
+for a new contract we use current_spot (just to be able to show a pair of barriers in FE if needed).
+in other cases bais_spot = previous_spot.
 since entry_tick is the first tick of the contract there is no previous spot, so basis_spot = undef
 for a closed contract basis_spot = tick_before_close_tick
-in other cases, basis_spot = previous_spot
 
 =head2 tick_count_after_entry
 
@@ -379,7 +380,7 @@ initializing basis_spot
 sub _build_basis_spot {
     my $self = shift;
 
-    return $self->previous_spot_before($self->current_tick->epoch) if $self->pricing_new;
+    return $self->current_spot if $self->pricing_new;
 
     return $self->previous_spot_before($self->close_tick->epoch) if $self->close_tick;
 
@@ -416,13 +417,17 @@ sub get_high_barrier {
 
 high barrier value showed to the client
 to have a clear loss condition, barriers should be rounded up and have one extra digit than the index 
+uses high_barrier by defult but custom $supplied_barrier can also be provided (used in PP response)
 
 =cut
 
 sub display_high_barrier {
-    my $self = shift;
+    my ($self, $supplied_barrier) = @_;
 
-    return $self->high_barrier ? roundup($self->high_barrier->supplied_barrier, $self->barrier_pip_size) : undef;
+    return undef unless $self->high_barrier or $supplied_barrier;
+
+    $supplied_barrier //= $self->high_barrier->supplied_barrier;
+    return roundup($supplied_barrier, $self->barrier_pip_size);
 }
 
 =head2 _build_low_barrier
@@ -453,13 +458,17 @@ sub get_low_barrier {
 
 low barrier value showed to the client
 to have a clear loss condition, barriers should be rounded down and have one extra digit than the index
+uses low_barrier by defult but custom $supplied_barrier can also be provided (used in PP response)
 
 =cut
 
 sub display_low_barrier {
-    my $self = shift;
+    my ($self, $supplied_barrier) = @_;
 
-    return $self->low_barrier ? rounddown($self->low_barrier->supplied_barrier, $self->barrier_pip_size) : undef;
+    return undef unless $self->low_barrier or $supplied_barrier;
+
+    $supplied_barrier //= $self->low_barrier->supplied_barrier;
+    return rounddown($supplied_barrier, $self->barrier_pip_size);
 }
 
 =head2 _build_barrier_pip_size
