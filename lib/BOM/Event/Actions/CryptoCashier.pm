@@ -28,7 +28,16 @@ use constant TRANSACTION_HANDLERS => {
     withdrawal => {
         SENT => \&withdrawal_sent_handler,
     },
-};
+    deposit => {
+        PENDING   => \&deposit_handler,
+        CONFIRMED => \&deposit_handler,
+    }};
+
+my %currency_code_mapper
+
+    = (
+    UST => 'USDT',
+    );
 
 =head2 crypto_cashier_transaction_updated
 
@@ -38,7 +47,7 @@ The transaction data contains the following:
 
 =over 4
 
-=item * C<id>                 - The crypto cashier uniqe transaction ID
+=item * C<id>                 - The crypto cashier unique transaction ID
 
 =item * C<address_hash>       - The destination crypto address
 
@@ -141,6 +150,40 @@ sub withdrawal_sent_handler {
         );
     } catch ($e) {
         $log->warnf("Failed to emit crypto_withdrawal_email event for %s: %s", $txn_metadata->{loginid}, $e);
+    }
+}
+
+=head2 deposit_handler
+
+Handler for the deposit transaction with PENDING or CONFIRMED status.
+
+=over 4
+
+=item * C<txn_info>     - A hashref of the transaction information.
+
+=item * C<txn_metadata> - A hashref of the transaction metadata.
+
+=back
+
+=cut
+
+sub deposit_handler {
+    my ($txn_info, $txn_metadata) = @_;
+
+    try {
+        BOM::Platform::Event::Emitter::emit(
+            'crypto_deposit_email',
+            {
+                loginid            => $txn_metadata->{loginid},
+                amount             => $txn_info->{amount},
+                currency           => $currency_code_mapper{$txn_metadata->{currency_code}} // $txn_metadata->{currency_code},
+                transaction_hash   => $txn_info->{transaction_hash},
+                transaction_status => $txn_info->{status_code},
+                transaction_url    => $txn_info->{transaction_url},
+            },
+        );
+    } catch ($e) {
+        $log->warnf("Failed to emit crypto_deposit_%s\_email event for %s: %s", lc $txn_info->{status_code}, $txn_metadata->{loginid}, $e);
     }
 }
 

@@ -134,4 +134,100 @@ subtest 'withdrawal_sent_handler' => sub {
     $mocked_event_emitter->unmock_all;
 };
 
+subtest 'deposit_pending_handler' => sub {
+
+    my $txn_info = {
+        id                 => 1,
+        address_hash       => 'address_hash',
+        address_url        => 'address_url',
+        amount             => 1,
+        is_valid_to_cancel => 0,
+        status_code        => 'PENDING',
+        status_message     => 'message',
+        submit_date        => '162',
+        transaction_hash   => 'transaction_hash',
+        transaction_type   => 'deposit',
+        transaction_url    => 'transaction_url',
+    };
+
+    my $txn_metadata = {
+        loginid       => 'loginid',
+        currency_code => 'ETH',
+    };
+
+    my $expected_events = [{
+            crypto_deposit_email => {
+                loginid            => $txn_metadata->{loginid},
+                amount             => $txn_info->{amount},
+                currency           => $txn_metadata->{currency_code},
+                transaction_hash   => $txn_info->{transaction_hash},
+                transaction_status => $txn_info->{status_code},
+                transaction_url    => $txn_info->{transaction_url},
+            }
+        },
+    ];
+
+    my @events;
+    $mocked_event_emitter->mock(
+        emit => sub {
+            my ($event_name, $event_data) = @_;
+            push @events, {$event_name => $event_data};
+            return;
+        },
+    );
+
+    BOM::Event::Actions::CryptoCashier::deposit_handler($txn_info, $txn_metadata);
+    is_deeply \@events, $expected_events, 'Correct events';
+
+    $mocked_event_emitter->unmock_all;
+};
+
+subtest 'deposit_confirmed_handler' => sub {
+
+    my $txn_info = {
+        id                 => 1,
+        address_hash       => 'address_hash',
+        address_url        => 'address_url',
+        amount             => 1,
+        is_valid_to_cancel => 0,
+        status_code        => 'CONFIRMED',
+        status_message     => 'message',
+        submit_date        => '162',
+        transaction_hash   => 'transaction_hash',
+        transaction_type   => 'deposit',
+        transaction_url    => 'transaction_url',
+    };
+
+    my $txn_metadata = {
+        login_id      => 'login_id',
+        currency_code => 'ETH',
+    };
+
+    my $expected_events = [{
+            crypto_deposit_email => {
+                loginid            => $txn_metadata->{loginid},
+                amount             => $txn_info->{amount},
+                currency           => $txn_metadata->{currency_code},
+                transaction_hash   => $txn_info->{transaction_hash},
+                transaction_status => $txn_info->{status_code},
+                transaction_url    => $txn_info->{transaction_url},
+            }
+        },
+    ];
+
+    my @events;
+    $mocked_event_emitter->mock(
+        emit => sub {
+            my ($event_name, $event_data) = @_;
+            push @events, {$event_name => $event_data};
+            return;
+        },
+    );
+
+    BOM::Event::Actions::CryptoCashier::deposit_handler($txn_info, $txn_metadata);
+    is_deeply \@events, $expected_events, 'Correct events';
+
+    $mocked_event_emitter->unmock_all;
+};
+
 done_testing;

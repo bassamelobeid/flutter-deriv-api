@@ -127,6 +127,7 @@ my $action_mapping = {
         api_token_created                                => \&BOM::Event::Actions::Client::api_token_created,
         api_token_deleted                                => \&BOM::Event::Actions::Client::api_token_deleted,
         confirm_change_email                             => \&BOM::Event::Actions::Client::confirm_change_email,
+        crypto_deposit_email                             => \&BOM::Event::Actions::Client::crypto_deposit_email,
         crypto_withdrawal_email                          => \&BOM::Event::Actions::Client::crypto_withdrawal_email,
         crypto_withdrawal_rejected_email                 => \&BOM::Event::Actions::Client::crypto_withdrawal_rejected_email,
         payment_deposit                                  => \&BOM::Event::Actions::Client::track_payment_deposit,

@@ -224,7 +224,7 @@ subtest 'process - tracking jobs' => sub {
         [keys %$action_mappings],
         bag(
             qw/multiplier_hit_type multiplier_near_expire_notification multiplier_near_dc_notification
-                crypto_withdrawal_rejected_email crypto_withdrawal_email
+                crypto_withdrawal_rejected_email crypto_withdrawal_email crypto_deposit_email
                 api_token_created api_token_deleted app_registered app_updated app_deleted
                 mt5_password_changed mt5_inactive_notification mt5_inactive_account_closed payops_event_email
                 p2p_archived_ad p2p_advert_created p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned

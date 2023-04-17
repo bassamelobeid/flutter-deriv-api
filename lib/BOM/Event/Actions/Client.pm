@@ -110,6 +110,7 @@ use constant PAYMENT_ACCOUNT_LIMIT_REACHED_TTL                 => 86400;        
 use constant PAYMENT_ACCOUNT_LIMIT_REACHED_KEY                 => 'PAYMENT_ACCOUNT_LIMIT_REACHED';
 use constant ONFIDO_DAILY_LIMIT_FLAG                           => 'ONFIDO_DAILY_LIMIT_FLAG::';
 use constant SECONDS_IN_DAY                                    => 86400;
+
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;                                                          # 10 days in seconds
 
@@ -599,6 +600,7 @@ async sub ready_for_authentication {
         $client->propagate_clear_status('allow_poi_resubmission');
 
         my ($request_count, $user_request_count);
+
         # INCR Onfido check request count in Redis
         await $redis_events_write->connect;
 
@@ -651,6 +653,7 @@ async sub ready_for_authentication {
             foreach my $email_blocker (@delete_on_resubmission) {
                 await $redis_events_write->del($email_blocker);
             }
+
             # Deal with resubmission counter and context
             await $redis_replicated_write->incr(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
             await $redis_replicated_write->set(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
@@ -690,6 +693,7 @@ async sub ready_for_authentication {
     }
 
     unless ($res) {
+
         # release the pending lock under check failure scenario
         my $redis_events_write = _redis_events_write();
         await $redis_events_write->del(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id);
@@ -750,6 +754,7 @@ async sub client_verification {
 
         try {
             my $age_verified;
+
             # Map to something that can be standardised across other systems
             my $check_status = {
                 clear        => 'pass',
@@ -850,6 +855,7 @@ async sub client_verification {
 
                     BOM::Event::Actions::Common::handle_under_age_client($client, 'Onfido');
                 }
+
                 # Extract all clear documents to check consistency between DOBs
                 elsif (my @valid_doc = grep { (defined $_->{properties}->{date_of_birth} and $_->result eq 'clear') } @reports) {
                     my %dob = map { ($_->{properties}{date_of_birth} // '') => 1 } @valid_doc;
@@ -886,6 +892,7 @@ async sub client_verification {
                 @reports = grep { ($_->{properties}->{document_type} // '') ne 'live_photo' } @reports;
 
                 foreach my $report (@reports) {
+
                     # It seems that expiration date and document number of all documents in $report->{documents} list are similar
                     my ($expiration_date, $doc_numbers) = @{$report->{properties}}{qw(date_of_expiry document_numbers)};
 
@@ -897,6 +904,7 @@ async sub client_verification {
 
                         if ($db_doc_id) {
                             await $redis_events_write->del(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id);
+
                             # There is a possibility that corresponding DB document of onfido document has been deleted (e.g. by BO user)
                             my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
 
@@ -1003,6 +1011,7 @@ async sub _store_applicant_documents {
     for my $report (@{$check_reports}) {
         if ($report->name eq 'facial_similarity_photo') {
             $facial_similarity_report = $report;
+
             # we can assume there is a selfie, note that `documents` is not particularly useful on this kind of report
             $reported_documents++;
         } elsif ($report->name eq 'document') {
@@ -1016,6 +1025,7 @@ async sub _store_applicant_documents {
     DataDog::DogStatsd::Helper::stats_histogram('event.onfido.client_verification.reported_documents', $reported_documents);
 
     foreach my $document_id (@documents) {
+
         # Fetch each document individually by applicant/id
         my $doc = await $onfido->get_document_details(
             applicant_id => $applicant_id,
@@ -1139,6 +1149,7 @@ async sub check_onfido_rules {
             );
             my $report_result = $report->{result} // '';
             my $check_result  = $check->{result}  // '';
+
             # get the current rejected reasons and drop the name mismatches if any.
             my @bad_reasons = qw(data_comparison.first_name data_comparison.last_name data_comparison.date_of_birth);
             my @reasons     = array_minus(BOM::User::Onfido::get_consider_reasons($client)->@*, @bad_reasons);
@@ -1321,6 +1332,7 @@ async sub onfido_doc_ready_for_upload {
     # so we can safely drop this event.
     my $lock_key     = join q{-} => ('ONFIDO_UPLOAD_BAG', $client_loginid, $file_checksum, $doc_type);
     my $acquire_lock = BOM::Platform::Redis::acquire_lock($lock_key, ONFIDO_UPLOAD_TIMEOUT_SECONDS);
+
     # A test is expecting this log warning though.
     $log->warn("Document already exists") unless $acquire_lock;
     return                                unless $acquire_lock;
@@ -1335,11 +1347,9 @@ async sub onfido_doc_ready_for_upload {
         $upload_info = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_hashref(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)',
-                    undef, $client_loginid, $doc_type, $file_type,
-                    $expiration_date || undef,
-                    $document_info->{number} || '',
-                    $file_checksum, '', $page_type, undef, $lifetime_valid, 'onfido'
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)', undef,
+                    $client_loginid, $doc_type, $file_type,      $expiration_date || undef, $document_info->{number} || '', $file_checksum, '',
+                    $page_type,      undef,     $lifetime_valid, 'onfido'
                 );
             });
 
@@ -1367,6 +1377,7 @@ async sub onfido_doc_ready_for_upload {
                 unless $finish_upload_result == $file_id;
 
             my $document_info = {
+
                 # to avoid a db hit, we can estimate the `upload_date` to the current timestamp.
                 # all the other fields can be derived from current symbols table.
                 upload_date     => Date::Utility->new->datetime_yyyymmdd_hhmmss,
@@ -1504,6 +1515,7 @@ async sub _address_verification {
     my %details = (
         freeform => $freeform,
         country  => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
+
         # We'll pick the proper license per client residence
         license => _smarty_license($client),
     );
@@ -1530,6 +1542,7 @@ async sub _address_verification {
     die 'too many attempts' if $counter_to_lock > 3;
 
     DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.trigger');
+
     # Next step is an address check. Let's make sure that whatever they
     # are sending is valid at least to locality level.
     my $future_verify_ss = _smartystreets()->verify(%details);
@@ -1537,6 +1550,7 @@ async sub _address_verification {
     $future_verify_ss->on_fail(
         sub {
             DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.failure');
+
             # clear current status on failure, if any
             $client->status->clear_smarty_streets_validated();
             $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
@@ -1620,6 +1634,7 @@ async sub _get_onfido_applicant {
             $log->debugf('Document not uploaded to Onfido as client is from list of countries not supported by Onfido');
             return undef;
         }
+
         # accessing applicant_data from onfido_applicant table
         my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
         my $applicant_id   = $applicant_data->{id};
@@ -1632,6 +1647,7 @@ async sub _get_onfido_applicant {
         my $start     = Time::HiRes::time();
         my $applicant = await $onfido->applicant_create(%{BOM::User::Onfido::applicant_info($client)});
         my $elapsed   = Time::HiRes::time() - $start;
+
         # saving data into onfido_applicant table
         BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id) if $applicant;
 
@@ -2069,6 +2085,7 @@ sub social_responsibility_check {
 
             die "failed to send social responsibility email ($loginid)"
                 unless Email::Stuffer->from($system_email)->to($sr_email)->subject($email_subject)->html_body($html)->send();
+
             # Here we set a key for which breached thresholds we have
             # sent an email. There is no point for the key to have a ttl
             # longer than the client's monitoring period of 30 days so
@@ -2170,6 +2187,7 @@ async sub _upload_onfido_documents {
 
             $future_upload_item = $onfido->live_photo_upload(%request);
         } else {
+
             # We already checked country when _get_applicant_and_file
             %request = (
                 applicant_id    => $applicant->id,
@@ -2212,6 +2230,7 @@ async sub _upload_onfido_documents {
             BOM::User::Onfido::store_onfido_document($doc, $applicant->id, $country, $type, $side);
 
             await $redis_events_write->connect;
+
             # Set expiry time for document id key in case of no onfido response due to
             # `applicant_check` is not being called in `ready_for_authentication`
             await $redis_events_write->setex(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, ONFIDO_PENDING_REQUEST_TIMEOUT, $document_entry->{id});
@@ -2294,12 +2313,16 @@ async sub _check_applicant {
         my $error_type;
         my %request = (
             applicant_id => $applicant_id,
+
             # We don't want Onfido to start emailing people
             suppress_form_emails => 1,
+
             # Used for reporting and filtering in the web interface
             tags => [$staff_name ? 'staff:' . $staff_name : 'automated', $broker, $loginid, $residence, 'brand:' . request->brand->name],
+
             # On v3 we need to specify the array of documents
             $staff_name ? () : (document_ids => $documents),
+
             # On v3 we need to specify the report names
             report_names => [qw/document facial_similarity_photo/],
         );
@@ -2685,6 +2708,7 @@ We store the applicant as we want to link any check related to the client.
 
 async sub check_or_store_onfido_applicant {
     my ($loginid, $applicant_id) = @_;
+
     #die if client not exists
     my $client = BOM::User::Client->new({loginid => $loginid}) or die "$loginid does not exists.";
 
@@ -2953,6 +2977,8 @@ Send an email to clients after a successful withdrawal
 
 =item * C<transaction_url> - required. Transaction url
 
+=item * C<transaction_status> - required. Transaction status
+
 =back
 
 =cut
@@ -2969,6 +2995,55 @@ sub crypto_withdrawal_email {
         currency         => $args->{currency},
         live_chat_url    => request->brand->live_chat_url,
         title            => localize('Your [_1] withdrawal is successful', $args->{currency}),
+    });
+}
+
+=head2 crypto_deposit_email
+
+Send an email to clients upon a pending crypto deposit
+
+=over 4
+
+=item * C<loginid> - required. Login id of the client.
+
+=item * C<amount> - required. Amount of transaction
+
+=item * C<currency> - required. Currency type
+
+=item * C<transaction_hash> - required. Transaction hash
+
+=item * C<transaction_url> - required. Transaction url
+
+=item * C<transaction_status> - required. Transaction status
+
+=back
+
+=cut
+
+sub crypto_deposit_email {
+
+    my ($args) = @_;
+
+    my %event_mapper = (
+        PENDING => {
+            event_name => \&BOM::Event::Services::Track::crypto_deposit_pending_email,
+            title      => localize('Your [_1] deposit is in progress', $args->{currency}),
+        },
+        CONFIRMED => {
+            event_name => \&BOM::Event::Services::Track::crypto_deposit_confirmed_email,
+            title      => localize('Your [_1] deposit is successful', $args->{currency}),
+        },
+    );
+
+    return $event_mapper{$args->{transaction_status}}{event_name}({
+        loginid            => $args->{loginid},
+        amount             => $args->{amount},
+        currency           => $args->{currency},
+        live_chat_url      => request->brand->live_chat_url,
+        title              => $event_mapper{$args->{transaction_status}}{title},
+        transaction_hash   => $args->{transaction_hash},
+        transaction_status => $args->{transaction_status},
+        transaction_url    => $args->{transaction_url},
     });
 }
 
@@ -3158,11 +3233,13 @@ async sub shared_payment_method_found {
     # Lock the cashier and set shared PM to both clients
     $args->{staff} //= 'system';
     $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, join(',', @filtered_loginids)));
+
     # This may be dropped when POI/POA refactoring is done
     $client->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
 
     foreach my $shared (@shared_clients) {
         $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid));
+
         # This may be dropped when POI/POA refactoring is done
         $shared->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
     }
@@ -3203,6 +3280,7 @@ sub _shared_payment_reason {
     my $loginids_extractor = sub {
         my $string            = shift;
         my @all_brokers_codes = LandingCompany::Registry::all_broker_codes();
+
         # This will build a regex like CH[0-9]+|MLT[0-9]+|MX[0-9]+|CR[0-9]+|DC[0-9]+|MF[0-9]+
         # it excludes virtual broker codes
         my $regex_str = join '|', map { $_ . '[0-9]+' } grep { $_ !~ /VR/ } @all_brokers_codes;
@@ -3688,6 +3766,7 @@ async sub bulk_client_status_update {
             $p2p_approved = $client->_p2p_advertiser_cached->{is_approved} if $client->_p2p_advertiser_cached;
             if ($client_status_type eq 'disabledlogins') {
                 if ($action eq 'insert_data' && $operation =~ $add_regex) {
+
                     #should check portfolio
                     if (@{$client->get_open_contracts}) {
                         $summary =

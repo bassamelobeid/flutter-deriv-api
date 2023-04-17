@@ -124,8 +124,10 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
-    crypto_withdrawal_email                          => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
-    crypto_withdrawal_rejected_email                 => [
+    crypto_deposit_confirmed_email   => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
+    crypto_deposit_pending_email     => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
+    crypto_withdrawal_email          => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
+    crypto_withdrawal_rejected_email => [
         qw(loginid reject_reason amount currency_code title live_chat_url meta_data fiat_account cashier_transfer_url cashier_p2p_url cashier_withdrawal_url)
     ],
     p2p_advert_created =>
@@ -186,6 +188,8 @@ my @COMMON_EVENT_METHODS = qw(
     p2p_advert_created
     p2p_advertiser_cancel_at_fault
     p2p_advertiser_temp_banned
+    crypto_deposit_confirmed_email
+    crypto_deposit_pending_email
     crypto_withdrawal_email
     crypto_withdrawal_rejected_email
     payment_deposit
@@ -1166,14 +1170,17 @@ sub _create_traits {
     foreach my $sibling (@siblings) {
         my $account = $sibling->account;
         if ($sibling->is_virtual) {
+
             # created_at should be the date virtual account has been created
             $created_at = $sibling->date_joined;
+
             # Skip virtual account currency
             next;
         }
         $currencies{$account->currency_code} = 1 if $account && $account->currency_code;
         push @landing_companies, $sibling->landing_company->short;
     }
+
     # Check DOB existance as virtual account does not have it
     my $client_age;
     if ($client->date_of_birth) {
@@ -1183,6 +1190,7 @@ sub _create_traits {
             month => $month,
             day   => $day
         );
+
         # If we get delta between now and DOB it will be negative so do it vice-versa
         $client_age = $dob->delta_years(Time::Moment->now_utc);
     }
@@ -1200,18 +1208,24 @@ sub _create_traits {
             country     => Locale::Country::code2country($client->residence),
         },
         age => $client_age,
+
         #avatar: not_supported,
         birthday => $client->date_of_birth,
+
         #company: not_supported,
         created_at => Date::Utility->new($created_at)->datetime_iso8601,
+
         #description: not_supported,
         email      => $client->email,
         first_name => $client->first_name // '',
+
         #gender     => not_supported for Deriv,
         #id: not_supported,
         last_name => $client->last_name,
+
         #name: automatically filled
         phone => $client->phone,
+
         #title: not_supported,
         #username: not_supported,
         #website: website,
@@ -1439,6 +1453,14 @@ It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it
 =head2 crypto_withdrawal_rejected_email
 
 Send rudderstack event when a crypto payout is rejected
+
+=head2 crypto_deposit_confirmed_email
+
+It is triggered for each B<crypto_deposit_confirmed_email> event emitted, delivering it to Rudderstack.
+
+=head2 crypto_deposit_pending_email
+
+It is triggered for each B<crypto_deposit_pending_email> event emitted, delivering it to Rudderstack.
 
 =head2 pa_withdraw_confirm
 
