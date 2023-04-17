@@ -2796,16 +2796,8 @@ async sub signup {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
 
-    my $emitting = 'new_crypto_address';
+    my $emitting = 'verify_false_profile_info';
     try {
-        BOM::Platform::Event::Emitter::emit(
-            $emitting,
-            {
-                loginid  => $client->loginid,
-                currency => $client->currency,
-            });
-
-        $emitting = 'verify_false_profile_info';
         BOM::Platform::Event::Emitter::emit(
             $emitting,
             {

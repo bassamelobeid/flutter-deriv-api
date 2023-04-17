@@ -1799,15 +1799,6 @@ subtest 'signup event' => sub {
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
     my $result  = $handler->($vr_args);
     ok $result, 'Success result';
-    is_deeply \@emit_args,
-        [
-        'new_crypto_address',
-        {
-            loginid  => $virtual_client2->loginid,
-            currency => $virtual_client2->currency
-        }
-        ],
-        'new_crypto_address event is emitted';
 
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -1824,11 +1815,6 @@ subtest 'signup event' => sub {
     is exception { $handler->($real_args) }, undef, 'Event processed successfully';
     is_deeply \@emit_args,
         [
-        'new_crypto_address',
-        {
-            loginid  => $test_client2->loginid,
-            currency => $test_client2->currency
-        },
         'verify_false_profile_info',
         {
             loginid    => $test_client2->loginid,
@@ -1836,7 +1822,7 @@ subtest 'signup event' => sub {
             last_name  => $test_client2->last_name,
         }
         ],
-        'new_crypto_address and verify_false_profile_info events are emitted';
+        'verify_false_profile_info event is emitted';
 };
 
 subtest 'wallet signup event' => sub {
