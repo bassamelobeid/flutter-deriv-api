@@ -229,14 +229,9 @@ subtest 'bad verification codes' => sub {
         'cannot use token created for other purpose'
     );
 
-    cmp_deeply(
-        exception { $advertiser->p2p_order_confirm(id => $order->{id}) },
-        {
-            error_code     => 'ExcessiveVerificationRequests',
-            message_params => [60]
-        },
-        'cannot retry within 1 min'
-    );
+    my $err = exception { $advertiser->p2p_order_confirm(id => $order->{id}) };
+    is $err->{error_code}, 'ExcessiveVerificationRequests', 'error code for retry within 1 min';
+    cmp_ok 60 - $err->{message_params}->[0], '<=', 1, 'message param for retry within 1 min';    # allow for 1 sec delay
 
     $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'REQUEST_BLOCK|' . $order->{id} . '|' . $advertiser->loginid);
 
