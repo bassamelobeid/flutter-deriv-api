@@ -251,7 +251,7 @@ sub generate_settings_branch {
 
 Contains the grouping of chronicle variables for displaying it on the Backoffice.
 
-=cut 
+=cut
 
 sub get_settings_by_group {
     my $group          = shift;
@@ -432,6 +432,8 @@ sub get_settings_by_group {
                 payments.crypto.restricted_countries
                 payments.crypto.auto_update.approve
                 payments.crypto.auto_update.reject
+                payments.crypto.stablecoin.bounds.min
+                payments.crypto.stablecoin.bounds.max
                 payments.transfer_between_accounts.limits.fiat_to_crypto
                 payments.transfer_between_accounts.limits.crypto_to_crypto
                 payments.transfer_between_accounts.limits.crypto_to_fiat
