@@ -398,7 +398,7 @@ async sub stream_process_loop {
                 # thus keeping it 'pending'
                 my $response = await $self->process_job($stream, $decoded_data);
 
-                if ($response && $response->isa('Future')) {
+                if (blessed($response) && $response->isa('Future')) {
                     die $response->failure if $response->failure;
                 }
                 await $self->_ack_message($stream, $id);
