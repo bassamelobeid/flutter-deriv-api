@@ -77,13 +77,15 @@ subtest 'number of contracts' => sub {
     ok $c->pricing_new, 'this is a new contract';
     cmp_ok sprintf("%.10f", $c->number_of_contracts), '==', '1.3624055686', 'correct number of contracts';
     ok !$c->is_expired, 'not expired (obviously but just be safe)';
+    is $c->buy_commission, 0.544393493773682, 'buy commission';
 
     $args->{date_pricing} = $now->plus_time_interval('1s');
     $c = produce_contract($args);
     cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '1.36241', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
-    is $c->bid_price, '122.07', 'has bid price';
+    is $c->bid_price,       '122.07',          'has bid price';
+    is $c->sell_commission, 0.549642892182163, 'sell commission when contract is not expired';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
@@ -97,7 +99,8 @@ subtest 'number of contracts' => sub {
     cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '1.36241', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok $c->is_expired,   'expired';
-    is $c->bid_price, '0.00', 'does not have bid price';
+    is $c->bid_price,       '0.00', 'does not have bid price';
+    is $c->sell_commission, 0,      'no sell commission when contract is expired';
 };
 
 subtest 'expired and not breached barrier' => sub {

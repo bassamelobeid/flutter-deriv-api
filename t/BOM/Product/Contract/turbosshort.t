@@ -80,13 +80,15 @@ subtest 'number of contracts' => sub {
     ok $c->pricing_new, 'this is a new contract';
     cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
     ok !$c->is_expired, 'not expired (obviously but just be safe)';
+    is $c->buy_commission, 0.529763542771197, 'correct buy commission';
 
     $args->{date_pricing} = $now->plus_time_interval('1s');
     $c = produce_contract($args);
     cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
-    is $c->bid_price, '1.39', 'has bid price';
+    is $c->bid_price,       '1.39',            'has bid price';
+    is $c->sell_commission, 0.530466689262102, 'correct sell commission';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);

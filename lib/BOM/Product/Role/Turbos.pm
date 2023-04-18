@@ -271,6 +271,45 @@ sub _build_ask_spread {
     return $avg_tick_size_up * $ticks_commission_up;
 }
 
+=head2 buy_commission
+
+commission charged when client enters a contract
+
+=cut
+
+sub buy_commission {
+    my $self = shift;
+
+    return $self->number_of_contracts * $self->current_spot * $self->ask_spread;
+}
+
+=head2 sell_commission
+
+commission charged when client sells a contract. this value is charged only when the contract is not expired yet. 
+
+=cut
+
+sub sell_commission {
+    my $self = shift;
+
+    return 0 if $self->is_expired;
+    return $self->number_of_contracts * $self->current_spot * $self->bid_spread;
+}
+
+=head2 base_commission
+
+commission charged on buy or sell. This value is used in calculating allowed_slippage. 
+
+=cut
+
+sub base_commission {
+    my $self = shift;
+
+    # No need for slippage validation on buy
+    return 0 if $self->pricing_new;
+    return $self->sell_commission;
+}
+
 =head2 _build_number_of_contracts
 
 Calculate implied number of contracts.
