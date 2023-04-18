@@ -2306,7 +2306,7 @@ sub get_detailed_status_reason {
         WITHDRAWAL_LIMIT_REACHED            => 'Client reached withdrawal limit',
         MARKED_AS_NEEDS_ACTION              => 'Client was marked as Needs Action',
         POTENTIAL_FRAUD                     => 'Client was identified as potential fraud',
-        CR_CREATION_FOR_NON_IDV_COUNTRIES   => 'CR creation for IDV unsupported countries - no authentication is required',
+        CR_CREATION_FOR_NON_IDV_COUNTRIES   => 'CR creation for IDV unsupported countries',
     };
 
     return $status_reason ? $status_reason_map->{$status_reason} // $status_reason : 'Unknown reason';
