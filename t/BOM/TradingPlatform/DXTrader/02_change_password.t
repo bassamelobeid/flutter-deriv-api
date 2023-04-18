@@ -75,7 +75,7 @@ $dxconfig->suspend->demo(0);
 my $acc_real = $dxtrader->new_account(
     account_type => 'real',
     password     => 'secret',
-    market_type  => 'financial',
+    market_type  => 'all',
     currency     => 'USD',
 );
 

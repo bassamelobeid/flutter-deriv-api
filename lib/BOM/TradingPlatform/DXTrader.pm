@@ -362,9 +362,8 @@ Checks if market type input is valid based on app config
 sub is_valid_market_type {
 
     my ($self, $server, $market_type) = @_;
-    my $enable_all_market_type = BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type;
 
-    return 1 if ($market_type eq 'all') == ($enable_all_market_type->$server // 0);
+    return 1 if ($market_type or $market_type eq 'all');
 
     return 0;
 

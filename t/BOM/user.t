@@ -910,7 +910,7 @@ subtest 'link_wallet' => sub {
     my $dxtrade_real_account = $dxtrader->new_account(
         account_type => 'real',
         password     => 'test',
-        market_type  => 'financial',
+        market_type  => 'all',
         currency     => 'USD',
     );
     $args->{wallet_id} = $wallet->loginid;

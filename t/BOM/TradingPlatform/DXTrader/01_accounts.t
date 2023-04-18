@@ -4,6 +4,7 @@ use Test::More;
 use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
+use Test::Most 0.22 (tests => 28);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
@@ -56,7 +57,7 @@ $real_account_ids_login_prefix = 'TEST';
 my %params = (
     account_type => 'demo',
     password     => 'test',
-    market_type  => 'synthetic',
+    market_type  => 'all',
     currency     => 'USD'
 );
 
@@ -84,7 +85,7 @@ cmp_deeply(
         display_balance       => '10000.00',
         login                 => re('^TEST\d+$'),
         platform              => 'dxtrade',
-        market_type           => 'synthetic',
+        market_type           => 'all',
         landing_company_short => 'svg',
     },
     'created first account'
@@ -109,7 +110,7 @@ cmp_deeply(
             client_domain => 'default',
             login         => re('^TEST\d+$'),
             account_code  => $account1->{account_id},
-            market_type   => 'synthetic',
+            market_type   => 'all',
         },
         creation_stamp => re('\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d*'),
     },
@@ -119,7 +120,7 @@ cmp_deeply(
 %params = (
     account_type => 'real',
     password     => 'test',
-    market_type  => 'synthetic',
+    market_type  => 'all',
     currency     => 'USD',
 );
 
@@ -143,7 +144,7 @@ cmp_deeply(
         display_balance       => '0.00',
         login                 => $account1->{login},
         platform              => 'dxtrade',
-        market_type           => 'synthetic',
+        market_type           => 'all',
         landing_company_short => 'svg',
     },
     'created second account'
@@ -171,7 +172,7 @@ cmp_deeply(
             clearing_code => 'default',
             client_domain => 'default',
             account_code  => $account2->{account_id},
-            market_type   => 'synthetic',
+            market_type   => 'all',
         },
         creation_stamp => re('\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d*'),
     },
@@ -189,7 +190,7 @@ cmp_deeply(
         $dxtrader->new_account(
             account_type => 'demo',
             password     => 'test',
-            market_type  => 'synthetic',
+            market_type  => 'all',
             currency     => 'USD',
         )
     },
@@ -209,7 +210,7 @@ my $suspend_account1 = {
     currency              => 'USD',
     login                 => $account1->{login},
     platform              => 'dxtrade',
-    market_type           => 'synthetic',
+    market_type           => 'all',
     landing_company_short => 'svg',
 };
 
@@ -220,7 +221,7 @@ my $suspend_account2 = {
     currency              => 'USD',
     login                 => $account2->{login},
     platform              => 'dxtrade',
-    market_type           => 'synthetic',
+    market_type           => 'all',
     landing_company_short => 'svg',
 };
 
@@ -246,7 +247,7 @@ cmp_deeply($dxtrader->get_accounts(type => 'real'), [$account2], 'only real acco
 my $account3 = $dxtrader->new_account(
     account_type => 'real',
     password     => 'test',
-    market_type  => 'financial',
+    market_type  => 'all',
     currency     => 'USD',
 );
 
@@ -261,7 +262,7 @@ cmp_deeply(
         display_balance       => '0.00',
         login                 => $account1->{login},
         platform              => 'dxtrade',
-        market_type           => 'financial',
+        market_type           => 'all',
         landing_company_short => 'svg',
     },
     'created third account'
@@ -305,7 +306,7 @@ subtest 'suspend user exception list' => sub {
             $account = $dxtrader->new_account(
                 account_type => 'real',
                 password     => 'test',
-                market_type  => 'synthetic',
+                market_type  => 'all',
                 currency     => 'USD',
             )
         },
@@ -385,7 +386,7 @@ subtest 'Inter landing company transfer' => sub {
             $account = $dxtrader_cr->new_account(
                 account_type => 'real',
                 password     => 'test',
-                market_type  => 'synthetic',
+                market_type  => 'all',
                 currency     => 'USD',
             )
         },

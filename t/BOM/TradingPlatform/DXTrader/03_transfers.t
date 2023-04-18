@@ -50,7 +50,7 @@ my $account = $dxtrader->new_account(
     account_type => 'real',
     password     => 'test',
     currency     => 'USD',
-    market_type  => 'financial',
+    market_type  => 'all',
 );
 
 my $dxbal;
