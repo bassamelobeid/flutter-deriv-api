@@ -949,6 +949,7 @@ Does not takes or returns any parameters
                     'sync_mt5_accounts_status',
                     {
                         binary_user_id => $client->binary_user_id,
+                        client_loginid => $client->loginid
                     });
 
                 $processed_binary_user{$binary_user_id} = 1;
