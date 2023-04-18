@@ -562,6 +562,7 @@ sub _apply_side_effects {
         if (any { $_ eq 'UNDERAGE' } $messages->@*) {
             BOM::Event::Actions::Common::handle_under_age_client($client, $provider);
             $clear_age_verification = 1;
+            BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id);    # no second attempts allowed
         }
 
         if (any { $_ eq 'DOB_MISMATCH' } $messages->@*) {
@@ -569,7 +570,6 @@ sub _apply_side_effects {
             $clear_age_verification = 1;
         }
 
-        BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id);    # no second attempts allowed
     } else {
         $clear_age_verification = 1;
     }

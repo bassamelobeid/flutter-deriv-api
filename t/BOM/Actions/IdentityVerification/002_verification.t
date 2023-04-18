@@ -887,6 +887,8 @@ subtest 'testing pass status and DOB' => sub {
     $updates  = 0;
     @requests = ();
 
+    my $current_submissions = $idv_model->submissions_left;
+
     $idv_model->add_document({
         issuing_country => 'br',
         number          => '123.456.789-33',
@@ -934,6 +936,9 @@ subtest 'testing pass status and DOB' => sub {
     );
 
     ok !$redis->get(IDV_LOCK_PENDING . $idv_model->user_id), 'There isn\'t a redis lock';
+
+    # the decrease of attempts occurs before event triggering so testing that the counter did not change is enough
+    is $idv_model->submissions_left, $current_submissions, 'Submission left did not change for name mismatch case';
 };
 
 subtest 'testing pass status and underage' => sub {
@@ -1014,6 +1019,8 @@ subtest 'testing pass status and underage' => sub {
         'Document has refuted from pass -  status underage'
     );
 
+    # number of attempts is reset to 0 and acc is blocked for this case
+    is $idv_model->submissions_left, 0, 'No attempts left for underage client';
 };
 subtest 'testing pass status and underage in messages' => sub {
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
@@ -1126,6 +1133,8 @@ subtest 'testing refuted status and expired' => sub {
     $updates  = 0;
     @requests = ();
 
+    my $current_submissions = $idv_model->submissions_left;
+
     $idv_model->add_document({
         issuing_country => 'br',
         number          => '123.456.789-33',
@@ -1160,7 +1169,7 @@ subtest 'testing refuted status and expired' => sub {
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
 
-    ok !$client->status->age_verification, 'age verification was clared';
+    ok !$client->status->age_verification, 'age verification was cleared';
 
     my $document = $idv_model->get_last_updated_document;
 
@@ -1176,9 +1185,11 @@ subtest 'testing refuted status and expired' => sub {
             'id'                       => re('\d+'),
             'document_type'            => 'cpf'
         },
-        'Document has refuted from pass -  status underage'
+        'Document has refuted from pass -  status expired'
     );
 
+    # the decrease of attempts occurs before event triggering so testing that the counter did not change is enough
+    is $idv_model->submissions_left, $current_submissions, 'Submission left did not change for name mismatch case';
 };
 
 subtest 'testing refuted status and dob mismatch' => sub {
@@ -1209,6 +1220,8 @@ subtest 'testing refuted status and dob mismatch' => sub {
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
     $updates  = 0;
     @requests = ();
+
+    my $current_submissions = $idv_model->submissions_left;
 
     $idv_model->add_document({
         issuing_country => 'br',
@@ -1243,7 +1256,7 @@ subtest 'testing refuted status and dob mismatch' => sub {
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
 
-    ok !$client->status->age_verification, 'age verification was clared';
+    ok !$client->status->age_verification, 'age verification was cleared';
 
     my $document = $idv_model->get_last_updated_document;
 
@@ -1259,9 +1272,11 @@ subtest 'testing refuted status and dob mismatch' => sub {
             'id'                       => re('\d+'),
             'document_type'            => 'cpf'
         },
-        'Document has refuted from pass -  status underage'
+        'Document has refuted from pass -  status dob mismatch'
     );
 
+    # the decrease of attempts occurs before event triggering so testing that the counter did not change is enough
+    is $idv_model->submissions_left, $current_submissions, 'Submission left did not change for dob mismatch case';
 };
 
 subtest 'testing refuted status and name mismatch' => sub {
@@ -1292,6 +1307,8 @@ subtest 'testing refuted status and name mismatch' => sub {
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
     $updates  = 0;
     @requests = ();
+
+    my $current_submissions = $idv_model->submissions_left;
 
     $idv_model->add_document({
         issuing_country => 'br',
@@ -1340,9 +1357,11 @@ subtest 'testing refuted status and name mismatch' => sub {
             'id'                       => re('\d+'),
             'document_type'            => 'cpf'
         },
-        'Document has refuted from pass -  status underage'
+        'Document has refuted from pass -  status name mismatch'
     );
 
+    # the decrease of attempts occurs before event triggering so testing that the counter did not change is enough
+    is $idv_model->submissions_left, $current_submissions, 'Submission left did not change for name mismatch case';
 };
 
 subtest 'pictures collected from IDV' => sub {
