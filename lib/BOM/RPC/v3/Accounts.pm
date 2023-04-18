@@ -2012,6 +2012,7 @@ rpc set_settings => sub {
             'sync_mt5_accounts_status',
             {
                 binary_user_id => $current_client->binary_user_id,
+                client_loginid => $current_client->loginid
             });
     }
 

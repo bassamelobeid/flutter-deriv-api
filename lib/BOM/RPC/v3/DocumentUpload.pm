@@ -179,6 +179,7 @@ sub successful_upload {
         'sync_mt5_accounts_status',
         {
             binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
         });
 
     return $args;
