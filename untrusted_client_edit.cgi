@@ -41,7 +41,6 @@ $status_checked = [$status_checked] unless ref($status_checked);
 my $additional_info = request()->param('additional_info');
 my $p2p_approved    = request()->param('p2p_approved');
 my $add_regex       = qr/^add|^sync/;
-my $file_name       = "$broker.$client_status_type";
 
 if (my $error_message = write_operation_error()) {
     print_error_and_exit($error_message);
@@ -52,6 +51,9 @@ if (!$status_checked->@* && (!$client_status_type || $client_status_type =~ /SEL
     print_error_and_exit("Action is not specified.");
 }
 
+my $file_name = "$broker.$client_status_type";
+# append the input text if additional infomation exist
+$reason = ($additional_info) ? $reason . ' - ' . $additional_info : $reason;
 my ($file, $csv, $lines, @login_ids);
 if ($bulk_loginids) {
 
@@ -69,7 +71,7 @@ if ($bulk_loginids) {
     my $dcc_error = BOM::DualControl->new({
             staff           => $clerk,
             transactiontype => "UPDATECLIENT_DETAILS_BULK"
-        })->validate_batch_anonymization_control_code($DCcode, [map { join "\0" => $_->@* } $lines->@*]);
+        })->validate_batch_status_update_control_code($DCcode, [map { join "\0" => $_->@* } $lines->@*]);
     code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg()))                                       if $dcc_error;
     code_exit_BO(_get_display_error_message("ERROR: the given file is empty, please provide the required client_ids")) if (scalar(@$lines) == 0);
     code_exit_BO(_get_display_error_message("ERROR: the number of client_ids exceeds limit of 2000 please reduce the number of entries"))
@@ -116,8 +118,6 @@ if ($client_status_type && $client_status_type !~ /SELECT AN ACTION/ && $reason 
     print_error_and_exit("Reason is not specified.");
 }
 
-# append the input text if additional infomation exist
-$reason = ($additional_info) ? $reason . ' - ' . $additional_info : $reason;
 local $\ = "\n";
 my ($printline, @invalid_logins);
 
