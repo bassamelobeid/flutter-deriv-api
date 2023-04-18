@@ -1494,10 +1494,14 @@ async sub sync_mt5_accounts_status {
     my $binary_user_id = $args->{binary_user_id} // undef;
     my $user           = BOM::User->new((id => $binary_user_id));
     my $default_client = $user ? $user->get_default_client : undef;
+    my $client;
+    $client = BOM::User::Client->new({loginid => $args->{client_loginid}}) if $args->{client_loginid};
+    $client = $default_client unless $client;
+    $log->debugf("No default client found for %s", $binary_user_id) unless $default_client;
 
     die 'Must provide binary_user_id' unless $args->{binary_user_id};
     die 'User not found'              unless $user;
-    die 'Default client not found'    unless $default_client;
+    die 'Client not found'            unless $client;
 
     my $loginid_details = $user->loginid_details;
 
@@ -1524,11 +1528,11 @@ async sub sync_mt5_accounts_status {
     foreach my $jurisdiction (keys %jurisdiction_mt5_accounts) {
         my $proof_failed_with_status;
         my $rule_failed = 0;
-        my $rule_engine = BOM::Rules::Engine->new(client => $default_client);
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
         try {
             $rule_engine->verify_action(
                 'mt5_jurisdiction_validation',
-                loginid              => $default_client->loginid,
+                loginid              => $client->loginid,
                 new_mt5_jurisdiction => $jurisdiction,
                 loginid_details      => $loginid_details,
             );

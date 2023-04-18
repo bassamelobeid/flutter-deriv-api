@@ -147,6 +147,7 @@ async sub verify_identity {
                     'sync_mt5_accounts_status',
                     {
                         binary_user_id => $client->binary_user_id,
+                        client_loginid => $client->loginid
                     });
             }) // undef;
 
@@ -174,6 +175,7 @@ async sub verify_identity {
             'sync_mt5_accounts_status',
             {
                 binary_user_id => $client->binary_user_id,
+                client_loginid => $client->loginid
             });
     } catch ($e) {
         $log->errorf('An error occurred while triggering IDV for document %s associated by client %s via provider %s due to %s',

@@ -684,6 +684,7 @@ async sub ready_for_authentication {
             'sync_mt5_accounts_status',
             {
                 binary_user_id => $client->binary_user_id,
+                client_loginid => $client->loginid
             });
 
     } catch ($e) {
@@ -955,6 +956,7 @@ async sub client_verification {
                 'sync_mt5_accounts_status',
                 {
                     binary_user_id => $client->binary_user_id,
+                    client_loginid => $client->loginid
                 });
 
         } catch ($e) {
