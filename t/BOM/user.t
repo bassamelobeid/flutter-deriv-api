@@ -1137,4 +1137,59 @@ subtest 'Populate users table on signup' => sub {
     cmp_deeply $mt5_logins->{$loginid}->{attributes}, {test => 'test'}, "Got correct 'attributes' value";
 };
 
+subtest 'check mt5 regulated accs' => sub {
+    my $test_client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'testmt5@testing.com',
+    });
+
+    my $user_1 = BOM::User->create(
+        email          => $test_client_1->email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+
+    #test for the real acc regular expressions and each segment of the group attribute
+    $user_1->add_loginid('MTR00001', 'mt5', 'real', 'USD', {group => 'real\p01_ts04\financial\svg'});
+
+    is $user_1->has_mt5_regulated_account, '0', "No real MT5 account, group details should not end with svg";
+
+    $user_1->add_loginid('MTR00002', 'mt5', 'real', 'USD', {group => 'real\p01_ts04\gaming\topside'});
+
+    is $user_1->has_mt5_regulated_account, '0', "No real MT5 account, subaccount cannot match gaming";
+
+    $user_1->add_loginid('MTR00003', 'mt5', 'real', 'USD', {group => 'real\p01_ts05\financial\topside'});
+
+    is $user_1->has_mt5_regulated_account, '0', "No real MT5 account, group details only match until ts04";
+
+    $user_1->add_loginid('MTR00004', 'mt5', 'real', 'USD', {group => 'real\p01_ts04\financial\topside'});
+
+    is $user_1->has_mt5_regulated_account, '1', "Client has a real MT5 account";
+
+    #create another client as the sub returns 1 upon a single real mt5 acc detected
+    my $test_client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'testmt6@testing.com',
+    });
+
+    my $user_2 = BOM::User->create(
+        email          => $test_client_2->email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+
+    #test for the demo acc regular expressions and each segment of the group attribute
+    $user_2->add_loginid('MTR00005', 'mt5', 'real', 'USD', {group => 'demo\test_financial'});
+
+    is $user_2->has_mt5_regulated_account, '0', "No real MT5 account, group details should not be demo";
+
+    $user_2->add_loginid('MTR00006', 'mt5', 'real', 'USD', {group => 'real\svg'});
+
+    is $user_2->has_mt5_regulated_account, '0', "No real MT5 account, group details should not end with svg";
+
+    $user_2->add_loginid('MTR00007', 'mt5', 'real', 'USD', {group => 'real\test_financial'});
+
+    is $user_2->has_mt5_regulated_account, '1', "Client has a real MT5 account";
+};
+
 done_testing();

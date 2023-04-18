@@ -635,19 +635,22 @@ sub has_mt5_regulated_account {
     # We want to check the real mt5 accounts, so we filter out MTD, then reverse sort,
     # that will move MTR first, and latest created id first
     my @all_mt5_loginids = $self->get_mt5_loginids(type_of_account => 'real');
+
     return 0 unless @all_mt5_loginids;
 
-    my @loginids = reverse sort @all_mt5_loginids;
-    return Future->wait_all(map { BOM::MT5::User::Async::get_user($_) } @loginids)->then(
-        sub {
-            # TODO (JB): to remove old group mapping once all accounts are moved to new group
-            return Future->done(1) if any {
-                $_->is_done
-                    && ($_->result->{group} =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_financial)/
-                    || $_->result->{group} =~ /^real(\\p01_ts)?(?:01|02|03|04)\\financial\\(?!svg)/)
-            } @_;
-            return Future->done(0);
-        })->get;
+    my $login_accs = $self->loginid_details;
+
+    for my $loginid (@all_mt5_loginids) {
+        my $acc = $login_accs->{$loginid};
+
+        next unless $acc->{attributes} && $acc->{attributes}->{group};
+
+        return 1
+            if $acc->{attributes}->{group} =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_financial)/
+            || $acc->{attributes}->{group} =~ /^real(\\p01_ts)?(?:01|02|03|04)\\financial\\(?!svg)/;
+    }
+
+    return 0;
 }
 
 =head2 get_clients_in_sorted_order
