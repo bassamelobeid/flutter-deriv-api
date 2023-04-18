@@ -2946,7 +2946,7 @@ subtest 'sync_mt5_accounts_status' => sub {
 
     $args->{binary_user_id} = $user->id;
 
-    like exception { $action_handler->($args)->get; }, qr/Default client not found/, 'correct exception when user has no clients';
+    like exception { $action_handler->($args)->get; }, qr/Client not found/, 'correct exception when user has no clients';
 
     $user->add_client($client);
 
