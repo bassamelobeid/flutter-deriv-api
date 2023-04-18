@@ -52,12 +52,12 @@ subtest 'suspend severs' => sub {
         bag({
                 'account_type'       => 'real',
                 'disabled'           => 1,
-                'supported_accounts' => bag('gaming', 'financial'),
+                'supported_accounts' => bag('all'),
             },
             {
                 'account_type'       => 'demo',
                 'disabled'           => 1,
-                'supported_accounts' => bag('gaming', 'financial'),
+                'supported_accounts' => bag('all'),
             }
         ),
         'all suspended'
@@ -71,12 +71,12 @@ subtest 'suspend severs' => sub {
         bag({
                 'account_type'       => 'real',
                 'disabled'           => 0,
-                'supported_accounts' => bag('gaming', 'financial'),
+                'supported_accounts' => bag('all'),
             },
             {
                 'account_type'       => 'demo',
                 'disabled'           => 1,
-                'supported_accounts' => bag('gaming', 'financial'),
+                'supported_accounts' => bag('all'),
             }
         ),
         'demo suspended'
@@ -90,12 +90,12 @@ subtest 'suspend severs' => sub {
         bag({
                 'account_type'       => 'real',
                 'disabled'           => 1,
-                'supported_accounts' => bag('gaming', 'financial'),
+                'supported_accounts' => bag('all'),
             },
             {
                 'account_type'       => 'demo',
                 'disabled'           => 0,
-                'supported_accounts' => bag('gaming', 'financial'),
+                'supported_accounts' => bag('all'),
             }
         ),
         'demo suspended'
@@ -108,12 +108,12 @@ subtest 'suspend severs' => sub {
         bag({
                 'account_type'       => 'real',
                 'disabled'           => 0,
-                'supported_accounts' => bag('gaming', 'financial'),
+                'supported_accounts' => bag('all'),
             },
             {
                 'account_type'       => 'demo',
                 'disabled'           => 0,
-                'supported_accounts' => bag('gaming', 'financial'),
+                'supported_accounts' => bag('all'),
             }
         ),
         'all available'
@@ -125,7 +125,7 @@ subtest 'suspend severs' => sub {
 subtest 'account types' => sub {
 
     my $mock_countries = Test::MockModule->new('Brands::Countries');
-    my $available      = 'gaming';
+    my $available      = 'all';
     $mock_countries->redefine(dx_company_for_country => sub { shift; my %args = @_; $args{account_type} eq $available ? 1 : 'none' });
 
     cmp_deeply(
@@ -133,34 +133,16 @@ subtest 'account types' => sub {
         bag({
                 'account_type'       => 'real',
                 'disabled'           => 0,
-                'supported_accounts' => ['gaming'],
+                'supported_accounts' => ['all'],
             },
             {
                 'account_type'       => 'demo',
                 'disabled'           => 0,
-                'supported_accounts' => ['gaming'],
+                'supported_accounts' => ['all'],
                 ,
             }
         ),
-        'only gaming'
-    );
-
-    $available = 'financial';
-
-    cmp_deeply(
-        $c->tcall(%params),
-        bag({
-                'account_type'       => 'real',
-                'disabled'           => 0,
-                'supported_accounts' => ['financial'],
-            },
-            {
-                'account_type'       => 'demo',
-                'disabled'           => 0,
-                'supported_accounts' => ['financial'],
-            }
-        ),
-        'only financial'
+        'only all'
     );
 
     $available = '';
@@ -175,12 +157,12 @@ subtest 'user exceptions' => sub {
     my $expected = bag({
             'account_type'       => 'real',
             'disabled'           => 0,
-            'supported_accounts' => bag('gaming', 'financial'),
+            'supported_accounts' => bag('all'),
         },
         {
             'account_type'       => 'demo',
             'disabled'           => 0,
-            'supported_accounts' => bag('gaming', 'financial'),
+            'supported_accounts' => bag('all'),
         });
 
     $suspend->all(1);

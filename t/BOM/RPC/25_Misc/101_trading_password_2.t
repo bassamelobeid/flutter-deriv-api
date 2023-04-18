@@ -48,7 +48,7 @@ subtest 'dxtrade' => sub {
     $params->{args}  = {
         platform     => 'dxtrade',
         account_type => 'real',
-        market_type  => 'financial',
+        market_type  => 'all',
         password     => 'test',
         currency     => 'USD',
     };
@@ -62,14 +62,6 @@ subtest 'dxtrade' => sub {
     $params->{args}{password} = 'Abcd1234';
     my $dx_fin = $c->call_ok('trading_platform_new_account', $params)->has_no_error->result;
     $dx_login = $dx_fin->{login};
-
-    $params->{args}{market_type} = 'synthetic';
-    $params->{args}{password}    = 'wrong';
-    $c->call_ok('trading_platform_new_account', $params)->has_error->error_code_is('PasswordError')
-        ->error_message_is('That password is incorrect. Please try again.', 'wrong password');
-
-    $params->{args}{password} = 'Abcd1234';
-    my $dx_syn = $c->call_ok('trading_platform_new_account', $params)->has_no_error->result;
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->demo(1);
 

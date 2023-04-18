@@ -872,7 +872,7 @@ sub get_dxtrade_server_list {
             country      => $client->residence,
             account_type => $_
         ) ne 'none'
-    } qw/gaming financial/;
+    } qw/all/;
 
     return Future->done([]) unless @market_types;
 

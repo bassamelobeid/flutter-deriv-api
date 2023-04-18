@@ -164,7 +164,7 @@ subtest 'dxtrader accounts' => sub {
     $params->{args} = {
         platform     => 'dxtrade',
         account_type => 'real',
-        market_type  => 'financial',
+        market_type  => 'all',
         password     => 'Abcd1234',
     };
     my $acc2 = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error('create 2nd account')->result;
@@ -255,7 +255,7 @@ subtest 'dxtrade for MF + CR' => sub {
     $params->{args} = {
         platform     => 'dxtrade',
         account_type => 'real',
-        market_type  => 'synthetic',
+        market_type  => 'all',
         password     => 'Abcd1234',
     };
 
@@ -478,7 +478,7 @@ subtest 'new account rules failure scenarios' => sub {
         args     => {
             platform     => 'dxtrade',
             account_type => 'real',
-            market_type  => 'financial',
+            market_type  => 'all',
             password     => 'Abcd1234',
             currency     => 'USD',
         },
@@ -524,32 +524,9 @@ subtest 'new account rules failure scenarios' => sub {
     # mocking lc
     my $lc_short;
     my $mock_lc = Test::MockModule->new('LandingCompany');
-    $mock_lc->mock(
-        'short',
-        sub {
-            return $lc_short;
-        });
-
-    # company won't match
-    $lc_short = 'some_fancy_name';
-    $c->call_ok('trading_platform_new_account', $params)
-        ->has_no_system_error->has_error->error_code_is('FinancialAccountMissing', 'Financial account is missing due to mocked LC')
-        ->error_message_is('Your existing account does not allow Deriv X trading. To open a Deriv X account, please upgrade to a financial account.',
-        'Expected error message');
-
-    # company won't match for gaming
-    $params->{args}->{market_type} = 'gaming';
-    $lc_short = 'other_fancy_name';
-    $c->call_ok('trading_platform_new_account', $params)
-        ->has_no_system_error->has_error->error_code_is('GamingAccountMissing', 'Gaming account is missing due to mocked LC')
-        ->error_message_is('Your existing account does not allow Deriv X trading. To open a Deriv X account, please upgrade to a gaming account.',
-        'Expected error message');
-
-    # unmock LC short
-    $mock_lc->unmock('short');
 
     # get back to financial
-    $params->{args}->{market_type} = 'financial';
+    $params->{args}->{market_type} = 'all';
 
     # Move to the U.K.
     $real->residence('gb');
@@ -652,7 +629,7 @@ subtest 'new account rules failure scenarios' => sub {
     cmp_deeply $acc,
         {
         login       => re('^[a-z0-9]+$'),
-        market_type => 'financial',
+        market_type => 'all',
         platform    => 'dxtrade',
         stash       => {
             app_markup_percentage      => '0',
@@ -679,7 +656,7 @@ subtest 'landing_company call' => sub {
     my %tests = (
         au => {},
         mt => {},
-        jp => {all => 1},
+        jp => {},
         id => {all => 1},
     );
 

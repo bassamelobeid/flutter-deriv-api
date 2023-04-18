@@ -679,7 +679,7 @@ subtest 'Transfers in between MT5 and Deriv X' => sub {
     $params->{args}  = {
         platform     => 'dxtrade',
         account_type => 'real',
-        market_type  => 'financial',
+        market_type  => 'all',
         password     => $DETAILS{password}{main},    # because we saved the trading password during MT5 account creation above
         currency     => 'USD',
     };
