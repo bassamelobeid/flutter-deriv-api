@@ -8,7 +8,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-use Test::Deep     qw(cmp_deeply);
+use Test::Deep;
 use Test::Warnings qw(warning);
 use Test::MockModule;
 use Path::Tiny;
@@ -472,11 +472,11 @@ subtest 'MT5 logins' => sub {
     my $loginid_real = $DETAILS_REAL{login};
     my $loginid_demo = $DETAILS_DEMO{login};
 
-    $user->add_loginid($loginid_real);
+    $user->add_loginid($loginid_real, 'mt5');
     my @mt5_logins = $user->mt5_logins;
     cmp_deeply(\@mt5_logins, [$loginid_real], 'MT5 logins match');
 
-    $user->add_loginid($loginid_demo);
+    $user->add_loginid($loginid_demo, 'mt5');
     @mt5_logins = $user->mt5_logins;
     cmp_deeply(\@mt5_logins, [$loginid_demo, $loginid_real], 'MT5 logins match');
 
@@ -917,25 +917,40 @@ subtest 'link_wallet' => sub {
     $args->{client_id} = $dxtrade_real_account->{account_id};
     throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real dxtrade account';
 
-    subtest 'get list of linked_wallet for user' => sub {
-        my $linked_wallet = $user->linked_wallet;
+    subtest 'get list of linked accounts for user' => sub {
+        my $account_links = $user->get_accounts_links;
 
         cmp_deeply(
-            $linked_wallet,
-            [{
-                    loginid        => $client_vr->loginid,
-                    wallet_loginid => $wallet->loginid
+            $account_links->{$client_vr->loginid},
+            [{loginid => $wallet->loginid, platform => 'dwallet'}],
+            'Wallet is linked to VR account'
+        );
+        cmp_deeply(
+            $account_links->{MTD2000},
+            [{loginid => $wallet->loginid, platform => 'dwallet'}],
+            'Wallet is linked to MT5 account'
+        );
+        cmp_deeply(
+            $account_links->{$dxtrade_account->{account_id}},
+            [{loginid => $wallet->loginid, platform => 'dwallet'}],
+            'Wallet is linked to DX account'
+        );
+        cmp_deeply(
+            $account_links->{$wallet->loginid},
+            bag({
+                    loginid  => $client_vr->loginid,
+                    platform => 'dtrade'
                 },
                 {
-                    loginid        => 'MTD2000',
-                    wallet_loginid => $wallet->loginid
+                    loginid  => 'MTD2000',
+                    platform => 'mt5'
                 },
                 {
-                    loginid        => $dxtrade_account->{account_id},
-                    wallet_loginid => $wallet->loginid
+                    loginid  => $dxtrade_account->{account_id},
+                    platform => 'dxtrade'
                 }
-            ],
-            'user list of linked_wallet is ok'
+            ),
+            'Wallet has links to all trading accounts'
         );
     };
 
@@ -945,73 +960,33 @@ subtest 'link_wallet' => sub {
 
         $user->add_client($new_wallet);
 
-        cmp_deeply(
-            $new_wallet->linked_accounts,
-            {
-                wallet => {
-                    linked_to      => [],                          # should be empty
-                    account_id     => $new_wallet->loginid,
-                    payment_method => $new_wallet->account_type,
-                    balance        => '0.00',
-                    currency       => 'USD',
-                }
-            },
-            'there is no linked_to trading accounts to this new wallet'
-        );
+        cmp_deeply($new_wallet->linked_accounts, [], 'there is no linked_to trading accounts to this new wallet');
 
         cmp_deeply(
             $wallet->linked_accounts,
-            {
-                wallet => {
-                    linked_to => [{
-                            account_id => $client_vr->loginid,
-                            balance    => '0.00',
-                            currency   => 'USD',
-                            platform   => 'deriv',
-                        },
-                        {
-                            account_id => 'MTD2000',
-                            balance    => '0.00',
-                            currency   => 'USD',
-                            platform   => 'mt5',
-                        },
-                        {
-                            account_id => $dxtrade_account->{account_id},
-                            balance    => '10000.00',
-                            currency   => 'USD',
-                            platform   => 'dxtrade'
-                        }
-                    ],
-                    account_id     => $wallet->loginid,
-                    payment_method => $wallet->account_type,
-                    balance        => '10000.00',
-                    currency       => 'USD'
+            bag({
+                    loginid  => $client_vr->loginid,
+                    platform => 'dtrade'
+                },
+                {
+                    loginid  => 'MTD2000',
+                    platform => 'mt5'
+                },
+                {
+                    loginid  => $dxtrade_account->{account_id},
+                    platform => 'dxtrade'
                 }
-            },
+            ),
             'returns correct list of linked_to trading account ids and wallet details'
         );
     };
 
     subtest 'get list of linked_accounts for a client' => sub {
-        cmp_deeply($client_cr->linked_accounts, {trading => {}}, 'there is no wallet linked to this client');
+        cmp_deeply($client_cr->linked_accounts, [], 'there is no wallet linked to this client');
 
         cmp_deeply(
             $client_vr->linked_accounts,
-            {
-                trading => {
-                    linked_to => [{
-                            account_id     => $wallet->loginid,
-                            payment_method => $wallet->account_type,
-                            balance        => '10000.00',
-                            currency       => 'USD'
-                        }
-                    ],
-                    account_id => $client_vr->loginid,
-                    balance    => '0.00',
-                    currency   => 'USD',
-                    platform   => 'deriv',
-                }
-            },
+            [{loginid => $wallet->loginid, platform => 'dwallet'}],
             'returns correct linked wallet info for this client'
         );
     }
