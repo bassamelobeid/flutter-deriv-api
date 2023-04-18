@@ -7,15 +7,13 @@ use Test::MockModule;
 use Test::More;
 use Test::Exception;
 use Test::Warnings;
-use ExpiryQueue;
-
-use Data::Dumper;
 
 use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client                    qw(top_up create_client);
+use Format::Util::Numbers                        qw/financialrounding/;
 
 use Guard;
 use Crypt::NamedKeys;
@@ -68,12 +66,6 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_u->mock('spot_tick', sub { return $current_tick });
-
-#TODO Remove the following two mocks after implementing accumulator expiry conditions
-my $mocked_exp = Test::MockModule->new('ExpiryQueue');
-$mocked_exp->mock('enqueue_new_transaction', sub { return () });
-my $mocked_trx = Test::MockModule->new('BOM::Transaction');
-$mocked_trx->mock('_get_params_for_expiryqueue', sub { return () });
 
 initialize_realtime_ticks_db();
 
@@ -148,9 +140,12 @@ my $args = {
     duration     => '10h',
     currency     => 'USD',
     amount_type  => 'stake',
-    amount       => 10,
-    barrier      => '98.00',
+    amount       => 100,
+    barrier      => '-22.00',
 };
+
+my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Turboslong');
+$mocked_contract->mock('strike_price_choices', sub { return ['-22.00'] });
 
 lives_ok {
     $cl = create_client('VRTC');
@@ -185,10 +180,7 @@ subtest 'buy turbos options', sub {
             purchase_date => $contract->date_start,
         });
 
-        #TODO: For now we skip tnx validation because turbos options contract type is not yet
-        #implemented into our offerings.
-        my %options = (skip_validation => 1);
-        my $error   = $txn->buy(%options);
+        my $error = $txn->buy();
         ok !$error, 'buy without error';
 
         subtest 'transaction report', sub {
@@ -248,7 +240,7 @@ subtest 'buy turbos options', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id},     'financial_market_bet_id';
-            is $chld->{barrier},                 '98.00',        'strike price/barrier is correct';
+            is $chld->{barrier},                 '78.00',        'strike price/barrier is correct';
             is $chld->{entry_spot},              100,            'entry spot is correct';
             is $chld->{entry_epoch},             $now->datetime, 'entry epoch is correct';
 
@@ -263,8 +255,7 @@ subtest 'sell a bet', sub {
         $args->{date_pricing} = $args->{date_start}->epoch + 1;
         my $contract = produce_contract($args);
 
-        my %options = (skip_validation => 1);
-        my $txn     = BOM::Transaction->new({
+        my $txn = BOM::Transaction->new({
             purchase_date => $contract->date_start->epoch + 1,
             client        => $cl,
             contract      => $contract,
@@ -272,7 +263,7 @@ subtest 'sell a bet', sub {
             price         => $contract->bid_price,
             source        => 23,
         });
-        my $error = $txn->sell(%options);
+        my $error = $txn->sell();
         is $error, undef, 'no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
@@ -282,7 +273,7 @@ subtest 'sell a bet', sub {
             is $trx->{account_id},              $acc_usd->id,             'account_id';
             is $trx->{action_type},             'sell',                   'action_type';
             is $trx->{amount} + 0,              $contract->bid_price + 0, 'amount';
-            is $trx->{balance_after} + 0,       4909.78,                  'balance_after';
+            is $trx->{balance_after} + 0,       4999.79,                  'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id},               'financial_market_bet_id';
             is $trx->{payment_id},              undef,                    'payment_id';
             is $trx->{quantity},                1,                        'quantity';
@@ -294,7 +285,7 @@ subtest 'sell a bet', sub {
         };
 
         subtest 'fmb row', sub {
-            plan tests => 17;
+            plan tests => 18;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,                              'account_id';
             is $fmb->{bet_class},     'turbos',                                  'bet_class';
@@ -306,8 +297,7 @@ subtest 'sell a bet', sub {
             is $fmb->{is_expired},    0,                                         'is_expired';
             ok $fmb->{is_sold}, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            #TODO: This test would pass after implementing offerings
-            # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
             is $fmb->{settlement_time}, $now->plus_time_interval('10h')->datetime, 'settlement_time';
@@ -326,9 +316,127 @@ subtest 'sell a bet', sub {
         is $chld->{financial_market_bet_id}, $fmb->{id},     'financial_market_bet_id';
         is $chld->{'entry_epoch'},           $now->datetime, 'correct entry epoch';
         is $chld->{'entry_spot'},            '100',          'correct entry spot price';
-        is $chld->{'barrier'},               '98.00',        'correct strike price (normalized)';
+        is $chld->{'barrier'},               '78.00',        'correct strike price (normalized)';
     };
 
+};
+
+subtest 'test Turbos sell slippage' => sub {
+    my $args = {
+        bet_type     => 'Turboslong',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '10h',
+        currency     => 'USD',
+        amount_type  => 'stake',
+        amount       => 100,
+        barrier      => '-22.00',
+    };
+    my $contract = produce_contract($args);
+    my $txn      = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+    ok !$txn->buy, 'no error in buy';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+
+    $args->{date_pricing} = $args->{date_start}->epoch + 1;
+    $args->{current_tick} = $current_tick;
+    my $contract_sell = produce_contract($args);
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        contract      => $contract_sell,
+        price         => $contract->bid_price,
+        purchase_date => $contract->date_start,
+    });
+    ok !$txn->sell, 'sell with no error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+    is $fmb->{sell_price}, $contract_sell->bid_price, 'sell price saved correctly';
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+    ok !$txn->buy, 'no error in buy';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+    my $price = $contract_sell->bid_price - ($contract_sell->allowed_slippage + 0.01);
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        contract      => $contract_sell,
+        price         => $price,
+        purchase_date => $contract->date_start,
+    });
+    ok !$txn->sell, 'sell with no error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+    is $fmb->{sell_price} + 0, $contract->bid_price, 'sell price is correct';
+    is $txn->price_slippage,   '0.06',               'correct price slippage';
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+    ok !$txn->buy, 'no error in buy';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+    $price = $contract_sell->bid_price - ($contract_sell->allowed_slippage - 0.01);
+    $txn   = BOM::Transaction->new({
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        contract      => $contract_sell,
+        price         => $price,
+        purchase_date => $contract->date_start,
+    });
+    ok !$txn->sell, 'sell with no error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+    is $fmb->{sell_price} + 0, financialrounding('price', $contract->currency, $price), 'sell price is correct';
+    is $txn->price_slippage,   '0.04',                                                  'correct price slippage';
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+    ok !$txn->buy, 'no error in buy';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+    $price = $contract_sell->bid_price + ($contract_sell->allowed_slippage + 0.01);
+    $txn   = BOM::Transaction->new({
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        contract      => $contract_sell,
+        price         => $price,
+        purchase_date => $contract->date_start,
+    });
+    my $error = $txn->sell;
+    is $error->{-type}, 'PriceMoved', 'error type - PriceMoved';
+    SKIP: {
+        skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
+        like(
+            $error->{-message_to_client},
+            qr/The underlying market has moved too much since you priced the contract. The contract sell price has changed from/,
+            'error message_to_client - The underlying market has moved too much since you priced the contract. The contract sell price has changed'
+        );
+    }
 };
 
 done_testing();
