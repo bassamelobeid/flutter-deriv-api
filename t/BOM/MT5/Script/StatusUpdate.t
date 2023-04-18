@@ -900,11 +900,13 @@ subtest 'sync_status_actions' => sub {
             [{
                 sync_mt5_accounts_status => {
                     binary_user_id => 10000007,
+                    client_loginid => 'CR10005'
                 }
             },
             {
                 sync_mt5_accounts_status => {
                     binary_user_id => 10000008,
+                    client_loginid => 'CR10005'
                 }}
             ],
             'Event emitted once per binary user id';
