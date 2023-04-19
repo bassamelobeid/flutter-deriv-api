@@ -89,10 +89,28 @@ Returns a L<BOM::User::Wallet> account details with a list of linked Trading acc
 sub linked_accounts {
     my $self = shift;
 
-    my $loginid       = $self->loginid;
-    my $account_links = $self->user->get_accounts_links({wallet_loginid => $loginid});
+    my $linked_wallet = $self->user->linked_wallet($self->loginid);
 
-    return $account_links->{$loginid} // [];
+    my @linked_to;
+    for (@{$linked_wallet}) {
+        my $details = $self->user->get_account_by_loginid($_->{loginid});
+
+        push @linked_to,
+            {
+            account_id => $details->{account_id},
+            balance    => $details->{display_balance},
+            currency   => $details->{currency},
+            platform   => $details->{platform}};
+    }
+
+    return {
+        wallet => {
+            linked_to      => \@linked_to,
+            account_id     => $self->loginid,
+            balance        => formatnumber('amount', $self->currency, $self->default_account->balance),
+            currency       => $self->currency,
+            payment_method => $self->get_account_type->name,
+        }};
 }
 
 1;

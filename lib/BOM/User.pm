@@ -931,7 +931,7 @@ sub is_payment_agents_suspended_in_country {
 
 =head2 filter_active_ids
 
-my $loginids = Reference list of all accounts associated with current client account;
+my $loginids = Reference list of all MT5 accounts associated with current client account;
 
 Filter the list of MT5 accounts to only get active accounts.
 
@@ -946,41 +946,16 @@ Other possible status includes:
 
 sub filter_active_ids {
     my ($self, $loginids) = @_;
-
-    return [grep { $self->is_active_loginid($_) } @$loginids];
-}
-
-=head2 is_active_loginid
-
-Predicate to check login id status based on the state we have in user db
-
-=over
-
-=item * C<$login_id> client login id to check status
-
-=back
-
-Returns  boolean value
-
-=cut
-
-sub is_active_loginid {
-    my ($self, $loginid) = @_;
-
-    my $details = $self->loginid_details->{$loginid};
-
-    return 0 unless $details;
-
-    # Currently we have statuses only for mt5 and derivez accounts
-    return 1 unless ($details->{platform} // '') =~ /^(?:mt5|derivez)$/;
-
     # Since there are no plans to add "active" to status of active account in DB, current active accounts
     # contain status of 'undef'.
-    return 1 unless $details->{status};
-
-    return 1 if any { $details->{status} eq $_ } qw/poa_outdated poa_pending poa_rejected poa_failed proof_failed verification_pending/;
-
-    return 0;
+    my $filter_active = sub {
+        my $status = shift;
+        return 1
+            if not defined($status)
+            or any { $status eq $_ } qw/poa_outdated poa_pending poa_rejected poa_failed proof_failed verification_pending/;
+        return 0;
+    };
+    return [grep { $filter_active->($self->{loginid_details}{$_}{status}) } @$loginids];
 }
 
 =head2 get_mt5_loginids
@@ -1733,57 +1708,35 @@ sub get_account_by_loginid {
     };
 }
 
-=head2 get_accounts_links
+=head2 linked_wallet
 
-regurns list of links between user's trading and wallets accounts
+Calls a db function to get a list of linked wallet for a user.
 
 =over 4
 
-=item * C<trading_loginid> - filter links by trading account login id
-=item * C<wallet_loginid> - filter links by wallet account login id
+=item * C<$loginid> - a L<BOM::User::Client> or L<BOM::User::Wallet> loginid
 
 =back
 
-Returns a hash where keys are representing loginid of accounts and values are arrays with linked accounts 
+Returns a list of linked wallet.
 
 =cut
 
-sub get_accounts_links {
-    my ($self, $args) = @_;
+sub linked_wallet {
+    my ($self, $wallet_loginid) = @_;
 
-    my $links = $self->dbic->run(
+    return $self->{linked_wallet} if $self->{linked_wallet};
+
+    $self->{linked_wallet} = $self->dbic->run(
         fixup => sub {
             return $_->selectall_arrayref(
-                'select wallet_loginid, loginid trading_loginid  from users.get_linked_wallet(?,?,?)',
+                'select loginid, wallet_loginid from users.get_linked_wallet(?,?,?)',
                 {Slice => {}},
-                $args->{trading_loginid},
-                $self->{id}, $args->{wallet_loginid});
-        }) // [];
+                undef, $self->{id}, $wallet_loginid
+            );
+        });
 
-    my $details = $self->loginid_details;
-
-    my %grouped_result;
-    for my $link ($links->@*) {
-        # Checking that trading account is active, currently is applicable only for mt5 and derivez
-        # In future may worth to add wallet check here as well, if we'll keep statuses at userdb
-        next unless $self->is_active_loginid($link->{trading_loginid});
-
-        $grouped_result{$_} //= [] for $link->@{qw(wallet_loginid trading_loginid)};
-
-        push $grouped_result{$link->{wallet_loginid}}->@*,
-            +{
-            loginid  => $link->{trading_loginid},
-            platform => $details->{$link->{trading_loginid}}{platform} // 'dtrade',
-            };
-
-        push $grouped_result{$link->{trading_loginid}}->@*,
-            +{
-            loginid  => $link->{wallet_loginid},
-            platform => $details->{$link->{wallet_loginid}}{platform},
-            };
-    }
-
-    return \%grouped_result;
+    return $self->{linked_wallet};
 }
 
 =head2 get_trading_platform_loginids
