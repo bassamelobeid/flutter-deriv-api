@@ -1,8 +1,8 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
-   "description" : "",
+   "description" : null,
    "type" : "object",
-   "title" : "",
+   "title" : null,
    "additionalProperties" : false,
    "required" : [
       "landing_company_fullname",
@@ -125,37 +125,21 @@
                   "type" : "string"
                },
                "account_type": {
-                  "description": "Account type.",
-                  "type": "string"
+                   "description": "Account type.",
+                   "type": "string",
+                   "enum": [
+                       "trading",
+                       "wallet"
+                   ]
                },
-               "account_category": {
-                  "description": "Account category.",
-                  "type": "string",
-                  "enum" : [
-                     "trading",
-                     "wallet"
-                  ]
+               "trading": {
+                  "description": "Details of the Trading account.",
+                  "type": "object"
                },
-              "linked_to": {
-                 "description": "list of linked accounts.",
-                 "type": "array",
-                 "items" : {
-                    "type" : "object",
-                    "additionalProperties" : false,
-                    "required" : [
-                       "loginid",
-                       "platform"
-                    ],
-                    "properties" : {
-                       "loginid": {
-                          "type": "string"
-                       },
-                       "platform": {
-                          "type": "string"
-                       }
-                    }
-                 }
-              },
+               "wallet": {
+                  "description": "Details of the Wallet account.",
+                  "type": "object"
+               },
                "created_at": {
                   "description": "Creation time of the account as epoch.",
                   "type": "integer"
@@ -181,25 +165,11 @@
          "type" : "string",
          "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
       },
-      "linked_to": {
-         "description": "list of linked accounts.",
-         "type": "array",
-         "items" : {
-            "type" : "object",
-            "additionalProperties" : false,
-            "required" : [
-               "loginid",
-               "platform"
-            ],
-            "properties" : {
-               "loginid": {
-                  "type": "string"
-               },
-               "platform": {
-                  "type": "string"
-               }
-            }
-         }
+      "trading": {
+         "type": "object"
+      },
+      "wallet": {
+         "type": "object"
       }
    }
 }
