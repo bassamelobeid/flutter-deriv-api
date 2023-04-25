@@ -27,9 +27,10 @@ use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode   qw( shortcode_to_parameters );
+use DataDog::DogStatsd::Helper    qw( stats_gauge );
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Config;
-use DataDog::DogStatsd::Helper qw( stats_gauge );
+use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Transaction::Utility;
 use List::Util qw(max);
@@ -123,12 +124,12 @@ sub check_open_bets {
                             } elsif ($bet->waiting_for_settlement_tick) {
                                 # Daily contract will be settled on the opening of the next trading day. Only report if contract is not sold one hour after settlement time.
                                 if ((Date::Utility->new->epoch - $bet->date_settlement->epoch) > 3600) {
+                                    $waiting_for_settlement++;
+                                } else {
                                     push @manually_settle_fmbid,
                                         get_fmb_for_manual_settlement($open_fmb, $bet, 'Settlement tick is missing. Please check.');
                                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                                         undef, $open_fmb_id, $value);
-                                } else {
-                                    $waiting_for_settlement++;
                                 }
                             } else {
                                 push @mail_content, "Contract expired but could not be settled [$last_fmb_id,  $open_fmb->{short_code}]";
@@ -174,8 +175,9 @@ sub check_open_bets {
     }
 
     DataDog::DogStatsd::Helper::stats_gauge('bom_backoffice.riskd.expired_unsold_contracts', scalar @manually_settle_fmbid);
-    $self->_cache_expired_contracts($open_bets_expired_ref, \@manually_settle_fmbid);
     $self->cache_daily_turnover($pricing_date);
+
+    $self->sell_expired_contracts($open_bets_expired_ref, \@manually_settle_fmbid);
 
     return {
         full_count                => $howmany,
@@ -186,18 +188,20 @@ sub check_open_bets {
     };
 }
 
-sub _cache_expired_contracts {
+sub sell_expired_contracts {
     my $self                  = shift;
     my $open_bets_ref         = shift;
     my $manually_settle_fmbid = shift;
 
-    my @error_lines;
+    # Now deal with them one by one.
 
+    my @error_lines;
     my @client_loginids = keys %{$open_bets_ref};
 
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
-        my %bet_infos;
+        my $client    = BOM::User::Client::get_instance({'loginid' => $client_id});
+        my (@fmb_ids_to_be_sold, %bet_infos);
         for my $id (keys %$fmb_infos) {
             my $fmb_id         = $fmb_infos->{$id}{id};
             my $expected_value = $fmb_infos->{$id}{market_price};
@@ -222,7 +226,6 @@ sub _cache_expired_contracts {
                 push @error_lines, $bet_info;
                 next;
             }
-
             if (0 + $bet->bid_price xor 0 + $expected_value) {
                 # We want to be sure that both sides agree that it is either worth nothing or payout.
                 # Sadly, you can't compare the values directly because $expected_value has been
@@ -233,7 +236,27 @@ sub _cache_expired_contracts {
                 next;
             }
 
+            push @fmb_ids_to_be_sold, $fmb_id;
             $bet_infos{$fmb_id} = $bet_info;
+        }
+
+        # We may end up with no contracts to sell at this point.
+        if (@fmb_ids_to_be_sold) {
+            try {
+                my $result = BOM::Transaction::sell_expired_contracts({
+                    client       => $client,
+                    contract_ids => \@fmb_ids_to_be_sold,
+                    source       => 3,                      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
+                });
+                for my $failure (@{$result->{failures}}) {
+                    my $bet_info = $bet_infos{$failure->{fmb_id}};
+                    $bet_info->{reason} = $failure->{reason};
+                    push @error_lines, $bet_info;
+                }
+            } catch ($e) {
+                $log->warnf("Failed to sell expired contracts for %s - IDs were %s and error was $e",
+                    $client->loginid, join(',', @fmb_ids_to_be_sold))
+            }
         }
     }
 
@@ -269,6 +292,8 @@ sub _cache_expired_contracts {
                 || $log->warn("sending email from $from to $to subject $subject failed");
         }
     }
+
+    return 0;
 }
 
 # cache query result for BO Daily Turnover Report
