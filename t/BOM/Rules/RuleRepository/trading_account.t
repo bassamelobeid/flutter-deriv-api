@@ -28,7 +28,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
             trading_platform_new_account => 1,
             loginid                      => $client->loginid,
             account_type                 => 'demo',
-            market_type                  => 'financial',
+            market_type                  => 'all',
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
@@ -77,14 +77,11 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
             },
             'Japan cannot open financial demo';
 
-        $params->{market_type} = 'synthetic';
-        ok $rule_engine->apply_rules($rule_name, %$params), 'Japan can open synthetic demo';
-
         # Make the real client disabled and try to open a real account
         $params->{account_type} = 'real';
 
         # Make the real client duplicate_account and try to open a real account
-        $params->{market_type} = 'financial';
+        $params->{market_type} = 'all';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'TradingAccountNotAllowed',
@@ -115,7 +112,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
             trading_platform_new_account => 1,
             loginid                      => $client->loginid,
             account_type                 => 'demo',
-            market_type                  => 'synthetic',
+            market_type                  => 'all',
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
@@ -165,7 +162,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
             trading_platform_new_account => 1,
             loginid                      => $client->loginid,
             account_type                 => 'demo',
-            market_type                  => 'synthetic',
+            market_type                  => 'all',
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
@@ -305,7 +302,7 @@ subtest 'rule trading_account.should_complete_financial_assessment' => sub {
         trading_platform_new_account => 1,
         loginid                      => $client->loginid,
         account_type                 => 'real',
-        market_type                  => 'synthetic',
+        market_type                  => 'all',
         password                     => 'C0rrect_p4ssword',
         platform                     => 'dxtrade',
     };
@@ -340,7 +337,7 @@ subtest 'rule trading_account.should_provide_tax_details' => sub {
         trading_platform_new_account => 1,
         loginid                      => $client->loginid,
         account_type                 => 'real',
-        market_type                  => 'synthetic',
+        market_type                  => 'all',
         password                     => 'C0rrect_p4ssword',
         platform                     => 'dxtrade',
     };
