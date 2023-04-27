@@ -91,7 +91,7 @@ payments:
       default: '{"jy":"99999"}'
       global: 1
     reversible_balance_limits:
-      description: 'Percentage of reversible deposits a client is allowed to sell/withdraw. Can be overridden per loginid.'
+      description: 'Percentage of reversible deposits a client is allowed to sell/withdraw.'
       isa: section
       contains:
         ctc:
@@ -100,7 +100,7 @@ payments:
           global: 1
           default: 100
         p2p:
-          description: 'Percentage of reversible deposits available to sell via P2P.'
+          description: 'Percentage of reversible deposits available to sell via P2P. Only applicable in countries where cashier is not blocked for P2P.'
           isa: Num
           global: 1
           default: 100
@@ -530,6 +530,16 @@ payments:
           isa: Bool
           global: 1
           default: 0
+        fiat_deposit_restricted_countries:
+          description: "Countries where all fiat cashier deposits are excluded from P2P balance. Only internal transfers and P2P deposits will count towards P2P available balance in these countries, except for deposits earlier that lookback."
+          isa: ArrayRef
+          default: []
+          global: 1
+        fiat_deposit_restricted_lookback:
+          isa: Int
+          description: 'Fiat cashier deposits made during this number of days in the past are excluded for fiat_deposit_restricted_countries.'
+          default: 180
+          global: 1          
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
