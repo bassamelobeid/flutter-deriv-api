@@ -67,11 +67,11 @@
 </form>
 <script type="text/javascript" language="javascript">
 
-var regex_poi            = /([% poi_doctypes %])/i;
-var regex_expirable      =  /([% expirable_doctypes %])/i;
-var regex_dateless       = /[% dateless_doctypes %]/i;
-var regex_selfie_with_id = /selfie_with_id/i;
-var regex_numberless     = /[% numberless_doctypes %]/;
+var regex_poi            = /^([% poi_doctypes %])\$/i;
+var regex_expirable      =  /^([% expirable_doctypes %])\$/i;
+var regex_dateless       = /^([% dateless_doctypes %])\$/i;
+var regex_selfie_with_id = /^(selfie_with_id)\$/i;
+var regex_numberless     = /^([% numberless_doctypes %])\$/;
 var docsides             = [% docsides | none %];
 var sides                = [% sides | none %];
 var type_sides           = {};
@@ -346,6 +346,10 @@ function handle_page_type_control(i, enabled_options) {
 \$(document).ready(function() {
       \$('.datepick').datepicker({dateFormat: "yy-mm-dd",changeMonth: true,
       changeYear: true});
+
+      \$('.datepick').datepicker('option', 'onSelect', function (date) {
+          \$(this).addClass('data-changed');
+      });
 
       const dropdowns = document.getElementsByClassName('expiration_dropdown');
       for(const elem of dropdowns) {

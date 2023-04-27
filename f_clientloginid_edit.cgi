@@ -1783,11 +1783,6 @@ print qq[
         }
     </style>
     <script>
-        \$(function() {
-            \$('.datepick').datepicker('option', 'onSelect', function (date) {
-                \$(this).addClass('data-changed');
-            });
-        });
         clientInfoForm.querySelectorAll('$INPUT_SELECTOR,select').forEach(input => {
             input.addEventListener('change', ev => ev.target.classList.add('data-changed'));
         });
