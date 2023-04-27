@@ -107,7 +107,7 @@ subtest 'residence_list' => sub {
                                 format       => '^[0-9]{12}$',
                                 additional   => {
                                     display_name => 'PAN Card',
-                                    format       => '^.{10}$',
+                                    format       => '^[a-zA-Z]{5}\d{4}[a-zA-Z]{1}$',
                                 },
                             },
                             passport => {
@@ -120,15 +120,15 @@ subtest 'residence_list' => sub {
                             },
                             drivers_license => {
                                 display_name => 'Drivers License',
-                                format       => '^.{5,255}$',
+                                format       => '^[a-zA-Z0-9]{10,17}$',
                             },
                             pan => {
                                 display_name => 'PAN Card',
-                                format       => '^.{10}$',
+                                format       => '^[a-zA-Z]{5}\d{4}[a-zA-Z]{1}$',
                             },
                             epic => {
                                 display_name => 'Voter ID',
-                                format       => '^.{10,23}$',
+                                format       => '^[a-zA-Z]{3}[0-9]{7}$',
                             }
                         },
                     },
