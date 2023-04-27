@@ -159,6 +159,9 @@ subtest 'deposit' => sub {
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
 
+    my $mt5_async_mock = Test::MockModule->new('BOM::MT5::User::Async');
+    $mt5_async_mock->mock('is_suspended', sub { return undef; });
+
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
     subtest record_mt5_transfer_deposit => sub {

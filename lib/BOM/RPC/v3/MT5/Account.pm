@@ -1737,7 +1737,7 @@ async_rpc "mt5_deposit",
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
-    return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
+    return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code, 'deposit')->then(
         sub {
             my ($response) = @_;
 
@@ -1935,7 +1935,7 @@ async_rpc "mt5_withdrawal",
         }
     }
 
-    return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, $currency_check)->then(
+    return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, 'withdrawal', $currency_check)->then(
         sub {
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
@@ -2035,12 +2035,19 @@ async_rpc "mt5_withdrawal",
     };
 
 sub _mt5_validate_and_get_amount {
-    my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code, $currency_check) = @_;
+    my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code, $transfer_type, $currency_check) = @_;
     my $brand_name = request()->brand->name;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
     return create_error_future('PaymentsSuspended', {override_code => $error_code})
         if ($app_config->system->suspend->payments);
+    my $is_suspended = BOM::MT5::User::Async::is_suspended(
+        'UserDepositChange',
+        {
+            login       => $mt5_loginid,
+            new_deposit => $transfer_type eq 'deposit' ? $amount : -$amount
+        });
+    return create_error_future($is_suspended, {override_code => $error_code}) if $is_suspended;
 
     my $mt5_transfer_limits = BOM::Config::CurrencyConfig::mt5_transfer_limits($brand_name);
 
