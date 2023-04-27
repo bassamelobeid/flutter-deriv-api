@@ -61,4 +61,35 @@ sub top_up {
     return;
 }
 
+=head2 create_doughflow_methods
+
+Creates entries in the payment.doughflow_method table:
+
+=over 4
+
+=item * payment_processor = 'reversible', payment_method = '': reversible, withdrawal not supported
+
+=item * payment_processor = 'nonreversible', payment_method = '': non reversible, withdrawal supported
+
+=back
+
+Takes the following argument:
+
+=over 4
+
+=item * C<broker> - uppercase broker code
+
+=back
+
+=cut
+
+sub create_doughflow_methods {
+    my $broker = shift;
+
+    BOM::Database::ClientDB->new({broker_code => $broker})->db->dbic->dbh->do(
+        "INSERT INTO payment.doughflow_method (payment_processor, reversible, withdrawal_supported) 
+        VALUES ('reversible', TRUE, FALSE), ('nonreversible', FALSE, TRUE)"
+    );
+}
+
 1;
