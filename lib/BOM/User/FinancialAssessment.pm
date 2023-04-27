@@ -33,12 +33,10 @@ Given a user and a hashref of the financial assessment does the following :
 sub update_financial_assessment {
     my ($user, $args, %options) = @_;
     my $is_new_mf_client = $options{new_mf_client} // 0;
-
     # Doesn't matter which client we get as they all share the same financial assessment details
     my @all_clients = $user->clients();
 
     my $client = $all_clients[0];
-
     return undef if $client->landing_company->is_suspended;
 
     my $previous = $client->financial_assessment();
@@ -66,7 +64,6 @@ sub update_financial_assessment {
     # - High risk CR with MT5 accounts
     my @client_ids = $user->loginids();
     if (my @cr_clients = $user->clients_for_landing_company('svg')) {
-
         # should we include CR clients since Sr applies on them also now
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client, $client->landing_company->short)
             if ($client->risk_level_sr() eq 'high')

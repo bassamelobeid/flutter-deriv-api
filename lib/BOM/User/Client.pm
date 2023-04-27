@@ -7156,48 +7156,49 @@ sub update_status_after_auth_fa {
     return unless $self->user;
 
     for my $sibling ($self->user->clients) {
+        my $sibling_status = $sibling->status;
         if ($sibling->is_financial_assessment_complete) {
 
-            $sibling->status->clear_financial_assessment_required;
+            $sibling_status->clear_financial_assessment_required;
 
             $sibling->status->clear_withdrawal_locked
                 if ($sibling->status->reason('withdrawal_locked') // '') =~ 'FA needs to be completed';
 
             if ($sibling->fully_authenticated && !$sibling->documents->expired) {
-                $sibling->status->clear_withdrawal_locked
-                    if ($sibling->status->reason('withdrawal_locked') // '') =~ 'Pending authentication or FA';
+                $sibling_status->clear_withdrawal_locked
+                    if ($sibling_status->reason('withdrawal_locked') // '') =~ 'Pending authentication or FA';
 
-                $sibling->status->clear_allow_document_upload
-                    if ($sibling->status->reason('allow_document_upload') // '') =~ /BECOME_HIGH_RISK|Pending authentication or FA/;
+                $sibling_status->clear_allow_document_upload
+                    if ($sibling_status->reason('allow_document_upload') // '') =~ /BECOME_HIGH_RISK|Pending authentication or FA/;
             }
         }
 
         if ($self->get_poi_status(undef, 0) eq 'verified') {
             for my $code (qw/cashier_locked unwelcome/) {
-                my $status   = $sibling->status->$code;
+                my $status   = $sibling_status->$code;
                 my $clear_fn = "clear_$code";
-                $sibling->status->$clear_fn if $status and $status->{reason} =~ FALSE_PROFILE_INFO_REGEX;
+                $sibling_status->$clear_fn if $status and $status->{reason} =~ FALSE_PROFILE_INFO_REGEX;
             }
         }
 
         if ($sibling->is_financial_assessment_complete) {
             # Clear unwelcome status for clients without financial assessment and have breached
             # social responsibility thresholds
-            $sibling->status->clear_unwelcome
-                if ref $sibling->status->unwelcome eq "HASH"
-                && $sibling->status->unwelcome->{reason} eq SR_UNWELCOME_REASON;
+            $sibling_status->clear_unwelcome
+                if ref $sibling_status->unwelcome eq "HASH"
+                && $sibling_status->unwelcome->{reason} eq SR_UNWELCOME_REASON;
         }
 
         if ($sibling->get_poi_status() eq 'verified') {
             # auto-unlock MLT clients locked after first deposit
-            $sibling->status->clear_unwelcome
-                if ($sibling->status->reason('unwelcome') // '') =~ qr/Age verification is needed after first deposit/;
+            $sibling_status->clear_unwelcome
+                if ($sibling_status->reason('unwelcome') // '') =~ qr/Age verification is needed after first deposit/;
             # clear withdrawal_locked set by check_name_changes_after_first_deposit event
-            $sibling->status->clear_withdrawal_locked
-                if ($sibling->status->reason('withdrawal_locked') // '') eq 'Excessive name changes after first deposit - pending POI';
+            $sibling_status->clear_withdrawal_locked
+                if ($sibling_status->reason('withdrawal_locked') // '') eq 'Excessive name changes after first deposit - pending POI';
 
             # Potential fraud limitations should be lifted after proof identity.
-            $sibling->status->clear_potential_fraud;
+            $sibling_status->clear_potential_fraud;
         }
     }
 
