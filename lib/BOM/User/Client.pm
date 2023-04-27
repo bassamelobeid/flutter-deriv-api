@@ -3186,25 +3186,28 @@ sub p2p_order_create {
 
     die +{error_code => 'OrderAlreadyExists'} if @{$open_orders};
 
-    my $txn_time            = Date::Utility->new->datetime;
-    my $reversible_limit    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
-    my $reversible_lookback = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
-    my $market_rate         = p2p_exchange_rate($advert->{local_currency})->{quote};
+    my $txn_time                          = Date::Utility->new->datetime;
+    my $reversible_limit                  = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
+    my $reversible_lookback               = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+    my $fiat_deposit_restricted_countries = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_countries;
+    my $fiat_deposit_restricted_lookback  = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_lookback;
+    my $market_rate                       = p2p_exchange_rate($advert->{local_currency})->{quote};
 
     my $order = $self->db->dbic->run(
         fixup => sub {
             my $dbh = shift;
 
             return $dbh->selectrow_hashref(
-                'SELECT * FROM p2p.order_create_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)', undef,
-                $advert_id,                                                                                $self->loginid,
-                $escrow->loginid,                                                                          $amount,
-                $expiry,                                                                                   $payment_info,
-                $contact_info,                                                                             $source,
-                $self->loginid,                                                                            $limit_per_day_per_client,
-                $txn_time,                                                                                 $reversible_limit,
-                $reversible_lookback,                                                                      $param{payment_method_ids},
-                $param{rate},                                                                              $market_rate
+                'SELECT * FROM p2p.order_create_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)', undef,
+                $advert_id,                                                                                      $self->loginid,
+                $escrow->loginid,                                                                                $amount,
+                $expiry,                                                                                         $payment_info,
+                $contact_info,                                                                                   $source,
+                $self->loginid,                                                                                  $limit_per_day_per_client,
+                $txn_time,                                                                                       $reversible_limit,
+                $reversible_lookback,                                                                            $param{payment_method_ids},
+                $param{rate},                                                                                    $market_rate,
+                $fiat_deposit_restricted_countries,                                                              $fiat_deposit_restricted_lookback
             );
         });
 
@@ -4231,8 +4234,10 @@ sub _p2p_adverts {
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     $param{max_order} = convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $self->currency);
-    $param{reversible_limit}    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
-    $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+    $param{reversible_limit}                  = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
+    $param{reversible_lookback}               = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+    $param{fiat_deposit_restricted_countries} = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_countries;
+    $param{fiat_deposit_restricted_lookback}  = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_lookback;
     $param{advertiser_name} =~ s/([%_])/\\$1/g         if $param{advertiser_name};
     $param{local_currency} = uc $param{local_currency} if $param{local_currency};
 
@@ -4261,12 +4266,13 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
                         client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
-                        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map country_payment_methods/
+                        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map country_payment_methods
+                        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback/
                 });
         }) // [];
 }
@@ -7965,11 +7971,71 @@ Returns the balance available for p2p
 sub p2p_balance {
     my ($self) = @_;
 
-    my $amount     = $self->balance_for_cashier('p2p');
-    my $advertiser = $self->_p2p_advertiser_cached // {};
-    $amount += ($advertiser->{extra_sell_amount} // 0);
-    $amount = min($amount, $self->account->balance);
-    return financialrounding('amount', $self->currency, $amount);
+    my $account_balance = $self->account->balance;
+    my $excluded_amount = $self->p2p_exclusion_amount;
+    my $advertiser      = $self->_p2p_advertiser_cached    // {};
+    my $extra_sell      = $advertiser->{extra_sell_amount} // 0;
+    my $p2p_balance     = min($account_balance, max(0, $account_balance - $excluded_amount) + $extra_sell);
+
+    return financialrounding('amount', $self->currency, $p2p_balance);
+}
+
+=head2 p2p_exclusion_amount
+
+Returns the amount that must be excluded from a P2P advertiser's account balance.
+
+=cut
+
+sub p2p_exclusion_amount {
+    my ($self) = @_;
+
+    my ($reversible, $limit, $lookback);
+    my @restricted_countries = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_countries->@*;
+
+    if (any { $self->residence eq $_ } @restricted_countries) {
+        $limit      = 0;
+        $lookback   = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_lookback;
+        $reversible = 0;
+    } else {
+        $limit      = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
+        $lookback   = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+        $reversible = 1;
+    }
+
+    my ($amount) = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM p2p.balance_exclusion_amount(?, ?, ?, ?)', undef, $self->account->id, $limit, $lookback, $reversible);
+        });
+
+    return $amount;
+}
+
+=head2 p2p_withdrawable_balance
+
+Returns the amount that can be withdrawn via cashier or transferred to sibling accounts.
+
+=cut
+
+sub p2p_withdrawable_balance {
+    my ($self) = @_;
+
+    my $balance = $self->account->balance;
+    my $limit   = BOM::Config::Runtime->instance->app_config->payments->p2p_withdrawal_limit;
+    return $balance if $limit >= 100;    # setting is a percentage
+
+    my $lookback = BOM::Config::Runtime->instance->app_config->payments->p2p_deposits_lookback;
+
+    my ($p2p_net) = $self->db->dbic->run(
+        fixup => sub {
+            return $_->selectrow_array('SELECT payment.aggregate_payments_by_type(?, ?, ?)', undef, $self->account->id, 'p2p', $lookback);
+        }) // 0;
+
+    return $balance if $p2p_net <= 0;
+    $p2p_net = $p2p_net * (1 - ($limit / 100));
+    my $p2p_excluded = $self->p2p_exclusion_amount;
+
+    # this calcalution was tested on over 10k clients so even though it may look strange, we know it works
+    return min($balance, $p2p_excluded + max(0, $balance - $p2p_excluded - $p2p_net));
 }
 
 =head2 balance_for_cashier
@@ -8005,7 +8071,7 @@ sub balance_for_cashier {
 
 =head2 balance_for_doughflow
 
-Returns withdrawable amount. Used for paymentapi /account endpoint.
+Returns withdrawable amount for doughflow. Used for paymentapi /account endpoint.
 
 =cut
 
