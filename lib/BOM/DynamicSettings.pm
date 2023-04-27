@@ -502,6 +502,8 @@ sub get_settings_by_group {
                 payment_agents.initial_deposit_per_country
                 payments.payments_limit
                 payments.p2p.cross_border_ads_restricted_countries
+                payments.p2p.fiat_deposit_restricted_countries
+                payments.p2p.fiat_deposit_restricted_lookback
             )]};
 
     my $settings;
@@ -605,6 +607,7 @@ sub get_extra_validation {
         'payments.p2p.restricted_countries'                          => \&_validate_countries,
         'payments.p2p.cross_border_ads_restricted_countries'         => \&_validate_countries,
         'payments.p2p.transaction_verification_countries'            => \&_validate_countries,
+        'payments.p2p.fiat_deposit_restricted_countries'             => \&_validate_countries,
         'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.dxtrade'          => \&_validate_positive_number,

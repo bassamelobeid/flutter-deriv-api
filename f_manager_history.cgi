@@ -11,7 +11,7 @@ use f_brokerincludeall;
 use HTML::Entities;
 use Date::Utility;
 use YAML::XS;
-use List::Util                       qw(max);
+use List::Util                       qw(min max);
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use Format::Util::Numbers            qw(formatnumber);
 use Syntax::Keyword::Try;
@@ -25,6 +25,7 @@ use BOM::Database::ClientDB;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
+use BOM::Config::Runtime;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -178,6 +179,29 @@ my $internal_transfer_summary = client_inernal_transfer_summary(
     to     => $overview_to_date->datetime
 );
 
+my $p2p_summary;
+if (my $advertiser = $client->_p2p_advertiser_cached) {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    $p2p_summary = {
+        p2p_balance          => $client->p2p_balance,
+        withdrawable_balance => formatnumber('amount', $currency, $client->p2p_withdrawable_balance),
+        exclusion            => formatnumber('amount', $currency, $client->p2p_exclusion_amount),
+    };
+
+    my @restricted_countries = $app_config->payments->p2p->fiat_deposit_restricted_countries->@*;
+    if (any { $client->residence eq $_ } @restricted_countries) {
+        $p2p_summary->{exclusion} .=
+            ' (100% of doughflow deposits in past ' . $app_config->payments->p2p->fiat_deposit_restricted_lookback . ' days' . ')';
+    } else {
+        my $limit = 100 - $app_config->payments->reversible_balance_limits->p2p;
+        $p2p_summary->{exclusion} .=
+            ' (' . $limit . '% of reversible deposits in past ' . $app_config->payments->reversible_deposits_lookback . ' days';
+    }
+
+    $p2p_summary->{withdrawal_limit} = formatnumber('amount', $currency, $advertiser->{withdrawal_limit}) if defined $advertiser->{withdrawal_limit};
+}
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
@@ -237,8 +261,8 @@ BOM::Backoffice::Request::template()->process(
 
         payment_type_urls  => $payment_type_urls,
         transfer_type_urls => internal_transfer_statement_urls($client, $overview_from_date, $overview_to_date),
+        p2p_summary        => $p2p_summary,
 
-        p2p_balance => $client->p2p_balance,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 BarEnd();

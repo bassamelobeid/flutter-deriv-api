@@ -46,18 +46,21 @@
             </table>
         </td>
         [% END %]
+        [% IF p2p_summary %]
+        <td>
+            <table class="collapsed hover alternate border">
+                <tr><td>Available balance for P2P</td><td>[% p2p_summary.p2p_balance %]</td></tr>
+                <tr><td>Deposits excluded from P2P</td><td>[% p2p_summary.exclusion %]</td></tr>
+                <tr><td>Available for cashier withdrawal/internal transfer</td><td>[% p2p_summary.withdrawable_balance %]</td></tr>
+                [% IF p2p_summary.withdrawal_limit.defined %]
+                <tr><td>Account lifetime wihdrawal limit remaining</td><td>[% p2p_summary.withdrawal_limit %] (updated daily)</td></tr>
+                [% END %]
+            </table>
+        </td>
+        [% END %]
     </tr>
     </tbody>
 </table>
-
-<br>
-<div>
-    <span>Available balance for P2P:&nbsp;
-        <strong>
-            [% currency %]&nbsp;[% p2p_balance %]
-        </strong>
-    </span>
-</div>
 
 <script type="text/javascript" language="javascript">
   \$(document).ready(function() {

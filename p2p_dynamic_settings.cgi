@@ -58,6 +58,8 @@ my @setting_keys = qw(
     payments.p2p.transaction_verification_countries_all
     payments.p2p.feature_level
     payments.p2p.cross_border_ads_restricted_countries
+    payments.p2p.fiat_deposit_restricted_countries
+    payments.p2p.fiat_deposit_restricted_lookback
 );
 
 my $countries_list = request()->brand->countries_instance->countries_list;

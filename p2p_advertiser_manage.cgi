@@ -176,24 +176,6 @@ if ($input{loginID} || $input{name} || $input{id}) {
 
 if ($output{advertiser}) {
 
-    if (my $blocked_until = $output{advertiser}->{blocked_until}) {
-        $output{advertiser}->{barred} = Date::Utility->new($blocked_until)->is_after(Date::Utility->new);
-    }
-
-    for (qw/daily_buy daily_sell withdrawal_limit extra_sell_pending/) {
-        $output{$_ . '_formatted'} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{$_})
-            if defined $output{advertiser}->{$_};
-    }
-
-    $output{extra_sell_amount_formatted} =
-        financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{extra_sell_amount} // 0);
-
-    $output{advertiser}->{$_} =
-        defined $output{advertiser}->{$_}
-        ? $output{advertiser}->{limit_currency} . ' ' . financialrounding('amount', $output{advertiser}->{limit_currency}, $output{advertiser}->{$_})
-        : '-'
-        for (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/);
-
     my $loginid = $output{advertiser}->{client_loginid};
     my $client  = BOM::User::Client->new({loginid => $loginid});
     $output{stats} = $client->_p2p_advertiser_stats($loginid, $output{days} * 24);
@@ -238,15 +220,27 @@ if ($output{advertiser}) {
                 $output{advertiser}->{id});
         });
 
-    $output{config} = BOM::Config::Runtime->instance->app_config->payments->p2p;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $output{p2p_config} = $app_config->payments->p2p;
 
     my $bands = $db->run(
         fixup => sub {
             $_->selectall_arrayref("SELECT DISTINCT(trade_band) FROM p2p.p2p_country_trade_band WHERE country = ? OR country = 'default'",
                 undef, $output{advertiser}->{residence});
         });
-    $output{bands}                 = [map { $_->[0] } @$bands];
-    $output{p2p_balance}           = $client->p2p_balance;
+    $output{bands}                = [map { $_->[0] } @$bands];
+    $output{p2p_balance}          = $client->p2p_balance;
+    $output{balance_exclusion}    = min($client->p2p_exclusion_amount, $client->account->balance);
+    $output{withdrawable_balance} = $client->p2p_withdrawable_balance;
+
+    my @restricted_countries = $app_config->payments->p2p->fiat_deposit_restricted_countries->@*;
+    if (any { $client->residence eq $_ } @restricted_countries) {
+        $output{exclusion_criteria} = '100% of doughflow deposits in past ' . $app_config->payments->p2p->fiat_deposit_restricted_lookback . ' days';
+    } else {
+        my $limit = 100 - $app_config->payments->reversible_balance_limits->p2p;
+        $output{exclusion_criteria} = $limit . '% of reversible deposits in past ' . $app_config->payments->reversible_deposits_lookback . ' days';
+    }
+
     $output{age_verification}      = $client->status->age_verification;
     $output{not_approved_statuses} = [qw/cashier_locked disabled unwelcome duplicate_account withdrawal_locked no_withdrawal_or_trading/];
     $output{not_approved_by} =
@@ -263,6 +257,27 @@ if ($output{advertiser}) {
         . $output{advertiser}->{recommended_count}
         . ' users)'
         : 'no recommentations yet';
+
+    if (my $blocked_until = $output{advertiser}->{blocked_until}) {
+        $output{advertiser}->{barred} = Date::Utility->new($blocked_until)->is_after(Date::Utility->new);
+    }
+
+    for (qw/daily_buy daily_sell withdrawal_limit extra_sell_pending/) {
+        $output{$_ . '_formatted'} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{$_})
+            if defined $output{advertiser}->{$_};
+    }
+
+    $output{extra_sell_amount_formatted} =
+        financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{extra_sell_amount} // 0);
+
+    $output{advertiser}->{$_} =
+        defined $output{advertiser}->{$_}
+        ? $output{advertiser}->{limit_currency} . ' ' . financialrounding('amount', $output{advertiser}->{limit_currency}, $output{advertiser}->{$_})
+        : '-'
+        for (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/);
+
+    $output{$_ . '_formatted'} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{$_})
+        for qw(balance_exclusion withdrawable_balance);
 
 } elsif ($input{loginID}) {
     try {

@@ -37,8 +37,8 @@
                 </select>
                 &nbsp;&nbsp;If NO, advertiser is completely banned from P2P Cashier.
                 <br/>Automatic ban after 
-                [% config.fraud_blocking.buy_count %] buy fraud cases[% IF config.fraud_blocking.buy_period > 0 %] in [% config.fraud_blocking.buy_period %] days[% END %] or 
-                [% config.fraud_blocking.sell_count %] sell fraud cases[% IF config.fraud_blocking.sell_period > 0 %] in [% config.fraud_blocking.sell_period %] days[% END %].
+                [% p2p_config.fraud_blocking.buy_count %] buy fraud cases[% IF p2p_config.fraud_blocking.buy_period > 0 %] in [% p2p_config.fraud_blocking.buy_period %] days[% END %] or 
+                [% p2p_config.fraud_blocking.sell_count %] sell fraud cases[% IF p2p_config.fraud_blocking.sell_period > 0 %] in [% p2p_config.fraud_blocking.sell_period %] days[% END %].
             </td>
         </tr>        
         <tr>
@@ -88,7 +88,7 @@
             <td>Blocked until</td>
             <td><input type="text" name="blocked_until" value="[% advertiser.blocked_until %]" [% !can_edit_general && 'disabled' %] size=24 data-lpignore="true" / >
             &nbsp;&nbsp;YYYY-MM-DD or YYYY-MM-DD HH:MM:SS, blank to clear
-            <br/>Advertiser will be barred for [% config.cancellation_barring.bar_time %] hours after [% config.cancellation_barring.count %] cancelled orders in [% config.cancellation_barring.period %] hours.
+            <br/>Advertiser will be barred for [% p2p_config.cancellation_barring.bar_time %] hours after [% p2p_config.cancellation_barring.count %] cancelled orders in [% p2p_config.cancellation_barring.period %] hours.
             </td>
         </tr>
         <tr>
@@ -147,6 +147,10 @@
             <td>[% advertiser.account_currency %] [% p2p_balance %]</td>
         </tr>
         <tr>
+            <td>Exluded deposits</td>
+            <td>[% advertiser.account_currency %] [% balance_exclusion_formatted %] ([% exclusion_criteria %])</td>
+        </tr>
+        <tr>
             <td>Additional sell allowance</td>
             <td>
                 [% advertiser.account_currency %]&nbsp;&nbsp;<input type="text" name="extra_sell_amount" value="[% extra_sell_amount_formatted %]" size=5 data-lpignore="true" />
@@ -154,9 +158,13 @@
             </td>
         </tr>        
         <tr>
-            <td>Withdrawal limit</td>
-            <td>[% IF advertiser.withdrawal_limit.length %][% advertiser.account_currency %] [% withdrawal_limit_formatted %] (calculated daily)[% ELSE %]none[% END %]</td>
-        </tr>        
+            <td>Cashier withdrawal/internal transfer limit</td>
+            <td>[% advertiser.account_currency %] [% withdrawable_balance_formatted %]</td>
+        </tr>
+        <tr>
+            <td>Remaining account lifetime withdrawal limit</td>
+            <td>[% IF advertiser.withdrawal_limit.length %][% advertiser.account_currency %] [% withdrawal_limit_formatted %] (calculated daily)[% ELSE %]unlimited - client has POA[% END %]</td>
+        </tr>
         <tr>
             <td>Sendbird ID</td>
             <td>[% advertiser.chat_user_id %]</td>
