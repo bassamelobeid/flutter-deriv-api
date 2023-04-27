@@ -86,6 +86,23 @@ sub _update_professional_existing_clients {
     return undef;
 }
 
+=head2 _get_professional_details_clients
+
+gets the professional requested and status value from clients against svg and malta invest landing company
+
+=over 4
+
+=item * C<args> 
+
+=item * C<$user> 
+
+
+=back
+
+Returns an array  C<BOM::User::Client>  instance, Professional Status boolean and Professional Requested boolean
+
+=cut
+
 sub _get_professional_details_clients {
     my ($user, $args) = @_;
 
@@ -155,12 +172,25 @@ rpc new_account_real => sub {
     };
 };
 
+=head2 new_account_maltainvest
+
+Create a new Maltainvest MF account account
+
+=over 4
+
+=item * C<args> new account details
+
+=back
+
+Returns a C<BOM::User::Client> or C<BOM::User::Wallet> instance
+
+=cut
+
 rpc new_account_maltainvest => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
     my $user = $client->user;
-
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;
 
@@ -205,7 +235,6 @@ rpc new_account_maltainvest => sub {
         return BOM::RPC::v3::Utility::client_error();
 
     }
-
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence    = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};
     my $tin_format                = $countries_instance->get_tin_format($selected_tax_residence);
@@ -558,12 +587,19 @@ sub create_virtual_account {
 }
 
 =head2 create_new_real_account_for_affiliate
+
 Creates a new real account for affiliate.
+
 =over 4
+
 =item * C<client> form client which the new real account is being created
+
 =item * C<args> new account request arguments
+
 =back
+
 Returns a C<BOM::User::Client> instance
+
 =cut
 
 sub create_new_real_account_for_affiliate {
@@ -585,12 +621,6 @@ sub create_new_real_account_for_affiliate {
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
     return $val if $val;
-
-    my $sibling_has_migrated_universal_password_status = any { $_->status->migrated_universal_password } $user->clients;
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
-        $val = _update_migrated_universal_password_existing_clients($clients);
-        return $val if $val;
-    }
 
     my $lock = BOM::Platform::Redis::acquire_lock($client->user_id, 10);
     return BOM::RPC::v3::Utility::rate_limit_error() if not $lock;
@@ -625,12 +655,11 @@ sub create_new_real_account_for_affiliate {
     my $new_client = $acc->{client};
 
     _new_account_post_process(
-        client                                         => $client,
-        new_client                                     => $new_client,
-        args                                           => $args,
-        professional_status                            => $professional_status,
-        professional_requested                         => $professional_requested,
-        sibling_has_migrated_universal_password_status => $sibling_has_migrated_universal_password_status
+        client                 => $client,
+        new_client             => $new_client,
+        args                   => $args,
+        professional_status    => $professional_status,
+        professional_requested => $professional_requested
     );
 
     return {
@@ -646,6 +675,7 @@ Creates a new real account. It's called by all real account opening RPC handlers
 =over 4
 
 =item * C<client> form client which the new real account is being created
+
 =item * C<args> new account request arguments
 
 =back
@@ -674,13 +704,6 @@ sub create_new_real_account {
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
     return $val if $val;
-
-    my $sibling_has_migrated_universal_password_status = any { $_->status->migrated_universal_password } $user->clients;
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
-        $val = _update_migrated_universal_password_existing_clients($clients);
-        return $val if $val;
-    }
-
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
         # Rules are applied on actual request arguments ($args),
@@ -694,15 +717,12 @@ sub create_new_real_account {
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     };
-
     my $lock = BOM::Platform::Redis::acquire_lock($client->user_id, 10);
     return BOM::RPC::v3::Utility::rate_limit_error() if not $lock;
-
     my $create_account_sub =
         $params{landing_company} eq 'maltainvest'
         ? \&BOM::Platform::Account::Real::maltainvest::create_account
         : \&BOM::Platform::Account::Real::default::create_account;
-
     # It's safe to create the new client now
     my $acc;
     try {
@@ -727,20 +747,18 @@ sub create_new_real_account {
     }
 
     my $new_client = $acc->{client};
-
     _new_account_post_process(
-        client                                         => $client,
-        new_client                                     => $new_client,
-        args                                           => $args,
-        professional_status                            => $professional_status,
-        professional_requested                         => $professional_requested,
-        sibling_has_migrated_universal_password_status => $sibling_has_migrated_universal_password_status
+        client                 => $client,
+        new_client             => $new_client,
+        args                   => $args,
+        professional_status    => $professional_status,
+        professional_requested => $professional_requested
     );
-
     return {
         client      => $new_client,
         oauth_token => _create_oauth_token($params{source}, $new_client->loginid),
     };
+
 }
 
 =head2 _new_account_pre_process
@@ -801,12 +819,6 @@ sub _new_account_pre_process {
 
     my $non_pep_declaration = delete $args->{non_pep_declaration};
     $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, $args->{landing_company}, $non_pep_declaration, $args->{source});
-
-    # If it's a virtual client, replace client with the newest real account if any
-    if ($client->is_virtual) {
-        $client = (sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0))[0]
-            // $client;
-    }
 
     my $details = {
         broker_code                   => $broker,
@@ -917,6 +929,7 @@ Validates and initilizes account details on real account opening, taking followi
 
 Returns {
     error   => C<error_code>
+
     details => C<detail info>
 }
 
@@ -925,16 +938,12 @@ Returns {
 sub _new_account_post_process {
     my %par = @_;
 
-    my ($client, $new_client, $args, $professional_status, $professional_requested, $sibling_has_migrated_universal_password_status) =
-        @par{qw/client new_client args professional_status  professional_requested sibling_has_migrated_universal_password_status/};
+    my ($client, $new_client, $args, $professional_status, $professional_requested) =
+        @par{qw/client new_client args professional_status  professional_requested/};
 
     # Ported from previous implementations of new_account_real, new_account_maltainvest  and new_wallet_real RPC codes
     my $error;
-    try {
-        $new_client->sync_authentication_from_siblings;
-    } catch {
-        return BOM::RPC::v3::Utility::client_error()
-    };
+
     # Set affiliate data if required
     if ($new_client->landing_company->is_for_affiliates) {
         $new_client->set_affiliate_info({affiliate_plan => $args->{affiliate_plan}});
@@ -965,18 +974,13 @@ sub _new_account_post_process {
             try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
             catch { return BOM::RPC::v3::Utility::client_error() }
         }
-        try {
-            $new_client->sync_authentication_from_siblings;
-        } catch ($error) {
-            $log->errorf('Failed to sync authentication for client %s: %s', $new_client->loginid, $error);
-            return BOM::RPC::v3::Utility::client_error()
-        };
     }
-
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
-        $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($new_client);
-        return $error if $error;
-    }
+    try {
+        $new_client->sync_authentication_from_siblings;
+    } catch ($error) {
+        $log->errorf('Failed to sync authentication for client %s: %s', $new_client->loginid, $error);
+        return BOM::RPC::v3::Utility::client_error()
+    };
 
     # Not sure if the following notfications are required for wallet creation or not
     $client->user->add_login_history(
@@ -1025,9 +1029,9 @@ If there is not any non-PEP declaration found for the specified landing company,
 
 =item * C<company> - landing company of the new account being created
 
-= item * C<non_pep_declaration> - boolean value that determines if non-PEP declaration is made through the current signup process
+=item * C<non_pep_declaration> - boolean value that determines if non-PEP declaration is made through the current signup process
 
-- item * C<app_id> - the id of the app through which the request is made
+=item * C<app_id> - the id of the app through which the request is made
 
 =back
 
@@ -1096,7 +1100,6 @@ rpc "affiliate_add_person",
 =head2 affiliate_add_company
 
 Creates a new company affiliate client account.
-
 Will do:
 
 =over 4
@@ -1185,7 +1188,9 @@ sub _compute_affiliate_token {
 Will do: 
 
 1- Create ThirdParty affiliate account (via API)
+
 2- Create Demo Account in Deriv
+
 3- Create Real Account in Deriv
 
 =over 4
