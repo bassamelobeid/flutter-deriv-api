@@ -40,8 +40,9 @@ my $categories = [{
         date_expiration      => [],
         preferred            =>
             [qw/utility_bill bank_statement tax_receipt insurance_bill phone_bill poa_others proofaddress bankstatement cardstatement vf_poa/],
-        date_issuance  => [qw/vf_poa utility_bill bank_statement tax_receipt insurance_bill phone_bill proofaddress bankstatement cardstatement/],
-        date_none      => [qw/poa_others/],
+        date_issuance =>
+            [qw/vf_poa utility_bill bank_statement tax_receipt insurance_bill phone_bill proofaddress bankstatement cardstatement poa_others/],
+        date_none      => [],
         deprecated     => [qw/vf_poa proofaddress bankstatement cardstatement/],
         maybe_lifetime => [],
         two_sided      => [qw/utility_bill bank_statement tax_receipt insurance_bill phone_bill poa_others/],
@@ -379,6 +380,7 @@ subtest 'Issuance document types' => sub {
             amlglobalcheck
             ip_mismatch_confirmation
             affiliate_reputation_check
+            poa_others
             /
     ];
 
@@ -394,7 +396,6 @@ subtest 'Dateless document types' => sub {
             photo
             live_photo
             selfie_with_id
-            poa_others
             edd_others
             poi_others
             business_documents_others

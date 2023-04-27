@@ -147,7 +147,7 @@ POA:
     poa_others:
       preferred: 1
       description: Others
-      date: none
+      date: issuance
       priority: 6
       sides: *two_sided
     proofaddress:
