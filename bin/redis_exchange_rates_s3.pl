@@ -58,13 +58,39 @@ my $s3   = Net::Async::Webservice::S3->new(
 );
 $loop->add($s3);
 
+sub _get_content {
+
+    my ($r, $keys) = @_;
+    my $content;
+    my %data;
+
+    for my $key ($keys->@*) {
+
+        if ($r->type($key) eq 'hash') {
+            $data{$key} = $r->hgetall($key);
+        } elsif ($r->type($key) eq 'string') {
+            $data{$key} = $r->get($key);
+        } elsif ($r->type($key) eq 'list') {
+            $data{$key} = $r->lrange($key, 0, -1);
+        } elsif ($r->type($key) eq 'set') {
+            $data{$key} = $r->smembers($key);
+        } elsif ($r->type($key) eq 'zset') {
+            $data{$key} = $r->zrange($key, 0, -1, 'WITHSCORES');
+        }
+
+    }
+
+    $content = encode_json(\%data);
+
+    return $content;
+
+}
+
 sub upload_redis {
 
     my $r       = BOM::Config::Redis::redis_exchangerates();
     my $keys    = $r->keys('*');
-    my %data    = map { $_ => {$r->hgetall($_)->@*} } grep { $_ ne 'exchange_rates_::queue' } $keys->@*;
-    my $content = encode_json(\%data);
-
+    my $content = _get_content($r, $keys);
     try {
         $s3->put_object(
             key   => $file_name,
@@ -84,9 +110,19 @@ sub download_redis {
         my $content = $data->{$record_key};
         my @details;
 
-        push @details, $_, $content->{$_} for keys %$content;
+        if ((ref $content eq "ARRAY") and ($record_key =~ /exchange_rates/)) {
 
-        $writer->hmset($record_key, @details);
+            $writer->hmset($record_key, $content->@*);
+
+        }
+        unless (ref $content) {
+
+            if ($writer->type($record_key) eq 'string') {
+                $writer->set($record_key, $content);
+            }
+
+        }
+
     }
     print "Updated redis_exchangerates successful\n";
 }
