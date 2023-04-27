@@ -350,10 +350,6 @@ sub update {
 
     # because of replication delay we need to bring it up to date
     my $child = $res_table->{$fmb->{id}};
-    if (!$child) {
-        $log->warnf("Additional log for Redmine #18015 - received parameters %s with result table %s, full FMB detail %s",
-            $update_args, $res_table, $fmb);
-    }
 
     $fmb = {$fmb->%*, $child->%*};
 
