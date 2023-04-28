@@ -369,21 +369,15 @@ sub _set_defaults {
 
 sub before_forward {
     my ($c, $req_storage) = @_;
+
     $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
+
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.
     # None are much helpful in a well prepared DDoS.
     my $is_real  = $c->stash('loginid') && !$c->stash('is_virtual');
     my $category = $req_storage->{name};
-    if ($category eq "verify_email") {
-        my $reponse_forwarding = restrict_request_forwarding($c->req->headers->header("Origin"), $args->{type});
-
-        if ($reponse_forwarding == 1) {
-            return $c->new_error('PermissionDenied', 'PermissionDenied',
-                'Please use official Deriv website to process this request ' . $category . ' for type ' . $args->{type});
-        }
-    }
 
     return reached_limit_check($c, $category, $is_real)->then(
         sub {
@@ -896,37 +890,6 @@ sub ignore_queue_separations {
     $req_storage->{category} = undef;
 
     return undef;
-}
-
-=head2 restrict_request_forwarding
-
-This will check the origin of request and will match it with Deriv domain
-if its a third party origin we will restrict access to vulnerable types for VERIFY_EMAIL API Request
-This is called by the C<before_forward> Hook in L<Binary::WebsocketAPI>
-
-=over 4
-
-=item * C<$method> the method request which needs restriction checks
-
-=item * C<$c> a L<Mojo::WebSocketProxy::Dispatcher>  
-
-=item * C<$type> the type of verify_email requested to be processed 
-
-=back
-
-Return: error or undef
-
-=cut
-
-sub restrict_request_forwarding {
-    my ($origin, $type) = @_;
-    my %restricted_request_types = map { $_ => 1 } ("reset_password", "request_email");
-    if ($restricted_request_types{$type}) {
-        if (defined $origin && $origin !~ /^https:\/\/(?:app\.deriv\.(?:com|me|be)|staging-app\.deriv\.com)$/) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 1;
