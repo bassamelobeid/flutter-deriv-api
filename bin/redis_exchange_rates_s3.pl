@@ -110,11 +110,25 @@ sub download_redis {
         my $content = $data->{$record_key};
         my @details;
 
-        if ((ref $content eq "ARRAY") and ($record_key =~ /exchange_rates/)) {
+        if (ref $content eq "ARRAY") {
+            if ($record_key =~ /^exchange_rates(_::queue)?/) {
+                # if it is the queue rate we need to store it as zset
+                if ($1) {
+                    my @content_array = @$content;
+                    # the zset is stored like an array so we have [rate, index, rate, index ...]
+                    # is that why we set the loop to be incremented by two
+                    for (my $i = 0; $i <= $#content_array; $i += 2) {
+                        # the index position is after the rate
+                        my $set_index = $i + 1;
+                        $writer->zadd($record_key, $content_array[$set_index], $content_array[$i]);
+                    }
+                    next;
+                }
 
-            $writer->hmset($record_key, $content->@*);
-
+                $writer->hmset($record_key, $content->@*);
+            }
         }
+
         unless (ref $content) {
 
             if ($writer->type($record_key) eq 'string') {
