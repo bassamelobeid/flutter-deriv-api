@@ -412,9 +412,9 @@ sub get_app_ids_by_user_id {
     my $app_ids = $self->dbic->run(
         fixup => sub {
             $_->selectcol_arrayref("
-        SELECT id
-        FROM oauth.apps WHERE binary_user_id = ?
-        ORDER BY id", undef, $user_id);
+        SELECT
+            id
+        FROM oauth.apps WHERE binary_user_id = ?", undef, $user_id);
         });
     return $app_ids || [];
 }
