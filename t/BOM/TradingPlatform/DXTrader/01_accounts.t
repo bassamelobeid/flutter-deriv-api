@@ -5,6 +5,7 @@ use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
 use Test::Most 0.22 (tests => 28);
+use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
