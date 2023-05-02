@@ -1,0 +1,25 @@
+<tr>
+<td>
+    <form action="[% url %]" method=post>
+        <table>
+            <tr><th colspan=2 style="background-color:lightgray"> [% landing_company %] </th></tr>
+            <tr>
+                <td>Country List</td>
+                <td><input type='text' name="[% landing_company %]" 
+                    value="[% npj_countries.$landing_company.join(',') %]"></td>
+            </tr>
+            <tr>
+                <td>Control Code</td>
+                <td><input type="text" name="dcc" placeholder="required" data-lpignore="true" /></td>
+            </tr>
+        </table>
+
+    <input type="hidden" name="whattodo" value="NPJ" />
+    <input type="hidden" name="revision" value="[% revision %]" />
+    <input type="hidden" name="landingCompany" value="[% landing_company %]" />
+    <input type="submit" class="btn btn--primary" value="Submit" />
+    <input type="submit" class="btn btn--primary" name="action" value="GenerateDCC" />
+    <input type='hidden' name='transtype' value='npj_country_list'>
+    </form>
+</td>
+</tr>

@@ -142,6 +142,24 @@ sub batch_anonymization_control_code {
     return $code;
 }
 
+=head2 create_compliance_dashboard_control_code
+
+Generates compliance dashboard DCC
+
+=cut
+
+sub create_compliance_dashboard_control_code {
+
+    my ($self, $data) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, sha256_hex($data), $self->_environment));
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
+}
+
 =head2 batch_status_update_control_code
 
 Generates DCC code to batch update client status code
@@ -157,6 +175,7 @@ sub batch_status_update_control_code {
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     return $code;
+
 }
 
 sub validate_client_control_code {
@@ -359,6 +378,33 @@ sub validate_batch_anonymization_control_code {
     return;
 }
 
+=head2 validate_compliance_dashboard_control_code_npj
+$incode
+Validate compliance dashboard dcc
+
+=cut
+
+sub validate_compliance_dashboard_control_code {
+    my ($self, $incode, $data) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_record_data_checksum($code, $data);
+    return $error_status if $error_status;
+
+    return;
+}
+
 sub validate_payments_settings_control_code {
     my ($self, $incode) = @_;
     my $code         = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
@@ -502,6 +548,24 @@ sub _validate_payment_amount {
         return Error::Base->cuss(
             -type => 'DifferentAmount',
             -mesg => 'Amount provided does not match with the amount provided during code generation',
+        );
+    }
+    return;
+}
+
+=head2 _validate_record_data_checksum
+
+Checks validity of the data being inserted with DCC 
+=cut
+
+sub _validate_record_data_checksum {
+    my ($self, $code, $data) = @_;
+
+    my @arry = split("_##_", $code);
+    if (sha256_hex($data) ne $arry[3]) {
+        return Error::Base->cuss(
+            -type => 'DifferentData',
+            -mesg => 'Data does not match with the data provided at code generation.',
         );
     }
     return;

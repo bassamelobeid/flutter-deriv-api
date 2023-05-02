@@ -24,21 +24,68 @@ use BOM::DynamicSettings;
 use BOM::Config;
 use BOM::Config::Redis;
 
+use JSON::MaybeUTF8 qw(:v1);
+
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("COMPLIANCE DASHBOARD");
 
-my ($thresholds, $jurisdiction_rating);
+my $now = Date::Utility->new;
+
+my ($thresholds, $jurisdiction_rating, $npj_countries_list);
 my $thresholds_readonly = not BOM::Backoffice::Auth0::has_authorisation(['IT']);
 my $compliance_config   = BOM::Config::Compliance->new;
 
-my $what_to_do = request()->param('whattodo') // '';
+my $what_to_do  = request()->param('whattodo') // '';
+my $action_name = request()->param('action')   // '';
+
+use Log::Any qw($log);
+
+my $staff = BOM::Backoffice::Auth0::get_staffname();
+
+if ($what_to_do eq "NPJ") {
+
+    my $landing_Company = request()->param('landingCompany');
+    my @data_array      = split /,/, request()->param($landing_Company);
+
+    my $sorted_data_string = join "", @data_array;
+
+    my $validation_error = $compliance_config->validate_npj_country_list(@data_array);
+
+    if ($validation_error) {
+        print "<p class=\"error\">Error: $validation_error </p>";
+        code_exit_BO();
+    }
+
+    if ($action_name eq "GenerateDCC") {
+
+        _generate_dcc_code($sorted_data_string);
+
+    } else {
+        my $code = request()->param('dcc');
+
+        _validate_dcc_code($code, $sorted_data_string);
+
+        my $revision = request()->param("revision");
+
+        my $npj_countries_list //= $compliance_config->get_npj_countries_list($_);
+        $npj_countries_list->{$landing_Company} = [sort @data_array];
+
+        BOM::DynamicSettings::save_settings({
+                settings => {
+                    revision                      => $revision,
+                    "compliance.npj_country_list" => encode_json_utf8($npj_countries_list)
+                },
+                settings_in_group => ["compliance.npj_country_list"],
+                save              => 'global',
+            });
+    }
+}
 
 if (!$thresholds_readonly && $what_to_do =~ qr/^save_thresholds_(\w+)_(\w+)$/) {
     my ($type, $landing_company) = ($1, $2);
 
     $thresholds->{$type} = $compliance_config->get_risk_thresholds($type);
-    delete $thresholds->{$type}->{revision};
 
     my %values = ();
     for my $threshold (BOM::Config::Compliance::RISK_THRESHOLDS) {
@@ -50,28 +97,43 @@ if (!$thresholds_readonly && $what_to_do =~ qr/^save_thresholds_(\w+)_(\w+)$/) {
     $thresholds->{$type}->{$landing_company} = \%values;
 
     my $revision = request()->param("revision");
+
     try {
         my $data = $compliance_config->validate_risk_thresholds($type, $thresholds->{$type}->%*);
 
-        BOM::DynamicSettings::save_settings({
-                settings => {
-                    revision                             => $revision,
-                    "compliance.${type}_risk_thresholds" => encode_json_utf8($data)
-                },
-                settings_in_group => ["compliance.${type}_risk_thresholds"],
-                save              => 'global',
-            });
-        # let thresholds be reloaded after successful save
-        undef $thresholds->{$type};
+        my $data_str    = encode_json_utf8($data);
+        my $sorted_data = join "", sort split //, $data_str;
+
+        if ($action_name eq "GenerateDCC") {
+
+            _generate_dcc_code($sorted_data);
+
+        } else {
+            my $code = request()->param('dcc');
+
+            _validate_dcc_code($code, $sorted_data);
+
+            BOM::DynamicSettings::save_settings({
+                    settings => {
+                        revision                             => $revision,
+                        "compliance.${type}_risk_thresholds" => encode_json_utf8($data)
+                    },
+                    settings_in_group => ["compliance.${type}_risk_thresholds"],
+                    save              => 'global',
+                });
+            # let thresholds be reloaded after successful save
+            undef $thresholds->{$type};
+        }
+
     } catch ($e) {
         print "<p class=\"error\">Error: $e </p>";
         $thresholds->{$type}->{revision} = $revision;
-    };
+    }
 } elsif ($what_to_do =~ qr/^save_jurisdiction_risk_rating_(\w+)_(\w+)$/) {
     my ($type, $landing_company) = ($1, $2);
 
     $jurisdiction_rating->{$type} = $compliance_config->get_jurisdiction_risk_rating($type);
-    delete $jurisdiction_rating->{$type}->{revision};
+    #delete $jurisdiction_rating->{$type}->{revision};
 
     for my $risk_level (BOM::Config::Compliance::RISK_LEVELS) {
         my $value = request()->param("$landing_company.$risk_level") // '';
@@ -80,27 +142,92 @@ if (!$thresholds_readonly && $what_to_do =~ qr/^save_thresholds_(\w+)_(\w+)$/) {
     }
 
     my $revision = request()->param("revision") // '';
+
     try {
         my $result = $compliance_config->validate_jurisdiction_risk_rating($type, $jurisdiction_rating->{$type}->%*);
 
-        BOM::DynamicSettings::save_settings({
-                settings => {
-                    revision                                      => $revision,
-                    "compliance.${type}_jurisdiction_risk_rating" => encode_json_utf8($result),
-                },
-                settings_in_group => ["compliance.${type}_jurisdiction_risk_rating"],
-                save              => 'global',
-            });
+        my $data_str    = encode_json_utf8($result);
+        my $sorted_data = join "", sort split //, $data_str;
 
-        $jurisdiction_rating->{$type} = undef;
+        if ($action_name eq "GenerateDCC") {
+
+            _generate_dcc_code($sorted_data);
+
+        } else {
+            my $code = request()->param('dcc');
+
+            _validate_dcc_code($code, $sorted_data);
+
+            BOM::DynamicSettings::save_settings({
+                    settings => {
+                        revision                                      => $revision,
+                        "compliance.${type}_jurisdiction_risk_rating" => encode_json_utf8($result),
+                    },
+                    settings_in_group => ["compliance.${type}_jurisdiction_risk_rating"],
+                    save              => 'global',
+                });
+
+            $jurisdiction_rating->{$type} = undef;
+        }
     } catch ($e) {
         print '<p class="error"> ' . encode_entities($e) . '</p>';
         $jurisdiction_rating->{$type}->{revision} = $revision;
     }
 }
 
+sub _generate_dcc_code {
+    my ($data) = shift;
+
+    my $staff = BOM::Backoffice::Auth0::get_staffname();
+
+    my $code = BOM::DualControl->new({
+            staff           => $staff,
+            transactiontype => request()->param('transtype')})->create_compliance_dashboard_control_code($data);
+
+    my $message =
+          "The dual control code created by $staff  (for a "
+        . request()->param('transtype') . ") for"
+        . " is: $code This code is valid for 1 hour (from "
+        . Date::Utility->new->datetime_ddmmmyy_hhmmss
+        . ") only.";
+
+    BOM::User::AuditLog::log($message, '', $staff);
+
+    print '<p>'
+        . 'DCC: (single click to copy)<br>'
+        . '<div class="dcc-code copy-on-click">'
+        . encode_entities($code)
+        . '</div><script>initCopyText()</script><br>'
+        . 'This code is valid for 1 hour from now: UTC '
+        . Date::Utility->new->datetime_ddmmmyy_hhmmss . '<br>'
+        . 'Creator: '
+        . $staff . '<br>';
+}
+
+sub _validate_dcc_code {
+
+    my ($code, $data) = @_;
+
+    my $staff = BOM::Backoffice::Auth0::get_staffname();
+
+    if ($code eq "") {
+        print "<p class=\"error\">Error: DCC can not be empty </p>";
+        code_exit_BO();
+    } else {
+        my $error = BOM::DualControl->new({
+                staff           => $staff,
+                transactiontype => request()->param('transtype')})->validate_compliance_dashboard_control_code($code, $data);
+
+        if ($error) {
+            print encode_entities($error->get_mesg());
+            code_exit_BO();
+        }
+    }
+}
+
 $thresholds->{$_}          //= $compliance_config->get_risk_thresholds($_)          for qw/aml mt5/;
 $jurisdiction_rating->{$_} //= $compliance_config->get_jurisdiction_risk_rating($_) for qw/aml mt5/;
+$npj_countries_list        //= $compliance_config->get_npj_countries_list($_);
 
 my $show_landing_company = sub {
     my ($type, $landing_company) = @_;
@@ -122,6 +249,19 @@ my $show_landing_company = sub {
             threshold_names => [BOM::Config::Compliance::RISK_THRESHOLDS],
             risk_levels     => [BOM::Config::Compliance::RISK_LEVELS],
             is_readonly     => $thresholds_readonly,
+        }) || die BOM::Backoffice::Request::template()->error() . "\n";
+};
+
+my $show_landing_company_npj = sub {
+    my ($landing_company) = @_;
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/npj_countries.html.tt',
+        {
+            url             => request()->url_for('backoffice/compliance_dashboard.cgi'),
+            landing_company => $landing_company,
+            npj_countries   => $npj_countries_list,
+            revision        => $npj_countries_list->{revision},
         }) || die BOM::Backoffice::Request::template()->error() . "\n";
 };
 
@@ -156,6 +296,18 @@ print '<tr> <td>'
     . '</td> <td>'
     . '<p><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=compliance.mt5_jurisdiction_risk_rating&referrer=compliance_dashboard.cgi">See history of jurisdiction changes</a></p>'
     . '</td> </tr>';
+print '</table>';
+
+Bar('NPJ Country Settings');
+print '<table>';
+$show_landing_company_npj->('labuan');     #DFX
+$show_landing_company_npj->('bvi');        #DBVI
+$show_landing_company_npj->('vanuatu');    #DVL
+print '</table>';
+
+print '<tr> <td>'
+    . '<p><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=compliance.npj_country_list&referrer=compliance_dashboard.cgi">See history of NPJ country</a></p>'
+    . '</td> <td>';
 print '</table>';
 
 Bar("Sanction List Info");

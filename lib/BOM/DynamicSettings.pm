@@ -449,6 +449,7 @@ sub get_settings_by_group {
                 compliance.enhanced_due_diligence.auto_lock
                 compliance.enhanced_due_diligence.auto_lock_threshold
                 compliance.auto_anonymization_daily_limit
+                compliance.npj_country_list
             )
         ],
         # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
@@ -845,4 +846,5 @@ sub send_email_notification {
 
     return;
 }
+
 1;

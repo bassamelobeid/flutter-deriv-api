@@ -54,6 +54,8 @@ use BOM::User::IdentityVerification;
 use BOM::Platform::Doughflow;
 use BOM::User::LexisNexis;
 
+my $compliance_config = BOM::Config::Compliance->new;
+
 use 5.010;
 
 =head1 subs_backoffice_clientdetails
@@ -678,6 +680,16 @@ SQL
     my $poo_access = BOM::Backoffice::Auth0::has_authorisation(['AntiFraud', 'CS']);
     my ($latest_poi_by) = $client->latest_poi_by({only_verified => 1});
 
+    # checking if the client tax_residence(country) and landing company are part NPJ (TIN not required) so TAX IDENTIFICATION NUMBER will show NPJ country
+
+    my $npj_countries_list = $compliance_config->get_npj_countries_list;
+
+    my $is_npj = 0;
+
+    if (any { $client->tax_residence eq $_ } $npj_countries_list->{$client->landing_company->short}->@*) {
+        $is_npj = 1;
+    }
+
     my $template_param = {
         balance              => $balance,
         client               => $client,
@@ -766,7 +778,8 @@ SQL
         latest_poi_by            => $latest_poi_by,
         idv_status               => $client->get_idv_status,
         onfido_status            => $client->get_onfido_status,
-        manual_status            => $client->get_manual_poi_status
+        manual_status            => $client->get_manual_poi_status,
+        is_npj                   => $is_npj,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

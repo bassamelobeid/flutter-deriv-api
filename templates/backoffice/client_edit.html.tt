@@ -334,11 +334,16 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="label">Tax Identification Number</td>
         <td>:
+            [% IF is_npj %]
+            <input style="font-weight: bold;" type="text" name="tax_identification_number" value="NPJ country" size="15" data-lpignore="true" readonly />
+            [% END %]
+            [% IF NOT is_npj %]
             <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="15" data-lpignore="true" />
+            [% END %]
             [% IF is_valid_tin %]
                 <span class="success">Tax format is correct</span>
             [% END %]
-            [% IF tin_validation_required AND not is_valid_tin %]
+            [% IF tin_validation_required AND not is_valid_tin AND not is_npj %]
                 <span class="error">Tax format is not provided or invalid</span>
             [% END %]
         </td>
