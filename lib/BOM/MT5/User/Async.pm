@@ -81,6 +81,7 @@ my $error_category_mapping = {
     8                          => 'Permissions',
     9                          => 'ConnectionTimeout',
     10                         => 'NoConnection',
+    11                         => 'ERR_NOSERVICE',
     12                         => 'TooManyRequests',
     13                         => 'NotFound',
     1002                       => 'AccountDisabled',
@@ -362,9 +363,13 @@ sub _invoke_mt5 {
             $circuit_breaker->circuit_reset() if $f->is_done;
 
             if ($f->is_failed && (ref $f->failure eq "HASH") && defined $f->failure->{code}) {
-                my $error_code = $f->failure->{code} // '';
+                my $error_code    = $f->failure->{code}  // '';
+                my $error_message = $f->failure->{error} // '';
 
-                if ($error_code eq $error_category_mapping->{9} || $error_code eq $error_category_mapping->{10}) {
+                if (   $error_code eq $error_category_mapping->{9}
+                    || $error_code eq $error_category_mapping->{10}
+                    || $error_message eq $error_category_mapping->{11})
+                {
                     stats_inc('mt5.call.connection_fail', {tags => $dd_tags});
                     $circuit_breaker->record_failure();
                 }
