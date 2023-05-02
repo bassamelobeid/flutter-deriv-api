@@ -22,7 +22,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::User::Client;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
-
+use List::Util                      qw/any/;
 use constant {REQUEST_EMAIL_TOKEN_TTL => 3600};
 
 =head2 new
@@ -585,7 +585,8 @@ this will do all input validations and call the related function.
 
 sub do_verification {
     my ($self) = @_;
-    return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($self->{email});
+    return BOM::RPC::v3::Utility::permission_error unless $self->check_app_for_restricted_types();
+    return BOM::RPC::v3::Utility::invalid_email()  unless Email::Valid->address($self->{email});
 
     my $error = BOM::RPC::v3::Utility::invalid_params($self->{args});
     return $error if $error;
@@ -608,6 +609,27 @@ sub do_verification {
     return $error_response if ref $error_response eq 'HASH';
 
     return {status => 1};
+}
+
+=head2 check_app_for_restricted_types
+
+This method will check whether the app id is official 
+for restricted types 
+
+=over 4
+
+=back
+
+=cut
+
+sub check_app_for_restricted_types {
+    my ($self) = @_;
+    my $type = $self->{type};
+    if (any { $_ eq $type } qw/ reset_password request_email /) {
+        my $oauth_model = BOM::Database::Model::OAuth->new;
+        return 0 unless $oauth_model->is_official_app($self->{source});
+    }
+    return 1;
 }
 
 1;

@@ -514,4 +514,46 @@ subtest 'Affiliate self tagging requests' => sub {
     $mock_verify_email->unmock_all();
 };
 
+subtest 'Reset Password request with an unofficial app_id' => sub {
+    mailbox_clear();
+    my $oauth = BOM::Database::Model::OAuth->new;
+    my $app1  = $oauth->create_app({
+        name         => 'Test App',
+        user_id      => 1,
+        scopes       => ['read', 'admin', 'trade', 'payments'],
+        redirect_uri => 'https://www.example.com/',
+    });
+    $params[1]->{args}->{verify_email}                 = $client->email;
+    $params[1]->{args}->{type}                         = 'reset_password';
+    $params[1]->{args}->{url_parameters}->{utm_medium} = 'email';
+    $params[1]->{server_name}                          = 'binary.com';
+    $params[1]->{link}                                 = 'deriv.com/some_url';
+    $params[1]->{source}                               = $app1->{app_id};
+
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'If the app is unofficial app')
+        ->error_message_is('Permission denied.');
+};
+
+subtest 'Request Email request with an unofficial app_id' => sub {
+    mailbox_clear();
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    my $app1  = $oauth->create_app({
+        name         => 'Test App',
+        user_id      => 1,
+        scopes       => ['read', 'admin', 'trade', 'payments'],
+        redirect_uri => 'https://www.example.com/',
+    });
+    $params[1]->{args}->{verify_email}                 = $client->email;
+    $params[1]->{args}->{type}                         = 'request_email';
+    $params[1]->{args}->{url_parameters}->{utm_medium} = 'email';
+    $params[1]->{server_name}                          = 'binary.com';
+    $params[1]->{link}                                 = 'deriv.com/some_url';
+    $params[1]->{source}                               = $app1->{app_id};
+
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'If the app is unofficial app')
+        ->error_message_is('Permission denied.');
+
+};
+
 done_testing();
