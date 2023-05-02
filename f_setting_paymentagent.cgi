@@ -208,12 +208,14 @@ if ($whattodo eq 'show') {
         %args = $pa->validate_payment_agent_details(%args)->%*;
         $pa->$_($args{$_}) for keys %args;
         $pa->save;
+
         if (my $affiliate_id = $pa->{affiliate_id}) {
-            try {
-                $client->user->set_affiliate_id($affiliate_id);
-            } catch {
+            my $affiliate = $client->user->affiliate // {};
+            if ($affiliate_id ne ($affiliate->{affiliate_id} // '')) {
+                $client->user->set_affiliate_id($pa->{affiliate_id});
             }
         }
+
     } catch ($error) {
         my $message;
         if (ref $error) {
