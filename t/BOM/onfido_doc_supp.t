@@ -21,6 +21,8 @@ my $id_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport'
 my $ng_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport', 'Voter Id'];
 my $gh_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport'];
 
+BOM::Config::Onfido::clear_supported_documents_cache();
+
 subtest 'Check supported documents ' => sub {
     is_deeply(BOM::Config::Onfido::supported_documents_for_country('ID'), $id_supported_docs, 'Indonesia supported type is correct');
     is_deeply(BOM::Config::Onfido::supported_documents_for_country('NG'), $ng_supported_docs, 'Nigeria supported type is correct');
@@ -40,9 +42,9 @@ subtest 'Invalid country ' => sub {
 };
 
 subtest 'disabled countries' => sub {
-    my $config = BOM::Config::Onfido::supported_documents_list();
+    my $config = BOM::Config::onfido_disabled_countries;
 
-    my $disabled_countries = [map { $_->{disabled} ? $_->{country_code} : () } values $config->@*];
+    my $disabled_countries = [map { $config->{$_} ? $_ : () } keys $config->%*];
 
     # there used to be repeated countries at config file?
     my @expected_disabled_countries = uniq(
@@ -56,9 +58,7 @@ subtest 'disabled countries' => sub {
         ok !BOM::Config::Onfido::is_country_supported($cc), "$cc is unsupported";
     }
 
-    my $expected_3alpha = [map { uc(country_code2code($_, 'alpha-2', 'alpha-3')); } @expected_disabled_countries];
-
-    cmp_bag $disabled_countries, $expected_3alpha, 'disabled countries full list';
+    cmp_bag $disabled_countries, [@expected_disabled_countries], 'disabled countries full list';
 };
 
 subtest 'Onfido supported documents updater' => sub {
@@ -80,9 +80,22 @@ subtest 'Onfido supported documents updater' => sub {
     my $redis = BOM::Config::Redis::redis_replicated_write();
 
     # clean all
-    my @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    $redis->del($_) for @redis_keys;
-    $redis->del(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY);
+    subtest 'clear cache' => sub {
+        $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY, 'test');
+        $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY,      'test');
+        $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'ARG', 'test');
+        $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'BRA', 'test');
+        $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'COL', 'test');
+        BOM::Config::Onfido::clear_supported_documents_cache();
+
+        ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY), 'key deleted';
+        ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY),      'key deleted';
+        ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'ARG'), 'key deleted';
+        ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'BRA'), 'key deleted';
+        ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'COL'), 'key deleted';
+    };
+
+    BOM::Config::Onfido::clear_supported_documents_cache();
 
     my $http_mock = Test::MockModule->new('HTTP::Tiny');
     my $http_exception;
@@ -112,39 +125,60 @@ subtest 'Onfido supported documents updater' => sub {
             };
         });
 
-    # undef data
+    # undef data & meta
 
     $log->clear();
     $stats_event = {};
     $data        = undef;
+    $meta        = undef;
     BOM::Config::Onfido::supported_documents_updater();
 
-    @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    ok !scalar @redis_keys, 'Empty redis on empty data';
+    my $document = $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY);
+    my $expected = undef;
+    cmp_deeply $document, $expected, 'Expected undef documents on undef data & meta';
+
     $log->empty_ok('no logs founds');
     cmp_deeply $stats_event, {}, 'No event reported';
 
-    # empty data
+    # empty data & undef meta
     $stats_event = {};
     $log->clear();
     $data = [];
+    $meta = undef;
     BOM::Config::Onfido::supported_documents_updater();
 
-    @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    ok !scalar @redis_keys, 'Empty redis on empty data';
+    $document = $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY);
+    $expected = undef;
+    cmp_deeply $document, $expected, 'Expected undef documents on undef meta';
     $log->empty_ok('no logs founds');
     cmp_deeply $stats_event, {}, 'No event reported';
 
-    # some docs
+    # some docs & version undef
     $stats_event = {};
     $log->clear();
     $data = [{
             country_alpha3 => 'TST',
-            document_type  => 'VIS'
+            document_type  => 'PPO'
         },
         {
             country_alpha3 => 'TST',
-            document_type  => 'VIS'
+            document_type  => 'VIS',
+            country        => 'Republic of Testers',
+        },
+        {
+            country_alpha3 => 'TST',
+            document_type  => 'PPO',
+            country        => 'Republic of Testers',
+        },
+        {
+            country_alpha3 => 'TST',
+            document_type  => 'PPO',
+            country        => 'Republic of Testers',
+        },
+        {
+            country_alpha3 => 'TST',
+            document       => 'CCC',
+            country        => 'Republic of Testers',
         },
         {
             country_alpha3 => 'TST',
@@ -154,19 +188,32 @@ subtest 'Onfido supported documents updater' => sub {
         {document      => 'VIS'},
         {
             country_alpha3 => 'SSS',
-            document_type  => 'VIS'
+            document_type  => 'VIS',
+            country        => 'The Kingdom of Super Simple Software',
         },
         {
             country_alpha3 => 'SSS',
-            document       => 'VIS'
+            document       => 'VIS',
+            country        => 'Kingdom of Super Simple Software',
         },
         {
             country_alpha3 => 'ATR',
-            document       => 'VIS'
+            document       => 'VIS',
+            country        => 'Autonomous Zone of Automatic Testing Robots',
+        },
+        {
+            country_alpha3 => 'ATR',
+            document_type  => 'VIS',
+            country        => 'Autonomous Zone of Automatic Testing Robots',
         },
     ];
+    $meta = {};
     BOM::Config::Onfido::supported_documents_updater();
-    ok !scalar @redis_keys, 'Empty redis on undefined version';
+
+    $document = $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY);
+    $expected = undef;
+    cmp_deeply $document, $expected, 'Undef documents on undefined version';
+
     $log->empty_ok('no logs founds');
     cmp_deeply $stats_event, {}, 'No event reported';
 
@@ -183,16 +230,25 @@ subtest 'Onfido supported documents updater' => sub {
         'Successful event reported';
 
     is $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY), 12345, 'expected version';
-    @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    %countries  = map { ($_ => $redis->smembers(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_)) } qw/TST SSS/;
 
-    cmp_bag [@redis_keys], [map { +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_ } qw/TST SSS/], 'Expected countries';
-    cmp_deeply { %countries },
-        +{
-        TST => bag(qw/VIS/),
-        SSS => bag(qw/VIS/),
+    $document = decode_json($redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY));
+    $expected = [{
+            doc_types_list => ['Visa'],
+            country_name   => 'Autonomous Zone of Automatic Testing Robots',
+            country_code   => 'ATR'
         },
-        'Expected documents per country';
+        {
+            country_name   => 'The Kingdom of Super Simple Software',
+            doc_types_list => ['Visa'],
+            country_code   => 'SSS'
+        },
+        {
+            country_code   => 'TST',
+            doc_types_list => ['Passport', 'Visa'],
+            country_name   => 'Republic of Testers'
+        }];
+
+    cmp_deeply $document, $expected, 'Expected documents per country';
 
     # http exception
     $stats_event = {};
@@ -212,17 +268,9 @@ subtest 'Onfido supported documents updater' => sub {
         },
         'Error event reported';
 
-    is $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY), 12345, 'expected version';
-    @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    %countries  = map { ($_ => $redis->smembers(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_)) } qw/TST SSS/;
+    is $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY), 12345, 'expected version (no changes made)';
 
-    cmp_bag [@redis_keys], [map { +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_ } qw/TST SSS/], 'Expected countries';
-    cmp_deeply { %countries },
-        +{
-        TST => bag(qw/VIS/),
-        SSS => bag(qw/VIS/),
-        },
-        'Expected documents per country';
+    cmp_deeply $document, $expected, 'Expected documents per country (no changes made)';
 
     # update docs
     $stats_event = {};
@@ -231,35 +279,43 @@ subtest 'Onfido supported documents updater' => sub {
     $meta           = {version => 123456};
     $data           = [{
             country_alpha3 => 'TST',
-            document_type  => 'VIS'
+            document_type  => 'PPO'
         },
         {
             country_alpha3 => 'TST',
-            document_type  => 'CCC'
+            document_type  => 'VIS',
+            country        => 'Republic of Testers and Forsaken Devs',
         },
         {
             country_alpha3 => 'TST',
-            document       => 'VIS'
+            document_type  => 'REP',
+            country        => 'Republic of Testers and Forsaken Devs',
         },
         {
-            country_alpha3 => 'SSS',
-            document_type  => 'RT'
+            country_alpha3 => 'TST',
+            document_type  => 'PPO',
+            country        => 'Republic of Testers and Forsaken Devs',
         },
         {
-            country_alpha3 => 'SSS',
-            document       => 'TX'
+            country_alpha3 => 'TST',
+            document_type  => 'PPO',
+            country        => 'Republic of Testers and Forsaken Devs',
         },
         {
-            country_alpha3 => 'SSS',
-            document_type  => 'TX'
+            country_alpha3 => 'TST',
+            document       => 'CCC',
+            country        => 'Republic of Testers and Forsaken Devs',
         },
+        {
+            country_alpha3 => 'TST',
+            document       => 'CCC'
+        },
+        {document_type => 'VIS'},
+        {document      => 'VIS'},
         {
             country_alpha3 => 'ATR',
-            document_type  => 'VIS'
-        },
-        {
-            country_alpha3 => 'SSS',
-            document_type  => 'TX'
+            document_type  => 'REP',
+            country        => 'Autonomous Zone of Automatic Testing Robots',
         },
     ];
     BOM::Config::Onfido::supported_documents_updater();
@@ -272,27 +328,30 @@ subtest 'Onfido supported documents updater' => sub {
         },
         'Successful event reported';
 
-    is $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY), 123456, 'expected version';
-    @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    %countries  = map { ($_ => $redis->smembers(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_)) } qw/TST SSS ATR/;
-
-    cmp_bag [@redis_keys], [map { +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_ } qw/TST ATR/], 'Expected countries';
-    cmp_deeply { %countries },
-        +{
-        TST => bag(qw/VIS/),
-        SSS => bag(),
-        ATR => bag(qw/VIS/),
+    $document = decode_json($redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY));
+    $expected = [{
+            doc_types_list => ['Residence Permit'],
+            country_name   => 'Autonomous Zone of Automatic Testing Robots',
+            country_code   => 'ATR'
         },
-        'Expected documents per country';
+        {
+            country_code   => 'TST',
+            doc_types_list => ['Passport', 'Residence Permit', 'Visa'],
+            country_name   => 'Republic of Testers and Forsaken Devs'
+        }];
 
-    # delete some docs
+    cmp_deeply $document, $expected, 'Expected documents per country';
+
+    # delete some countries
     $stats_event = {};
     $meta        = {version => 123457};
     $data        = [{
             country_alpha3 => 'ATR',
-            document_type  => 'VIS'
+            document_type  => 'REP',
+            country        => 'Empire of the Automatic Testing Robots',
         },
     ];
+
     BOM::Config::Onfido::supported_documents_updater();
     $log->empty_ok('empty logs');
     cmp_deeply $stats_event,
@@ -303,15 +362,12 @@ subtest 'Onfido supported documents updater' => sub {
         },
         'Successful event reported';
 
-    @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    %countries  = map { ($_ => $redis->smembers(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_)) } qw/ATR/;
-
-    cmp_bag [@redis_keys], [map { +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_ } qw/ATR/], 'Expected countries';
-    cmp_deeply { %countries },
-        +{
-        ATR => bag(qw/VIS/),
-        },
-        'Expected documents per country';
+    $document = decode_json($redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY));
+    $expected = [{
+            country_code   => 'TST',
+            doc_types_list => ['Residence Permit',],
+            country_name   => 'Empire of the Automatic Testing Robots'
+        }];
 
     # empty again
     $stats_event = {};
@@ -327,52 +383,35 @@ subtest 'Onfido supported documents updater' => sub {
         },
         'Successful event reported';
 
-    is $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY), 123458, 'expected version';
-    @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    ok !scalar @redis_keys, 'Empty redis on empty data';
-
-    %countries = map { ($_ => $redis->smembers(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_)) } qw/SSS TST ATR/;
-
-    cmp_deeply { %countries },
-        +{
-        SSS => [],
-        TST => [],
-        ATR => [],
-        },
-        'Expected empty docs';
+    $document = decode_json($redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY));
+    $expected = [];
+    cmp_deeply $document, $expected, 'Expected documents per country';
 
     # dont process unchanged version
     $stats_event = {};
     $meta        = {version => 123458};
     $data        = [{
-            country_alpha3 => 'TST',
-            document_type  => 'VIS'
+            country_alpha3 => 'ATR',
+            document_type  => 'REP',
+            country        => 'Empire of the Automatic Testing Robots',
         },
     ];
     BOM::Config::Onfido::supported_documents_updater();
     $log->empty_ok('empty logs');
     cmp_deeply $stats_event, {}, 'unchanged version not reported';
 
-    is $redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY), 123458, 'expected version';
-    @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    ok !scalar @redis_keys, 'Empty redis on empty data';
+    $document = decode_json($redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY));
+    $expected = [];
+    cmp_deeply $document, $expected, 'Expected documents per country';
 
-    %countries = map { ($_ => $redis->smembers(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . $_)) } qw/SSS TST ATR/;
-
-    cmp_deeply { %countries },
-        +{
-        SSS => [],
-        TST => [],
-        ATR => [],
-        },
-        'Expected empty docs';
-
-    $redis->del($_) for @redis_keys;
-    $redis->del(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY);
+    BOM::Config::Onfido::clear_supported_documents_cache();
     $http_mock->unmock_all;
 };
 
 subtest 'document configuration with redis' => sub {
+    # this is bad we need the desired keys
+    ok !test_country_hashref_keys({TST => {test => 1}});
+
     my $mock = Test::MockModule->new('BOM::Config::Onfido');
     my $hits = 0;
     $mock->mock(
@@ -399,13 +438,23 @@ subtest 'document configuration with redis' => sub {
         push @doc_bag, $new_details->{$country}->{doc_types_list}->@*;
     }
 
-    is scalar @doc_bag, 0, 'Empty docs for every country';
+    ok test_country_hashref_keys($new_details);
+    is scalar @doc_bag, 693, 'Document stash taken from the YML';
 
-    # bring some info
-    $redis->sadd(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'ARG', 'DLD', 'TEST', 'VIS');
-    $redis->sadd(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'GHA', 'PPO', 'TEST', 'NIC');
+    # inject some info
+    $redis->set(
+        +BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY,
+        encode_json([{
+                    country_code   => 'TST',
+                    country_name   => 'Republic of Testers and Forsaken Devs',
+                    doc_types_list => ['Passport', 'Visa'],
+                },
+                {
+                    country_code   => 'ATR',
+                    doc_types_list => ['Passport', 'Residence Permit'],
+                    country_name   => 'Empire of the Automatic Testing Robots',
+                }]));
 
-    BOM::Config::Onfido::_get_country_details();
     $new_details = BOM::Config::Onfido::_get_country_details();
     @doc_bag     = ();
 
@@ -413,56 +462,69 @@ subtest 'document configuration with redis' => sub {
         push @doc_bag, $new_details->{$country}->{doc_types_list}->@*;
     }
 
-    is scalar @doc_bag, 0, 'Empty docs for every country still';
-    is $hits,           1, 'same version hit';
+    ok test_country_hashref_keys($new_details);
+    is scalar @doc_bag, 693, 'Still taken from the YML as the version remains the same';
+    is $hits,           1,   'same version hit';
 
     # bump the version
     $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY, 2);
     $new_details = BOM::Config::Onfido::_get_country_details();
     is $hits, 2, 'new version hit';
 
-    cmp_bag $new_details->{ARG}->{doc_types_list}, ['Driving Licence', 'Visa'],                   'Expected docs for ARG';
-    cmp_bag $new_details->{GHA}->{doc_types_list}, ['Passport',        'National Identity Card'], 'Expected docs for GHA';
-    cmp_bag $new_details->{KOR}->{doc_types_list}, [], 'Expected docs for KOR';
+    ok test_country_hashref_keys($new_details);
+    cmp_bag $new_details->{ATR}->{doc_types_list}, ['Passport', 'Residence Permit'], 'Expected docs for ATR';
+    cmp_bag $new_details->{TST}->{doc_types_list}, ['Passport', 'Visa'],             'Expected docs for TST';
 
     # bump the version
     $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY, 3);
-    $redis->del(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'ARG');
-    $redis->del(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'GHA');
+    $redis->set(
+        +BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY,
+        encode_json([{
+                    country_code   => 'SSS',
+                    country_name   => 'Republic of Super Simple Software',
+                    doc_types_list => ['Passport'],
+                },
+                {
+                    country_code   => 'ATR',
+                    doc_types_list => ['Passport', 'Residence Permit'],
+                    country_name   => 'Empire of the Automatic Testing Robots',
+                }]));
 
     $new_details = BOM::Config::Onfido::_get_country_details();
     is $hits, 3, 'new version hit';
 
-    cmp_bag $new_details->{ARG}->{doc_types_list}, [], 'Expected docs for ARG';
-    cmp_bag $new_details->{GHA}->{doc_types_list}, [], 'Expected docs for GHA';
-    cmp_bag $new_details->{KOR}->{doc_types_list}, [], 'Expected docs for KOR';
+    ok test_country_hashref_keys($new_details);
+    is $new_details->{TST}, undef, 'Expected undef TST';
+    cmp_bag $new_details->{SSS}->{doc_types_list}, ['Passport'],                     'Expected docs for SSS';
+    cmp_bag $new_details->{ATR}->{doc_types_list}, ['Passport', 'Residence Permit'], 'Expected docs for ATR';
+    BOM::Config::Onfido::clear_supported_documents_cache();
 
-    # bump the version
-    my %doc_mapping = (
-        PPO => 'Passport',
-        NIC => 'National Identity Card',
-        DLD => 'Driving Licence',
-        REP => 'Residence Permit',
-        VIS => 'Visa',
-        HIC => 'National Health Insurance Card',
-        ARC => 'Asylum Registration Card',
-        ISD => 'Immigration Status Document',
-        VTD => 'Voter Id',
-    );
-
+    # bad json
+    $log->clear();
     $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY, 4);
-    $redis->sadd(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'ARG', keys %doc_mapping);
-
+    $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY,      '{bad:json}');
     $new_details = BOM::Config::Onfido::_get_country_details();
-    is $hits, 4, 'new version hit';
+    @doc_bag     = ();
 
-    cmp_deeply $new_details->{ARG}->{doc_types_list}, [sort values %doc_mapping], 'Expected docs for ARG';
+    for my $country (keys $new_details->%*) {
+        push @doc_bag, $new_details->{$country}->{doc_types_list}->@*;
+    }
 
-    my @redis_keys = $redis->scan_all(MATCH => +BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . '*')->@*;
-    $redis->del($_) for @redis_keys;
+    ok test_country_hashref_keys($new_details);
+    is scalar @doc_bag, 693, 'it has fallen back to YML';
+    is $hits,           4,   'new version hit';
 
-    $redis->del(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY);
+    $log->contains_ok('Could not read Onfido supported documents from redis key: ONFIDO::SUPPORTED::DOCUMENTS::STASH');
+
     $mock->unmock_all;
 };
+
+# all hashref within the list of countries must have all the desired keys
+
+sub test_country_hashref_keys {
+    my $list = shift;
+
+    return List::Util::all { $_ } map { @{$_}{qw/country_name doc_types_list country_code/} } values $list->%*;
+}
 
 done_testing();

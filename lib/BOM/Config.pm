@@ -762,6 +762,26 @@ sub onfido_supported_documents {
     return $config;
 }
 
+=head2 onfido_disabled_countries
+
+Get a list of disabled countries by our business rules.
+
+Onfido might support them but we rather don't
+
+Example:
+
+    my $disabled_countries = BOM::Config::onfido_disabled_countries();
+
+Returns the a hashref indexed by country code (2 letter) pointing to a boolean value that
+defines the disabled status of the country,
+
+=cut
+
+sub onfido_disabled_countries {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/onfido_disabled_countries.yml');
+    return $config;
+}
+
 =head2 redis_payment_config
 
     BOM::Config::redis_payment_config()
