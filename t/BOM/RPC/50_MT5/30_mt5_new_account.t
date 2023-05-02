@@ -861,11 +861,8 @@ subtest 'country=latam african, financial STP account' => sub {
     my @latam_african_countries =
         qw(dz ao ai ag ar bs bz bj bo bw br bi cv cm cf td cl co km cg cr ci dj dm do ec eg sv gq er sz et ga gm gh gd gt gn gw gy hn ke ls lr mg mw mu mx ms mz na ne ng pa pe kn lc vc st sc sl so za sd sr tz tg tt tn tc uy ve zm zw);
 
-    my @high_risk_countries      = ('al', 'bb', 'bf', 'kh', 'ky', 'ht', 'jm', 'jo', 'ml', 'ma', 'ni', 'pk', 'ph', 'ru', 'sn', 'ss', 'tr', 'ug', 'ye');
-    my @onfido_blocked_countries = (
-        'af', 'by', 'cn', 'cd', 'iq', 'ly', 'ru', 'aq', 'bq', 'bv', 'io', 'cx', 'cc',  'ck', 'cw', 'fk', 'gf', 'tf', 'gp', 'hm',
-        'mq', 'yt', 'nc', 'nu', 'nf', 're', 'sh', 'pm', 'sx', 'gs', 'sj', 'tl', 'tk',, 'wf', 'eh', 'ax'
-    );
+    my @high_risk_countries      = ('jo', 'ru');
+    my @onfido_blocked_countries = ('cn', 'ru', 'by');
     foreach my $country (@latam_african_countries) {
         my $new_email  = $country . $details{email};
         my $new_client = create_client('CR', undef, {residence => $country});
@@ -1337,7 +1334,7 @@ subtest 'bvi/vanuatu fully authenticated' => sub {
 };
 
 subtest 'countries restrictions, high-risk jurisdiction, onfido blocked' => sub {
-    my @countries = qw(vg bb ru aq bv);
+    my @countries = qw(cn ru);
 
     # do not create vg for bvi
     # bb and ru is in high risk

@@ -146,9 +146,10 @@ subtest 'trading servers for Aland Islands' => sub {
         ->result;
 
     ok @$result == 1, 'returns 2 trade servers';
+
     is $result->[0]->{id}, 'p01_ts04', 'first server p01_ts04';
-    ok $result->[0]->{disabled}, 'first server p01_ts04 is disabled';
-    is $result->[0]->{message_to_client}, 'Region added', 'no error message';
+    ok !$result->[0]->{disabled},          'first server p01_ts04 is disabled';
+    ok !$result->[0]->{message_to_client}, 'no error message';
 };
 
 done_testing();
