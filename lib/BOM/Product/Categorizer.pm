@@ -78,9 +78,9 @@ sub BUILD {
 
         $self->_initialize_parameters();
 
-        unless (($skip_contract_input_validation) or ($self->_parameters->{category}->code eq 'vanilla')) {
+        unless ($skip_contract_input_validation) {
             $self->_validate_barrier;
-            $self->_validate_stake_min_max unless ($self->_parameters->{category}->code eq 'turbos');
+            $self->_validate_stake_min_max;
             $self->_validate_multiplier;
             $self->_validate_limit_order;
         }
@@ -507,8 +507,6 @@ sub _validate_stake_min_max {
 
     my $params = $self->_parameters;
 
-    return unless $params->{pricing_new};
-
     if ($params->{category}->require_basis) {
         BOM::Product::Exception->throw(
             error_code => 'MissingEither',
@@ -526,6 +524,8 @@ sub _validate_stake_min_max {
             );
         }
 
+        return unless $params->{pricing_new};
+
         my @limit_args = ($params->{currency}, $params->{landing_company}, $params->{underlying}->market->name, $params->{category}->code);
         my $min_amount = $params->{amount_type} eq 'payout' ? minimum_payout_limit(@limit_args) : minimum_stake_limit(@limit_args);
         BOM::Product::Exception->throw(
@@ -535,7 +535,15 @@ sub _validate_stake_min_max {
             if defined $min_amount
             and exists $params->{amount}
             and $params->{amount} < $min_amount
-            and not $params->{is_sold};
+            and not $params->{is_sold}
+            and ($params->{category}->is_binary
+            or ($params->{category}->code eq 'multiplier')
+            or ($params->{category}->code eq 'accumulator'));
+        # non binary contract do not have fixed payout and have their own stake limits
+        # except for multipliers and accumulator
+        # for other non binary contracts like vanilla, turbos and sharkfin
+        # they have their own min/max stake validation
+        # skipping to avoid conflicts
 
     } else {
         BOM::Product::Exception->throw(

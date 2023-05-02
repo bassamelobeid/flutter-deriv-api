@@ -171,4 +171,20 @@ subtest 'cryto amount' => sub {
     isa_ok $c, 'BOM::Product::Contract::Call';
 };
 
+subtest 'amount_type - forward starting' => sub {
+    my $args = {
+        bet_type   => 'CALL',
+        underlying => 'R_100',
+        barrier    => 'S0P',
+        date_start => time + 100,
+        duration   => '5m',
+        currency   => 'USD',
+    };
+
+    my $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Please specify either [_1] or [_2].', 'no payout or stake specify';
+
+};
+
 done_testing();
