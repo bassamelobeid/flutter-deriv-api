@@ -102,6 +102,14 @@
          "pattern" : "^Malta$",
          "type" : "string"
       },
+      "tin_not_mandatory": {
+         "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+         "type": "integer",
+         "enum": [
+             0,
+             1
+         ]
+      },
       "currency_config" : {
          "type" : "object",
          "additionalProperties" : false,

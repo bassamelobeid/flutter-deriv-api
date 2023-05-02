@@ -73,6 +73,14 @@
                ],
                "type" : "integer"
             },
+            "tin_not_mandatory": {
+               "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+               "type": "integer",
+               "enum": [
+                   0,
+                   1
+               ]
+            },
             "currency_config" : {
                "properties" : {
                   "forex" : {
@@ -239,6 +247,14 @@
          "properties" : {
             "country" : {
                "type" : "string"
+            },
+            "tin_not_mandatory": {
+               "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+               "type": "integer",
+               "enum": [
+                   0,
+                   1
+               ]
             },
             "currency_config" : {
                "properties" : {
@@ -459,6 +475,14 @@
                   "country" : {
                      "type" : "string",
                      "description" : "Landing Company country of incorporation"
+                  },
+                  "tin_not_mandatory": {
+                     "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+                     "type": "integer",
+                     "enum": [
+                         0,
+                         1
+                     ]
                   },
                   "currency_config" : {
                      "properties" : {
@@ -709,6 +733,14 @@
                      "description" : "Landing Company country of incorporation",
                      "type" : "string"
                   },
+                  "tin_not_mandatory": {
+                     "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+                     "type": "integer",
+                     "enum": [
+                         0,
+                         1
+                     ]
+                  },
                   "currency_config" : {
                      "properties" : {
                         "forex" : {
@@ -893,6 +925,14 @@
                      "items" : {
                         "type" : "string"
                      }
+                  },
+                  "tin_not_mandatory": {
+                     "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+                     "type": "integer",
+                     "enum": [
+                         0,
+                         1
+                     ]
                   },
                   "requirements" : {
                      "type" : "object",
@@ -1254,6 +1294,14 @@
                              0,
                              1
                          ]
+                     },
+                     "tin_not_mandatory": {
+                        "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1
+                        ]
                      }
                  }
              }
@@ -1343,6 +1391,14 @@
                   "address" : {
                      "description" : "Landing Company address",
                      "type" : "null"
+                  },
+                  "tin_not_mandatory": {
+                     "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+                     "type": "integer",
+                     "enum": [
+                         0,
+                         1
+                     ]
                   },
                   "currency_config" : {
                      "properties" : {

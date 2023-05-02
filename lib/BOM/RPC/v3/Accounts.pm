@@ -21,6 +21,7 @@ use Digest::SHA     qw( hmac_sha256_hex );
 use Text::Trim      qw( trim );
 use JSON::MaybeUTF8 qw( decode_json_utf8 encode_json_utf8);
 use URI;
+use List::Util qw(any);
 
 use BOM::User::Client;
 use BOM::User::FinancialAssessment
@@ -92,6 +93,8 @@ use constant WITHDRAWAL_PROCESSING_TIMES => {
 # other RPC calls which retrieve lists of accounts.
 use constant MT5_BALANCE_CALL_ENABLED => 0;
 use constant CHANGE_EMAIL_TOKEN_TTL   => 3600;
+
+my $compliance_config = BOM::Config::Compliance->new;
 
 my $email_field_labels = {
     exclude_until          => 'Exclude from website until',
@@ -314,13 +317,34 @@ rpc "landing_company_details",
     sub {
     my $params = shift;
 
+    my $country = $params->{args}->{country} // "default";
+
     my $lc = LandingCompany::Registry->by_name($params->{args}->{landing_company_details});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
             message_to_client => localize('Unknown landing company.')}) unless $lc;
 
-    return __build_landing_company($lc);
+    return __build_landing_company($lc, $country);
     };
+
+=head2 _lc_country_requires_tin
+
+check if the country for the provided landing company is (NPJ) Non Participating Jurisdiction 
+and TIN is mandatory or not.
+
+=cut
+
+sub _lc_country_requires_tin {
+    my ($landing_company, $country) = @_;
+
+    my $npj_countries_list = $compliance_config->get_npj_countries_list;
+    my $tin_not_mandatory  = 0;
+
+    if (any { $country eq $_ } $npj_countries_list->{$landing_company}->@*) {
+        $tin_not_mandatory = 1;
+    }
+    return $tin_not_mandatory;
+}
 
 =head2 __build_landing_company
 
@@ -386,10 +410,15 @@ sub __build_landing_company {
     # else it will return the legal allowed markets for the given country
     my $country = shift // "default";
 
+    # Check if the country is NPJ for the landing company
+    # NPJ = TIN is not required for the combination of Country + Landing Company
+
+    my $tin_not_mandatory = _lc_country_requires_tin($lc->short, $country);
+
     # Get suspended currencies and remove them from list of legal currencies
     my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
 
-    return {
+    my $result = {
         shortcode                         => $lc->short,
         name                              => $lc->name,
         address                           => $lc->address,
@@ -402,8 +431,14 @@ sub __build_landing_company {
         currency_config                   => market_pricing_limits($payout_currencies, $lc->short, $lc->legal_allowed_markets),
         requirements                      => $lc->requirements,
         changeable_fields                 => $lc->changeable_fields,
-        support_professional_client       => $lc->support_professional_client,
+        support_professional_client       => $lc->support_professional_client
     };
+
+    if ($country ne "default") {
+        $result->{tin_not_mandatory} = $tin_not_mandatory;
+    }
+
+    return $result;
 }
 
 =head2 _withdrawal_details
