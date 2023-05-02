@@ -272,4 +272,45 @@ sub validate_jurisdiction_risk_rating {
     return $result;
 }
 
+=head2 get_npj_countries_list
+
+Gets list of countries categorized by their landing company name that are NPJ.
+
+=cut
+
+sub get_npj_countries_list {
+
+    my ($self) = @_;
+
+    my $app_config = $self->_app_config;
+    my $config     = decode_json_utf8($app_config->get("compliance.npj_country_list"));
+
+    $config->{revision} = $app_config->global_revision;
+
+    return $config;
+}
+
+=head2 validate_npj_country_list
+validate input country codes
+lower case
+2 character lenght
+valid country (cross check with our country list)
+repeated values
+=cut
+
+sub validate_npj_country_list {
+    my ($self, @countries) = @_;
+    my %counter;
+
+    return "duplicate values detected" if grep { ++$counter{$_} == 2 } @countries;
+
+    for my $country (@countries) {
+
+        return "Invalid country code <$country> in NPJ Country List\n"
+            unless $self->_countries->country_from_code($country)
+            && length($country) == 2
+            && $country eq lc $country;
+    }
+}
+
 1;

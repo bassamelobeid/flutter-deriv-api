@@ -1412,6 +1412,11 @@ compliance:
       isa: json_string
       global: 1
       default: '{"labuan": {"standard":[], "high":[]}, "vanuatu": {"standard":[], "high":[]}, "bvi": {"standard":[], "high":[]} }'
+    npj_country_list:
+      description: "2 character lowercase country code list for each landing company for which we need to exclude TIN verification ex : {'labuan': ['id'], 'bvi': ['id','my'],'vanuatu': ['id']}"
+      isa: json_string
+      global: 1
+      default: '{"labuan": [], "bvi": [], "vanuatu": [] }'
     enhanced_due_diligence:
       description: "Enhanced Due Diligence (EDD) settings"
       isa: section
