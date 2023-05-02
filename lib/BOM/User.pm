@@ -1951,15 +1951,10 @@ This check is to be done manually by Compliance team.
 sub set_affiliate_id {
     my ($self, $affiliate_id) = @_;
 
-    try {
-        return $self->dbic->run(
-            fixup => sub {
-                $_->do('SELECT FROM users.add_affiliate_id(?, ?)', undef, $self->{id}, $affiliate_id);
-            });
-
-    } catch {
-        die +{code => 'AffiliateAlreadyExist'};
-    }
+    return $self->dbic->run(
+        fixup => sub {
+            $_->do('SELECT FROM users.set_affiliate_id(?, ?)', undef, $self->{id}, $affiliate_id);
+        });
 }
 
 =head2 set_affiliate_coc_approval

@@ -18,22 +18,25 @@ my $user = BOM::User->create(
     password => $hash_pwd,
 );
 
-my $id_1 = 'aff123';
-
 cmp_deeply(exception { $user->set_affiliate_coc_approval(0) }, {code => 'AffiliateNotFound'}, 'cannot set affiliate coc without affiliate_id');
 
 is $user->affiliate_coc_approval_required, undef, 'returns undef if user is not an affiliate';
 
-$user->set_affiliate_id($id_1);
+$user->set_affiliate_id('01a');
+is $user->affiliate->{affiliate_id}, '01a', 'can set affiliate_id';
 
-local $SIG{__WARN__} = sub { };
-cmp_deeply(exception { $user->set_affiliate_id('123') }, {code => 'AffiliateAlreadyExist'}, 'cannot change affiliate_id');
-
-is $user->affiliate->{affiliate_id}, $id_1, 'can set affiliate_id';
 is $user->affiliate->{coc_approval}, undef, 'affiliate coc approval is set to null by default';
 
 is $user->set_affiliate_coc_approval(undef), 1, 'can set affiliate coc approval to null';
 is $user->set_affiliate_coc_approval(0),     1, 'can set affiliate coc approval to false';
 is $user->set_affiliate_coc_approval(1),     1, 'can set affiliate coc approval to true';
+
+$user->set_affiliate_id('02b');
+is $user->affiliate->{affiliate_id}, '01a', 'old affiliate is cached';
+
+delete $user->{affiliate};
+is $user->affiliate->{affiliate_id}, '02b', 'uncached affiliate id is changed';
+
+is $user->affiliate->{coc_approval}, 1, 'affiliate coc approval is still true';
 
 done_testing();
