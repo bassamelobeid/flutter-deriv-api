@@ -541,7 +541,7 @@ subtest 'user profile change event track' => sub {
     my $result           = $action_handler->($args)->get;
     ok $result, 'Success profile_change result';
     my ($customer, %args) = @identify_args;
-    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined, 'svg');
+    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined, 'labuan,svg');
 
     is_deeply \%args,
         {
@@ -554,7 +554,7 @@ subtest 'user profile change event track' => sub {
         'identify context is properly set for profile change';
 
     ($customer, %args) = @track_args;
-    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined, 'svg');
+    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined, 'labuan,svg');
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is_deeply \%args, {
         context => {
