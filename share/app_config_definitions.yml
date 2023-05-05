@@ -156,7 +156,7 @@ payments:
           description: 'Grouped allowed payment methods (used in Rule 6.0 and 7.0).'
           isa: json_string
           global: 1
-          default: '[["AirTM"],["AstroPay"],["FasaPay"],["Jeton","JetonWL"],["NETeller","NETellerDT","NETellerPS"],["NganLuong"],["Onlinenaira"],["PayLivre"],["paysafe"],["PerfectM"],["QIWI"],["Skrill","Skrill1tap"],["SticPay"],["WebMoney"],["ZingPay"]]'
+          default: '[["AirTM"],["AstroPay"],["FasaPay"],["Jeton","JetonWL"],["NETeller","NETellerDT","NETellerPS"],["NganLuong"],["Onlinenaira"],["PayLivre"],["paysafe"],["PerfectM"],["Skrill","Skrill1tap"],["SticPay"],["WebMoney"],["ZingPay"]]'
         check_most_used_payment_method_enabled:
           description: 'Check the withdrawal payment method to match the one used to deposit the most in the past'
           isa: Bool
