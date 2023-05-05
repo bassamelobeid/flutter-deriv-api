@@ -1381,7 +1381,7 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         my $email  = mailbox_search(
-            email   => 'i-payments-TL@deriv.com',
+            email   => 'i-payments-notification@deriv.com',
             subject => qr/MT5 Account Rescind Report/
         );
 
@@ -1429,7 +1429,7 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         my $email  = mailbox_search(
-            email   => 'i-payments-TL@deriv.com',
+            email   => 'i-payments-notification@deriv.com',
             subject => qr/MT5 Account Rescind Report/
         );
 
@@ -1466,7 +1466,7 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         my $email  = mailbox_search(
-            email   => 'i-payments-TL@deriv.com',
+            email   => 'i-payments-notification@deriv.com',
             subject => qr/MT5 Account Rescind Report/
         );
 
@@ -1520,7 +1520,7 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         my $email  = mailbox_search(
-            email   => 'i-payments-TL@deriv.com',
+            email   => 'i-payments-notification@deriv.com',
             subject => qr/MT5 Account Rescind Report/
         );
 

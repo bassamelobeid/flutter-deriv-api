@@ -1408,7 +1408,7 @@ sub _send_mt5_rescind_report {
     push @$csv_attachment, $failed_csv->[0]  if scalar(keys %$process_mt5_fail);
 
     BOM::Platform::Email::send_email({
-        to                    => 'i-payments-TL@deriv.com',
+        to                    => 'i-payments-notification@deriv.com',
         from                  => $brand->emails('no-reply'),
         email_content_is_html => 1,
         subject               => 'MT5 Account Rescind Report',
