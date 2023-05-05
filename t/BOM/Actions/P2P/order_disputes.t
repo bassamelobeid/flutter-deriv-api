@@ -60,6 +60,12 @@ subtest 'Order disputes' => sub {
             seller_title => 'We’re investigating your dispute',
         },
         {
+            disputer     => 'seller',
+            reason       => 'buyer_third_party_payment_method',
+            buyer_title  => 'We need your account details',
+            seller_title => 'We’re investigating your dispute',
+        },
+        {
             disputer     => 'buyer',
             reason       => 'seller_not_released',
             buyer_title  => 'We’re investigating your dispute',

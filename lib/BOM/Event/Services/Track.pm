@@ -739,6 +739,9 @@ sub p2p_order_dispute {
         if ($properties{dispute_reason} eq 'buyer_overpaid') {
             $buyer_title  = localize('You’ve paid more than the order amount');
             $seller_title = localize('Please return the excess funds');
+        } elsif ($properties{dispute_reason} eq 'buyer_third_party_payment_method') {
+            $buyer_title  = localize('We need your account details');
+            $seller_title = localize('We’re investigating your dispute');
         }
 
     } elsif ($properties{dispute_reason} eq 'buyer_underpaid') {    # buyer raised a dispute
