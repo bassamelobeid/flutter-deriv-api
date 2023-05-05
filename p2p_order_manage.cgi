@@ -32,10 +32,11 @@ my %input  = %{request()->params};
 my $broker = request()->broker_code;
 
 my %dispute_reasons = (
-    seller_not_released => 'Seller did not release funds',
-    buyer_overpaid      => 'Buyer paid too much',
-    buyer_underpaid     => 'Buyer paid less',
-    buyer_not_paid      => 'Buyer has not made any payment',
+    seller_not_released              => 'Seller did not release funds',
+    buyer_overpaid                   => 'Buyer paid too much',
+    buyer_underpaid                  => 'Buyer paid less',
+    buyer_not_paid                   => 'Buyer has not made any payment',
+    buyer_third_party_payment_method => 'Buyer paid with the help of third party'
 );
 
 my $db = BOM::Database::ClientDB->new({
