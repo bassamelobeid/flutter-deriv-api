@@ -3800,7 +3800,7 @@ sub p2p_create_order_dispute {
     my $buyer = 1;
     $buyer = 0 if $side eq 'advertiser' and $order->{type} eq 'buy';
     $buyer = 0 if $side eq 'client'     and $order->{type} eq 'sell';
-    die +{error_code => 'InvalidReasonForBuyer'}  if $buyer     and $dispute_reason eq 'buyer_not_paid';
+    die +{error_code => 'InvalidReasonForBuyer'}  if $buyer     and any { $dispute_reason eq $_ } qw/buyer_not_paid buyer_third_party_payment_method/;
     die +{error_code => 'InvalidReasonForSeller'} if not $buyer and $dispute_reason eq 'seller_not_released';
 
     # We allow buyer-confirmed due to FE relying on expire_time to show complain button.

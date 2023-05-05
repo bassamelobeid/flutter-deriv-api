@@ -99,10 +99,24 @@ subtest 'Order dispute (type buy)' => sub {
     BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
     my $response_advertiser = $advertiser->p2p_create_order_dispute(
         id             => $new_order->{id},
-        dispute_reason => 'buyer_underpaid',
+        dispute_reason => 'buyer_third_party_payment_method',
     );
 
     my $expected_response_advertiser = {
+        dispute_reason   => 'buyer_third_party_payment_method',
+        disputer_loginid => $advertiser->loginid,
+    };
+
+    is $response_advertiser->{status}, 'disputed', 'Order is disputed';
+    cmp_deeply($response_advertiser->{dispute_details}, $expected_response_advertiser, 'order_dispute expected response after advertiser complaint');
+
+    BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
+    $response_advertiser = $advertiser->p2p_create_order_dispute(
+        id             => $new_order->{id},
+        dispute_reason => 'buyer_underpaid',
+    );
+
+    $expected_response_advertiser = {
         dispute_reason   => 'buyer_underpaid',
         disputer_loginid => $advertiser->loginid,
     };
@@ -192,6 +206,20 @@ subtest 'Order dispute (type sell)' => sub {
 
     my $expected_response_client = {
         dispute_reason   => 'buyer_not_paid',
+        disputer_loginid => $client->loginid,
+    };
+
+    is $response_client->{status}, 'disputed', 'Order is disputed';
+    cmp_deeply($response_client->{dispute_details}, $expected_response_client, 'order_dispute expected response after client complaint');
+
+    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    $response_client = $client->p2p_create_order_dispute(
+        id             => $order->{id},
+        dispute_reason => 'buyer_third_party_payment_method',
+    );
+
+    $expected_response_client = {
+        dispute_reason   => 'buyer_third_party_payment_method',
         disputer_loginid => $client->loginid,
     };
 
@@ -432,6 +460,14 @@ subtest 'Order cannot be disputed' => sub {
     is $err->{error_code}, 'InvalidReasonForBuyer', 'Invalid reason for buyer (advertiser on sell order)';
 
     $err = exception {
+        $advertiser2->p2p_create_order_dispute(
+            id             => $order2->{id},
+            dispute_reason => 'buyer_third_party_payment_method'
+        );
+    };
+    is $err->{error_code}, 'InvalidReasonForBuyer', 'Invalid reason for buyer (advertiser on sell order)';
+
+    $err = exception {
         $client2->p2p_create_order_dispute(
             id             => $order2->{id},
             dispute_reason => 'seller_not_released'
@@ -453,6 +489,14 @@ subtest 'Order cannot be disputed' => sub {
             dispute_reason => 'buyer_not_paid'
         );
     };
+
+    $err = exception {
+        $client->p2p_create_order_dispute(
+            id             => $order->{id},
+            dispute_reason => 'buyer_third_party_payment_method'
+        );
+    };
+
     is $err->{error_code}, 'InvalidReasonForBuyer', 'Invalid reason for buyer (client on buy order)';
 };
 
