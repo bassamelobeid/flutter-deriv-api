@@ -4565,6 +4565,101 @@ subtest 'Onfido DOB checks' => sub {
     $mocked_emitter->unmock_all();
 };
 
+subtest 'store applicant if it does not exist in db' => sub {
+    my $test_client01 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $test_client01->email('test01@deriv.com');
+    $test_client01->first_name('top');
+    $test_client01->last_name('side');
+    $test_client01->salutation('MR');
+    $test_client01->save;
+
+    my $test_user = BOM::User->create(
+        email          => $test_client01->email,
+        password       => "1234",
+        email_verified => 1,
+    )->add_client($test_client01);
+
+    $test_client01->binary_user_id($test_user->id);
+    $test_client01->user($test_user);
+    $test_client01->save;
+
+    lives_ok {
+        my $onfido            = BOM::Event::Actions::Client::_onfido();
+        my $applicant_id      = 'newapplicant-test01';
+        my $onfido_async_mock = Test::MockModule->new(ref($onfido));
+        my ($onfido_exception, $onfido_http_exception);
+        my $events_mock = Test::MockModule->new('BOM::Event::Actions::Client');
+
+        $events_mock->mock(
+            '_store_applicant_documents',
+            sub {
+                return Future->done;
+            });
+        $onfido_async_mock->mock(
+            'applicant_get',
+            sub {
+                return Future->done(
+                    WebService::Async::Onfido::Applicant->new(
+                        id => $applicant_id,
+                    ));
+            });
+        $onfido_async_mock->mock(
+            'applicant_create',
+            sub {
+                if ($onfido_http_exception) {
+                    my $res = HTTP::Response->new(422);
+                    $res->content(eval { encode_json_utf8($onfido_http_exception) });
+
+                    Future::Exception->throw('some exception', 'http', $res);
+                }
+                die $onfido_exception if $onfido_exception;
+                return Future->done(undef) unless $applicant_id;
+                return Future->done(
+                    WebService::Async::Onfido::Applicant->new(
+                        id => $applicant_id,
+                    ));
+            });
+        $onfido_async_mock->mock(
+            'check_get',
+            sub {
+                return Future->done(
+                    WebService::Async::Onfido::Check->new(
+                        'href'         => '/v3.4/checks/newcheck',
+                        'results_uri'  => 'https://onfido.com/dashboard/information_requests/<REQUEST_ID>',
+                        'result'       => 'consider',
+                        'created_at'   => '2025-01-12 14:29:37',
+                        'stamp'        => '2025-01-12 14:29:37.440662',
+                        'api_type'     => 'deprecated',
+                        'download_uri' => 'http://localhost:4039/v3.4/checks/newcheck/download',
+                        'tags'         => ['automated', 'CR', $test_client01->loginid, 'IDN', 'brand:deriv'],
+                        'applicant_id' => $applicant_id,
+                        'id'           => 'supasus',
+                        'status'       => 'complete',
+                        'onfido'       => $onfido,
+                    ));
+            });
+
+        $check_href = '/v2/applicants/some-id/checks/supasus';
+        BOM::Event::Actions::Client::client_verification({
+                check_url => $check_href,
+            })->get;
+
+        my $check_newdata = BOM::Database::UserDB::rose_db()->dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client01->user_id);
+            });
+
+        is $check_newdata->{id}, $applicant_id, 'the applicant was stored';
+
+        $onfido_async_mock->unmock_all();
+        $events_mock->unmock_all;
+    }
+    "Applicant found in db";
+
+};
+
 subtest 'store check coming from webhook even if there is no check record in db' => sub {
     lives_ok {
         my $ryu_mock = Test::MockModule->new('Ryu::Source');

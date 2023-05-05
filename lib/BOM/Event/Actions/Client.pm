@@ -777,21 +777,20 @@ async sub client_verification {
                 or die 'Could not instantiate client for login ID ' . $loginid;
             $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
+            # check if the applicant already exist for this check. If not, store the applicant record in db
+            # this is to cater the case where CS/Compliance perform manual check in Onfido dashboard
+            await check_or_store_onfido_applicant($loginid, $applicant_id);
+
             my $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $applicant_id, $check_id);
 
             BOM::User::Onfido::store_onfido_check($applicant_id, $check) unless $db_check;
+            BOM::User::Onfido::update_onfido_check($check) if $db_check;
 
             my $country     = $client->place_of_birth // $client->residence;
             my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
             push @common_datadog_tags, sprintf("country:$country_tag");
 
             BOM::Platform::Redis::release_lock(APPLICANT_CHECK_LOCK_PREFIX . $client->binary_user_id);
-
-            # check if the applicant already exist for this check. If not, store the applicant record in db
-            # this is to cater the case where CS/Compliance perform manual check in Onfido dashboard
-            my $new_applicant_flag = await check_or_store_onfido_applicant($loginid, $applicant_id);
-
-            $new_applicant_flag ? BOM::User::Onfido::store_onfido_check($applicant_id, $check) : BOM::User::Onfido::update_onfido_check($check);
 
             my @all_report = await $check->reports->as_list;
 
