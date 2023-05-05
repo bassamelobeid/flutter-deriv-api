@@ -169,7 +169,7 @@ function pc_fields() {
             <td class="label">Payment Method</td>
             <td>: <select name="payment_processor" style="width:130px;">
                     <option value=''>--select--</option>
-                    [% FOREACH pp = ['ALL','Skrill','NETeller','NETellerDT','QIWI','PerfectM','FasaPay','ZingPay','Jeton','JetonWL','paysafe','SticPay','WebMoney','AirTM'] %]
+                    [% FOREACH pp = ['ALL','Skrill','NETeller','NETellerDT','PerfectM','FasaPay','ZingPay','Jeton','JetonWL','paysafe','SticPay','WebMoney','AirTM'] %]
                         [% selected = pp == pc_json.payment_processor ? 'selected="selected"': '' %]
                         <option value="[% pp %]" [% selected %] > [% pp %] </option>
                     [% END %]

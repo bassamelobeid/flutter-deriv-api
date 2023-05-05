@@ -13,7 +13,7 @@ $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 my $values_to_set = {};
 
 $values_to_set->{'payments.autoapproval.grouped_allowed_payment_methods'} =
-    '[["AirTM"],["AstroPay"],["FasaPay"],["Jeton","JetonWL"],["NETeller","NETellerDT","NETellerPS"],["NganLuong"],["Onlinenaira"],["PayLivre"],["paysafe"],["PerfectM"],["QIWI"],["Skrill","Skrill1tap"],["SticPay"],["WebMoney"],["ZingPay"]]';
+    '[["AirTM"],["AstroPay"],["FasaPay"],["Jeton","JetonWL"],["NETeller","NETellerDT","NETellerPS"],["NganLuong"],["Onlinenaira"],["PayLivre"],["paysafe"],["PerfectM"],["Skrill","Skrill1tap"],["SticPay"],["WebMoney"],["ZingPay"]]';
 $values_to_set->{'payments.autoapproval.max_mt5_net_transfer'}                                           = 5000;
 $values_to_set->{'payments.autoapproval.max_mt5_net_transfer_enabled'}                                   = 1;
 $values_to_set->{'payments.autoapproval.max_pending_total'}                                              = 1000;
