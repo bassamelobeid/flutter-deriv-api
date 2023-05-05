@@ -2770,27 +2770,6 @@ subtest 'onfido resubmission' => sub {
     $dog_mock->unmock_all;
 };
 
-subtest 'client becomes transfers_blocked when deposits from QIWI' => sub {
-    ok !$test_client->status->transfers_blocked, 'client is not transfers_blocked before QIWI deposit';
-
-    my $sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $test_user->add_client($sibling);
-    ok !$sibling->status->transfers_blocked, 'sibling account is not transfers_blocked before QIWI deposit';
-
-    BOM::Event::Actions::Client::payment_deposit({
-            loginid           => $test_client->loginid,
-            is_first_deposit  => 0,
-            payment_processor => 'Qiwi',
-        })->get;
-
-    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
-    $sibling     = BOM::User::Client->new({loginid => $sibling->loginid});
-    ok $test_client->status->transfers_blocked, 'transfers_blocked status is set correctly after QIWI deposit';
-    ok $sibling->status->transfers_blocked,     'transfers_blocked status is copied over all siblings after QIWI deposit';
-};
-
 subtest 'card deposits' => sub {
     ok !$test_client->status->personal_details_locked, 'personal details are not locked';
 

@@ -2547,14 +2547,6 @@ async sub payment_deposit {
         BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication;
     }
 
-    if (uc($payment_processor) =~ m/QIWI/) {
-        _set_all_sibling_status({
-            loginid => $loginid,
-            status  => 'transfers_blocked',
-            message => "Internal account transfers are blocked because of QIWI deposit into $loginid"
-        });
-    }
-
     if ($payment_type && !$client->status->age_verification) {
         my $antifraud = BOM::Platform::Client::AntiFraud->new(client => $client);
 
