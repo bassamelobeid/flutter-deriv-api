@@ -3213,8 +3213,18 @@ async sub shared_payment_method_found {
 
     die "Invalid shared loginids specified. Loginids string passed is empty." unless @shared_loginid_array;
 
+    my $siblings = $client->get_siblings_information(
+        include_virtual  => 0,
+        include_disabled => 0,
+        include_self     => 0,
+        include_wallet   => 0,
+    );
+    my $siblings_loginids = [map { $siblings->{$_}->{loginid} } keys %$siblings];
     my @shared_clients    = ();
     my @filtered_loginids = ();
+    push @shared_loginid_array, @$siblings_loginids;
+    my %send_email_count = ($client->user->id => 1);
+
     foreach my $shared_loginid (@shared_loginid_array) {
         my $shared_client = BOM::User::Client->new({loginid => $shared_loginid});
 
@@ -3226,16 +3236,23 @@ async sub shared_payment_method_found {
 
     # Lock the cashier and set shared PM to both clients
     $args->{staff} //= 'system';
+    $client->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
     $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, join(',', @filtered_loginids)));
 
     # This may be dropped when POI/POA refactoring is done
     $client->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
+    _send_shared_payment_method_email($client);
 
     foreach my $shared (@shared_clients) {
+        $shared->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
         $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid));
 
         # This may be dropped when POI/POA refactoring is done
         $shared->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
+        unless ($send_email_count{$shared->user->id}) {
+            _send_shared_payment_method_email($shared);
+            $send_email_count{$shared->user->id} = 1;
+        }
     }
 
     return;
@@ -3285,6 +3302,58 @@ sub _shared_payment_reason {
     my @loginids = $loginids_extractor->($current);
     return $current if any { $shared_loginid =~ /\b$_\b/ } @loginids;
     return join(' ', $current, $shared_loginid);
+}
+
+=head2 _send_shared_payment_method_email
+
+Notifies the client via email regarding the shared payment methods situation it's involved.
+It takes the following arguments:
+
+=over 4
+
+=item * C<client> the client sharing a payment method
+
+=back
+
+Returns, undef.
+
+=cut
+
+sub _send_shared_payment_method_email {
+    my $client            = shift;
+    my $client_first_name = $client->first_name;
+    my $client_last_name  = $client->last_name;
+    my $lang              = lc(request()->language // 'en');
+    my $email             = $client->email;
+
+    # Each client may come from a different brand
+    # this switches the template accordingly
+    my $brand = Brands->new_from_app_id($client->source);
+    request(BOM::Platform::Context::Request->new(brand_name => $brand->name));
+
+    my $params = {
+        language => request->language,
+    };
+
+    send_email({
+            from          => $brand->emails('authentications'),
+            to            => $email,
+            subject       => localize('Shared Payment Method account [_1]', $client->loginid),
+            template_name => 'shared_payment_method',
+            template_args => {
+                client_first_name   => $client_first_name,
+                client_last_name    => $client_last_name,
+                lang                => $lang,
+                ask_poi             => !$client->status->age_verification,
+                authentication_url  => $brand->authentication_url($params),
+                name                => $client_first_name,
+                title               => localize('Shared payment method'),
+                payment_methods_url => $brand->payment_methods_url($params),
+            },
+            use_email_template => 1,
+        });
+
+    return;
 }
 
 =head2 check_name_changes_after_first_deposit
