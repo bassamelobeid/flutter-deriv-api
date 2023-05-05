@@ -3562,24 +3562,9 @@ Both clients of the order must be P2P advertisers.
 
 sub p2p_chat_create {    #This function and feature create_order_chat will be remove after successful realease,
                          #We are keeping just for backward compatibility
-
     my ($self, %param) = @_;
 
-    my $p2p_create_order_chat = BOM::Config::Runtime->instance->app_config->payments->p2p->create_order_chat;
-    if (!$p2p_create_order_chat) {
-        return $self->p2p_create_order_chat(%param);
-    }
-
-    my $order_id = $param{order_id}                         // die +{error_code => 'OrderNotFound'};
-    my $order    = $self->_p2p_orders(id => $order_id)->[0] // die +{error_code => 'OrderNotFound'};
-
-    if (!(($order->{advertiser_loginid} eq $self->loginid) || ($order->{client_loginid} eq $self->loginid))) {
-        die +{error_code => 'PermissionDenied'};
-    }
-    return {
-        channel_url => $order->{chat_channel_url},
-        order_id    => $order_id,
-    };
+    return $self->p2p_create_order_chat(%param);
 }
 
 =head2 p2p_create_order_chat
