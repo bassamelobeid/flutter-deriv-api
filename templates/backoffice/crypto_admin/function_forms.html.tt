@@ -76,10 +76,6 @@
         bump_eth_transaction => {
             title    => 'Bump transaction',
             description => 'Use this when the transaction needs to be bumped. It requires a two-person check to complete the process.',
-            elements => [
-                { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 80, value => '' },
-                { label => 'Max fee per gas(Gwei)',  name => 'max_fee_per_gas', size => 4, value => '' },
-            ],
         },
         bump_btc_transaction => {
             title    => 'Bump transaction',
@@ -92,7 +88,7 @@
     currency_forms = {
         BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'bump_btc_transaction'],
         UST => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'list_transactions'],
-        ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt','bump_eth_transaction'],
+        ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt', 'bump_eth_transaction'],
     };
 %]
 
@@ -109,6 +105,7 @@
         <form action="[% controller_url %]" method="post">
             <input type="hidden" name="currency" value="[% currency %]" />
             <input type="hidden" name="req_title" value="[% title %]" />
+
             <table>
                 [% FOREACH elm IN elements %]
                     [% INCLUDE input props=elm value=previous_values %]
@@ -174,8 +171,19 @@
     </div>
 
     <div id="form_container">
-        [% FOREACH form_name IN currency_forms.$form_type.sort %]
-            [% INCLUDE form id=form_name props=all_forms.$form_name %]
+        [% FOREACH form_name IN currency_forms.$form_type.sort %]   
+            [% IF form_name == 'bump_eth_transaction' %]
+                <div id="[% id %]" class="invisible">
+                    <form action="[% controller_url %]" method="POST" name="get_eth_pending">
+                        <input type="hidden" name='req_title' value="Bump transactions" />
+                        <input type="hidden" name='currency' value="ETH" />
+                        <input type="hidden" name='req_type' value="get_eth_pending_txn" />
+                        <button type="submit" class="btn btn--primary">Show</button>
+                    </form>
+                </div>
+            [% ELSE %]
+                [% INCLUDE form id=form_name props=all_forms.$form_name %]
+            [% END %]    
         [% END %]
     </div>
 [% END %]
@@ -193,6 +201,10 @@
         document.querySelectorAll('#ddl_no_params, #ddl_with_params').forEach(el_ddl => {
             el_ddl.value = el_ddl.querySelector(`option[value='\${form_id}']`) ? form_id : '';
         });
+
+        if(form_id == 'bump_eth_transaction') {        
+            document.forms.get_eth_pending.submit();      
+        }
     }
 
     showForm('[% previous_req %]');

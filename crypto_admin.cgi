@@ -168,6 +168,7 @@ $request_type->{gt_revert_processing_txn} = sub {
         my %h_txn_to_process = map { $_ => $redis_read->get(REVERT_ERROR_TXN_RECORD . $_) } @txn_to_process;
 
         my $txid_approver_mapping = [];
+
         #preparing txn list already approved by other staff to send it to db for approval.
         #making array of hash like {id=>123, approver => "approverName"}
         for (grep { $h_txn_to_process{$_} && $h_txn_to_process{$_} ne $staff } @txn_to_process) {
@@ -213,6 +214,7 @@ $request_type->{gt_revert_processing_txn} = sub {
         my @txn_to_process = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
 
         my %h_txn_to_process = map { $_ => $redis_read->get(REVERT_ERROR_TXN_RECORD . $_) } @txn_to_process;
+
         #gather txn already approved by caller previously or first time
         for (sort { $a <=> $b } @txn_to_process) {
             if (!$h_txn_to_process{$_}) {
@@ -264,6 +266,7 @@ $request_type->{gt_update_error_txn_sent} = sub {
         my $redis_read        = BOM::Config::Redis::redis_replicated_read();
         my $previous_approver = $redis_read->get(SENT_ERROR_TXN_RECORD . $input{txn_hash});
         my @txn_to_process    = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
+
         # call batch_requests if the txn hash is previously approved by other than the caller & txn_to_process not empty
         if ($previous_approver && $staff ne $previous_approver && @txn_to_process) {
             push @batch_requests,
@@ -328,6 +331,7 @@ $request_type->{not_general_req} = sub {
     my $template_details;
     $template_details->{req_type} = $input{req_type};
     $template_details->{currency} = $currency_selected;
+
     my $func_map = _get_function_map($currency_selected, \%input, \@batch_requests, $input{req_type});
     try {
         $func_map->{$input{req_type}}();
@@ -613,6 +617,7 @@ sub _get_function_map {
     };
 
     my $bump_transaction = sub {
+
         unless ($txn_hash) {
             return sub {
                 $template_details->{response} = +{error => ":Transaction hash must be specified"};
@@ -620,41 +625,58 @@ sub _get_function_map {
             }
         }
 
-        my $redis_write         = BOM::Config::Redis::redis_replicated_write();
-        my $redis_read          = BOM::Config::Redis::redis_replicated_read();
-        my $approved_previously = $redis_read->get(BUMP_TXN_RECORD . $txn_hash);
-        my $id                  = $currency eq "ETH" ? "bump_eth_transaction" : "bump_btc_transaction";
+        my $redis_write           = BOM::Config::Redis::redis_replicated_write();
+        my $redis_read            = BOM::Config::Redis::redis_replicated_read();
+        my @txn_to_process        = ref($txn_hash) eq 'ARRAY' ? $txn_hash->@* : ($txn_hash);
+        my %h_txn_to_process      = map { $_ => $redis_read->get(BUMP_TXN_RECORD . $_) } @txn_to_process;
+        my $txid_approver_mapping = [];
+        my $id                    = $currency eq "ETH" ? "bump_eth_transaction" : "bump_btc_transaction";
+
+        for (grep { $h_txn_to_process{$_} && $h_txn_to_process{$_} ne $staff } @txn_to_process) {
+            push @{$txid_approver_mapping}, $_;
+        }
 
         #bump if its second person's approval
-        if ($approved_previously && $approved_previously ne $staff) {
-            $redis_write->del(BUMP_TXN_RECORD . $txn_hash);
+        if (scalar $txid_approver_mapping->@*) {
             push @$batch_requests,
                 {
                 id     => $id,
                 action => 'withdrawal/bump_transaction',
                 body   => {
                     currency_code    => $currency_code,
-                    transaction_hash => $txn_hash,
+                    transaction_list => $txid_approver_mapping,
                     max_fee_per_gas  => $max_fee_per_gas,
                 },
                 };
             return sub {
                 my ($response_bodies) = @_;
+                my $req_type          = $id;
+                my $error             = _error_handler($response_bodies, $req_type);
 
-                my $error = _error_handler($response_bodies, $req_type);
+                $template_details->{req_type} = $id;
+                $template_details->{response} = $error // $response_bodies->{$template_details->{req_type}}{response};
 
-                $template_details->{response} = $error // $response_bodies->{$template_details->{req_type}}{message};
                 _response_handler($template_details);
             }
         }
         return sub {
-            my $approval_message =
-                !$approved_previously
-                ? 'Transaction has been successfully approved for bump.'
-                : 'This transaction is already approved by you for bump.';    # $approved_previously eq $staff
-            $redis_write->setex(BUMP_TXN_RECORD . $txn_hash, 3600, $staff);
-            my $result = sprintf('<p>%s Needs one more approver.</p><b>Transaction hash:</b> %s', $approval_message, $txn_hash);
+            my %messages;
+            for (@txn_to_process) {
+                if (!$h_txn_to_process{$_}) {
+                    push @{$messages{
+                            "<p class='success'>Following transaction(s) has been successfully approved. Needs one more approval.<br />%s</p>"}}, $_;
+                    $redis_write->setex(BUMP_TXN_RECORD . $_, 3600, $staff);
+                } elsif ($h_txn_to_process{$_} && $h_txn_to_process{$_} eq $staff) {
+                    push @{$messages{"<p class='error'>The following transaction(s) have previously been approved by you.<br />%s</p>"}}, $_;
+                    $redis_write->setex(BUMP_TXN_RECORD . $_, 3600, $staff);
+                }
+            }
+
+            my $result;
+            $result .= sprintf($_, join ', ', $messages{$_}->@*) for keys %messages;
             $result .= sprintf(', <b>Max fee per gas(Gwei):</b> %s', $max_fee_per_gas || 'Not provided') if $currency_code eq 'ETH';
+
+            $template_details->{req_type} = $currency eq "ETH" ? "bump_eth_transactions" : "bump_btc_transactions";
             $template_details->{response} = $result;
             _response_handler($template_details);
         };
@@ -786,6 +808,25 @@ sub _get_function_map {
         }
     };
 
+    my $get_eth_pending_txn = sub {
+        push @$batch_requests,
+            {
+            id     => 'get_eth_pending_txn',
+            action => 'wallet/get_pending_list',
+            body   => {
+                currency_code => $currency_code,
+            },
+            };
+        return sub {
+            my ($response_bodies) = @_;
+
+            my $error = _error_handler($response_bodies, $req_type);
+            $template_details->{response} = $error // $response_bodies->{$template_details->{req_type}}{pending_list};
+
+            _response_handler($template_details);
+        }
+    };
+
     return +{
         list_unspent_utxo        => $list_unspent_utxo,
         get_transaction          => $get_transaction,
@@ -827,7 +868,8 @@ sub _get_function_map {
         get_estimatedgas         => $get_estimatedgas,
         get_transaction          => $get_transaction,
         get_transaction_receipt  => $get_transaction_receipt,
-        bump_eth_transaction     => $bump_transaction,
+        bump_eth_transactions    => $bump_transaction,
+        get_eth_pending_txn      => $get_eth_pending_txn,
         }
         if $currency eq 'ETH';
 
@@ -917,9 +959,9 @@ Parse the input and display the result on result_CURRENCY_CODE.html.tt page.
 =cut
 
 sub _response_handler {
-    my $template_details  = shift;
-    my $currency_selected = $template_details->{currency};
+    my $template_details = shift;
 
+    my $currency_selected = $template_details->{currency};
     try {
         $template_details->{response_json} = encode_json($template_details->{response});
     } catch ($e) {
@@ -990,6 +1032,7 @@ if (%input && $input{req_type}) {
     code_exit_BO('<p class="error">ERROR: Please select ONLY ONE request at a time.</p>') if (ref $input{req_type});
 
     $render_action->($response_bodies) if $render_action;
+
 }
 
 code_exit_BO();

@@ -20,7 +20,7 @@ table td{
 
 [% ELSE %]
     <div class="tab">
-      <button onclick="toggleResponse()" class="btn btn--secondary">Show alternate view</button>
+      <button onclick="toggleResponse()" class="btn btn--secondary" id="[% req_type %]">Show alternate view</button>
     </div>
     <br>
     <div class="toggle-response">
@@ -210,7 +210,65 @@ table td{
                         <td>[% response.blockHash %]</td>
                     </tr>
                 </table>
+            [% CASE 'get_eth_pending_txn' %]
+                [% IF response.size > 0 %]
+                <form name="pending_bump_form" id="[% response.1 %]" method="post">
+                    <div class="scrollable">
+                        <table id="pending_txn_list" class="alternate border">
+                            <tr>
+                                <td></td>
+                                <th>Transaction Hash</th>
+                                <th>To address</th>
+                                <th>Max Fee Per Gas</th>
+                                <th>Max Priority Fee Per Gas</th>
+                            </tr>
+                            [% FOREACH pending IN response %] 
+                            <tr>
+                                <td><input type="checkbox" name="txn_hash" value="[% pending.hash %]" onchange="toggleSelected(this)" /></td>
+                                <td>[% pending.hash %]</td>
+                                <td>[% pending.to %]</td>
+                                <td>[% pending.maxFeePerGas %]</td>
+                                <td>[% pending.maxPriorityFeePerGas %]</td>
+                            </tr>
+                            [% END %] 
+                            
+                        </table>
+                    </div>
+                    <br>
+                    <br>
+                    <!--
+                    <label for="txn_hash">Transaction hash</label>
+                    <input type="text" id="sent_tx_hash" name="txn_hash" value="" size="80"/>
+                    <br>
+                    <br> -->
+                    <label for="max_fee_per_gas">Max fee per gas(Gwei)</label>
+                    <input type="text" id="max_fee_per_gas" name="max_fee_per_gas" value="" size="4"/>
 
+                    <input type="hidden" name="currency" value="[% currency %]" />
+                    <input type="hidden" name="txn_to_process" />
+                    <input type="hidden" name="req_title" value="Bump transactions" />
+                    <input type="hidden" name="req_type" value="bump_eth_transactions" />
+                    <hr />
+                    <div id="selected_items"></div>
+                    <button type="button" class="btn btn--primary" onclick="processPendingTransactions()">Bump Transactions</button>
+                </form>
+                [% ELSE %]
+                    <p>There are no pending transactions at the moment.</p>
+                [% END %]
+            [% CASE 'bump_eth_transaction' %]
+                <div class="scrollable">
+                    <table id="bump_txn_message" class="alternate border">
+                        [% FOREACH msg IN response %]
+                        <tr>
+                            [% IF msg.is_success == 0 %]
+                            <td style="color:red;">[% msg.message %]</td>
+                            [% ELSE %]
+                            <td style="color:green;">[% msg.message %]</td>
+                            [% END %]
+                        </tr>
+                        [% END %]
+                    </table>
+                </div>
             [% CASE DEFAULT %]
                 <p>[% response.replace("\n", "<br>") | none %]</p>
         [% END %]
@@ -220,10 +278,44 @@ table td{
     </div>
 
     <script>
+        const all_checkboxes = document.querySelectorAll('#pending_txn_list [name="txn_hash"]');
         function toggleResponse() {
             document.querySelectorAll('.toggle-response').forEach(el_response => {
                 el_response.classList[el_response.classList.contains('invisible') ? 'remove' : 'add']('invisible');
             });
         }
+        function getAllChecked() {
+            return [...all_checkboxes].filter(el_chk => el_chk.checked);
+        }
+
+        function toggleSelected(el_chk) {
+            const is_selected = el_chk.checked;
+            const el_row      = el_chk.closest('tr');
+            el_row.classList[is_selected ? 'add' : 'remove']('selected');
+            showSelectedSummary();
+        }
+
+        function showSelectedSummary() {
+            const selected_ids = getAllChecked().map(el_chk => el_chk.value).sort((a, b) => a - b).join(', ');
+            (document.getElementById('selected_items') || {}).innerHTML = `<b>Selected transactions:</b> \${selected_ids || 'None'}`;
+        }
+    
+        function checkEmpty() {
+            const checked_count = getAllChecked().length;
+            if (!checked_count) {
+                alert('Error: No transaction selected.');
+                return false;
+            }
+            return true;
+        }
+
+        function processPendingTransactions(){
+            if(checkEmpty()){
+                document.forms.pending_bump_form.req_title.value = 'Bump transactions';
+                document.forms.pending_bump_form.req_type.value  = 'bump_eth_transactions';
+                document.forms.pending_bump_form.submit();
+            }
+        }
+        showSelectedSummary();
     </script>
 [% END %]

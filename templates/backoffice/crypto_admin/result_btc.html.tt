@@ -218,7 +218,20 @@
                         </td>
                     </tr>
                 </table>
-
+            [% CASE 'bump_btc_transaction' %]
+                <div class="scrollable">
+                    <table id="bump_txn_message" class="alternate border">
+                        [% FOREACH msg IN response %]
+                        <tr>
+                            [% IF msg.is_success == 0 %]
+                            <td style="color:red;">[% msg.message %]</td>
+                            [% ELSE %]
+                            <td style="color:green;">[% msg.message %]</td>
+                            [% END %]
+                        </tr>
+                        [% END %]
+                    </table>
+                </div>
             [% CASE DEFAULT %]
                 <p>[% response.replace("\n", "<br>") | none %]</p>
         [% END %]
