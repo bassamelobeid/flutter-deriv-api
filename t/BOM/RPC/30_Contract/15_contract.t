@@ -149,13 +149,16 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '51.19',
-        'ask_price'           => '51.19',
-        'longcode'            => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
-        'spot'                => '963.3054',
-        'payout'              => '100',
-        'theo_probability'    => 0.499862430427529,
-        'date_expiry'         => ignore(),
+        'display_value'    => '51.19',
+        'ask_price'        => '51.19',
+        'longcode'         => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'             => '963.3054',
+        'payout'           => '100',
+        'theo_probability' => 0.499862430427529,
+        'date_expiry'      => ignore(),
+        'contract_details' => {
+            'barrier' => '963.3054',
+        },
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
             'barrier'               => 'S0P',
@@ -275,7 +278,7 @@ subtest 'send_ask' => sub {
     my $result        = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys = [
         sort { $a cmp $b } (
-            qw(date_expiry longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters stash auth_time theo_probability subscription_channel channel subchannel)
+            qw(date_expiry contract_details longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters stash auth_time theo_probability subscription_channel channel subchannel)
         )];
 
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');

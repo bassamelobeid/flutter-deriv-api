@@ -267,11 +267,13 @@ subtest 'get_ask' => sub {
         'display_value' => '6.38',
         'ask_price'     => '6.38',
         'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
-
-        'spot'                => '963.3054',
-        'payout'              => '10',
-        skip_streaming        => 1,
-        'date_expiry'         => ignore(),
+        'spot'     => '963.3054',
+        'payout'   => '10',
+        skip_streaming     => 1,
+        'date_expiry'      => ignore(),
+        'contract_details' => {
+            'barrier' => '963.3054',
+        },
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
             'barrier'               => 'S0P',
@@ -313,7 +315,7 @@ subtest 'send_ask' => sub {
     my $result        = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys = [
         sort { $a cmp $b } (
-            qw(longcode spot display_value ask_price spot_time date_expiry date_start rpc_time payout contract_parameters stash auth_time skip_streaming channel subchannel subscription_channel)
+            qw(longcode contract_details spot display_value ask_price spot_time date_expiry date_start rpc_time payout contract_parameters stash auth_time skip_streaming channel subchannel subscription_channel)
         )];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(

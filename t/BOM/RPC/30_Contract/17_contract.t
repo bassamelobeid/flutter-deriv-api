@@ -303,14 +303,17 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '203.00',
-        'ask_price'           => '203.00',
-        'longcode'            => "Win USD 100.00 times Volatility 50 Index's close minus low over the next 15 minutes.",
-        'spot'                => '963.3054',
-        multiplier            => 100,
-        'payout'              => '0',
-        'theo_price'          => '199.145854964839',
-        'date_expiry'         => ignore(),
+        'display_value'    => '203.00',
+        'ask_price'        => '203.00',
+        'longcode'         => "Win USD 100.00 times Volatility 50 Index's close minus low over the next 15 minutes.",
+        'spot'             => '963.3054',
+        multiplier         => 100,
+        'payout'           => '0',
+        'theo_price'       => '199.145854964839',
+        'date_expiry'      => ignore(),
+        'contract_details' => {
+            'barrier' => '963.3054',
+        },
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
             'duration'              => '15m',
@@ -345,7 +348,7 @@ subtest 'send_ask' => sub {
     my $result        = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys = [
         sort { $a cmp $b } (
-            qw(longcode spot display_value multiplier ask_price spot_time date_expiry date_start rpc_time payout contract_parameters stash auth_time skip_streaming channel subchannel subscription_channel)
+            qw(longcode contract_details spot display_value multiplier ask_price spot_time date_expiry date_start rpc_time payout contract_parameters stash auth_time skip_streaming channel subchannel subscription_channel)
         )];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is($result->{longcode}, 'Win USD 100.00 times Volatility 50 Index\'s close minus low over the next 15 minutes.', 'long code  is correct');
