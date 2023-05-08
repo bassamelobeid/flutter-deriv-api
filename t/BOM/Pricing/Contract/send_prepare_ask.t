@@ -169,13 +169,16 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '51.19',
-        'ask_price'           => '51.19',
-        'longcode'            => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
-        'spot'                => '963.3054',
-        'payout'              => '100',
-        'theo_probability'    => 0.499862430427529,
-        'date_expiry'         => ignore(),
+        'display_value'    => '51.19',
+        'ask_price'        => '51.19',
+        'longcode'         => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'             => '963.3054',
+        'payout'           => '100',
+        'theo_probability' => 0.499862430427529,
+        'date_expiry'      => ignore(),
+        'contract_details' => {
+            'barrier' => '963.3054',
+        },
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
             'barrier'               => 'S0P',
@@ -276,13 +279,16 @@ subtest 'send_ask LBFLOATCALL' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '203.00',
-        'ask_price'           => '203.00',
-        'longcode'            => "Win USD 100.00 times Volatility 50 Index's close minus low over the next 15 minutes.",
-        'spot'                => '963.3054',
-        'multiplier'          => 100,
-        'payout'              => '0',
-        'theo_price'          => '199.145854964839',
+        'display_value'    => '203.00',
+        'ask_price'        => '203.00',
+        'longcode'         => "Win USD 100.00 times Volatility 50 Index's close minus low over the next 15 minutes.",
+        'spot'             => '963.3054',
+        'multiplier'       => 100,
+        'payout'           => '0',
+        'theo_price'       => '199.145854964839',
+        'contract_details' => {
+            'barrier' => '963.3054',
+        },
         'date_expiry'         => ignore(),
         'rpc_time'            => ignore(),
         'contract_parameters' => ignore()};
@@ -319,14 +325,54 @@ subtest 'send_ask RESETCALL' => sub {
         'ask_price'     => '6.38',
         'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
 
-        'spot'                => '963.3054',
-        'payout'              => '10',
-        'skip_streaming'      => 1,
+        'spot'             => '963.3054',
+        'payout'           => '10',
+        'skip_streaming'   => 1,
+        'contract_details' => {
+            'barrier' => '963.3054',
+        },
         'rpc_time'            => ignore(),
         'date_expiry'         => ignore(),
         'contract_parameters' => ignore()};
 
     cmp_deeply($result, $expected, 'the left values are all right');
+};
+
+subtest 'send_ask EXPIRYRANGE' => sub {
+    my $params = {
+        "proposal"        => 1,
+        "barrier"         => 963.3090,
+        "barrier2"        => 963.3000,
+        "contract_type"   => "EXPIRYRANGE",
+        "currency"        => "USD",
+        "duration"        => "15",
+        "duration_unit"   => "m",
+        'payout'          => '20',
+        "symbol"          => "R_50",
+        "landing_company" => "virtual",
+        streaming_params  => {from_pricer => 1},
+    };
+
+    my $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
+
+    ok(delete $result->{spot_time},  'result have spot time');
+    ok(delete $result->{date_start}, 'result have date_start');
+    my $expected = {
+        'display_value'    => '0.50',
+        'ask_price'        => '0.50',
+        'longcode'         => "Win payout if Volatility 50 Index ends strictly between 963.3000 to 963.3090 at 15 minutes after contract start time.",
+        'spot'             => '963.3054',
+        'payout'           => '20',
+        'theo_probability' => '0.00139540603914123',
+        'contract_details' => {
+            'high_barrier' => '963.3090',
+            'low_barrier'  => '963.3000',
+        },
+        'date_expiry'         => ignore(),
+        'rpc_time'            => ignore(),
+        'contract_parameters' => ignore()};
+    cmp_deeply($result, $expected, 'the left values are all right');
+
 };
 
 subtest 'send_ask ONETOUCH' => sub {
@@ -354,15 +400,17 @@ subtest 'send_ask ONETOUCH' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'  => '19.76',
-        'ask_price'      => '19.76',
-        'longcode'       => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
-        'skip_streaming' => 0,
-        'spot'           => '963.3054',
-        'payout'         => '100',
-        'date_expiry'    => ignore(),
-        'rpc_time'       => ignore(),
-
+        'display_value'    => '19.76',
+        'ask_price'        => '19.76',
+        'longcode'         => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
+        'skip_streaming'   => 0,
+        'spot'             => '963.3054',
+        'payout'           => '100',
+        'date_expiry'      => ignore(),
+        'rpc_time'         => ignore(),
+        'contract_details' => {
+            'barrier' => '963.6108',
+        },
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
             'barrier'               => '+0.3054',

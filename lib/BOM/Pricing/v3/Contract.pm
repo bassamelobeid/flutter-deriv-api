@@ -282,6 +282,14 @@ sub _get_ask {
                         'order_amount' => $contract->take_profit->{amount}}};
             }
 
+            if (($contract->two_barriers) and ($contract->category_code ne 'accumulator')) {
+                # accumulator has its own logic
+                $response->{contract_details}->{high_barrier} = $contract->high_barrier->as_absolute;
+                $response->{contract_details}->{low_barrier}  = $contract->low_barrier->as_absolute;
+            } elsif ($contract->can('barrier') and (defined $contract->barrier)) {
+                # Contracts without "barrier" attribute is skipped
+                $response->{contract_details}->{barrier} = $contract->barrier->as_absolute;
+            }
             # On websocket, we are setting 'basis' to payout and 'amount' to 1000 to increase the collission rate.
             # This logic shouldn't be in websocket since it is business logic.
             unless ($streaming_params->{from_pricer}) {
