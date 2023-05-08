@@ -2972,14 +2972,31 @@ sub crypto_withdrawal_email {
 
     my ($args) = @_;
 
-    return BOM::Event::Services::Track::crypto_withdrawal_email({
-        loginid          => $args->{loginid},
-        transaction_hash => $args->{transaction_hash},
-        transaction_url  => $args->{transaction_url},
-        amount           => $args->{amount},
-        currency         => $args->{currency},
-        live_chat_url    => request->brand->live_chat_url,
-        title            => localize('Your [_1] withdrawal is successful', $args->{currency}),
+    my %event_mapper = (
+        SENT => {
+            event_name => \&BOM::Event::Services::Track::crypto_withdrawal_sent_email,
+            title      => localize('Your [_1] withdrawal is successful', $args->{currency}),
+        },
+        LOCKED => {
+            event_name => \&BOM::Event::Services::Track::crypto_withdrawal_locked_email,
+            title      => localize('Your [_1] withdrawal is in progress', $args->{currency}),
+        },
+        CANCELLED => {
+            event_name => \&BOM::Event::Services::Track::crypto_withdrawal_cancelled_email,
+            title      => localize('Your [_1] withdrawal is cancelled', $args->{currency}),
+        },
+    );
+
+    return $event_mapper{$args->{transaction_status}}{event_name}({
+        loginid            => $args->{loginid},
+        transaction_hash   => $args->{transaction_hash},
+        transaction_url    => $args->{transaction_url},
+        transaction_status => $args->{transaction_status},
+        amount             => $args->{amount},
+        currency           => $args->{currency},
+        reference_no       => $args->{reference_no},
+        live_chat_url      => request->brand->live_chat_url,
+        title              => $event_mapper{$args->{transaction_status}}{title},
     });
 }
 

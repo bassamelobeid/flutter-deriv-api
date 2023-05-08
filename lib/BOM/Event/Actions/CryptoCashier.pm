@@ -26,18 +26,19 @@ use constant {
 
 use constant TRANSACTION_HANDLERS => {
     withdrawal => {
-        SENT => \&withdrawal_sent_handler,
+        SENT      => \&withdrawal_handler,
+        LOCKED    => \&withdrawal_handler,
+        CANCELLED => \&withdrawal_handler,
     },
     deposit => {
         PENDING   => \&deposit_handler,
         CONFIRMED => \&deposit_handler,
-    }};
+    },
+};
 
-my %currency_code_mapper
-
-    = (
+my %currency_code_mapper = (
     UST => 'USDT',
-    );
+);
 
 =head2 crypto_cashier_transaction_updated
 
@@ -108,7 +109,7 @@ sub crypto_cashier_transaction_updated {
     $tx_status_handler->($txn_info, $tx_metadata) if $tx_status_handler;
 }
 
-=head2 withdrawal_sent_handler
+=head2 withdrawal_handler
 
 Handler for the withdrawal transaction with SENT status.
 
@@ -122,34 +123,37 @@ Handler for the withdrawal transaction with SENT status.
 
 =cut
 
-sub withdrawal_sent_handler {
+sub withdrawal_handler {
     my ($txn_info, $txn_metadata) = @_;
-
-    try {
-        BOM::Platform::Event::Emitter::emit(
-            'payment_withdrawal',
-            {
-                loginid  => $txn_metadata->{loginid},
-                amount   => $txn_info->{amount},
-                currency => $txn_info->{currency_code},
-            });
-    } catch ($e) {
-        $log->warnf("Failed to emit payment_withdrawal event for %s: %s", $txn_metadata->{loginid}, $e);
+    if ($txn_info->{status_code} eq 'SENT') {
+        try {
+            BOM::Platform::Event::Emitter::emit(
+                'payment_withdrawal',
+                {
+                    loginid  => $txn_metadata->{loginid},
+                    amount   => $txn_info->{amount},
+                    currency => $txn_metadata->{currency_code},
+                });
+        } catch ($e) {
+            $log->warnf("Failed to emit payment_withdrawal event for %s: %s", $txn_metadata->{loginid}, $e);
+        }
     }
 
     try {
         BOM::Platform::Event::Emitter::emit(
             'crypto_withdrawal_email',
             {
-                amount           => $txn_info->{amount},
-                loginid          => $txn_metadata->{loginid},
-                currency         => $txn_info->{currency_code},
-                transaction_hash => $txn_info->{transaction_hash},
-                transaction_url  => $txn_info->{transaction_url},
+                amount             => $txn_info->{amount},
+                loginid            => $txn_metadata->{loginid},
+                currency           => $currency_code_mapper{$txn_metadata->{currency_code}} // $txn_metadata->{currency_code},
+                transaction_hash   => $txn_info->{transaction_hash},
+                transaction_url    => $txn_info->{transaction_url},
+                reference_no       => $txn_info->{id},
+                transaction_status => $txn_info->{status_code},
             },
         );
     } catch ($e) {
-        $log->warnf("Failed to emit crypto_withdrawal_email event for %s: %s", $txn_metadata->{loginid}, $e);
+        $log->warnf("Failed to emit crypto_withdrawal_%s\_email event for %s: %s", lc $txn_info->{status_code}, $txn_metadata->{loginid}, $e);
     }
 }
 

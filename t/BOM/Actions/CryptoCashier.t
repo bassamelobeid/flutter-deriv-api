@@ -80,14 +80,13 @@ subtest 'crypto_cashier_transaction_updated' => sub {
     };
 };
 
-subtest 'withdrawal_sent_handler' => sub {
+subtest 'withdrawal_handler' => sub {
 
     my $txn_info = {
         id                 => 1,
         address_hash       => 'address_hash',
         address_url        => 'address_url',
         amount             => 1,
-        currency_code      => 'ETH',
         is_valid_to_cancel => 0,
         status_code        => 'SENT',
         status_message     => 'message',
@@ -98,23 +97,26 @@ subtest 'withdrawal_sent_handler' => sub {
     };
 
     my $txn_metadata = {
-        loginid => 'loginid',
+        loginid       => 'loginid',
+        currency_code => 'ETH',
     };
 
     my $expected_events = [{
             payment_withdrawal => {
                 loginid  => $txn_metadata->{loginid},
                 amount   => $txn_info->{amount},
-                currency => $txn_info->{currency_code},
+                currency => $txn_metadata->{currency_code},
             }
         },
         {
             crypto_withdrawal_email => {
-                amount           => $txn_info->{amount},
-                loginid          => $txn_metadata->{loginid},
-                currency         => $txn_info->{currency_code},
-                transaction_hash => $txn_info->{transaction_hash},
-                transaction_url  => $txn_info->{transaction_url},
+                amount             => $txn_info->{amount},
+                loginid            => $txn_metadata->{loginid},
+                currency           => $txn_metadata->{currency_code},
+                transaction_hash   => $txn_info->{transaction_hash},
+                transaction_url    => $txn_info->{transaction_url},
+                reference_no       => $txn_info->{id},
+                transaction_status => $txn_info->{status_code},
             }
         },
     ];
@@ -128,7 +130,7 @@ subtest 'withdrawal_sent_handler' => sub {
         },
     );
 
-    BOM::Event::Actions::CryptoCashier::withdrawal_sent_handler($txn_info, $txn_metadata);
+    BOM::Event::Actions::CryptoCashier::withdrawal_handler($txn_info, $txn_metadata);
     is_deeply \@events, $expected_events, 'Correct events';
 
     $mocked_event_emitter->unmock_all;

@@ -3598,18 +3598,56 @@ subtest 'crypto_withdrawal_email event' => sub {
     undef @track_args;
 
     BOM::Event::Actions::Client::crypto_withdrawal_email({
-            loginid          => $client->loginid,
-            amount           => '2',
-            currency         => 'ETH',
-            transaction_hash => '0xjkdf483jfh834ekjh834kdk48',
-            transaction_url  => 'https://sepolia.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
-            live_chat_url    => 'https://deriv.com/en/?is_livechat_open=true',
-            title            => 'Your ETH withdrawal is successful',
+            loginid            => $client->loginid,
+            amount             => '2',
+            currency           => 'ETH',
+            transaction_hash   => undef,
+            transaction_url    => undef,
+            live_chat_url      => 'https://deriv.com/en/?is_livechat_open=true',
+            transaction_status => 'LOCKED',
+            reference_no       => 1,
+            title              => 'Your ETH withdrawal is in progress',
         })->get;
 
     my ($customer, %args) = @track_args;
 
-    is $args{event}, 'crypto_withdrawal_email', "got correct event name";
+    is $args{event}, 'crypto_withdrawal_locked_email', "got correct event name";
+
+    undef @track_args;
+
+    BOM::Event::Actions::Client::crypto_withdrawal_email({
+            loginid            => $client->loginid,
+            amount             => '2',
+            currency           => 'ETH',
+            transaction_hash   => undef,
+            transaction_url    => undef,
+            live_chat_url      => 'https://deriv.com/en/?is_livechat_open=true',
+            transaction_status => 'CANCELLED',
+            reference_no       => 1,
+            title              => 'Your ETH withdrawal is cancelled',
+        })->get;
+
+    ($customer, %args) = @track_args;
+
+    is $args{event}, 'crypto_withdrawal_cancelled_email', "got correct event name";
+
+    undef @track_args;
+
+    BOM::Event::Actions::Client::crypto_withdrawal_email({
+            loginid            => $client->loginid,
+            amount             => '2',
+            currency           => 'ETH',
+            transaction_hash   => '0xjkdf483jfh834ekjh834kdk48',
+            transaction_url    => 'https://sepolia.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
+            live_chat_url      => 'https://deriv.com/en/?is_livechat_open=true',
+            transaction_status => 'SENT',
+            reference_no       => 1,
+            title              => 'Your ETH withdrawal is successful',
+        })->get;
+
+    ($customer, %args) = @track_args;
+
+    is $args{event}, 'crypto_withdrawal_sent_email', "got correct event name";
 
     cmp_deeply $args{properties},
         {

@@ -124,10 +124,12 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
-    crypto_deposit_confirmed_email   => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
-    crypto_deposit_pending_email     => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
-    crypto_withdrawal_email          => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
-    crypto_withdrawal_rejected_email => [
+    crypto_deposit_confirmed_email    => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
+    crypto_deposit_pending_email      => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
+    crypto_withdrawal_sent_email      => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
+    crypto_withdrawal_locked_email    => [qw(loginid amount currency live_chat_url title)],
+    crypto_withdrawal_cancelled_email => [qw(loginid amount currency reference_no live_chat_url title)],
+    crypto_withdrawal_rejected_email  => [
         qw(loginid reject_reason amount currency_code title live_chat_url meta_data fiat_account cashier_transfer_url cashier_p2p_url cashier_withdrawal_url)
     ],
     p2p_advert_created =>
@@ -191,6 +193,9 @@ my @COMMON_EVENT_METHODS = qw(
     crypto_deposit_confirmed_email
     crypto_deposit_pending_email
     crypto_withdrawal_email
+    crypto_withdrawal_sent_email
+    crypto_withdrawal_locked_email
+    crypto_withdrawal_cancelled_email
     crypto_withdrawal_rejected_email
     payment_deposit
     payment_withdrawal
@@ -463,7 +468,7 @@ sub new_mt5_signup {
     );
 }
 
-=head2 profile_change 
+=head2 profile_change
 
 It is triggered for each B<changing in user profile> event emitted, delivering it to Segment.
 It can be called with the following parameters:
@@ -509,7 +514,7 @@ sub profile_change {
 
 It is triggered for each B<transfer_between_accounts> event emitted, delivering it to Segment.
 
-It is called with the following parameters: 
+It is called with the following parameters:
 
 =over
 
@@ -703,7 +708,7 @@ sub p2p_order_expired {
 
 =head2 p2p_order_dispute
 
-Sends to segment the disputed order for further email sending or other events. 
+Sends to segment the disputed order for further email sending or other events.
 Two events should be fired off, one for each party.
 
 =over 4
@@ -861,7 +866,7 @@ sub p2p_order_dispute_fraud_complete {
 
 =head2 p2p_order_timeout_refund
 
-Sends to segment the order refunded tracking event for both parties involved. 
+Sends to segment the order refunded tracking event for both parties involved.
 It takes the following arguments:
 
 =over 4
@@ -960,7 +965,7 @@ sub _p2p_order_track {
 
 =head2 _p2p_properties
 
-Since p2p events have a lot of common properties it makes sense to centralize 
+Since p2p events have a lot of common properties it makes sense to centralize
 the common fields in a handy sub.
 It takes the following arguments:
 
@@ -1105,7 +1110,7 @@ sub _send_track_request {
 =head2 _create_context
 
 Dictionary of extra information that provides context about a message.
-It takes the following args: 
+It takes the following args:
 
 =over
 
@@ -1281,7 +1286,7 @@ sub _validate_event {
     return 1;
 }
 
-=head2 _time_to_iso_8601 
+=head2 _time_to_iso_8601
 
 Convert the format of the database time to iso 8601 time that is sutable for Segment
 Arguments:
