@@ -60,6 +60,11 @@ use constant USER_RIGHT_API            => 0x0000000000000080;
 use constant USER_RIGHT_REPORTS        => 0x0000000000000100;
 use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 
+use constant MT5_TRANSFER_LOCK_ERRORS => {
+    deposit    => 'MT5DepositLocked',
+    withdrawal => 'MT5WithdrawalLocked'
+};
+
 # This is the default trading server key for
 # - demo account
 # - real financial and financial stp accounts
@@ -2165,16 +2170,14 @@ sub _mt5_validate_and_get_amount {
                 if ($action eq 'deposit'
                 and ($client->status->no_withdrawal_or_trading or $client->status->withdrawal_locked));
 
-            # Deposit should be locked if mt5 vanuatu/labuan account is disabled
-            if (    $action eq 'deposit'
-                and $mt5_group =~ /(?:labuan|vanuatu|bvi)/)
-            {
-                my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
-                my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
-                my %rights       = map { $_ => $setting->{rights} & $known_rights{$_} ? 1 : 0 } keys %known_rights;
-                if (not $rights{enabled} or $rights{trade_disabled}) {
-                    return create_error_future('MT5DepositLocked');
-                }
+            # Withdrawals and deposits should be blocked if account is disabled
+
+            my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
+            my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
+            my %rights       = map { $_ => $setting->{rights} & $known_rights{$_} ? 1 : 0 } keys %known_rights;
+            if (not $rights{enabled} or $rights{trade_disabled}) {
+                my $error_code = MT5_TRANSFER_LOCK_ERRORS->{$action};
+                return create_error_future($error_code);
             }
 
             # Actual USD or EUR amount that will be deposited into the MT5 account.

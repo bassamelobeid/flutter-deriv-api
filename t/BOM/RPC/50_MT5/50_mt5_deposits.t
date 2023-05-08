@@ -217,6 +217,26 @@ subtest 'deposit' => sub {
         'Payment agents cannot make MT5 deposits, even whith all services allowed.')
         ->error_message_is('You are not allowed to transfer to this account.', 'MT5 trasfer cannot be allowed');
 
+    # Clients should not be able to deposit to disabled SVG accounts
+    $manager_module->mock(
+        'get_user',
+        sub {
+            return Future->done({
+                email   => 'test.account@binary.com',
+                name    => 'Meta traderman',
+                balance => '1234',
+                country => 'Malta',
+                rights  => 999,
+                group   => 'real\p01_ts03\synthetic\svg_std_usd\01',
+                'login' => 'MTR00001015',
+            });
+        });
+
+    $c->call_ok($method, $params)->has_error('client is disable')
+        ->error_code_is('MT5DepositLocked', 'Deposit is locked when mt5 account is disabled for svg');
+
+    $manager_module->unmock('get_user');
+
     $mock_client->unmock_all;
 
     $demo_account_mock->unmock_all();
@@ -854,6 +874,7 @@ subtest 'bvi withdrawal' => sub {
                 'company'  => 'Deriv (SVG) LLC'
             });
         });
+    #  Rights changed to 483 as account should be enabled
     $manager_module->mock(
         'get_user',
         sub {
@@ -862,7 +883,7 @@ subtest 'bvi withdrawal' => sub {
                 name    => 'Meta traderman',
                 balance => '1234',
                 country => 'Malta',
-                rights  => 482,
+                rights  => 483,
                 group   => 'real\p01_ts01\financial\bvi_std_usd',
                 'login' => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\bvi_std_usd'},
             });
@@ -1068,7 +1089,7 @@ subtest 'vanuatu withdrawal' => sub {
                 name    => 'Meta traderman',
                 balance => '1234',
                 country => 'Malta',
-                rights  => 482,
+                rights  => 483,
                 group   => 'real\p01_ts01\financial\vanuatu_std-hr_usd',
                 'login' => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
             });
