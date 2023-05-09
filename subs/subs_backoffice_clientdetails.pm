@@ -2164,12 +2164,12 @@ sub client_text_field_validation_info {
 
         },
         address_1 => {
-            pattern => q/^[\p{L}\p{Nd}\s'.,:;()\x{b0}@#\/-]{1,70}$/,
+            pattern => q/^[\p{L}\p{Nd}\s'\N{U+2019}.,:;()\x{b0}@#\/-]{1,70}$/,
             message => 'Within 70 characters, Only letters, numbers, space, and these special characters are allowed: - . \' # ; : ( ) , @ /',
             name    => 'Address 1',
         },
         address_2 => {
-            pattern => q/^[\p{L}\p{Nd}\s'.,:;()\x{b0}@#\/-]{0,70}$/,
+            pattern => q/^[\p{L}\p{Nd}\s'\N{U+2019}.,:;()\x{b0}@#\/-]{0,70}$/,
             message => 'Within 70 characters, Only letters, numbers, space, and these special characters are allowed: - . \' # ; : ( ) , @ /',
             name    => 'Address 2',
         },
@@ -2208,8 +2208,6 @@ sub client_text_field_validation_info {
 
     for my $field (keys %validations) {
         my $value = $args{$field} // $client->$field // '';
-
-        # empty values are accepted in backoffice
         $validations{$field}->{is_valid} = (not $value or $value =~ m/$validations{$field}->{pattern}/);
     }
 
