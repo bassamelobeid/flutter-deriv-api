@@ -1049,12 +1049,12 @@ subtest 'applicant info' => sub {
         dob        => '1969-04-20',
         email      => 'maria+juana@test.com',
         address    => {
-            street          => 301,
+            street          => re('Ronald-Street \(\)lanes B\/O12'),
             state           => 'LA',
             town            => 'Beverly Hills',
             country         => 'GBR',
             postcode        => 232323,
-            building_number => 'Civic Center'
+            building_number => re('Ronald-Street \(\)lanes B\/O12')
         },
         location => {country_of_residence => 'IDN'},
         },
@@ -1067,12 +1067,12 @@ subtest 'applicant info' => sub {
         dob        => '1969-04-20',
         email      => 'maria+juana@test.com',
         address    => {
-            street          => 301,
+            street          => re('Ronald-Street \(\)lanes B\/O12'),
             state           => 'LA',
             town            => 'Beverly Hills',
             country         => 'IDN',
             postcode        => 232323,
-            building_number => 'Civic Center'
+            building_number => re('Ronald-Street \(\)lanes B\/O12')
         },
         location => {country_of_residence => 'IDN'},
         },
