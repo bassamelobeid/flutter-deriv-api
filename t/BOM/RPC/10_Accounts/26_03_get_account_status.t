@@ -309,4 +309,199 @@ subtest 'expired docs account' => sub {
     $documents_mock->unmock_all;
 };
 
+subtest 'POA state machine' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+poa+state+machine@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $client->set_default_account('EUR');
+    $client->save();
+
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    my $documents;
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            $self->_clear_uploaded;
+            return $documents // {};
+        });
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'none', 'Nothing uploaded';
+
+    $documents = {
+        proof_of_address => {
+            documents => {
+                $client->loginid
+                    . '_bankstatement' => {
+                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    type        => 'bankstatement',
+                    format      => 'pdf',
+                    id          => 1,
+                    status      => 'uploaded'
+                    },
+            },
+            is_pending => 1,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'pending', 'Pending document';
+
+    $documents = {
+        proof_of_address => {
+            documents => {
+                $client->loginid
+                    . '_bankstatement' => {
+                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    type        => 'bankstatement',
+                    format      => 'pdf',
+                    id          => 1,
+                    status      => 'uploaded'
+                    },
+            },
+            is_rejected => 1,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'rejected', 'Rejected document';
+
+    $documents = {
+        proof_of_address => {
+            documents => {
+                $client->loginid
+                    . '_bankstatement' => {
+                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    type        => 'bankstatement',
+                    format      => 'pdf',
+                    id          => 1,
+                    status      => 'uploaded'
+                    },
+            },
+            is_verified => 1,
+        },
+    };
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'verified', 'Verified document';
+
+    $documents = {
+        proof_of_address => {
+            documents => {
+                $client->loginid
+                    . '_bankstatement' => {
+                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    type        => 'bankstatement',
+                    format      => 'pdf',
+                    id          => 1,
+                    status      => 'uploaded'
+                    },
+            },
+            is_rejected => 1,
+        },
+    };
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'rejected', 'Rejected document';
+
+    $documents = {
+        proof_of_address => {
+            documents => {
+                $client->loginid
+                    . '_bankstatement' => {
+                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    type        => 'bankstatement',
+                    format      => 'pdf',
+                    id          => 1,
+                    status      => 'uploaded'
+                    },
+            },
+            is_pending => 1,
+        },
+    };
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'under_review'});
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'pending', 'Pending document';
+
+    $documents = {
+        proof_of_address => {
+            documents => {
+                $client->loginid
+                    . '_bankstatement' => {
+                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    type        => 'bankstatement',
+                    format      => 'pdf',
+                    id          => 1,
+                    status      => 'uploaded'
+                    },
+            },
+            is_outdated => 1,
+        },
+    };
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'under_review'});
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'expired', 'Expired document';
+
+    $documents = {
+        proof_of_address => {
+            documents => {
+                $client->loginid
+                    . '_bankstatement' => {
+                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    type        => 'bankstatement',
+                    format      => 'pdf',
+                    id          => 1,
+                    status      => 'uploaded'
+                    },
+            },
+            is_outdated => 1,
+        },
+    };
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'expired', 'Expired document';
+
+    $documents = {
+        proof_of_address => {
+            documents => {
+                $client->loginid
+                    . '_bankstatement' => {
+                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    type        => 'bankstatement',
+                    format      => 'pdf',
+                    id          => 1,
+                    status      => 'uploaded'
+                    },
+            },
+            is_verified => 1,
+        },
+    };
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    is $result->{authentication}->{document}->{status}, 'verified', 'Verified document';
+};
+
 done_testing();
