@@ -6,7 +6,7 @@ use Test::Exception;
 use Test::Warnings;
 
 use Getopt::Long;
-use JSON::MaybeUTF8 qw(decode_json_utf8);
+use JSON::MaybeUTF8 qw(decode_json_text);
 use JSON::MaybeXS;
 use List::Util qw(first all);
 use Path::Tiny;
@@ -40,7 +40,7 @@ my @json_schemas = read_all_schemas();
 # decoded json is used in the next subtests
 subtest 'json structure' => sub {
     for my $schema (@json_schemas) {
-        lives_ok(sub { $schema->{json} = decode_json_utf8($schema->{json_text}) }, 'JSON Structure is valid: ' . $schema->{formatted_path});
+        lives_ok(sub { $schema->{json} = decode_json_text($schema->{json_text}) }, 'JSON Structure is valid: ' . $schema->{formatted_path});
     }
 };
 
