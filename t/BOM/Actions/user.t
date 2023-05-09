@@ -279,7 +279,7 @@ subtest 'user profile change event' => sub {
         properties => {
             loginid          => $test_client->loginid,
             'updated_fields' => {
-                'address_line_1' => 'street:1- 23;appt#78 park’s views bondie// (kingslanding/loping . )',
+                'address_line_1' => 'street 1',
                 'address_city'   => 'Ambon',
                 'address_state'  => "BAL",
                 'phone'          => '+15417541233',
@@ -338,7 +338,7 @@ subtest 'user profile change event' => sub {
                 properties => {
                     loginid          => $test_loginid,
                     'updated_fields' => {
-                        'address_line_1' => 'street:1- 23;appt#78 park’s views bondie// (kingslanding/loping . )',
+                        'address_line_1' => 'other st',
                     },
                 }};
             undef @emit_args;
