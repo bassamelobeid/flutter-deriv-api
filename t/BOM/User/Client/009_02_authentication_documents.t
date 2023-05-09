@@ -551,6 +551,99 @@ subtest 'Manual docs uploaded at BO' => sub {
     is $client->get_manual_poi_status, 'verified', 'Verified Manual POI status';
     is $client->get_poi_status,        'verified', 'Verified POI status';
     cmp_deeply [$client->latest_poi_by], ['manual', ignore(), ignore()], 'Manual POI attempted';
+};
+
+subtest 'POA state machine' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $user = BOM::User->create(
+        email    => $client->loginid . '@binary.com',
+        password => 'Abcd1234'
+    );
+
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+    $client->user($user);
+    $client->save;
+
+    is $client->get_poa_status, 'none', 'POA status = none';
+    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin)';
+    my $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'z33z', 'none', 'front', 'bo');
+
+    my $id1 = $sth_doc_new->fetch()->[0];
+    $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
+
+    my $sth_doc_info = $dbh->prepare($SQL);
+    $sth_doc_info->execute($client->loginid);
+
+    $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    my $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client->documents->_clear_uploaded;
+    is $client->get_poa_status, 'pending', 'POA status = pending';
+
+    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'rejected\'::status_type)';
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client->documents->_clear_uploaded;
+    is $client->get_poa_status, 'rejected', 'POA status = rejected';
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client->documents->_clear_uploaded;
+    is $client->get_poa_status, 'verified', 'POA status = verified';
+
+    $SQL            = "UPDATE betonmarkets.client_authentication_document SET issue_date=NOW() - INTERVAL '1 year' - INTERVAL '1 day' WHERE id = ?";
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client->documents->_clear_uploaded;
+    is $client->get_poa_status, 'expired', 'POA status = expired';
+
+    # upload a 2nd document
+
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 431214, 'qefwee', 'none', 'front', 'bo');
+
+    my $id2 = $sth_doc_new->fetch()->[0];
+    $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
+
+    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id2);
+
+    $client->documents->_clear_uploaded;
+    is $client->get_poa_status, 'pending', 'POA status = pending (2nd doc uploaded)';
+
+    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'rejected\'::status_type)';
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id2);
+
+    $client->documents->_clear_uploaded;
+    is $client->get_poa_status, 'expired', 'POA status = expired (2nd doc rejected)';
+
+    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id2);
+
+    $client->documents->_clear_uploaded;
+    is $client->get_poa_status, 'expired', 'POA status = expired (2nd doc issue date-less)';
+
+    $SQL            = "UPDATE betonmarkets.client_authentication_document SET issue_date=NOW() - INTERVAL '1 year' WHERE id = ?";
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client->documents->_clear_uploaded;
+    is $client->get_poa_status, 'verified', 'POA status = verified';
 
 };
 

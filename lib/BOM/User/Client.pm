@@ -7555,14 +7555,18 @@ sub get_poa_status {
 
     return 'pending' if $is_poa_pending;
 
+    if ($self->fully_authenticated) {
+        return 'expired' if $is_outdated;
+
+        return 'verified';
+    }
+
     return 'rejected' if $is_rejected;
 
     # note: POA documents do not expire, but they can get outdated by compliance rules
     # for our state machine this is "expired" to avoid adding extra statuses
 
     return 'expired' if $is_outdated;
-
-    return 'verified' if $self->fully_authenticated;
 
     return 'none';
 }

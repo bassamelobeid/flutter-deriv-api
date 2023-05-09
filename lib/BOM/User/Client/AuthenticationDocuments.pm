@@ -179,7 +179,7 @@ sub _build_uploaded {
 
             $documents{$category_key}{documents}{$single_document->file_name} = $doc_structure->($single_document);
 
-            if ($category eq 'proof_of_income' || $category eq 'proof_of_identity') {
+            if (any { $category eq $_ } qw/proof_of_income proof_of_identity proof_of_address/) {
                 $documents{$category_key}{'is_' . $doc_status} += 1;
             }
 
@@ -205,6 +205,8 @@ sub _build_uploaded {
                         $documents{$category_key}->{best_issue_date} = $issue_du
                             if $documents{$category_key}->{best_issue_date}->is_before($issue_du);
                     }
+                } elsif ($doc_status eq 'uploaded') {
+                    $documents{$category_key}{is_pending} = 1;
                 }
             }
 
@@ -252,7 +254,7 @@ sub _build_uploaded {
         $documents{$category_key}->{lifetime_valid} = 1;
     }
 
-    for my $origin (qw/onfido idv proof_of_identity/) {
+    for my $origin (qw/onfido idv proof_of_identity proof_of_address/) {
         if ($documents{$origin}) {
             $documents{$origin}{is_pending} //= 0;
         }
@@ -265,7 +267,7 @@ sub _build_uploaded {
     if (scalar(keys %documents) and exists $documents{proof_of_address}) {
         if (($self->client->authentication_status // '') eq 'needs_action') {
             $documents{proof_of_address}{is_rejected} = 1;
-        } elsif (not $fully_authenticated) {
+        } elsif (($self->client->authentication_status // '') eq 'under_review') {
             $documents{proof_of_address}{is_pending} = 1;
         }
     }
@@ -273,6 +275,10 @@ sub _build_uploaded {
     # remove POI is_pending flag under fully authenticated scenario
     if (scalar(keys %documents) and exists $documents{proof_of_identity}) {
         $documents{proof_of_identity}{is_pending} = 0 if $fully_authenticated && !$documents{proof_of_identity}{is_expired};
+    }
+    # remove POA is_pending flag under fully authenticated scenario
+    if (scalar(keys %documents) and exists $documents{proof_of_address}) {
+        $documents{proof_of_address}{is_pending} = 0 if $fully_authenticated && !$documents{proof_of_address}{is_outdated};
     }
 
     return \%documents;

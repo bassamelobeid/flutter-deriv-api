@@ -229,7 +229,8 @@ subtest 'documents uploaded' => sub {
                     type   => "bankstatement",
                     },
             },
-            is_pending => 1,
+            is_pending  => 0,
+            is_verified => 1,
         },
         proof_of_identity => {
             documents => {
@@ -275,7 +276,8 @@ subtest 'documents uploaded' => sub {
                     type   => "bankstatement",
                     },
             },
-            is_pending => 1,
+            is_pending  => 0,
+            is_verified => 1,
         },
         proof_of_identity => {
             documents => {
@@ -311,7 +313,7 @@ subtest 'documents uploaded' => sub {
     $module->mock('authentication_status', sub { 'needs_action' });
 
     my $documents = $client->documents->uploaded();
-    delete $document_hash->{proof_of_address}{is_pending};
+    $document_hash->{proof_of_address}{is_pending}  = 0;
     $document_hash->{proof_of_address}{is_rejected} = 1;
     cmp_deeply($documents, $document_hash, 'correct structure for client documents with authentication status as needs_action');
 
