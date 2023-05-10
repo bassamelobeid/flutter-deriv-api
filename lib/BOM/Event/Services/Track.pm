@@ -22,7 +22,7 @@ use BOM::Event::Services;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Locale  qw(get_state_by_id);
 use BOM::Database::Model::UserConnect;
-
+use DataDog::DogStatsd::Helper;
 # Constant user_id for anonymous events.
 use constant BINARY_CUSTOMER => 1;
 
@@ -227,6 +227,12 @@ my @COMMON_EVENT_METHODS = qw(
     pa_first_time_approved
 );
 
+# list of events that will be forwarded directly to cio as tranasctional emails
+my @TRANSACTIONAL_EVENTS = qw(
+    pa_withdraw_confirm
+    request_change_email
+);
+
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
 
@@ -239,6 +245,17 @@ It's a singleton - we don't want to leak memory by creating new ones for every e
 
 sub _api {
     return $services->rudderstack();
+}
+
+=head2 _is_transactional
+
+check if the passed event name in @TRANSACTIONAL_EVENTS list.
+
+=cut
+
+sub _is_transactional {
+    my $event = shift;
+    return any { $event eq $_ } @TRANSACTIONAL_EVENTS;
 }
 
 =head2 multiplier_hit_type
@@ -1100,11 +1117,62 @@ sub _send_track_request {
     my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'loginid', 'lang', 'brand'];
     my $valid_properties       = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } @$valid_event_properties};
 
+    return _send_transactional_request(
+        customer   => $customer,
+        event      => $event,
+        properties => $valid_properties,
+        context    => $context,
+        )
+        if _is_transactional($event)
+        && BOM::Config::Runtime->instance->app_config->customerio->transactional_emails;
+
     return $customer->track(
         event      => $event,
         properties => $valid_properties,
         context    => $context,
     );
+}
+
+=head2 _send_transactional_request
+
+A private method that makes a CustomerIO B<transactional> email API call.
+The properties should be filtered and valid before reaching here.
+It is called with the following parameters:
+
+=over
+
+=item * C<customer> - Customer object, traits are not needed.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=item * C<event> - The event name that will be sent to the Segment.
+
+=item * C<context> - Request context.
+
+=back
+
+=cut
+
+sub _send_transactional_request {
+    my %args = @_;
+    my $cio  = $services->customerio // die 'Could not load cio';
+    my $data = {
+        transactional_message_id => $args{event},
+        message_data             => $args{properties},
+        to                       => $args{properties}->{email},
+        identifiers              => {id => $args{customer}->user_id}};
+
+    my $tags = ["event:$args{event}"];
+    return $cio->send_transactional($data)->then(
+        sub {
+            DataDog::DogStatsd::Helper::stats_inc('bom-events.transactional_email.sent.success', {tags => $tags});
+            return Future->done(@_);
+        }
+    )->else(
+        sub {
+            DataDog::DogStatsd::Helper::stats_inc('bom-events.transactional_email.sent.failure', {tags => $tags});
+            return Future->fail(@_);
+        });
 }
 
 =head2 _create_context

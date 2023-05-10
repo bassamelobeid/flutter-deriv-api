@@ -98,11 +98,13 @@ sub customerio {
     my ($self) = @_;
 
     return $self->{customerio} //= do {
+        my $cfg  = BOM::Config::third_party()->{customerio};
         my %args = (
-            api_key   => BOM::Config::third_party()->{customerio}->{api_key},
-            api_token => BOM::Config::third_party()->{customerio}->{api_token},
-            site_id   => BOM::Config::third_party()->{customerio}->{site_id},
-        );
+            api_key   => $cfg->{api_key},
+            api_token => $cfg->{api_token},
+            site_id   => $cfg->{site_id},
+            api_uri   => $cfg->{app_uri},
+            track_uri => $cfg->{api_uri});
         $self->add_child(my $service = WebService::Async::CustomerIO->new(%args));
         $service;
     }

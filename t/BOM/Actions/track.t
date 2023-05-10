@@ -45,9 +45,17 @@ my $user  = BOM::User->create(
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 
-my (@identify_args, @track_args);
+my (@identify_args, @track_args, @transactional_args);
+
 my $segment_response = Future->done(1);
 my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
+my $mock_cio         = new Test::MockModule('WebService::Async::CustomerIO');
+$mock_cio->redefine(
+    'send_transactional' => sub {
+        @transactional_args = @_;
+        return Future->done(1);
+    });
+
 $mock_segment->redefine(
     'identify' => sub {
         @identify_args = @_;
@@ -78,6 +86,15 @@ $mock_mt5_groups->mock(
         return {};
     },
 );
+
+my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my @metrics;
+$dog_mock->mock(
+    'stats_inc',
+    sub {
+        push @metrics, @_;
+        return 1;
+    });
 
 subtest 'General event validation - filtering by brand' => sub {
     undef @identify_args;
@@ -624,6 +641,66 @@ subtest 'General event validation - filtering by brand' => sub {
             'track lang args is correct'
         );
     };
+
+    subtest 'transactional emails feature flag' => sub {
+        undef @track_args;
+        undef @identify_args;
+        undef @transactional_args;
+        my $args = {
+            loginid    => $test_client->loginid,
+            properties => {
+                first_name => 'Aname',
+                email      => 'any_email@anywhere.com',
+                language   => 'EN',
+            }};
+        ok BOM::Event::Services::Track::track_event(
+            event => 'request_change_email',
+            $args->%*
+        )->get;
+        ok @track_args,          'Segment track is invoked by default';
+        ok !@transactional_args, 'CIO transactional is not invoked by default';
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);
+        undef @track_args;
+        ok BOM::Event::Services::Track::track_event(
+            event => 'request_change_email',
+            $args->%*
+        )->get;
+        ok !@track_args,        'Segment track is not invoked';
+        ok @transactional_args, 'CIO transactional is invoked';
+        my (undef, $to_cmp) = @transactional_args;
+        is_deeply(
+            $to_cmp,
+            {
+                transactional_message_id => 'request_change_email',
+                message_data             => {
+                    loginid    => $test_client->loginid,
+                    brand      => 'deriv',
+                    lang       => 'RU',
+                    first_name => 'Aname',
+                    email      => 'any_email@anywhere.com',
+                },
+                to          => 'any_email@anywhere.com',
+                identifiers => {id => $test_client->binary_user_id}
+            },
+            'correct transactional args'
+        );
+        is $metrics[0], 'bom-events.transactional_email.sent.success', 'success dd reported';
+        undef @metrics;
+
+        #test for failure dd metrics
+        $mock_cio->redefine(
+            'send_transactional' => sub {
+                @transactional_args = @_;
+                return Future->fail("API ERROR");
+            });
+        like exception {
+            BOM::Event::Services::Track::track_event(
+                event => 'request_change_email',
+                $args->%*
+            )->get
+        }, qr{API ERROR};
+        is $metrics[0], 'bom-events.transactional_email.sent.failure', 'failure dd reported';
+    };
 };
 
 sub test_segment_customer {
@@ -701,5 +778,6 @@ subtest 'brand/offical app id validation' => sub {
 
 $mock_segment->unmock_all;
 $mock_mt5_groups->unmock_all;
+$mock_cio->unmock_all;
 
 done_testing();
