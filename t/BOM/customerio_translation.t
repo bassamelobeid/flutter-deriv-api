@@ -12,6 +12,8 @@ use BOM::Platform::Context;
 my $cio = BOM::Backoffice::Script::CustomerIOTranslation->new(token => 'x');
 
 subtest 'email parsing' => sub {
+    my $mock_cio = Test::MockModule->new('BOM::Backoffice::Script::CustomerIOTranslation');
+    $mock_cio->mock(_is_transactional => sub { return 0; });
 
     my $subject = ' {{event.x}}  ';
     cmp_deeply(
@@ -351,6 +353,36 @@ subtest 'update campaigns and snippets' => sub {
     $cio->update_campaigns_and_snippets;
 
     cmp_deeply(\%calls, {}, 'snippets with "custom_" prefix are kept');
+};
+
+subtest 'transactional integration' => sub {
+    my $mock_cio = Test::MockModule->new('BOM::Backoffice::Script::CustomerIOTranslation');
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_translations(1);
+    $mock_cio->mock(_is_transactional => sub { return 1 });
+
+    subtest 'process placehoders' => sub {
+        my $item = [
+            '{{event.name}}',
+            'no liquid tag',
+            '{% if event.name %}',
+            '{% if event.name  == "ABC" %}',
+            '{% if event.name  == "ABC" or event.id != "123" %}',
+            '{% if event.name  == "ABC" and event.id != "123" %}',
+            '{% if event.org   == "ABC" and event.land != "123" %}',
+        ];
+
+        my $expected = [
+            '{% if event.name %}{{event.name}}{% else %}{{trigger.name}}{%endif%}',
+            'no liquid tag',
+            '{% if (event.name  or trigger.name )%}',
+            '{% if (event.name  == "ABC"  or trigger.name  == "ABC" )%}',
+            '{% if (event.name  == "ABC" or trigger.name  == "ABC") or (event.id != "123"  or trigger.id != "123" )%}',
+            '{% if (event.name  == "ABC" or trigger.name  == "ABC") and (event.id != "123"  or trigger.id != "123" )%}',
+            '{% if (event.org   == "ABC" or trigger.org   == "ABC") and (event.land != "123"  or trigger.land != "123" )%}',
+        ];
+
+        is $cio->_integrate_transactional($item->[$_], "dummy_event"), $expected->[$_], 'expected liqued found' for 0 .. scalar($expected->@*);
+    };
 };
 
 done_testing;

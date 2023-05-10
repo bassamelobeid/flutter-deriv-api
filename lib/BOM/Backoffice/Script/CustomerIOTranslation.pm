@@ -17,9 +17,15 @@ use Log::Any        qw($log);
 use Time::HiRes;
 
 use constant {
-    API_URL     => 'https://beta-api.customer.io/v1/api/',
+    API_URL     => 'https://api.customer.io/v1/api/',
     REQ_PER_SEC => 10,
 };
+
+# list of events that should be transactional compatible
+my @TRANSACTIONAL_EVENTS = qw(
+    pa_withdraw_confirm
+    request_change_email
+);
 
 my %rate_limit;
 
@@ -71,6 +77,8 @@ sub update_campaigns_and_snippets {
         for my $id (keys %strings_by_id) {
             my $string   = $strings_by_id{$id};
             my $new_snip = $self->generate_snippet($string, $campaign->{name});
+            $new_snip = $self->_integrate_transactional($new_snip, $campaign->{event});
+
             next if exists $current_snips->{$id} and $current_snips->{$id} eq $new_snip;
 
             $log->debugf("updating snippet %s for string '%s'", $id, $string->{orig_text});
@@ -101,6 +109,8 @@ sub update_campaigns_and_snippets {
         my %used_snips = map { $_ => 1 } @snips_to_keep;
         for my $snip (grep { (not exists $used_snips{$_}) && $_ !~ m/^custom_/ } keys %$current_snips) {
             $log->debugf("deleting unused snippet %s", $snip);
+            #TODO:: transactional messages snippets shouldn't be removed. but no api to get them.
+            #anyway, cio will not remove "in use" snippet.
             $self->delete_snippet($snip);
         }
     }
@@ -199,6 +209,7 @@ sub get_campaigns {
             type       => $campaign->{type},
             template   => $template,
             live       => $live,
+            event      => $campaign->{event_name},
             updateable => (
                        $filter_campaign
                     or $updateable ? 1 : 0
@@ -281,6 +292,7 @@ sub delete_snippet {
     try {
         return $self->call_api('DELETE', 'snippets/' . $id);
     } catch ($e) {
+        #we may supress this warning if the erorr is 'in use' as snippets could be used in transactional messages.
         $log->warnf('Failed to delete snippet %s: %s', $id, $e);
         return undef;
     }
@@ -332,6 +344,7 @@ sub process_camapign {
     my $template = $campaign->{template};
     my $type     = $template->{type};
     my $body     = $template->{body};
+
     $body = $template->{layout} if $template->{layout} =~ s/\{\{content\}\}/$body/m;
     my $result;
 
@@ -355,7 +368,10 @@ sub process_camapign {
         $subject = snippet_tag($item);
         push $result->{strings}->@*, $item;
     }
-    $result->{subject} = $subject;
+
+    ## integrate transactioanl to add trigger liquid variable
+    $result->{subject} = $self->_integrate_transactional($subject,        $campaign->{event});
+    $result->{body}    = $self->_integrate_transactional($result->{body}, $campaign->{event});
 
     return $result;
 }
@@ -607,6 +623,58 @@ sub generate_snippet {
     $res .= qq[{% else %}\n$en_text\n{% endif %}];
 
     return $res;
+}
+
+=head2 _is_transactional
+
+check if the passed event name in @TRANSACTIONAL_EVENTS list.
+
+=cut
+
+sub _is_transactional {
+    my $event = shift;
+    $event //= '';
+    return any { $event eq $_ } @TRANSACTIONAL_EVENTS;
+}
+
+=head2 _integrate_transactional
+
+replace all liquid variables in passed $text with transactional compatible 
+
+=cut
+
+sub _integrate_transactional {
+    my ($self, $text, $event) = @_;
+
+    return $text
+        unless _is_transactional($event)
+        && BOM::Config::Runtime->instance->app_config->customerio->transactional_translations;
+    return $text unless $text;
+
+    $text =~ s/(\{[\{\%].*?[\}\%]\})/$self->_process_liquid_placehoders($1)/ge;
+    return $text;
+}
+
+=head2 _process_liquid_placehoders
+
+add trigger.property_name to liquid placeholders to support transactional email translation.
+property_name will be extracted from event.property_name
+examples:
+{{event.verification_url}} => {{event.verification_url | prepend trigger.verification_url}}
+{% if event.verification_url == 'xyz' or event.first_name == 'x' %} => 
+{% if (event.verification_url == 'xyz' or trigger.verification_url == 'xyz') or (event.first_name == 'x' or trigger.first_name == 'x') %} 
+{% if event.verification_url%} => {% if  (event.verification_url or trigger.virification_url) %}
+
+=cut
+
+sub _process_liquid_placehoders {
+    my ($self, $text) = @_;
+
+    $text =~ s/event\.([^}]*?)(?= or| and|\%\})/(event.$1 or trigger.$1)/g if $text =~ /\{\%/;
+    $text =~ s/\{\{\s*event\.(\w+)(.*?)\s*\}\}/\{\% if event.$1 \%\}\{\{event.$1$2\}\}\{\% else \%\}{{trigger.$1$2}}\{\%endif\%\}/g
+        if $text =~ /\{\{/;
+
+    return $text;
 }
 
 1;
