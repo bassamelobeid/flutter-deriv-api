@@ -2053,6 +2053,20 @@ marketing:
             isa: Num
             default: 30
             global: 1
+customerio:
+  description: "CustomerIO integration Settings"
+  isa: section
+  contains:
+    transactional_emails:
+      description: "if enabled events is sent as transactionals directly using cio"
+      isa: Bool
+      default: 0
+      global: 1
+    transactional_translations:
+      description: "if enabled cio translation cron will include transactional's 'trigger' tags (requires `transactional_emails` to be `zero` first)"
+      isa: Bool
+      default: 1
+      global: 1
 payment_agents:
   description: "Payment Agents program settings"
   isa: section
