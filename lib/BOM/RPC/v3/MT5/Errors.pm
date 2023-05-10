@@ -103,10 +103,8 @@ my %category_message_mapping = do {
         InvalidMT5Group              => localize('This MT5 account has an invalid Landing Company.'),
         ExpiredDocuments             =>
             localize('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.'),
-        Experimental        => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
-        MT5DepositLocked    => localize('You cannot make a deposit because your MT5 account is disabled. Please contact our Customer Support team.'),
-        MT5WithdrawalLocked =>
-            localize('You cannot make a withdrawal because your MT5 account is disabled. Please contact our Customer Support team.'),
+        Experimental     => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
+        MT5DepositLocked => localize('You cannot make a deposit because your MT5 account is disabled. Please contact our Customer Support team.'),
         TransferBetweenDifferentCurrencies =>
             localize('Your account currencies need to be the same. Please choose accounts with matching currencies and try again.'),
         PasswordError         => localize('That password is incorrect. Please try again.'),
