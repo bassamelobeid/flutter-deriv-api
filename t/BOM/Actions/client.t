@@ -5213,7 +5213,7 @@ subtest 'request edd document upload' => sub {
     is scalar @track_args, 7, 'Track event is triggered';
 };
 
-subtest 'account disabled event for the sideoffice' => sub {
+subtest 'account status set event' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => 'test33@bin.com',
@@ -5223,30 +5223,51 @@ subtest 'account disabled event for the sideoffice' => sub {
     delete $client->{status};    #clear status cache
 
     my $args = {
-        loginid        => $client->loginid,
-        agent_username => 'system',
+        loginid  => $client->loginid,
+        username => 'system',
+        status   => 'disabled',
+        reason   => 'Incomplete/false details'
     };
 
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{account_disabled_sideoffice};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{sideoffice_set_account_status};
     my $result  = $handler->($args);
     ok $result,                   'Success result';
     ok $client->status->disabled, 'Disabled status is set';
-    is $client->status->disabled->{reason}, 'Sideoffce', 'Status reason is correct';
+    is $client->status->disabled->{reason}, 'Incomplete/false details', 'Status reason is correct';
 
     # Test that we dont override the reason for disabled status
     $client->status->disabled->{reason} = 'Old reason';
     $result = $handler->($args);
-    ok $result, 'Success result';
+    ok !$result, 'not Success result';
     is $client->status->disabled->{reason}, 'Old reason', 'Status reason was not changed';
+
     $client->status->clear_disabled;
     delete $client->{status};    #clear status cache
-
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine('get_open_contracts', sub { return [1]; });
 
     $result = $handler->($args);
-    ok $result,                    'Success result';
-    ok !$client->status->disabled, 'Disabled status was not set if there is contracts are open';
+    ok !$result,                           'Not success result';
+    ok !$client->status->_get('disabled'), 'Disabled status was not set if there is contracts are open';
+};
+
+subtest 'account status remove event' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test33@bin.com',
+    });
+    $client->status->setnx('disabled', 'test', 'test');
+    ok $client->status->disabled, 'status set';
+
+    my $args = {
+        loginid => $client->loginid,
+        status  => 'disabled',
+    };
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{sideoffice_remove_account_status};
+    my $result  = $handler->($args);
+    ok $result,                            'Success result';
+    ok !$client->status->_get('disabled'), 'Disabled status is removed';
 };
 
 subtest '[Payops] Update account status' => sub {

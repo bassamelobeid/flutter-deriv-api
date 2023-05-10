@@ -12,9 +12,9 @@ use Log::Any qw($log);
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
-use BOM::Event::Actions::Client;
 use BOM::Event::Actions::Client::DisputeNotification;
 use BOM::Event::Actions::Client::IdentityVerification;
+use BOM::Event::Actions::Client::Status;
 use BOM::Event::Actions::CryptoCashier;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
@@ -107,7 +107,8 @@ my $action_mapping = {
         trigger_cio_broadcast                       => \&BOM::Event::Actions::Common::trigger_cio_broadcast,
         mt5_deriv_auto_rescind                      => \&BOM::Event::Actions::MT5::mt5_deriv_auto_rescind,
         crypto_cashier_transaction_updated          => \&BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated,
-        account_disabled_sideoffice                 => \&BOM::Event::Actions::Client::account_disabled_sideoffice,
+        sideoffice_set_account_status               => \&BOM::Event::Actions::Client::Status::execute_set_status,
+        sideoffice_remove_account_status            => \&BOM::Event::Actions::Client::Status::execute_remove_status,
         update_loginid_status                       => \&BOM::Event::Actions::MT5::update_loginid_status,
         bulk_affiliate_loginids_sync                => \&BOM::Event::Actions::MyAffiliate::bulk_affiliate_loginids_sync,
         p2p_update_local_currencies                 => \&BOM::Event::Actions::P2P::update_local_currencies,
