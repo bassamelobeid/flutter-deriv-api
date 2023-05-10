@@ -248,7 +248,7 @@ sub request_email {
     if ($self->{existing_user}) {
         my $data              = $self->{email_verification}->{request_email}->();
         my $has_social_signup = $data->{template_args}->{has_social_signup} ? 1 : 0;
-
+        my $ttl               = REQUEST_EMAIL_TOKEN_TTL / 60;
         BOM::Platform::Event::Emitter::emit(
             'request_change_email',
             {
@@ -258,7 +258,7 @@ sub request_email {
                     first_name            => $self->{existing_user}->get_default_client->first_name,
                     code                  => $data->{template_args}->{code} // '',
                     email                 => $self->{email},
-                    time_to_expire_in_min => REQUEST_EMAIL_TOKEN_TTL / 60,
+                    time_to_expire_in_min => "$ttl",
                     language              => $self->{language},
                     social_signup         => $has_social_signup,
                     live_chat_url         => request()->brand->live_chat_url
