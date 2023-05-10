@@ -1,21 +1,21 @@
 use Object::Pad;
 
-=head1 Rudderstack_Webserver
+=head1 CustomerIO_Webserver
 
- BOM::Test::Rudderstack::Webserver - Webservice mocking events sent to rudderstack.
+ BOM::Test::CustomerIO::Webserver - Webservice mocking events sent to CustomerIO.
 
 =head1 SYNOPSIS
 
- use BOM::Test::Rudderstack::Webserver;
+ use BOM::Test::CustomerIO::Webserver;
 
 =head1 DESCRIPTION
 
- This module listents to requests outbound form bom-events to rudderstack via track_event call.
+ This module listents to requests outbound form bom-events to CustomerIO via track_event call.
  It validates then logs the event detials in an html file.
 
 =cut
 
-class BOM::Test::Rudderstack::Webserver :isa(IO::Async::Notifier);
+class BOM::Test::CustomerIO::Webserver :isa(IO::Async::Notifier);
 
 use Future::AsyncAwait;
 use Syntax::Keyword::Try;
@@ -78,7 +78,7 @@ async method handle {
     $log->infof('HTTP receives %s %s:%s', $req->method, $req->path, $req->body);
     try {
         my $body_params = decode_json_utf8($req->body || '{}');
-        $self->validates($body_params) if ($req->path eq '/rudderstack/track');
+        $self->validate_transactional($body_params) if ($req->path eq '/customerio/send/email');
         $self->record($body_params);
         $self->respond(
             $req,
@@ -98,8 +98,8 @@ async method handle {
 
 =cut
 
-method validates ($body) {
-    for my $attribute ('event', 'userId', 'sentAt', 'context', 'properties') {
+method validate_transactional ($body) {
+    for my $attribute ('transactional_message_id', 'to', 'identifiers', 'message_data') {
         die {
             code => 400,
             msg  => "Expected attribute $attribute in request body"
@@ -114,9 +114,10 @@ method validates ($body) {
 =cut
 
 method record ($body) {
+
     my $prefix   = strftime("%Y%m%d%R", localtime);
-    my $suffix   = $body->{event} // 'Identify_Request';
-    my $filename = PATH . "$prefix-Rudderstack_$suffix.html";
+    my $suffix   = $body->{transactional_message_id} // 'Identify_Request';
+    my $filename = PATH . "$prefix-CustomerIO_$suffix.html";
     open(my $fh, '>>', $filename) or die $log->error("Could not open file $filename  $!");
     print $fh HTML_HEAD;
     traverse($fh, $body);
@@ -147,7 +148,7 @@ method respond ($req, $data) {
 method fail ($req, $error) {
     if (ref($error) eq 'HASH') {
         my $body_params = decode_json_utf8($req->body || '{}');
-        my $filename    = PATH . time . "-Rudderstack_error-" . ($body_params->{event} ? $body_params->{event} : $error->{code}) . ".html";
+        my $filename    = PATH . time . "-CustomerIO_error-" . ($body_params->{event} ? $body_params->{event} : $error->{code}) . ".html";
         open(my $fh, '>>', $filename) or die $log->error("Could not open file $filename  $!");
         print $fh HTML_HEAD;
         print $fh
@@ -209,14 +210,14 @@ async method start {
 
 =head2 run
 
- The main run function of the rudderstack mocking webserver.
+ The main run function of the CustomerIO mocking webserver.
 
 =cut
 
 async method run() {
     $port = await $self->start();
     while (1) {
-        $log->infof('Rudderstack mocking webservice is running');
+        $log->infof('CustomerIO mocking webservice is running');
         await $self->loop->run;
     }
 }

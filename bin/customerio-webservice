@@ -1,0 +1,20 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use IO::Async::Loop;
+use BOM::Test::CustomerIO::Webserver;
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 'json',
+    log_level => 'error';
+
+my $loop = IO::Async::Loop->new;
+
+$loop->add(
+    my $mocker = BOM::Test::CustomerIO::Webserver->new(
+        server => 'localhost',
+        port => 8341,
+    )
+);
+
+$mocker->run->get;
