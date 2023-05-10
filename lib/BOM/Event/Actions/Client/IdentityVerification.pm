@@ -117,7 +117,7 @@ async sub verify_identity {
 
     die 'No standby document found, IDV request skipped.' unless $document;
 
-    my $provider = _get_provider($document->{issuing_country});
+    my $provider = _get_provider($document->{issuing_country}, $document->{document_type});
 
     return undef unless $provider;
 
@@ -230,7 +230,7 @@ async sub verify_process {
 
     die 'No standby document found, IDV request skipped.' unless $document;
 
-    my $provider = _get_provider($document->{issuing_country});
+    my $provider = _get_provider($document->{issuing_country}, $document->{document_type});
 
     return undef unless $provider;
 
@@ -701,16 +701,19 @@ Returns string.
 =cut
 
 sub _get_provider {
-    my ($issuing_country) = @_;
+    my ($issuing_country, $document_type) = @_;
 
     return 'qa' if BOM::Config::on_qa() && $issuing_country eq 'qq';
 
     my $country_configs = Brands::Countries->new();
     my $idv_config      = $country_configs->get_idv_config($issuing_country);
 
-    return undef unless BOM::Platform::Utility::has_idv(
-        country  => $issuing_country,
-        provider => $idv_config->{provider});
+    return undef
+        unless BOM::Platform::Utility::has_idv(
+        country       => $issuing_country,
+        provider      => $idv_config->{provider},
+        document_type => $document_type
+        );
 
     return $idv_config->{provider};
 }
