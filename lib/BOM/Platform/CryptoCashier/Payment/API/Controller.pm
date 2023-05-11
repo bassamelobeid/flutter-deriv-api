@@ -211,11 +211,7 @@ sub init_payment_validation {
     my ($self, $currency_code, $client_loginid, $amount) = @_;
 
     unless ($self->{client}) {
-        try {
-            $self->{client} = BOM::User::Client->new({loginid => $client_loginid});
-        } catch ($e) {
-            $log->warnf("Error when get client of login id %s. more detail: %s", $client_loginid, $e);
-        }
+        $self->{client} = BOM::User::Client->new({loginid => $client_loginid});
     }
 
     return create_error('ClientNotFound', message_params => $client_loginid)
