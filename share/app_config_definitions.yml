@@ -1430,7 +1430,7 @@ compliance:
           description: "Enhanced due diligence (EDD) auto lock threshold that will be applied on clients"
           isa: Num
           global: 1
-          default: 2000
+          default: 20000
     auto_anonymization_daily_limit:
       description: "Maximum number of clients to be auto-anonymized every day. Anonymization of each client takes a lot of time, and this number will be fine tuned by observing the datadog metrics."
       isa: Int
