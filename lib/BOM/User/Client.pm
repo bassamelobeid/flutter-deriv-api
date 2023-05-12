@@ -2958,12 +2958,14 @@ sub p2p_advert_update {
 
     $advert->{remaining_amount} = delete $advert->{remaining};    # named differently in api vs db function
 
+    my %changed_fields = map { (exists $advert->{$_} and ($advert->{$_} // '') ne $param{$_}) ? ($_ => 1) : () } keys %param;
+
     # return current advert details if nothing changed
     return $self->p2p_advert_info(id => $id)
         if not $param{delete}
         and not $param{payment_method_ids}
         and not $param{payment_method_names}
-        and not any { exists $advert->{$_} and ($advert->{$_} // '') ne $param{$_} } keys %param;
+        and not %changed_fields;
 
     # upgrade of legacy ads
     $param{payment_method} = ''
@@ -3002,6 +3004,12 @@ sub p2p_advert_update {
         p2p_adverts_updated => {
             advertiser_id => $advert->{advertiser_id},
         });
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advert_orders_updated => {
+            advert_id      => $param{id},
+            client_loginid => $self->loginid
+        }) if any { $changed_fields{$_} } qw/description payment_method_ids payment_method_names/;
 
     if ($param{delete}) {
         return {

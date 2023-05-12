@@ -276,6 +276,111 @@ subtest 'updating all advert fields' => sub {
     );
 };
 
+subtest 'updating advert fields that will be reflected in orders' => sub {
+
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+        client_details => {residence => 'id'},
+        balance        => 100
+    );
+
+    my %advertiser_methods = $advertiser->p2p_advertiser_payment_methods(
+        create => [{
+                method => 'method1',
+                tag    => 'm1'
+            },
+            {
+                method => 'method2',
+                tag    => 'm2'
+            }])->%*;
+
+    my %methods_by_tag = map { $advertiser_methods{$_}->{fields}{tag}{value} => $_ } keys %advertiser_methods;
+
+    my %test_data = (
+        buy => {
+            initial_params => {
+                is_active            => 1,
+                amount               => 100,
+                description          => 'test advert',
+                max_order_amount     => 10,
+                min_order_amount     => 1,
+                payment_method_names => ['method1'],
+                contact_info         => 'ad contact info',
+                rate                 => 1.0,
+                rate_type            => 'fixed',
+                type                 => 'buy',
+            },
+
+            update_params => {
+                is_active            => 0,
+                description          => 'changed instruction',
+                max_order_amount     => 9,
+                min_order_amount     => 2,
+                payment_method_names => ['method2'],
+                contact_info         => 'new contact info',
+                rate                 => 2.0
+            }
+        },
+        sell => {
+            initial_params => {
+                is_active          => 1,
+                amount             => 100,
+                description        => 'test advert',
+                max_order_amount   => 9,
+                min_order_amount   => 2,
+                payment_method_ids => [$methods_by_tag{m1}],
+                contact_info       => 'ad contact info',
+                rate               => 1.0,
+                rate_type          => 'fixed',
+                type               => 'sell',
+            },
+
+            update_params => {
+                is_active          => 0,
+                description        => 'changed instruction',
+                max_order_amount   => 8,
+                min_order_amount   => 3,
+                payment_method_ids => [$methods_by_tag{m2}],
+                contact_info       => 'new contact info',
+                rate               => 2.0
+            }});
+
+    my $advert;
+    foreach my $ad_type (keys %test_data) {
+        @emitted_events = ();
+        $advert         = $advertiser->p2p_advert_create($test_data{$ad_type}->{initial_params}->%*);
+        foreach my $field (keys $test_data{$ad_type}->{update_params}->%*) {
+            @emitted_events = ();
+            $advertiser->p2p_advert_update(
+                id     => $advert->{id},
+                $field => $test_data{$ad_type}->{update_params}->{$field});
+            if ($field =~ m/description|payment_method_names|payment_method_ids/) {
+                cmp_deeply(
+                    \@emitted_events,
+                    [
+                        ['p2p_adverts_updated', {advertiser_id => $advert->{advertiser_details}{id}}],
+                        [
+                            'p2p_advert_orders_updated',
+                            {
+                                advert_id      => $advert->{id},
+                                client_loginid => $advertiser->loginid
+                            }]
+                    ],
+                    "p2p_adverts_updated and p2p_order_advert_updated event emitted when $field updated for $ad_type ad."
+                );
+            } else {
+                cmp_deeply(
+                    \@emitted_events,
+                    [['p2p_adverts_updated', {advertiser_id => $advert->{advertiser_details}{id}}],],
+                    "only p2p_adverts_updated event emitted when $field updated for $ad_type ad."
+                );
+            }
+
+        }
+
+    }
+
+};
+
 subtest 'Buy ads' => sub {
 
     my %params = (
