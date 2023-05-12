@@ -22,6 +22,7 @@ use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request      qw(request);
 use BOM::Database::ClientDB;
+use BOM::Backoffice::Utility;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
@@ -119,11 +120,11 @@ if (defined $action && $action eq "gross_transactions") {
 }
 
 # Deleting checked statuses
-my $status_op_summary = BOM::User::Utility::status_op_processor($client, request()->params);
+my $status_op_summary = BOM::Platform::Utility::status_op_processor($client, request()->params);
 # Print other untrusted section warning in backoffice
 print build_client_warning_message(encode_entities($client->loginid));
 # The choice of positioning is to allow display under the buttons associated with this event
-print $status_op_summary if $status_op_summary;
+print BOM::Backoffice::Utility::transform_summary_status_to_html($status_op_summary, request()->params->{status_op}) if $status_op_summary;
 
 my $tel          = $client->phone;
 my $citizen      = Locale::Country::code2country($client->citizen);
