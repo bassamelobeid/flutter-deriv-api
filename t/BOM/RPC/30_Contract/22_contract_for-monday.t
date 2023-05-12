@@ -39,7 +39,8 @@ subtest "Request $method" => sub {
 
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
 
-    is_deeply [sort keys %{$result}], [sort qw/ available close open hit_count spot feed_license stash/], 'It should return contracts_for object';
+    is_deeply [sort keys %{$result}], [sort qw/ available close non_available open hit_count spot feed_license stash/],
+        'It should return contracts_for object';
     ok @{$result->{available}}, 'It should return available contracts';
     ok !grep { $_->{contract_type} =~ /^(EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 

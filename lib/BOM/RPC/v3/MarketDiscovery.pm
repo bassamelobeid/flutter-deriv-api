@@ -9,7 +9,7 @@ use BOM::User::Client;
 use BOM::Platform::Context                   qw (localize request);
 use List::UtilsBy                            qw(sort_by);
 use BOM::Product::Offerings::TradingSymbol   qw(get_symbols);
-use BOM::Product::Offerings::TradingContract qw(get_contracts);
+use BOM::Product::Offerings::TradingContract qw(get_contracts get_unavailable_contracts);
 use BOM::Product::ContractFinder::Basic;
 
 rpc active_symbols => sub {
@@ -45,9 +45,19 @@ rpc contracts_for => sub {
     my $args = _extract_params($params);
     $args->{symbol} = $params->{args}->{contracts_for};
 
-    my $offerings     = get_contracts($args);
+    my $offerings = get_contracts($args);
+
+    my $non_available_offerings = get_unavailable_contracts({
+            offerings            => $offerings,
+            symbol               => $args->{symbol},
+            app_id               => $args->{app_id},
+            brands               => $args->{brands},
+            country_code         => $args->{country_code},
+            landing_company_name => $args->{landing_company_name}});
+
     my $contracts_for = BOM::Product::ContractFinder::Basic::decorate({
-        offerings => $offerings,
+        offerings               => $offerings,
+        non_available_offerings => $non_available_offerings,
         %$args,
     });
 
@@ -62,6 +72,18 @@ rpc contracts_for => sub {
             $contracts_for->{available}->[$i]->{contract_display} = localize($contracts_for->{available}->[$i]->{contract_display});
         }
         $i++;
+    }
+
+    my $count = 0;
+    foreach my $contract (@{$contracts_for->{non_available}}) {
+        # localise non_available_contract *_display and categories
+        $contracts_for->{non_available}->[$count]->{contract_display_name} =
+            localize($contracts_for->{non_available}->[$count]->{contract_display_name})
+            if $contracts_for->{non_available}->[$count]->{contract_display_name};
+
+        $contracts_for->{non_available}->[$count]->{contract_category} = localize($contracts_for->{non_available}->[$count]->{contract_category})
+            if $contracts_for->{non_available}->[$count]->{contract_category};
+        $count++;
     }
 
     return $contracts_for;
