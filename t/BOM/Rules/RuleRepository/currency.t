@@ -139,6 +139,17 @@ subtest $rule_name => sub {
             },
             'Only one fiat account is allowed';
 
+        $client_cr_usd->status->set('duplicate_account', 'test', 'test');
+        lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Duplicate account with different currency is ignored';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args, currency => 'USD') },
+            {
+            error_code => 'DuplicateCurrency',
+            params     => 'USD',
+            rule       => $rule_name
+            },
+            "Currency shouldnt be the same as a duplicate account's";
+        $client_cr_usd->status->clear_duplicate_account;
+
         my $mock_account = Test::MockModule->new('BOM::User::Client::Account');
         $mock_account->redefine(currency_code => sub { return 'BTC' });
         lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule applies if the existing account is crypto';
@@ -217,6 +228,65 @@ subtest $rule_name => sub {
         rule       => $rule_name
         },
         'Only one fiat trading account is allowed';
+    $client_cr_usd->status->set('duplicate_account', 'test', 'test');
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Duplicate account with different currency is ignored';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args, currency => 'USD') },
+        {
+        error_code => 'DuplicateCurrency',
+        params     => 'USD',
+        rule       => $rule_name
+        },
+        "Currency shouldnt be the same as a duplicate account's";
+    $client_cr_usd->status->clear_duplicate_account;
+    $client_cr_usd->status->clear_duplicate_account;
+};
+
+$rule_name = 'currency.is_available_for_reactivation';
+subtest $rule_name => sub {
+    my $client_cr_usd1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr_usd1->set_default_account('USD');
+    my $client_cr_usd2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr_usd2->set_default_account('USD');
+
+    my $client_cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr_eur->set_default_account('EUR');
+
+    my $user = BOM::User->create(
+        email    => 'currency_reactivation@test.deriv',
+        password => 'TEST PASS',
+    );
+
+    $user->add_client($client_cr_usd1);
+    $user->add_client($client_cr_usd2);
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_cr_usd1, $client_cr_usd2, $client_cr_eur]);
+
+    my %args             = (loginid => $client_cr_usd1->loginid);
+    my $expected_failure = {
+        error_code => 'DuplicateCurrency',
+        rule       => $rule_name,
+        params     => 'USD'
+    };
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) }, $expected_failure,
+        'Rule fails because there are enabled siblings with the same currency';
+
+    $user->add_client($client_cr_eur);
+    $client_cr_usd2->status->set('duplicate_account', 'test', 'test');
+    $expected_failure = {
+        error_code => 'CurrencyTypeNotAllowed',
+        rule       => $rule_name
+    };
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) }, $expected_failure, 'Rule fails because there is an enabled fiat sibling';
+
+    $client_cr_eur->status->set('duplicate_account', 'test', 'test');
+    lives_ok { $rule_engine->apply_rules($rule_name, %args, currency => 'EUR') } 'Fiat siblings are all deactivated.';
 };
 
 $rule_name = 'currency.no_real_mt5_accounts';
