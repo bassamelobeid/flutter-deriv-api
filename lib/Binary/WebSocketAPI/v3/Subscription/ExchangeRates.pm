@@ -105,6 +105,11 @@ sub handle_message {
     my $type = 'exchange_rates';
     my $c    = $self->c;
 
+    unless ($c->tx) {
+        $self->unregister;
+        return;
+    }
+
     my $results = {
         msg_type     => $type,
         $type        => {$payload->%*,},
