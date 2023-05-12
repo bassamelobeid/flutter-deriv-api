@@ -897,7 +897,7 @@ subtest 'upgradeable_landing_companies svg' => sub {
 
     # Test 1
     my $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['svg', 'maltainvest'], 'Client can upgrade to svg';
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest', 'svg'], 'Client can upgrade to svg';
 
     # Create CR account
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -911,7 +911,7 @@ subtest 'upgradeable_landing_companies svg' => sub {
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
     # Test 1
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['svg', 'maltainvest'],
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest', 'svg'],
         'Client can upgrade to svg or maltainvest becasue his only Real svg account is disabled and he had not selected currency yet.';
 
     # Create CR account
