@@ -225,10 +225,12 @@ sub Gender { return uc shift->gender }
 #    2 - Bronze           => Age verified
 #    3 - Silver           => Identity authenticated
 #    4 - Gold             => Been with us for more than 6 months
+#    5 - Platinum         => Authenticated PyamentAgent
 sub Profile {
     my $self = shift;
 
     return 0 if $self->status->disabled;
+    return 5 if $self->is_pa_and_authenticated;
     if ($self->status->age_verification) {
         if ($self->fully_authenticated) {
             if ($self->_days_since_joined > 180) {
