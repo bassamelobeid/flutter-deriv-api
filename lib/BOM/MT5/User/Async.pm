@@ -66,6 +66,7 @@ my @common_fields = qw(
     company
     phone
     phonePassword
+    comment
 );
 
 # the mapping from MT5 doc (need login)
