@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Deep;
 use Encode;
 use JSON::MaybeXS;
 use FindBin qw/$Bin/;
