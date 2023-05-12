@@ -222,12 +222,11 @@ async sub order_updated {
     $order_event //= 'missing';
 
     _publish_orders_to_channels({
-        loginid   => $loginid,
-        client    => $client,
-        self_only => $data->{self_only},
-        order_id  => $order_id,
-        order     => $order
-    });
+            loginid   => $loginid,
+            client    => $client,
+            self_only => $data->{self_only},
+            order_id  => $order_id,
+            orders    => [$order]});
 
     my $parties = {
         advertiser => $order_response->{advertiser_details}->{loginid},
@@ -573,6 +572,36 @@ sub p2p_advertiser_approval_changed {
     BOM::Platform::Event::Emitter::emit('p2p_advertiser_approved', {loginid => $client->loginid});
 }
 
+=head2 p2p_advert_orders_updated
+
+An advert has been updated.
+At least one the the following advert fields have been updated: (description|payment_method_names|payment_method_ids).
+If that advert has active orders, updated order info is sent to order creator if he has active subscription.
+
+=over 4
+
+=item * C <loginid> client loginid
+
+=back
+
+=cut
+
+sub p2p_advert_orders_updated {
+    my $data   = shift;
+    my $client = BOM::User::Client->new({loginid => $data->{client_loginid}});
+    my $orders = $client->_p2p_orders(
+        advert_id => $data->{advert_id},
+        active    => 1,
+    );
+
+    _publish_orders_to_channels({
+        advert_updated => 1,
+        orders         => $orders
+    });
+
+    return 1;
+}
+
 =head2 order_chat_create
 
 An order chat has been created against an order.
@@ -782,7 +811,7 @@ Publish only relevant orders to only relevant channels
 
 sub _publish_orders_to_channels {
     my $args     = shift;
-    my %clients  = ($args->{loginid} => $args->{client} // BOM::User::Client->new({loginid => $args->{loginid}}));
+    my %clients  = $args->{loginid} ? ($args->{loginid} => $args->{client} // BOM::User::Client->new({loginid => $args->{loginid}})) : ();
     my $redis    = BOM::Config::Redis->redis_p2p_write();
     my $members  = $args->{online_advertiser} && $args->{advertiser_id} ? $redis->smembers('P2P::ORDER::PARTIES::' . $args->{advertiser_id}) : undef;
     my $channels = $redis->pubsub('channels', "P2P::ORDER::NOTIFICATION::CR::*");
@@ -811,15 +840,17 @@ sub _publish_orders_to_channels {
     my $orders =
           $args->{online_advertiser} && $args->{advertiser_id}
         ? $clients{$args->{loginid}}->_p2p_orders(loginid => $args->{loginid})
-        : [$args->{order}];
+        : $args->{orders};
 
     foreach my $channel (@$parsed_channels) {
-        my $p_advertiser_id = $channel->{advertiser_id};
-        my $p_loginid       = $channel->{subscriber_loginid};
-        next unless any { $p_advertiser_id == $_ } $members->@* or not $args->{online_advertiser};
+        my $advertiser_id = $channel->{advertiser_id};
+        my $loginid       = $channel->{subscriber_loginid};
+        my $order_id      = $channel->{order_id};
+        next unless not $args->{online_advertiser} or any { $advertiser_id == $_ } $members->@*;
         foreach my $order ($orders->@*) {
-            next if ((($args->{self_only}) && ($p_loginid ne $args->{loginid})) || (not _validate_order_for_channel($channel, $order)));
-            my $loginid = $p_loginid eq $order->{client_loginid} ? $order->{client_loginid} : $order->{advertiser_loginid};
+            next if ((($args->{self_only}) && ($loginid ne $args->{loginid})) || (not _validate_order_for_channel($channel, $order)));
+            next if $args->{advert_updated} && ($order_id ne $order->{id} || $loginid ne $order->{client_loginid});
+            my $loginid = $loginid eq $order->{client_loginid} ? $order->{client_loginid} : $order->{advertiser_loginid};
             $clients{$loginid} //= BOM::User::Client->new({loginid => $loginid});
             $orders_payment_method{$order->{id}} //= $clients{$loginid}->_p2p_order_payment_method_details($order);
             $order->{payment_method_details} = $orders_payment_method{$order->{id}};

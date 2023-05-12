@@ -80,6 +80,7 @@ my $action_mapping = {
         p2p_order_chat_create                       => \&BOM::Event::Actions::P2P::order_chat_create,
         p2p_advertiser_created                      => \&BOM::Event::Actions::P2P::advertiser_created,
         p2p_advertiser_updated                      => \&BOM::Event::Actions::P2P::advertiser_updated,
+        p2p_advert_orders_updated                   => \&BOM::Event::Actions::P2P::p2p_advert_orders_updated,
         p2p_advertiser_online_status                => \&BOM::Event::Actions::P2P::advertiser_online_status,
         p2p_chat_received                           => \&BOM::Event::Actions::P2P::chat_received,
         p2p_timeout_refund                          => \&BOM::Event::Actions::P2P::timeout_refund,

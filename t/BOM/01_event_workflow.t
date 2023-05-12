@@ -129,7 +129,7 @@ subtest 'process - generic jobs' => sub {
                 identity_verification_requested identity_verification_processed
                 mt5_inactive_account_closure_report bulk_authentication
                 check_name_changes_after_first_deposit p2p_adverts_updated
-                affiliate_loginids_sync p2p_advertiser_approval_changed p2p_advertiser_online_status
+                affiliate_loginids_sync p2p_advertiser_approval_changed p2p_advertiser_online_status p2p_advert_orders_updated
                 cms_add_affiliate_client df_anonymization_done sideoffice_set_account_status sideoffice_remove_account_status
                 account_verification_for_pending_payout bulk_client_status_update
                 pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast crypto_cashier_transaction_updated

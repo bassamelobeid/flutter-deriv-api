@@ -13,8 +13,9 @@ BOM::Test::Helper::P2P::bypass_sendbird();
 
 my $escrow = BOM::Test::Helper::P2P::create_escrow();
 my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
-    amount => 100,
-    type   => 'sell'
+    amount      => 100,
+    type        => 'sell',
+    description => 'instruction 1'
 );
 my ($client, $order) = BOM::Test::Helper::P2P::create_order(
     advert_id => $advert->{id},
@@ -30,6 +31,10 @@ my $connection_config = BOM::Config::redis_p2p_config()->{p2p}{write};
 
 my $advertiser_id = $advertiser->{_p2p_advertiser_cached}{id};
 $client->p2p_advertiser_relations(add_blocked => [$advertiser_id]);
+$advertiser->p2p_advert_update(
+    id          => $advert->{id},
+    description => "instruction 2"
+);
 
 delete $advertiser->{_p2p_advertiser_cached};    # delete cache
 my $client_order     = $client->p2p_order_info(id => $order->{id});
@@ -93,11 +98,16 @@ my @data_for_notification_tests = ({
                 . '::'
                 . -1 => [$client_order],
             'P2P::ORDER::NOTIFICATION::'
-                . uc($advertiser->broker) . '::'
-                . $advertiser->loginid . '::'
-                . $advertiser_id . '::'
-                . -1 . '::'
-                . -1 . '::'
+                . uc($advertiser->broker)
+                . '::'
+                . $advertiser->loginid
+                . '::'
+                . $advertiser_id
+                . '::'
+                . -1
+                . '::'
+                . -1
+                . '::'
                 . -1 => [$advertiser_order],
         }
     },
@@ -111,11 +121,29 @@ my @data_for_notification_tests = ({
         },
         expected => {
                   'P2P::ORDER::NOTIFICATION::'
-                . uc($client->broker) . '::'
+                . uc($client->broker)
+                . '::'
                 . $client->loginid . '::'
                 . $client_id . '::'
                 . -1 . '::'
                 . -1 . '::'
+                . -1 => [$client_order],
+        }
+    },
+    {
+        name  => 'order updated due to advert changes (client only)',
+        event => 'p2p_advert_orders_updated',
+        data  => {
+            client_loginid => $client->loginid,
+            advert_id      => $advert->{id},
+        },
+        expected => {
+                  'P2P::ORDER::NOTIFICATION::'
+                . uc($client->broker) . '::'
+                . $client->loginid . '::'
+                . $client_id . '::'
+                . -1 . '::'
+                . $order->{id} . '::'
                 . -1 => [$client_order],
         }
     },
