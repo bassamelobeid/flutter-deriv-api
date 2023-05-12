@@ -172,6 +172,14 @@ sub validate_params {
         return {error => "Long Dividend and Short Dividend should have the same absolute value in postive and negative respectively."};
     }
 
+    # We are offering financials on MT5 p01_ts01 and DerivEZ p02_ts01
+    # DerivEZ is using MT5 as backend trading platform, and DerivEZ groups are only in p02_ts01 now
+    # Checks if the servers for dividend adjustment are either of them or both (p01_ts01,p02_ts01)
+    my ($mt5_financials_tradeserver, $derivez_financials_tradeserver) = $args->{server_name} =~ m/p01_ts01|p02_ts01/gm;
+    unless ($mt5_financials_tradeserver || $derivez_financials_tradeserver) {
+        return {error => "Please input server to be p01_ts01 or p02_ts01 or both (p01_ts01,p02_ts01)"};
+    }
+
     # Validate when the market is closed(on the weekend or holiday)
     if ($valid_trading_time) {
         if ($applied_datetime->hour >= $closing_hour and $applied_datetime->hour < ($closing_hour + 1)) {

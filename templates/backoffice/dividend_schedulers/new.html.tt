@@ -9,11 +9,8 @@
             </td>
             <td>
                 <label for="server_name">Servers</label>
-                <select name="server_name" id="server_name" data-lpignore="true">
-                    [% FOREACH mt5_webapi_config IN mt5_webapi_configs.keys.sort %]
-                        <option value='[% mt5_webapi_config %]'>[% mt5_webapi_config %]</option>
-                    [% END %]
-                </select>
+                <input type="text" name="server_name" value="p01_ts01,p02_ts01"/>
+                <label>To apply dividends on MT5 and DerivEZ trade servers</label>
             </td>
         </tr>
         <tr>
@@ -85,7 +82,7 @@
         var result = el.find('.form_result');
 
         var platform_type = el.find('input[name="platform_type"]').val();
-        var server_name = \$('#server_name').val();
+        var server_name = el.find('input[name="server_name"]').val();
         var symbol = \$('#symbol').val();
         var currency = \$('#currency').val();
         var long_dividend = el.find('input[name="long_dividend"]').val();

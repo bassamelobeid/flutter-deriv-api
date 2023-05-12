@@ -8,15 +8,7 @@
             </td>
             <td>
                 <label for="server_name">Servers</label>
-                <select name="server_name" id="server_name" data-lpignore="true">
-                    [% FOREACH mt5_webapi_config IN mt5_webapi_configs.keys.sort %]
-                        [% IF mt5_webapi_config == dividend_scheduler.server %]
-                            <option value='[% mt5_webapi_config %]' selected>[% mt5_webapi_config %]</option>
-                        [% ELSE %]
-                            <option value='[% mt5_webapi_config %]'>[% mt5_webapi_config %]</option>
-                        [% END %]
-                    [% END %]
-                </select>
+                <input type="text" name="server_name" value='[% dividend_scheduler.server %]'/>                
             </td>
         </tr>
         <tr>
@@ -122,7 +114,7 @@
 
         var schedule_id = el.find('input[name="schedule_id"]').val();
         var platform_type = el.find('input[name="platform_type"]').val();
-        var server_name = \$('#server_name').val();
+        var server_name = el.find('input[name="server_name"]').val();
         var symbol = \$('#symbol').val();
         var currency = \$('#currency').val();
         var long_dividend = el.find('input[name="long_dividend"]').val();
