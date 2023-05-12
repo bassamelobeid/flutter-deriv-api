@@ -10,9 +10,10 @@ use Test::FailWarnings;
 use Test::Deep;
 
 use Brands;
-use BOM::Product::Offerings::TradingContract qw(get_contracts);
+use BOM::Product::Offerings::TradingContract qw(get_contracts get_offerings_obj virtual_offering_based_on_country_code);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
+use Brands;
 
 subtest 'general' => sub {
     my $error = exception { get_contracts };
@@ -192,6 +193,22 @@ subtest 'suspend trading' => sub {
     is $res->error_code, 'OfferingsInvalidSymbol';
     $app_config->set({'quants.markets.suspend_buy' => $prev});
 
+};
+
+subtest 'virtual contracts based on country code' => sub {
+    my $args = {
+        app_id               => 16303,
+        brands               => Brands->new(),
+        landing_company_name => "virtual",
+        country_code         => "es",
+    };
+
+    my %expected = ("multiplier", 1);
+
+    my $offerings_obj           = get_offerings_obj($args);
+    my %legal_allowed_contracts = virtual_offering_based_on_country_code($offerings_obj);
+
+    is_deeply(\%legal_allowed_contracts, \%expected, "virtual contracts based on country code matched");
 };
 
 done_testing();

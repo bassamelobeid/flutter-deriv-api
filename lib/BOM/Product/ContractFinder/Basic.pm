@@ -31,7 +31,8 @@ my $cache = Cache::LRU->new(size => 500);
 sub decorate {
     my $args = shift;
 
-    my ($symbol, $offerings, $lc_short) = @{$args}{'symbol', 'offerings', 'landing_company_name'};
+    my ($symbol, $offerings, $non_available_offerings, $lc_short) =
+        @{$args}{'symbol', 'offerings', 'non_available_offerings', 'landing_company_name'};
 
     my $now                 = Date::Utility->new;
     my $underlying          = create_underlying($symbol);
@@ -190,12 +191,13 @@ sub decorate {
     }
 
     return {
-        available    => $offerings,
-        hit_count    => scalar(@$offerings),
-        spot         => $underlying->spot,
-        open         => $open,
-        close        => $close,
-        feed_license => $underlying->feed_license
+        available     => $offerings,
+        non_available => $non_available_offerings,
+        hit_count     => scalar(@$offerings),
+        spot          => $underlying->spot,
+        open          => $open,
+        close         => $close,
+        feed_license  => $underlying->feed_license
     };
 }
 
