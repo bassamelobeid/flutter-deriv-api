@@ -23,6 +23,7 @@ use constant AFFILIATE_CHUNK_SIZE => 300;
 
 =head2 affiliate_sync_initiated
 
+
 Initiates the affiliate sync process.
 
 Will fetch the collection of loginids related to this affiliate, split them in chunks and process every chunk separately.
@@ -120,10 +121,24 @@ async sub affiliate_loginids_sync {
     push @archive_report, ($section_sep, 'MT5 Technical Accounts Archive Failed', '~~~', (sort @{$archive_result->{failed}}), '~~~')
         if exists $archive_result->{failed} and @{$archive_result->{failed}};
 
+    push @archive_report,
+        ($section_sep, 'MT5 Main Account - IB Comment Removed', '~~~', (sort @{$archive_result->{main_account_ib_removal_success}}), '~~~')
+        if exists $archive_result->{main_account_ib_removal_success} and @{$archive_result->{main_account_ib_removal_success}};
+    push @archive_report,
+        ($section_sep, 'MT5 Main Account - IB Comment Removal Failed', '~~~', (sort @{$archive_result->{main_account_ib_removal_failed}}), '~~~')
+        if exists $archive_result->{main_account_ib_removal_failed} and @{$archive_result->{main_account_ib_removal_failed}};
+    push @archive_report, ($section_sep, 'MT5 Account Not Found', '~~~', (sort @{$archive_result->{account_not_found}}), '~~~')
+        if exists $archive_result->{account_not_found} and @{$archive_result->{account_not_found}};
+    push @archive_report,
+        (
+        $section_sep, 'MT5 Technical Accounts Archival Failed because of below accounts which has balance',
+        '~~~', (sort @{$archive_result->{technical_account_balance_exists}}), '~~~'
+        ) if exists $archive_result->{technical_account_balance_exists} and @{$archive_result->{technical_account_balance_exists}};
+
     send_email({
             from    => '<no-reply@binary.com>',
-            to      => $data->{email},
-            subject => "Affliate $affiliate_id " . ($data->{untag} ? 'untagging operation' : 'synchronization to mt5'),
+            to      => join(',', $data->{email}, 'x-trading-ops@regentmarkets.com'),
+            subject => "Affiliate $affiliate_id " . ($data->{untag} ? 'untagging operation' : 'synchronization to mt5'),
             message => [
                 ($data->{untag} ? 'Untag operation' : 'Synchronization to mt5') . " for Affiliate $affiliate_id is finished.",
                 'Action: ' . ($action eq 'clear' ? 'remove agent from all clients.' : 'sync agent with all clients.'),
@@ -338,21 +353,58 @@ async sub _archive_technical_accounts {
     my %affiliate_mt5_accounts = map { 'MTR' . $_->{mt5_account_id} => $_ } @$affiliate_mt5_accounts_db;
 
     my %archive_result;
-    $archive_result{success} = [];
-    $archive_result{failed}  = [];
-    foreach my $mt5_account (keys %affiliate_mt5_accounts) {
-        next unless $affiliate_mt5_accounts{$mt5_account}{mt5_account_type} eq 'technical';
+    $archive_result{success}                          = [];
+    $archive_result{failed}                           = [];
+    $archive_result{main_account_ib_removal_success}  = [];
+    $archive_result{main_account_ib_removal_failed}   = [];
+    $archive_result{account_not_found}                = [];
+    $archive_result{technical_account_balance_exists} = [];
+    my $eligible_to_archive = 1;
 
+    foreach my $mt5_account (keys %affiliate_mt5_accounts) {
+        my $user_data;
         try {
-            await BOM::MT5::User::Async::user_archive($mt5_account);
-            push @{$archive_result{success}}, $mt5_account;
+            $user_data = await BOM::MT5::User::Async::get_user($mt5_account);
+            if ($user_data->{balance} != 0 && $affiliate_mt5_accounts{$mt5_account}{mt5_account_type} eq 'technical') {
+                $eligible_to_archive = 0;
+                push @{$archive_result{technical_account_balance_exists}}, $mt5_account;
+            }
         } catch ($e) {
             my $error_code = '';
             $error_code = ' - ' . $e->{code} if ref $e eq 'HASH' and exists $e->{code};
-            push @{$archive_result{failed}}, $mt5_account . $error_code;
+            push @{$archive_result{account_not_found}}, $mt5_account . $error_code;
         }
     }
 
+    if ($eligible_to_archive) {
+        foreach my $mt5_account (keys %affiliate_mt5_accounts) {
+            if ($affiliate_mt5_accounts{$mt5_account}{mt5_account_type} eq 'technical') {
+                try {
+                    await BOM::MT5::User::Async::user_archive($mt5_account);
+                    push @{$archive_result{success}}, $mt5_account;
+                } catch ($e) {
+                    my $error_code = '';
+                    $error_code = ' - ' . $e->{code} if ref $e eq 'HASH' and exists $e->{code};
+                    push @{$archive_result{failed}}, $mt5_account . $error_code;
+                }
+            } elsif ($affiliate_mt5_accounts{$mt5_account}{mt5_account_type} eq 'main') {
+                try {
+                    my $user_detail = await BOM::MT5::User::Async::get_user($mt5_account);
+                    $user_detail->{comment} = '';
+                    await BOM::MT5::User::Async::update_user($user_detail);
+                    push @{$archive_result{main_account_ib_removal_success}}, $mt5_account;
+                    $client->user->dbic->run(
+                        fixup => sub {
+                            $_->do(q{SELECT mt5.remove_mt5_affiliate_accounts(?)}, undef, $client->user->id);
+                        });
+                } catch ($e) {
+                    my $error_code = '';
+                    $error_code = ' - ' . $e->{code} if ref $e eq 'HASH' and exists $e->{code};
+                    push @{$archive_result{main_account_ib_removal_failed}}, $mt5_account . $error_code;
+                }
+            }
+        }
+    }
     return \%archive_result;
 }
 

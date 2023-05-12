@@ -164,7 +164,7 @@ subtest "affiliate_sync_initiated" => sub {
             },
             'Expected data processed';
 
-        my $msg = mailbox_search(subject => qr/Affliate $affiliate_id synchronization to mt5/);
+        my $msg = mailbox_search(subject => qr/Affiliate $affiliate_id synchronization to mt5/);
         like($msg->{body}, qr/Synchronization to mt5 for Affiliate $affiliate_id/, "Correct user in message");
         is($msg->{from}, 'no-reply@binary.com', 'Correct from Address');
     };
@@ -187,7 +187,7 @@ subtest "affiliate_loginids_sync" => sub {
     }
     "affiliate_loginids_sync no exception";
 
-    my $msg = mailbox_search(subject => qr/Affliate $affiliate_id synchronization to mt5/);
+    my $msg = mailbox_search(subject => qr/Affiliate $affiliate_id synchronization to mt5/);
     like($msg->{body}, qr/Synchronization to mt5 for Affiliate $affiliate_id/, "Correct user in message");
     is($msg->{from}, 'no-reply@binary.com', 'Correct from Address');
 };
