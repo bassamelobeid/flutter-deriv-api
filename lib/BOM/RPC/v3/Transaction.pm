@@ -525,10 +525,7 @@ rpc "sell",
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
 
-    my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-        operation      => 'replica',
-    });
+    my $clientdb = BOM::Database::ClientDB->new({client_loginid => $client->loginid});
 
     my @fmbs = @{$clientdb->getall_arrayref('select * from bet_v1.get_open_contract_by_id(?)', [$id])};
 
@@ -741,10 +738,7 @@ rpc cancel => sub {
         });
     }
 
-    my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $client->loginid,
-        operation      => 'replica',
-    });
+    my $clientdb = BOM::Database::ClientDB->new({client_loginid => $client->loginid});
 
     my @fmbs = @{$clientdb->getall_arrayref('select * from bet_v1.get_open_contract_by_id(?)', [$contract_id])};
 
