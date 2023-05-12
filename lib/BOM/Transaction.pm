@@ -2302,8 +2302,7 @@ sub sell_expired_contracts {
     my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         client_loginid => $loginid,
         currency_code  => $currency,
-        broker_code    => $client->broker_code,
-        operation      => 'replica',
+        broker_code    => $client->broker_code
     });
 
     my $clientdb = BOM::Database::ClientDB->new({
