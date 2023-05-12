@@ -1512,6 +1512,8 @@ It filters siblings with following args:
 
 =item *  exclude_disabled_no_currency - exclude disabled siblings with no currency (default 0).
 
+=item * include_duplicated - return duplicated siblings as well (default 0)
+
 =item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned;
     otherwise (default) there won't be any filter applied on landing companiesd.
 
@@ -1528,6 +1530,7 @@ sub get_siblings_information {
     my $include_virtual              = $args{include_virtual}  // 1;
     my $include_wallet               = $args{include_wallet}   // 1;
     my $exclude_disabled_no_currency = $args{exclude_disabled_no_currency};
+    my $include_duplicated           = $args{include_duplicated};
     my $landing_company              = $args{landing_company};
 
     my $user = $self->user;
@@ -1535,7 +1538,10 @@ sub get_siblings_information {
     # happen but added as additional check
     return {} unless $user;
 
-    my @clients = $user->clients(include_disabled => $include_disabled);
+    my @clients = $user->clients(
+        include_disabled   => $include_disabled,
+        include_duplicated => $include_duplicated
+    );
 
     unless ($include_virtual) {
         @clients = grep { not $_->is_virtual } @clients;
@@ -1569,7 +1575,7 @@ sub get_siblings_information {
             category             => $cl->get_account_type->category->name,
             demo_account         => $cl->is_virtual,
             disabled             => $cl->status->disabled ? 1 : 0,
-            }
+            $cl->status->duplicate_account ? (duplicate => 1) : ()}
             unless (!$include_self && ($cl->loginid eq $self->loginid));
     }
 
@@ -7067,9 +7073,12 @@ Returns an array containing the loginids of the clients that have been updated.
 =cut
 
 sub clear_status_and_sync_to_siblings {
-    my ($self, $status_code, $staff_name, $all_accounts) = @_;
+    my ($self, $status_code, $all_accounts, $allow_reactivate) = @_;
 
     $status_code or die 'No status code provided';
+
+    die 'Status codes disabled and duplicate_account cannot be removed by this method.'
+        if $status_code =~ qr/^disabled|duplicate_account$/ && !$allow_reactivate;
 
     if ($all_accounts) {
 
