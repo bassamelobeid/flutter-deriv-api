@@ -17,7 +17,9 @@ use utf8;
 
 no indirect;
 
-use JSON::MaybeUTF8 qw( :v1 );
+use JSON::MaybeUTF8            qw( :v1 );
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use Time::HiRes;
 use IO::Async::Loop;
 use Log::Any qw( $log );
 use Net::Async::HTTP;
@@ -105,6 +107,8 @@ sub generate_token {
     my $loginid           = $self->client->loginid;
     my ($derivez_loginid) = $self->client->user->get_derivez_loginids(type_of_account => $server);
     my ($login)           = get_loginid_number($derivez_loginid);
+    my $request_start     = [Time::HiRes::gettimeofday];
+    my $dd_tags           = ["server_code:" . $server];
 
     return $self->http_client->GET(
         $self->create_login_url(
@@ -123,9 +127,12 @@ sub generate_token {
                 $json = decode_json_utf8 $response->content;
             } catch ($e) {
                 $log->errorf('An error occurred during parsing PandaTS response json, %s', $e);
+                stats_inc("pandats.response_parsing.error_count");
             };
 
             die $response unless $json and $json->{token};
+
+            stats_timing('pandats.call.http.success.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
 
             return Future->done({token => $json->{token}});
         }
@@ -137,6 +144,7 @@ sub generate_token {
                 $self->handle_api_error($response);
             } else {
                 $log->errorf('An unexpected error occurred while creating login token for PandaTS service due to %s', $response);
+                stats_inc("pandats.token_generation.exception");
             }
 
             return Future->done({
@@ -174,10 +182,10 @@ sub handle_api_error {
     my ($self, $response) = @_;
 
     my $json = eval { decode_json_utf8($response->content) };
-
     $log->errorf('Cannot create login token for PandaTS, reqId: %s, api message: %s, http status code: %s',
         $json->{reqId}, $json->{msg}, $response->code)
         if $json;
+    stats_inc("pandats.token_generation.failure");
 
     return undef;
 }
