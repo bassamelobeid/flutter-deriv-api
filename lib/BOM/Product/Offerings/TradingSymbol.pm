@@ -19,7 +19,6 @@ use Finance::Underlying;
 use Quant::Framework;
 use Date::Utility;
 use Brands;
-use JSON::MaybeXS qw(decode_json);
 
 use constant {
     NAMESPACE      => 'TRADING_SYMBOL',
@@ -87,12 +86,6 @@ sub get_symbols {
         my $cache_interval = 30;
         Cache::RedisDB->set($namespace, $key, $active_symbols, $cache_interval - time % $cache_interval);
     }
-
-    # filter no_business risk profiles
-    my %no_business_data = _filter_no_business_profiles($landing_company_name);
-
-    @$active_symbols =
-        grep { !$no_business_data{$_->{submarket}} && !$no_business_data{$_->{symbol}} && !$no_business_data{$_->{market}} } @$active_symbols;
 
     return {symbols => $type eq 'brief' ? _trim($active_symbols) : $active_symbols};
 }
@@ -180,49 +173,6 @@ sub _get_leaderboard {
     }
 
     return \%leaderboard;
-}
-
-=head2 _filter_no_business_profiles
-
-Filter No Business product profiles
-
-=cut
-
-sub _filter_no_business_profiles {
-    my $landing_company         = shift;
-    my $app_config              = BOM::Config::Runtime->instance->app_config;
-    my $custom_product_profiles = $app_config->get('quants.custom_product_profiles');
-    my $data                    = decode_json($custom_product_profiles);
-    my %no_business_data;
-    my @split_string;
-
-    # storing market, submarket or underlying_symbol having risk_profile = no_business into new no_business_data
-    for my $contract_id (keys %{$data}) {
-        my $contract = $data->{$contract_id};
-        if ($contract->{risk_profile} && $contract->{risk_profile} eq "no_business") {
-            if ($contract->{landing_company} && $contract->{landing_company} eq $landing_company || !$contract->{landing_company}) {
-                if (!$contract->{expiry_type} && !$contract->{start_time}) {
-                    if ($contract->{market}) {
-                        if (!$contract->{contract_category}) {
-                            @split_string = split(/,/, $contract->{market});
-                            $no_business_data{$_} = 1 for @split_string;
-                        }
-                    } elsif ($contract->{submarket}) {
-                        if (!$contract->{contract_category}) {
-                            @split_string = split(/,/, $contract->{submarket});
-                            $no_business_data{$_} = 1 for @split_string;
-                        }
-                    } elsif ($contract->{underlying_symbol}) {
-                        @split_string = split(/,/, $contract->{underlying_symbol});
-                        $no_business_data{$_} = 1 for @split_string;
-                    }
-                }
-
-            }
-        }
-    }
-
-    return %no_business_data;
 }
 
 1;
