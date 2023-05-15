@@ -1,0 +1,296 @@
+name: Daily master test
+run-name: Daily test on master branch
+on:
+  schedule:
+    - cron: '30 22 * * *'
+jobs:
+  syntax_unit:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          need_service: 'false'
+      - name: Code structure and syntax
+        run: make syntax
+      - name: unit tests
+        run: make unit
+  produt_contract:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Product contract test
+        run: make unit_test_product_contract
+  validation:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Validation
+        run: make unit_test_validation
+  memory_test:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: MemoryTest
+        run: make memory_test
+  pricing:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Pricing
+        run: make unit_test_pricing
+  product_others:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Product extended
+        run: make unit_test_product_contract_extended
+      - name: Product base
+        run: make unit_test_product_base
+        if: always()
+      - name: Product model
+        run: make unit_test_product_model
+        if: always()
+      - name: Valatility
+        run: make unit_test_volatility
+        if: always()
+      - name: Offerings
+        run: make unit_test_offerings
+        if: always()
+  benchmark_merlin_ovra:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Merlin Benchmark
+        run: |
+          cd /home/git/regentmarkets/bom-quant-benchmark
+          make merlin_benchmark
+      - name: OVRA benchmark
+        run: |
+          cd /home/git/regentmarkets/bom-quant-benchmark
+          make OVRA_benchmark
+        if: always()
+  benchmark_SD:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: SDFX benchmark major
+        run: make SDFX_benchmark_major
+        if: always()
+      - name: SDFX benchmark minor
+        run: make SDFX_benchmark_minor
+        if: always()
+      - name: SDEQ benchmark OTC_DJI
+        run: make SDEQ_benchmark_OTC_DJI
+        if: always()
+      - name: SDEQ benchmark OTC_FCHI
+        run: make SDEQ_benchmark_OTC_FCHI
+        if: always()
+      - name: SDEQ benchmark OTC_SPC
+        run: make SDEQ_benchmark_OTC_SPC
+        if: always()
+      - name: SDEQ benchmark SSECOMP
+        run: make SDEQ_benchmark_SSECOMP
+        if: always()
+      - name: SDEQ benchmark OTC_FTSE
+        run: make SDEQ_benchmark_OTC_FTSE
+        if: always()
+  Pricing-Engine-Tests:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: perl-Pricing-Engine-European-Digital-Slope
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope
+          make test
+      - name: perl-Pricing-Engine-BlackScholes
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
+          make test
+        if: always()
+      - name: perl-Pricing-Engine-Digits
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
+          make test
+        if: always()
+      - name: perl-Pricing-Engine-HighLow-Ticks
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
+          make test
+        if: always()
+      - name: perl-Pricing-Engine-Intraday-Forex-Base
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
+          make test
+        if: always()
+      - name: perl-Pricing-Engine-Lookback
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
+          make test
+        if: always()
+      - name: perl-Pricing-Engine-Markup
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
+          make test
+        if: always()
+      - name: perl-Pricing-Engine-Reset
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
+          make test
+        if: always()
+      - name: perl-Pricing-Engine-TickExpiry
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
+          make test
+        if: always()
