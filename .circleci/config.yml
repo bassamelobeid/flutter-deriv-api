@@ -16,7 +16,6 @@ alias:
     name: Start services
 - &5
   environment:
-    PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 - &debian-ci
   auth:
