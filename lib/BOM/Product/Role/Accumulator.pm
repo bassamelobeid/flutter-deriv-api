@@ -732,6 +732,10 @@ override '_build_pricing_engine_name' => sub {
     return '';
 };
 
+override '_build_base_commission' => sub {
+    return 0;
+};
+
 has _order => (
     is      => 'ro',
     default => sub { {} },
