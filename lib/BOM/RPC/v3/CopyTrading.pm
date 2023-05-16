@@ -33,8 +33,9 @@ rpc copy_start => sub {
                 message_to_client => localize('Min trade stake should be lower than max trade stake.')});
     }
 
-    my $trader_token  = $args->{copy_start};
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
+    my $trader_token   = $args->{copy_start};
+    my $token_instance = BOM::Platform::Token::API->new;
+    my $token_details  = $token_instance->get_client_details_from_token($trader_token);
     my $trader;
     if ($token_details && $token_details->{loginid}) {
         try {
@@ -122,7 +123,8 @@ rpc copy_stop => sub {
     my $trader_token = $args->{copy_stop};
 
     my $trader_id;
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
+    my $token_instance = BOM::Platform::Token::API->new;
+    my $token_details  = $token_instance->get_client_details_from_token($trader_token);
     $trader_id = $token_details->{loginid} if ref $token_details eq 'HASH';
 
     unless ($trader_id) {

@@ -398,7 +398,8 @@ sub _check_token_list {
     my ($err, $result, $success, $m1, $m2) = (undef, [], 0, undef, undef);
 
     for my $t (@$tokens) {
-        my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
+        my $token_instance = BOM::Platform::Token::API->new;
+        my $token_details  = $token_instance->get_client_details_from_token($t);
         my $loginid;
 
         if (    $token_details

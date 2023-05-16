@@ -121,37 +121,6 @@ sub validation_checks {
     return undef;
 }
 
-sub get_token_details {
-    my $token = shift;
-
-    return unless $token;
-
-    my ($loginid, $creation_time, $epoch, $ua_fingerprint, $scopes, $valid_for_ip);
-    if (length $token == 15) {    # access token
-        my $m = BOM::Platform::Token::API->new;
-        ($loginid, $creation_time, $scopes, $valid_for_ip) = @{$m->get_token_details($token, 1)}{qw/loginid creation_time scopes valid_for_ip/};
-        return unless $loginid;
-        $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
-    } elsif (length $token == 32 && $token =~ /^a1-/) {
-        my $m = BOM::Database::Model::OAuth->new;
-        ($loginid, $creation_time, $ua_fingerprint, $scopes) =
-            @{$m->get_token_details($token)}{qw/loginid creation_time ua_fingerprint scopes/};
-        return unless $loginid;
-        $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
-    } else {
-        # invalid token type
-        return;
-    }
-
-    return {
-        loginid        => $loginid,
-        scopes         => $scopes,
-        epoch          => $epoch,
-        ua_fingerprint => $ua_fingerprint,
-        ($valid_for_ip) ? (valid_for_ip => $valid_for_ip) : (),
-    };
-}
-
 =head2 create_error
 
 Description: Creates an error data structure that allows front-end to display the correct information

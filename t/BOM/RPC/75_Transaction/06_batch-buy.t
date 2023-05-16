@@ -49,7 +49,8 @@ my $clm_token = BOM::RPC::v3::Accounts::api_token({
         },
     })->{tokens}->[0]->{token};
 
-my $clm_token_details = BOM::RPC::v3::Utility::get_token_details($clm_token);
+my $token_instance    = BOM::Platform::Token::API->new;
+my $clm_token_details = $token_instance->get_client_details_from_token($clm_token);
 
 my @cl;
 push @cl,

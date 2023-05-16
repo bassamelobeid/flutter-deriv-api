@@ -30,9 +30,9 @@ BOM::Platform::Token::API->new->remove_by_loginid($test_loginid);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
+my $mock_p_token = Test::MockModule->new('BOM::Platform::Token::API');
 # need to mock it as to access api token we need token beforehand
-$mock_utility->mock('get_token_details', sub { return {loginid => $test_loginid} });
+$mock_p_token->mock('get_client_details_from_token', sub { return {loginid => $test_loginid} });
 
 my @emit_args;
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -55,7 +55,7 @@ my $res = $c->call_ok(
 is scalar(@{$res->{tokens}}), 1, "token created succesfully";
 my $token = $res->{tokens}->[0]->{token};
 
-$mock_utility->unmock('get_token_details');
+$mock_p_token->unmock('get_client_details_from_token');
 
 my $app1 = $c->call_ok(
     'app_register',

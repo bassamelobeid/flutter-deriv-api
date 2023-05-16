@@ -110,7 +110,8 @@ sub wrap_rpc_sub {
             delete $params->{args}{$_};
         }
 
-        $params->{token_details} = BOM::RPC::v3::Utility::get_token_details($params->{token});
+        my $token_instance = BOM::Platform::Token::API->new;
+        $params->{token_details} = $token_instance->get_client_details_from_token($params->{token});
 
         set_current_context($params);
 

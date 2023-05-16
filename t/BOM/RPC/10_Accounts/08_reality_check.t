@@ -76,8 +76,10 @@ is_deeply $result,
     'empty record for client that has no reality check';
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client_mlt->loginid);
-my $details       = BOM::RPC::v3::Utility::get_token_details($token);
-my $creation_time = $details->{epoch};
+
+my $token_instance = BOM::Platform::Token::API->new;
+my $details        = $token_instance->get_client_details_from_token($token);
+my $creation_time  = $details->{epoch};
 
 $result = $c->call_ok($method, {token => $token})->result;
 is $result->{start_time},          $creation_time,            'Start time matches oauth token creation time';
