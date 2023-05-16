@@ -88,7 +88,7 @@ subtest 'accumulator - send_ask' => sub {
             'date_start'            => 0,
             'proposal'              => 1,
             'amount'                => '100',
-            'base_commission'       => '0.012',
+            'base_commission'       => '0',
             'underlying'            => 'R_100',
             'bet_type'              => 'ACCU',
             'landing_company'       => 'virtual'
@@ -115,11 +115,11 @@ subtest 'accumulator - send_ask' => sub {
         'rpc_time'     => ignore(),
         'ask_price'    => '100.00',
         skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,',
+        subchannel     => 'v1,USD,100,stake,0,0.025,0,0.02,,,,',
         channel        =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
         subscription_channel =>
-            'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,'
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0,0.02,,,,'
     };
     my $redis_mock = Test::MockModule->new('RedisDB');
     $redis_mock->mock(
@@ -147,7 +147,7 @@ subtest 'accumulator - send_ask' => sub {
             'date_start'            => 0,
             'proposal'              => 1,
             'amount'                => '100',
-            'base_commission'       => '0.012',
+            'base_commission'       => '0',
             'underlying'            => 'R_100',
             'bet_type'              => 'ACCU',
             'landing_company'       => 'virtual',
@@ -182,11 +182,11 @@ subtest 'accumulator - send_ask' => sub {
         'rpc_time'     => ignore(),
         'ask_price'    => '100.00',
         skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,',
+        subchannel     => 'v1,USD,100,stake,0,0.025,0,0.02,,,,',
         channel        =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","limit_order",{"take_profit":10},"price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
         subscription_channel =>
-            'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","limit_order",{"take_profit":10},"price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,'
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","limit_order",{"take_profit":10},"price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0,0.02,,,,'
     };
 
     $args->{limit_order}->{take_profit} = 10;
