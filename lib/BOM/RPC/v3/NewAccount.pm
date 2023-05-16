@@ -709,9 +709,8 @@ sub create_new_real_account {
         # Rules are applied on actual request arguments ($args),
         # not the initialized values ($details_ref->{details}) used for creating the client object.
         $rule_engine->verify_action(
-            'activate_account',
+            'new_account',
             %$args,
-            action_type     => 'create',
             loginid         => $client->loginid,
             landing_company => $params{landing_company},
         );
