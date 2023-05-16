@@ -15,6 +15,7 @@ BEGIN {
     *DataDog::DogStatsd::Helper::stats_timing = sub {
         my ($key, $val, $tag) = @_;
         $stats{$key} = $val;
+        return if !defined $tag || !defined $tag->{tags};
         ++$tags{$tag->{tags}[0]};
     };
 }
