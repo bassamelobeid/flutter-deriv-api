@@ -61,6 +61,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol => 'R_100',
         date   => $now,
     });
+
 my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => $underlying->symbol,
     epoch      => $now->epoch,
@@ -69,9 +70,11 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 #creat some ticks to be able to sell accumulator contracts
 BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-    [100, $now->epoch,     $underlying->symbol],
-    [101, $now->epoch + 1, $underlying->symbol],
-    [101, $now->epoch + 2, $underlying->symbol]);
+    [100,  $now->epoch,     $underlying->symbol],
+    [101,  $now->epoch + 1, $underlying->symbol],
+    [101,  $now->epoch + 2, $underlying->symbol],
+    [101,  $now->epoch + 3, $underlying->symbol],
+    [1000, $now->epoch + 4, $underlying->symbol]);
 
 my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_u->mock('spot_tick', sub { return $current_tick });
@@ -190,6 +193,7 @@ subtest 'buy ACCU', sub {
 
         my $error = $txn->buy();
         ok !$error, 'buy without error';
+        is $txn->price_slippage, '0', 'no slippage';
 
         subtest 'transaction report', sub {
             note $txn->report;
@@ -271,7 +275,8 @@ subtest 'sell a bet', sub {
             source        => 23,
         });
         my $error = $txn->sell();
-        is $error, undef, 'no error';
+        is $error,               undef, 'no error';
+        is $txn->price_slippage, '0',   'no slippage';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
 
@@ -341,6 +346,7 @@ subtest 'buy ACCU with take profit', sub {
 
         my $error = $txn->buy();
         ok !$error, 'buy without error';
+        is $txn->price_slippage, '0', 'no slippage';
 
         subtest 'transaction report', sub {
             plan tests => 11;
@@ -426,6 +432,7 @@ subtest 'sell a bet with take profit', sub {
             price         => 100,
             source        => 23,
         });
+
         my $error = $txn->sell();
         is $error, undef, 'no error';
 
@@ -545,7 +552,7 @@ subtest 'sell failure due to update' => sub {
         underlying   => $underlying->symbol,
         bet_type     => 'ACCU',
         date_start   => $contract->date_start,
-        date_pricing => $contract->date_start->plus_time_interval(4),
+        date_pricing => $contract->date_start->plus_time_interval(3),
         currency     => 'USD',
         growth_rate  => 0.01,
         amount       => 100,
@@ -620,6 +627,85 @@ subtest 'sell failure due to update' => sub {
             $mocked_contract->unmock('is_expired');
         };
     }
+};
+
+subtest 'slippage' => sub {
+    subtest 'executed at better price' => sub {
+        my $contract = produce_contract($args);
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+        my $error = $txn->buy();
+        ok !$error, 'buy without error';
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
+
+        my $price = $contract->calculate_payout(1);
+        $args->{date_pricing} = $args->{date_start}->epoch + 3;
+        my $sell_contract = produce_contract($args);
+
+        $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            contract      => $sell_contract,
+            price         => $price,
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->sell;
+        ok !$error, 'sell without error';
+        is $txn->price_slippage, '1.00', 'correct price slippage';
+    };
+
+    subtest 'executed at zero payout' => sub {
+        $args->{date_pricing} = $args->{date_start};
+        my $contract = produce_contract($args);
+        my $txn      = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+        my $error = $txn->buy();
+        ok !$error, 'buy without error';
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
+
+        my $price = $contract->calculate_payout(2);
+        $args->{date_pricing} = $args->{date_start}->epoch + 4;
+        my $sell_contract = produce_contract($args);
+
+        $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            contract      => $sell_contract,
+            price         => $price,
+            purchase_date => $contract->date_start,
+        });
+
+        my $mocked_validation = Test::MockModule->new('BOM::Transaction::Validation');
+        $mocked_validation->mock(
+            '_validate_sell_pricing_adjustment',
+            sub {
+                my $self = shift;
+                return $self->_validate_non_binary_price_adjustment();
+            });
+
+        $error = $txn->sell;
+        ok !$error, 'sell without error';
+        is $txn->price_slippage, '-101.00', 'correct price slippage';
+
+        $mocked_validation->unmock_all();
+    }
+
 };
 
 done_testing();

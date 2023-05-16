@@ -352,6 +352,15 @@ sub _adjust_trade {
 
     if ($move < -$allowed_move) {
         $transaction->record_slippage($move);
+
+        if ($transaction->contract->category_code eq 'accumulator') {
+            #for accumulator this case only happens if the client sells the contract right at the moment
+            #contract expires (barrier violation). in this case, contract will be executed at zero payout
+            #we don't need to reject the request, we just keep a record of this incident
+            $transaction->adjust_amount($transaction->recomputed_amount);
+            return undef;
+        }
+
         return $self->_write_to_rejected({
             type              => 'slippage',
             action            => $self->transaction->action_type,
