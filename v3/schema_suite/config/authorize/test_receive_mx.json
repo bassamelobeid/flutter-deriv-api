@@ -73,9 +73,6 @@
                   "type" : "object"
                }
             },
-            "upgradeable_landing_companies" : {
-               "type" : "array"
-            },
             "scopes" : {
                "type" : "array",
                "minItems" : 4,
@@ -123,9 +120,7 @@
             "is_virtual",
             "landing_company_name",
             "email",
-            "preferred_language",
-            "account_list",
-            "upgradeable_landing_companies"
+            "preferred_language"
          ]
       },
       "echo_req" : {},

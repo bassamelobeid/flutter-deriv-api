@@ -79,9 +79,6 @@
                "description" : "List of accounts for current client",
                "type" : "array"
             },
-            "upgradeable_landing_companies" : {
-               "type" : "array"
-            },
             "fullname" : {
                "type" : "string",
                "pattern" : "^Mr [_3] Pan$"
@@ -124,9 +121,7 @@
             "loginid",
             "currency",
             "country",
-            "preferred_language",
-            "account_list",
-            "upgradeable_landing_companies"
+            "preferred_language"
          ]
       }
    }

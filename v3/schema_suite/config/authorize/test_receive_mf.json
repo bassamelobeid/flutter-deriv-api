@@ -70,9 +70,6 @@
                   }
                }
             },
-            "upgradeable_landing_companies" : {
-               "type" : "array"
-            },
             "fullname" : {
                "type" : "string",
                "pattern" : "^Mr [_3] Pan$"
@@ -123,9 +120,7 @@
             "scopes",
             "currency",
             "country",
-            "preferred_language",
-            "account_list",
-            "upgradeable_landing_companies"
+            "preferred_language"
          ]
       },
       "echo_req" : {},

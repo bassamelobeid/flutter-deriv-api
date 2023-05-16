@@ -21,9 +21,7 @@
             "landing_company_name",
             "is_virtual",
             "email",
-            "preferred_language",
-            "account_list",
-            "upgradeable_landing_companies"
+            "preferred_language"
          ],
          "properties" : {
             "country" : {
