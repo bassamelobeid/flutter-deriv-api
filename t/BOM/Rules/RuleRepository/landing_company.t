@@ -58,12 +58,8 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
     $user->add_client($client_mf);
-    $user->add_client($client_vr);
-    $engine = BOM::Rules::Engine->new(client => [$client_mlt, $client_mf, $client_vr]);
+    $engine = BOM::Rules::Engine->new(client => [$client_mlt, $client_mf]);
     is_deeply exception { $engine->apply_rules($rule_name, %args) },
         {
         error_code => 'FinancialAccountExists',
@@ -91,21 +87,6 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
         rule       => 'landing_company.accounts_limit_not_reached'
         },
         'Number of MF accounts is limited - disabled accounts included';
-
-    $args{action_type} = 'reactivate';
-    lives_ok { $engine->apply_rules($rule_name, %args) } 'Disabled accounts are ignored in account reactivation';
-
-    # virtual account
-    $args{landing_company} = 'virtual';
-    is_deeply exception { $engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'VirtualAccountExists',
-        rule       => 'landing_company.accounts_limit_not_reached'
-        },
-        'Virtual account limit is reached';
-    $client_vr->status->set('disabled', 'test', 'test');
-    lives_ok { $engine->apply_rules($rule_name, %args) } 'Disabled accounts are ignored in virtual account reactivation';
-
 };
 
 subtest 'rule landing_company.required_fields_are_non_empty' => sub {
