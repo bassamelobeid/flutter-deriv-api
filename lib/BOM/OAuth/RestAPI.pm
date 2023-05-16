@@ -29,9 +29,12 @@ use Text::Trim;
 use WWW::OneAll;
 
 use BOM::User::TOTP;
-use BOM::Config::Redis;
+use BOM::User::Client;
 use BOM::Config;
+use BOM::Config::Redis;
+use BOM::Config::Runtime;
 use BOM::Database::Model::UserConnect;
+use BOM::Database::Model::OAuth;
 use BOM::OAuth::Common;
 use BOM::OAuth::Static qw( get_api_errors_mapping get_valid_login_types );
 use BOM::Platform::Token::API;
@@ -168,13 +171,72 @@ sub authorize {
 
         if ($expected eq $solution) {
             return $c->render(
-                json   => {token => $c->_jwt_token($app_id)},
+                json   => {token => $c->_jwt_token({app => $app_id})},
                 status => 200,
             );
         }
     }
 
     return $c->_make_error;
+}
+
+=head2 sub authorize_services {
+
+
+This endpoint authorizes those requests that send an oauth token or api token (similar to authorize in websocket)
+
+It takes a JSON payload as:
+
+=over 4
+
+=item * C<token> the string with user's oauth or api token
+
+=back
+
+It renders a JSON with the following structure:
+
+=over 4
+
+=item * C<token> a JWT that authorizes the service
+
+=back
+
+=cut
+
+sub authorize_services {
+    my $c = shift;
+
+    return $c->_make_error('NEED_JSON_BODY', 400) unless $c->req->json;
+
+    my $token = defang($c->req->json->{token});
+    return $c->_make_error('NO_APP_TOKEN_FOUND', 404) unless $token;
+
+    my $token_instance = BOM::Platform::Token::API->new;
+    my $token_details  = $token_instance->get_client_details_from_token($token);
+    return $c->_make_error('INVALID_TOKEN') unless $token_details;
+
+    return $c->_make_error('INVALID_TOKEN') if BOM::OAuth::Common->is_login_suspended($token_details->{loginid});
+
+    return $c->_make_error('INVALID_TOKEN')
+        if (exists $token_details->{valid_for_ip} and $token_details->{valid_for_ip} ne $c->client_ip);
+
+    my $loginid = $token_details->{loginid};
+
+    my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
+    return $c->_make_error('INVALID_TOKEN') unless $client;
+
+    return $c->_make_error('ACCOUNT_DISABLED') unless $client->is_available;
+
+    my $payload = {
+        loginId   => $client->loginid,
+        isVirtual => $client->is_virtual ? 1 : 0,
+    };
+
+    return $c->render(
+        json   => {token => $c->_jwt_token($payload)},
+        status => 200,
+    );
+
 }
 
 =head2 login
@@ -888,15 +950,16 @@ Returns a valid expirable JWT.
 =cut
 
 sub _jwt_token {
-    my ($c, $app_id) = @_;
+    my ($c, $payload) = @_;
 
-    my $claims = {
-        app => $app_id,
+    my $common_claims = {
         sub => 'auth',
         exp => time + JWT_TIMEOUT,
     };
 
-    return encode_jwt $claims, $c->_secret();
+    my %claims = (%$common_claims, %$payload);
+
+    return encode_jwt \%claims, $c->_secret();
 }
 
 =head2 _validate_jwt

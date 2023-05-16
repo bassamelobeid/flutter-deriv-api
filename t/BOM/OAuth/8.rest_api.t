@@ -242,6 +242,71 @@ subtest 'authorize' => sub {
         'JWT looks good';
 };
 
+subtest 'authorize_services' => sub {
+
+    my $url = '/api/v1/service/authorize';
+
+    note "Non json request body";
+    $t->post_ok($url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
+
+    # should've been ok but no token in our app_token table
+    my $token = "1234567890";
+    $post->(
+        $url,
+        {
+            token => $token,
+        })->status_is(401);
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+
+    note "Valid CR account";
+    my $email       = 'dummy@binary.com';
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        date_joined => '2021-06-06 23:59:59'
+    });
+    $test_client->email($email);
+    $test_client->save;
+
+    ($token) = $oauth->store_access_token_only(1, $test_client->loginid);
+    my $response = $post->(
+        $url,
+        {
+            token => $token,
+        })->status_is(200)->json_has('/token', 'Response has a token')->tx->res->json;
+
+    $jwt_token = $response->{token};
+    ok $jwt_token, 'Got the JWT token from the JSON response';
+
+    my $decoded = decode_jwt $jwt_token, 'dummy';
+    cmp_deeply $decoded,
+        {
+        isVirtual => re('\w+'),
+        loginId   => re('\w+'),
+        sub       => 'auth',
+        exp       => re('\d+')
+        },
+        'JWT looks good';
+
+    note "Disabled CR account";
+    my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        date_joined => '2021-06-06 23:59:59'
+    });
+    $test_client_disabled->email($email);
+    $test_client_disabled->account('USD');
+    $test_client_disabled->status->set('disabled', 'system', 'reason');
+    $test_client_disabled->save;
+
+    ($token) = $oauth->store_access_token_only(1, $test_client_disabled->loginid);
+
+    $post->(
+        $url,
+        {
+            token => $token,
+        })->status_is(401);
+};
+
 subtest 'login' => sub {
     my $authorize_url = '/api/v1/authorize';
     my $solution      = hmac_sha256_hex($challenge, 'tok3n');

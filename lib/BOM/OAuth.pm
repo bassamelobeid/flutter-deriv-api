@@ -81,8 +81,10 @@ sub startup {
 
     $r->get('/api/v1/pta_login/:one_time_token')->to('RestAPI#one_time_token');
 
-    # cTrader endpoints
+    # microservices rest api authentication using oauth/api token
+    $r->post('/api/v1/service/authorize')->to('RestAPI#authorize_services');
 
+    # cTrader endpoints
     $r->post('/api/v1/ctrader/oauth2/crmApiToken')->to('CTrader#crm_api_token');
     $r->post('/api/v1/ctrader/oauth2/onetime/authorize')->to('CTrader#pta_login');
     $r->post('/api/v1/ctrader/oauth2/authorize')->to('CTrader#authorize');
