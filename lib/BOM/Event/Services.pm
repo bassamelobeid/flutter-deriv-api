@@ -130,7 +130,8 @@ sub redis_mt5user {
     my ($self) = @_;
 
     return $self->{redis_mt5user} //= do {
-        $self->add_child(my $service = Net::Async::Redis->new(uri => BOM::Config::Redis::redis_config('mt5_user', 'read')->{uri}));
+        my $redis_config = BOM::Config::Redis::redis_config('mt5_user', 'read');
+        $self->add_child(my $service = Net::Async::Redis->new(uri => $redis_config->{uri}, auth => $redis_config->{password}));
         $service;
     }
 }
