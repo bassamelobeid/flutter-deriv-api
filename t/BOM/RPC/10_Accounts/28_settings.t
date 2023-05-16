@@ -1260,6 +1260,105 @@ subtest 'set_setting duplicate account' => sub {
     ok !exists $c->tcall('set_settings', $params)->{error}, 'can call set_settings even though the client is duplicating its own data';
 };
 
+subtest 'address mismatch' => sub {
+    # Positive Test
+    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'address_mismatch01@test.com',
+        broker_code   => 'CR',
+        first_name    => 'bob',
+        last_name     => 'smith',
+        date_of_birth => '2000-01-01',
+    });
+
+    my $user1 = BOM::User->create(
+        email    => $client1->email,
+        password => 'x',
+    );
+
+    $user1->add_client($client1);
+    $client1->address_1('GATITO');
+    $client1->address_2('456');
+    $client1->save;
+
+    my $token = $token_gen->create_token($client1->loginid, 'cli1 token test');
+
+    my $expected_address = 'Main St. 123';
+
+    $client1->documents->poa_address_mismatch({
+        expected_address => $expected_address,
+        staff            => 'staff',
+        reason           => 'test from RPC'
+    });
+
+    my $params = {
+        language  => 'EN',
+        token     => $token,
+        client_ip => '127.0.0.1',
+        args      => {
+            address_line_1 => 'Main St. 123',
+            address_line_2 => ''
+        }};
+
+    my $res = $c->tcall('set_settings', $params);
+
+    ok !$client1->status->poa_address_mismatch(), 'POA Address Mismatch is gone';
+
+    if ($client1->status->age_verification) {
+        ok $client1->fully_authenticated(), 'Status should be fully authenticated';
+    } else {
+        ok !$client1->fully_authenticated(), 'Status should not be fully authenticated';
+
+    }
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    ok !$redis->get('POA_ADDRESS_MISMATCH::' . $client1->binary_user_id), 'Redis key should be deleted';
+
+    # Negative test
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'address_mismatch02@test.com',
+        broker_code   => 'CR',
+        first_name    => 'bob',
+        last_name     => 'smith',
+        date_of_birth => '2000-01-01',
+    });
+
+    my $user2 = BOM::User->create(
+        email    => $client2->email,
+        password => 'x',
+    );
+
+    $user2->add_client($client2);
+    $client2->address_1('GATITO');
+    $client2->address_2('456');
+    $client2->save;
+
+    $token = $token_gen->create_token($client2->loginid, 'cli2 token test');
+
+    $expected_address = 'Main St. 123';
+
+    $client2->documents->poa_address_mismatch({
+        expected_address => $expected_address,
+        staff            => 'staff',
+        reason           => 'test from RPC'
+    });
+
+    $params = {
+        language  => 'EN',
+        token     => $token,
+        client_ip => '127.0.0.1',
+        args      => {
+            address_line_1 => 'Elm St.',
+            address_line_2 => '123'
+        }};
+
+    $c->tcall('set_settings', $params);
+
+    ok $client2->status->poa_address_mismatch(), 'POA Address Mismatch should exist';
+
+    ok !$client2->fully_authenticated(), 'Status should not be fully authenticated';
+
+    ok $redis->get('POA_ADDRESS_MISMATCH::' . $client2->binary_user_id), 'Redis key should exist';
+};
+
 subtest 'set_setting check salutuation not removed' => sub {
 
     my $client_CR = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
