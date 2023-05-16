@@ -455,6 +455,8 @@ Returns a hashref containing RPC response
 sub _dispatch_request {
     my ($self, $params) = @_;
 
+    my $request_start = [Time::HiRes::gettimeofday];
+
     # Take a deep clone of params to avoid any redundant data per dispathing requests.
     $params = dclone $params;
 
@@ -467,8 +469,7 @@ sub _dispatch_request {
         $self->stream_name, $method
     );
 
-    my $request_start = [Time::HiRes::gettimeofday];
-    my $vsz_start     = _current_virtual_mem_size();
+    my $vsz_start = _current_virtual_mem_size();
 
     DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ['rpc:' . $method, 'stream:' . $self->stream_name]});
 
@@ -504,12 +505,6 @@ sub _dispatch_request {
         }
     }
 
-    # We use timing for the extra statistics (min/max/avg) it provides
-    DataDog::DogStatsd::Helper::stats_timing(
-        'bom_rpc.v_3.call.timing',
-        (1000 * Time::HiRes::tv_interval($request_start)),
-        {tags => ['rpc:' . $method, 'stream:' . $self->stream_name]});
-
     push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
     shift @recent if @recent > 50;
 
@@ -521,6 +516,12 @@ sub _dispatch_request {
         "bom-rpc-redis-%s: (idle since %s #req=%s us=%s%%)",
         $self->stream_name, $last_request_at, $self->{request_counter}, $usage
     );
+
+    # We use timing for the extra statistics (min/max/avg) it provides
+    DataDog::DogStatsd::Helper::stats_timing(
+        'bom_rpc.v_3.call.timing',
+        (1000 * Time::HiRes::tv_interval($request_start)),
+        {tags => ['rpc:' . $method, 'stream:' . $self->stream_name]});
 
     return $result;
 }
