@@ -21,6 +21,8 @@ use curry::weak;
 
 use JSON::MaybeUTF8 qw(:v1);
 use Binary::WebSocketAPI::v3::SubscriptionManager;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_inc);
+use Time::HiRes;
 use Scalar::Util qw(blessed weaken);
 use Log::Any     qw($log);
 use Syntax::Keyword::Try;
@@ -105,11 +107,14 @@ sub process {
     my ($self, $message) = @_;
 
     try {
+        my $tv   = [Time::HiRes::gettimeofday];
         my $data = decode_json_utf8($message);
 
         $data = $self->handle_error($data->{error}, $message, $data) if exists $data->{error};
         return undef unless $data;
-        return $self->handle_message($data);
+        my $message = $self->handle_message($data);
+        stats_timing('bom_websocket_api.v_3.subscription.handling.timing', 1000 * Time::HiRes::tv_interval($tv),);
+        return $message;
     } catch ($e) {
         $log->errorf("Failure processing Redis subscription message: %s from original message %s, module %s, channel %s",
             $e, $message, $self->class, $self->channel);
@@ -156,19 +161,22 @@ sub abbrev_class {
     return $class;
 }
 
-=head2 stats_name
+=head2 stats_tag
 
-The name that will be used in stats_* function
+The tag that will be used in stats_* function
 
 =cut
 
-has stats_name => (is => 'lazy');
+has stats_tag => (is => 'lazy');
 
-sub _build_stats_name {
+sub _build_stats_tag {
     my ($self) = @_;
     $self->class =~ /(\w+)$/;
-    my $package = lc($1);
-    return "bom_websocket_api.v_3.${package}_subscriptions";
+    my $package = $1;
+    # convert CamelCase to underscore_style
+    $package =~ s/((?<=[a-z])[A-Z][a-z]+)/_$1/g;
+    $package = lc($package);
+    return "type:${package}";
 }
 
 =head2 handle_error
