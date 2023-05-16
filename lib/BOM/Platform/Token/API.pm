@@ -72,6 +72,44 @@ sub create_token {
     return $success->{token};
 }
 
+=head2 get_client_details_from_token
+
+returns a hash reference containing details of a token
+
+=cut
+
+sub get_client_details_from_token {
+    my ($self, $token) = @_;
+
+    return unless $token;
+
+    my ($loginid, $creation_time, $epoch, $ua_fingerprint, $scopes, $valid_for_ip);
+    if (length $token == 15) {    # access token
+        ($loginid, $creation_time, $scopes, $valid_for_ip) = @{$self->get_token_details($token, 1)}{qw/loginid creation_time scopes valid_for_ip/};
+        return unless $loginid;
+        $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
+    } elsif (length $token == 32 && $token =~ /^a1-/) {
+        my $m = BOM::Database::Model::OAuth->new;
+
+        ($loginid, $creation_time, $ua_fingerprint, $scopes) =
+            @{$m->get_token_details($token)}{qw/loginid creation_time ua_fingerprint scopes/};
+
+        return unless $loginid;
+        $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
+    } else {
+        # invalid token type
+        return;
+    }
+
+    return {
+        loginid        => $loginid,
+        scopes         => $scopes,
+        epoch          => $epoch,
+        ua_fingerprint => $ua_fingerprint,
+        ($valid_for_ip) ? (valid_for_ip => $valid_for_ip) : (),
+    };
+}
+
 =head2 get_token_details
 
 returns a hash reference containing details of a token
