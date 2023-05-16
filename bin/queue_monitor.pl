@@ -57,7 +57,7 @@ my $METRIC_PREFIX //= $REDIS_SERVER_DEFAULT{$server}->{METRIC_PREFIX}    or die 
 
 $log->info("Start running $server" . "_queue_monitor");
 my $loop = IO::Async::Loop->new;
-$loop->add(my $redis = Net::Async::Redis->new(uri => $redis_uri));
+$loop->add(my $redis = Net::Async::Redis->new(uri => $redis_uri, auth => $redis_config->{password}));
 
 =head2 compare_id
 
