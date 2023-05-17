@@ -386,7 +386,7 @@ sub db_approve_withdrawal {
     my ($self, %args) = @_;
 
     my $crypto_api = BOM::Platform::CryptoCashier::InternalAPI->new;
-    $crypto_api->verify_withdrawal([{id => $args{id}}]);
+    $crypto_api->verify_withdrawal([{id => $args{id}, currency_code => $args{currency_code}}]);
 }
 
 =head2 auto_update_withdrawal
@@ -439,7 +439,9 @@ sub auto_update_withdrawal {
             );
         }
 
-        $self->db_approve_withdrawal(id => $withdrawal_details->{id});
+        $self->db_approve_withdrawal(
+            id            => $withdrawal_details->{id},
+            currency_code => $withdrawal_details->{currency_code});
 
         stats_inc('crypto.payments.autoapprove.approved',
             {tags => ['reason:' . $user_details->{tag}, 'currency:' . $withdrawal_details->{currency_code}]});

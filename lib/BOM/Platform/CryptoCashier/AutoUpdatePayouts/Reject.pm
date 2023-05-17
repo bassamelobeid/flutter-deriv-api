@@ -211,7 +211,7 @@ sub db_reject_withdrawal {
     my ($self, %args) = @_;
 
     my $crypto_api = BOM::Platform::CryptoCashier::InternalAPI->new;
-    my $response   = $crypto_api->reject_withdrawal([{id => $args{id}, remark => $args{reject_remark}}]);
+    my $response   = $crypto_api->reject_withdrawal([{id => $args{id}, remark => $args{reject_remark}, currency_code => $args{currency_code}}]);
 
     if ($response && ref $response eq 'HASH' && $response->{error}) {
         $log->errorf('Faild to reject the withdrawal request, error: %s', $response->{error}{message_to_client});
@@ -258,7 +258,8 @@ sub auto_update_withdrawal {
 
         my ($result) = $self->db_reject_withdrawal(
             id            => $withdrawal_details->{id},
-            reject_remark => $user_details->{reject_remark});
+            reject_remark => $user_details->{reject_remark},
+            currency_code => $withdrawal_details->{currency_code});
 
         $log->debugf('DB reject withdrawal response %s', $result);
 
