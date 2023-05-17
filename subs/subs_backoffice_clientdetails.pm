@@ -2662,13 +2662,14 @@ Returns a hashref containing the list of Dynamic Settings.
 
 sub get_dynamic_settings_list {
     return +{
-        shutdown_suspend => 'Shutdown/Suspend',
-        quant            => 'Quant',
-        it               => 'IT',
-        others           => 'Others',
-        payments         => 'Payments',
-        crypto           => 'Cryptocurrency',
-        compliance       => 'Compliance',
+        shutdown_suspend     => 'Shutdown/Suspend',
+        quant                => 'Quant',
+        it                   => 'IT',
+        terms_and_conditions => 'T&C',
+        others               => 'Others',
+        payments             => 'Payments',
+        crypto               => 'Cryptocurrency',
+        compliance           => 'Compliance',
     };
 }
 

@@ -28,7 +28,6 @@ my $group_to_display = request()->param('group');
 
 if (request()->param('page') eq 'global') {
     my $authorisations = BOM::DynamicSettings::AUTHORISATIONS();
-
     unless (exists $authorisations->{$group_to_display}) {
         code_exit_BO("The group '$group_to_display' not found.");
     }

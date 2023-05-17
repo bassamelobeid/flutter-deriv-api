@@ -41,14 +41,15 @@ BOM::DynamicSettings
 use constant MINIMUM_ALLOWABLE_USD_AMOUNT => 1;
 
 use constant AUTHORISATIONS => {
-    shutdown_suspend => ['IT'],
-    quant            => ['Quants'],
-    it               => ['IT'],
-    others           => ['IT'],
-    payments         => ['IT'],
-    crypto           => ['IT'],
-    compliance       => ['Compliance'],
-    payment_agents   => ['IT'],
+    shutdown_suspend     => ['IT'],
+    quant                => ['Quants'],
+    it                   => ['IT'],
+    others               => ['IT'],
+    payments             => ['IT'],
+    crypto               => ['IT'],
+    compliance           => ['Compliance'],
+    payment_agents       => ['IT'],
+    terms_and_conditions => ['T&C'],
 };
 
 sub _textify_obj {
@@ -355,9 +356,13 @@ sub get_settings_by_group {
         ],
         it => [qw(
                 cgi.allowed_languages
-                cgi.terms_conditions_versions
                 oauth.ctrader_api.white_listed_networks
             )
+        ],
+        terms_and_conditions => [qw(
+                cgi.terms_conditions_versions
+            )
+
         ],
         payments => [qw(
                 payments.payment_limits
