@@ -130,6 +130,71 @@ subtest "/v1/payment/deposit" => sub {
             $body->{currency_code} = $old_value;
         };
 
+        subtest "incorrect loginid with no sibling account" => sub {
+            $body->{client_loginid} = undef;
+
+            # create random account
+            my $user2 = BOM::User->create(
+                email    => random_email_address,
+                password => 'test',
+            );
+            my $random_crypto_client = create_client();
+            $random_crypto_client->set_default_account('ETH');
+            $random_crypto_client->save();
+            $user2->add_client($random_crypto_client);
+            my $random_crypto_loginid = $random_crypto_client->loginid;
+
+            $body->{incorrect_loginid} = $random_crypto_loginid;
+
+            my $error = create_error('SiblingAccountNotFound', message_params => $body->{crypto_id});
+            call_ok('post' => '/v1/payment/deposit' => $body)->has_error->error_code_is('SiblingAccountNotFound')
+                ->error_message_like($error->{message});
+
+            $body->{client_loginid}    = $crypto_loginid;
+            $body->{incorrect_loginid} = undef;
+        };
+
+        subtest "incorrect loginid with correct sibling account" => sub {
+            $body->{client_loginid} = undef;
+            my $old_value = $body->{crypto_id};
+            $body->{crypto_id} = 2;
+
+            # create sibling account
+            my $sibling_crypto_client = create_client();
+            $sibling_crypto_client->set_default_account('ETH');
+            $sibling_crypto_client->save();
+            $user->add_client($sibling_crypto_client);
+            my $sibling_crypto_loginid = $sibling_crypto_client->loginid;
+
+            $body->{incorrect_loginid} = $sibling_crypto_loginid;
+
+            $mocked_event->mock(
+                emit => sub {
+                    my ($event, $event_body) = @_;
+                    return 1;
+                },
+            );
+
+            call_ok('post' => '/v1/payment/deposit' => $body)->has_no_error;
+
+            my $controller = BOM::Platform::CryptoCashier::Payment::API::Controller->new;
+            my $payment_id = $controller->get_payment_id_from_clientdb($sibling_crypto_loginid, $body->{crypto_id}, 'deposit');
+            $t->json_is(
+                '' => {
+                    payment_id     => $payment_id,
+                    client_loginid => $crypto_loginid
+                },
+                'right object'
+            );
+
+            $body->{client_loginid}    = $crypto_loginid;
+            $body->{incorrect_loginid} = undef;
+            $body->{crypto_id}         = $old_value;
+
+            $mocked_event->unmock_all;
+
+        };
+
         subtest "zero amount" => sub {
             my $old_value = $body->{amount};
             $body->{amount} = 0.000000004;
@@ -157,7 +222,7 @@ subtest "/v1/payment/deposit" => sub {
     subtest "Credit successfully after rounding the amount" => sub {
         my $expected_event_body = {
             loginid          => $body->{client_loginid},
-            is_first_deposit => 1,
+            is_first_deposit => 0,
             amount           => financialrounding('amount', $body->{currency_code}, $body->{amount}),
             currency         => $body->{currency_code},
             remark           => $body->{address},
@@ -177,7 +242,10 @@ subtest "/v1/payment/deposit" => sub {
         my $controller = BOM::Platform::CryptoCashier::Payment::API::Controller->new;
         my $payment_id = $controller->get_payment_id_from_clientdb($body->{client_loginid}, $body->{crypto_id}, 'deposit');
         $t->json_is(
-            '' => {payment_id => $payment_id},
+            '' => {
+                payment_id     => $payment_id,
+                client_loginid => $crypto_loginid
+            },
             'right object'
         );
 
@@ -192,7 +260,8 @@ subtest "/v1/payment/deposit" => sub {
         my $controller = BOM::Platform::CryptoCashier::Payment::API::Controller->new;
         my $payment_id = $controller->get_payment_id_from_clientdb($body->{client_loginid}, $body->{crypto_id}, 'deposit');
 
-        call_ok('post' => '/v1/payment/deposit' => $body)->has_no_error->response_is_deeply({payment_id => $payment_id});
+        call_ok('post' => '/v1/payment/deposit' => $body)
+            ->has_no_error->response_is_deeply({payment_id => $payment_id, client_loginid => $crypto_loginid});
     };
 };
 

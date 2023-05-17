@@ -4,7 +4,8 @@ use Mojo::Base 'Mojolicious::Controller';
 use Format::Util::Numbers qw(financialrounding);
 use Scalar::Util          qw(blessed);
 use Syntax::Keyword::Try;
-use Log::Any qw($log);
+use Log::Any   qw($log);
+use List::Util qw(first);
 
 use BOM::Config::CurrencyConfig;
 use BOM::Database::ClientDB;
@@ -53,8 +54,31 @@ sub deposit {
     my $amount           = $self->param('amount')    // return $self->render_error('MissingRequiredParameter', message_params => 'amount');
     my $transaction_hash = $self->param('transaction_hash')
         // return $self->render_error('MissingRequiredParameter', message_params => 'transaction_hash');
-    my $currency_code  = $self->param('currency_code')  // return $self->render_error('MissingRequiredParameter', message_params => 'currency_code');
-    my $client_loginid = $self->param('client_loginid') // return $self->render_error('MissingRequiredParameter', message_params => 'client_loginid');
+    my $currency_code = $self->param('currency_code') // return $self->render_error('MissingRequiredParameter', message_params => 'currency_code');
+    my $client_loginid;
+
+    return $self->render_error('MissingRequiredParameter', message_params => 'client_loginid')
+        unless ($self->param('client_loginid') || $self->param('incorrect_loginid'));
+
+    unless ($self->param('client_loginid')) {
+        my $incorrect_loginid        = $self->param('incorrect_loginid');
+        my $incorrect_loginid_client = BOM::User::Client->new({loginid => $incorrect_loginid});
+
+        #TODO: Might need refactoring after releasing app store project(account type might change).
+        my $sibling_accounts = $incorrect_loginid_client->get_siblings_information(
+            include_disabled             => 0,
+            include_virtual              => 0,
+            exclude_disabled_no_currency => 1,
+            include_self                 => 0
+        );
+
+        my $correct_account = first { $sibling_accounts->{$_}{currency} eq $currency_code } keys %$sibling_accounts;
+
+        return $self->render_error('SiblingAccountNotFound', message_params => $crypto_id) unless ($correct_account);
+        $client_loginid = $correct_account;
+    } else {
+        $client_loginid = $self->param('client_loginid');
+    }
 
     # apply sensible rounding for the amount for credit
     $amount = financialrounding('amount', $currency_code, $amount);
@@ -68,7 +92,8 @@ sub deposit {
     my $payment_id = $self->get_payment_id_from_clientdb($client_loginid, $crypto_id, 'deposit');
 
     return $self->render_response({
-            payment_id => $payment_id,
+            payment_id     => $payment_id,
+            client_loginid => $client_loginid
         }) if $payment_id;
 
     my $fdp = $self->{client}->is_first_deposit_pending;
@@ -97,7 +122,8 @@ sub deposit {
         });
 
     return $self->render_response({
-        payment_id => $txn->{payment_id},
+        payment_id     => $txn->{payment_id},
+        client_loginid => $client_loginid,
     });
 }
 
