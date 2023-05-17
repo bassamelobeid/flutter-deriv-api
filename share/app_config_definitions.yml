@@ -56,7 +56,7 @@ cgi:
     terms_conditions_versions:
       description: "Current version for terms and conditions per brand (brand name as key, version as value). WARNING: Clients from particular landing companies (IOM/Malta/Maltainvest) will be blocked from trading and accessing cashier when T&Cs are updated until they manually approve them."
       isa: json_string
-      default: '{ "binary": "Version 48 2019-05-10", "deriv": "Version 4.2.0 2020-08-07" }'
+      default: '{ "binary": "Version 48 2019-05-10", "deriv": "Version 4.2.0 2020-08-07", "deriv-EU": "Version 4.2.0 2020-08-07", "deriv-ROW": "Version 4.2.0 2020-08-07" }'
       global: 1
 payments:
   description: "Control parameters for cashier and other payment systems"
