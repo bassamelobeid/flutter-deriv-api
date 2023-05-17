@@ -1035,7 +1035,12 @@ sub derivez_validate_and_get_amount {
 
                     try {
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
-                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency);
+                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees(
+                            amount        => $amount,
+                            from_currency => $client_currency,
+                            to_currency   => $mt5_currency,
+                            country       => $client->residence,
+                            );
 
                         $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
 
@@ -1053,7 +1058,12 @@ sub derivez_validate_and_get_amount {
                         $source_currency = $mt5_currency;
 
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
-                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency);
+                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees(
+                            amount        => $amount,
+                            from_currency => $mt5_currency,
+                            to_currency   => $client_currency,
+                            country       => $client->residence,
+                            );
 
                         $mt5_amount = financialrounding('amount', $client_currency, $mt5_amount);
 

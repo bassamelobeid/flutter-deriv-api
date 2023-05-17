@@ -235,15 +235,24 @@ sub validate_transfer {
         if ($action eq 'deposit') {
 
             ($recv_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
-                BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($send_amount, $local_currency, $platform_currency);
-
+                BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees(
+                amount        => $send_amount,
+                from_currency => $local_currency,
+                to_currency   => $platform_currency,
+                country       => $self->client->residence,
+                );
             $recv_amount = financialrounding('amount', $platform_currency, $recv_amount);
             $send_amount = $send_amount * -1;
 
         } elsif ($action eq 'withdrawal') {
 
             ($recv_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
-                BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($send_amount, $platform_currency, $local_currency);
+                BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees(
+                amount        => $send_amount,
+                from_currency => $platform_currency,
+                to_currency   => $local_currency,
+                country       => $self->client->residence,
+                );
 
             $recv_amount = financialrounding('amount', $local_currency, $recv_amount);
 
