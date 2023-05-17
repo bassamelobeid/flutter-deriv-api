@@ -594,7 +594,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         }
     };
 
-    my $test_poi_status = {
+    my $test_status = {
         svg   => 'none',
         malta => 'none'
     };
@@ -607,7 +607,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
             my $client   = BOM::User::Client->new({loginid => $self->client_loginid});
             my $lc_short = $client->landing_company->short;
 
-            my $status = $test_poi_status->{$lc_short} // '';
+            my $status = $test_status->{$lc_short} // '';
 
             return {
                 staff_name => 'system',
@@ -639,10 +639,10 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
 
         test_immutable_fields([], $test_user, "all fields are changeable now");
 
-        $test_poi_status->{svg} = 'verified';
+        $test_status->{svg} = 'verified';
         cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields are reverted to default after authentication";
 
-        $test_poi_status->{svg} = 'pending';
+        $test_status->{svg} = 'pending';
         $client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
 
         my $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
@@ -664,7 +664,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         $client_cr->status->clear_poi_dob_mismatch;
 
         $client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
-        $test_poi_status->{svg} = 'verified';
+        $test_status->{svg} = 'verified';
 
         cmp_bag [$client_cr->immutable_fields], \@all_immutables,
             "Cannot update first_name and last_name on name mismatch case if already age verified";
@@ -680,8 +680,83 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         $client_cr->status->clear_personal_details_locked;
         $client_cr->status->clear_poi_name_mismatch;
         $client_cr->status->clear_age_verification;
-        $test_poi_status->{svg} = 'none';
+        $test_status->{svg} = 'none';
         cmp_bag [$client_cr->immutable_fields], [], "Immutable fields are reverted to empty";
+    };
+
+    subtest 'Age verified/fully authenticated/address verified with poi/poa expired scenario' => sub {
+        my @identity_fields = ('first_name',   'last_name', 'date_of_birth');
+        my @address_fields  = ('address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state');
+
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        my $poi_status;
+        $mock_client->mock(
+            get_poi_status => sub {
+                return $poi_status // 'none';
+            });
+        my $poa_status;
+        $mock_client->mock(
+            get_poa_status => sub {
+                return $poa_status // 'none';
+            });
+        my $fully_authenticated;
+        $mock_client->mock(
+            fully_authenticated => sub {
+                return $fully_authenticated // 0;
+            });
+
+        test_immutable_fields([], $test_user, "Immutable fields are empty");
+
+        $test_status->{svg} = 'verified';
+        my $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
+        for my $identity_field (@identity_fields) {
+            ok $immutable_fields_hash->{$identity_field}, "Age verified cannot update $identity_field identity field";
+        }
+
+        $poi_status            = 'expired';
+        $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
+        for my $identity_field (@identity_fields) {
+            ok $immutable_fields_hash->{$identity_field}, "Age verified and poi expired cannot update $identity_field identity field";
+        }
+
+        $poi_status = 'none';
+        $test_status->{svg} = 'none';
+        $client_cr->status->clear_age_verification;
+        cmp_bag [$client_cr->immutable_fields], [], "Immutable fields reverted to empty";
+
+        $fully_authenticated   = 1;
+        $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
+        for my $address_field (@address_fields) {
+            ok $immutable_fields_hash->{$address_field}, "Fully authenticated cannot update $address_field address field";
+        }
+
+        $poa_status            = 'expired';
+        $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
+        for my $address_field (@address_fields) {
+            ok !$immutable_fields_hash->{$address_field}, "Fully authenticated and poa expired can update $address_field address field";
+        }
+
+        $poa_status          = 'none';
+        $fully_authenticated = 0;
+        $test_status->{svg}  = 'none';
+        cmp_bag [$client_cr->immutable_fields], [], "Immutable fields reverted to empty";
+
+        $client_cr->status->upsert('address_verified', 'system', 'address verified');
+        $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
+        for my $address_field (@address_fields) {
+            ok $immutable_fields_hash->{$address_field}, "Address verified cannot update $address_field address field";
+        }
+
+        $poa_status            = 'expired';
+        $immutable_fields_hash = +{map { ($_ => 1) } $client_cr->immutable_fields};
+        for my $address_field (@address_fields) {
+            ok !$immutable_fields_hash->{$address_field}, "Address verified and poa expired can update $address_field address field";
+        }
+
+        $mock_client->unmock_all;
+        $test_status->{svg} = 'none';
+        $client_cr->status->clear_address_verified;
+        cmp_bag [$client_cr->immutable_fields], [], "Immutable fields reverted to empty";
     };
 
     subtest 'personal_details_locked status' => sub {

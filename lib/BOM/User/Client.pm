@@ -2239,17 +2239,21 @@ sub immutable_fields {
 
     # Add address fields to immutable array if address verified
     if ($self->status->address_verified) {
-        push @immutable, ADDRESS_FIELDS->@*;
-        $return = 1;
+        unless ($self->get_poa_status eq 'expired') {
+            push @immutable, ADDRESS_FIELDS->@*;
+            $return = 1;
+        }
     }
 
     # Add address fields to immutable array if fully authenticated
     if ($self->fully_authenticated) {
-        push @immutable, ADDRESS_FIELDS->@*;
-        $return = 1;
+        unless ($self->get_poa_status eq 'expired') {
+            push @immutable, ADDRESS_FIELDS->@*;
+            $return = 1;
+        }
     }
 
-    #Added first name, last name and DOB to immutable if poi verified
+    # Add first name, last name and DOB to immutable if poi verified
     if ($self->status->age_verification) {
         push @immutable, IMMUTABLE_FIELDS_AGE_VERIFICATION->@*;
         $return = 1;
