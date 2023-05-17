@@ -237,20 +237,22 @@ sub invalid_currency_error {
 
 Calculates transfer amount and fees
 
-Args
+Takes for the following named args:
 
 =over 4
 
-=item * The amount is be transferred (in the currency of the sending account)
+=item * C<amount> - The amount is be transferred (in the currency of the sending account)
 
-=item * The currency of the sending account
+=item * C<from_currency> - The currency of the sending account
 
-=item * The currency of the receiving account
+=item * C<to_currency> - The currency of the receiving account
 
-=item * A L<BOM::User::Client> instance of the sending client
+=item * C<country> - to determine country specific fees, optional
+
+=item * C<from_client> - A L<BOM::User::Client> instance of the sending client
 Optional: only required to ascertain if client qualifies for PA fee exemption
 
-=item * A L<BOM::User::Client> instance of the receiving client
+=item * C<to_client> - A L<BOM::User::Client> instance of the receiving client
 Optional: only required to ascertain if client qualifies for PA fee exemption
 
 =back
@@ -276,7 +278,11 @@ B<Note>: If a minimum fee was enforced then this will not reflect the actual fee
 =cut
 
 sub calculate_to_amount_with_fees {
-    my ($amount, $from_currency, $to_currency, $fm_client, $to_client) = @_;
+    my %args = @_;
+
+    my ($amount, $from_currency, $to_currency, $fm_client, $to_client, $country) =
+        @args{qw(amount from_currency to_currency from_client to_client country)};
+
     my $rate_expiry = BOM::Config::CurrencyConfig::rate_expiry($from_currency, $to_currency);
 
     return ($amount, 0, 0, 0, 0) if $from_currency eq $to_currency;
@@ -288,7 +294,7 @@ sub calculate_to_amount_with_fees {
         && $fm_client->is_same_user_as($to_client)
         && ($fm_client->is_pa_and_authenticated() || $to_client->is_pa_and_authenticated()));
 
-    my $currency_config = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
+    my $currency_config = BOM::Config::CurrencyConfig::transfer_between_accounts_fees($country);
     my $fee_percent     = $currency_config->{$from_currency}->{$to_currency};
 
     die "No transfer fee found for $from_currency-$to_currency" unless defined $fee_percent;
