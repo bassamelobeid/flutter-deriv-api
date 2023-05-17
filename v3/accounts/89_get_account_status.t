@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Deep;
+use Test::Exception;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -71,32 +72,146 @@ subtest 'Onfido country code' => sub {
 };
 
 subtest 'POI Attempts' => sub {
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'poi+attempts@binary.com',
-        client_password => 'abc123',
-        residence       => 'br',
-    });
+    subtest 'No POI attempts' => sub {
+        my $user = BOM::User->create(
+            email    => 'poi+attempts@deriv.com',
+            password => 'poi_attempts_test'
+        );
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code    => 'CR',
+            binary_user_id => $user->id
+        });
 
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
-    $t->await::authorize({authorize => $token});
+        $user->add_client($client_cr);
+        $client_cr->binary_user_id($user->id);
+        $client_cr->save;
 
-    $user->add_client($client);
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr->loginid);
+        $t->await::authorize({authorize => $token});
 
-    my $res = $t->await::get_account_status({get_account_status => 1});
-    test_schema('get_account_status', $res);
-    cmp_deeply $res->{get_account_status}->{authentication}->{attempts},
-        {
-        count   => 0,
-        history => [],
-        latest  => undef,
-        },
-        'expected result for empty history';
+        my $res = $t->await::get_account_status({get_account_status => 1});
+        test_schema('get_account_status', $res);
+        cmp_deeply $res->{get_account_status}->{authentication}->{attempts},
+            {
+            count   => 0,
+            history => [],
+            latest  => undef,
+            },
+            'expected result for empty history';
+    };
 
-    # TODO: Add more test cases when IDV is implemented
+    subtest 'IDV attempts' => sub {
+        my $user = BOM::User->create(
+            email    => 'poi+attempts+idv@deriv.com',
+            password => 'poi_attempts_idv_test'
+        );
+
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code    => 'CR',
+            binary_user_id => $user->id
+        });
+
+        $user->add_client($client_cr);
+        $client_cr->binary_user_id($user->id);
+        $client_cr->save;
+
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr->loginid);
+        $t->await::authorize({authorize => $token});
+
+        my $doc_id_1;
+        my $document;
+        my $idv_model = BOM::User::IdentityVerification->new(user_id => $client_cr->binary_user_id);
+
+        lives_ok {
+            $document = $idv_model->add_document({
+                issuing_country => 'zw',
+                number          => '00005000A00',
+                type            => 'national_id',
+                expiration_date => '2099-01-01'
+            });
+            $doc_id_1 = $document->{id};
+            $idv_model->update_document_check({
+                document_id => $doc_id_1,
+                status      => 'failed',
+                messages    => [],
+                provider    => 'smile_identity'
+            });
+        }
+        'first client document added and updated successfully';
+
+        my $res = $t->await::get_account_status({get_account_status => 1});
+        test_schema('get_account_status', $res);
+
+        my $expected_count = 1;
+        my $count          = $res->{get_account_status}->{authentication}->{attempts}->{count};
+
+        is $count, $expected_count, 'expected count=1 for 1 attempt';
+
+        my $expected_latest_attempt_1 = {
+            id            => $doc_id_1,
+            status        => 'rejected',
+            service       => 'idv',
+            country_code  => 'zw',
+            document_type => 'national_id',
+        };
+
+        my $latest_attempt = $res->{get_account_status}->{authentication}->{attempts}->{latest};
+        delete($latest_attempt->{timestamp});
+
+        cmp_deeply $latest_attempt, $expected_latest_attempt_1, 'expected latest IDV attempt';
+
+        my $history = $res->{get_account_status}->{authentication}->{attempts}->{history};
+        @$history = map { delete $_->{timestamp}; $_ } @$history;
+
+        my $expected_history = [$expected_latest_attempt_1];
+        cmp_deeply $history, $expected_history, 'expected history of IDV attempts';
+
+        my $doc_id_2;
+        lives_ok {
+            $document = $idv_model->add_document({
+                issuing_country => 'zw',
+                number          => '12300000A00',
+                type            => 'national_id',
+                expiration_date => '2089-01-02'
+            });
+            $doc_id_2 = $document->{id};
+            $idv_model->update_document_check({
+                document_id => $doc_id_2,
+                status      => 'verified',
+                messages    => [],
+                provider    => 'smile_identity'
+            });
+        }
+        'second client document added and updated successfully';
+
+        $res = $t->await::get_account_status({get_account_status => 1});
+        test_schema('get_account_status', $res);
+
+        $expected_count = 2;
+        $count          = $res->{get_account_status}->{authentication}->{attempts}->{count};
+
+        is $count, $expected_count, 'expected count=2 for 2 attempts';
+
+        my $expected_latest_attempt_2 = {
+            id            => $doc_id_2,
+            status        => 'verified',
+            service       => 'idv',
+            country_code  => 'zw',
+            document_type => 'national_id',
+        };
+
+        $latest_attempt = $res->{get_account_status}->{authentication}->{attempts}->{latest};
+        delete($latest_attempt->{timestamp});
+
+        cmp_deeply $latest_attempt, $expected_latest_attempt_2, 'expected latest IDV attempt after second attempt';
+
+        $history  = $res->{get_account_status}->{authentication}->{attempts}->{history};
+        @$history = map { delete $_->{timestamp}; $_ } @$history;
+
+        $expected_history = [$expected_latest_attempt_2, $expected_latest_attempt_1];
+        cmp_deeply $history, $expected_history, 'expected history of IDV attempts';
+    };
 };
 
 subtest 'Proof of ownership' => sub {
