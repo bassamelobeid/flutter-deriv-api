@@ -8553,11 +8553,12 @@ sub poi_attempts {
 
             push $attempts->@*,
                 {
-                id           => '' . $idv_check->{id},
-                status       => $idv_status,
-                service      => 'idv',
-                country_code => $idv_check->{issuing_country},
-                timestamp    => Date::Utility->new($idv_check->{submitted_at})->epoch,
+                id            => '' . $idv_check->{id},
+                status        => $idv_status,
+                service       => 'idv',
+                country_code  => $idv_check->{issuing_country},
+                document_type => $idv_check->{document_type},
+                timestamp     => Date::Utility->new($idv_check->{submitted_at})->epoch,
                 };
         }
     }

@@ -2453,14 +2453,16 @@ subtest 'POI attempts' => sub {
                     status          => 'pending',
                     id              => 1,
                     submitted_at    => $now->datetime_yyyymmdd_hhmmss,
+                    document_type   => 'national_id',
                 }
             ],
             results => [{
-                    service      => 'idv',
-                    status       => 'pending',
-                    country_code => 'ng',
-                    id           => '1',
-                    timestamp    => re('\d+'),
+                    service       => 'idv',
+                    status        => 'pending',
+                    country_code  => 'ng',
+                    id            => '1',
+                    timestamp     => re('\d+'),
+                    document_type => 'national_id',
                 }
             ],
         },
@@ -2472,14 +2474,16 @@ subtest 'POI attempts' => sub {
                     status          => 'failed',
                     id              => 2,
                     submitted_at    => $now->datetime_yyyymmdd_hhmmss,
+                    document_type   => 'national_id',
                 }
             ],
             results => [{
-                    service      => 'idv',
-                    status       => 'rejected',
-                    country_code => 'za',
-                    id           => '2',
-                    timestamp    => re('\d+'),
+                    service       => 'idv',
+                    status        => 'rejected',
+                    country_code  => 'za',
+                    id            => '2',
+                    timestamp     => re('\d+'),
+                    document_type => 'national_id',
                 }
             ],
         },
@@ -2491,14 +2495,16 @@ subtest 'POI attempts' => sub {
                     status          => 'refuted',
                     id              => 3,
                     submitted_at    => $now->datetime_yyyymmdd_hhmmss,
+                    document_type   => 'national_id',
                 }
             ],
             results => [{
-                    service      => 'idv',
-                    status       => 'rejected',
-                    country_code => 'gh',
-                    id           => '3',
-                    timestamp    => re('\d+'),
+                    service       => 'idv',
+                    status        => 'rejected',
+                    country_code  => 'gh',
+                    id            => '3',
+                    timestamp     => re('\d+'),
+                    document_type => 'national_id',
                 }
             ],
         },
@@ -2510,14 +2516,16 @@ subtest 'POI attempts' => sub {
                     status          => 'verified',
                     id              => 4,
                     submitted_at    => $now->datetime_yyyymmdd_hhmmss,
+                    document_type   => 'national_id',
                 }
             ],
             results => [{
-                    service      => 'idv',
-                    status       => 'verified',
-                    country_code => 'ke',
-                    id           => '4',
-                    timestamp    => re('\d+'),
+                    service       => 'idv',
+                    status        => 'verified',
+                    country_code  => 'ke',
+                    id            => '4',
+                    timestamp     => re('\d+'),
+                    document_type => 'national_id',
                 }
             ],
         },
@@ -2536,6 +2544,7 @@ subtest 'POI attempts' => sub {
                     status          => 'verified',
                     id              => 4,
                     submitted_at    => $before->datetime_yyyymmdd_hhmmss,
+                    document_type   => 'national_id',
                 }
             ],
             results => [{
@@ -2546,11 +2555,12 @@ subtest 'POI attempts' => sub {
                     timestamp    => re('\d+'),
                 },
                 {
-                    service      => 'idv',
-                    status       => 'verified',
-                    country_code => 'ke',
-                    id           => '4',
-                    timestamp    => re('\d+'),
+                    service       => 'idv',
+                    status        => 'verified',
+                    country_code  => 'ke',
+                    id            => '4',
+                    timestamp     => re('\d+'),
+                    document_type => 'national_id',
                 }
             ],
         },
@@ -2568,14 +2578,16 @@ subtest 'POI attempts' => sub {
                     status          => 'verified',
                     id              => 4,
                     submitted_at    => $after->datetime_yyyymmdd_hhmmss,
+                    document_type   => 'national_id',
                 }
             ],
             results => [{
-                    service      => 'idv',
-                    status       => 'verified',
-                    country_code => 'ke',
-                    id           => '4',
-                    timestamp    => re('\d+'),
+                    service       => 'idv',
+                    status        => 'verified',
+                    country_code  => 'ke',
+                    id            => '4',
+                    timestamp     => re('\d+'),
+                    document_type => 'national_id',
                 },
                 {
                     service      => 'onfido',
@@ -2684,6 +2696,7 @@ subtest 'POI attempts' => sub {
                     status          => 'verified',
                     id              => 4,
                     submitted_at    => $before->datetime_yyyymmdd_hhmmss,
+                    document_type   => 'national_id',
                 }
             ],
             results => [{
@@ -2694,11 +2707,12 @@ subtest 'POI attempts' => sub {
                     timestamp    => re('\d+'),
                 },
                 {
-                    service      => 'idv',
-                    status       => 'verified',
-                    country_code => 'ke',
-                    id           => '4',
-                    timestamp    => re('\d+'),
+                    service       => 'idv',
+                    status        => 'verified',
+                    country_code  => 'ke',
+                    id            => '4',
+                    timestamp     => re('\d+'),
+                    document_type => 'national_id',
                 },
                 {
                     service      => 'onfido',
