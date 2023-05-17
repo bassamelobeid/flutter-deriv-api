@@ -439,11 +439,13 @@ subtest 'transfer_between_accounts_limits' => sub {
 
 subtest 'transfer_between_accounts_fees' => sub {
     my $currency_fees = {
-        "USD_BTC" => 1.1,
-        "USD_UST" => 1.2,
-        "BTC_EUR" => 1.3,
-        "UST_EUR" => 1.4,
-        "GBP_USD" => 1.5,
+        "USD_BTC_all" => 1.1,
+        "USD_UST_all" => 1.2,
+        "BTC_EUR_all" => 1.3,
+        "UST_EUR_all" => 1.4,
+        "USD_BTC_ng"  => 1.6,
+        "BTC_EUR_ng"  => 1.7,
+        "USD_BTC_id"  => 1.8,
     };
 
     my $default_fees = {
@@ -474,7 +476,7 @@ subtest 'transfer_between_accounts_fees' => sub {
     });
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
-    my $transfer_fees  = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
+    my $global_fees    = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     for my $from_currency (@all_currencies) {
         my $from_def      = LandingCompany::Registry::get_currency_definition($from_currency);
@@ -484,12 +486,26 @@ subtest 'transfer_between_accounts_fees' => sub {
             my $to_category  = $to_def->{stable} ? 'stable' : $to_def->{type};
             my $expected_fee = -1;
             unless ($from_currency eq $to_currency) {
-                $expected_fee = $currency_fees->{"${from_currency}_$to_currency"} // $default_fees->{"${from_category}_$to_category"};
+                $expected_fee = $currency_fees->{"${from_currency}_${to_currency}_all"} // $default_fees->{"${from_category}_$to_category"};
             }
-            is($transfer_fees->{$from_currency}->{$to_currency} // -1,
+            is($global_fees->{$from_currency}->{$to_currency} // -1,
                 $expected_fee, "Transfer between account fee is correct for $from_currency to $to_currency");
         }
     }
+
+    my $ng_fees = BOM::Config::CurrencyConfig::transfer_between_accounts_fees('ng');
+    my $id_fees = BOM::Config::CurrencyConfig::transfer_between_accounts_fees('id');
+
+    is $global_fees->{USD}{BTC}, 1.1, 'rate for no country, all country override';
+    is $ng_fees->{USD}{BTC},     1.6, 'override for a country';
+    is $ng_fees->{BTC}{EUR},     1.7, '2nd override for a country';
+    is $id_fees->{USD}{BTC},     1.8, 'override for a 2nd country';
+    is $id_fees->{BTC}{EUR},     1.3, 'all country override';
+
+    $app_config->set({'payments.transfer_between_accounts.fees.by_currency' => '{}'});
+    $revision = 2;
+    $ng_fees  = BOM::Config::CurrencyConfig::transfer_between_accounts_fees('ng');
+    is $ng_fees->{USD}{BTC}, 3, 'cache is reset when setting changes';
 };
 
 subtest 'exchange_rate_expiry' => sub {

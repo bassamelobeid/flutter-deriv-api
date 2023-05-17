@@ -480,9 +480,11 @@ a value under payment.transfer_between_accounts.fees.default.* that matches the 
 =cut
 
 sub transfer_between_accounts_fees {
+    my $country = shift // 'generic';
+
     state $transfer_fees_cache = {};
     my $loaded_revision = BOM::Config::Runtime->instance->app_config()->loaded_revision // '';
-    return $transfer_fees_cache if $transfer_fees_cache->{revision} and ($transfer_fees_cache->{revision} eq $loaded_revision);
+    return $transfer_fees_cache->{$country} if $transfer_fees_cache->{$country} and $transfer_fees_cache->{revision} eq $loaded_revision;
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
@@ -494,6 +496,13 @@ sub transfer_between_accounts_fees {
         'payments.transfer_between_accounts.fees.default.stable_crypto', 'payments.transfer_between_accounts.fees.default.stable_stable'
     ]);
     my $fee_by_currency = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.fees.by_currency'});
+    my $fee_override    = {};
+
+    # key format is <from_currency>_<to_currency>_<country>
+    for my $k (keys %$fee_by_currency) {
+        my ($fee_from_currency, $fee_to_currency, $fee_country) = split '_', $k;
+        $fee_override->{$fee_from_currency}{$fee_to_currency}{$fee_country} = $fee_by_currency->{$k};
+    }
 
     my $currency_config;
     for my $from_currency (@all_currencies) {
@@ -502,33 +511,34 @@ sub transfer_between_accounts_fees {
 
         my $fees;
         foreach my $to_currency (@all_currencies) {
-            my $to_def = LandingCompany::Registry::get_currency_definition($to_currency);
+            # Same-currency is not supported: fee = undef.
+            next if $from_currency eq $to_currency;
 
-            #Same-currency is not supported: fee = undef.
-            unless ($from_currency eq $to_currency) {
-                my $to_category = $to_def->{stable} ? 'stable' : $to_def->{type};
-                my $fee         = $fee_by_currency->{"${from_currency}_$to_currency"}
-                    // $configs->{"payments.transfer_between_accounts.fees.default.${from_category}_$to_category"};
-                if ($fee < 0) {
-                    $log->tracef("The %s-%s transfer fee of %d in app_config->payements.transfer_between_accounts.fees was too low. Raised to 0",
-                        $from_currency, $to_currency, $fee);
-                    $fee = 0;
-                }
-                if ($fee > MAX_TRANSFER_FEE) {
-                    $log->tracef("The %s-%s transfer fee of %d app_config->payements.transfer_between_accounts.fees was too high. Lowered to %d",
-                        $from_currency, $to_currency, $fee, MAX_TRANSFER_FEE);
-                    $fee = MAX_TRANSFER_FEE;
-                }
+            my $to_def      = LandingCompany::Registry::get_currency_definition($to_currency);
+            my $to_category = $to_def->{stable} ? 'stable' : $to_def->{type};
 
-                $fees->{$to_currency} = 0 + Format::Util::Numbers::roundcommon(0.01, $fee);
+            my $fee = $fee_override->{$from_currency}{$to_currency}{$country} // $fee_override->{$from_currency}{$to_currency}{all}
+                // $configs->{"payments.transfer_between_accounts.fees.default.${from_category}_$to_category"};
+
+            if ($fee < 0) {
+                $log->tracef("The %s-%s transfer fee of %d in app_config->payements.transfer_between_accounts.fees was too low. Raised to 0",
+                    $from_currency, $to_currency, $fee);
+                $fee = 0;
             }
+            if ($fee > MAX_TRANSFER_FEE) {
+                $log->tracef("The %s-%s transfer fee of %d app_config->payements.transfer_between_accounts.fees was too high. Lowered to %d",
+                    $from_currency, $to_currency, $fee, MAX_TRANSFER_FEE);
+                $fee = MAX_TRANSFER_FEE;
+            }
+
+            $fees->{$to_currency} = 0 + Format::Util::Numbers::roundcommon(0.01, $fee);
         }
 
         $currency_config->{$from_currency} = $fees;
     }
 
-    $currency_config->{revision} = $loaded_revision;
-    $transfer_fees_cache = $currency_config;
+    $transfer_fees_cache->{revision} = $loaded_revision;
+    $transfer_fees_cache->{$country} = $currency_config;
     return $currency_config;
 }
 
