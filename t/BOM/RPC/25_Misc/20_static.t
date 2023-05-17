@@ -233,17 +233,23 @@ subtest 'states_list' => sub {
 
 subtest 'currencies_config.transfer_between_accounts' => sub {
 
-    my $result = $c->call_ok(
-        'website_status',
-        {
-            language => 'EN',
-            args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
+    my $params = {
+        language     => 'EN',
+        country_code => 'id',
+        args         => {website_status => 1},
+    };
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    $app_config->set({'payments.transfer_between_accounts.fees.by_currency' => encode_json({'BTC_USD_all' => 5.1, 'BTC_USD_ng' => 5.2})});
+
+    my $result = $c->call_ok('website_status' => $params)->has_no_system_error->has_no_error->result;
 
     my @all_currencies          = keys %{LandingCompany::Registry->by_name('svg')->legal_allowed_currencies};
     my $currency_limits         = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
     my $currency_limits_mt5     = BOM::Config::CurrencyConfig::platform_transfer_limits('MT5');
     my $currency_limits_dxtrade = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade');
-    my $currency_fees           = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     is(
         $currency_limits->{$_}->{min},
@@ -281,15 +287,29 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
         "dxtrade transfer between account maximum is correct for $_"
     ) for @all_currencies;
 
+    my $currency_fees = BOM::Config::CurrencyConfig::transfer_between_accounts_fees('id');
+
     for my $currency (@all_currencies) {
         cmp_ok(
             $currency_fees->{$currency}->{$_} // -1,
             '==',
             $result->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
-            "Transfer between account fee is correct for ${currency}_$_"
+            "Transfer between account fee is correct for ${currency}_$_ in country id"
         ) for @all_currencies;
     }
 
+    $params->{country_code} = 'ng';
+    $result                 = $c->call_ok('website_status' => $params)->result;
+    $currency_fees          = BOM::Config::CurrencyConfig::transfer_between_accounts_fees('ng');
+
+    for my $currency (@all_currencies) {
+        cmp_ok(
+            $currency_fees->{$currency}->{$_} // -1,
+            '==',
+            $result->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
+            "Transfer between account fee is correct for ${currency}_$_ in country ng"
+        ) for @all_currencies;
+    }
 };
 
 subtest 'trading_servers' => sub {

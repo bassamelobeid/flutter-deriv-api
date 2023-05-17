@@ -1726,7 +1726,14 @@ rpc transfer_between_accounts => sub {
     my ($to_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent);
     try {
         ($to_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
-            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $client_from, $client_to);
+            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees(
+            amount        => $amount,
+            from_currency => $from_currency,
+            to_currency   => $to_currency,
+            from_client   => $client_from,
+            to_client     => $client_to,
+            country       => $client_from->residence,
+            );
     } catch ($err) {
         log_exception();
 

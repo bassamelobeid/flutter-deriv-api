@@ -212,6 +212,7 @@ rpc states_list => sub {
 };
 
 sub _currencies_config {
+    my $country = shift;
 
     my $brand_name     = request()->brand->name;
     my $amt_precision  = Format::Util::Numbers::get_precision_config()->{price};
@@ -222,7 +223,7 @@ sub _currencies_config {
 
     my $transfer_limits         = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
     my $transfer_limits_mt5     = BOM::Config::CurrencyConfig::platform_transfer_limits('MT5', $brand_name);
-    my $transfer_fees           = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
+    my $transfer_fees           = BOM::Config::CurrencyConfig::transfer_between_accounts_fees($country);
     my $transfer_limits_dxtrade = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade', $brand_name);
     my $transfer_limits_derivez = BOM::Config::CurrencyConfig::platform_transfer_limits('derivez', $brand_name);
     my $transfer_limits_ctrader = BOM::Config::CurrencyConfig::platform_transfer_limits('ctrader', $brand_name);
@@ -344,7 +345,7 @@ rpc website_status => sub {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         broker_codes             => $broker_codes,
-        currencies_config        => _currencies_config(),
+        currencies_config        => _currencies_config($country),
         mt5_status               => _mt5_status(),
         dxtrade_status           => _dxtrade_status(),
         payment_agents           => {
