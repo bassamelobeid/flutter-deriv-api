@@ -194,8 +194,8 @@ my $display_transactions = sub {
     for my $trx (@$trxns) {
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
 
-        my $formatted_usd_amount = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
-        $trx->{amount_usd} = commas($formatted_usd_amount);
+        $trx->{exchange_rate} = $trx->{exchange_rate} || $exchange_rate;
+        $trx->{amount_usd}    = commas(formatnumber('amount', 'USD', ($trx->{amount} // 0) * $trx->{exchange_rate}));
 
         $trx->{statement_link} = request()->url_for(
             'backoffice/f_manager_history.cgi',
@@ -285,7 +285,7 @@ $actions->{withdrawals} = sub {
             }
         } else {
             my %params = request()->params->%*;
-            @params_list = {%params{qw(id amount remark rejection_reason loginid app_id other_reason)}};
+            @params_list = {%params{qw(id amount remark rejection_reason loginid app_id other_reason amount_usd exchange_rate)}};
         }
 
         my %actions_map = (
@@ -308,7 +308,7 @@ $actions->{withdrawals} = sub {
             if (my $error = $actions_map{$trx_action}->{validation_error}->($transaction_info, $currency, $staff)) {
                 $update_errors->{$transaction_info->{id}} = $error;
             } else {
-                push @transaction_list, {%{$transaction_info}{qw/ id remark client_siblings /}};
+                push @transaction_list, {%{$transaction_info}{qw/ id remark client_siblings exchange_rate/}};
                 $reject_email_params->{$transaction_info->{id}} = $transaction_info
                     if $trx_action eq 'Reject';
             }
@@ -664,13 +664,13 @@ Returns error if there is an issue, otherwise C<undef>.
 sub validation_error_verify {
     my ($transaction_info, $currency, $staff) = @_;
 
-    my ($id, $loginid, $amount) = @{$transaction_info}{qw/ id loginid amount /};
+    my ($id, $loginid, $amount, $amount_usd) = @{$transaction_info}{qw/ id loginid amount amount_usd/};
     my $client = BOM::User::Client->new({loginid => $loginid});
 
     return "Error in verifying transaction id: $id. The client $loginid withdrawal is locked."
         if $client->status->withdrawal_locked;
 
-    my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($amount, $currency));
+    my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, $amount_usd);
     return "Error in verifying transaction id: $id. " . $over_limit->get_mesg()
         if $over_limit;
 

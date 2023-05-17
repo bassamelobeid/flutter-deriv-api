@@ -180,7 +180,8 @@ my $prepare_transaction = sub {
 
         for my $transaction_info ($transaction_list->@*) {
             if (my $exchange_rate = $get_exchange_rate->($transaction_info->{currency_code})) {
-                $transaction_info->{usd_amount} = formatnumber('amount', 'USD', ($transaction_info->{amount} // 0) * $exchange_rate);
+                $transaction_info->{usd_amount} =
+                    formatnumber('amount', 'USD', ($transaction_info->{amount} // 0) * ($transaction_info->{exchange_rate} || $exchange_rate));
             }
         }
 
