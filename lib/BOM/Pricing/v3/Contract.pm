@@ -260,8 +260,8 @@ sub _get_ask {
                     : $redis->lrange($stat_key, 0,  -1);
 
                 #barriers in PP should be calculated based on the current tick
-                my $high_barrier = $contract->display_high_barrier($contract->get_high_barrier($contract->current_spot));
-                my $low_barrier  = $contract->display_low_barrier($contract->get_low_barrier($contract->current_spot));
+                my $high_barrier = $contract->current_spot_high_barrier;
+                my $low_barrier  = $contract->current_spot_low_barrier;
 
                 $response->{contract_details} = {
                     'maximum_payout'    => $contract->max_payout,
@@ -883,11 +883,13 @@ sub _build_bid_response {
                     'order_date'   => $contract->take_profit->{date}->epoch,
                     'order_amount' => $contract->take_profit->{amount}}};
         }
-        $response->{growth_rate}  = $contract->growth_rate;
-        $response->{tick_count}   = $contract->max_duration;
-        $response->{tick_passed}  = $contract->tick_count_after_entry;
-        $response->{high_barrier} = $contract->display_high_barrier if $contract->display_high_barrier;
-        $response->{low_barrier}  = $contract->display_low_barrier  if $contract->display_low_barrier;
+        $response->{growth_rate}               = $contract->growth_rate;
+        $response->{tick_count}                = $contract->max_duration;
+        $response->{tick_passed}               = $contract->tick_count_after_entry;
+        $response->{high_barrier}              = $contract->display_high_barrier if $contract->display_high_barrier;
+        $response->{low_barrier}               = $contract->display_low_barrier  if $contract->display_low_barrier;
+        $response->{current_spot_high_barrier} = $contract->current_spot_high_barrier;
+        $response->{current_spot_low_barrier}  = $contract->current_spot_low_barrier;
 
         #in the first few ticks of the contract bid_price will be less than stake
         #but we don't want to show that to users
