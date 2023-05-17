@@ -124,7 +124,7 @@ subtest 'barrier pip size' => sub {
 };
 
 subtest 'barrier' => sub {
-    subtest 'display_low/high_barrier with argument' => sub {
+    subtest 'rounded barriers' => sub {
         $args->{date_pricing} = $now->epoch + 1;
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([91, $now->epoch, $symbol]);
         my $c = produce_contract($args);
@@ -140,7 +140,7 @@ subtest 'barrier' => sub {
             ok !$c->display_high_barrier, 'no display_high_barrier';
 
             while (my ($raw_barrier, $display_barrier) = each %examples) {
-                is $c->display_high_barrier($raw_barrier), $display_barrier, 'correct display high barrier';
+                is $c->round_high_barrier($raw_barrier), $display_barrier, 'correct display high barrier';
             }
         };
 
@@ -155,7 +155,7 @@ subtest 'barrier' => sub {
             ok !$c->display_low_barrier, 'no display_low_barrier';
 
             while (my ($raw_barrier, $display_barrier) = each %examples) {
-                is $c->display_low_barrier($raw_barrier), $display_barrier, 'correct display low barrier';
+                is $c->round_low_barrier($raw_barrier), $display_barrier, 'correct display low barrier';
             }
         };
     };
@@ -164,18 +164,8 @@ subtest 'barrier' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, $symbol], [101, $now->epoch + 1, $symbol]);
         $args->{date_pricing} = $now;
         my $c = produce_contract($args);
-        is $c->low_barrier->supplied_barrier,  98,  'supplied_barrier is correct';
-        is $c->high_barrier->supplied_barrier, 102, 'supplied_barrier is correct';
-
-        $args->{tick_size_barrier} = 0.000366;
-        $c = produce_contract($args);
-        is $c->low_barrier->supplied_barrier,  '99.9634',  'low supplied_barrier is correct';
-        is $c->low_barrier->as_absolute,       '99.96',    'low barrier as_absolute is correct';
-        is $c->display_low_barrier,            '99.963',   'display low value is correct';
-        is $c->high_barrier->supplied_barrier, '100.0366', 'high supplied_barrier is correct';
-        is $c->high_barrier->as_absolute,      '100.04',   'high barrier as_absolute is correct';
-        is $c->display_high_barrier,           '100.037',  'display low value is correct';
-        is $c->basis_spot,                     '100.00',   'basis_spot is correct';
+        is $c->low_barrier,  undef, 'low barrier is not defined';
+        is $c->high_barrier, undef, 'high barrier is not defined';
     };
 
     subtest 'non-pricing_new & no entry_tick' => sub {
@@ -205,6 +195,8 @@ subtest 'barrier' => sub {
         ok !$c->display_low_barrier,  'no display_low_barrier';
         ok !$c->display_high_barrier, 'no display_high_barrier';
         ok !$c->basis_spot,           'no basis_spot';
+        is $c->current_spot_high_barrier, '91.800', 'current_spot_high_barrier is correct';
+        is $c->current_spot_low_barrier,  '88.200', 'current_spot_low_barrier is correct';
     };
 
     subtest 'date_pricing after entry_tick' => sub {
@@ -222,9 +214,11 @@ subtest 'barrier' => sub {
         is $c->low_barrier->supplied_barrier,  '88.2',          'low supplied_barrier is correct';
         is $c->low_barrier->as_absolute,       '88.20',         'low barrier as_absolute is correct';
         is $c->display_low_barrier,            '88.200',        'display_low_barrier is correct';
+        is $c->current_spot_low_barrier,       '90.160',        'current_spot_high_barrier is correct';
         is $c->high_barrier->supplied_barrier, '91.8',          'high supplied_barrier is correct';
         is $c->high_barrier->as_absolute,      '91.80',         'high barrier as_absolute is correct';
         is $c->display_high_barrier,           '91.800',        'display_high_barrier is correct';
+        is $c->current_spot_high_barrier,      '93.840',        'current_spot_high_barrier is correct';
         is $c->basis_spot,                     '90',            'basis_spot is correct';
     };
 
