@@ -131,6 +131,7 @@ BOM::Backoffice::Request::template()->process(
         fee_by_currency   => $fee_by_currency,
         max_percent       => $max_fee_percent,
         disabled          => $disabled_write,
+        countries         => request()->brand->countries_instance->countries_list,
     });
 
 code_exit_BO();
