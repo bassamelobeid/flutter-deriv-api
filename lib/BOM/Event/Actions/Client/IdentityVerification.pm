@@ -745,50 +745,69 @@ async sub idv_webhook_relay {
 
     my $url = "$api_base_url/v1/idv/webhook";
 
-    try {
-        # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
-        await $loop->later;
+    # if 'X-Retry-Attempts' present in header, it means that it came from the IDV retry mechanism
+    if (my $retries = $args->{headers}->{'X-Retry-Attempts'}) {
+        $log->debugf("Got IDV webhook with retries: $retries");
+        my $retry_response = $args->{data}->{json};
 
-        $response =
-            (await _http()->POST($url, encode_json($args->{data}->{json}), (content_type => 'application/json', headers => $args->{headers})))
-            ->content;
-        $decoded_response = eval { decode_json_utf8 $response }
-            // {};    # further json encoding of this hashref should not convert to utf8 again, use `json_encode_text` instead
+        $status         = $retry_response->{status};
+        $status_message = $retry_response->{messages};
+        $login_id       = $retry_response->{req_echo}->{profile}->{id};
 
-        $status         = $decoded_response->{status};
-        $status_message = $decoded_response->{messages};
-        $login_id       = $decoded_response->{req_echo}->{profile}->{id};
-
-        my $verify_process_response = await verify_process({
+        await verify_process({
             loginid       => $login_id,
             status        => $status,
-            response_hash => $decoded_response,
+            response_hash => $retry_response,
             message       => $status_message,
         });
 
-    } catch ($e) {
-        if (blessed($e) and $e->isa('Future::Exception')) {
-            my ($payload) = $e->details;
-            $response = $payload->content;
+        $decoded_response = $retry_response;
 
-            $decoded_response = eval { decode_json_utf8 $response } // {};
+    } else {
+        try {
+            # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
+            await $loop->later;
 
-            $status = 'failed';
+            $response =
+                (await _http()->POST($url, encode_json($args->{data}->{json}), (content_type => 'application/json', headers => $args->{headers})))
+                ->content;
+            $decoded_response = eval { decode_json_utf8 $response }
+                // {};    # further json encoding of this hashref should not convert to utf8 again, use `json_encode_text` instead
 
-            $status_message = $log->errorf(
-                "Identity Verification Microservice responded an error to our request for passing the webhook response with code: %s, message: %s - %s",
-                $decoded_response->{code} // 'UNKNOWN',
-                $e->message,
-                $decoded_response->{error} // 'UNKNOWN'
-            );
-        } elsif ($e =~ /\bconnection refused\b/i) {
+            $status         = $decoded_response->{status};
+            $status_message = $decoded_response->{messages};
+            $login_id       = $decoded_response->{req_echo}->{profile}->{id};
 
-            # Update the status to failed as for it to not remain in perpetual 'pending' state
-            $status         = 'failed';
-            $status_message = "CONNECTION_REFUSED";
+            my $verify_process_response = await verify_process({
+                loginid       => $login_id,
+                status        => $status,
+                response_hash => $decoded_response,
+                message       => $status_message,
+            });
+        } catch ($e) {
+            if (blessed($e) and $e->isa('Future::Exception')) {
+                my ($payload) = $e->details;
+                $response = $payload->content;
 
-        } else {
-            $log->errorf('Unhandled IDV exception: %s', $e);
+                $decoded_response = eval { decode_json_utf8 $response } // {};
+
+                $status = 'failed';
+
+                $status_message = $log->errorf(
+                    "Identity Verification Microservice responded an error to our request for passing the webhook response with code: %s, message: %s - %s",
+                    $decoded_response->{code} // 'UNKNOWN',
+                    $e->message,
+                    $decoded_response->{error} // 'UNKNOWN'
+                );
+            } elsif ($e =~ /\bconnection refused\b/i) {
+
+                # Update the status to failed as for it to not remain in perpetual 'pending' state
+                $status         = 'failed';
+                $status_message = "CONNECTION_REFUSED";
+
+            } else {
+                $log->errorf('Unhandled IDV exception: %s', $e);
+            }
         }
     }
 
