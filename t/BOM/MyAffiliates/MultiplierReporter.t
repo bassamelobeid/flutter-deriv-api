@@ -172,8 +172,8 @@ subtest 'Multiple Contracts Commission', sub {
     is(@csv, 1, 'Client 2 is on the list');
 
     @csv = $reporter->activity();
-    @csv = @csv[1 .. $#csv];
-    @csv = map { chomp $_; $_ } @csv;
+    shift @csv;
+    chomp @csv;
     my @expected_csv = ("2020-09-14,deriv_CR101,800.40,320.16,1.00", "2020-09-14,deriv_CR102,400.00,160.00,1.00");
     is_deeply(\@csv, \@expected_csv, 'Check if values are correct');
 
