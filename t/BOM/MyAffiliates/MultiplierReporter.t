@@ -187,7 +187,7 @@ subtest 'Multiple Contracts Commission', sub {
 
     cmp_deeply($output, $expected_output, 'Client 2 : Financial contract without DC');
 
-    @csv          = $reporter->activity();
+    @csv = $reporter->activity();
     shift @csv;
     chomp @csv;
     @expected_csv = ("2020-09-14,deriv_CR101,800.40,320.16,1.00", "2020-09-14,deriv_CR102,800.00,280.00,1.00");
@@ -204,7 +204,7 @@ subtest 'Multiple Contracts Commission', sub {
 
     cmp_deeply($output, $expected_output, 'Client 2 : Financial contract with DC');
 
-    @csv          = $reporter->activity();
+    @csv = $reporter->activity();
     shift @csv;
     chomp @csv;
     @expected_csv = ("2020-09-14,deriv_CR101,800.40,320.16,1.00", "2020-09-14,deriv_CR102,801.00,280.30,1.00");
