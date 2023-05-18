@@ -187,9 +187,9 @@ subtest 'Multiple Contracts Commission', sub {
 
     cmp_deeply($output, $expected_output, 'Client 2 : Financial contract without DC');
 
-    @csv = $reporter->activity();
-    @csv = @csv[1 .. $#csv];
-    @csv = map { chomp $_; $_ } @csv;
+    @csv          = $reporter->activity();
+    @csv          = @csv[1 .. $#csv];
+    @csv          = map { chomp $_; $_ } @csv;
     @expected_csv = ("2020-09-14,deriv_CR101,800.40,320.16,1.00", "2020-09-14,deriv_CR102,800.00,280.00,1.00");
     is_deeply(\@csv, \@expected_csv, 'Check if values are correct');
 
@@ -203,10 +203,10 @@ subtest 'Multiple Contracts Commission', sub {
         $forex_cancellation_price * $dc_commission->{'frxUSDJPY'}->{cancellation_commission} * DUPLICATE;
 
     cmp_deeply($output, $expected_output, 'Client 2 : Financial contract with DC');
-    
-    @csv = $reporter->activity();
-    @csv = @csv[1 .. $#csv];
-    @csv = map { chomp $_; $_ } @csv;
+
+    @csv          = $reporter->activity();
+    @csv          = @csv[1 .. $#csv];
+    @csv          = map { chomp $_; $_ } @csv;
     @expected_csv = ("2020-09-14,deriv_CR101,800.40,320.16,1.00", "2020-09-14,deriv_CR102,801.00,280.30,1.00");
     is_deeply(\@csv, \@expected_csv, 'Check if values are correct');
 
