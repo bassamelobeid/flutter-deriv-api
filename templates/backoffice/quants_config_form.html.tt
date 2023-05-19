@@ -121,7 +121,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
 
 <div id="per_landing_company" class="row"></div>
 
-<h3>Global Realized Loss Limits Hit</h3>
+<h3>Global Loss Limits Hit</h3>
 
 <div id="global_loss_limits_display" class="row"></div>
 

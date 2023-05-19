@@ -98,10 +98,12 @@ for my $global_limit (@$all_global_limits_ref) {
         $global_limits_hit->{rank}{market}         //= "default";
         $global_limits_hit->{rank}{expiry_type}    //= "default";
         $global_limits_hit->{rank}{is_atm}         //= "default";
+        my $global_loss_limit =
+            $global_limit->{global_realized_loss} ? $global_limit->{global_realized_loss} : $global_limit->{global_potential_loss};
 
         # comparison of global_limits_hit from redis hash and $global_limit from the $quants_config->get_all_global_limit
         if (_compare_values($global_limits_hit, $global_limit)
-            && $global_limits_hit->{current_amount} >= $global_limit->{global_realized_loss})
+            && $global_limits_hit->{current_amount} >= $global_loss_limit)
         {
             if ($global_limits_hit->{landing_company_short} && $global_limits_hit->{landing_company_short} eq $global_limit->{landing_company}) {
                 # replacing landing company short name with their respective broker code i.e. svg to cr01;
