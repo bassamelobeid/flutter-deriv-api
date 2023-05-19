@@ -150,7 +150,9 @@ sub _store_global_limits {
         . _is_defined($msg->{rank}{is_atm}) . "::"
         . _is_defined($msg->{rank}{contract_group}) . "::"
         . _is_defined($msg->{landing_company}) . "::"
+        . _is_defined($msg->{type}) . "::"
         . _is_defined($msg->{limit_amount});
+
     my $encoded_msg = $json->encode($msg);
     my $ttl         = DateTime->today(time_zone => 'local')->add(days => 1)->epoch - time;
     my $redis       = BOM::Config::Redis::redis_replicated_write();
