@@ -32,7 +32,7 @@ BrokerPresentation("COMPLIANCE DASHBOARD");
 
 my $now = Date::Utility->new;
 
-my ($thresholds, $jurisdiction_rating, $npj_countries_list);
+my ($thresholds, $jurisdiction_rating, $npj_countries_list, $mf_enable_country_list);
 my $thresholds_readonly = not BOM::Backoffice::Auth0::has_authorisation(['IT']);
 my $compliance_config   = BOM::Config::Compliance->new;
 
@@ -45,8 +45,8 @@ my $staff = BOM::Backoffice::Auth0::get_staffname();
 
 if ($what_to_do eq "NPJ") {
 
-    my $landing_Company = request()->param('landingCompany');
-    my @data_array      = split /,/, request()->param($landing_Company);
+    my $landing_company = request()->param('landingCompany');
+    my @data_array      = split /,/, request()->param($landing_company);
 
     my $sorted_data_string = join "", @data_array;
 
@@ -69,7 +69,7 @@ if ($what_to_do eq "NPJ") {
         my $revision = request()->param("revision");
 
         my $npj_countries_list //= $compliance_config->get_npj_countries_list($_);
-        $npj_countries_list->{$landing_Company} = [sort @data_array];
+        $npj_countries_list->{$landing_company} = [sort @data_array];
 
         BOM::DynamicSettings::save_settings({
                 settings => {
@@ -77,6 +77,50 @@ if ($what_to_do eq "NPJ") {
                     "compliance.npj_country_list" => encode_json_utf8($npj_countries_list)
                 },
                 settings_in_group => ["compliance.npj_country_list"],
+                save              => 'global',
+            });
+    }
+}
+
+if ($what_to_do eq "mfCountries") {
+
+    my @enable_data_array = split /,/, request()->param('enable');
+
+    my $validation_error = $compliance_config->validate_npj_country_list(@enable_data_array);
+
+    if ($validation_error) {
+        print "<p class=\"error\">Error: $validation_error </p>";
+        code_exit_BO();
+    }
+
+    $mf_enable_country_list //= $compliance_config->get_mf_enable_country_list($_);
+
+    $mf_enable_country_list->{enable} = [sort @enable_data_array];
+
+    # creating a data string from the json data and sorting the string
+    # the sorted string will be used in creating a control code so that everytime for same data
+    # the signature created is same and consistent.
+
+    my $data_str    = encode_json_utf8($mf_enable_country_list);
+    my $sorted_data = join "", sort split //, $data_str;
+
+    if ($action_name eq 'GenerateDCC') {
+
+        _generate_dcc_code($sorted_data);
+
+    } else {
+        my $code = request()->param('dcc');
+
+        _validate_dcc_code($code, $sorted_data);
+
+        my $revision = request()->param("revision");
+
+        BOM::DynamicSettings::save_settings({
+                settings => {
+                    revision                            => $revision,
+                    "compliance.mf_enable_country_list" => encode_json_utf8($mf_enable_country_list),
+                },
+                settings_in_group => ["compliance.mf_enable_country_list"],
                 save              => 'global',
             });
     }
@@ -228,6 +272,7 @@ sub _validate_dcc_code {
 $thresholds->{$_}          //= $compliance_config->get_risk_thresholds($_)          for qw/aml mt5/;
 $jurisdiction_rating->{$_} //= $compliance_config->get_jurisdiction_risk_rating($_) for qw/aml mt5/;
 $npj_countries_list        //= $compliance_config->get_npj_countries_list($_);
+$mf_enable_country_list    //= $compliance_config->get_mf_enable_country_list($_);
 
 my $show_landing_company = sub {
     my ($type, $landing_company) = @_;
@@ -262,6 +307,17 @@ my $show_landing_company_npj = sub {
             landing_company => $landing_company,
             npj_countries   => $npj_countries_list,
             revision        => $npj_countries_list->{revision},
+        }) || die BOM::Backoffice::Request::template()->error() . "\n";
+};
+
+my $show_mf_enable_disable_country = sub {
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/mf_enable_country.html.tt',
+        {
+            url                    => request()->url_for('backoffice/compliance_dashboard.cgi'),
+            revision               => $mf_enable_country_list->{revision},
+            mf_enable_country_list => $mf_enable_country_list,
         }) || die BOM::Backoffice::Request::template()->error() . "\n";
 };
 
@@ -308,6 +364,11 @@ print '</table>';
 print '<tr> <td>'
     . '<p><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=compliance.npj_country_list&referrer=compliance_dashboard.cgi">See history of NPJ country</a></p>'
     . '</td> <td>';
+print '</table>';
+
+Bar('MF Country List');
+print '<table>';
+$show_mf_enable_disable_country->();
 print '</table>';
 
 Bar("Sanction List Info");

@@ -379,7 +379,6 @@ sub validate_batch_anonymization_control_code {
 }
 
 =head2 validate_compliance_dashboard_control_code_npj
-$incode
 Validate compliance dashboard dcc
 
 =cut
