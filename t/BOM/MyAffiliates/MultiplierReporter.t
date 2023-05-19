@@ -44,7 +44,7 @@ my $synthetic_multiplier         = 100;
 
 subtest 'Multiple Contracts Commission', sub {
 
-    plan tests => 7;
+    plan tests => 22;
 
     my $client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         loginid            => 'CR101',
@@ -109,6 +109,16 @@ subtest 'Multiple Contracts Commission', sub {
 
     cmp_deeply($output, $expected_output, 'Client 1 : Non-financial contract without DC');
 
+    my @csv = $reporter->activity();
+    is(@csv, 2, 'One row client one row header');
+
+    @csv = grep { my $id = $client_1->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client 1 is on the list');
+
+    chomp $csv[0];
+    my $expected_csv = "2020-09-14,deriv_CR101,400.00,160.00,1.00";
+    is_deeply($csv[0], $expected_csv, 'Check if values are correct');
+
     buy_contract($client_1, 'synthetic', 0);
 
     $output = $reporter->computation();
@@ -118,6 +128,11 @@ subtest 'Multiple Contracts Commission', sub {
     $expected_output->{$client_1->{loginid}}{trade_commission} += $buy_price * $synthetic_multiplier * $synthetic_commission * DUPLICATE;
 
     cmp_deeply($output, $expected_output, 'Client 1 : Non-financial contract without DC');
+
+    @csv = $reporter->activity();
+    chomp $csv[1];
+    $expected_csv = "2020-09-14,deriv_CR101,800.00,320.00,1.00";
+    is_deeply($csv[1], $expected_csv, 'Check if values are correct');
 
     buy_contract($client_1, 'synthetic', 1);
 
@@ -130,6 +145,11 @@ subtest 'Multiple Contracts Commission', sub {
 
     cmp_deeply($output, $expected_output, 'Client 1 : Non-financial contract with DC');
 
+    @csv = $reporter->activity();
+    chomp $csv[1];
+    $expected_csv = "2020-09-14,deriv_CR101,800.40,320.16,1.00";
+    is_deeply($csv[1], $expected_csv, 'Check if values are correct');
+
     buy_contract($client_2, 'synthetic', 0);
 
     $output = $reporter->computation();
@@ -140,6 +160,23 @@ subtest 'Multiple Contracts Commission', sub {
 
     cmp_deeply($output, $expected_output, 'Client 2 : Non-financial contract without DC');
 
+    @csv = $reporter->activity();
+    is(@csv, 3, 'Two row clients one row header');
+
+    @csv = $reporter->activity();
+    @csv = grep { my $id = $client_1->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client 1 is on the list');
+
+    @csv = $reporter->activity();
+    @csv = grep { my $id = $client_2->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client 2 is on the list');
+
+    @csv = $reporter->activity();
+    shift @csv;
+    chomp @csv;
+    my @expected_csv = ("2020-09-14,deriv_CR101,800.40,320.16,1.00", "2020-09-14,deriv_CR102,400.00,160.00,1.00");
+    is_deeply(\@csv, \@expected_csv, 'Check if values are correct');
+
     buy_contract($client_2, 'forex', 0);
 
     $output = $reporter->computation();
@@ -149,6 +186,12 @@ subtest 'Multiple Contracts Commission', sub {
     $expected_output->{$client_2->{loginid}}{trade_commission} += $buy_price * $forex_multiplier * $forex_commission * DUPLICATE;
 
     cmp_deeply($output, $expected_output, 'Client 2 : Financial contract without DC');
+
+    @csv = $reporter->activity();
+    shift @csv;
+    chomp @csv;
+    @expected_csv = ("2020-09-14,deriv_CR101,800.40,320.16,1.00", "2020-09-14,deriv_CR102,800.00,280.00,1.00");
+    is_deeply(\@csv, \@expected_csv, 'Check if values are correct');
 
     buy_contract($client_2, 'forex', 1);
 
@@ -161,11 +204,32 @@ subtest 'Multiple Contracts Commission', sub {
 
     cmp_deeply($output, $expected_output, 'Client 2 : Financial contract with DC');
 
+    @csv = $reporter->activity();
+    shift @csv;
+    chomp @csv;
+    @expected_csv = ("2020-09-14,deriv_CR101,800.40,320.16,1.00", "2020-09-14,deriv_CR102,801.00,280.30,1.00");
+    is_deeply(\@csv, \@expected_csv, 'Check if values are correct');
+
     buy_contract($client_3, 'forex', 1);
 
     $output = $reporter->computation();
 
     cmp_deeply($output, $expected_output, 'Client 3 : Non-affiliated');
+
+    @csv = $reporter->activity();
+    is(@csv, 3, 'Two row clients one row header');
+
+    @csv = $reporter->activity();
+    @csv = grep { my $id = $client_1->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client 1 is on the list');
+
+    @csv = $reporter->activity();
+    @csv = grep { my $id = $client_2->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client 2 is on the list');
+
+    @csv = $reporter->activity();
+    @csv = grep { my $id = $client_3->loginid; /$id/ } @csv;
+    is(@csv, 0, 'Client 3 is not on the list');
 };
 
 sub buy_contract {

@@ -79,19 +79,45 @@ subtest 'app ids', sub {
 
     is_deeply($output, $expected_output, 'included and excluded app ids are undef');
 
+    my @csv = $reporter->activity();
+    is(@csv, 2, 'One row client one row header');
+
+    @csv = grep { my $id = $client->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client is on the list');
+
+    chomp $csv[0];
+    my $expected_csv = "2020-09-14,deriv_CR101,0.80,0.32,1.00";
+    is_deeply($csv[0], $expected_csv, 'Check if values are correct');
+
     # excluded app ids
     $mock_reporter->mock('get_apps_by_brand', sub { return {exclude_apps => [100], include_apps => undef} });
     $output = $reporter->computation();
     is_deeply($output, {}, 'app id is in the excluded app list');
+
+    @csv = $reporter->activity();
+    is(@csv, 0, 'No csv output');
 
     # included app ids
     $mock_reporter->mock('get_apps_by_brand', sub { return {exclude_apps => undef, include_apps => [101]} });
     $output = $reporter->computation();
     is_deeply($output, {}, 'app id is not in the included list');
 
+    @csv = $reporter->activity();
+    is(@csv, 0, 'No csv output');
+
     $mock_reporter->mock('get_apps_by_brand', sub { return {exclude_apps => undef, include_apps => [100]} });
     $output = $reporter->computation();
     is_deeply($output, $expected_output, 'app id is in the included app list');
+
+    @csv = $reporter->activity();
+    is(@csv, 2, 'One row client one row header');
+
+    @csv = grep { my $id = $client->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client is on the list');
+
+    chomp $csv[0];
+    $expected_csv = "2020-09-14,deriv_CR101,0.80,0.32,1.00";
+    is_deeply($csv[0], $expected_csv, 'Check if values are correct');
 
 };
 
@@ -151,6 +177,16 @@ subtest 'Multiple Contracts Commission', sub {
 
     is_deeply($output, $client1_expected_output, 'Client 1 with 1 contract');
 
+    my @csv = $reporter->activity();
+    is(@csv, 2, 'One row client one row header');
+
+    @csv = grep { my $id = $client_1->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client 1 is on the list');
+
+    chomp $csv[0];
+    my $expected_csv = "2020-09-16,deriv_CR200,0.80,0.32,1.00";
+    is_deeply($csv[0], $expected_csv, 'Check if values are correct');
+
     $short_code = 'ACCU_R_10_10_2_0.01_1_0.0001_' . ($date->epoch + 1);
     # buy a contract
     $args = {
@@ -174,6 +210,11 @@ subtest 'Multiple Contracts Commission', sub {
         }};
 
     is_deeply($output, $client1_expected_output, 'Client 1 with 2 contracts');
+
+    @csv = $reporter->activity();
+    chomp $csv[1];
+    $expected_csv = "2020-09-16,deriv_CR200,1.61,0.64,1.00";
+    is_deeply($csv[1], $expected_csv, 'Check if values are correct');
 
     my $client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         loginid            => 'CR201',
@@ -223,6 +264,22 @@ subtest 'Multiple Contracts Commission', sub {
 
     is_deeply($output, $expected_output, 'Two clients with contracts');
 
+    @csv = $reporter->activity();
+    is(@csv, 3, 'Two row clients one row header');
+
+    @csv = $reporter->activity();
+    @csv = grep { my $id = $client_1->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client 1 is on the list');
+
+    @csv = $reporter->activity();
+    @csv = grep { my $id = $client_2->loginid; /$id/ } @csv;
+    is(@csv, 1, 'Client 2 is on the list');
+
+    @csv = $reporter->activity();
+    shift @csv;
+    chomp @csv;
+    my @expected_csv = ("2020-09-16,deriv_CR200,1.61,0.64,1.00", "2020-09-16,deriv_CR201,1.21,0.48,1.00");
+    is_deeply(\@csv, \@expected_csv, 'Check if values are correct');
 };
 
 done_testing();
