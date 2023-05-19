@@ -402,6 +402,9 @@ Takes the following arguments as named parameters:
 sub get_accounts {
     my ($self, %args) = @_;
 
+    local $SIG{ALRM} = sub { my $err = {code => 'TimedOut', message_to_client => 'Unable to fetch accounts due to a timeout'}; die $err; };
+    alarm 10;
+
     my @local_accounts  = $self->local_accounts or return [];
     my @account_servers = $self->account_servers;
 
@@ -416,7 +419,7 @@ sub get_accounts {
             die $e if $args{force};
         }
     }
-
+    alarm 0;
     my @result;
     for my $local_account (@local_accounts) {
         next if $args{type} and $args{type} ne $local_account->{account_type};
