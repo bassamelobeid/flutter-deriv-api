@@ -82,7 +82,7 @@ $client->smart_payment(
     currency     => 'USD',
     amount       => +100,
     payment_type => 'external_cashier',
-    remark       => '存钱'
+    remark       => 'Tesing deposit'
 );
 
 # Here we test the message process flow when json include utf8 string.
