@@ -36,6 +36,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::User::Client;
 
+use constant CRYPTO_DEFAULT_TRANSACTION_COUNT => 50;
 use constant REJECTION_REASONS => {
     low_trade => {
         reason => 'less trade/no trade',
@@ -188,6 +189,8 @@ try {
     push @errors, 'Invalid dates, please check the dates and try again.';
 }
 
+my $offset               = max(request()->param("offset") // 0, 0);
+my $limit                = CRYPTO_DEFAULT_TRANSACTION_COUNT;
 my $display_transactions = sub {
     my ($trxns, $update_errors) = @_;
     # Assign USD equivalent value
@@ -231,7 +234,29 @@ my $display_transactions = sub {
         map  { {index => $_, reason => REJECTION_REASONS->{$_}->{reason}} }
         sort { REJECTION_REASONS->{$a}->{reason} cmp REJECTION_REASONS->{$b}->{reason} }
         keys REJECTION_REASONS->%*;
-
+    my $pagination_qs = {
+        currency    => $currency,
+        view_action => $view_action,
+        offset      => max($offset, 0),
+        view_type   => $view_type
+    };
+    if ($view_action eq 'search') {
+        $pagination_qs->{search_type}             = request()->param('search_type');
+        $pagination_qs->{search_query}            = request()->param('search_query');
+        $pagination_qs->{search_transaction_type} = request()->param('search_transaction_type');
+    }
+    my $make_pagination_url = sub {
+        my ($offset_value) = @_;
+        $pagination_qs->{offset} = $offset_value;
+        return request()->url_for('backoffice/f_manager_crypto.cgi', $pagination_qs)->fragment('transactions');
+    };
+    my $transactions_count = scalar $trxns->@*;
+    my $pagination_info    = {
+        prev_url => $offset                              ? $make_pagination_url->($offset - $limit) : undef,
+        next_url => $limit == scalar $transactions_count ? $make_pagination_url->($offset + $limit) : undef,
+        range    => ($offset + !!$transactions_count) . ' - ' . ($offset + $transactions_count),
+    };
+    $pagination_qs->{offset} = $offset;
     # Render template page with transactions
     $tt->process(
         'backoffice/crypto_cashier/manage_crypto_transactions.tt',
@@ -241,13 +266,14 @@ my $display_transactions = sub {
             currency            => $currency,
             view_action         => $view_action,
             view_type           => $view_type,
-            controller_url      => request()->url_for('backoffice/f_manager_crypto.cgi'),
+            controller_url      => request()->url_for('backoffice/f_manager_crypto.cgi', $pagination_qs),
             staff               => $staff,
             show_all_pendings   => $show_all_pendings   // '',
             show_one_authorised => $show_one_authorised // '',
             fetch_url           => request()->url_for('backoffice/fetch_client_details.cgi'),
             rejection_reasons   => \@rejection_reasons_tpl,
             update_errors       => $update_errors,
+            pagination          => $pagination_info,
         }) || die $tt->error() . "\n";
 };
 
@@ -336,6 +362,7 @@ $actions->{withdrawals} = sub {
             status        => $view_type eq 'pending' ? 'LOCKED' : uc($view_type),
             type          => 'withdrawal',
             detail_level  => 'full',
+            offset        => $offset,
         },
     };
 
@@ -379,11 +406,12 @@ $actions->{auto_reject_insufficient} = sub {
         id     => $view_action,
         action => 'transaction/get_list',
         body   => {
-            currency_code  => $currency,
-            status         => 'LOCKED',
-            type           => 'withdrawal',
-            detail_level   => 'brief',
-            sort_direction => 'ASC',
+            currency_code   => $currency,
+            status          => 'LOCKED',
+            type            => 'withdrawal',
+            detail_level    => 'brief',
+            sort_direction  => 'ASC',
+            skip_pagination => 1,              # don't consider pagination, else it will reject withdrawals page-wise
         },
     };
 
@@ -451,6 +479,7 @@ $actions->{deposits} = sub {
             status        => uc($view_type),
             type          => 'deposit',
             detail_level  => 'full',
+            offset        => $offset,
         },
     };
 
@@ -463,31 +492,30 @@ $actions->{deposits} = sub {
 };
 
 $actions->{search} = sub {
-    my $search_type  = request()->param('search_type');
-    my $search_query = request()->param('search_query');
+    my $search_type      = request()->param('search_type');
+    my $search_query     = request()->param('search_query');
+    my $transaction_type = request()->param('search_transaction_type');
 
     push @errors, 'Invalid type of search request.'
-        unless grep { $search_type eq $_ } qw/loginid address/;
+        unless grep { $search_type eq $_ } qw/loginid address search_transaction_type/;
 
-    my @transaction_types = qw(withdrawal deposit);
-    for my $transaction_type (@transaction_types) {
-        push @batch_requests, {    # Request transaction lists
-            id     => $transaction_type,
-            action => 'transaction/get_list',
-            body   => {
-                currency_code => $currency,
-                $search_type  => $search_query,
-                type          => $transaction_type,
-                detail_level  => 'full',
-            },
-        };
-    }
+    push @batch_requests, {    # Request transaction lists
+        id     => $transaction_type,
+        action => 'transaction/get_list',
+        body   => {
+            currency_code => $currency,
+            $search_type  => $search_query,
+            type          => $transaction_type,
+            detail_level  => 'full',
+            offset        => $offset,
+        },
+    };
 
     return sub {
         my ($response_bodies) = @_;
 
         Bar("SEARCH RESULT FOR $search_query");
-        my @transaction_list = map { $response_bodies->{$_}{transaction_list}->@* } @transaction_types;
+        my @transaction_list = $response_bodies->{$transaction_type}{transaction_list}->@*;
         $display_transactions->([@transaction_list]);
     };
 };

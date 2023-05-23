@@ -34,7 +34,11 @@
             <option value="loginid">Login ID</option>
             <option value="address">Address</option>
         </select>
-        <input type="text" name="search_query" data-lpignore="true" size="40" />
+        <select name="search_transaction_type">
+            <option value="withdrawal">Withdrawals</option>
+            <option value="deposit">Deposits</option>
+        </select>
+        <input type="text" name="search_query" data-lpignore="true" size="40"/>
     <br><br>
 <!-- Deposit -->
     <button type="submit" class="btn btn--primary" name="view_action" value="deposits">Deposit transactions</button>
