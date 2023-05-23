@@ -49,7 +49,7 @@ sub run {
                     my $redis = _redis();
                     my $dbh   = _db($addr);
 
-                    $dbh->do("LISTEN transaction_watchers");
+                    $dbh->do("LISTEN transaction_watchers_json");
                     my $sel = IO::Select->new;
                     $sel->add($dbh->{pg_socket});
                     while ($sel->can_read) {
@@ -97,8 +97,8 @@ sub _msg {
     my %msg;
     @msg{
         qw/id account_id action_type referrer_type financial_market_bet_id
-            payment_id amount balance_after transaction_time short_code currency_code purchase_time purchase_price sell_time payment_remark/
-    } = split(',', $payload, 15);
+            payment_id amount balance_after transaction_time short_code currency_code purchase_time purchase_price sell_time payment_remark client_loginid binary_user_id/
+    } = decode_json_utf8($payload)->@*;
 
     return \%msg;
 }
