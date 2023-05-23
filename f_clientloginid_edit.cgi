@@ -55,8 +55,6 @@ use BOM::Backoffice::VirtualStatus;
 
 use BOM::Config::Compliance;
 
-my $compliance_config = BOM::Config::Compliance->new;
-
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
@@ -2388,6 +2386,7 @@ sub _residence_change_validation {
     my @all_clients   = @{$data->{all_clients}};
 
     my $countries_instance = request()->brand->countries_instance;
+    my $compliance_config  = BOM::Config::Compliance->new;
 
     # Get the list of landing companies, as per residence
     my $get_lc = sub {
@@ -2396,7 +2395,7 @@ sub _residence_change_validation {
         my @broker_list;
 
         my $gc = $countries_instance->gaming_company_for_country($residence);
-        my $fc = $compliance_config->get_financial_company($client->residence) // '';
+        my $fc = $compliance_config->get_financial_company($residence);
 
         return () unless ($gc || $fc);
 
