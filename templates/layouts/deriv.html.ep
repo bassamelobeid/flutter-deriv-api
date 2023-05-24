@@ -408,6 +408,8 @@
             p.error-oneall {
                 color: var(--color-red);
                 font-size: var(--text-size-s);
+                width: 100%;
+                text-aligh: center;
             }
             .title-text {
                 margin-top: 0;
@@ -482,7 +484,7 @@
                 font-size: var(--text-size-s);
                 width: 100%;
                 text-align: center;
-                margin-top: -18px;
+                padding-top: 24px;
             }
             @media (max-width: 480px) {
                 .account-text {
