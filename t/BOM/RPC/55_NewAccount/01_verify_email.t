@@ -276,8 +276,6 @@ subtest 'Payment agent withdraw' => sub {
         $emitted[1]->{properties}->{verification_url},
         'https://www.binary.com/en/redirect.html?action=payment_agent_withdraw&lang=EN&code='
             . $emitted[1]->{properties}->{code}
-            . '&loginid='
-            . $client->loginid
             . '&utm_medium=email',
         'the verification_url is correct'
     );
@@ -313,11 +311,7 @@ subtest 'Payment withdraw' => sub {
     is $emitted[1]->{properties}{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
     is(
         $emitted[1]->{properties}->{verification_url},
-        'https://www.binary.com/en/redirect.html?action=payment_withdraw&lang=EN&code='
-            . $emitted[1]->{properties}->{code}
-            . '&loginid='
-            . $client->loginid
-            . '&utm_medium=email',
+        'https://www.binary.com/en/redirect.html?action=payment_withdraw&lang=EN&code=' . $emitted[1]->{properties}->{code} . '&utm_medium=email',
         'the verification_url is correct'
     );
     undef @emitted;

@@ -170,7 +170,6 @@ Create Email verification function base on verify_email arguments
 sub create_email_verification_function {
     my ($self) = @_;
     $self->{email_verification} = email_verification({
-        loginid          => $self->{token_details}->{loginid},
         code             => $self->{code},
         website_name     => $self->{website_name},
         verification_uri => BOM::RPC::v3::Utility::get_verification_uri($self->{source}),

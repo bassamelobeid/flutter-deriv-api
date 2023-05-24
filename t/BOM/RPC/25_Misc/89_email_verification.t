@@ -38,16 +38,6 @@ subtest 'Build Verification  URL' => sub {
 
     my $construct_expected_url = sub {
         my ($args, $extra_params, $action) = @_;
-        if ($action eq 'payment_agent_withdraw') {
-            my $expected_url = "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}&loginid=$args->{loginid}"
-                . (
-                defined $extra_params
-                ? '&' . join '&', map { "$_=$extra_params->{$_}" } sort keys $extra_params->%*
-                : ''
-                );
-
-            return $expected_url;
-        }
         my $expected_url = "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}"
             . (
             defined $extra_params
@@ -103,7 +93,6 @@ subtest 'Build Verification  URL' => sub {
         language         => 'Eng',
         code             => "Thisisthecode",
         verification_uri => "https://www.rover.com/search",
-        loginid          => "CR90000001",
     };
     $expected_url = $construct_expected_url->($args, $extra_params, 'action_test');
     $result       = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', {$args->%*, $extra_params->%*});
