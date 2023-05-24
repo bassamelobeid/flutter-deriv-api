@@ -732,11 +732,9 @@ async_rpc "mt5_new_account",
         return create_error_future('InvalidServerInput');
     }
 
-    my $compliance_config = BOM::Config::Compliance->new;
-
     # Restrict if Onfido blocked
     return create_error_future('MT5NotAllowed', {params => $company_type})
-        if not $compliance_config->is_mt_company_supported($residence, $company_type, $landing_company_short, $client->broker_code);
+        if not $countries_instance->is_mt_company_supported($residence, $company_type, $landing_company_short);
 
     # MT5 is not allowed in client country
     return create_error_future($sub_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
@@ -1140,14 +1138,13 @@ sub _get_landing_company {
 
     my $mt_lc = LandingCompany::Registry->by_name($mt_landing_company);
 
-    my $brand             = request()->brand;
-    my $countries         = $brand->countries_instance;
-    my $residence         = $client->residence;
-    my $compliance_config = BOM::Config::Compliance->new;
+    my $brand     = request()->brand;
+    my $countries = $brand->countries_instance;
+    my $residence = $client->residence;
 
     for my $deriv_lc ($mt_lc->mt5_require_deriv_account_at->@*) {
         return $deriv_lc if ($countries->gaming_company_for_country($residence)    // '') eq $deriv_lc;
-        return $deriv_lc if ($compliance_config->get_financial_company($residence) // '') eq $deriv_lc;
+        return $deriv_lc if ($countries->financial_company_for_country($residence) // '') eq $deriv_lc;
     }
 
     return 'none';
