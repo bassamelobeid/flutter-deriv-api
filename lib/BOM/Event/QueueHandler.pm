@@ -314,6 +314,8 @@ async sub get_stream_items {
     my $self = shift;
     my $message;
 
+    await $self->redis->connected;
+
     try {
         $message = await $self->redis->xreadgroup(
             'GROUP',   $self->consumer_group, $self->consumer_name,
