@@ -219,13 +219,13 @@ Future->wait_any(
                 my ($code) = @_;
                 while (1) {
                     try {
+                        await $loop->delay_future(after => $interval_in_seconds);
+
                         await &fmap_void(
                             $code,
                             # Avoid piling too many requests into Redis at a time
                             concurrent => 8,
                             foreach    => [@$streams]);
-
-                        await $loop->delay_future(after => $interval_in_seconds);
                     } catch ($e) {
                         $log->errorf("An error occurred while monitoring Redis: %s", $e);
                         ping_circuit();
