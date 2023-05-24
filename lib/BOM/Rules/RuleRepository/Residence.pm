@@ -17,8 +17,6 @@ use List::Util;
 
 use BOM::Rules::Registry qw(rule);
 
-use BOM::Config::Compliance;
-
 rule 'residence.market_type_is_available' => {
     description => "The market_type in args should be allowed in the context residence",
     code        => sub {
@@ -30,12 +28,11 @@ rule 'residence.market_type_is_available' => {
         my $residence       = $context->residence($args);
         my $landing_company = $context->landing_company_object($args);
 
-        my $compliance_config = BOM::Config::Compliance->new;
-
         my $countries_instance = $context->brand($args)->countries_instance;
-        my $companies          = {
+
+        my $companies = {
             synthetic => $countries_instance->gaming_company_for_country($context->residence($args)),
-            financial => $compliance_config->get_financial_company($context->residence($args)),
+            financial => $countries_instance->financial_company_for_country($context->residence($args)),
         };
 
         if ($category eq 'wallet') {
