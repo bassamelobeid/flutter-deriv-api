@@ -75,8 +75,6 @@ use Carp qw(croak confess);
 
 use Log::Any qw($log);
 
-use BOM::Config::Compliance;
-
 =head1 NAME
 
 BOM::User::Client
@@ -2326,12 +2324,11 @@ sub check_duplicate_account {
             exclude_status => ['duplicate_account']};
         $dup_details->{$_} = $args->{$_} || $self->$_ for @$checks;
 
-        my $countries         = request()->brand->countries_instance;
-        my $compliance_config = BOM::Config::Compliance->new;
+        my $countries = request()->brand->countries_instance;
 
         # check for duplicates in current and all uprgradeable landing companies
         my @real_companies =
-            uniq grep { $_ } ($countries->gaming_company_for_country($self->residence), $compliance_config->get_financial_company($self->residence));
+            uniq grep { $_ } ($countries->gaming_company_for_country($self->residence), $countries->financial_company_for_country($self->residence));
         my @broker_codes = map { LandingCompany::Registry->by_name($_)->broker_codes->@* } @real_companies;
 
         for my $broker_code (@broker_codes) {
