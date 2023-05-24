@@ -256,11 +256,10 @@ my %account_display_mapping = (
 sub _mt5_listing {
     my ($self, $country_code, $app) = @_;
 
-    my $compliance_config = BOM::Config::Compliance->new;
-    my $mt_accounts       = $compliance_config->get_mt_account_types_for_country($country_code);
-    my $mt5_config        = BOM::Config::MT5->new();
-    my $market_registry   = Finance::Underlying::Market::Registry->instance;
-    my $redis             = BOM::Config::Redis::redis_mt5_user();
+    my $mt_accounts     = $self->countries_instance->mt_account_types_for_country($country_code);
+    my $mt5_config      = BOM::Config::MT5->new();
+    my $market_registry = Finance::Underlying::Market::Registry->instance;
+    my $redis           = BOM::Config::Redis::redis_mt5_user();
 
     my %mt5_product_list;
     my @mt5_available_markets;
