@@ -436,7 +436,7 @@ sub rejected_onfido_reasons {
             "Your age in the document you provided appears to be below 18 years. We're only allowed to offer our services to clients above 18 years old, so we'll need to close your account. If you have a balance in your account, contact us via live chat and we'll help to withdraw your funds before your account is closed."
         ),
         'selfie' => localize(
-            "Your selfie isn't clear. Please take a clearer photo and try again. Ensure that there's enough light where you are and that your entire face is in the frame."
+            "We're unable to verify the selfie you provided as it does not match the required criteria. Please provide a photo that closely resembles the document photo provided."
         ),
     };
 
