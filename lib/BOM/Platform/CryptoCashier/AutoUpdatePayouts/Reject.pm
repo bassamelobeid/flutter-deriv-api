@@ -149,7 +149,6 @@ sub user_activity {
         $response->{auto_reject} = 0;
         return $response;
     }
-
     my $start_date_to_inspect = Time::Moment->from_epoch(Time::Moment->now->epoch - TIME_RANGE);
     my ($user_payments) = $self->user_payment_details(
         binary_user_id => $binary_user_id,
@@ -165,7 +164,6 @@ sub user_activity {
     my $all_crypto_net_deposits   = $user_payments->{currency_wise_crypto_net_deposits} // {};
     my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$currency_code}          // 0;
     my $highest_deposited_amount  = $self->find_highest_deposit($user_payments);
-    my $fiat_account              = $self->find_fiat_account($user_payments->{payments}) // 'fiat';
 
     if (($highest_deposited_amount->{net_amount_in_usd} // 0) < 0 and $net_crypto_deposit_amount < 0) {
         $log->debugf('User\'s net crypto deposit amount & highest deposited amount are both negative values since %s',
@@ -176,14 +174,13 @@ sub user_activity {
     } elsif (%$highest_deposited_amount and $net_crypto_deposit_amount < $highest_deposited_amount->{net_amount_in_usd}) {
 
         $log->debugf('User has more Fiat deposits than crypto deposits since %s', $start_date_to_inspect->to_string);
-        $response->{tag}           = TAGS->{highest_deposit_not_crypto};
-        $response->{reject_reason} = 'highest_deposit_method_is_not_crypto';
-        $response->{auto_reject}   = 1;
-        $response->{meta_data}     = $self->map_clean_method_name($highest_deposited_amount->{highest_deposit_method});
-        $response->{fiat_account}  = $fiat_account;
-        $response->{reject_remark} = $self->generate_reject_remarks(
+        $response->{tag}                       = TAGS->{highest_deposit_not_crypto};
+        $response->{reject_reason}             = 'highest_deposit_method_is_not_crypto';
+        $response->{auto_reject}               = 1;
+        $response->{suggested_withdraw_method} = $self->map_clean_method_name($highest_deposited_amount->{highest_deposit_method});
+        $response->{reject_remark}             = $self->generate_reject_remarks(
             reject_reason => $response->{reject_reason},
-            reject_remark => $response->{meta_data});
+            reject_remark => $response->{suggested_withdraw_method});
     } else {
         $log->debugf('User has more crypto deposits than fiat, PA and P2P since %s', $start_date_to_inspect->to_string);
         $response->{tag}         = TAGS->{high_crypto_deposit};
@@ -211,7 +208,8 @@ sub db_reject_withdrawal {
     my ($self, %args) = @_;
 
     my $crypto_api = BOM::Platform::CryptoCashier::InternalAPI->new;
-    my $response   = $crypto_api->reject_withdrawal([{id => $args{id}, remark => $args{reject_remark}, currency_code => $args{currency_code}}]);
+    my $response   = $crypto_api->reject_withdrawal(
+        [{id => $args{id}, remark => $args{reject_remark}, remark_code => $args{reject_code}, currency_code => $args{currency_code}}]);
 
     if ($response && ref $response eq 'HASH' && $response->{error}) {
         $log->errorf('Faild to reject the withdrawal request, error: %s', $response->{error}{message_to_client});
@@ -255,27 +253,16 @@ sub auto_update_withdrawal {
 
     if ($user_details->{auto_reject}) {
         $log->debugf('Rejecting withdrawal. Details - currency: %s, paymentID: %s.', $withdrawal_details->{currency_code}, $withdrawal_details->{id});
-
+        my $reject_code = $user_details->{reject_reason} . '--' . $user_details->{suggested_withdraw_method};
         my ($result) = $self->db_reject_withdrawal(
             id            => $withdrawal_details->{id},
             reject_remark => $user_details->{reject_remark},
+            reject_code   => $reject_code,
             currency_code => $withdrawal_details->{currency_code});
 
         $log->debugf('DB reject withdrawal response %s', $result);
 
         if ($result) {
-
-            BOM::Platform::Event::Emitter::emit(
-                'crypto_withdrawal_rejected_email',
-                {
-                    app_id         => $withdrawal_details->{source},
-                    client_loginid => $withdrawal_details->{client_loginid},
-                    reject_reason  => $user_details->{reject_reason},
-                    amount         => $withdrawal_details->{amount},
-                    currency_code  => $withdrawal_details->{currency_code},
-                    meta_data      => $user_details->{meta_data},
-                    fiat_account   => $user_details->{fiat_account}});
-
             stats_inc('crypto.payments.autoreject.rejected',
                 {tags => ['reason:' . $user_details->{tag}, 'currency:' . $withdrawal_details->{currency_code}]});
 

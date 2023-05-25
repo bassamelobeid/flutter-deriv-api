@@ -838,7 +838,7 @@ subtest 'validate_payment_error' => sub {
             ? {
             error => {
                 code              => $error_code,
-                message_to_client => localize(error_map->{$error_code}, $args->@*),
+                message_to_client => localize(error_map()->{$error_code}, $args->@*),
             }}
             : undef,
             $test_name;

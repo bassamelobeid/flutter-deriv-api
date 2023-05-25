@@ -61,9 +61,10 @@ sub mock_my_methods {
         },
         user_activity => sub {
             return $details{user_activity} // {
-                tag           => 'test',
-                reject_reason => 'highest_deposit_method_is_not_crypto',
-                auto_reject   => 0
+                tag                       => 'test',
+                reject_reason             => 'highest_deposit_method_is_not_crypto',
+                suggested_withdraw_method => "Skrill",
+                auto_reject               => 0
             };
         });
 
@@ -76,9 +77,10 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject" => sub {
 
         mock_my_methods(
             user_activity => {
-                tag           => 'doesnt matter',
-                reject_reason => 'highest_deposit_method_is_not_crypto',
-                auto_reject   => 1
+                tag                       => 'doesnt matter',
+                reject_reason             => 'highest_deposit_method_is_not_crypto',
+                suggested_withdraw_method => "Skrill",
+                auto_reject               => 1
             });
         $auto_reject_obj->run(enable_reject => 0);
         is($db_reject_withdrawal_called_times, 0, 'the payment has not been rejected for dry run');
@@ -91,9 +93,10 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject" => sub {
 
         mock_my_methods(
             user_activity => {
-                tag           => 'doesnt matter',
-                reject_reason => 'highest_deposit_method_is_not_crypto',
-                auto_reject   => 0
+                tag                       => 'doesnt matter',
+                reject_reason             => 'highest_deposit_method_is_not_crypto',
+                suggested_withdraw_method => "Skrill",
+                auto_reject               => 0
             });
         $auto_reject_obj->run(
             enable_reject => 1,
@@ -109,9 +112,10 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject" => sub {
 
         mock_my_methods(
             user_activity => {
-                tag           => 'doesnt matter',
-                reject_reason => 'highest_deposit_method_is_not_crypto',
-                auto_reject   => 1
+                tag                       => 'doesnt matter',
+                reject_reason             => 'highest_deposit_method_is_not_crypto',
+                suggested_withdraw_method => "Skrill",
+                auto_reject               => 1
             });
         $auto_reject_obj->run(enable_reject => 1);
 

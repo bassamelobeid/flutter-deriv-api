@@ -94,8 +94,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
                 total_withdrawal_amount_today_in_usd => 4,
                 reject_reason                        => 'highest_deposit_method_is_not_crypto',
                 reject_remark                        => 'AutoRejected - highest deposit method is not crypto, request payout via Webmoney',
-                meta_data                            => 'Webmoney',
-                fiat_account                         => 'USD'
+                suggested_withdraw_method            => 'Webmoney',
             },
             "returns tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO as net deposit of Webmoney payment method is greater than ETH net deposit"
         );
@@ -138,8 +137,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
                 total_withdrawal_amount_today_in_usd => 4,
                 reject_reason                        => 'highest_deposit_method_is_not_crypto',
                 reject_remark                        => 'AutoRejected - highest deposit method is not crypto, request payout via Payment Agent',
-                meta_data                            => 'Payment Agent',
-                fiat_account                         => 'USD'
+                suggested_withdraw_method            => 'Payment Agent',
             },
             "returns tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO if there are no crypto deposits for any currency"
         );
@@ -195,8 +193,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
                 total_withdrawal_amount_today_in_usd => 4,
                 reject_reason                        => 'highest_deposit_method_is_not_crypto',
                 reject_remark                        => 'AutoRejected - highest deposit method is not crypto, request payout via Skrill',
-                meta_data                            => 'Skrill',
-                fiat_account                         => 'USD'
+                suggested_withdraw_method            => 'Skrill',
             },
             "returns tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO if there are no crypto deposits for the withdrawal currency"
         );
@@ -406,8 +403,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
                 total_withdrawal_amount_today_in_usd => 4,
                 reject_reason                        => 'highest_deposit_method_is_not_crypto',
                 reject_remark                        => 'AutoRejected - highest deposit method is not crypto, request payout via Skrill',
-                meta_data                            => 'Skrill',
-                fiat_account                         => 'USD'
+                suggested_withdraw_method            => 'Skrill',
             },
             "returns recent highest deposited method when net deposits of different payment methods are equal "
         );

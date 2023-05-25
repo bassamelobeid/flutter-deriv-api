@@ -349,7 +349,7 @@ sub _add_error_by_code {
     }
 
     # make localized message based on original code and the params
-    my $message = localize(error_map->{$code}, @params);
+    my $message = localize(error_map()->{$code}, @params);
 
     # map error code to status (FE requires)
     $code = $error_to_status_mapping{$code} // $code;

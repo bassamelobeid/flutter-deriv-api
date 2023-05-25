@@ -9,6 +9,7 @@ use Brands::Countries;
 
 use BOM::Platform::Context qw/localize/;
 use BOM::Config::Runtime;
+use BOM::User::Client;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(error_map create_error);
@@ -512,7 +513,7 @@ Returns error as hashref containing the following keys:
 sub create_error {
     my ($error_code, %options) = @_;
 
-    my $message = error_map->{$error_code} || error_map->{UnknownError};
+    my $message = error_map()->{$error_code} || error_map()->{UnknownError};
 
     my @params;
     if (my $message_params = $options{message_params}) {
@@ -529,4 +530,31 @@ sub create_error {
         }};
 }
 
+=head2 get_fiat_sibling_account_currency_for
+
+finds & returns fiat sibling currency code
+
+=over 4
+
+=item C<loginid>: client loginid
+
+=back
+
+Returns fiat_currency if fiat sibling account exists
+
+=cut
+
+sub get_fiat_sibling_account_currency_for {
+    my ($loginid) = @_;
+    my $client = BOM::User::Client->new({loginid => $loginid});
+    my $fiat_currency;
+    foreach my $login_id ($client->user->bom_real_loginids) {
+        my $client_account = BOM::User::Client->new({loginid => $login_id});
+        next unless $client_account->currency;
+        next if (LandingCompany::Registry::get_currency_type($client_account->currency) // '') eq 'crypto';
+        $fiat_currency = $client_account->account->currency_code;
+        last;
+    }
+    return $fiat_currency;
+}
 1;

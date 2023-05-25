@@ -654,35 +654,6 @@ sub find_highest_deposit {
 
 }
 
-=head2 find_fiat_account
-
-Find the fiat account of the client if exists
-
-=over 4
-
-=item * C<payments> - arrayref of user payments
-
-=back
-
-return fiat account currency if exists else return undef
-
-=cut
-
-sub find_fiat_account {
-    my ($self, $args) = @_;
-    my $landing_company = LandingCompany::Registry->by_broker($self->broker_code);
-    my $currencies      = $landing_company->legal_allowed_currencies;
-
-    my @fiat_currencies = grep { $currencies->{$_}->{type} eq 'fiat' } keys $currencies->%*;
-
-    foreach my $payment ($args->@*) {
-        return first { $payment->{currency_code} eq $_ } @fiat_currencies;
-    }
-
-    return undef;
-
-}
-
 =head2 send_email
 
 Required environment variables are:
