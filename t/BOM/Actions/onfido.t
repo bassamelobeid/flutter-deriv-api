@@ -627,6 +627,13 @@ subtest 'Forged documents email' => sub {
 };
 
 subtest 'Applicant Check' => sub {
+    my $lc_mock = Test::MockModule->new(ref($test_client->landing_company));
+    $lc_mock->mock(
+        'requires_face_similarity_check',
+        sub {
+            return 1;
+        });
+
     $test_client->residence('br');
     $test_client->save;
 
@@ -692,6 +699,16 @@ subtest 'Applicant Check' => sub {
         sub {
             return Future->done(@applicant_documents);
         });
+
+    $log->clear();
+    release_onfido_lock();
+
+    BOM::Event::Actions::Client::_check_applicant({
+            client       => $test_client,
+            applicant_id => 'mocked-applicant-id',
+            documents    => [qw/test/],
+        })->get;
+    $log->contains_ok(qr/invalid live photo/, 'expected log found no selfie');
 
     $log->clear();
     release_onfido_lock();
@@ -769,6 +786,7 @@ subtest 'Applicant Check' => sub {
     $onfido_mocker->unmock('applicant_check');
     $onfido_mocker->unmock('photo_list');
     $ryu_mock->unmock_all;
+    $lc_mock->unmock_all;
 };
 
 subtest 'Upload document' => sub {

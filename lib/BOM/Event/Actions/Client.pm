@@ -319,6 +319,7 @@ async sub document_upload {
             document_entry    => $document_entry,
             uploaded_by_staff => $uploaded_manually_by_staff,
         };
+
         return await _upload_poa_document($document_args) if $is_poa_document;
         return await _upload_poi_document($document_args) if $is_onfido_document;
         return await _upload_pow_document($document_args) if $is_pow_document;
@@ -832,22 +833,26 @@ async sub client_verification {
 
             await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
-            # Skip facial similarity:
-            # For current selfie we ask them to submit with ID document
-            # that leads to sub optimal facial images and hence, it leads
-            # to lot of negatives for Onfido checks
             # TODO: remove this check when we have fully integrated Onfido
             try {
-                my @reports = await $check->reports->filter(name => 'document')->as_list;
+                my @reports;
+                if ($client->landing_company->requires_face_similarity_check) {
+                    #for MF accounts we take into consideration the document and the face similarity check report
+                    @reports = await $check->reports->as_list;
+                } else {
+                    #for CR and ROW we filter out and use only the report for the documents
+                    @reports = await $check->reports->filter(name => 'document')->as_list;
+                }
+
+                # map the reports for documents and selfies
+                my $reports = +{map { ($_->{name} => $_) } @reports};
+
+                my $document_report = $reports->{document};
+                push @common_datadog_tags, sprintf("report:%s", $document_report->result);
 
                 # Process the minimum_accepted_age result from Onfido
                 # we will consider the client as underage only if this result is defined and not equal to `clear`.
-                # We will only peek on the last report generated as previous could've been invalid ones
-                my ($last_report) = @reports;
-                $last_report //= {};
-
-                push @common_datadog_tags, sprintf("report:%s", $last_report->result);
-                my $minimum_accepted_age = $last_report->{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result};
+                my $minimum_accepted_age = $document_report->{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result};
                 my $underage_detected    = defined $minimum_accepted_age && $minimum_accepted_age ne 'clear';
 
                 if ($underage_detected) {
@@ -866,15 +871,26 @@ async sub client_verification {
                     my $min_age = $brand->countries_instance->minimum_age_for_country($client->residence);
 
                     if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
-                        await check_onfido_rules({
-                            loginid      => $client->loginid,
-                            check_id     => $check_id,
-                            datadog_tags => \@common_datadog_tags,
-                        });
+                        # we check facial similarity result exists by peeking both keys from the reports for a match
+                        my $selfie_report = $reports->{facial_similarity_photo} // $reports->{facial_similarity};
+                        my $selfie_result = $selfie_report ? $selfie_report->result : '';
 
-                        if ($age_verified = await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido'))
-                        {
-                            push @common_datadog_tags, "result:age_verified";
+                        # we first check if facial similarity is clear for LCs with the required flag active, currently just for MF
+                        if ($selfie_result eq 'clear' || !$client->landing_company->requires_face_similarity_check) {
+                            await check_onfido_rules({
+                                loginid      => $client->loginid,
+                                check_id     => $check_id,
+                                datadog_tags => \@common_datadog_tags,
+                            });
+
+                            if ($age_verified =
+                                await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido'))
+                            {
+                                push @common_datadog_tags, "result:age_verified";
+                                DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
+                            }
+                        } else {
+                            push @common_datadog_tags, "result:selfie_rejected";
                             DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
                         }
                     } else {
@@ -889,14 +905,16 @@ async sub client_verification {
 
                 # Update expiration_date and document_id of each document in DB
                 # Using corresponding values in Onfido response
+
                 @reports = grep { ($_->{properties}->{document_type} // '') ne 'live_photo' } @reports;
 
                 foreach my $report (@reports) {
 
                     # It seems that expiration date and document number of all documents in $report->{documents} list are similar
                     my ($expiration_date, $doc_numbers) = @{$report->{properties}}{qw(date_of_expiry document_numbers)};
+                    my $documents = $report->documents // [];
 
-                    foreach my $onfido_doc ($report->{documents}->@*) {
+                    foreach my $onfido_doc ($documents->@*) {
                         my $onfido_doc_id = $onfido_doc->{id};
 
                         await $redis_events_write->connect;
@@ -1198,7 +1216,7 @@ async sub check_onfido_rules {
 
                 if (exists $errors->{NameMismatch}) {
                     if ($tags) {
-                        push @$tags, 'result:dob_mismatch';
+                        push @$tags, 'result:name_mismatch';
                         DataDog::DogStatsd::Helper::stats_inc(
                             'event.onfido.client_verification.result',
                             {
@@ -2284,30 +2302,49 @@ async sub _check_applicant {
 
         die 'documents not specified' if !$document_count && !$staff_name;
 
-        my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
-
-        # logs do often report 422 errors, this may be due to lack of live photo uploaded,
-        # if the client has live photos but we still hitting 422 in the logs, we can confirm
-        # our `applicant_check` call is buggy, otherwise we'll keep digging.
-        die "applicant $applicant_id does not have live photos" unless scalar @live_photos;
-
         # skip validation if the events was emitted from the BO
         # BO cannot specify documents, so it will use the last uploaded docs
         unless ($staff_name) {
-            my @live_photo_ids = map { $_->id } @live_photos;
-            my ($selfie) = intersect(@live_photo_ids, $documents->@*);
+            my $onfido_docs;
 
-            die 'invalid live photo' unless $selfie;
+            if ($client->landing_company->requires_face_similarity_check) {
+                my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
 
-            # valid document count interval [2,3] (there should be a selfie + some document picture)
-            die 'documents not specified' if $document_count < 2;
-            die 'too many documents'      if $document_count > 3;
+                # logs do often report 422 errors, this may be due to lack of live photo uploaded,
+                # if the client has live photos but we still hitting 422 in the logs, we can confirm
+                # our `applicant_check` call is buggy, otherwise we'll keep digging.
+                die "applicant $applicant_id does not have live photos" unless scalar @live_photos;
 
-            # grab all the applicant's documents id
-            my $onfido_docs = [$selfie, map { $_->id } await $onfido->document_list(applicant_id => $applicant_id)->as_list];
+                my @live_photo_ids = map { $_->id } @live_photos;
+                my ($selfie) = intersect(@live_photo_ids, $documents->@*);
 
+                die 'invalid live photo' unless $selfie;
+
+                # valid document count interval [2,3] (there should be a selfie + some document picture)
+                die 'documents not specified' if $document_count < 2;
+                die 'too many documents'      if $document_count > 3;
+
+                # grab all the applicant's documents id
+                $onfido_docs = [$selfie, map { $_->id } await $onfido->document_list(applicant_id => $applicant_id)->as_list];
+            } else {
+                # we can drop the selfie here id the FE is still sending us a face similarity check request
+                # can be taken down once FE stops asking for selfies when not needed
+                my @live_photos    = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
+                my @live_photo_ids = map { $_->id } @live_photos;
+
+                $documents      = [array_minus($documents->@*, @live_photo_ids)];
+                $document_count = scalar $documents->@*;
+
+                # valid document count interval [1,2] (there should only be some document picture)
+                die 'documents not specified' if $document_count < 1;
+                die 'too many documents'      if $document_count > 2;
+
+                # grab all the applicant's documents id
+                $onfido_docs = [map { $_->id } await $onfido->document_list(applicant_id => $applicant_id)->as_list];
+            }
             # all the documents coming from the args must belong to this applicant
             # in other words, the args documents must be a subset of the applicant docs
+
             die 'invalid documents' if array_minus($documents->@*, $onfido_docs->@*);
         }
 
@@ -2324,8 +2361,8 @@ async sub _check_applicant {
             # On v3 we need to specify the array of documents
             $staff_name ? () : (document_ids => $documents),
 
-            # On v3 we need to specify the report names
-            report_names => [qw/document facial_similarity_photo/],
+            # On v3 we need to specify the report names depending of the LC's requirements
+            report_names => $client->landing_company->requires_face_similarity_check ? [qw/document facial_similarity_photo/] : [qw/document/],
         );
 
         my $future_applicant_check = $onfido->applicant_check(%request)->on_fail(

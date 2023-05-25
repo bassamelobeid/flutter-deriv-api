@@ -634,258 +634,6 @@ subtest 'upload document' => sub {
     };
 };
 
-my $check;
-subtest "ready for run authentication" => sub {
-    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
-    my @metrics;
-    $dog_mock->mock(
-        'stats_inc',
-        sub {
-            push @metrics, @_;
-            return 1;
-        });
-
-    my $ryu_mock      = Test::MockModule->new('Ryu::Source');
-    my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
-
-    $onfido_mocker->mock(
-        'photo_list',
-        sub {
-            return Ryu::Source->new;
-        });
-
-    my @applicant_documents = (
-        WebService::Async::Onfido::Document->new(id => 'aaa'),
-        WebService::Async::Onfido::Document->new(id => 'bbb'),
-        WebService::Async::Onfido::Document->new(id => 'ccc'),
-    );
-    $ryu_mock->mock(
-        'as_list',
-        sub {
-            return Future->done(@applicant_documents);
-        });
-
-    $test_client->status->clear_age_verification;
-    $loop->add(my $services = BOM::Event::Services->new);
-    my $redis        = $services->redis_events_write();
-    my $redis_r_read = $services->redis_replicated_read();
-    $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id)->get;
-    lives_ok {
-        @metrics = ();
-        BOM::Event::Actions::Client::ready_for_authentication({
-                loginid      => $test_client->loginid,
-                applicant_id => $applicant_id,
-                documents    => [qw/aaa bbb ccc/],
-            })->get;
-        cmp_deeply + {@metrics},
-            +{
-            'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:COL']},
-            'event.onfido.check_applicant.dispatch'          => {tags => ['country:COL']},
-            'event.onfido.check_applicant.success'           => {tags => ['country:COL']},
-            'event.onfido.ready_for_authentication.success'  => {tags => ['country:COL']},
-            },
-            'Expected dd metrics';
-    }
-    "ready_for_authentication no exception";
-
-    $check = $onfido->check_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
-
-    ok($check, "there is a check");
-    my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
-        fixup => sub {
-            my $sth =
-                $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $test_client->user_id, $applicant_id);
-        });
-    ok($check_data, 'get check data ok from db');
-    is($check_data->{id},     $check->{id},  'check data correct');
-    is($check_data->{status}, 'in_progress', 'check status is in_progress');
-
-    my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
-    ok $applicant_context, 'request context of applicant is present in redis';
-
-    subtest 'consecutive calls to ready_for_authentication' => sub {
-        my $lock_mock = Test::MockModule->new('BOM::Platform::Redis');
-        my $lock_attempts;
-        my $locked;
-        $lock_mock->mock(
-            'acquire_lock',
-            sub {
-                my $res;
-
-                if ($res = $lock_mock->original('acquire_lock')->(@_)) {
-                    $locked++;
-                }
-                $lock_attempts++;
-                return $res;
-            });
-        my $consecutive_cli = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-        });
-        my $user = BOM::User->create(
-            email          => 'consec@test.com',
-            password       => "hello",
-            email_verified => 1,
-            email_consent  => 1,
-        );
-
-        $user->add_client($consecutive_cli);
-        $consecutive_cli->binary_user_id($user->id);
-        $consecutive_cli->save;
-
-        my $consecutive_applicant = $onfido->applicant_create(
-            first_name => 'Mary',
-            last_name  => 'Jane',
-            dob        => '1999-02-02',
-        )->get;
-        BOM::User::Onfido::store_onfido_applicant($consecutive_applicant, $consecutive_cli->binary_user_id);
-
-        my $checks_counter = 0;
-
-        $onfido_mocker->mock(
-            'applicant_check',
-            sub {
-                $checks_counter++;
-
-                return $onfido_mocker->original('applicant_check')->(@_);
-            });
-
-        my $generator = sub {
-            $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $consecutive_cli->binary_user_id)->get;
-            my $f = BOM::Event::Actions::Client::ready_for_authentication({
-                loginid      => $consecutive_cli->loginid,
-                applicant_id => $consecutive_applicant->id,
-                documents    => [qw/aaa bbb ccc/],
-            });
-            return $f;
-        };
-
-        @metrics = ();
-        my $f = Future->wait_all(map { $generator->() } (1 .. 20));
-        $f->on_ready(
-            sub {
-                my $checks = $onfido->check_list(applicant_id => $consecutive_applicant->id)->as_arrayref->get;
-                is scalar @$checks, $checks_counter, 'Expected checks counter';
-                is $checks_counter, 1,               'One check done';
-                is $locked,         1,               'One lock have gone through';
-                is $lock_attempts,  20,              'Many lock attempts';
-
-                cmp_deeply + {@metrics},
-                    +{
-                    'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:IDN']},
-                    'event.onfido.check_applicant.dispatch'          => {tags => ['country:IDN']},
-                    'event.onfido.check_applicant.success'           => {tags => ['country:IDN']},
-                    'event.onfido.ready_for_authentication.success'  => {tags => ['country:IDN']},
-                    'event.onfido.ready_for_authentication.failure'  => {tags => ['country:IDN']},
-                    },
-                    'Expected dd metrics';
-            });
-        $f->get;
-        $lock_mock->unmock_all;
-    };
-
-    # assume any onfido API call can fail and so disrupt the process
-    # under this scenario we will delete the pending flag
-
-    subtest 'ready for authentication - unexpected status code' => sub {
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-        });
-        my $user = BOM::User->create(
-            email          => 'error+test@test.com',
-            password       => "hello",
-            email_verified => 1,
-            email_consent  => 1,
-        );
-
-        $user->add_client($client);
-        $client->binary_user_id($user->id);
-        $client->save;
-
-        my $applicant = $onfido->applicant_create(
-            first_name => 'Mary',
-            last_name  => 'Jane',
-            dob        => '1999-02-02',
-        )->get;
-
-        BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
-
-        $onfido_mocker->mock(
-            'applicant_update',
-            sub {
-                my $response = HTTP::Response->new(429, 'Too Many Requests');
-                Future->fail('429', http => $response);
-            });
-
-        $log->clear();
-
-        is $client->get_onfido_status, 'none', 'None status';
-
-        my $redis = BOM::Config::Redis::redis_events();
-        $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $user->id, 1);
-        $redis->incr(+BOM::User::Onfido::ONFIDO_REQUEST_PER_USER_PREFIX . $user->id);
-        is $client->get_onfido_status, 'pending', 'Pending status';
-
-        BOM::Event::Actions::Client::ready_for_authentication({
-                loginid      => $client->loginid,
-                applicant_id => $applicant->id,
-                documents    => [qw/aaa bbb ccc/],
-            })->get;
-
-        ok !BOM::User::Onfido::pending_request($user->id), 'pending flag is gone';
-        is $client->get_onfido_status, 'rejected', 'Rejected due to failure';
-    };
-
-    $onfido_mocker->unmock_all;
-    $ryu_mock->unmock_all;
-    $dog_mock->unmock_all;
-};
-
-my $services;
-my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
-my $ryu_mock      = Test::MockModule->new('Ryu::Source');
-my $ryu_data      = {
-    photo_list    => [WebService::Async::Onfido::Document->new(id => 'test', file_type => 'png'),],
-    document_list => [
-        WebService::Async::Onfido::Document->new(
-            id        => 'aaa',
-            file_type => 'png'
-        ),
-        WebService::Async::Onfido::Document->new(
-            id        => 'bbb',
-            file_type => 'png'
-        ),
-    ],
-};
-my $ryu_pointer;
-
-$onfido_mocker->mock(
-    'photo_list',
-    sub {
-        $ryu_pointer = 'photo_list';
-        return Ryu::Source->new;
-    });
-
-$onfido_mocker->mock(
-    'document_list',
-    sub {
-        $ryu_pointer = 'document_list';
-        return Ryu::Source->new;
-    });
-
-$ryu_mock->mock(
-    'as_list',
-    sub {
-        if ($ryu_pointer && exists $ryu_data->{$ryu_pointer}) {
-            my @data = $ryu_data->{$ryu_pointer}->@*;
-            $ryu_pointer = undef;
-            return Future->done(@data);
-        }
-
-        return $ryu_mock->original('as_list')->(@_);
-    });
-
-my $check_href = $check->{href};
-
 subtest 'test bulk client status update' => sub {
     ok 1, 'test';
     my ($result, $msg);
@@ -940,204 +688,857 @@ subtest 'test bulk client status update' => sub {
     ok $msg,    'email sent';
 };
 
-subtest "client_verification" => sub {
-    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
-    my $dd_bag   = {};
+my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+    email       => 'supahtestsus@mf.com'
+});
+my $test_user_mf = BOM::User->create(
+    email          => 'supahtestsus@mf.com',
+    password       => "hello",
+    email_verified => 1,
+);
+$test_user_mf->add_client($test_client_mf);
+$test_client_mf->place_of_birth('es');
+$test_client_mf->binary_user_id($test_user_mf->id);
+$test_client_mf->user($test_user_mf);
+$test_client_mf->save;
 
-    $dog_mock->mock(
-        'stats_histogram',
-        sub {
-            my ($what, $value) = @_;
-            $dd_bag->{$what} = $value;
-            return;
-        });
+my $check_href;
+my $check;
+$loop->add(my $services = BOM::Event::Services->new);
 
-    my @metrics;
-    $dog_mock->mock(
-        'stats_inc',
-        sub {
-            push @metrics, @_ if scalar @_ == 2;
-            push @metrics, @_, undef if scalar @_ == 1;
+$args->{document_type} = 'passport';
+my $upload_info_mf = start_document_upload($args, $test_client_mf);
 
-            return 1;
-        });
+$test_client_mf->db->dbic->run(
+    ping => sub {
+        $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info_mf->{file_id});
+    });
 
-    $loop->add($services = BOM::Event::Services->new);
-    my $redis_write = $services->redis_events_write();
-    $redis_write->connect->get;
-    mailbox_clear();
+BOM::Event::Actions::Client::document_upload({
+        loginid => $test_client_mf->loginid,
+        file_id => $upload_info_mf->{file_id}})->get;
 
-    my $redis_r_write = $services->redis_replicated_write();
-    my $keys          = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+my $applicant_mf = BOM::Database::UserDB::rose_db()->dbic->run(
+    fixup => sub {
+        my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client_mf->user_id);
+    });
 
-    my $redis_mock = Test::MockModule->new(ref($redis_r_write));
-    my $db_doc_id;
-    my $doc_key;
-    $redis_mock->mock(
-        'del',
-        sub {
-            my ($self, $key) = @_;
+my $applicants = {
+    $test_client->loginid    => $applicant_id,
+    $test_client_mf->loginid => $applicant_mf->{id},
+};
+my $check_hash;
+for my $client ($test_client, $test_client_mf) {
+    my $country_code = $client->landing_company->short eq 'svg' ? 'COL' : 'ESP';
+    my $applicant_id = $applicants->{$client->loginid};
 
-            if ($key =~ qr/^ONFIDO::DOCUMENT::ID::/) {
-                $doc_key   = $key;
-                $db_doc_id = $self->get($key)->get;
+    subtest "onfido testing " . $client->landing_company->short => sub {
+        subtest "ready for run authentication" => sub {
+            my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+            my @metrics;
+            $dog_mock->mock(
+                'stats_inc',
+                sub {
+                    push @metrics, @_;
+                    return 1;
+                });
+
+            my $ryu_mock      = Test::MockModule->new('Ryu::Source');
+            my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+
+            my $ryu_data = {
+                photo_list    => [WebService::Async::Onfido::Document->new(id => 'selfie' . $client->loginid, file_type => 'png'),],
+                document_list => [
+                    WebService::Async::Onfido::Document->new(
+                        id        => 'aaa' . $client->loginid,
+                        file_type => 'png',
+                        type      => 'passport',
+                    ),
+                    WebService::Async::Onfido::Document->new(
+                        id        => 'bbb' . $client->loginid,
+                        file_type => 'png',
+                        type      => 'passport',
+                    ),
+                ],
+            };
+            my $ryu_pointer;
+
+            $onfido_mocker->mock(
+                'photo_list',
+                sub {
+                    $ryu_pointer = 'photo_list';
+                    return Ryu::Source->new;
+                });
+
+            $onfido_mocker->mock(
+                'document_list',
+                sub {
+                    $ryu_pointer = 'document_list';
+                    return Ryu::Source->new;
+                });
+
+            $ryu_mock->mock(
+                'as_list',
+                sub {
+                    if ($ryu_pointer && exists $ryu_data->{$ryu_pointer}) {
+                        my @data = $ryu_data->{$ryu_pointer}->@*;
+                        $ryu_pointer = undef;
+                        return Future->done(@data);
+                    }
+
+                    return $ryu_mock->original('as_list')->(@_);
+                });
+
+            $client->status->clear_age_verification;
+            my $redis        = $services->redis_events_write();
+            my $redis_r_read = $services->redis_replicated_read();
+            $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->get;
+
+            my $doc_ids = [map { $_ . $client->loginid } $client->landing_company->short eq 'maltainvest' ? qw/aaa bbb selfie/ : qw/aaa bbb/];
+
+            lives_ok {
+                @metrics = ();
+                BOM::Event::Actions::Client::ready_for_authentication({
+                        loginid      => $client->loginid,
+                        applicant_id => $applicant_id,
+                        documents    => $doc_ids,
+                    })->get;
+                cmp_deeply + {@metrics},
+                    +{
+                    'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:' . $country_code]},
+                    'event.onfido.check_applicant.dispatch'          => {tags => ['country:' . $country_code]},
+                    'event.onfido.check_applicant.success'           => {tags => ['country:' . $country_code]},
+                    'event.onfido.ready_for_authentication.success'  => {tags => ['country:' . $country_code]},
+                    },
+                    'Expected dd metrics';
             }
+            "ready_for_authentication no exception";
 
-            return $redis_mock->original('del')->(@_);
-        });
+            $check = $onfido->check_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
 
-    for my $key (@$keys) {
-        $redis_r_write->del($key)->get;
-    }
+            ok($check, "there is a check");
+            my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
+                fixup => sub {
+                    my $sth =
+                        $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $client->user_id, $applicant_id);
+                });
+            ok($check_data, 'get check data ok from db');
+            is($check_data->{id},     $check->{id},  'check data correct');
+            is($check_data->{status}, 'in_progress', 'check status is in_progress');
 
-    my $lock_key = 'BOM::Event::Actions::Client_LOCK_ONFIDO::APPLICANT_CHECK_LOCK::' . $test_client->binary_user_id;
-    $redis_r_write->set($lock_key, 1, 'NX', 'EX', 30);
-    $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
-    is scalar @$keys, 1, 'Lock acquired';
+            my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+            ok $applicant_context, 'request context of applicant is present in redis';
 
-    lives_ok {
-        $dd_bag  = {};
-        @metrics = ();
-        my $redis = BOM::Config::Redis::redis_events();
-        $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $test_client->binary_user_id, 1);
-        BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
-        ok !BOM::User::Onfido::pending_request($test_client->binary_user_id), 'pending flag is gone';
+            subtest 'consecutive calls to ready_for_authentication' => sub {
+                my $lock_mock = Test::MockModule->new('BOM::Platform::Redis');
+                my $lock_attempts;
+                my $locked;
+                $lock_mock->mock(
+                    'acquire_lock',
+                    sub {
+                        my $res;
 
-        cmp_deeply $dd_bag,
-            {
-            'event.onfido.client_verification.reported_documents' => 3,
-            },
-            'Expected DD histogram sent';
-        cmp_deeply + {@metrics},
-            +{
-            'onfido.api.hit'                                => undef,
-            'event.onfido.client_verification.dispatch'     => undef,
-            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
-            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
-            'event.onfido.client_verification.success'      => undef,
-            },
-            'Expected dd metrics';
+                        if ($res = $lock_mock->original('acquire_lock')->(@_)) {
+                            $locked++;
+                        }
+                        $lock_attempts++;
+                        return $res;
+                    });
+                my $consecutive_cli = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                    broker_code => 'CR',
+                });
+                my $user = BOM::User->create(
+                    email          => $client->loginid . 'consec@test.com',
+                    password       => "hello",
+                    email_verified => 1,
+                    email_consent  => 1,
+                );
 
-        my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
-        is scalar @$keys, 0, 'Lock released';
+                $user->add_client($consecutive_cli);
+                $consecutive_cli->binary_user_id($user->id);
+                $consecutive_cli->save;
 
-        $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
-        is scalar @$keys, 0, 'Pending lock released';
+                my $consecutive_applicant = $onfido->applicant_create(
+                    first_name => 'Mary',
+                    last_name  => 'Jane',
+                    dob        => '1999-02-02',
+                )->get;
+                BOM::User::Onfido::store_onfido_applicant($consecutive_applicant, $consecutive_cli->binary_user_id);
 
-        my ($db_doc) = $test_client->find_client_authentication_document(query => [id => $db_doc_id]);
-        is $db_doc->status, 'rejected', 'upload doc status is rejected';
-    }
-    "client verification no exception";
-    my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $test_client->user_id, $applicant_id);
-        });
-    ok($check_data, 'get check data ok from db');
-    is($check_data->{id},     $check->{id}, 'check data correct');
-    is($check_data->{status}, 'complete',   'check status is updated');
-    my $report_data = BOM::Database::UserDB::rose_db()->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('select * from users.get_onfido_reports(?::BIGINT, ?::TEXT)', undef, $test_client->user_id, $check->{id});
-        });
-    is($report_data->{check_id}, $check->{id}, 'report is correct');
+                my $checks_counter = 0;
 
-    lives_ok {
-        $redis_write->set($doc_key, $db_doc_id)->get;
-        $db_doc_id = undef;
+                $onfido_mocker->mock(
+                    'applicant_check',
+                    sub {
+                        $checks_counter++;
 
-        my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+                        return $onfido_mocker->original('applicant_check')->(@_);
+                    });
 
-        $mocked_report->mock(
-            'result',
+                my $consecutive_doc_ids =
+                    [map { $_ . $client->loginid } $consecutive_cli->landing_company->short eq 'maltainvest' ? qw/aaa bbb selfie/ : qw/aaa bbb/];
+                my $generator = sub {
+                    $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $consecutive_cli->binary_user_id)->get;
+                    my $f = BOM::Event::Actions::Client::ready_for_authentication({
+                        loginid      => $consecutive_cli->loginid,
+                        applicant_id => $consecutive_applicant->id,
+                        documents    => $consecutive_doc_ids,
+                    });
+                    return $f;
+                };
+
+                @metrics = ();
+                my $f = Future->wait_all(map { $generator->() } (1 .. 20));
+                $f->on_ready(
+                    sub {
+                        my $checks = $onfido->check_list(applicant_id => $consecutive_applicant->id)->as_arrayref->get;
+                        is scalar @$checks, $checks_counter, 'Expected checks counter';
+                        is $checks_counter, 1,               'One check done';
+                        is $locked,         1,               'One lock have gone through';
+                        is $lock_attempts,  20,              'Many lock attempts';
+
+                        cmp_deeply + {@metrics},
+                            +{
+                            'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:IDN']},
+                            'event.onfido.check_applicant.dispatch'          => {tags => ['country:IDN']},
+                            'event.onfido.check_applicant.success'           => {tags => ['country:IDN']},
+                            'event.onfido.ready_for_authentication.success'  => {tags => ['country:IDN']},
+                            'event.onfido.ready_for_authentication.failure'  => {tags => ['country:IDN']},
+                            },
+                            'Expected dd metrics';
+                    });
+                $f->get;
+                $lock_mock->unmock_all;
+            };
+
+            # assume any onfido API call can fail and so disrupt the process
+            # under this scenario we will delete the pending flag
+
+            subtest 'ready for authentication - unexpected status code' => sub {
+                my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                    broker_code => 'CR',
+                });
+                my $user = BOM::User->create(
+                    email          => $client->loginid . 'error+test@test.com',
+                    password       => "hello",
+                    email_verified => 1,
+                    email_consent  => 1,
+                );
+
+                $user->add_client($client);
+                $client->binary_user_id($user->id);
+                $client->save;
+
+                my $applicant = $onfido->applicant_create(
+                    first_name => 'Mary',
+                    last_name  => 'Jane',
+                    dob        => '1999-02-02',
+                )->get;
+
+                BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
+
+                $onfido_mocker->mock(
+                    'applicant_update',
+                    sub {
+                        my $response = HTTP::Response->new(429, 'Too Many Requests');
+                        Future->fail('429', http => $response);
+                    });
+
+                $log->clear();
+
+                is $client->get_onfido_status, 'none', 'None status';
+
+                my $redis = BOM::Config::Redis::redis_events();
+                $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $user->id, 1);
+                $redis->incr(+BOM::User::Onfido::ONFIDO_REQUEST_PER_USER_PREFIX . $user->id);
+                is $client->get_onfido_status, 'pending', 'Pending status';
+
+                BOM::Event::Actions::Client::ready_for_authentication({
+                        loginid      => $client->loginid,
+                        applicant_id => $applicant->id,
+                        documents    => $doc_ids,
+                    })->get;
+
+                ok !BOM::User::Onfido::pending_request($user->id), 'pending flag is gone';
+                is $client->get_onfido_status, 'rejected', 'Rejected due to failure';
+            };
+
+            $onfido_mocker->unmock_all;
+            $ryu_mock->unmock_all;
+            $dog_mock->unmock_all;
+        };
+
+        my $services;
+        my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+        my $ryu_mock      = Test::MockModule->new('Ryu::Source');
+        my $ryu_data      = {
+            photo_list    => [WebService::Async::Onfido::Document->new(id => 'test' . $client->loginid, file_type => 'png'),],
+            document_list => [
+                WebService::Async::Onfido::Document->new(
+                    id        => 'aaa' . $client->loginid,
+                    file_type => 'png',
+                    type      => 'passport',
+                ),
+                WebService::Async::Onfido::Document->new(
+                    id        => 'bbb' . $client->loginid,
+                    file_type => 'png',
+                    type      => 'passport',
+                ),
+            ],
+        };
+        my $ryu_pointer;
+
+        $onfido_mocker->mock(
+            'photo_list',
             sub {
-                return 'consider';
+                $ryu_pointer = 'photo_list';
+                return Ryu::Source->new;
             });
 
-        # we support v2 and v3 check hrefs
-        # TODO: remove this line when ONFIDO sadness stops
-        $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
+        $onfido_mocker->mock(
+            'document_list',
+            sub {
+                $ryu_pointer = 'document_list';
+                return Ryu::Source->new;
+            });
 
-        @metrics = ();
-        BOM::Event::Actions::Client::client_verification({
-                check_url => $check_href,
-            })->get;
-        cmp_deeply + {@metrics},
-            +{
-            'onfido.api.hit'                                => undef,
-            'event.onfido.client_verification.dispatch'     => undef,
-            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:consider', 'result:dob_not_reported']},
-            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:consider', 'result:dob_not_reported']},
-            'event.onfido.client_verification.success'      => undef,
-            },
-            'Expected dd metrics';
+        $ryu_mock->mock(
+            'as_list',
+            sub {
+                if ($ryu_pointer && exists $ryu_data->{$ryu_pointer}) {
+                    my @data = $ryu_data->{$ryu_pointer}->@*;
+                    $ryu_pointer = undef;
+                    return Future->done(@data);
+                }
 
-        my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
-        is scalar @$keys, 0, 'Lock released';
+                return $ryu_mock->original('as_list')->(@_);
+            });
 
-        $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
-        is scalar @$keys, 0, 'Pending lock released';
+        $onfido_mocker->mock(
+            'get_document_details',
+            sub {
+                my (undef, %args) = @_;
+                my $document_id = $args{document_id};
+                my $doc_hash    = +{map { ($_->id => $_) } $ryu_data->{document_list}->@*};
 
-        my ($db_doc) = $test_client->find_client_authentication_document(query => [id => $db_doc_id]);
-        is $db_doc->status, 'rejected', 'upload doc status is rejected';
+                return Future->done($doc_hash->{$document_id});
+            });
 
-        $mocked_report->unmock_all;
-    }
-    "client verification no exception, rejected result";
+        $check_href = $check->{href};
+        $check_hash->{$client->landing_company->short} = $check_href;
 
-    subtest 'forged email' => sub {
-        my $redis_write = $services->redis_events_write();
-        $redis_write->del('FORGED::EMAIL::LOCK::' . $test_client->loginid)->get;
+        subtest "client_verification" => sub {
+            my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+            my $dd_bag   = {};
 
-        mailbox_clear();
-        $test_client->status->clear_cashier_locked;
-        $test_client->status->set('cashier_locked', 'test', 'Forged documents');
+            $dog_mock->mock(
+                'stats_histogram',
+                sub {
+                    my ($what, $value) = @_;
+                    $dd_bag->{$what} = $value;
+                    return;
+                });
 
-        lives_ok {
-            @metrics = ();
-            BOM::Event::Actions::Client::client_verification({
-                    check_url => $check_href,
-                })->get;
-            cmp_deeply + {@metrics},
-                +{
-                'onfido.api.hit'                                => undef,
-                'event.onfido.client_verification.dispatch'     => undef,
-                'event.onfido.client_verification.not_verified' =>
-                    {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
-                'event.onfido.client_verification.result'  => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
-                'event.onfido.client_verification.success' => undef,
-                },
-                'Expected dd metrics';
-        }
-        "client verification no exception";
+            my @metrics;
+            $dog_mock->mock(
+                'stats_inc',
+                sub {
+                    push @metrics, @_ if scalar @_ == 2;
+                    push @metrics, @_, undef if scalar @_ == 1;
 
-        my $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
-        ok $msg,                                                                    'Email sent';
-        ok $redis_write->ttl('FORGED::EMAIL::LOCK::' . $test_client->loginid)->get, 'Cooldown has been set';
+                    return 1;
+                });
 
-        mailbox_clear();
+            $loop->add($services = BOM::Event::Services->new);
+            my $redis_write = $services->redis_events_write();
+            $redis_write->connect->get;
+            mailbox_clear();
 
-        lives_ok {
-            @metrics = ();
-            BOM::Event::Actions::Client::client_verification({
-                    check_url => $check_href,
-                })->get;
-            cmp_deeply + {@metrics},
-                +{
-                'onfido.api.hit'                                => undef,
-                'event.onfido.client_verification.dispatch'     => undef,
-                'event.onfido.client_verification.not_verified' =>
-                    {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
-                'event.onfido.client_verification.result'  => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
-                'event.onfido.client_verification.success' => undef,
-                },
-                'Expected dd metrics';
-        }
-        "client verification no exception";
+            my $redis_r_write = $services->redis_replicated_write();
+            my $keys          = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
 
-        $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
-        ok !$msg, 'Email not sent (on cooldown)';
+            my $redis_mock = Test::MockModule->new(ref($redis_r_write));
+            my $db_doc_id;
+            my $doc_key;
+            $redis_mock->mock(
+                'del',
+                sub {
+                    my ($self, $key) = @_;
+
+                    if ($key =~ qr/^ONFIDO::DOCUMENT::ID::/) {
+                        $doc_key   = $key;
+                        $db_doc_id = $self->get($key)->get;
+                    }
+
+                    return $redis_mock->original('del')->(@_);
+                });
+
+            for my $key (@$keys) {
+                $redis_r_write->del($key)->get;
+            }
+
+            my $lock_key = 'BOM::Event::Actions::Client_LOCK_ONFIDO::APPLICANT_CHECK_LOCK::' . $client->binary_user_id;
+            $redis_r_write->set($lock_key, 1, 'NX', 'EX', 30);
+            $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+            is scalar @$keys, 1, 'Lock acquired';
+
+            my $report_mock = Test::MockModule->new('WebService::Async::Onfido::Report');
+            $report_mock->mock(
+                'documents',
+                sub {
+                    return $ryu_data->{document_list};
+                });
+
+            lives_ok {
+                $dd_bag  = {};
+                @metrics = ();
+                my $redis = BOM::Config::Redis::redis_events();
+                $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
+                BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+                ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
+
+                cmp_deeply $dd_bag, {
+                    'event.onfido.client_verification.reported_documents' => $client->landing_company->short eq 'maltainvest'
+                    ? 3
+                    : 2,    # +1 because of the selfie
+                    },
+                    'Expected DD histogram sent';
+                cmp_deeply + {@metrics},
+                    +{
+                    'onfido.api.hit'                                => undef,
+                    'event.onfido.client_verification.dispatch'     => undef,
+                    'event.onfido.client_verification.not_verified' =>
+                        {tags => ['check:clear', 'country:' . $country_code, 'report:clear', 'result:dob_not_reported']},
+                    'event.onfido.client_verification.result' =>
+                        {tags => ['check:clear', 'country:' . $country_code, 'report:clear', 'result:dob_not_reported']},
+                    'event.onfido.client_verification.success' => undef,
+                    },
+                    'Expected dd metrics';
+
+                my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+                is scalar @$keys, 0, 'Lock released';
+
+                $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
+                is scalar @$keys, 0, 'Pending lock released';
+
+                my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
+                is $db_doc->status, 'rejected', 'upload doc status is rejected';
+            }
+            "client verification no exception";
+
+            $report_mock->unmock_all;
+            my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
+                fixup => sub {
+                    $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $client->user_id, $applicant_id);
+                });
+            ok($check_data, 'get check data ok from db');
+            is($check_data->{id},     $check->{id}, 'check data correct');
+            is($check_data->{status}, 'complete',   'check status is updated');
+            my $report_data = BOM::Database::UserDB::rose_db()->dbic->run(
+                fixup => sub {
+                    $_->selectrow_hashref('select * from users.get_onfido_reports(?::BIGINT, ?::TEXT)', undef, $client->user_id, $check->{id});
+                });
+            is($report_data->{check_id}, $check->{id}, 'report is correct');
+
+            lives_ok {
+                $redis_write->set($doc_key, $db_doc_id)->get;
+                $db_doc_id = undef;
+
+                my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+                $mocked_report->mock(
+                    'documents',
+                    sub {
+                        return $ryu_data->{document_list};
+                    });
+
+                $mocked_report->mock(
+                    'result',
+                    sub {
+                        return 'consider';
+                    });
+
+                # we support v2 and v3 check hrefs
+                # TODO: remove this line when ONFIDO sadness stops
+                $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
+
+                @metrics = ();
+                BOM::Event::Actions::Client::client_verification({
+                        check_url => $check_href,
+                    })->get;
+                cmp_deeply + {@metrics},
+                    +{
+                    'onfido.api.hit'                                => undef,
+                    'event.onfido.client_verification.dispatch'     => undef,
+                    'event.onfido.client_verification.not_verified' =>
+                        {tags => ['check:clear', 'country:' . $country_code, 'report:consider', 'result:dob_not_reported']},
+                    'event.onfido.client_verification.result' =>
+                        {tags => ['check:clear', 'country:' . $country_code, 'report:consider', 'result:dob_not_reported']},
+                    'event.onfido.client_verification.success' => undef,
+                    },
+                    'Expected dd metrics';
+
+                my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+                is scalar @$keys, 0, 'Lock released';
+
+                $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
+                is scalar @$keys, 0, 'Pending lock released';
+
+                my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
+                is $db_doc->status, 'rejected', 'upload doc status is rejected';
+
+                $mocked_report->unmock_all;
+            }
+            "client verification no exception, rejected result";
+
+            subtest 'clear report from Onfido' => sub {
+                lives_ok {
+                    $redis_write->set($doc_key, $db_doc_id)->get;
+                    $db_doc_id = undef;
+
+                    my $onfido_report_filters;
+
+                    $ryu_mock->mock(
+                        'filter',
+                        sub {
+                            my (undef, %args) = @_;
+                            $onfido_report_filters = {%args};
+
+                            return $ryu_mock->original('filter')->(@_);
+                        });
+
+                    my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+                    my $mocked_common = Test::MockModule->new('BOM::Event::Actions::Common');
+                    $mocked_report->mock(
+                        'documents',
+                        sub {
+                            return $ryu_data->{document_list};
+                        });
+                    $mocked_common->mock(
+                        'set_age_verification',
+                        sub {
+                            Future->done(1);
+                        });
+                    $mocked_report->mock(
+                        'new',
+                        sub {
+                            my $self = shift, my %data = @_;
+                            $data{properties}->{date_of_birth} = '1989-01-01';
+                            $mocked_report->original('new')->($self, %data);
+                        });
+                    $mocked_report->mock(
+                        'result',
+                        sub {
+                            return 'clear';
+                        });
+
+                    # we support v2 and v3 check hrefs
+                    # TODO: remove this line when ONFIDO sadness stops
+                    $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
+
+                    @metrics               = ();
+                    @emit_args             = ();
+                    $onfido_report_filters = undef;
+                    BOM::Event::Actions::Client::client_verification({
+                            check_url => $check_href,
+                        })->get;
+                    cmp_deeply + {@metrics}, +{
+                        'onfido.api.hit'                            => undef,
+                        'event.onfido.client_verification.dispatch' => undef,
+                        'event.onfido.client_verification.result'   => {
+                            tags => [
+                                'check:clear',         'country:' . $country_code, 'report:clear', 'result:name_mismatch',
+                                'result:dob_mismatch', 'result:age_verified'
+                            ]
+                        },    # may look sus, but we're mocking the age verified function!
+                        'event.onfido.client_verification.success' => undef,
+                        },
+                        'Expected dd metrics';
+
+                    my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+                    is scalar @$keys, 0, 'Lock released';
+
+                    $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
+                    is scalar @$keys, 0, 'Pending lock released';
+
+                    my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
+                    is $db_doc->status, 'verified', 'upload doc status is verified';
+
+                    my $expected_filter;
+                    $expected_filter = {name => 'document'} if $client->landing_company->short eq 'svg';
+                    cmp_deeply $onfido_report_filters, $expected_filter, 'Expected filtering';
+
+                    cmp_bag [@emit_args],
+                        [
+                        'sync_mt5_accounts_status',
+                        {
+                            binary_user_id => $client->binary_user_id,
+                            client_loginid => $client->loginid,
+                        }
+                        ],
+                        'expected emissions';
+                    $mocked_report->unmock_all;
+                    $mocked_common->unmock_all;
+                    $ryu_mock->unmock('filter');
+
+                    subtest 'selfie checking: clear result' => sub {
+                        $redis_write->set($doc_key, $db_doc_id)->get;
+                        $db_doc_id = undef;
+
+                        my $onfido_report_filters;
+
+                        $ryu_mock->mock(
+                            'filter',
+                            sub {
+                                my (undef, %args) = @_;
+                                $onfido_report_filters = {%args};
+
+                                return $ryu_mock->original('filter')->(@_);
+                            });
+
+                        my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+                        my $mocked_common = Test::MockModule->new('BOM::Event::Actions::Common');
+                        $mocked_report->mock(
+                            'documents',
+                            sub {
+                                return $ryu_data->{document_list};
+                            });
+                        $mocked_common->mock(
+                            'set_age_verification',
+                            sub {
+                                Future->done(1);
+                            });
+                        $mocked_report->mock(
+                            'new',
+                            sub {
+                                my $self = shift, my %data = @_;
+                                $data{properties}->{date_of_birth} = '1989-01-01';
+                                $mocked_report->original('new')->($self, %data);
+                            });
+                        $mocked_report->mock(
+                            'result',
+                            sub {
+                                return 'clear';
+                            });
+
+                        # we support v2 and v3 check hrefs
+                        # TODO: remove this line when ONFIDO sadness stops
+                        $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
+
+                        @metrics               = ();
+                        @emit_args             = ();
+                        $onfido_report_filters = undef;
+                        BOM::Event::Actions::Client::client_verification({
+                                check_url => $check_href,
+                            })->get;
+                        cmp_deeply + {@metrics}, +{
+                            'onfido.api.hit'                            => undef,
+                            'event.onfido.client_verification.dispatch' => undef,
+                            'event.onfido.client_verification.result'   => {
+                                tags => [
+                                    'check:clear',         'country:' . $country_code, 'report:clear', 'result:name_mismatch',
+                                    'result:dob_mismatch', 'result:age_verified'
+                                ]
+                            },    # may look sus, but we're mocking the age verified function!
+                            'event.onfido.client_verification.success' => undef,
+                            },
+                            'Expected dd metrics';
+
+                        my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+                        is scalar @$keys, 0, 'Lock released';
+
+                        $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
+                        is scalar @$keys, 0, 'Pending lock released';
+
+                        my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
+                        is $db_doc->status, 'verified', 'upload doc status is verified';
+
+                        my $expected_filter;
+
+                        $expected_filter = {name => 'document'} if $client->landing_company->short eq 'svg';
+                        cmp_deeply $onfido_report_filters, $expected_filter, 'Expected filtering';
+
+                        cmp_bag [@emit_args],
+                            [
+                            'sync_mt5_accounts_status',
+                            {
+                                binary_user_id => $client->binary_user_id,
+                                client_loginid => $client->loginid,
+                            }
+                            ],
+                            'expected emissions';
+                        $mocked_report->unmock_all;
+                        $mocked_common->unmock_all;
+                        $ryu_mock->unmock('filter');
+                    };
+
+                    # for svg the test would be the same as the one above as there would not be a selfie report
+                    if ($client->landing_company->short eq 'maltainvest') {
+                        subtest 'selfie checking: consider result' => sub {
+                            $redis_write->set($doc_key, $db_doc_id)->get;
+                            $db_doc_id = undef;
+
+                            my $onfido_report_filters;
+
+                            $ryu_mock->mock(
+                                'filter',
+                                sub {
+                                    my (undef, %args) = @_;
+                                    $onfido_report_filters = {%args};
+
+                                    return $ryu_mock->original('filter')->(@_);
+                                });
+
+                            my $mocked_common = Test::MockModule->new('BOM::Event::Actions::Common');
+                            my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+                            $mocked_report->mock(
+                                'documents',
+                                sub {
+                                    return $ryu_data->{document_list};
+                                });
+                            $mocked_common->mock(
+                                'set_age_verification',
+                                sub {
+                                    Future->done(1);
+                                });
+                            $mocked_report->mock(
+                                'new',
+                                sub {
+                                    my $self = shift, my %data = @_;
+                                    $data{properties}->{date_of_birth} = '1989-01-01';
+                                    $mocked_report->original('new')->($self, %data);
+                                });
+                            $mocked_report->mock(
+                                'result',
+                                sub {
+                                    my ($self) = @_;
+
+                                    return 'consider' if $self->name ne 'document';    # in svg this never hits
+
+                                    return 'clear';
+                                });
+
+                            # we support v2 and v3 check hrefs
+                            # TODO: remove this line when ONFIDO sadness stops
+                            $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
+
+                            @metrics               = ();
+                            @emit_args             = ();
+                            $onfido_report_filters = undef;
+                            BOM::Event::Actions::Client::client_verification({
+                                    check_url => $check_href,
+                                })->get;
+                            cmp_deeply + {@metrics},
+                                +{
+                                'onfido.api.hit'                                => undef,
+                                'event.onfido.client_verification.dispatch'     => undef,
+                                'event.onfido.client_verification.not_verified' =>
+                                    {tags => ['check:clear', 'country:' . $country_code, 'report:clear', 'result:selfie_rejected']},
+                                'event.onfido.client_verification.result' =>
+                                    {tags => ['check:clear', 'country:' . $country_code, 'report:clear', 'result:selfie_rejected']},
+                                'event.onfido.client_verification.success' => undef,
+                                },
+                                'Expected dd metrics';
+
+                            my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+                            is scalar @$keys, 0, 'Lock released';
+
+                            $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
+                            is scalar @$keys, 0, 'Pending lock released';
+
+                            my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
+                            is $db_doc->status, 'rejected', 'upload doc status is rejected';
+                            cmp_deeply $onfido_report_filters, undef, 'Expected filtering';
+
+                            cmp_bag [@emit_args],
+                                [
+                                'sync_mt5_accounts_status',
+                                {
+                                    binary_user_id => $client->binary_user_id,
+                                    client_loginid => $client->loginid,
+                                }
+                                ],
+                                'expected emissions';
+                            $mocked_report->unmock_all;
+                            $mocked_common->unmock_all;
+                            $ryu_mock->unmock('filter');
+                        };
+                    }
+                }
+                "client verification no exception, verified result";
+            };
+
+            subtest 'forged email' => sub {
+                my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+                $mocked_report->mock(
+                    'documents',
+                    sub {
+                        return $ryu_data->{document_list};
+                    });
+                my $redis_write = $services->redis_events_write();
+                $redis_write->del('FORGED::EMAIL::LOCK::' . $client->loginid)->get;
+
+                mailbox_clear();
+                $client->status->clear_cashier_locked;
+                $client->status->set('cashier_locked', 'test', 'Forged documents');
+
+                lives_ok {
+                    @metrics = ();
+                    BOM::Event::Actions::Client::client_verification({
+                            check_url => $check_href,
+                        })->get;
+                    cmp_deeply + {@metrics},
+                        +{
+                        'onfido.api.hit'                                => undef,
+                        'event.onfido.client_verification.dispatch'     => undef,
+                        'event.onfido.client_verification.not_verified' =>
+                            {tags => ['check:clear', 'country:' . $country_code, 'report:clear', 'result:dob_not_reported']},
+                        'event.onfido.client_verification.result' =>
+                            {tags => ['check:clear', 'country:' . $country_code, 'report:clear', 'result:dob_not_reported']},
+                        'event.onfido.client_verification.success' => undef,
+                        },
+                        'Expected dd metrics';
+                }
+                "client verification no exception";
+
+                my $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
+                ok $msg,                                                               'Email sent';
+                ok $redis_write->ttl('FORGED::EMAIL::LOCK::' . $client->loginid)->get, 'Cooldown has been set';
+
+                mailbox_clear();
+
+                lives_ok {
+                    @metrics = ();
+                    BOM::Event::Actions::Client::client_verification({
+                            check_url => $check_href,
+                        })->get;
+                    cmp_deeply + {@metrics},
+                        +{
+                        'onfido.api.hit'                                => undef,
+                        'event.onfido.client_verification.dispatch'     => undef,
+                        'event.onfido.client_verification.not_verified' =>
+                            {tags => ['check:clear', 'country:' . $country_code, 'report:clear', 'result:dob_not_reported']},
+                        'event.onfido.client_verification.result' =>
+                            {tags => ['check:clear', 'country:' . $country_code, 'report:clear', 'result:dob_not_reported']},
+                        'event.onfido.client_verification.success' => undef,
+                        },
+                        'Expected dd metrics';
+                }
+                "client verification no exception";
+
+                $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
+                ok !$msg, 'Email not sent (on cooldown)';
+
+                $mocked_report->unmock_all;
+            };
+        };
+
+        $onfido_mocker->unmock('get_document_details');
     };
-};
+}
+
+# come back to svg
+$check_href = $check_hash->{svg};
 
 subtest "Uninitialized date of birth" => sub {
     my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
@@ -1172,8 +1573,8 @@ subtest "Uninitialized date of birth" => sub {
             +{
             'onfido.api.hit'                                => undef,
             'event.onfido.client_verification.dispatch'     => undef,
-            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
-            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
+            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch']},
+            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch']},
             'event.onfido.client_verification.success'      => undef,
             },
             'Expected dd metrics';
@@ -1482,7 +1883,7 @@ subtest 'client_verification after upload document himself' => sub {
         BOM::Event::Actions::Client::ready_for_authentication({
                 loginid      => $test_client2->loginid,
                 applicant_id => $applicant_id2,
-                documents    => [qw/aaa bbb test/],
+                documents    => [$doc->id],
             })->get;
         cmp_deeply + {@metrics},
             +{
