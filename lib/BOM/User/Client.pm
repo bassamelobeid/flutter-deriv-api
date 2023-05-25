@@ -6341,7 +6341,7 @@ sub validate_payment {
 
         my $code    = $e->{error_code} // 'PaymentValidationError';
         my $params  = $e->{params}     // [];
-        my $message = localize(error_map->{$code}, @$params);
+        my $message = localize(error_map()->{$code}, @$params);
 
         die +{
             code              => $code,
