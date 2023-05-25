@@ -71,31 +71,6 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
-sub notify_crypto_withdrawal_rejected {
-    my ($transaction_info) = @_;
-
-    my ($loginid, $reason, $app_id, $other_reason) = @{$transaction_info}{qw/ loginid rejection_reason app_id other_reason /};
-
-    $reason //= 'unknown';
-    my $client = BOM::User::Client->new({loginid => $loginid});
-
-    my $brand = defined $app_id ? Brands->new_from_app_id($app_id) : request->brand;
-    my $req   = BOM::Platform::Context::Request->new(brand_name => $brand->name);
-    BOM::Platform::Context::request($req);
-
-    BOM::Platform::Event::Emitter::emit(
-        'withdrawal_rejected',
-        {
-            loginid    => $client->loginid,
-            properties => {
-                loginid    => $client->loginid,
-                first_name => $client->first_name,
-                reason     => $reason,
-                brand      => ucfirst $brand->name,
-                remark     => $other_reason,
-            }});
-}
-
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::get_staffname();
 
@@ -334,7 +309,7 @@ $actions->{withdrawals} = sub {
             if (my $error = $actions_map{$trx_action}->{validation_error}->($transaction_info, $currency, $staff)) {
                 $update_errors->{$transaction_info->{id}} = $error;
             } else {
-                push @transaction_list, {%{$transaction_info}{qw/ id remark client_siblings exchange_rate/}};
+                push @transaction_list, {%{$transaction_info}{qw/ id remark rejection_reason client_siblings exchange_rate/}};
                 $reject_email_params->{$transaction_info->{id}} = $transaction_info
                     if $trx_action eq 'Reject';
             }
@@ -388,10 +363,7 @@ $actions->{withdrawals} = sub {
         }
 
         for my $update_result (($response_bodies->{update}{transaction_list} // [])->@*) {
-            if ($update_result->{is_success}) {
-                notify_crypto_withdrawal_rejected($reject_email_params->{$update_result->{id}})
-                    if $reject_email_params;
-            } else {
+            unless ($update_result->{is_success}) {
                 $update_errors->{$update_result->{id}} = $update_result->{message};
             }
         }
