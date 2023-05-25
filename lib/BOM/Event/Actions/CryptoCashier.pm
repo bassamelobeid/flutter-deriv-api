@@ -26,6 +26,7 @@ use constant {
 
 use constant TRANSACTION_HANDLERS => {
     withdrawal => {
+        REJECTED  => \&withdrawal_rejected_handler,
         SENT      => \&withdrawal_handler,
         LOCKED    => \&withdrawal_handler,
         CANCELLED => \&withdrawal_handler,
@@ -188,6 +189,40 @@ sub deposit_handler {
         );
     } catch ($e) {
         $log->warnf("Failed to emit crypto_deposit_%s\_email event for %s: %s", lc $txn_info->{status_code}, $txn_metadata->{loginid}, $e);
+    }
+}
+
+=head2 withdrawal_rejected_handler
+
+Handler for the withdrawal transaction with REJECTED status.
+
+=over 4
+
+=item * C<$txn_info>     - A hashref of the transaction information.
+
+=item * C<$txn_metadata> - A hashref of the transaction metadata.
+
+=back
+
+=cut
+
+sub withdrawal_rejected_handler {
+    my ($txn_info, $txn_metadata) = @_;
+
+    try {
+        BOM::Platform::Event::Emitter::emit(
+            'crypto_withdrawal_rejected_email_v2',
+            {
+                amount        => $txn_info->{amount},
+                loginid       => $txn_metadata->{loginid},
+                currency      => $currency_code_mapper{$txn_metadata->{currency_code}} // $txn_metadata->{currency_code},
+                reference_no  => $txn_info->{id},
+                reject_code   => $txn_metadata->{reason_code},
+                reject_remark => (($txn_metadata->{reason} && $txn_metadata->{reason_code} eq 'other')) ? $txn_metadata->{reason} : '',
+            },
+        );
+    } catch ($e) {
+        $log->warnf("Failed to emit crypto_withdrawal_rejected_email_v2 event for %s: %s", $txn_metadata->{loginid}, $e);
     }
 }
 

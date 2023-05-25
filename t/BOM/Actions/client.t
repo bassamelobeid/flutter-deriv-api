@@ -40,6 +40,7 @@ use Encode                 qw(encode_utf8);
 use Locale::Codes::Country qw(country_code2code);
 use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
 use BOM::Test::Helper::P2P;
+use BOM::Platform::Utility;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -5192,8 +5193,9 @@ subtest 'store check coming from webhook even if there is no check record in db'
     $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
 };
 
-subtest 'crypto_withdrawal_rejected_email' => sub {
-    my $req = BOM::Platform::Context::Request->new(
+subtest 'crypto_withdrawal_rejected_email_v2' => sub {
+    my $currency_code = 'BTC';
+    my $req           = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
         language   => 'EN',
         app_id     => $app_id,
@@ -5203,54 +5205,62 @@ subtest 'crypto_withdrawal_rejected_email' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
-    $client->email('nobody@deriv.com');
+    my $email = 'nobody@deriv.com';
+    $client->email($email);
     $client->first_name('Alice');
     $client->last_name('Bob');
     $client->salutation('MR');
+    $client->set_default_account($currency_code);
     $client->save;
+    my $fiat_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $fiat_client->email($email);
+    $fiat_client->account('USD');
+    $fiat_client->save;
 
     my $user = BOM::User->create(
         email          => $client->email,
         password       => "1234",
         email_verified => 1,
     )->add_client($client);
-
+    my $client_fiat_account = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($client->loginid);
+    is $client_fiat_account, undef, 'no fiat account curency yet';
+    $user->add_client($fiat_client);
     undef @track_args;
 
-    BOM::Event::Actions::Client::crypto_withdrawal_rejected_email({
-            client_loginid         => $client->loginid,
-            reject_reason          => 'highest_deposit_method_is_not_crypto',
-            amount                 => '0.09',
-            currency_code          => 'BTC',
-            live_chat_url          => 'https://deriv.com/en/?is_livechat_open=true',
-            cashier_transfer_url   => 'https://app.deriv.com/cashier/account-transfer?lang=en',
-            cashier_p2p_url        => 'https://app.deriv.com/cashier/p2p?lang=en',
-            cashier_withdrawal_url => 'https://app.deriv.com/cashier/withdrawal?lang=en',
-            meta_data              => 'Perfect Money',
-            fiat_account           => 'USD'
+    $client_fiat_account = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($client->loginid);
+    is $client_fiat_account, 'USD', 'correct fiat account curency';
+    BOM::Event::Actions::Client::crypto_withdrawal_rejected_email_v2({
+            loginid       => $client->loginid,
+            reject_code   => 'highest_deposit_method_is_not_crypto--Skrill',
+            reject_remark => '',
+            amount        => '0.09',
+            currency      => $currency_code,
+            live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
+            reference_no  => 1
         })->get;
 
     my ($customer, %args) = @track_args;
     ok 1, 'is ok';
 
-    is $args{event}, 'crypto_withdrawal_rejected_email', "got correct event name";
+    is $args{event}, 'crypto_withdrawal_rejected_email_v2', "got correct event name";
 
     cmp_deeply(
         $args{properties},
         {
-            "lang"                   => "EN",
-            "brand"                  => "deriv",
-            "title"                  => "We were unable to process your withdrawal",
-            "amount"                 => 0.09,
-            "loginid"                => $client->loginid,
-            "meta_data"              => "Perfect Money",
-            "currency_code"          => "BTC",
-            "live_chat_url"          => 'https://deriv.com/en/?is_livechat_open=true',
-            "cashier_transfer_url"   => 'https://app.deriv.com/cashier/account-transfer?lang=en',
-            "cashier_p2p_url"        => 'https://app.deriv.com/cashier/p2p?lang=en',
-            "cashier_withdrawal_url" => 'https://app.deriv.com/cashier/withdrawal?lang=en',
-            "reject_reason"          => "highest_deposit_method_is_not_crypto",
-            "fiat_account"           => "USD"
+            "lang"          => "EN",
+            "brand"         => "deriv",
+            "title"         => sprintf("Your %s withdrawal is declined", $currency_code),
+            "amount"        => 0.09,
+            "loginid"       => $client->loginid,
+            "currency"      => "BTC",
+            "live_chat_url" => 'https://deriv.com/en/?is_livechat_open=true',
+            "reject_code"   => "highest_deposit_method_is_not_crypto",
+            "reject_remark" => "",
+            'reference_no'  => 1,
+            "fiat_account"  => "USD",
+            "meta_data"     => "Skrill",
         },
         'event properties are ok'
     );

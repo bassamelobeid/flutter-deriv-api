@@ -70,6 +70,7 @@ use BOM::Config::Payments::PaymentMethods;
 use BOM::Platform::Client::AntiFraud;
 use Locale::Country qw/code2country/;
 use BOM::Platform::Client::AntiFraud;
+use BOM::Platform::Utility;
 
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
@@ -3085,7 +3086,7 @@ sub crypto_deposit_email {
     });
 }
 
-=head2 crypto_withdrawal_rejected_email
+=head2 crypto_withdrawal_rejected_email_v2
 
 Handles sending event to trigger email from customer io and send required event data
 
@@ -3093,21 +3094,23 @@ Handles sending event to trigger email from customer io and send required event 
 
 =item * C<loginid> - Login id of the client.
 
-=item * C<reject_reason> - Reason for rejecting
+=item * C<reject_remark> - reject remark for rejecting payout
+
+=item * C<reject_code> - reject code
 
 =item * C<amount> - Amount requested
 
-=item * C<currency_code> - Currency_code
+=item * C<currency> - Currency code
 
 =item * C<title> - Title for email header
 
-=item * C<meta_data> - Additional details to be included in email
+=item * C<reference_no> - db id of the withdrawal
 
 =back
 
 =cut
 
-sub crypto_withdrawal_rejected_email {
+sub crypto_withdrawal_rejected_email_v2 {
     my ($params) = @_;
 
     my $prefrd_lang;
@@ -3126,19 +3129,27 @@ sub crypto_withdrawal_rejected_email {
         app_id => $params->{app_id},
         $prefrd_lang ? (language => $prefrd_lang) : (),
     };
-
-    return BOM::Event::Services::Track::crypto_withdrawal_rejected_email({
-            loginid                => $params->{client_loginid},
-            reject_reason          => $params->{reject_reason},
-            amount                 => $params->{amount},
-            currency_code          => $params->{currency_code},
-            title                  => localize('We were unable to process your withdrawal'),
-            live_chat_url          => $brand->live_chat_url($url_params),
-            cashier_transfer_url   => $brand->cashier_transfer_url($url_params),
-            cashier_p2p_url        => $brand->cashier_p2p_url($url_params),
-            cashier_withdrawal_url => $brand->cashier_withdrawal_url($url_params),
-            meta_data              => $params->{meta_data},
-            fiat_account           => $params->{fiat_account}});
+    my $reject_code = $params->{reject_code};
+    my $meta_data   = '';
+    # check if its special reject_code that is set from auto-reject script
+    if ($reject_code =~ /--/) {
+        my @reject_code_info = split('--', $reject_code);
+        $reject_code = $reject_code_info[0];
+        $meta_data   = $reject_code_info[1];
+    }
+    my $fiat_account_currency = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($params->{loginid}) // 'fiat';
+    return BOM::Event::Services::Track::crypto_withdrawal_rejected_email_v2({
+        loginid       => $params->{loginid},
+        reject_code   => $reject_code,
+        reject_remark => $params->{reject_remark},
+        meta_data     => $meta_data,
+        amount        => $params->{amount},
+        currency      => $params->{currency},
+        title         => localize('Your [_1] withdrawal is declined', $params->{currency}),
+        live_chat_url => $brand->live_chat_url($url_params),
+        reference_no  => $params->{reference_no},
+        fiat_account  => $fiat_account_currency,
+    });
 }
 
 =head2 _save_request_context

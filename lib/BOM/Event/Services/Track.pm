@@ -124,14 +124,14 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
+    crypto_withdrawal_rejected_email_v2              =>
+        [qw(loginid reject_code reject_remark meta_data fiat_account amount currency title live_chat_url reference_no )],
     crypto_deposit_confirmed_email    => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
     crypto_deposit_pending_email      => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
     crypto_withdrawal_sent_email      => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
     crypto_withdrawal_locked_email    => [qw(loginid amount currency live_chat_url title)],
     crypto_withdrawal_cancelled_email => [qw(loginid amount currency reference_no live_chat_url title)],
-    crypto_withdrawal_rejected_email  => [
-        qw(loginid reject_reason amount currency_code title live_chat_url meta_data fiat_account cashier_transfer_url cashier_p2p_url cashier_withdrawal_url)
-    ],
+
     p2p_advert_created =>
         [qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible)],
     p2p_advertiser_cancel_at_fault    => [qw(order_id cancels_remaining)],
@@ -193,10 +193,10 @@ my @COMMON_EVENT_METHODS = qw(
     crypto_deposit_confirmed_email
     crypto_deposit_pending_email
     crypto_withdrawal_email
+    crypto_withdrawal_rejected_email_v2
     crypto_withdrawal_sent_email
     crypto_withdrawal_locked_email
     crypto_withdrawal_cancelled_email
-    crypto_withdrawal_rejected_email
     payment_deposit
     payment_withdrawal
     payment_withdrawal_reversal
@@ -1526,7 +1526,7 @@ It is triggered for B<request_edd_document_upload> event emitted, delivering it 
 
 It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it to Rudderstack.
 
-=head2 crypto_withdrawal_rejected_email
+=head2 crypto_withdrawal_rejected_email_v2
 
 Send rudderstack event when a crypto payout is rejected
 
