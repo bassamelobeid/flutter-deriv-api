@@ -536,7 +536,7 @@ sub get_consider_reasons {
 
                 # If the facial similarity is `consider` we directly inject the `selfie` reason.
                 my $api_name = $report->{api_name} // '';
-                push @reasons, 'selfie' if $api_name eq 'facial_similarity';
+                push @reasons, 'selfie' if $api_name eq 'facial_similarity' || $api_name eq 'facial_similarity_photo';
 
                 # For documents, scan the whole thing looking for `result` as `consider` or `unidentified`
                 # We may also look for a `properties` hash, in this case we scan each value for `consider` or `unidentified`.
