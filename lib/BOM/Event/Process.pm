@@ -103,8 +103,6 @@ my $action_mapping = {
         df_anonymization_done                       => \&BOM::Event::Actions::Anonymization::df_anonymization_done,
         mt5_archived_account_reset_trading_password => \&BOM::Event::Actions::MT5::mt5_archived_account_reset_trading_password,
         account_verification_for_pending_payout     => \&BOM::Event::Services::Track::account_verification_for_pending_payout,
-        pa_transfer_confirm                         => \&BOM::Event::Actions::Client::pa_transfer_confirm,
-        pa_withdraw_confirm                         => \&BOM::Event::Actions::Client::pa_withdraw_confirm,
         trigger_cio_broadcast                       => \&BOM::Event::Actions::Common::trigger_cio_broadcast,
         mt5_deriv_auto_rescind                      => \&BOM::Event::Actions::MT5::mt5_deriv_auto_rescind,
         crypto_cashier_transaction_updated          => \&BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated,
@@ -195,6 +193,8 @@ my $action_mapping = {
         unknown_login                                    => \&BOM::Event::Actions::Email::send_client_email_track_event,
         dp_successful_login                              => \&BOM::Event::Services::Track::dp_successful_login,
         pa_first_time_approved                           => \&BOM::Event::Services::Track::pa_first_time_approved,
+        pa_transfer_confirm                              => \&BOM::Event::Actions::Client::pa_transfer_confirm,
+        pa_withdraw_confirm                              => \&BOM::Event::Actions::Client::pa_withdraw_confirm,
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,

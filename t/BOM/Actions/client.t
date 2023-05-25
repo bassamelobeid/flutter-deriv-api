@@ -4280,7 +4280,7 @@ subtest 'pa transfer confirm' => sub {
         'currency'          => 'USD'
     };
 
-    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{pa_transfer_confirm};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{pa_transfer_confirm};
     my $result  = $handler->($param)->get;
     ok $result, 'Success result';
 
@@ -4339,7 +4339,7 @@ subtest 'pa withdraw confirm' => sub {
         'currency'          => 'USD'
     };
 
-    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{pa_withdraw_confirm};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{pa_withdraw_confirm};
     my $result  = $handler->($param)->get;
     ok $result, 'Success result';
 

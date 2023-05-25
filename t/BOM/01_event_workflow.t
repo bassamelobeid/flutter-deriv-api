@@ -132,7 +132,7 @@ subtest 'process - generic jobs' => sub {
                 affiliate_loginids_sync p2p_advertiser_approval_changed p2p_advertiser_online_status p2p_advert_orders_updated
                 cms_add_affiliate_client df_anonymization_done sideoffice_set_account_status sideoffice_remove_account_status
                 account_verification_for_pending_payout bulk_client_status_update
-                pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast crypto_cashier_transaction_updated
+                trigger_cio_broadcast crypto_cashier_transaction_updated
                 update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind mt5_archive_restore_sync sync_mt5_accounts_status
                 poa_updated/
         ),
@@ -241,7 +241,8 @@ subtest 'process - tracking jobs' => sub {
                 verify_email_closed_account_reset_password verify_email_closed_account_account_opening verify_email_closed_account_other request_payment_withdraw
                 account_opening_existing self_tagging_affiliates authenticated_with_scans document_uploaded new_mt5_signup_stored
                 identity_verification_rejected p2p_advertiser_approved p2p_order_updated_handled
-                risk_disclaimer_resubmission unknown_login derivx_account_deactivated poa_verification_failed_reminder professional_status_requested dp_successful_login pa_first_time_approved/
+                risk_disclaimer_resubmission unknown_login derivx_account_deactivated poa_verification_failed_reminder professional_status_requested dp_successful_login
+                pa_first_time_approved pa_transfer_confirm pa_withdraw_confirm/
         ),
         'Correct number of actions that can be emitted'
     );
