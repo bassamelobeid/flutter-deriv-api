@@ -1013,6 +1013,32 @@ subtest 'rule transfers.account_types_are_compatible' => sub {
         rule       => $rule_name
         },
         'Expected error when client_from is dxtrade and client_to is dxtrade';
+
+    %args = (
+        loginid           => $client->loginid,
+        account_type_from => 'derivez',
+        account_type_to   => 'mt5',
+    );
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'IncompatibleDerivezToMt5',
+        rule       => $rule_name
+        },
+        'Expected error when client_from is derivez and client_to is mt5';
+
+    %args = (
+        loginid           => $client->loginid,
+        account_type_from => 'mt5',
+        account_type_to   => 'derivez',
+    );
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'IncompatibleMt5ToDerivez',
+        rule       => $rule_name
+        },
+        'Expected error when client_from is mt5 and client_to is derivez';
 };
 
 done_testing();

@@ -343,6 +343,10 @@ rule 'transfers.account_types_are_compatible' => {
 
         $self->fail('IncompatibleDxtradeToDxtrade') if $args->{account_type_from} eq 'dxtrade' && $args->{account_type_to} eq 'dxtrade';
 
+        $self->fail('IncompatibleDerivezToMt5') if $args->{account_type_from} eq 'derivez' && $args->{account_type_to} eq 'mt5';
+
+        $self->fail('IncompatibleMt5ToDerivez') if $args->{account_type_from} eq 'mt5' && $args->{account_type_to} eq 'derivez';
+
         return 1;
     },
 };
