@@ -9,8 +9,8 @@
         <p class="subtitle-text"><%= l('It\'s good to see you again. Log in to start trading.') %></p>
         <form novalidate id="frmLogin" method="POST">
             <div class='input-group'>
-                <div style = "border-radius: 8px" class="input-wrapper <% if (stash('error')) { %>has_error<% } %>">
-                    <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" <% if (stash('error')) { %>autofocus="autofocus"<% } %> />
+                <div class="input-wrapper <% if (stash('error')) { %>has_error<% } %>">
+                    <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" value="<%= stash('email_entered') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" <% if (stash('error')) { %>autofocus="autofocus"<% } %> />
                     <label for="txtEmail"><%= l('Email') %></label>
                     <span class="bar"></span>
                 </div>
@@ -23,7 +23,7 @@
                 </div>
             </div>
             <div class="input-group">
-                <div style = "border-radius: 8px" class="input-wrapper">
+                <div class="input-wrapper">
                     <input type="password" id="txtPass" name="password" required autocomplete="off" />
                     <label for="txtPass"><%= l('Password') %></label>
                     <span class="bar"></span>
@@ -37,7 +37,7 @@
                 <% if ($is_reset_password_allowed) { %>
                     <a id="lost-password" href="https://<%= $website_domain %>/<%= lc($language) %>reset-password"><%= l('Forgot password?') %></a>
                 <% } %>
-                <button style = "border-radius: 8px" type="submit" class="button secondary" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button>
+                <button type="submit" class="button secondary" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button>
             </div>
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
         </form>

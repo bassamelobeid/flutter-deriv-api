@@ -391,6 +391,7 @@ sub _login {
             login_method              => undef,
             is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($id),
             website_domain            => $c->_website_domain($id),
+            email_entered             => $email,
         );
 
         return;
