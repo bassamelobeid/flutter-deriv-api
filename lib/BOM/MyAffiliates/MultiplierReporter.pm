@@ -55,7 +55,7 @@ sub activity {
 
     my $result = $self->computation();
 
-    my $apps_by_brand = $self->get_apps_by_brand();
+    my $apps_by_brand = $self->get_apps_by_brand_multiplier();
 
     my $activity = $self->database_mapper()->get_clients_activity({
         date              => $when->date_yyyymmdd,
@@ -112,7 +112,7 @@ sub computation {
 
     my $when = $self->processing_date;
 
-    my $apps_by_brand = $self->get_apps_by_brand();
+    my $apps_by_brand = $self->get_apps_by_brand_multiplier();
     my $commission    = $self->database_mapper()->get_multiplier_commission({
         date         => $when->date_yyyymmdd,
         include_apps => $apps_by_brand->{include_apps},

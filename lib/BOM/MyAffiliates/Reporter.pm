@@ -23,7 +23,6 @@ use Brands;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::DataMapper::MyAffiliates;
-
 use feature 'state';
 
 use constant NOT_IMPLEMENTED => "Not implemented %s %s %s";
@@ -230,6 +229,31 @@ sub get_apps_by_brand {
     } else {
         push @{$result->{include_apps}}, keys %{$self->brand->whitelist_apps()};
     }
+
+    return $result;
+}
+
+=head2 get_apps_by_brand_multiplier
+
+This return apps by brand for multiplier
+
+=cut
+
+sub get_apps_by_brand_multiplier {
+    my $self = shift;
+
+    my $result = {
+        exclude_apps => undef,
+        include_apps => undef,
+    };
+
+    my $allowed_brand_names = $self->brand->allowed_names();
+    for my $allowed_name (@$allowed_brand_names) {
+        next if $allowed_name eq 'binary';
+        my $brand = Brands->new(name => $allowed_name);
+        push @{$result->{include_apps}}, keys %{$brand->whitelist_apps()};
+    }
+    push @{$result->{include_apps}}, keys %{$self->brand->whitelist_apps()};
 
     return $result;
 }
