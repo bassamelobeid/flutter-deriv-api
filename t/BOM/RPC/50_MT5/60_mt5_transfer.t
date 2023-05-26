@@ -708,4 +708,32 @@ subtest 'Transfers in between MT5 and Deriv X' => sub {
         ->has_no_system_error->has_error->error_code_is('IncompatibleMt5ToDxtrade', 'Cannot transfer from MT5 to DX');
 };
 
+subtest 'Transfers in between MT5 and DERIVEZ' => sub {
+    my $mock_user = Test::MockModule->new('BOM::User');
+    $mock_user->mock('get_derivez_loginids', sub { return ('EZR1000'); });
+    my $mt5_account = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
+
+    my $params;
+    $params->{token} = $token;
+    $params->{args}  = {
+        account_from => "EZR1000",
+        account_to   => $mt5_account,
+        amount       => 10,
+        currency     => 'USD',
+    };
+
+    $c->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('IncompatibleDerivezToMt5', 'Cannot transfer from Derivez to MT5');
+
+    $params->{args} = {
+        account_from => $mt5_account,
+        account_to   => 'EZR1000',
+        amount       => 10,
+        currency     => 'USD',
+    };
+
+    $c->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('IncompatibleMt5ToDerivez', 'Cannot transfer from Derivez to DX');
+};
+
 done_testing();

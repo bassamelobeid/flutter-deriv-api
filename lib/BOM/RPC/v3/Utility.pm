@@ -642,6 +642,8 @@ sub error_map {
         InvalidLoginidTo             => localize('You are not allowed to transfer to this account.'),
         IncompatibleDxtradeToMt5     => localize('You are not allowed to transfer to this account.'),
         IncompatibleMt5ToDxtrade     => localize('You are not allowed to transfer to this account.'),
+        IncompatibleDerivezToMt5     => localize('You are not allowed to transfer to this account.'),
+        IncompatibleMt5ToDerivez     => localize('You are not allowed to transfer to this account.'),
         IncompatibleMt5ToMt5         => localize('Transfer between two MT5 accounts is not allowed.'),
         IncompatibleDxtradeToDxtrade => localize('Transfer between two Deriv X accounts is not allowed.'),
         CashierLocked                => localize('Your account cashier is locked. Please contact us for more information.'),
