@@ -70,6 +70,7 @@ my $app1 = $c->call_ok(
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
+is $app1->{name},             'App 1',                          'app name is valid';
 is $app1->{redirect_uri},     'https://www.example.com/',       'redirect_uri is right';
 is $app1->{verification_uri}, 'https://www.example.com/verify', 'verification_uri is right';
 is $app1->{homepage},         'https://www.homepage.com/',      'homepage is right';
@@ -100,6 +101,7 @@ $app1 = $c->call_ok(
     })->has_no_system_error->has_no_error->result;
 delete $app1->{stash};    # This will check against an ARRAY response which doesn't have the stash
 is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
+is $app1->{name},             'App 1',                                  'app name is valid';
 is $app1->{redirect_uri},     'https://www.example.com/callback',       'redirect_uri is updated';
 is $app1->{verification_uri}, 'https://www.example.com/verify_updated', 'redirect_uri is updated';
 is $app1->{homepage},         'https://www.homepage2.com/',             'homepage is updated';
@@ -373,6 +375,39 @@ $used_apps = $c->call_ok(
         },
     })->has_no_system_error->has_error->result;
 is $used_apps->{error}->{code}, 'InvalidToken', 'not valid after revoke';
+
+# Check creation of a 3rd party app (app4) with invalid name
+my $app4 = $c->call_ok(
+    'app_register',
+    {
+        token => $token,
+        args  => {
+            name => 'Deriv official app',
+        },
+    })->has_no_system_error->has_error->result;
+is $app4->{error}->{code}, 'AppRegister', 'app4 name is not valid';
+
+# Check creation of a 3rd party app (app5) with valid name
+# and then trying to rename it to a invalid name
+my $app5 = $c->call_ok(
+    'app_register',
+    {
+        token => $token,
+        args  => {
+            name => 'Valid official app name',
+        },
+    })->has_no_system_error->has_no_error->result;
+is $app5->{name}, 'Valid official app name', 'app name is valid';
+
+$app5 = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            name => 'Binary official app',
+        },
+    })->has_no_system_error->has_error->result;
+is $app5->{error}->{code}, 'AppUpdate', 'app5 rename to [Binary official app] is not allowed';
 
 $res = $c->call_ok(
     'api_token',

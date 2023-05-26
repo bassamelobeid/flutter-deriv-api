@@ -43,6 +43,11 @@ rpc app_register => sub {
         });
     };
 
+    # Validate $name not to include 'deriv' or 'binary' or words that look similar
+    if (my $err = __validate_app_name($name)) {
+        return $error_sub->($err);
+    }
+
     if (my $err = __validate_redirect_uri($redirect_uri, $app_markup_percentage)) {
         return $error_sub->($err);
     }
@@ -110,6 +115,11 @@ rpc app_update => sub {
     my $app = $oauth->get_app($user_id, $app_id);
     return $error_sub->(localize('Not Found')) unless $app;
 
+    # Validate $name not to include 'deriv' or 'binary' or words that look similar
+    if (my $err = __validate_app_name($name)) {
+        return $error_sub->($err);
+    }
+
     if (my $err = __validate_redirect_uri($redirect_uri, $app_markup_percentage)) {
         return $error_sub->($err);
     }
@@ -161,6 +171,25 @@ sub __validate_app_links {
     }
 
     return;
+}
+
+=head2 __validate_app_name
+
+    __validate_app_name($app_name);
+
+    Validate 3rd party app name not to include 'deriv' or 'binary' and words that look similar
+
+=cut
+
+# Validate app name not to include 'deriv' or 'binary' and words that look similar
+sub __validate_app_name {
+    my $app_name = shift;
+    my $validation_error;
+
+    $validation_error = BOM::RPC::v3::Utility::validate_app_name($app_name);
+    return $validation_error if $validation_error;
+
+    return undef;
 }
 
 rpc app_list => sub {
