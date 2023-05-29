@@ -21,8 +21,8 @@ rule 'financial_assessment.required_sections_are_complete' => {
     code        => sub {
         my ($self, $context, $args) = @_;
         my $client         = $context->client($args);
-        my $is_FI_complete = is_section_complete($args, "financial_information", $context->landing_company($args));
-        my $is_TE_complete = is_section_complete($args, "trading_experience",    $context->landing_company($args));
+        my $is_FI_complete = BOM::User::FinancialAssessment::is_section_complete($args, "financial_information", $context->landing_company($args));
+        my $is_TE_complete = BOM::User::FinancialAssessment::is_section_complete($args, "trading_experience",    $context->landing_company($args));
 
         $self->fail('IncompleteFinancialAssessment')
             if ($context->landing_company($args) eq "svg" && !$is_FI_complete);
@@ -59,7 +59,7 @@ rule 'financial_asssessment.appropriateness_test' => {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
         return 1 if $args->{account_type} && $args->{account_type} eq 'affiliate';
-        my $app_test = appropriateness_tests($client, $args);
+        my $app_test = BOM::User::FinancialAssessment::appropriateness_tests($client, $args);
         if (!$app_test->{result}) {
             if ($app_test->{cooling_off_expiration_date}) {
                 $self->fail('AppropriatenessTestFailed', details => {cooling_off_expiration_date => $app_test->{cooling_off_expiration_date}});

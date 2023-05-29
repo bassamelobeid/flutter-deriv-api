@@ -90,7 +90,7 @@ rule 'client.signup_immitable_fields_not_changed' => {
             my $arg_value = $args->{$field} // '';
             my $cli_value;
 
-            if (any { $_ eq $field } BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*) {
+            if (any { $_ eq $field } BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED()->@*) {
                 $cli_value = $financial_assessment ? $financial_assessment->{$field} // '' : '';
             } else {
                 next unless $client->$field;

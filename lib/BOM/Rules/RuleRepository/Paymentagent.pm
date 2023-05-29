@@ -167,7 +167,7 @@ rule 'paymentagent.action_is_allowed' => {
         return 1 unless $pa && ($pa->status // '') eq 'authorized';
 
         my $service = PA_ACTION_MAPPING->{$action} // $action;
-        return 1 unless any { $_ eq $service } BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*;
+        return 1 unless any { $_ eq $service } BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES()->@*;
         return 1 if $pa->tier_details->{$service};
 
         if ($service eq 'cashier_withdraw') {

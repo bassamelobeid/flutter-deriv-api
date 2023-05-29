@@ -3,3 +3,18 @@ mt5_jurisdiction_validation:
   ruleset:
     - mt5_account.account_poa_status_allowed
     - mt5_account.account_proof_status_allowed
+
+new_mt5_dez_account:
+  description: Rules applied on MT5 and DerivEZ account creation
+  ruleset:
+    - type: conditional
+      on: account_type
+      rules_per_value:
+        real:
+          - trading_account.client_should_be_real
+        financial:
+          - trading_account.client_should_be_real
+        gaming:
+          - trading_account.client_should_be_real
+        demo:
+          - pass
