@@ -16,7 +16,9 @@ __PACKAGE__->meta->setup(
         entry_epoch => { type => 'timestamp' },
         entry_spot => { type => 'numeric' },
         barrier => { type => 'numeric' },
-        commission  => { type => 'numeric' },
+        commission => { type => 'numeric' }, #deprecated as commission is divided to ask and bid spread now, keeping for backward compatibility
+        ask_spread  => { type => 'numeric' },
+        bid_spread  => { type => 'numeric' },
     ],
 
     primary_key_columns => ['financial_market_bet_id'],

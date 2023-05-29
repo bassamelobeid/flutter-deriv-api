@@ -338,6 +338,7 @@ sub sell_bet {
         # FMB child table
         $bet->{absolute_barrier}       ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}}))
         : defined $bet->{is_cancelled} ? Encode::encode_utf8($json->encode(+{is_cancelled     => $bet->{is_cancelled}}))
+        : $bet->{sell_commission}      ? Encode::encode_utf8($json->encode(+{bid_spread       => $bet->{sell_commission}}))
         : undef,
 
         $bet->{is_expired} // 1,
