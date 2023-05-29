@@ -65,19 +65,20 @@ sub get_exchangerates_limit {
         return ($redis->get($key) + 0);
     }
 
-    my $price = convert_currency($value + 0, $unit, $currency);
+    my $redis_write = BOM::Config::Redis::redis_exchangerates_write();
+    my $price       = convert_currency($value + 0, $unit, $currency);
     return undef if (not defined $price);
 
     $price = _round($price, MAX_DEVIATION);
 
-    return $price if $redis->set($key, $price, 'EX', TTL) eq 'OK';
+    return $price if $redis_write->set($key, $price, 'EX', TTL) eq 'OK';
 
     die 'Failed to convert ' . $value . ' amount of ' . $currency;
 }
 
 =head2 _round
 
-Fucntion to round the price withing the allowed deviance
+Function to round the price within the allowed deviance
 
 =over 4
 
@@ -104,6 +105,13 @@ sub _round {
         $rounded = roundnear(10**$power, $number + 0);
         $power--;
     } until (abs($rounded - $number) / max($rounded, $number) <= $allowed_difference);
+
+    # $rounded should never be undefined. If it is, we should capture it here and reset it to $number.
+    unless (defined $rounded) {
+        $log->warnf("Fail to round with the following arguments: %s", ($number, $allowed_difference));
+        $rounded = $number;
+    }
+
     return $rounded;
 }
 
