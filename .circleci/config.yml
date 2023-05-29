@@ -112,7 +112,6 @@ jobs:
     - *start_services
     - run:
         <<: *environment
-        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make security
@@ -127,13 +126,11 @@ jobs:
     - *start_services
     - run:
         <<: *environment
-        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make structure
         name: Code structure and syntax
     - run:
-        no_output_timeout: 3h
         command: make unit
         name: unit tests
     - store_test_results:
@@ -146,7 +143,6 @@ jobs:
     - *start_services
     - run:
         <<: *environment
-        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make subscriptions
@@ -161,7 +157,6 @@ jobs:
     - *start_services
     - run:
         <<: *environment
-        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make backends
@@ -175,7 +170,6 @@ jobs:
     - *update_git
     - run:
         <<: *environment
-        no_output_timeout: 3h
         command: |
           script/websocket_schema_update.sh
         name: Update developer.binary.com schema documentation
@@ -187,40 +181,31 @@ jobs:
     - *update_git
     - *start_services
     - run:
-        no_output_timeout: 3h
         command: make cover
         name: code cover tests
     - run:
-        no_output_timeout: 3h
         command: make cover_websocket_tests sub_test=schema_suite
         name: schema_suite tests
     - run:
-        no_output_timeout: 3h
         command: make cover_websocket_tests sub_test=security
         name: security tests
     - run:
-        no_output_timeout: 3h
         command: make cover_websocket_tests sub_test=accounts
         name: accounts tests
     - run:
-        no_output_timeout: 3h
         command: make cover_websocket_tests sub_test=misc
         name: misc tests
     - run:
-        no_output_timeout: 3h
         command: make cover_websocket_tests sub_test=p2p
         name: p2p tests
     - run:
-        no_output_timeout: 3h
         command: make cover_websocket_tests sub_test=pricing
         name: pricing tests
     - run:
-        no_output_timeout: 3h
         command: make cover_websocket_tests sub_test=backends
         name: backends tests
     - run:
         name: upload coverage report
-        no_output_timeout: 3h
         command: cover -report coveralls
   unit:
     <<: *test_config
@@ -229,7 +214,6 @@ jobs:
     - *update_git
     - run:
         <<: *environment
-        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit
