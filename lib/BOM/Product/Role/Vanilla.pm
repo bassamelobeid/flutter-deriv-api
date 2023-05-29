@@ -243,7 +243,10 @@ commission we charged
 sub base_commission {
     my $self = shift;
 
-    return ($self->bid_probability->amount - $self->theo_probability->amount) if $self->for_sale;
+    # pricing_new is more reliable than for_sale here,
+    # because if pricing_new is 0,
+    # client can only sell it
+    return ($self->theo_probability->amount - $self->bid_probability->amount) unless $self->pricing_new;
     return ($self->ask_probability->amount - $self->theo_probability->amount);
 }
 
@@ -342,6 +345,37 @@ sub _build_bid_probability {
     };
     $bid_probability->include_adjustment('subtract', $self->bs_markup);
     return $bid_probability;
+}
+
+=head2 buy_commission
+
+Commission for affiliate when client buys contract
+
+=cut
+
+sub buy_commission {
+    my $self = shift;
+
+    # buy commission = stake * (ask_0 - mid)/ask_0
+    #                = number of contracts * (ask_0 - mid)
+    return $self->number_of_contracts * ($self->initial_ask_probability->amount - $self->theo_probability->amount);
+}
+
+=head2 sell_commission
+
+Commission for affiliate when client sells contract
+
+=cut
+
+sub sell_commission {
+    my $self = shift;
+
+    # sell commission = stake * (mid - bid)/ask_0
+    #                 = number of contracts * (mid - bid)
+
+    # no commission charged when contract is left until expiry
+    return 0 if $self->is_expired;
+    return $self->number_of_contracts * ($self->theo_probability->amount - $self->bid_probability->amount);
 }
 
 =head2 delta_charge

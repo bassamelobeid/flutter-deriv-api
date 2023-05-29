@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -352,4 +352,23 @@ subtest 'check if spread is applied properly' => sub {
 
 };
 
+subtest 'affiliate commission' => sub {
+    my $c               = produce_contract($args);
+    my $sell_commission = $c->sell_commission;
+    my $buy_commission  = $c->buy_commission;
+
+    my $expected_bid_spread = $c->number_of_contracts * ($c->theo_probability->amount - $c->bid_probability->amount);
+    my $expected_ask_spread = $c->number_of_contracts * ($c->initial_ask_probability->amount - $c->theo_probability->amount);
+
+    is $sell_commission, $expected_bid_spread, 'correct commission';
+    is $buy_commission,  $expected_ask_spread, 'correct commission';
+
+    $args->{date_pricing} = $now->plus_time_interval('11h');
+    $args->{duration}     = '10h';
+    $c                    = produce_contract($args);
+
+    is $c->is_expired,      1, 'contract is expired';
+    is $c->sell_commission, 0, 'correct commission';
+
+};
 done_testing;
