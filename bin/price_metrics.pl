@@ -42,10 +42,10 @@ sub generate_csv_contents {
 
     $redis_pricer->hgetall('PRICE_METRICS::COUNT');
     $redis_pricer->hgetall('PRICE_METRICS::TIMING');
-    $redis_pricer->hgetall('PRICE_METRICS::QUEUED');
+    $redis_pricer->hgetall('PRICE_METRICS::DEQUEUED');
     $redis_pricer->del('PRICE_METRICS::COUNT');
     $redis_pricer->del('PRICE_METRICS::TIMING');
-    $redis_pricer->del('PRICE_METRICS::QUEUED');
+    $redis_pricer->del('PRICE_METRICS::DEQUEUED');
 
     my $result = $redis_pricer->exec;
 
@@ -57,7 +57,11 @@ sub generate_csv_contents {
     my $csv_contents = (join ',', qw(shortcode processed timing queued)) . "\n";
 
     for my $shortcode (@unique_shortcodes) {
-        $csv_contents .= (join ',', ($shortcode, map { $_->{$shortcode} // '' } @results)) . "\n";
+        $csv_contents .= (
+            join ',', $shortcode,
+            ($results[0]{$shortcode} // ''),
+            ($results[1]{$shortcode} // ''),
+            ($results[0]{$shortcode} + $results[2]{$shortcode})) . "\n";
     }
 
     return $csv_contents;

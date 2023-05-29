@@ -38,6 +38,7 @@ require BOM::Pricing::Queue;
 # use a separate redis client for this test
 my $redis        = RedisDB->new(YAML::XS::LoadFile('/etc/rmg/redis-pricer.yml')->{write}->%*);
 my $redis_shared = RedisDB->new(YAML::XS::LoadFile('/etc/rmg/redis-pricer-shared.yml')->{write}->%*);
+my $redis_feed   = RedisDB->new(YAML::XS::LoadFile('/etc/rmg/redis-feed.yml')->{master_read}->%*);
 
 my $loop  = IO::Async::Loop->new;
 my $queue = new_ok('BOM::Pricing::Queue', [internal_ip => '1.2.3.4'], 'New BOM::Pricing::Queue processor');
@@ -48,83 +49,60 @@ my @keys = (
     q{PRICER_ARGS::["amount",1000,"basis","payout","contract_type","PUT","country_code","ph","currency","AUD","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxAUDJPY"]},
     q{PRICER_ARGS::["amount",1000,"basis","payout","contract_type","CALL","country_code","ph","currency","AUD","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxAUDJPY"]},
     q{PRICER_ARGS::["contract_id",123,"landing_company","svg","price_daemon_cmd","bid"]},
+    q{PRICER_ARGS::["amount",1000,"basis","payout","contract_type","PUT","country_code","ph","currency","EUR","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxEURUSD"]},
+    q{PRICER_ARGS::["amount",1000,"basis","payout","contract_type","CALL","country_code","ph","currency","EUR","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxEURUSD"]},
+    q{PRICER_ARGS::["contract_id",124,"landing_company","svg","price_daemon_cmd","bid"]},
 );
 
 my @contract_params = ([
-    q{CONTRACT_PARAMS::123::svg},
-    q{["short_code","PUT_FRXAUDJPY_19.23_1583120649_1583120949_S0P_0","contract_id","123","currency","USD","is_sold","0","landing_company","svg","price_daemon_cmd","bid","sell_time",null]}
-]);
+        q{POC_PARAMETERS::123::svg},
+        q{["short_code","PUT_FRXAUDJPY_19.23_1583120649_1583120949_S0P_0","contract_id","123","currency","USD","is_sold","0","landing_company","svg","price_daemon_cmd","bid","sell_time",null]}
+    ],
+    [
+        q{POC_PARAMETERS::124::svg},
+        q{["short_code","PUT_FRXEURUSD_19.23_1583120649_1583120949_S0P_0","contract_id","124","currency","USD","is_sold","0","landing_company","svg","price_daemon_cmd","bid","sell_time",null]}
+    ],
+);
 $redis_shared->set($_->[0] => $_->[1]) for @contract_params;
 
 subtest 'normal flow' => sub {
 
     $redis->set($_ => 1) for @keys;
 
-    $queue->process->get;
+    $queue->update_list_of_contracts->get;
+    $queue->process('frxEURUSD')->get;
 
-    is($redis->llen('pricer_jobs'),            @keys,                            'keys added to pricer_jobs queue');
-    is($stats{'pricer_daemon.queue.overflow'}, 0,                                'zero overflow reported in statd');
-    is($stats{'pricer_daemon.queue.size'},     @keys,                            'keys waiting for processing in statsd');
-    is((keys %tags)[0],                        "tag:@{[ $queue->internal_ip ]}", 'internal ip recorded as tag');
+    is($redis->llen('pricer_jobs'), 3,                                'frxEURUSD keys added to pricer_jobs queue, but not frxAUDJPY');
+    is((keys %tags)[0],             "tag:@{[ $queue->internal_ip ]}", 'internal ip recorded as tag');
 
     like $redis->lrange('pricer_jobs', -1, -1)->[0], qr/"contract_id"/, 'bid contract is the first to rpop for being processed';
+    $queue->process('frxAUDJPY')->get;
+    is($redis->llen('pricer_jobs'), 6, 'now frxAUDJPY keys were also added');
+
+    $queue->stats->get;
+    is($stats{'pricer_daemon.queue.overflow'}, 0, 'zero overflow reported in statd');
+    is($stats{'pricer_daemon.queue.size'},     6, '6 keys were queued');
 };
 
 subtest 'overloaded daemon' => sub {
     # kill the subscriptions or they will be added again
     $redis->del($_) for @keys;
 
-    $queue->process->get;
+    $queue->stats->get;
 
     is($stats{'pricer_daemon.queue.overflow'}, @keys, 'overflow correctly reported in statsd');
-    is($stats{'pricer_daemon.queue.size'},     0,     'no keys pending processing in statsd');
+    is($redis->llen('pricer_jobs'),            0,     'non-processed jobs have been dequeued');
 };
 
-subtest 'jobs processed by daemon' => sub {
-    # Simulate the pricer daemon taking jobs
-    $redis->del('pricer_jobs');
-    $queue->process->get;
-
-    is($stats{'pricer_daemon.queue.overflow'}, 0, 'zero overflow reported in statsd');
-    is($stats{'pricer_daemon.queue.size'},     0, 'no keys pending processing in statsd');
+subtest 'symbol_for_contract' => sub {
+    is($queue->symbol_for_contract('123::svg')->get, 'frxAUDJPY', 'correct symbol for 123::svg');
 };
 
-subtest 'pricing interval stability' => sub {
-    $queue->configure(pricing_interval => 1.0);
-    note 'Repeating next test 5 times to confirm stability';
-    for (1 .. 5) {
-        my $start = Time::HiRes::time();
-        $queue->next_tick->get;
-        my $end = Time::HiRes::time();
-        cmp_ok($end - $start,    '<=', 1.1 * $queue->pricing_interval, 'time taken to sleep is acceptably close to pricing interval');
-        cmp_ok($end - int($end), '<=', 0.05,                           'next interval starts within 50ms of the start of the second');
-    }
-};
-
-subtest 'sleeping to next interval' => sub {
-    for my $interval (qw(0.25 0.5 1.2)) {
-        $queue->configure(pricing_interval => $interval);
-        note 'Repeating next test 5 times with interval ' . $interval . 's to confirm stability';
-        for (1 .. 5) {
-            my $start = Time::HiRes::time();
-            $queue->next_tick->get;
-            my $end = Time::HiRes::time();
-            cmp_ok(
-                $end - $start,
-                '<=',
-                1.05 * $queue->pricing_interval,
-                'time taken to sleep does not exceed ' . $interval . 's pricing interval by too much'
-            );
-        }
-    }
-};
-
-subtest 'parameters_for_contract_id' => sub {
+subtest 'parameters_for_contract' => sub {
     throws_ok {
-        $queue->parameters_for_contract_id(1, 'test')->get
+        $queue->parameters_for_contract('1::test')->get
     }
     qr/Contract parameters/, 'Contract parameters not found';
-    ok $queue->run->isa('IO::Async::Future'), 'BOM::Pricing::Queue run';
 };
 
 done_testing;
