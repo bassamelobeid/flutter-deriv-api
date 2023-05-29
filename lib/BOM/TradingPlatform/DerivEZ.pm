@@ -4,6 +4,7 @@ use strict;
 use warnings;
 no indirect;
 
+use BOM::Rules::Engine;
 use BOM::MT5::User::Async;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw(formatnumber);
@@ -110,6 +111,18 @@ sub new_account {
     # Build client and user object
     my $client = $self->client;
     my $user   = $client->user;
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    try {
+        $rule_engine->verify_action(
+            'new_mt5_dez_account',
+            loginid      => $client->loginid,
+            account_type => $account_type
+        );
+    } catch ($error) {
+        return create_error($error->{error_code}, {params => 'DerivEZ'});
+    }
 
     # Build client params if missing
     unless ($landing_company_short) {
