@@ -870,14 +870,7 @@ sub prepare_bet_data_for_buy {
         $bet_params->{barrier}     = $contract->barrier->as_absolute;
         $bet_params->{entry_spot}  = $contract->entry_spot;
         $bet_params->{entry_epoch} = Date::Utility->new($contract->entry_tick->epoch)->db_timestamp;
-
-        if ($contract->can('take_profit') and defined $contract->take_profit) {
-            $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
-            $bet_params->{take_profit_order_date}   = $contract->take_profit->{date}->db_timestamp;
-        }
-
-        $bet_params->{commission} = $contract->_user_input_stake *
-            (($contract->ask_probability->amount - $contract->theo_probability->amount) / $contract->ask_probability->amount);
+        $bet_params->{ask_spread}  = $contract->buy_commission;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TURBOS) {
         $bet_params->{barrier}     = $contract->barrier->as_absolute;
         $bet_params->{entry_spot}  = $contract->entry_spot;
@@ -1388,6 +1381,11 @@ sub prepare_bet_data_for_sell {
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
     };
+
+    $bet_params->{sell_commission} = $contract->sell_commission
+        if (($contract->can('sell_commission'))
+        and ($contract->category->code ne 'turbos'));
+    # Added to avoid unit test failures because of missing database changes. This should be removed in redmine #86504;
 
     if ($contract->can('cancellation')) {
         $bet_params->{is_cancelled} = $self->action_type eq 'cancel' ? 1 : 0;
