@@ -790,7 +790,7 @@ subtest 'VR account types - CR residence' => sub {
     #real accounts
     create_mt5_account->(
         $c, $token, $client, {account_type => 'gaming'},
-        'RealAccountMissing', 'Real gaming MT5 account creation is not allowed from a virtual account'
+        'AccountShouldBeReal', 'Real gaming MT5 account creation is not allowed from a virtual account'
     );
 
     create_mt5_account->(
@@ -799,7 +799,7 @@ subtest 'VR account types - CR residence' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         },
-        'RealAccountMissing',
+        'AccountShouldBeReal',
         'Real financial MT5 account creation is not allowed from a virtual account'
     );
 
@@ -809,7 +809,7 @@ subtest 'VR account types - CR residence' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial_stp'
         },
-        'RealAccountMissing',
+        'AccountShouldBeReal',
         'Real financial_stp MT5 account creation is not allowed from a virtual account'
     );
 
@@ -858,23 +858,38 @@ subtest 'Virtual account types - EU residences' => sub {
         'Financial STP MT5 account is not available in this country'
     );
 
-    #real accounts
-    create_mt5_account->(
-        $c, $token, $client, {account_type => 'gaming'},
-        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed in the country of residence'
-    );
-
     create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         },
-        'RealAccountMissing',
+        'AccountShouldBeReal',
         'Real financial MT5 account creation is not allowed from a virtual account'
     );
+};
 
+subtest 'Real account types - EU residences' => sub {
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->residence('de');
+    $client->save();
+
+    my $user = BOM::User->create(
+        email    => 'cr+eu@deriv.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+    $user->add_client($client);
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    #real accounts
     create_mt5_account->(
+        $c, $token, $client, {account_type => 'gaming'},
+        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed in the country of residence'
+    );
+
+    my $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
@@ -902,8 +917,7 @@ subtest 'Virtual account types - EU residences' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'real\p01_ts01\financial\maltainvest_std-hr_gbp', 'correct VRTC financial demo group with eur currency';
-
+    is $mt5_account_info->{group}, 'real\p01_ts01\financial\maltainvest_std-hr_gbp', 'correct financial real group with eur currency';
 };
 
 subtest 'Virtual account types - GB residence' => sub {
@@ -965,6 +979,21 @@ subtest 'Virtual account types - GB residence' => sub {
         'InvalidAccountRegion',
         'Sorry, account opening is unavailable in your region.'
     );
+};
+
+subtest 'Real account types - GB residence' => sub {
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->residence('gb');
+    $client->save();
+
+    my $user = BOM::User->create(
+        email    => 'cr+gb@binary.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+    $user->add_client($client);
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #real accounts
     $client->status->clear_age_verification();
@@ -1000,7 +1029,6 @@ subtest 'Virtual account types - GB residence' => sub {
         'InvalidAccountRegion',
         'Sorry, account opening is unavailable in your region.'
     );
-
 };
 
 my %lc_company_specific_details = (
@@ -1057,8 +1085,9 @@ foreach my $broker_code (keys %lc_company_specific_details) {
                 investPassword => 'Abcd345435@!',
             },
         };
-        my $error_code = 'RealAccountMissing';
+        my $error_code = 'AccountShouldBeReal';
         my $message    = " MT5 account creation is not allowed from a virtual account since $broker_code account is ";
+
         create_mt5_account->(
             $c,
             $token_vr,

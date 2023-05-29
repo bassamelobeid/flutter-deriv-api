@@ -393,7 +393,7 @@ subtest 'new account with switching' => sub {
     my $method = 'mt5_new_account';
     my $params = {
         language => 'EN',
-        token    => $token_vr,
+        token    => $token,
         # Pass this virtual account token to test switching functionality.
         #   If the user has multiple client accounts the Binary.com front-end
         #   will pass to this function whichever one is currently selected.
@@ -620,16 +620,65 @@ subtest 'VRTC to MLT and MF account switching' => sub {
         },
     };
 
-    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
-        ->error_code_is('MT5NotAllowed', 'error should be account not available');
+    $c->call_ok($method, $params)->has_error("Only real accounts are allowed to open real accounts")
+        ->error_code_is("AccountShouldBeReal", "error should be 'cannot open real account'");
 
     # Add dry_run test, we should get exact result like previous test
     $params->{args}->{dry_run} = 1;
-    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
-        ->error_code_is('MT5NotAllowed', 'error should be account not available');
+    $c->call_ok($method, $params)->has_error("Only real accounts are allowed to open real accounts")
+        ->error_code_is("AccountShouldBeReal", "error should be 'cannot open real account'");
 
     # Reset params after dry_run test
     $params->{args}->{dry_run} = 0;
+};
+
+subtest 'CR to MLT and MF account switching' => sub {
+    my $mf_switch_client = create_client('MF');
+    $mf_switch_client->set_default_account('GBP');
+    $mf_switch_client->residence('at');
+    $mf_switch_client->tax_residence('at');
+    $mf_switch_client->tax_identification_number('1234');
+    $mf_switch_client->account_opening_reason('speculative');
+
+    my $mlt_switch_client = create_client('MLT');
+    $mlt_switch_client->set_default_account('EUR');
+    $mlt_switch_client->residence('at');
+
+    my $cr_switch_client = create_client('CR');
+    $cr_switch_client->set_default_account('USD');
+    $cr_switch_client->residence('at');
+
+    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
+    $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
+
+    $mf_switch_client->save();
+    $mlt_switch_client->save();
+    $cr_switch_client->save();
+
+    my $switch_user = BOM::User->create(
+        email    => 'switch+cr@binary.com',
+        password => 's3kr1t',
+    );
+
+    $switch_user->add_client($cr_switch_client);
+    $switch_user->update_trading_password($details{password}{main});
+
+    my $cr_switch_token = $m->create_token($cr_switch_client->loginid, 'test token');
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $cr_switch_token,
+        args     => {
+            account_type   => 'gaming',
+            country        => 'es',
+            email          => $details{email},
+            name           => $details{name},
+            investPassword => 'Abcd1234',
+            mainPassword   => $details{password}{main},
+            company        => 'maltainvest'
+        },
+    };
 
     $switch_user->add_client($mlt_switch_client);
 
@@ -641,7 +690,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     $method = 'mt5_new_account';
     $params = {
         language => 'EN',
-        token    => $vr_switch_token,
+        token    => $cr_switch_token,
         args     => {
             account_type     => 'financial',
             mt5_account_type => 'financial',
@@ -1408,6 +1457,41 @@ subtest 'country=id, mt5 swap free account' => sub {
     my $result = $c->call_ok($method, $params)->has_no_error('real swap free account successfully created')->result;
     $params->{args}->{account_type} = 'demo';
     $result = $c->call_ok($method, $params)->has_no_error('demo swap free account successfully created')->result;
+};
+
+subtest 'VRTC client cannot create real MT5 account' => sub {
+    my $method = 'mt5_new_account';
+
+    # Financial account
+    my $client_params = {
+        token => $token_vr,
+        args  => {
+            account_type     => 'financial',
+            email            => $details{email},
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    $c->call_ok($method, $client_params)->has_error->error_code_is('AccountShouldBeReal');
+
+    # Gaming account
+    $client_params = {
+        token => $token_vr,
+        args  => {
+            account_type => 'gaming',
+            email        => $details{email},
+            name         => $details{name},
+            mainPassword => $details{password}{main},
+            leverage     => 1000,
+            company      => 'bvi'
+        },
+    };
+
+    $c->call_ok($method, $client_params)->has_error->error_code_is('AccountShouldBeReal');
 };
 
 done_testing();

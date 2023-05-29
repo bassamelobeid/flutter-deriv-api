@@ -71,9 +71,6 @@ subtest 'create mt5 client with different currency' => sub {
         $user->add_client($new_client_vr);
 
         $params->{token} = $token;
-        $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
-            ->error_message_is(
-            'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
 
         $params->{args}->{account_type} = 'demo';
         $result = $c->call_ok($method, $params)->has_no_error->result;

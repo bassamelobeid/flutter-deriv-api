@@ -54,7 +54,7 @@ my $m        = BOM::Platform::Token::API->new;
 my $token    = $m->create_token($test_client->loginid,    'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
-subtest 'custom new account' => sub {
+subtest 'custom new demo account' => sub {
     my $method = 'mt5_new_account';
     my $args   = {
         account_type => 'demo',
@@ -71,9 +71,26 @@ subtest 'custom new account' => sub {
     };
 
     note('demo account cannot select trade server');
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
+
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidServerInput')
         ->error_message_is('Input parameter \'server\' is not supported for the account type.');
+};
+
+subtest 'custom new real account' => sub {
+    my $method = 'mt5_new_account';
+    my $args   = {
+        account_type => 'real',
+        email        => $DETAILS{email},
+        name         => $DETAILS{name},
+        mainPassword => $DETAILS{password}{main},
+        leverage     => 100,
+        server       => 'p01_ts03'
+    };
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => $args,
+    };
 
     note('financial account cannot select trade server');
     $args->{account_type}     = 'financial';
@@ -107,7 +124,7 @@ subtest 'non-Ireland client new account check' => sub {
     };
     my $params = {
         language => 'EN',
-        token    => $token_vr,
+        token    => $token,
         args     => $args,
     };
 
@@ -140,7 +157,7 @@ subtest 'use default routing rule if server is not provided' => sub {
     };
     my $params = {
         language => 'EN',
-        token    => $token_vr,
+        token    => $token,
         args     => $args,
     };
 

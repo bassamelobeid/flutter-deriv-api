@@ -652,6 +652,8 @@ async_rpc "mt5_new_account",
 
     my ($client, $args) = @{$params}{qw/client args/};
 
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
     # extract request parameters
     my $account_type            = delete $args->{account_type};
     my $mt5_account_type        = delete $args->{mt5_account_type}     // '';
@@ -660,11 +662,21 @@ async_rpc "mt5_new_account",
     my $landing_company_short   = delete $args->{company};
     my $sub_account_category    = delete $args->{sub_account_category} // 'standard';
 
-    # input validation
-    return create_error_future('SetExistingAccountCurrency') unless $client->default_account;
-
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^all|demo|gaming|financial$/);
+
+    try {
+        $rule_engine->verify_action(
+            'new_mt5_dez_account',
+            loginid      => $client->loginid,
+            account_type => $account_type
+        );
+    } catch ($error) {
+        return create_error_future($error->{error_code}, {params => 'MT5'});
+    }
+
+    # input validation
+    return create_error_future('SetExistingAccountCurrency') unless $client->default_account;
 
     # - demo account cannot select trade server
     # - financial account cannot select trade server
@@ -864,7 +876,6 @@ async_rpc "mt5_new_account",
 
         if (!$client->fully_authenticated) {
             if (any { $landing_company_short eq $_ } qw/bvi vanuatu labuan maltainvest/) {
-                my $rule_engine = BOM::Rules::Engine->new(client => $client);
                 try {
                     $rule_engine->verify_action(
                         'mt5_jurisdiction_validation',

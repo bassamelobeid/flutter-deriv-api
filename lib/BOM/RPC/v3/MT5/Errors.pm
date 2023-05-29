@@ -119,6 +119,7 @@ my %category_message_mapping = do {
         NewAccountPOAFailed   => localize('Failed to create account due to failed Proof of Address with status: [_1]'),
         POAVerificationFailed => localize('Proof of Address verification failed. Withdrawal operation suspended.'),
         ProofRequirementError => localize('Proof of Identity or Address requirements not met. Operation rejected.'),
+        AccountShouldBeReal   => localize('Only real accounts are allowed to open [_1] real accounts'),
     );
 };
 
