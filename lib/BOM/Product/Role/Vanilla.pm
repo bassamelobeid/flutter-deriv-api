@@ -12,6 +12,14 @@ use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Vanilla;
 use BOM::Config::Quants qw(minimum_stake_limit);
 
+=head2 ADDED_CURRENCY_PRECISION
+
+Added currency precision used in rounding number_of_contracts
+
+=cut
+
+use constant ADDED_CURRENCY_PRECISION => 3;
+
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 =head2 _build_pricing_engine_name
@@ -112,8 +120,12 @@ We need to use entry tick to calculate this figure.
 sub _build_number_of_contracts {
     my $self = shift;
 
-    # limit to 10 decimal points
-    return sprintf("%.10f", $self->_user_input_stake / $self->initial_ask_probability->amount);
+    my $number_of_contracts = $self->_user_input_stake / $self->initial_ask_probability->amount;
+    my $currency_decimal_places =
+        min(Format::Util::Numbers::get_precision_config()->{price}->{$self->currency} + ADDED_CURRENCY_PRECISION, 10);    # 10 dp is all we need
+    my $rounding_precision = 10**($currency_decimal_places * -1);
+    # Based on the documentation for roundcommon, this sub uses the same rounding technique as financialrounding, the only difference is that it acccepts precision
+    return roundcommon($rounding_precision, $number_of_contracts);
 }
 
 =head2 per_symbol_config

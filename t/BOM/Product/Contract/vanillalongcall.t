@@ -92,33 +92,33 @@ subtest 'number of contracts' => sub {
     # must be the same
     my $c = produce_contract($args);
     ok $c->pricing_new, 'this is a new contract';
-    cmp_ok $c->number_of_contracts, '==', '0.0207957139', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.02080', 'correct number of contracts';
     ok !$c->is_expired, 'not expired (obviously but just be safe)';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
-    cmp_ok $c->number_of_contracts, '==', '0.0207957139', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.02080', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
     is $c->bid_price, '9.16', 'has bid price';
 
     $args->{date_pricing} = $now->plus_time_interval('3m');
     $c = produce_contract($args);
-    cmp_ok $c->number_of_contracts, '==', '0.0207957139', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.02080', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
-    is $c->bid_price, '16.46', 'has bid price, and higher because spot is higher now';
+    is $c->bid_price, '16.47', 'has bid price, and higher because spot is higher now';
 
     $args->{date_pricing} = $now->plus_time_interval('12h');
     $c = produce_contract($args);
     ok $c->is_expired, 'contract is expired, this is a 10h contract';
-    cmp_ok $c->number_of_contracts, '==', '0.0207957139', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.02080', 'correct number of contracts';
 };
 
 subtest 'shortcode' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     my $c         = produce_contract($args);
-    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.0207957139';
+    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.02080';
 
     my $c_shortcode;
     lives_ok {
@@ -137,7 +137,7 @@ subtest 'shortcode' => sub {
 subtest 'shortcode S1P' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     my $c         = produce_contract($args);
-    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_S116181P_0.0207957139';
+    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_S116181P_0.02080';
 
     # 68258.19 + 1161.81 = 69420
 
@@ -166,7 +166,7 @@ subtest 'longcode' => sub {
                 value => 36000
             },
             '69420.00',
-            '0.0207957139'
+            '0.02080'
         ],
         'longcode matches'
     );

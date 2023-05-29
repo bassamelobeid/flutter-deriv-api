@@ -81,22 +81,22 @@ subtest 'number of contracts' => sub {
     # must be the same
     my $c = produce_contract($args);
     ok $c->pricing_new, 'contract is new';
-    cmp_ok $c->number_of_contracts, '==', '0.0060876192', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.00609', 'correct number of contracts';
     ok !$c->is_expired, 'not expired';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
-    cmp_ok $c->number_of_contracts, '==', '0.0060876192', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.00609', 'correct number of contracts';
 
     $args->{date_pricing} = $now->plus_time_interval('12h');
     $c = produce_contract($args);
-    cmp_ok $c->number_of_contracts, '==', '0.0060876192', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.00609', 'correct number of contracts';
 };
 
 subtest 'shortcode' => sub {
 
     my $c         = produce_contract($args);
-    my $shortcode = 'VANILLALONGPUT_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.0060876192';
+    my $shortcode = 'VANILLALONGPUT_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.00609';
 
     my $c_shortcode;
     lives_ok {
@@ -124,7 +124,7 @@ subtest 'longcode' => sub {
                 value => 36000
             },
             '69420.00',
-            '0.0060876192'
+            '0.00609'
         ],
         'longcode matches'
     );
@@ -180,7 +180,7 @@ subtest 'entry and exit tick' => sub {
         cmp_ok $c->barrier->as_absolute,                 'eq', '69420.00', 'correct strike';
 
         ok $c->is_expired, 'expired';
-        cmp_ok sprintf("%.2f", $c->value), 'eq', '0.80',     '(exit quote - strike) * number of contracts';
+        cmp_ok sprintf("%.2f", $c->value), 'eq', '0.79',     '(exit quote - strike) * number of contracts';
         cmp_ok $c->exit_tick->quote,       'eq', '69327.58', 'correct exit tick';
     }
     'losing the contract';
