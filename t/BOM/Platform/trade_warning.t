@@ -12,6 +12,8 @@ use Brands;
 
 my $brand      = Brands->new(name => 'deriv');
 my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
+my @message_parameters =
+    qw(comment start_time end_time limit_amount current_amount landing_company is_atm expiry_type contract_group market symbol is_market_default);
 
 subtest 'Send email notification when global limit is crossed' => sub {
     my $mocked_warning = Test::MockModule->new('BOM::Platform::Script::TradeWarnings');
@@ -19,14 +21,17 @@ subtest 'Send email notification when global limit is crossed' => sub {
         'send_email',
         sub {
             my $msg = shift;
+            # Checking if all of the necessary parameters exist in the email.
+            map { is($msg->{message}->[0] =~ /$_/, 1) } @message_parameters;
+
+            $msg->{message} = ['{"is_market_default":0}'];
             is_deeply(
                 $msg,
                 {
                     from    => 'system@binary.com',
                     message => ['{"is_market_default":0}'],
-                    subject =>
-                        'TRADING SUSPENDED! global_financial_potential_loss LIMIT is crossed for landing company champion. Limit set: 50. Current amount: 60',
-                    to => $email_list,
+                    subject => 'Trading suspended! global financial potential loss LIMIT is hit. Limit set: 50. Current amount: 60',
+                    to      => $email_list,
                 },
                 'Email message object is properly created'
             );
@@ -51,13 +56,17 @@ subtest 'Send email notification when user limit is more than or equal to new cl
         'send_email',
         sub {
             my $msg = shift;
+            # Checking if all of the necessary parameters exist in the email.
+            map { is($msg->{message}->[0] =~ /$_/, 1) } @message_parameters;
+
+            $msg->{message} = ['{"is_market_default":0}'];
             is_deeply(
                 $msg,
                 {
                     from    => 'system@binary.com',
                     message => ['{"is_market_default":0}'],
                     subject =>
-                        'TRADING SUSPENDED! user_financial_potential_loss LIMIT is crossed for user 1 loginid CR90000000. Limit set: 50. Current amount: 110',
+                        'Trading suspended! user financial potential loss LIMIT is crossed for user 1 loginid CR90000000. Limit set: 50. Current amount: 110',
                     to => $email_list,
                 },
                 'Email message object is properly created'

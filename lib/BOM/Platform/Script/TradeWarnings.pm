@@ -36,7 +36,12 @@ sub _publish {
     }
 
     my ($subject, $email_list, $status);
-    my $brand = Brands->new(name => 'deriv');
+    my $brand         = Brands->new(name => 'deriv');
+    my $message_title = $msg->{type};
+
+    # replacing the underscore with whitespace.
+    $message_title =~ s/_/ /g;
+
     # trading is suspended. So sound the alarm!
     if ($msg->{current_amount} >= $msg->{limit_amount}) {
         # storing global limits into redis-hash
@@ -44,15 +49,15 @@ sub _publish {
         $status = 'disabled';
         $subject =
             $msg->{type} =~ /^global/
-            ? "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for landing company $msg->{landing_company}."
-            : "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for user $msg->{binary_user_id} loginid $msg->{client_loginid}.";
+            ? "Trading suspended! $message_title LIMIT is hit."
+            : "Trading suspended! $message_title LIMIT is crossed for user $msg->{binary_user_id} loginid $msg->{client_loginid}.";
         $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
     } else {
         $status = 'threshold_crossed';
         $subject =
             $msg->{type} =~ /^global/
-            ? "$msg->{type} THRESHOLD is crossed for landing company $msg->{landing_company}."
-            : "$msg->{type} THRESHOLD is crossed for user $msg->{binary_user_id}. loginid $msg->{client_loginid}";
+            ? "$message_title THRESHOLD is crossed for landing company $msg->{landing_company}."
+            : "$message_title THRESHOLD is crossed for user $msg->{binary_user_id}. loginid $msg->{client_loginid}";
         $email_list = $brand->emails('quants');
     }
 
@@ -70,7 +75,7 @@ sub _publish {
             from    => 'system@binary.com',
             to      => $email_list,
             subject => $subject . " Limit set: $msg->{limit_amount}. Current amount: $msg->{current_amount}",
-            message => [$json->encode($msg->{rank})],
+            message => [$json->encode(_parse_email_parameters($msg))],
         });
         $notification_cache{$warning_key} = 1;
     }
@@ -110,6 +115,25 @@ sub _get_new_clients_limit {
     my $lc_loss_limit =
         $dbh->selectcol_arrayref(q/SELECT potential_loss FROM betonmarkets.user_specific_limits WHERE binary_user_id IS NULL AND client_type='new'/);
     return $lc_loss_limit->[0] // undef;
+}
+
+=head2 _parse_email_parameters
+
+parsing email parameters
+
+=cut
+
+sub _parse_email_parameters {
+    my $message = shift;
+    my %parsed_message;
+
+    my @root_keys = qw(comment start_time end_time limit_amount current_amount landing_company);
+    map { $parsed_message{$_} = $message->{$_} } @root_keys;
+
+    my @rank_keys = qw(is_atm expiry_type contract_group market symbol is_market_default);
+    map { $parsed_message{$_} = $message->{rank}->{$_} } @rank_keys;
+
+    return \%parsed_message;
 }
 
 =head2 _is_defined
