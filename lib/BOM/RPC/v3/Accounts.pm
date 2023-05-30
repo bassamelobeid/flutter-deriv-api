@@ -2933,34 +2933,6 @@ rpc account_closure => sub {
         email_consent => 0
     };
 
-    #Alert CS team of the account closure for specific reasons and if the user is subscribed to receiving emails.
-    if ($user->{email_consent}) {
-        my %expand_closing_reason = (
-            'another-website'        => 'Prefers another trading website',
-            'not-user-friendly'      => 'The platforms aren\'t user-friendly',
-            'unsatisfactory-service' => 'Customer Service was unsatisfactory'
-        );
-        my @matched_reason_keys = map { $expand_closing_reason{$_} } grep { exists $expand_closing_reason{$_} } split(',', $closing_reason);
-        if (@matched_reason_keys) {
-            my $loginid = $client->loginid;
-            my $date    = Date::Utility->new($params->{token_details}->{epoch})->datetime_ddmmmyy_hhmmss_TZ;
-            my $email_content =
-                  "This is to inform the team that an account has been closed\n<br>"
-                . "The login-ID for the account is : $loginid\n<br>"
-                . "The account closing time : $date\n<br>"
-                . "The account closing reason(s) is/are : "
-                . join(", ", @matched_reason_keys);
-            send_email({
-                from                  => 'no-reply@deriv.com',
-                to                    => 'x-engagement@regentmarkets.com',
-                subject               => "Account Closed for Client : " . $client->loginid,
-                message               => [$email_content],
-                use_email_template    => 0,
-                email_content_is_html => 1,
-                skip_text2html        => 1,
-            });
-        }
-    }
     # Remove email consents for the user (and update the clients as well)
     $user->update_email_fields(email_consent => $data_email_consent->{email_consent});
 

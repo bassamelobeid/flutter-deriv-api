@@ -17,7 +17,6 @@ use Test::BOM::RPC::QueueClient;
 use BOM::Test::Script::DevExperts;
 use BOM::Config::Runtime;
 use BOM::Database::Model::OAuth;
-use BOM::Test::Email;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
@@ -600,51 +599,6 @@ subtest 'Account closure DXTrader' => sub {
     $account_closure = $c->tcall('account_closure', $params);
     ok $account_closure->{status}, 'Account closure status 1';
     ok($test_client->status->disabled, 'Account disabled');
-};
-
-subtest 'Account Closure Email Notification' => sub {
-    foreach my $reason (qw(another-website not-user-friendly unsatisfactory-service)) {
-        my $email       = "test01" . $reason . "\@email.com";
-        my $password    = 'emailTest0909099';
-        my $hash_pwd    = BOM::User::Password::hashpw($password);
-        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-        });
-
-        $test_client->email($email);
-        $test_client->save;
-
-        my $test_loginid = $test_client->loginid;
-        my $user         = BOM::User->create(
-            email         => $email,
-            password      => $hash_pwd,
-            email_consent => 1,
-        );
-        $user->add_client($test_client);
-
-        $test_client->set_default_account('USD');
-        $test_client->save;
-
-        my $token = $m->create_token($test_loginid, 'test token');
-        my $args  = {
-            "account_closure" => 1,
-            "reason"          => $reason,
-        };
-
-        my $res = $c->tcall(
-            $method,
-            {
-                token => $token,
-                args  => $args
-            });
-
-        my $msg = mailbox_search(subject => qr/Account Closed for Client : /);
-        ok $res, 'result processed';
-        ok $msg, 'email sent to CS team for ' . $reason;
-        mailbox_clear();
-        $test_client->status->clear_disabled;
-
-    }
 };
 
 # reset
