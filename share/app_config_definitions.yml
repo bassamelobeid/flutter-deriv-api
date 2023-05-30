@@ -1643,6 +1643,15 @@ system:
       description: "Configuration for MT5"
       isa: section
       contains:
+        commission_transfer:
+          description: "Configuration for MT5 commission transfer script"
+          isa: section
+          contains:
+            max_lookback_days:
+              description: "The maximum lookback days to check technical account deals that are not transferred"
+              isa: Num
+              default : 30
+              global: 1
         parallel_run:
           description: "Enable parallel running of MT5 Proxy (read only calls) with PHP script"
           isa: Bool
