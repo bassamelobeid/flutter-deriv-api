@@ -633,6 +633,18 @@ subtest 'slippage' => sub {
     subtest 'executed at better price' => sub {
         my $contract = produce_contract($args);
 
+        if ($ENV{DEVEL_COVER_OPTIONS}) {
+            $mocked_contract->mock('is_expired', sub { return 1 });
+
+            sleep 1;
+            my $out = BOM::Transaction::sell_expired_contracts({
+                client => $cl,
+                source => 23,
+            });
+
+            $mocked_contract->unmock('is_expired');
+        }
+
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
