@@ -33,7 +33,7 @@ use BOM::Database::UserDB;
 use BOM::User::LexisNexis;
 use BOM::User;
 
-use constant API_TIMEOUT            => 180;
+use constant API_TIMEOUT            => 1000;    # Increased the timeout due to the number of records in the production env
 use constant BACKOFF_INITIAL_DELAY  => 0.3;
 use constant BACKOFF_MAX_DELAY      => 10;
 use constant MAX_FAILURES_TOLERATED => 10;
@@ -143,7 +143,7 @@ sub _build_backoff {
 =head2 get_user_by_interface_reference
 
 Parses the loginid of the client to extract loginid and converts an associated L<BOM::User> object.
-It accepts the following argument:
+It accepts the following argument.
 
 =over 1
 
@@ -178,12 +178,17 @@ async sub sync_all_customers {
 
     my $constants = constants();
 
+    my ($last_update_date) = $self->dbic->run(
+        fixup => sub {
+            return $_->selectrow_array('select * from users.get_lexis_nexis_max_date_updated()');
+        });
+
+    $last_update_date //= Date::Utility->new('01-12-2022');
     # fetch all customers records from the LexisNexis server
-    my @customers = await $self->get_all_client_records();
+    my @customers = await $self->get_all_client_records($last_update_date);
     $log->debugf('%d customers found', scalar @customers);
 
     for my $customer (@customers) {
-
         my $user;
         next unless ($customer->{record_details}->{additional_info});
 
@@ -226,23 +231,22 @@ async sub sync_all_customers {
             if ($record_history->{event} eq $constants->{Events}->{NewNote} && !exists $customer->{note}) {
                 $customer->{note} = $record_history->{note};
             }
-            # If the alert state is closed, get the latest decision has been applied on the alert and set is as the alert_status
-            elsif ($record_history->{event} eq $constants->{Events}->{DecisionApplied} && !exists $customer->{alert_status}) {
-                if ($record_history->{note} =~ /REJECT/) {
-                    $customer->{alert_status} = "rejected";
-                } elsif ($record_history->{note} =~ /ACCEPT/) {
-                    $customer->{alert_status} = "accepted";
-                } elsif ($record_history->{note} =~ /UNDETERMINED/) {
-                    $customer->{alert_status} = "undetermined";
-                }
-            }
         }
 
-        # If the alert_status isn't set, it means the alert is opened and no decision has been applied on it
-        if (!exists($customer->{alert_status})) {
+        # Set the status of the alert
+        my $alert_status = $customer->{record_details}->{record_state}->{status};
+
+        if ($alert_status =~ /Undetermined/i) {
+            $customer->{alert_status} = "undetermined";
+        } elsif ($alert_status =~ /False Positive/i) {
+            $customer->{alert_status} = "false positive";
+        } elsif ($alert_status =~ /Positive Match/i) {
+            $customer->{alert_status} = "positive match";
+        } elsif ($alert_status =~ /Potential Match/i) {
+            $customer->{alert_status} = "potential match";
+        } else {
             $customer->{alert_status} = "open";
         }
-
         # check the user has previous data in the users.lexis_nexis table
         my $old_data = $user ? $user->lexis_nexis : undef;
 
@@ -251,7 +255,7 @@ async sub sync_all_customers {
             || !$old_data
             || $old_data->alert_status =~ qr/(requested|outdated)/
             || $old_data->alert_id != $customer->{alert_id}
-            || lc($old_data->alert_status) ne lc($customer->{alert_status});
+            || exists $customer->{alert_status} && lc($old_data->alert_status) ne lc($customer->{alert_status});
 
         # if the custom note is not valid it will be ignored (not saved)
         delete $customer->{note}
@@ -302,6 +306,7 @@ async sub get_record_ids {
         #If the jwt token is expired generate a new one and recall the method
         if ($e->{http_code} == 401) {
             $auth_token = await $self->get_jwt_token();
+            $_[1]       = $auth_token;                            # Updating the reference value
             $result     = await $self->api->request_record_ids(
                 run_ids    => $params->{run_ids},
                 auth_token => $auth_token
@@ -330,8 +335,9 @@ async sub get_records {
         );
     } catch ($e) {
         #If the jwt token is expired generate a new one and call the method again
-        if ($e->{http_code} == 401) {
+        if (exists $e->{http_code} && $e->{http_code} == 401) {
             $auth_token = await $self->get_jwt_token();
+            $_[1]       = $auth_token;                         # Updating the reference value
             $records    = await $self->api->request_records(
                 record_ids => $record_ids,
                 auth_token => $auth_token
@@ -349,15 +355,20 @@ Runs are created when the search records are imported to the server
 =cut
 
 async sub get_runs_ids {
-    my ($self, $auth_token) = @_;
+    my ($self, $auth_token, $date_end, $date_start) = @_;
 
     my $result;
     try {
-        $result = await $self->api->request_runs_ids(auth_token => $auth_token);
+        $result = await $self->api->request_runs_ids(
+            auth_token => $auth_token,
+            date_end   => $date_end,
+            date_start => $date_start
+        );
     } catch ($e) {
         #If the jwt token is expired generate a new one and call the method again
         if ($e->{http_code} == 401) {
             $auth_token = await $self->get_jwt_token();
+            $_[1]       = $auth_token;                                                     # Updating the reference value
             $result     = await $self->api->request_runs_ids(auth_token => $auth_token);
         }
     }
@@ -381,11 +392,25 @@ Returns an array of records
 =cut
 
 async sub get_all_client_records {
-    my ($self) = @_;
+    my ($self, $last_update_date) = @_;
 
     my $token = await $self->get_jwt_token();
 
-    my $ids = await $self->get_runs_ids($token);
+    my $today      = Date::Utility->new;
+    my $date_start = Date::Utility->new($last_update_date);
+    return () if $today->is_before($date_start);
+
+    my $days_to_process = $today->days_between($date_start);
+    my $ids             = [];
+
+    for my $days (0 .. $days_to_process) {
+        my $date_end = $date_start->plus_time_interval("${days}d");
+        $log->debugf('Fetching matches for %s', $date_end->date);
+        my $run_ids = await $self->get_runs_ids($token, $date_end->date_yyyymmdd(), $date_start->date_yyyymmdd());
+
+        @$ids       = (@$ids, @$run_ids) if (defined $run_ids);
+        $date_start = $date_end;
+    }
 
     # If the count variable is set, we only need to update that number records
     if ($self->count > 0 && scalar(@$ids) > $self->count) {
@@ -397,12 +422,21 @@ async sub get_all_client_records {
     push @arr, [splice @$ids, 0, 100] while @$ids;
 
     my $record_ids;
-    my $records;
-    my @client_records;
+    my $record_ids_list = [];
 
     for my $idList (@arr) {
-        $record_ids = await $self->get_record_ids($token, {run_ids => $idList});
-        $records    = await $self->get_records($token, $record_ids);
+        $record_ids       = await $self->get_record_ids($token, {run_ids => $idList}) unless scalar @$idList <= 0;
+        @$record_ids_list = (@$record_ids_list, @$record_ids) if (defined $record_ids);
+    }
+
+    my @arr_record_ids_list;
+    # Splicing the record ids list into 100 items per batch
+    push @arr_record_ids_list, [splice @$record_ids_list, 0, 100] while @$record_ids_list;
+
+    my $records;
+    my @client_records;
+    for my $list (@arr_record_ids_list) {
+        $records = await $self->get_records($token, $list);
         for my $record (@$records) {
             push @client_records, $record;
         }

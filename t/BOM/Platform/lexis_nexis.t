@@ -109,7 +109,7 @@ subtest 'get_runs_ids' => sub {
                 NumRecordsProcessed => -1
             }]);
     my $result;
-    lives_ok { $result = $lexis_nexis_api->get_runs_ids("dummy")->get } 'get_runs_ids method successfully executed';
+    lives_ok { $result = $lexis_nexis_api->get_runs_ids("dummy", "08-03-2023", "07-03-2023")->get } 'get_runs_ids method successfully executed';
     is_deeply $result, [10000001, 10000002], 'Correct run ids were returned';
 };
 
@@ -289,7 +289,8 @@ subtest 'get_all_client_records' => sub {
         ]);
 
     my @result;
-    lives_ok { @result = $lexis_nexis_api->get_all_client_records()->get } 'get_all_client_records method successfully executed';
+    my $date_start = Date::Utility->new()->date_ddmmyyyy();
+    lives_ok { @result = $lexis_nexis_api->get_all_client_records($date_start)->get } 'get_all_client_records method successfully executed';
 
     my $mock_data = remap_keys('snake', $mock_data{Records});
     is_deeply \@result, $mock_data, 'Correct all client records were returned';
@@ -346,6 +347,7 @@ subtest 'sync_all_customers' => sub {
                                 Note  => "MT5 BVI"
                             },
                         ],
+                        Status => "false positive"
                     },
                     SearchDate => "2022-12-30T10:53:50Z",
                 },
@@ -376,6 +378,7 @@ subtest 'sync_all_customers' => sub {
                                 Note  => "MT5 BVI"
                             },
                         ],
+                        Status => "positive match"
                     },
                     SearchDate => "2022-12-31T10:53:50Z",
                 },
@@ -395,7 +398,7 @@ subtest 'sync_all_customers' => sub {
         $user_cr->lexis_nexis,
         {
             'alert_id'       => 300001,
-            'alert_status'   => "undetermined",
+            'alert_status'   => "false positive",
             'binary_user_id' => 1,
             'client_loginid' => $client_cr->loginid,
             'date_added'     => "2022-12-30",
@@ -409,7 +412,7 @@ subtest 'sync_all_customers' => sub {
         $user_mf->lexis_nexis,
         {
             'alert_id'       => 300002,
-            'alert_status'   => "accepted",
+            'alert_status'   => "positive match",
             'binary_user_id' => 2,
             'client_loginid' => $client_mf->loginid,
             'date_added'     => "2022-12-31",
