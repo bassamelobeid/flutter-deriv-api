@@ -129,6 +129,34 @@ sub create_redis_ticks {
     return;
 }
 
+sub create_rangebreak_data {
+    my @symbols  = @_;
+    my $ts       = Date::Utility->new(time)->datetime_yyyymmdd_hhmmss;
+    my $tick_sql = <<EOD;
+INSERT INTO feed.data_rangebreak(underlying ,ts ,  spot  , support , resistance , min_since_last_jump , max_since_last_jump , ticks_since_last_jump )
+    VALUES(?, ?, ?, ?, ?, ?,? ,?)
+EOD
+    my $dbic = Postgres::FeedDB::write_dbic;
+    foreach my $symbol (@symbols) {
+        $dbic->run(
+            sub {
+                my $sth = $_->prepare($tick_sql);
+                $sth->bind_param(1, $symbol);
+                $sth->bind_param(2, $ts);
+                $sth->bind_param(3, 50000);
+                $sth->bind_param(4, 50000);
+                $sth->bind_param(5, 50001);
+                $sth->bind_param(6, 50000);
+                $sth->bind_param(7, 50000);
+                $sth->bind_param(8, 0);
+
+                $sth->execute();
+
+            });
+    }
+
+}
+
 sub create_tick {
     my ($args, $create_redis_tick) = @_;
 
