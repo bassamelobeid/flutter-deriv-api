@@ -43,7 +43,7 @@ subtest 'P2P::Advert' => sub {
     my $send_data = $worker->c->{send_data}->{json};
     is $send_data->{'subscription'}->{id}, $worker->uuid,     'subscription id matches';
     is $send_data->{'msg_type'},           'p2p_advert_info', 'msg_type matches';
-    is_deeply $send_data->{'p2p_advert_info'}, {'data' => 'test message'}, 'p2p_advert_info matches';
+    is_deeply $send_data->{'p2p_advert_info'}, {'data' => 'test message'}, 'send_data matches';
 };
 
 subtest 'P2P::Advertiser' => sub {
@@ -72,7 +72,7 @@ subtest 'P2P::Advertiser' => sub {
     my $send_data = $worker->c->{send_data}->{json};
     is $send_data->{'subscription'}->{id}, $worker->uuid,         'subscription id matches';
     is $send_data->{'msg_type'},           'p2p_advertiser_info', 'msg_type matches';
-    is_deeply $send_data->{'p2p_advertiser_info'}, {'data' => 'test message'}, 'p2p_advertiser_info matches';
+    is_deeply $send_data->{'p2p_advertiser_info'}, {'data' => 'test message'}, 'send_data matches';
 };
 
 subtest 'P2P::Order' => sub {
@@ -109,7 +109,7 @@ subtest 'P2P::Order' => sub {
     my $send_data = $worker->c->{send_data}->{json};
     is $send_data->{'subscription'}->{id}, $worker->uuid,    'subscription id matches';
     is $send_data->{'msg_type'},           'p2p_order_info', 'msg_type matches';
-    is_deeply $send_data->{'p2p_order_info'}, {'data' => 'test message'}, 'p2p_order_info matches';
+    is_deeply $send_data->{'p2p_order_info'}, {'data' => 'test message'}, 'send_data matches';
 };
 
 done_testing();
