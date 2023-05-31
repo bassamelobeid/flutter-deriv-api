@@ -3288,6 +3288,7 @@ async sub shared_payment_method_found {
         push @filtered_loginids, $shared_loginid;
         push @shared_clients,    $shared_client;
     }
+    splice @filtered_loginids, 10;    # The number of loginids in the reason is limited to 10
 
     # Lock the cashier and set shared PM to both clients
     $args->{staff} //= 'system';
@@ -3355,7 +3356,7 @@ sub _shared_payment_reason {
     };
 
     my @loginids = $loginids_extractor->($current);
-    return $current if any { $shared_loginid =~ /\b$_\b/ } @loginids;
+    return $current if (any { $shared_loginid =~ /\b$_\b/ } @loginids) || scalar(@loginids) >= 10;
     return join(' ', $current, $shared_loginid);
 }
 
