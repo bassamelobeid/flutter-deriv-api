@@ -115,11 +115,11 @@ subtest 'accumulator - send_ask' => sub {
         'rpc_time'     => ignore(),
         'ask_price'    => '100.00',
         skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0,0.02,,,,',
+        subchannel     => 'v1,USD,100,stake,0,0.025,0,0.02,,,,,EN',
         channel        =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
         subscription_channel =>
-            'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0,0.02,,,,'
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0,0.02,,,,,EN'
     };
     my $redis_mock = Test::MockModule->new('RedisDB');
     $redis_mock->mock(
@@ -182,11 +182,11 @@ subtest 'accumulator - send_ask' => sub {
         'rpc_time'     => ignore(),
         'ask_price'    => '100.00',
         skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0,0.02,,,,',
+        subchannel     => 'v1,USD,100,stake,0,0.025,0,0.02,,,,,EN',
         channel        =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","limit_order",{"take_profit":10},"price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
         subscription_channel =>
-            'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","limit_order",{"take_profit":10},"price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0,0.02,,,,'
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","limit_order",{"take_profit":10},"price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0,0.02,,,,,EN'
     };
 
     $args->{limit_order}->{take_profit} = 10;

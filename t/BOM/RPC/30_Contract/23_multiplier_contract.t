@@ -117,11 +117,11 @@ subtest 'multiplier - send_ask' => sub {
         'ask_price'    => '100.00',
         'multiplier'   => 10,
         skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10',
+        subchannel     => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN',
         channel        =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
         subscription_channel =>
-            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10'
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN'
     };
     my $res = $c->call_ok('send_ask', $params)->has_no_error->result;
     cmp_deeply($res, $expected, 'send_ask output as expected');
@@ -177,11 +177,11 @@ subtest 'multiplier - send_ask' => sub {
         'ask_price'    => '100.00',
         'multiplier'   => 10,
         skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10',
+        subchannel     => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN',
         channel        =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","limit_order",{"take_profit":10},"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
         subscription_channel =>
-            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","limit_order",{"take_profit":10},"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10',
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","limit_order",{"take_profit":10},"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN',
     };
     $args->{limit_order}->{take_profit} = 10;
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;

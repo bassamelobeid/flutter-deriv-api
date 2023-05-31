@@ -44,8 +44,10 @@ rpc send_ask => sub {
     $args->{args}->{country_code}           = $args->{residence} || $args->{country_code};
     $args->{args}->{skips_price_validation} = 1;
 
+    my $language = $args->{args}->{language};
+
     my $channel              = _serialized_args($args->{args});
-    my $subchannel           = _serialize_contract_parameters($response->{contract_parameters});
+    my $subchannel           = _serialize_contract_parameters($response->{contract_parameters}, $language);
     my $subscription_channel = $channel . '::' . $subchannel;
 
     my $market = BOM::RPC::v3::Utility::get_market_by_symbol($args->{args}->{symbol});
@@ -106,7 +108,7 @@ Encode the input in 'v1,$currency,$amount,$amount_type, ... , $multiplier' forma
 =cut
 
 sub _serialize_contract_parameters {
-    my $args = shift;
+    my ($args, $language) = @_;
 
     my $staking_limits = $args->{staking_limits} // {};
     return join(
@@ -125,6 +127,7 @@ sub _serialize_contract_parameters {
         # non-binary
         $args->{maximum_ask_price} // '',    # callputspread is the only contract type that has this
         $args->{multiplier}        // '',
+        $language                  // '',
     );
 }
 
