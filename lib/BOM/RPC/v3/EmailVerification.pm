@@ -321,6 +321,9 @@ sub _build_verification_url {
     @extra_params = map { defined $args->{$_} ? join('=', $_, $args->{$_}) : () } sort @extra_params;
     my $extra_params_string = @extra_params ? '&' . join('&', @extra_params) : '';
 
+    if ($action eq 'payment_withdraw' || $action eq 'payment_agent_withdraw') {
+        return "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}&loginid=$args->{loginid}$extra_params_string";
+    }
     return "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}$extra_params_string";
 }
 
