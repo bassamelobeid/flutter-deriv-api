@@ -109,6 +109,7 @@ if (my $error_message = write_operation_error()) {
 
 my %doc_types_categories = $client->documents->categories->%*;
 my @poi_doctypes         = $client->documents->poi_types->@*;
+my @poa_doctypes         = $client->documents->poa_types->@*;
 my @pow_doctypes         = $client->documents->pow_types->@*;
 my @dateless_doctypes    = $client->documents->dateless_types->@*;
 my @expirable_doctypes   = $client->documents->expirable_types->@*;
@@ -619,6 +620,7 @@ if ($input{whattodo} eq 'uploadID') {
     foreach my $i (1 .. 4) {
         my $doctype      = $cgi->param('doctype_' . $i);
         my $is_poi       = any { $_ eq $doctype } @poi_doctypes;
+        my $is_poa       = any { $_ eq $doctype } @poa_doctypes;
         my $is_expirable = any { $_ eq $doctype } @expirable_doctypes;
         my $dateless_doc = any { $_ eq $doctype } @dateless_doctypes;
 
@@ -647,6 +649,11 @@ if ($input{whattodo} eq 'uploadID') {
 
         if ($is_poi and not $expiration_date and $expiration eq 'expiration_date') {
             print qq[<p class="notify notify--warning">Expiration date is missing for the POI document $doctype.</p>];
+            code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+        }
+
+        if ($is_poa and not $issue_date) {
+            print qq[<p class="notify notify--warning">Issuance date is missing for the POA document $doctype.</p>];
             code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
         }
 
@@ -2257,6 +2264,7 @@ if (not $client->is_virtual) {
             loginid                    => $encoded_loginid,
             countries                  => request()->brand->countries_instance->countries,
             poi_doctypes               => join('|', @poi_doctypes),
+            poa_doctypes               => join('|', @poa_doctypes),
             expirable_doctypes         => join('|', @expirable_doctypes),
             dateless_doctypes          => join('|', @dateless_doctypes),
             doctypes                   => [sort { $a->{priority} <=> $b->{priority} } $doctypes->@*],

@@ -41,6 +41,7 @@
     </div>
     <div id="issue_date_div_[% n %]" style="display:none">
       Issue date:
+      <label id="required_star_[% n %]">*</label>
       <input type="text" size=11 name="issue_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" />
       <label name="doc_field_required_[% n %]">*</label>
     </div>
@@ -68,6 +69,7 @@
 <script type="text/javascript" language="javascript">
 
 var regex_poi            = /^([% poi_doctypes %])\$/i;
+var regex_poa            = /^([% poa_doctypes %])\$/i;
 var regex_expirable      =  /^([% expirable_doctypes %])\$/i;
 var regex_dateless       = /^([% dateless_doctypes %])\$/i;
 var regex_selfie_with_id = /^(selfie_with_id)\$/i;
@@ -206,6 +208,16 @@ function validate_expiry_date(date) {
   return '';
 }
 
+function validate_issue_date(date) {
+  let issue_date = new Date(date);
+  if(issue_date == 'Invalid Date')
+      return "Invalid issue date. Please match the requested format.\n"
+  else if(issue_date > new Date())
+    return "Issue date must be a past date.\n";
+
+  return '';
+}
+
 function validate_document_info() {
   let get_value = function(elm_name) {
     return (document.getElementsByName(elm_name)[0] || {}).value;
@@ -232,6 +244,7 @@ function validate_document_info() {
     let page_type = get_value('page_type_' + i);
 
     let is_poi_doc = doc_type.match(regex_poi);
+    let is_poa_doc = doc_type.match(regex_poa);
     let is_expirable_doc = doc_type.match(regex_expirable);
     let is_dateless_doc = doc_type.match(regex_dateless);
     let expiration = document.getElementsByName('expiration_' +i)[0].value;
@@ -261,29 +274,30 @@ function validate_document_info() {
       }
     }
 
-    // POI validation
+    // POI and POA validation
 
     if(is_poi_doc) {
       if(!nationality) {
         file_comments_errors += "Nationality is required.\n";
       }
-
       if (!expiry_date && expiration === 'expiration_date')
         file_comments_errors += "Expiry date is required.\n";
       if (expiry_date)
         file_comments_errors += validate_expiry_date(expiry_date);
     }
+
+    else if (is_poa_doc) {
+      if (!issue_date)
+        file_comments_errors += "Issue date is required.\n";
+      if (issue_date)
+        file_comments_errors += validate_issue_date(issue_date);
+    }
+    
     else if (is_expirable_doc && expiry_date){
       file_comments_errors += validate_expiry_date(expiry_date);
     }
     else if (!is_dateless_doc && issue_date) {
-      issue_date = new Date(issue_date);
-      if(issue_date == 'Invalid Date'){
-          file_comments_errors += "Invalid issue date. Please match the requested format.\n"
-        }
-        else if(issue_date > new Date()) {
-        file_comments_errors += "Issue date must be a past date.\n"
-      }
+      file_comments_errors += validate_issue_date(issue_date);
     }
 
     if (doc_id.length > 30) {
