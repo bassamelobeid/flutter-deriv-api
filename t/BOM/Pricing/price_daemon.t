@@ -231,4 +231,14 @@ subtest 'run' => sub {
     }, 'del invalid keys';
 };
 
+subtest 'country code' => sub {
+
+    my $subchannel = ["v1,AUD,200,stake,0,0.025,0.012,0.03,,,,100,EN"];
+    my $expected   = "EN";
+
+    my $actual = BOM::Pricing::PriceDaemon::get_local_language($subchannel);
+
+    is($actual, $expected, "correct language code");
+};
+
 done_testing;

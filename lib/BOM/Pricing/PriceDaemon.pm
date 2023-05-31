@@ -3,6 +3,9 @@ package BOM::Pricing::PriceDaemon;
 use strict;
 use warnings;
 
+use Exporter qw(import);
+our @EXPORT_OK = qw(get_local_language);
+
 use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_count stats_timing/;
 use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
@@ -114,6 +117,7 @@ sub process_job {
 
     my $response = $commands->{$cmd}->{process}->($self, $params);
     $response->{price_daemon_cmd} = $cmd;
+
     # contract parameters are stored after first call, no need to send them with every stream message
     delete $response->{contract_parameters};
 
@@ -227,6 +231,15 @@ sub run {
         my $response;
         try {
             # Possible transient failure/dupe spot time
+            my $pricer_args      = $key->[1];
+            my $pricer_data_type = $redis_pricer->type($pricer_args);
+            my $language         = '';
+            if ($pricer_data_type eq 'set') {
+                my $pricer_value = $redis_pricer->smembers($pricer_args);
+                $language = get_local_language($pricer_value);
+            }
+
+            $params->{language} = $language // 'EN';
             $response = $self->process_job($redis_pricer, $next, $params) // next LOOP;
         } catch ($e) {
             $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $e, $params);
@@ -264,8 +277,7 @@ sub run {
             for my $subchannel (@$subchannels) {
                 my $redis_channel       = $pricer_args . "::" . $subchannel;
                 my $contract_parameters = $self->_deserialize_contract_parameters($subchannel);
-
-                my $adjusted_response = $response;
+                my $adjusted_response   = $response;
                 # for non-binary where we expect theo_price to be present
                 if (defined $response->{theo_price}) {
                     $adjusted_response = BOM::Pricing::v3::Utility::non_binary_price_adjustment($contract_parameters, {%$response});
@@ -466,6 +478,18 @@ sub _deserialize_contract_parameters {
         $maximum_ask_price ne '' ? (maximum_ask_price => $maximum_ask_price) : (),
         $multiplier ne ''        ? (multiplier        => $multiplier)        : (),
     };
+}
+
+=head2 get_local_language
+
+Returns the language code of a client.
+
+=cut
+
+sub get_local_language {
+    my $args         = shift;
+    my $last_element = @{$args} ? (split(',', $args->[0]))[-1] : undef;
+    return $last_element;
 }
 
 1;
