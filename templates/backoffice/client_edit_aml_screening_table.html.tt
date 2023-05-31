@@ -74,3 +74,38 @@
     </td>
 </tr>
 
+<caption>Sanction Screening Result</caption>
+
+<tr>
+    <td colspan=2>
+        <table class="collapsed hover alternate">
+            <tr>
+                <th>Client Login ID</th>
+                <th>Result </th>
+                <th>UPDATE DATE</th>
+                <th>DATE ADDED</th>
+                <th>Type </th>
+
+
+            </tr>
+            [% IF sanction_check.type %]
+            <tr>
+                <td>[% sanction_check.client_loginid %]</td>
+                <td>[% sanction_check.result %]</td>
+                <td>[% sanction_check.tstmp %]</td>
+                [% IF sanction_check.date_added != 'now()'%]
+                    <td>[% sanction_check.date_added %]</td>
+                [% ELSE %]
+                    <td> NILL </td>
+                [% END %]    
+                <td>[% sanction_check.type %]</td>
+
+            </tr>
+            [% ELSE %]
+            <tr><td colspan='9' class='center'>No records found for the client in sanctions list.</td></tr>
+            [% END %]
+        </table>
+    </td>
+</tr>
+
+

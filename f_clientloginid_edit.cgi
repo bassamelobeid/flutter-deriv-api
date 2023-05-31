@@ -295,12 +295,12 @@ if (defined $input{show_aml_screen_table}) {
     $risk_screen->{flags_str} = join(',', $risk_screen->{flags}->@*) if $risk_screen && $risk_screen->{flags};
 
     my $lexis_nexis = $client->user->lexis_nexis;
-
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_edit_aml_screening_table.html.tt',
         {
-            risk_screen => $risk_screen,
-            lexis_nexis => $lexis_nexis,
+            risk_screen    => $risk_screen,
+            lexis_nexis    => $lexis_nexis,
+            sanction_check => $client->sanctions_check
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
