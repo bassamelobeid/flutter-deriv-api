@@ -11,6 +11,7 @@ __PACKAGE__->meta->setup(
     columns => [
         client_loginid => { type => 'varchar', length => 12, not_null => 1 },
         tstmp          => { type => 'timestamp', default => 'now()', not_null => 1 },
+        date_added     => { type => 'timestamp', default => 'now()', remarks => 'The timestamp of when this record was created. NULL values here mean the record was created prior to this column`s creation.' },
         type           => { type => 'varchar', default => 'R', length => 1, not_null => 1 },
         result         => { type => 'varchar', default => '', length => 128, not_null => 1 },
     ],
