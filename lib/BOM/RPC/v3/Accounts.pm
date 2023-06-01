@@ -71,6 +71,7 @@ use BOM::User::IdentityVerification;
 use BOM::Rules::Engine;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::TradingPlatform::CTrader;
+use Log::Any qw($log);
 
 use Locale::Country;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
@@ -200,6 +201,7 @@ rpc "payout_currencies",
 rpc "landing_company",
     auth => [],    # unauthenticated
     sub {
+
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
@@ -212,6 +214,16 @@ rpc "landing_company",
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
             message_to_client => localize('Unknown landing company.')}) unless $c_config;
+
+    # Check if MF account sign up is enable for the country
+    # if it is allowed assign financial_company as maltainvest
+    # incase of invalid country code like - XX log it
+
+    if (defined($c_config->{financial_company})) {
+        $c_config->{financial_company} = $compliance_config->get_financial_company($country);
+    } else {
+        $log->infof("This is not a valid country - $country");
+    }
 
     # BE CAREFUL, do not change ref since it's persistent
     my %landing_company = %{$c_config};
@@ -434,9 +446,7 @@ sub __build_landing_company {
         support_professional_client       => $lc->support_professional_client
     };
 
-    if ($country ne "default") {
-        $result->{tin_not_mandatory} = $tin_not_mandatory;
-    }
+    $result->{tin_not_mandatory} = $tin_not_mandatory if $country ne 'default';
 
     return $result;
 }
