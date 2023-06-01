@@ -5,8 +5,8 @@ use warnings;
 use Digest::SHA qw(sha1_hex);
 use JSON::XS;
 use Path::Tiny;
-use List::MoreUtils qw(uniq);
-
+use List::MoreUtils               qw(uniq);
+use Encode                        qw(decode_utf8 encode_utf8);
 use DataDog::DogStatsd::Helper    qw(stats_inc);
 use Binary::WebSocketAPI::Actions qw(actions_config);
 use Binary::WebSocketAPI::v3::Instance::Redis 'redis_rpc';
@@ -68,8 +68,8 @@ sub actions_update {
 
         my $cfg = +{};
 
-        my $send_data    = path(SCHEMA_PATH . "/$action_name/send.json")->slurp_utf8;
-        my $receive_data = path(SCHEMA_PATH . "/$action_name/receive.json")->slurp_utf8;
+        my $send_data    = decode_utf8(path(SCHEMA_PATH . "/$action_name/send.json")->slurp);
+        my $receive_data = decode_utf8(path(SCHEMA_PATH . "/$action_name/receive.json")->slurp);
 
         my $send_schema = $json->decode($send_data);
 
@@ -85,9 +85,9 @@ sub actions_update {
         $cfg->{category} = $action_cfg->{category} // '';
         $cfg->{priority} = $priority++;
 
-        my $cfg_data = $json->encode($cfg);
+        my $cfg_data = encode_utf8($json->encode($cfg));
 
-        my $ver = sha1_hex(join q{} => ($send_data, $receive_data, $cfg_data));
+        my $ver = sha1_hex(join q{} => (encode_utf8($send_data), encode_utf8($receive_data), $cfg_data));
 
         my $cur_ver = $redis->hget(get_redis_key($action_name), 'VERSION') // '';
         next if $cur_ver eq $ver;
@@ -99,8 +99,8 @@ sub actions_update {
         $txn->hset(
             get_redis_key($action_name),
             'VERSION' => $ver,
-            'SEND'    => $send_data,
-            'RECEIVE' => $receive_data,
+            'SEND'    => encode_utf8($send_data),
+            'RECEIVE' => encode_utf8($receive_data),
             'CONFIG'  => encode_json($cfg),
         );
 
