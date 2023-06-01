@@ -77,8 +77,23 @@ sub _build_min_stake {
     my $min_stake_theoretical =
         financialrounding('price', $self->currency, $self->minimum_number_of_implied_contracts * $self->ask_probability->amount);
 
-    # return the bigger min stake
-    return ($min_stake_quants > $min_stake_theoretical) ? $min_stake_quants : $min_stake_theoretical;
+    my $min_stake = max($min_stake_quants, $min_stake_theoretical);
+
+    # beautify min stake
+    # different ways to process min stake depending on its value
+    # values less than 1 might be crypto so we need to be careful
+    if ($min_stake > 1) {
+        $min_stake = ceil($min_stake);
+    } else {
+        # for min stake, it's okay to round up slightly
+        my $precision = int(Format::Util::Numbers::get_precision_config()->{price}->{$self->currency} * 0.8);
+        $min_stake = roundnear(10**-$precision, $min_stake);
+    }
+
+    # in extreme cases, min stake could be bigger than max stake
+    # though it should never happen with the right BO settings
+    # but adding validation here just in case
+    return min($min_stake, $self->max_stake);
 }
 
 =head2 _build_max_stake
@@ -96,16 +111,23 @@ sub _build_max_stake {
     my $max_stake_theoretical =
         financialrounding('price', $self->currency, $self->maximum_number_of_implied_contracts() * $self->ask_probability->amount);
 
-    # return the smaller max stake
-    my $max_stake;
-    my $min_stake = $self->min_stake;
-    $max_stake = ($max_stake_risk_profile < $max_stake_theoretical) ? $max_stake_risk_profile : $max_stake_theoretical;
+    my $max_stake = min($max_stake_risk_profile, $max_stake_theoretical);
 
-    # in extreme cases, min stake could be bigger than max stake
-    # though it should never happen with the right BO settings
-    # but adding validation here just in case
-    return $min_stake if $min_stake > $max_stake;
-    return $max_stake;
+    # beautify max stake
+    # for example, 12.34 -> 12.00
+    if ($max_stake > 1) {
+        return floor($max_stake);
+    } else {
+        # to avoid it flickering every second, let's take 80% of the precision
+        # not using roundnear as it might round the number up
+        # this implementation will chop the rest of precision off
+        # sprintf it to force it to be a number instead of
+        # scientific notation
+        my $precision = int(Format::Util::Numbers::get_precision_config()->{price}->{$self->currency} * 0.8);
+        $max_stake = sprintf("%.20f", $max_stake);
+        $max_stake =~ s/\.(\d{$precision}).*/.$1/;
+        return $max_stake;
+    }
 }
 
 =head2 _build_number_of_contracts
@@ -416,17 +438,21 @@ sub _validate_stake {
         };
     }
 
-    if ($self->_user_input_stake < $self->min_stake) {
-        return {
-            message           => 'minimum stake limit exceeded',
-            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
-            details           => {
-                field           => 'amount',
-                min_stake       => $self->min_stake,
-                max_stake       => $self->max_stake,
-                barrier_choices => $self->strike_price_choices
-            },
-        };
+    # facing weird issues where stake < min_stake being evaluated as true
+    # when they are equal, so we need to check if they are different or not
+    if ($self->_user_input_stake ne $self->min_stake) {
+        if ($self->_user_input_stake < $self->min_stake) {
+            return {
+                message           => 'minimum stake limit exceeded',
+                message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
+                details           => {
+                    field           => 'amount',
+                    min_stake       => $self->min_stake,
+                    max_stake       => $self->max_stake,
+                    barrier_choices => $self->strike_price_choices
+                },
+            };
+        }
     }
 }
 

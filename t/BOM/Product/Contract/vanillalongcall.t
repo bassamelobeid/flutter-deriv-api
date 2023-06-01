@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 16;
+use Test::More tests => 17;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -436,6 +436,30 @@ subtest 'check if spread is applied properly' => sub {
     ok $c->bid_probability->amount < $bid, 'spread applied properly';
     ok $c->ask_probability->amount > $ask, 'spread applied properly';
 
+};
+
+subtest 'min stake can never be greater than max stake check' => sub {
+    # min stake > max stake can happen if
+    #   - spot price is high valued
+    #   - high volatility underlying
+    #   - long duration
+    #   - far ITM
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [682580.19, $now->epoch,       'R_100'],
+        [694200.69, $now->epoch + 600, 'R_100'],
+        [694190.48, $now->epoch + 601, 'R_100']);
+
+    $per_symbol_config                            = JSON::MaybeXS::decode_json($per_symbol_config);
+    $per_symbol_config->{min_number_of_contracts} = {'USD' => 0.1};
+    $per_symbol_config                            = JSON::MaybeXS::encode_json($per_symbol_config);
+    $app_config->set({'quants.vanilla.per_symbol_config.R_100_daily' => $per_symbol_config});
+
+    $args->{duration} = '364d';
+    $args->{barrier}  = '60000.00';
+    my $c = produce_contract($args);
+
+    ok $c->delta > 0.9,                'contract is deep ITM';
+    ok $c->min_stake <= $c->max_stake, 'min stake is less than or equal to max stake even for deep ITM contract';
 };
 
 subtest 'affiliate commission' => sub {
