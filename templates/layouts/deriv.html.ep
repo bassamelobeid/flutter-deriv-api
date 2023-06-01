@@ -409,7 +409,9 @@
                 color: var(--color-red);
                 font-size: var(--text-size-s);
                 width: 100%;
-                text-aligh: center;
+                text-align: center;
+                margin-bottom: 30px;
+                margin-top: -20px;
             }
             .title-text {
                 margin-top: 0;
@@ -484,7 +486,8 @@
                 font-size: var(--text-size-s);
                 width: 100%;
                 text-align: center;
-                padding-top: 24px;
+                margin-bottom: 30px;
+                margin-top: -20px;
             }
             @media (max-width: 480px) {
                 .account-text {
