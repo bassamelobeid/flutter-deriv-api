@@ -17,6 +17,7 @@ use Array::Utils qw( intersect );
 use LandingCompany::Registry;
 use BOM::Config;
 use BOM::Config::Runtime;
+use BOM::Config::Compliance;
 
 =head1 METHODS - Accessors
 
@@ -377,6 +378,8 @@ method is_supported ($brand, $country, $landing_company) {
 
     return 0 unless $self->is_regulation_supported($landing_company);
 
+    my $compliance_config = BOM::Config::Compliance->new;
+
     my $name = $self->name;
 
     ### Handlig wallet category ###
@@ -432,7 +435,7 @@ method is_supported ($brand, $country, $landing_company) {
 
     if ($name eq 'standard' || $name eq 'binary') {
         return 1 if ($countries->virtual_company_for_country($country)   // '') eq $landing_company;
-        return 1 if ($countries->financial_company_for_country($country) // '') eq $landing_company;
+        return 1 if ($compliance_config->get_financial_company($country) // '') eq $landing_company;
         return 1 if ($countries->gaming_company_for_country($country)    // '') eq $landing_company;
     }
 

@@ -1417,6 +1417,11 @@ compliance:
       isa: json_string
       global: 1
       default: '{"labuan": [], "bvi": [], "vanuatu": [] }'
+    mf_enable_country_list:
+      description: "2 character lowercase country code list for which MF account sign up is enable by default disable for others  ex : {'enable': ['id']}"
+      isa: json_string
+      global: 1
+      default: '{"enable": ["ec","za"]}'
     enhanced_due_diligence:
       description: "Enhanced Due Diligence (EDD) settings"
       isa: section
