@@ -53,6 +53,8 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 use BOM::Backoffice::VirtualStatus;
 
+use BOM::Config::Compliance;
+
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
@@ -2392,6 +2394,7 @@ sub _residence_change_validation {
     my @all_clients   = @{$data->{all_clients}};
 
     my $countries_instance = request()->brand->countries_instance;
+    my $compliance_config  = BOM::Config::Compliance->new;
 
     # Get the list of landing companies, as per residence
     my $get_lc = sub {
@@ -2400,7 +2403,7 @@ sub _residence_change_validation {
         my @broker_list;
 
         my $gc = $countries_instance->gaming_company_for_country($residence);
-        my $fc = $countries_instance->financial_company_for_country($residence);
+        my $fc = $compliance_config->get_financial_company($residence) // '';
 
         return () unless ($gc || $fc);
 

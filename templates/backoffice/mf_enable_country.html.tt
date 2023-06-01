@@ -1,0 +1,24 @@
+<tr>
+<td>
+    <form action="[% url %]" method=post>
+        <table>
+            <tr><th colspan=2 style="background-color:lightgray"> MF Countries </th></tr>
+            <tr>
+                <td>Enable</td>
+                <td><input type='text' name="enable" 
+                    value="[% mf_enable_country_list.enable.join(',') %]"></td>
+            </tr>
+            <tr>
+                <td>Control Code</td>
+                <td><input type="text" name="dcc" placeholder="required" data-lpignore="true" /></td>
+            </tr>
+        </table>
+
+    <input type="hidden" name="whattodo" value="mfCountries" />
+    <input type="hidden" name="revision" value="[% revision %]" />
+    <input type="submit" class="btn btn--primary" value="Submit" />
+    <input type="submit" class="btn btn--primary" name="action" value="GenerateDCC" />
+    <input type='hidden' name='transtype' value='mf_enable_country_list'>
+    </form>
+</td>
+</tr>
