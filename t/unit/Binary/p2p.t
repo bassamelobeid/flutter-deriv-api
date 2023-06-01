@@ -28,6 +28,7 @@ subtest 'P2P::Advert' => sub {
             args          => {},
         ]);
 
+    lives_ok { $worker->register } 'register ok';
     is $worker->advert_id,     3, 'advert_id matches';
     is $worker->advertiser_id, 4, 'advertiser_id matches';
     like($worker->uuid, qr/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/, 'has correct uuid');
@@ -44,6 +45,7 @@ subtest 'P2P::Advert' => sub {
     is $send_data->{'subscription'}->{id}, $worker->uuid,     'subscription id matches';
     is $send_data->{'msg_type'},           'p2p_advert_info', 'msg_type matches';
     is_deeply $send_data->{'p2p_advert_info'}, {'data' => 'test message'}, 'send_data matches';
+    lives_ok { $worker->unregister } 'unregister ok';
 };
 
 subtest 'P2P::Advertiser' => sub {
@@ -56,6 +58,7 @@ subtest 'P2P::Advertiser' => sub {
             c                  => $c,
             args               => {},
         ]);
+    lives_ok { $worker->register } 'register ok';
 
     is $worker->advertiser_loginid, 4, 'advertiser_loginid matches';
     is $worker->loginid,            1, 'loginid matches';
@@ -73,6 +76,8 @@ subtest 'P2P::Advertiser' => sub {
     is $send_data->{'subscription'}->{id}, $worker->uuid,         'subscription id matches';
     is $send_data->{'msg_type'},           'p2p_advertiser_info', 'msg_type matches';
     is_deeply $send_data->{'p2p_advertiser_info'}, {'data' => 'test message'}, 'send_data matches';
+    lives_ok { $worker->unregister } 'unregister ok';
+
 };
 
 subtest 'P2P::Order' => sub {
@@ -86,6 +91,7 @@ subtest 'P2P::Order' => sub {
             c        => $c,
             args     => {},
         ]);
+    lives_ok { $worker->register } 'register ok';
 
     is $worker->order_id, 4, 'order_id matches';
     is $worker->loginid,  1, 'loginid matches';
@@ -113,6 +119,8 @@ subtest 'P2P::Order' => sub {
     is $send_data->{'subscription'}->{id}, $worker->uuid,    'subscription id matches';
     is $send_data->{'msg_type'},           'p2p_order_info', 'msg_type matches';
     is_deeply $send_data->{'p2p_order_info'}, {'data' => 'test message'}, 'send_data matches';
+    lives_ok { $worker->unregister } 'unregister ok';
+
 };
 
 done_testing();
