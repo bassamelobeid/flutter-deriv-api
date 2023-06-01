@@ -330,10 +330,8 @@ sub available_accounts {
         die 'CountryCodeRequired';
     }
 
-    # If brand is not provided, it will default to deriv.
-    my $brand = $args->{brand} // Brands->new;
-
-    my $accounts = $brand->countries_instance->mt_account_types_for_country($args->{country_code});
+    my $compliance_config = BOM::Config::Compliance->new;
+    my $accounts          = $compliance_config->get_mt_account_types_for_country($args->{country_code}, $self->client->broker_code);
 
     return [] unless $accounts->%*;
 

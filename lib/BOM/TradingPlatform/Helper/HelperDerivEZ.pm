@@ -20,6 +20,8 @@ use BOM::User::Utility               qw(parse_mt5_group);
 use Log::Any                         qw($log);
 use BOM::User::FinancialAssessment;
 
+use BOM::Config::Compliance;
+
 use base 'Exporter';
 our @EXPORT_OK = qw(
     new_account_trading_rights
@@ -367,11 +369,12 @@ sub get_landing_company {
 
     return $client->landing_company->short if $client->landing_company->is_for_affiliates;
 
-    my $countries = request()->brand->countries_instance;
-    my $residence = $client->residence;
+    my $countries         = request()->brand->countries_instance;
+    my $residence         = $client->residence;
+    my $compliance_config = BOM::Config::Compliance->new;
 
     return DERIVEZ_AVAILABLE_FOR if ($countries->gaming_company_for_country($residence)    // '') eq DERIVEZ_AVAILABLE_FOR;
-    return DERIVEZ_AVAILABLE_FOR if ($countries->financial_company_for_country($residence) // '') eq DERIVEZ_AVAILABLE_FOR;
+    return DERIVEZ_AVAILABLE_FOR if ($compliance_config->get_financial_company($residence) // '') eq DERIVEZ_AVAILABLE_FOR;
 
     return 'none';
 }
