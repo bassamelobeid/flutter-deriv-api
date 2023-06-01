@@ -65,6 +65,7 @@ subtest 'rule residence.market_type_is_available' => sub {
         },
         'Fails if the landing company matching market type is different form context landing company';
 
+    $args->{residence}      = 'id';
     $companies->{financial} = 'svg';
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Succeeds after setting the same landing company';
 
