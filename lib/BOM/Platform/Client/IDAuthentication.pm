@@ -110,7 +110,7 @@ sub _fully_auth_check {
     if ($client->fully_authenticated) {
         $client->status->clear_unwelcome if $client->status->unwelcome;
     } else {
-        $client->status->set("unwelcome", "system", "Client was not fully authenticated before making first deposit");
+        $client->status->upsert("unwelcome", "system", "Client was not fully authenticated before making first deposit");
     }
     return undef;
 }
