@@ -74,7 +74,7 @@ subtest "handshake" => sub {
     $t->app->routes->get('/cryptocurrency/btc/deposit')->to('Controller#deposit');
     $t->app->routes->get('/cryptocurrency/btc/withdrawal')->to('Controller#withdraw');
 
-    BOM::Config::Runtime->instance->app_config->cgi->allowed_languages([qw(EN ID RU ES FR PT DE ZH_CN JA PL VI ZH_TW IT TH TR KO)]);
+    BOM::Config::Runtime->instance->app_config->cgi->allowed_languages([qw(EN ID RU ES FR PT DE ZH_CN JA PL VI ZH_TW IT TH TR KO AR BN SI)]);
 
     my $token = BOM::Platform::CryptoCashier::Iframe::Controller::_get_handoff_token_key($client->loginid);
 
