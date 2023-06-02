@@ -439,7 +439,13 @@ sub deposit {
     } else {
         # This status is intended to block withdrawals from binary to MT5
         # For DerivEZ we are still using mt5 as the BE trade server
-        return create_error('WithdrawalLocked', {override_code => $error_code}) if $client->status->mt5_withdrawal_locked;
+        if (    $client->status->mt5_withdrawal_locked
+            and $client->status->mt5_withdrawal_locked->{'reason'} =~ /FA is required for the first deposit on regulated MT5./g)
+        {
+            return create_error_future('FinancialAssessmentRequired');
+        } elsif ($client->status->mt5_withdrawal_locked) {
+            return create_error('WithdrawalLocked', {override_code => $error_code});
+        }
 
         $account_type = $response->{account_type};
     }

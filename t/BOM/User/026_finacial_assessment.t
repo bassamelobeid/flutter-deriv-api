@@ -7,18 +7,23 @@ use Test::Fatal qw(exception lives_ok);
 use Test::MockModule;
 use Future;
 use List::Util      qw(first);
-use JSON::MaybeUTF8 qw(encode_json_utf8);
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::User::SocialResponsibility;
-use BOM::User::FinancialAssessment qw(is_section_complete build_financial_assessment should_warn appropriateness_tests);
+use BOM::User::FinancialAssessment qw(is_section_complete build_financial_assessment update_financial_assessment should_warn appropriateness_tests);
 
 my $email_cr = 'test-cr-fa' . '@binary.com';
 my $email_mf = 'test-mf-fa' . '@binary.com';
 
 my $user = BOM::User->create(
     email    => $email_cr,
+    password => 'hello'
+);
+
+my $user_mf = BOM::User->create(
+    email    => $email_mf,
     password => 'hello'
 );
 
@@ -35,6 +40,11 @@ my $client_mf_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my $client_mf_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
+
+$user->add_client($client_cr_1);
+
+$user_mf->add_client($client_mf_1);
+$user_mf->add_client($client_mf_2);
 
 subtest 'CR is_financial_assessment_complete' => sub {
 
@@ -228,6 +238,34 @@ subtest 'is_section_complete' => sub {
     is $is_section_complete, 1, 'old TE present and cfd score was positive';
 };
 
+subtest 'update_financial_assessment' => sub {
+    use Data::Printer;
+    my $financial_information = {
+        "employment_industry" => "Finance",
+        "education_level"     => "Secondary",
+        "income_source"       => "Self-Employed",
+        "net_income"          => '$25,000 - $50,000',
+        "estimated_worth"     => '$100,000 - $250,000',
+        "occupation"          => 'Senior Manager',
+        "employment_status"   => "Self-Employed",
+        "source_of_wealth"    => "Company Ownership",
+        "account_turnover"    => 'Less than $25,000'
+    };
+    my $updated_fa;
+
+    # CR user
+    update_financial_assessment($user, $financial_information);
+    $updated_fa = decode_json_utf8($client_cr_1->get_financial_assessment);
+    is $updated_fa->{'occupation'}, 'Senior Manager', 'Financial assessment was unpdated';
+
+    # MF user
+    my $mocked_maltainvest_fa = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+    $mocked_maltainvest_fa->{'occupation'} = 'Senior Manager';
+    update_financial_assessment($user_mf, $mocked_maltainvest_fa);
+    $updated_fa = decode_json_utf8($client_mf_1->get_financial_assessment);
+    is $updated_fa->{'occupation'}, 'Senior Manager', 'Financial assessment was unpdated';
+};
+
 subtest 'build_financial_assessment' => sub {
 
     my $financial_information = {
@@ -273,13 +311,17 @@ subtest 'should_warn' => sub {
 
 subtest 'appropriateness_tests' => sub {
     my $mocked_maltainvest_fa = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+    my $appropriateness_tests;
+    $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
+    is $appropriateness_tests->{result}, 1, "Passed appropriateness first questions";
 
-    my $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
+    $mocked_maltainvest_fa->{accept_risk} = 1;
+    $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
     is $appropriateness_tests->{result}, 1, "Accepted risk";
 
     delete $mocked_maltainvest_fa->{risk_tolerance};
     $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
-    is $appropriateness_tests->{result}, 0, "Risk not accepted";
+    is $appropriateness_tests->{result}, 0, "Failed appropriateness first questions";
 
     my $expected_result = $appropriateness_tests;
     $mocked_maltainvest_fa->{risk_tolerance} = "Yes";
@@ -296,8 +338,9 @@ subtest 'appropriateness_tests' => sub {
         });
 
     $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
-    is $appropriateness_tests->{result}, 1, "Risk accepted";
+    is $appropriateness_tests->{result}, 1, "Passed appropriateness first questions after cooldown";
     $mocked_redis_db->unmock_all();
+
 };
 
 done_testing();
