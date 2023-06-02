@@ -18,7 +18,6 @@ use Format::Util::Numbers qw(financialrounding);
 use List::Util            qw(any uniq none);
 use Scalar::Util          qw(looks_like_number);
 use JSON::MaybeUTF8       qw(decode_json_utf8 encode_json_utf8);
-use Locale::Country::Extra;
 
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
@@ -292,13 +291,11 @@ sub get_npj_countries_list {
 }
 
 =head2 validate_npj_country_list
-
-validate input country codes to check if they meet the following criteria:
-- must be lower case
-- must be exactly 2 character length
-- must valid country code (cross check with our country list)
-- duplicate values not allowed
-
+validate input country codes
+lower case
+2 character lenght
+valid country (cross check with our country list)
+repeated values
 =cut
 
 sub validate_npj_country_list {
@@ -314,148 +311,6 @@ sub validate_npj_country_list {
             && length($country) == 2
             && $country eq lc $country;
     }
-}
-
-=head2 get_mf_enable_country_list
-
-Gets list of countries for which MF account creation is allowed.
-
-Example:
-
-    my $compliance_config = BOM::Config::Compliance->new();
-    my $result            = $compliance_config->get_mf_enable_country_list('aml');
-
-Returns a hashref with the following structure:
-
-{ revision => ..., enable => ["ec","za",...] } 
-
-
-=cut
-
-sub get_mf_enable_country_list {
-
-    my ($self) = @_;
-
-    my $app_config = $self->_app_config;
-    my $config     = decode_json_utf8($app_config->get("compliance.mf_enable_country_list"));
-
-    $config->{revision} = $app_config->global_revision;
-
-    return $config;
-}
-
-=head2 get_financial_company
-
-return maltainvest if mf signup is allowed for the country (country code exist in mf_enable_country_list)
-else read the brand config and return what the financial_company value. 
-
-=cut
-
-sub get_financial_company {
-
-    my ($self, $country) = @_;
-
-    return undef unless (defined($country));
-
-    my $app_config          = $self->_app_config;
-    my $mf_enable_countries = decode_json_utf8($app_config->get("compliance.mf_enable_country_list"));
-
-    return 'maltainvest' if any { $country eq $_ } $mf_enable_countries->{enable}->@*;
-
-    return Brands->new()->countries_instance->financial_company_for_country($country);
-}
-
-=head2 get_mt_account_types_for_country
-
-=over 4
-
-=item * country_code - 2-letter country code
-
-=back
-
-Returns a hash reference of available account types for country and broker code
-
-also checks if MF account opening is allowed for the country. If it is allowed adds maltainvest to the list
-
-Not too sure how we manage to complicate the config for mt5 accounts. At this point we have 2 account types:
-- financial (standard & stp accounts)
-- gaming (standard account)
-
-Each account type can have one or more counter parties. At the point of writing, demo and real have the same
-available trading account list.
-
-=cut
-
-sub get_mt_account_types_for_country {
-    my ($self, $country_code, $broker_code) = @_;
-
-    my $mt                  = Brands->new()->countries_instance->_build_countries_list()->{$country_code}{mt};
-    my $app_config          = $self->_app_config;
-    my $mf_enable_countries = decode_json_utf8($app_config->get("compliance.mf_enable_country_list"));
-
-    if (    (any { $country_code eq $_ } $mf_enable_countries->{enable}->@*)
-        and ($broker_code eq 'MF')
-        and (!(grep { $_ eq 'maltainvest' } @{$mt->{financial}->{standard}})))
-    {
-        push @{$mt->{financial}->{standard}}, "maltainvest";
-    }
-
-    my %accounts;
-    foreach my $market_type (keys $mt->%*) {
-        foreach my $subtype (sort keys $mt->{$market_type}->%*) {
-            my $primary = 1;
-            foreach my $counter_party ($mt->{$market_type}{$subtype}->@*) {
-                if ($counter_party ne 'none') {
-                    push @{$accounts{$market_type}},
-                        {
-                        market_type      => $market_type,
-                        sub_account_type => $subtype,
-                        company          => $counter_party,
-                        ($primary ? (primary => $primary) : ()),
-                        };
-                    $primary = 0;
-                }
-            }
-        }
-    }
-
-    return \%accounts;
-}
-
-=head2 is_mt_company_supported
-
-Checks if a given landing company is supported for this country, market type and broker code
-
-=over 5
-
-=item * C<$country_code> - 2-letter country code
-
-=item * C<$market_type> - gaming or financial
-
-=item * C<$requested_company> - a landing company short string
-
-=item * C<$broker_code> -  broker code (CR, MT, etc)
-
-=back
-
-Returns a boolean.
-
-=cut
-
-sub is_mt_company_supported {
-    my ($self, $country_code, $market_type, $requested_company, $broker_code) = @_;
-
-    my $accounts = $self->get_mt_account_types_for_country($country_code, $broker_code);
-
-    return 0 unless $accounts->{$market_type};
-
-    foreach my $account ($accounts->{$market_type}->@*) {
-        if ($account->{company} eq $requested_company) {
-            return 1;
-        }
-    }
-
-    return 0;
 }
 
 1;
