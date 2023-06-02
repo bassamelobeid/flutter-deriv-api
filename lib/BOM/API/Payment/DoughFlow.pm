@@ -31,6 +31,7 @@ sub _process_doughflow_request {
     my $start            = [Time::HiRes::gettimeofday];
     my $response         = _doughflow_backend($c, $type);
     my $request_millisec = 1000 * Time::HiRes::tv_interval($start);
+    push @$tags, "error_code:" . ($c->error_code // '');
     BOM::API::Payment::Metric::collect_metric($type, $response, $tags, $request_millisec);
     return $response;
 }
@@ -128,7 +129,6 @@ If new status is 'inprogress', the payout is processed as a withdrawal unless fr
 
 sub update_payout_POST {
     my $c = shift;
-
     return _process_doughflow_request($c, 'payout_inprogress')
         if ($c->request_parameters->{status} // '') eq 'inprogress';
 

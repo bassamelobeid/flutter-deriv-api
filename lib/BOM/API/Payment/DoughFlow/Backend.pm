@@ -173,22 +173,26 @@ sub validate_params {
     return $c->validate(@required);
 }
 
-=head2 _genrate_payment_error_message
+=head2 _generate_payment_error_message
 
-Generates a localized error message from the error returned by C<payment_validation>>.
+Generates a localized error message from the error returned by C<payment_validation> 
+and also sets the error_code field for the Datadog reporting unless it is set.
 
 =cut
 
-sub _genrate_payment_error_message {
+sub _generate_payment_error_message {
     my $error = shift;
+    my $c     = shift;
 
     # no need to process unknown erros
     return $error unless ref($error) eq 'HASH';
 
-    my $code    = $error->{code} // 'InternalCashierError';
-    my $params  = $error->{params};
-    my $message = error_map->{$code};
+    my $code   = $error->{code} // 'InternalCashierError';
+    my $params = $error->{params};
+    # Set the error code if it is absent
+    $c->error_code($code) unless $c->error_code;
 
+    my $message = error_map->{$code};
     if ($custom_errors{$code}) {
         $message = $custom_errors{$code}->{message};
         my $link_name = $custom_errors{$code}->{link};
@@ -255,7 +259,8 @@ sub validate_as_payment {
 
             if ($doughflow_method and $doughflow_method->{deposit_poi_required}) {
                 $client->status->upsert('allow_document_upload', 'system', "Deposit attempted with method requiring POI ($processor)");
-
+                $c->error_code('DepositPoiRequired');
+                $log->warn("$action validation failed as client didn't performed verification process");
                 $msg = localize(
                     "To use this method for deposits, we'll need to verify your identity. Click [_1] here[_2] to start the verification process, or choose another deposit method.",
                     '<a href="' . request()->brand->authentication_url({language => request()->language}) . '">',
@@ -267,6 +272,8 @@ sub validate_as_payment {
 
                     try {
                         if ($antifraud->df_cumulative_total_by_payment_type($payment_type)) {
+                            $c->error_code('DepositLimitReached');
+                            $log->warn("$action validation failed as client hit his deposit limit");
                             $msg = localize(
                                 "You've hit the deposit limit, we'll need to verify your identity. Click [_1] here[_2] to start the verification process.",
                                 '<a href="' . request()->brand->authentication_url({language => request()->language}) . '">',
@@ -274,7 +281,7 @@ sub validate_as_payment {
                             );
                         }
                     } catch ($e) {
-                        $log->warnf('Failed to check for deposit limits of the client %s: %s', $client->loginid, $e);
+                        $log->warn(sprintf('Failed to check for deposit limits of the client %s: %s', $client->loginid, $e));
                     }
                 }
             }
@@ -282,11 +289,10 @@ sub validate_as_payment {
             die "$msg\n" if $msg;
         }
     } catch ($err) {
-        return $c->throw(403, _genrate_payment_error_message($err));
+        return $c->throw(403, _generate_payment_error_message($err, $c));
     }
 
     $log->debug("$action validation passed");
-
     return 1;
 }
 

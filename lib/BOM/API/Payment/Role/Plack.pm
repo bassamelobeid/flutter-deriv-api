@@ -19,6 +19,13 @@ sub _build_req {
     return Plack::Request->new((shift)->env);
 }
 
+# Accessor and mutator for the error code
+sub error_code {
+    my ($self, $new_val) = @_;
+    return $self->env->{error_code} unless defined $new_val;
+    $self->env->{error_code} = $new_val;
+}
+
 # alias
 sub request { return (shift)->req }
 

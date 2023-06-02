@@ -150,6 +150,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                     # database errors are arrays
                     $error = join ', ', @$error if ref $error eq 'ARRAY';
                     $log->error($error);
+                    stats_inc('bom_paymentapi.error.uncaught_errors', {tags => ["path:" . ($req->path // 'Unknown')]});
                     $ref = [500, [], ['Server Error']];
                 };
 
