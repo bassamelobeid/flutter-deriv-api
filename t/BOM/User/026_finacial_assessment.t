@@ -285,7 +285,7 @@ subtest 'build_financial_assessment' => sub {
     is $financial_assessment->{scores}->{total_score}, 0, 'Financial information not provided';
 
     $financial_assessment = build_financial_assessment($financial_information);
-    is $financial_assessment->{scores}->{total_score}, 18, ' Only financial information is provided';
+    is $financial_assessment->{scores}->{total_score}, 18, 'Only financial information is provided';
 
     my $mocked_te = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()->{trading_experience_regulated};
     $financial_assessment = build_financial_assessment($mocked_te);
