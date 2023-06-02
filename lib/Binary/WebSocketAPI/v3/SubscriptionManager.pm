@@ -121,10 +121,10 @@ sub subscribe {
     my ($self, $subscription) = @_;
 
     my $channel    = $subscription->channel;
-    my $stats_name = $subscription->stats_name;
+    my $stats_tags = [$subscription->stats_tag];
     my $class      = $subscription->class;
 
-    stats_inc("$stats_name.clients");
+    stats_inc("bom_websocket_api.v_3.subscriptions.clients", {tags => $stats_tags});
     $log->tracef('Subscribing %s channel %s in pid %i', $class, $channel, $$);
     my $f = (
         $self->channels->{$channel} //= do {
@@ -136,11 +136,11 @@ sub subscribe {
                 $log->tracef('Subscribed to redis server for %s channel %s in pid %i', $class, $channel, $$);
                 if ($err) {
                     $log->errorf("Failed Redis subscription for %s channel %s - %s", $class, $channel, $err);
-                    stats_inc("$stats_name.instances.error");
+                    stats_inc("bom_websocket_api.v_3.subscriptions.instances.error", {tags => $stats_tags});
                     $f->fail($err, redis => $channel);
                     return;
                 }
-                stats_inc("$stats_name.instances.success");
+                stats_inc("bom_websocket_api.v_3.subscriptions.instances.success", {tags => $stats_tags});
                 $f->done($channel);
                 return;
             };
@@ -169,14 +169,14 @@ sub unsubscribe {
     my ($self, $subscription) = @_;
     my $channel      = $subscription->channel;
     my $class        = $subscription->class;
-    my $stats_name   = $subscription->stats_name;
+    my $stats_tags   = [$subscription->stats_tag];
     my $subs         = $self->channel_subscriptions->{$channel};
     my $original_sub = delete $subs->{refaddr($subscription)} or do {
         $log->errorf('Request to unsubscribe for a %s subscription that never existed on channel [%s]', $class, $channel);
         return $self;
     };
 
-    stats_dec("$stats_name.clients");
+    stats_dec("bom_websocket_api.v_3.subscriptions.clients", {tags => $stats_tags});
     my $remaining = 0 + keys %$subs;
     $log->tracef('Unsubscribed from %s channel %s, %d remaining, in pid %i', $class, $channel, $remaining, $$);
     return $self if $remaining;
@@ -211,10 +211,10 @@ sub unsubscribe {
         $f->cancel unless $f->is_ready;
         if ($err) {
             $log->warnf("Failed to stop %s subscription for channel %s due to error: $err", $class, $channel);
-            stats_inc("$stats_name.unsubscribe.error");
+            stats_inc("bom_websocket_api.v_3.subscriptions.unsubscribe.error", {tags => $stats_tags});
             return;
         }
-        stats_inc("$stats_name.unsubscribe.success");
+        stats_inc("bom_websocket_api.v_3.subscriptions.unsubscribe.success", {tags => $stats_tags});
         return;
     };
     if ($channel =~ m/\*/) {

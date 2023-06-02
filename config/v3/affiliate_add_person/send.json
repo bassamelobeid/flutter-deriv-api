@@ -39,6 +39,16 @@
             "type": "string",
             "pattern": "^\\p{L}[\\p{L}\\s'.-]{0,49}$"
         },
+        "address_line_1": {
+            "description": "Within 70 characters, with no leading whitespaces and may contain letters/numbers and/or any of following characters '.,:;()@#/-",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}'.,:;()\\x{b0}@#/-][\\p{L}\\p{Nd}\\s'’.,:;()\\x{b0}@#/-]{0,69}$"
+        },
+        "address_line_2": {
+            "description": "[Optional] Within 70 characters.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'’.,:;()\\x{b0}@#/-]{0,70}$"
+        },
         "address_postcode": {
             "description": "Within 20 characters and may not contain '+'.",
             "type": "string",

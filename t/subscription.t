@@ -128,7 +128,7 @@ subtest 'Subscription role attribute & method test' => sub {
         ]);
     like($worker->uuid, qr/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/, 'There is a uuid');
     is($worker->abbrev_class, 'Example1', 'abbrev class correct');
-    is($worker->stats_name, 'bom_websocket_api.v_3.example1_subscriptions');
+    is($worker->stats_tag, 'type:example1');
 };
 
 subtest 'Subscription class general test' => sub {
@@ -606,7 +606,7 @@ subtest 'Transaction subscription role attribute & method test' => sub {
         ]);
     like($worker->uuid, qr/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/, 'There is a uuid');
     is($worker->abbrev_class, 'TransactionSubscription', 'abbrev class correct');
-    is($worker->stats_name, 'bom_websocket_api.v_3.transactionsubscription_subscriptions');
+    is($worker->stats_tag, 'type:transaction_subscription');
 };
 
 subtest 'Subscription class transaction test' => sub {

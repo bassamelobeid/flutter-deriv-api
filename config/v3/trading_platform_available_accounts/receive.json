@@ -35,7 +35,8 @@
                         "type": "string",
                         "enum": [
                             "financial",
-                            "gaming"
+                            "gaming",
+                            "all"
                         ]
                     },
                     "name": {
@@ -128,6 +129,7 @@
                         "type": "string",
                         "enum": [
                             "standard",
+                            "swap_free",
                             "stp"
                         ]
                     }

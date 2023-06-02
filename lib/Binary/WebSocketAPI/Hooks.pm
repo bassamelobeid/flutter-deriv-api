@@ -125,10 +125,11 @@ sub log_call_timing {
         $tags{market} = $c->stash('market');
     }
 
+    $req_storage->{stat_tags} = [map { join ':', $_ => $tags{$_} } grep { $tags{$_} } sort(keys %tags)];
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing',
         1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-        {tags => [map { join ':', $_ => $tags{$_} } grep { $tags{$_} } sort(keys %tags)]},
+        {tags => $req_storage->{stat_tags}},
     );
     return;
 }
@@ -138,26 +139,12 @@ sub log_response_latency_timing {
 
     return unless $rpc_response->{rpc_response}->{timestamp};
 
-    my %tags = (
-        rpc    => $req_storage->{method},
-        stream => $req_storage->{category},
-        map { $_ => $c->stash($_) } qw/brand source_type/
-    );
-
-    $tags{app_id} = $c->stash('source') if $req_storage->{method} =~ APP_ID_LOGGED_METHODS;
-
-    # extra tagging for buy, proposal_open_contract, send_ask and sell for better visualization
-    my $methods = qr/^(buy|sell|send_ask|proposal_open_contract)/;
-
-    if (($req_storage->{method} =~ $methods) and $c->stash('market')) {
-        $tags{market} = $c->stash('market');
-    }
     my $elapsed = Time::HiRes::time - $rpc_response->{rpc_response}->{timestamp};
 
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing.response.latency',
         $elapsed * 1000,
-        {tags => [map { join ':', $_ => $tags{$_} } grep { $tags{$_} } sort(keys %tags)]},
+        {tags => $req_storage->{stat_tags}},
     );
 
     return;
@@ -645,7 +632,17 @@ sub on_client_connect {
     $log->warn("Client connect request but $c is already in active connection list") if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
 
+    # total we have ever seen in this process
     $c->app->stat->{cumulative_client_connections}++;
+
+    # https://docs.datadoghq.com/metrics/types/?tab=histogram#metric-types - statsd timing metrics provide min/max/average for all the values received,
+    # so even if it's not timing data it's still a good type for this, and in datadog "histogram" is just another name for "timing"
+    # count - would be the number of new connections for all workers
+    # max   - max number of active connections of some worker
+    # min   - min number of active connections of some worker
+    # avg   - avg number of active connections for all workers
+    DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.client_connections', ++$c->app->stat->{active_client_connections});
+
     $c->on(encoding_error => \&_handle_error);
     $c->on(sanity_failed  => \&_on_sanity_failed);
 
@@ -658,6 +655,7 @@ sub on_client_disconnect {
     $log->warn("Client disconnect request but $c is not in active connection list") unless exists $c->app->active_connections->{$c};
     forget_all($c);
 
+    $c->app->stat->{active_client_connections}--;
     delete $c->app->active_connections->{$c};
     if (my $tx = $c->tx) {
         $tx->unsubscribe('sanity_failed');

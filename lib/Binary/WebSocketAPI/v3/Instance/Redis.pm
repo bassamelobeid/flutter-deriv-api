@@ -15,7 +15,6 @@ Provides a container for dealing with all internal Redis connections.
 
 no indirect;
 use Syntax::Keyword::Try;
-
 use YAML::XS qw(LoadFile);
 use Exporter qw(import);
 use Mojo::Redis2;
@@ -97,7 +96,6 @@ my $servers = {
         user   => 'read',
     },
 };
-
 # We export (on demand) all Redis names and a helper function.
 our @EXPORT_OK = ('check_connections', sort keys %$servers);
 
@@ -112,15 +110,14 @@ my %message_handler = (
     });
 
 sub create {
-    my $name = shift;
-
+    my $name   = shift;
     my $server = $servers->{$name} // die 'unknown Redis instance ' . $name;
-
+    if (!$server->{current_config}) {
+        $server->{current_config} = $server->{config};
+    }
     my $cf        = LoadFile($server->{current_config})->{$server->{user}};
     my $redis_url = Mojo::URL->new("redis://$cf->{host}:$cf->{port}");
-
     $redis_url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
-
     my $redis = Mojo::Redis2->new(url => $redis_url);
     # NOTICE Mojo::Redis2 will 'encode_utf8' and 'decode_utf8' automatically
     # when it send and receive messages. And before and after that we do
@@ -131,30 +128,30 @@ sub create {
     # RedisDB, that will generate an error 'wide character' when we decode
     # message twice. So we disable it now
     $redis->encoding(undef) if $name =~ /^redis_(?:transaction|p2p|rpc|pricer_subscription)$/;
+
     $redis->on(
         error => sub {
             my ($self, $err) = @_;
             $log->errorf('Redis %s(%s) error: %s', $name, $redis_url, $err);
-
             # When redis connection is lost wait until redis server become
             # available then terminate the service so that hypnotoad will
             # restart it.
             return if ($err ne 'Connection refused');
-            my $ping_redis;
-            $ping_redis = sub {
-                Mojo::IOLoop->timer(
-                    1 => sub {
+            my $ping_redis = sub {
+                my $retry_delay = 1;    #retry ping after every sec of failure
+                my $loop_timer_id;
+                $loop_timer_id = Mojo::IOLoop->recurring(
+                    $retry_delay => sub {
                         try {
                             # This die to cover bug in Mojo::Redis2, if we're doing a request to Redis
                             # But we have connection problem, our callback will not be dequeued from waiting queue.
                             # Because of that our ping may not throw exception here.
                             die "Connection to Redis is not recovered" unless $self->ping;
-
                             $log->warnf('Redis connection %s(%s) is recovered', $name, $redis_url);
+                            Mojo::IOLoop->remove($loop_timer_id);    # remove the associated timer (closure for MOJO Loop)
                             exit;
                         } catch ($e) {
                             $log->errorf('Unable to connect to redis %s(%s):%s', $name, $redis_url, $e);
-                            $ping_redis->();
                         }
                     });
             };

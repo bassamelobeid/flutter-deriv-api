@@ -1,0 +1,263 @@
+name: Daily master test
+run-name: Daily test on master branch
+on:
+  schedule:
+    - cron: '36 20 * * *'
+jobs:
+  structure:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Code structure and syntax
+        run: make structure
+      - name: unit tests
+        run: make unit
+  accounts:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Accounts-related functionality
+        run: make accounts
+  security:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Security handling
+        run: make security
+  pricing:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Pricing
+        run: make pricing
+  misc:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Uncategorised tests
+        run: make misc
+  p2p:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Run P2P tests
+        run: make p2p
+  schema:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Schema tests
+        run: make schema
+  subscriptions:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Run subscription tests
+        run: make subscriptions
+  backends:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Run backends tests
+        run: make backends
+  update_docs:
+    if: github.ref == 'refs/heads/master'
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{github.repository}}
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          need_service: 'false'
+      - name: Update developer.binary.com schema documentation
+        run: |
+          script/websocket_schema_update.sh
+  
+
