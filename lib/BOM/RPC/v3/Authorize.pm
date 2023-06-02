@@ -18,7 +18,6 @@ use BOM::User::TOTP;
 use BOM::Config::Runtime;
 
 use LandingCompany::Registry;
-use BOM::Config::Compliance;
 
 sub _get_upgradeable_landing_companies {
     my ($client) = @_;
@@ -30,19 +29,10 @@ sub _get_upgradeable_landing_companies {
     my @upgradeable_landing_companies;
 
     my $countries_instance = request()->brand->countries_instance;
-    my $compliance_config  = BOM::Config::Compliance->new;
 
     # Get the gaming and financial company from the client's residence
-    my $configs  = $countries_instance->countries_list;
-    my $c_config = $configs->{$client->residence};
-
-    my $gaming_company    = $c_config->{gaming_company};
-    my $financial_company = $c_config->{financial_company};
-
-    if (defined($c_config->{financial_company} or $c_config->{gaming_company})) {
-        $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
-        $financial_company = $compliance_config->get_financial_company($client->residence);
-    }
+    my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence)    // '';
+    my $financial_company = $countries_instance->financial_company_for_country($client->residence) // '';
 
     my @siblings = values $client->real_account_siblings_information(
         exclude_disabled_no_currency => 1,

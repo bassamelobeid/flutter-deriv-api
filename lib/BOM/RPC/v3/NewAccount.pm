@@ -37,7 +37,6 @@ use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Services::CellxpertService;
 use BOM::RPC::v3::VerifyEmail::Functions;
 use Data::Dumper;
-use BOM::Config::Compliance;
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
@@ -124,14 +123,13 @@ rpc new_account_real => sub {
 
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;
-    my $compliance_config  = BOM::Config::Compliance->new;
 
     my $market_type = 'synthetic';
     my $company     = $countries_instance->gaming_company_for_country($client->residence);
     unless ($company) {
         # for CR countries like Australia (au) where only financial market is available.
         $market_type = 'financial';
-        $company     = $compliance_config->get_financial_company($client->residence) // '';
+        $company     = $countries_instance->financial_company_for_country($client->residence) // '';
 
         return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $company;
     }
@@ -195,9 +193,8 @@ rpc new_account_maltainvest => sub {
     my $user = $client->user;
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;
-    my $compliance_config  = BOM::Config::Compliance->new;
 
-    my $company = $compliance_config->get_financial_company($client->residence) // '';
+    my $company = $countries_instance->financial_company_for_country($client->residence) // '';
 
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') unless $company;
 
