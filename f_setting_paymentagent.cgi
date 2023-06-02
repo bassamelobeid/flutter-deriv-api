@@ -256,6 +256,14 @@ if ($whattodo eq 'show') {
                 }});
     }
 
+    my $pa_edit_href = request()->url_for(
+        "backoffice/f_setting_paymentagent.cgi",
+        {
+            broker   => $broker,
+            loginid  => $loginid,
+            whattodo => 'show',
+        });
+
     my $auditt_href = request()->url_for(
         "backoffice/show_audit_trail.cgi",
         {
@@ -271,8 +279,16 @@ if ($whattodo eq 'show') {
             loginID => $loginid
         });
 
+    my $pa_list_href = request()->url_for(
+        "backoffice/f_payment_agent_list.cgi",
+        {
+            broker => $broker,
+        });
+
+    print qq(<a class='link' href="$pa_edit_href">&laquo; Return to Payment Agent setting for $encoded_loginid<a/><br>);
     print qq(<a class='link' href="$auditt_href">&laquo; Show payment-agent audit trail for $encoded_loginid</a><br/>);
-    print qq(<a class='link' href="$return_href">&laquo; Return to client details<a/>);
+    print qq(<a class='link' href="$return_href">&laquo; Return to client details<a/><br>);
+    print qq(<a class='link' href="$pa_list_href">&laquo; Payment Agent list<a/><br>);
 
     code_exit_BO();
 }

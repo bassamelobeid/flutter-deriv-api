@@ -1027,7 +1027,9 @@ sub get_payment_agent_registration_form {
         'input' => {
             'id'        => 'pa_status_comment',
             'name'      => 'pa_status_comment',
-            'type'      => 'text',
+            'type'      => 'textarea',
+            'rows'      => 3,
+            'cols'      => 60,
             'maxlength' => 500,
         }};
 
@@ -1108,7 +1110,9 @@ sub get_payment_agent_registration_form {
         'input' => {
             'id'        => 'pa_services_allowed_comments',
             'name'      => 'pa_services_allowed_comments',
-            'type'      => 'text',
+            'type'      => 'textarea',
+            'rows'      => 3,
+            'cols'      => 60,
             'maxlength' => 500,
         }};
 
