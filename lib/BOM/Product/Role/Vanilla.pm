@@ -268,8 +268,8 @@ sub base_commission {
     # pricing_new is more reliable than for_sale here,
     # because if pricing_new is 0,
     # client can only sell it
-    return ($self->theo_probability->amount - $self->bid_probability->amount) unless $self->pricing_new;
-    return ($self->ask_probability->amount - $self->theo_probability->amount);
+    return $self->number_of_contracts * ($self->theo_probability->amount - $self->bid_probability->amount) unless $self->pricing_new;
+    return $self->number_of_contracts * ($self->ask_probability->amount - $self->theo_probability->amount);
 }
 
 =head2 _build_theo_probability
@@ -309,18 +309,16 @@ Used in calculating number of contracts
 sub initial_ask_probability {
     my $self = shift;
 
-    my $delta_charge = $self->delta_charge;
-    $delta_charge = (-$delta_charge) if $self->code eq 'VANILLALONGPUT';
-
     my $ask_probability = do {
         local $self->_pricing_args->{iv} = $self->pricing_vol * (1 + $self->vol_charge);
 
         # don't wrap them in one scope as the changes will be reverted out of scope
-        local $self->_pricing_args->{spot} = $self->entry_tick->quote + $delta_charge                        unless $self->pricing_new;
+        local $self->_pricing_args->{spot} = $self->entry_spot                                               unless $self->pricing_new;
         local $self->_pricing_args->{t}    = $self->calculate_timeindays_from($self->date_start)->days / 365 unless $self->pricing_new;
 
         $self->_build_theo_probability;
     };
+    $ask_probability->include_adjustment('add', $self->delta_charge);
     $ask_probability->include_adjustment('add', $self->bs_markup);
     return $ask_probability;
 }
@@ -334,16 +332,13 @@ Adds markup to theoretical blackscholes option price
 sub _build_ask_probability {
     my $self = shift;
 
-    my $delta_charge = $self->delta_charge;
-    $delta_charge = (-$delta_charge) if $self->code eq 'VANILLALONGPUT';
-
     my $ask_probability = do {
-        local $self->_pricing_args->{spot} = $self->current_spot + $delta_charge;
-        local $self->_pricing_args->{iv}   = $self->pricing_vol * (1 + $self->vol_charge);
+        local $self->_pricing_args->{iv} = $self->pricing_vol * (1 + $self->vol_charge);
 
         # don't wrap them in one scope as the changes will be reverted out of scope
         $self->_build_theo_probability;
     };
+    $ask_probability->include_adjustment('add', $self->delta_charge);
     $ask_probability->include_adjustment('add', $self->bs_markup);
     return $ask_probability;
 }
@@ -357,14 +352,11 @@ Adds markup to theoretical blackscholes option price
 sub _build_bid_probability {
     my $self = shift;
 
-    my $delta_charge = $self->delta_charge;
-    $delta_charge = (-$delta_charge) if $self->code eq 'VANILLALONGPUT';
-
     my $bid_probability = do {
-        local $self->_pricing_args->{spot} = $self->current_spot - $delta_charge;
-        local $self->_pricing_args->{iv}   = $self->pricing_vol * (1 - $self->vol_charge);
+        local $self->_pricing_args->{iv} = $self->pricing_vol * (1 - $self->vol_charge);
         $self->_build_theo_probability;
     };
+    $bid_probability->include_adjustment('subtract', $self->delta_charge);
     $bid_probability->include_adjustment('subtract', $self->bs_markup);
     return $bid_probability;
 }
@@ -413,7 +405,14 @@ sub delta_charge {
     my $spread_spot = $self->per_symbol_config()->{spread_spot};
     $spread_spot = abs($self->delta) * $spread_spot / 2;
 
-    return $spread_spot;
+    my $markup = Math::Util::CalculatedValue->new({
+        name        => 'delta_charge',
+        description => 'delta_charge',
+        set_by      => 'Contract',
+        base_amount => $spread_spot,
+    });
+
+    return $markup;
 }
 
 =head2 _validate_stake
@@ -499,6 +498,10 @@ override '_build_ask_price' => sub {
 override 'shortcode' => sub {
     my $self = shift;
 
+    # these 2 attributes are extremely sensitive to time
+    # hence placing them near each other
+    my $entry_tick          = $self->entry_tick;
+    my $number_of_contracts = $self->number_of_contracts;
     return join '_',
         (
         uc $self->code,
@@ -507,7 +510,7 @@ override 'shortcode' => sub {
         $self->date_start->epoch,
         $self->date_expiry->epoch,
         $self->_barrier_for_shortcode_string($self->supplied_barrier),
-        $self->number_of_contracts
+        $number_of_contracts, $entry_tick->epoch
         );
 };
 
@@ -523,10 +526,12 @@ sub _build_payout {
 
 override _build_entry_tick => sub {
     my $self = shift;
-    my $tick = $self->_tick_accessor->tick_at($self->date_start->epoch);
 
-    return $tick if defined($tick);
-    return $self->current_tick;
+    my $entry_epoch_from_shortcode = $self->build_parameters->{entry_epoch};
+
+    return $self->_tick_accessor->tick_at($entry_epoch_from_shortcode) if $entry_epoch_from_shortcode;
+
+    return $self->_tick_accessor->tick_at($self->date_start->epoch, {allow_inconsistent => 1});
 };
 
 =head2 _validate_barrier_choice

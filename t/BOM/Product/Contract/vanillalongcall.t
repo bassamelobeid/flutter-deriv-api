@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 17;
+use Test::More tests => 19;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -115,10 +115,48 @@ subtest 'number of contracts' => sub {
     cmp_ok $c->number_of_contracts, '==', '0.02080', 'correct number of contracts';
 };
 
-subtest 'shortcode' => sub {
+subtest 'shortcode (legacy)' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     my $c         = produce_contract($args);
     my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.02080';
+
+    my $c_shortcode;
+    lives_ok {
+        $c_shortcode = produce_contract($shortcode, 'USD');
+    }
+    'does not die trying to produce contract from short code';
+
+    is $c->code,                 $c_shortcode->code,                 'same code';
+    is $c->pricing_code,         $c_shortcode->pricing_code,         'same pricing code';
+    is $c->barrier->as_absolute, $c_shortcode->barrier->as_absolute, 'same strike price';
+    is $c->date_start->epoch,    $c_shortcode->date_start->epoch,    'same date start';
+    is $c->number_of_contracts,  $c_shortcode->number_of_contracts,  'same number of contracts';
+};
+
+subtest 'shortcode S1P (legacy)' => sub {
+    $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
+    my $c         = produce_contract($args);
+    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_S116181P_0.02080';
+
+    # 68258.19 + 1161.81 = 69420
+
+    my $c_shortcode;
+    lives_ok {
+        $c_shortcode = produce_contract($shortcode, 'USD');
+    }
+    'does not die trying to produce contract from short code';
+
+    is $c->code,                 $c_shortcode->code,                 'same code';
+    is $c->pricing_code,         $c_shortcode->pricing_code,         'same pricing code';
+    is $c->barrier->as_absolute, $c_shortcode->barrier->as_absolute, 'same strike price';
+    is $c->date_start->epoch,    $c_shortcode->date_start->epoch,    'same date start';
+    is $c->number_of_contracts,  $c_shortcode->number_of_contracts,  'same number of contracts';
+};
+
+subtest 'shortcode' => sub {
+    $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
+    my $c         = produce_contract($args);
+    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.02080_1425945600';
 
     my $c_shortcode;
     lives_ok {
@@ -137,7 +175,7 @@ subtest 'shortcode' => sub {
 subtest 'shortcode S1P' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     my $c         = produce_contract($args);
-    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_S116181P_0.02080';
+    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_S116181P_0.02080_1425945600';
 
     # 68258.19 + 1161.81 = 69420
 

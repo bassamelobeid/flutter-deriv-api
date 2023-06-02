@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -93,10 +93,27 @@ subtest 'number of contracts' => sub {
     cmp_ok $c->number_of_contracts, '==', '0.00609', 'correct number of contracts';
 };
 
-subtest 'shortcode' => sub {
+subtest 'shortcode (legacy)' => sub {
 
     my $c         = produce_contract($args);
     my $shortcode = 'VANILLALONGPUT_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.00609';
+
+    my $c_shortcode;
+    lives_ok {
+        $c_shortcode = produce_contract($shortcode, 'USD');
+    }
+    'does not die trying to produce contract from short code';
+
+    is $c->code,                 $c_shortcode->code,                 'same code';
+    is $c->pricing_code,         $c_shortcode->pricing_code,         'same pricing code';
+    is $c->barrier->as_absolute, $c_shortcode->barrier->as_absolute, 'same strike price';
+    is $c->date_start->epoch,    $c_shortcode->date_start->epoch,    'same date start';
+};
+
+subtest 'shortcode' => sub {
+
+    my $c         = produce_contract($args);
+    my $shortcode = 'VANILLALONGPUT_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.00609_1425945600';
 
     my $c_shortcode;
     lives_ok {
