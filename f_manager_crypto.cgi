@@ -670,6 +670,8 @@ sub validation_error_verify {
     return "Error in verifying transaction id: $id. The client $loginid withdrawal is locked."
         if $client->status->withdrawal_locked;
 
+    $amount_usd =~ s/,//g;    # remove commas
+
     my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, $amount_usd);
     return "Error in verifying transaction id: $id. " . $over_limit->get_mesg()
         if $over_limit;
