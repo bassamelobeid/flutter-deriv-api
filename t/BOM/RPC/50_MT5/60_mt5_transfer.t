@@ -708,6 +708,81 @@ subtest 'Transfers in between MT5 and Deriv X' => sub {
         ->has_no_system_error->has_error->error_code_is('IncompatibleMt5ToDxtrade', 'Cannot transfer from MT5 to DX');
 };
 
+subtest 'financial assessment requirement' => sub {
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    top_up $client, USD => 1000;
+    $user->add_client($client);
+    my $mock_client_status = Test::MockModule->new('BOM::User::Client::Status');
+    $mock_client_status->mock('mt5_withdrawal_locked', sub { return undef; });
+    my $deposit_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_binary => $client->loginid,
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
+            amount      => 10
+        },
+    };
+    my @emitted_event;
+    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_emitter->redefine(emit => sub { push @emitted_event, \@_; });
+
+    my $mock_landing_company = Test::MockModule->new('LandingCompany');
+    my $mock_fa              = Test::MockModule->new('BOM::User::FinancialAssessment');
+
+    $manager_module->mock(
+        'deposit',
+        sub {
+            return Future->done({success => 1});
+        });
+
+    my @test_cases = ({
+            financial_assessment       => 0,
+            after_deposit_requirements => undef,
+            fa_after_mt5_deposit       => 0,
+            title                      => 'No FA and FA not required by landing company -> not ask for FA'
+        },
+        {
+            financial_assessment       => 0,
+            after_deposit_requirements => {financial_assessment => ['financial_information']},
+            fa_after_mt5_deposit       => 1,
+            title                      => 'No FA and FA is required by landing company -> ask for FA'
+        },
+        {
+            financial_assessment       => 1,
+            after_deposit_requirements => undef,
+            fa_after_mt5_deposit       => 0,
+            title                      => 'FA completed and FA not required by landing company -> not ask for FA'
+        },
+        {
+            financial_assessment       => 1,
+            after_deposit_requirements => {financial_assessment => ['financial_information']},
+            fa_after_mt5_deposit       => 0,
+            title                      => 'FA completed and required by landing company -> not ask for FA'
+        },
+
+    );
+
+    for my $test_case (@test_cases) {
+        $mock_landing_company->redefine(requirements => {after_first_deposit => $test_case->{after_deposit_requirements}});
+        $mock_fa->redefine(is_section_complete => $test_case->{financial_assessment});
+
+        $c->call_ok('mt5_deposit', $deposit_params);
+        my $event_name  = $test_case->{fa_after_mt5_deposit} ? undef : 'transfer_between_accounts';
+        my $event_count = $test_case->{fa_after_mt5_deposit} ? 0     : 1;
+        is scalar @emitted_event,  $event_count, 'One event is emitted';
+        is $emitted_event[0]->[0], $event_name,  'Event name is correct';
+
+        undef @emitted_event;
+    }
+
+    $mock_landing_company->unmock_all;
+    $mock_fa->unmock_all;
+    $mock_emitter->unmock_all;
+
+};
+
 subtest 'Transfers in between MT5 and DERIVEZ' => sub {
     my $mock_user = Test::MockModule->new('BOM::User');
     $mock_user->mock('get_derivez_loginids', sub { return ('EZR1000'); });

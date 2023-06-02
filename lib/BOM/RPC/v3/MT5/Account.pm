@@ -40,7 +40,7 @@ use BOM::Config::Runtime;
 use BOM::Platform::Email;
 use BOM::Platform::Event::Emitter;
 use BOM::Transaction;
-use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
+use BOM::User::FinancialAssessment qw(decode_fa);
 use BOM::Config::MT5;
 use BOM::Config::Compliance;
 requires_auth('wallet', 'trading');
@@ -1223,7 +1223,7 @@ sub _is_financial_assessment_complete {
 
         my $is_FI =
             (first { $_ eq 'financial_information' } @{$args{financial_assessment_requirements}})
-            ? is_section_complete($financial_assessment, 'financial_information', $client->landing_company->short)
+            ? BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information', $client->landing_company->short)
             : 1;
 
         # The `financial information` section is enough for `CR (svg)` clients. No need to check `trading_experience` section
@@ -1231,7 +1231,7 @@ sub _is_financial_assessment_complete {
 
         my $is_TE =
             (first { $_ eq 'trading_experience' } @{$args{financial_assessment_requirements}})
-            ? is_section_complete($financial_assessment, 'trading_experience', $client->landing_company->short)
+            ? BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience', $client->landing_company->short)
             : 1;
 
         ($is_FI and $is_TE) ? return 1 : return 0;
@@ -2090,14 +2090,15 @@ sub _mt5_validate_and_get_amount {
 
             my $requirements = $mt5_lc->requirements->{after_first_deposit}->{financial_assessment} // [];
             if (
-                    $action eq 'withdrawal'
-                and $authorized_client->has_mt5_deposits($mt5_loginid)
+                $action eq 'deposit'
                 and not _is_financial_assessment_complete(
                     client                            => $authorized_client,
                     group                             => $mt5_group,
                     financial_assessment_requirements => $requirements
                 ))
             {
+                $authorized_client->status->set('mt5_withdrawal_locked', 'system', 'FA is required for the first deposit on regulated MT5.')
+                    if !$authorized_client->status->mt5_withdrawal_locked;
                 return create_error_future('FinancialAssessmentRequired');
             }
 

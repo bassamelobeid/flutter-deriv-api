@@ -1887,12 +1887,10 @@ subtest 'MT5' => sub {
 
     $is_fa_complete = 0;
     $mock_client->mock(has_mt5_deposits => sub { return 1 });    # need this to create the error
-    $params->{args}{currency} = 'USD';
-    $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired', 'Custom error code for FA required');
-    $is_fa_complete = 1;
-    $mock_client->unmock('has_mt5_deposits');
-
+    $params->{args}{currency}     = 'USD';
+    $params->{args}{account_from} = $test_client->loginid;
+    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
+    $is_fa_complete               = 1;
     subtest 'transfers using an account other than authenticated client' => sub {
         $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_btc->loginid, 'test token');
 

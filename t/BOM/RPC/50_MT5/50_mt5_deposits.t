@@ -613,24 +613,21 @@ subtest 'labuan withdrawal' => sub {
                 from_binary => $test_client->loginid,
                 amount      => 50,
             },
-        })->has_no_error('Deposit allowed to labuan mt5 account without FA');
-    cmp_ok $test_client->default_account->balance, '==', 820 + 150, "Correct balance after deposit";
+        })->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired', 'Custom error code for FA required');
 
-    $c->call_ok($method, $params)->has_error('Withdrawal request failed.')
-        ->error_code_is('FinancialAssessmentRequired', 'error code is FinancialAssessmentRequired')
-        ->error_message_like(qr/complete your financial assessment/);
+    $c->call_ok($method, $params)->has_no_error('Withdrawal is allowed.');
 
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
     $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from svg mt5 account when sibling labuan account is withdrawal-locked');
-    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50 + 100, "Correct balance after withdrawal";
 
     $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
     $test_client->save;
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
     $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
     $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
-    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 100, "Correct balance after withdrawal";
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 200, "Correct balance after withdrawal";
     $has_valid_documents = undef;
 };
 
@@ -754,8 +751,7 @@ subtest 'labuan deposit' => sub {
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
 
     $has_valid_documents = 1;
-    $c->call_ok($method, $params)->has_no_error('Deposit allowed to enable labuan mt5 account');
-    cmp_ok $test_client->default_account->balance, '==', 1050, "Correct balance after deposit";
+    $c->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired', 'Custom error code for FA required');
 
     $manager_module->mock(
         'get_group',
@@ -781,14 +777,18 @@ subtest 'labuan deposit' => sub {
                 'login' => 'MTR00001015',
             });
         });
+    $account_mock->mock(_is_financial_assessment_complete => sub { return 1 });
     $c->call_ok($method, $params)->has_error('client is disable')
         ->error_code_is('MT5DepositLocked', 'Deposit is locked when mt5 account is disabled for labuan');
 
-    cmp_ok $test_client->default_account->balance, '==', 1050, "Balance has not changed because mt5 account is locked";
+    cmp_ok $test_client->default_account->balance, '==', 1050 + 120, "Balance has not changed because mt5 account is locked";
     $manager_module->unmock('get_user', 'get_group');
+    $c->call_ok($method, $params)->has_error('You cannot perform this action, as your account is withdrawal locked.');
+    $test_client->status->clear_mt5_withdrawal_locked;
     # Using enable rights 482 should enable transfer.
     $c->call_ok($method, $params)->has_no_error('Deposit allowed when mt5 account gets enabled');
-    cmp_ok $test_client->default_account->balance, '==', 1030, "Correct balance after deposit";
+    cmp_ok $test_client->default_account->balance, '==', 1030 + 120, "Correct balance after deposit";
+    $account_mock->unmock('_is_financial_assessment_complete');
     $has_valid_documents = undef;
 };
 
