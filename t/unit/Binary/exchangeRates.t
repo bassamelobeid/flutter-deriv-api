@@ -30,6 +30,11 @@ like($worker->uuid, qr/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/, 'has correct uuid');
 isa_ok $worker->subscription_manager, 'Binary::WebSocketAPI::v3::SubscriptionManager', 'subscription_manager';
 is $worker->channel, 'exchange_rates::abc', 'channel matches';
 
+lives_ok { $worker->process(encode_json_utf8({data => 'test message'})) } 'process with no tx';
+ok !$worker->c->{send_data}, 'no data when no tx';
+
+$c->mock('tx', sub { return 1 });
+
 lives_ok { $worker->process(encode_json_utf8({data => 'test message'})) } 'process ok';
 
 my $send_data = $worker->c->{send_data}->{json};
