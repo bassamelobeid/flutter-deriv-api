@@ -85,11 +85,12 @@ subtest 'P2P::Order' => sub {
 
     my $worker = new_ok(
         'Binary::WebSocketAPI::v3::Subscription::P2P::Order' => [
-            loginid  => 1,
-            order_id => 4,
-            broker   => 'xyz',
-            c        => $c,
-            args     => {},
+            loginid       => 1,
+            order_id      => 4,
+            advertiser_id => 2,
+            broker        => 'xyz',
+            c             => $c,
+            args          => {},
         ]);
     lives_ok { $worker->register } 'register ok';
 
@@ -97,28 +98,23 @@ subtest 'P2P::Order' => sub {
     is $worker->loginid,  1, 'loginid matches';
     like($worker->uuid, qr/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/, 'has correct uuid');
     isa_ok $worker->subscription_manager, 'Binary::WebSocketAPI::v3::SubscriptionManager', 'subscription_manager';
-    is $worker->channel, 'P2P::ORDER::NOTIFICATION::XYZ::1', 'channel matches';
+    is $worker->channel, 'P2P::ORDER::NOTIFICATION::XYZ::1::2::-1::4::-1', 'channel matches';
 
     lives_ok { $worker->process(encode_json_utf8({data => 'test message'})) } 'process with no tx';
     ok !$worker->c->{send_data}, 'no data when no tx';
 
     $c->mock('tx', sub { return 1 });
     lives_ok { $worker->process(encode_json_utf8({data => 'test message', id => 0})) } 'process with order_id';
-    ok !$worker->c->{send_data}, 'no data when order_id not matches';
-
-    $worker = new_ok(
-        'Binary::WebSocketAPI::v3::Subscription::P2P::Order' => [
-            loginid => 1,
-            broker  => 'xyz',
-            c       => $c,
-            args    => {},
-        ]);
-    lives_ok { $worker->process(encode_json_utf8({data => 'test message'})) } 'process without order_id';
 
     my $send_data = $worker->c->{send_data}->{json};
     is $send_data->{'subscription'}->{id}, $worker->uuid,    'subscription id matches';
     is $send_data->{'msg_type'},           'p2p_order_info', 'msg_type matches';
-    is_deeply $send_data->{'p2p_order_info'}, {'data' => 'test message'}, 'send_data matches';
+    is_deeply $send_data->{'p2p_order_info'},
+        {
+        'data' => 'test message',
+        id     => 0
+        },
+        'send_data matches';
     lives_ok { $worker->unregister } 'unregister ok';
 
 };
