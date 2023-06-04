@@ -695,5 +695,40 @@ subtest 'Subscription class transaction test' => sub {
     done_testing;
 };
 
+subtest 'introspect' => sub {
+    my $c      = mock_c();
+    my $worker = new_ok(
+        Example1 => [
+            c    => $c,
+            args => {},
+        ]);
+    lives_ok { $worker->register; } 'register work';
+    is_deeply([Example1->get_by_class($c)], [$worker], 'find this subscription because it is registered now');
+    is(Example1->get_by_uuid($c, $worker->uuid), $worker, 'find subscription because it is regtistered now');
+    ok($worker->already_registered, 'this channel not registered yet');
+    is_deeply(
+        $c->stash,
+        {
+            channels     => {Example1      => {example1 => $worker}},
+            uuid_channel => {$worker->uuid => $worker}
+        },
+        'register result ok'
+    );
+    $worker->subscribe(sub { });
+    my $intro = $worker->introspect($c);
+
+    is_deeply(
+        $intro,
+        {
+            'Example1' => {
+                'channel_count'      => 1,
+                'subscription_count' => 1
+            }
+        },
+        'introspect matches'
+    );
+
+};
+
 done_testing();
 
