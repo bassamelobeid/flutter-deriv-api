@@ -29,7 +29,7 @@ cover:
 	# code coverage test should exclude those memeory or benchmark performance tests.
 	cover -delete
 	sed -i '/unexpected OP/,/OP_CUSTOM/d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
-	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --ignore-exit --norc -rl -MBOM::Test  $$(find t/unit t/BOM -name "*.t" | grep -v 'memory')
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --ignore-exit --norc -vrl -MBOM::Test  $$(find t/unit t/BOM -name "*.t" | grep -v 'memory')
 	cover -report coveralls
 
 unit:
