@@ -239,7 +239,6 @@ subtest 'is_section_complete' => sub {
 };
 
 subtest 'update_financial_assessment' => sub {
-    use Data::Printer;
     my $financial_information = {
         "employment_industry" => "Finance",
         "education_level"     => "Secondary",
