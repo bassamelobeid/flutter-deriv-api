@@ -224,8 +224,30 @@ version: 2
 workflows:
   build-workflow:
     jobs: &all-jobs
-    - code_coverage:
+    - structure:
         context: perl
+    - accounts:
+        context: perl
+    - security:
+        context: perl
+    - pricing:
+        context: perl
+    - misc:
+        context: perl
+    - p2p:
+        context: perl
+    - schema:
+        context: perl
+    - subscriptions:
+        context: perl
+    - backends:
+        context: perl
+    - update_docs:
+        context: perl
+        filters:
+          branches:
+            only:
+            - master
   daily:
     jobs: *all-jobs
     triggers:
