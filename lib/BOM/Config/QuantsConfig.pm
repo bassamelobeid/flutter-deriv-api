@@ -375,26 +375,29 @@ sub get_per_symbol_config {
         return $config if $config;
 
         # this case is needed when we need a config before the first insertion into Chronicle.
-        return $self->get_config_default('per_symbol')->{$landing_company}->{$underlying_symbol};
+        return $self->get_default_config('per_symbol')->{$landing_company}->{$underlying_symbol};
 
     } else {
-        return $self->get_config_default('per_symbol')->{$landing_company}->{$underlying_symbol};
+        return $self->get_default_config('per_symbol')->{$landing_company}->{$underlying_symbol};
     }
     return;
 
 }
 
-=head2 get_config_default
+=head2 get_default_config
 
 This function would return the default config for a specific contract category and for the following config types:
 - per_symbol
 - per_symbol_limits
+- risk_profile
 
 =cut
 
-sub get_config_default {
+sub get_default_config {
     my ($self, $config_type) = @_;
 
+    #defualt risk profile value is the same for all contract types, but other configs can be different for each type
+    return LoadFile("/home/git/regentmarkets/bom-config/share/default_" . $config_type . "_config.yml") if $config_type eq 'risk_profile';
     return LoadFile("/home/git/regentmarkets/bom-config/share/default_" . $self->contract_category . "_" . $config_type . "_config.yml");
 }
 
@@ -414,7 +417,7 @@ sub get_per_symbol_limits {
     my $redis_key       = join("::", $self->contract_category, 'per_symbol_limits',, $landing_company, $underlying_symbol);
     my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key);
 
-    return $existing_config ? $existing_config : $self->get_config_default('per_symbol_limits')->{$landing_company}->{$underlying_symbol};
+    return $existing_config ? $existing_config : $self->get_default_config('per_symbol_limits')->{$landing_company}->{$underlying_symbol};
 }
 
 =head2 get_user_specific_limits
@@ -433,18 +436,6 @@ sub get_user_specific_limits {
     return $existing_config ? $existing_config : undef;
 }
 
-=head2 get_max_stake_per_risk_profile_config_default
-
-Returns a hashref containing the default values for each contract type risk profile's max stake value. 
-
-=cut
-
-sub get_max_stake_per_risk_profile_config_default {
-    my $self = shift;
-
-    return BOM::Config::quants()->{risk_profile};
-}
-
 =head2 get_max_stake_per_risk_profile
 
 Returns a hashref containing the values for each risk profile's max stake value. 
@@ -457,7 +448,7 @@ sub get_max_stake_per_risk_profile {
     my $redis_key       = join("::", $self->contract_category, 'max_stake_per_risk_profile', $risk_profile);
     my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key);
 
-    return $existing_config ? $existing_config : $self->get_max_stake_per_risk_profile_config_default->{$risk_profile}->{$self->contract_category};
+    return $existing_config ? $existing_config : $self->get_default_config('risk_profile')->{$risk_profile};
 }
 
 =head2 get_risk_profile_per_symbol
