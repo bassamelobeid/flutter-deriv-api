@@ -4,6 +4,8 @@ use Test::More;
 use Test::MockModule;
 
 use Binary::WebSocketAPI;
+use Binary::WebSocketAPI::BalanceConnections;
+
 use List::Util qw( first any none);
 
 subtest check_blocked_app_id => sub {
@@ -18,6 +20,11 @@ subtest check_blocked_app_id => sub {
     $apps_blocked_from_operation_domain = Binary::WebSocketAPI::get_apps_blocked_from_operation_domain()->get;
     $result                             = none { $test_app_id eq $_ } $apps_blocked_from_operation_domain->{blue}->@*;
     is($result, 1, "Unblocked APP ID $test_app_id");
+};
+
+subtest check_balance_connections => sub {
+    is Binary::WebSocketAPI::BalanceConnections::connection_count_class(), 'lt20', 'default connection_count_class';
+    ok !Binary::WebSocketAPI::BalanceConnections::get_active_connections_count(), 'no active_connections_count';
 };
 
 done_testing;
