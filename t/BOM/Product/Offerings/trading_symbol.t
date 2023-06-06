@@ -12,7 +12,7 @@ use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Quant::Framework::Underlying;
-use BOM::Product::Offerings::TradingSymbol qw(get_symbols);
+use BOM::Product::Offerings::TradingSymbol qw(get_symbols _filter_no_business_profiles);
 use Brands;
 use LandingCompany::Offerings;
 use BOM::Config::Runtime;
@@ -262,6 +262,50 @@ subtest 'type=brief' => sub {
         qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting subgroup subgroup_display_name display_order)
     ];
     cmp_bag([keys $res->{symbols}->[0]->%*], $expected_keys, 'brief symbol returns correct information');
+};
+
+subtest 'filter no business profiles' => sub {
+    my $landing_company = 'svg';
+
+    my $custom_product_profiles = {
+        "contract1" => {
+            "risk_profile"      => "no_business",
+            "landing_company"   => "svg",
+            "expiry_type"       => "",
+            "start_time"        => "",
+            "market"            => "forex",
+            "submarket"         => "forex_basket",
+            "underlying_symbol" => "frxUSDJPY",
+            "contract_category" => ""
+        },
+        "contract2" => {
+            "risk_profile"      => "no_business",
+            "landing_company"   => "maltainvest",
+            "expiry_type"       => "",
+            "start_time"        => "",
+            "market"            => "synthetic_index",
+            "submarket"         => "",
+            "underlying_symbol" => "",
+            "contract_category" => ""
+        },
+        "contract3" => {
+            "risk_profile"      => "no_business",
+            "landing_company"   => "svg",
+            "expiry_type"       => "",
+            "start_time"        => "",
+            "market"            => "",
+            "submarket"         => "forex_basket",
+            "underlying_symbol" => "CRASH300N",
+            "contract_category" => ""
+        }};
+
+    my %expected_result = (
+        'frxUSDJPY' => 1,
+        'CRASH300N' => 1
+    );
+
+    my %actual_result = _filter_no_business_profiles($landing_company, $custom_product_profiles);
+    is_deeply(\%actual_result, \%expected_result, "Checking _filter_no_business_profiles");
 };
 
 done_testing();

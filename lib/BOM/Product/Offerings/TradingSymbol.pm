@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(get_symbols);
+our @EXPORT_OK = qw(get_symbols _filter_no_business_profiles);
 
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
@@ -19,6 +19,7 @@ use Finance::Underlying;
 use Quant::Framework;
 use Date::Utility;
 use Brands;
+use JSON::MaybeXS qw(decode_json);
 
 use constant {
     NAMESPACE      => 'TRADING_SYMBOL',
@@ -86,6 +87,13 @@ sub get_symbols {
         my $cache_interval = 30;
         Cache::RedisDB->set($namespace, $key, $active_symbols, $cache_interval - time % $cache_interval);
     }
+
+    # filter no_business risk profiles
+    my $data             = _get_product_profiles();
+    my %no_business_data = _filter_no_business_profiles($landing_company_name, $data);
+
+    @$active_symbols =
+        grep { !$no_business_data{$_->{submarket}} && !$no_business_data{$_->{symbol}} && !$no_business_data{$_->{market}} } @$active_symbols;
 
     return {symbols => $type eq 'brief' ? _trim($active_symbols) : $active_symbols};
 }
@@ -173,6 +181,85 @@ sub _get_leaderboard {
     }
 
     return \%leaderboard;
+}
+
+=head2 _get_product_profiles
+
+get data [custom_product_profile] from redis 
+
+=cut
+
+sub _get_product_profiles {
+    my $app_config              = BOM::Config::Runtime->instance->app_config;
+    my $custom_product_profiles = $app_config->get('quants.custom_product_profiles');
+    return decode_json($custom_product_profiles);
+}
+
+=head2 _is_no_business_contract
+
+return true if meets the requirements
+
+=cut
+
+sub _is_no_business_contract {
+    my ($contract, $landing_company) = @_;
+
+    return (   $contract->{risk_profile}
+            && $contract->{risk_profile} eq "no_business"
+            && (!$contract->{landing_company} || $contract->{landing_company} eq $landing_company)
+            && (!$contract->{expiry_type} && !$contract->{start_time})
+            && (!$contract->{contract_category}));
+}
+
+=head2 _split_string
+
+split strings and store into hash
+
+=cut
+
+sub _split_string {
+    my $string = shift;
+    my %split_data;
+
+    if (defined $string) {
+        my @split_strings = split(/,/, $string);
+        foreach my $split_string (@split_strings) {
+            if (defined $split_string) {
+                $split_data{$split_string} = 1;
+            }
+        }
+    }
+    return \%split_data;
+}
+
+=head2 _filter_no_business_profiles
+
+Filter No Business product profiles
+
+=cut
+
+sub _filter_no_business_profiles {
+    my ($landing_company, $data) = @_;
+    my %no_business_data;
+    # storing market, submarket or underlying_symbol having risk_profile = no_business into new no_business_data
+    for my $contract (values %{$data}) {
+        if (_is_no_business_contract($contract, $landing_company)) {
+            if (($contract->{market} || $contract->{submarket}) && $contract->{underlying_symbol}) {
+                %no_business_data = (%no_business_data, %{_split_string($contract->{underlying_symbol})});
+            } elsif (($contract->{market} && $contract->{submarket})) {
+                %no_business_data = (%no_business_data, %{_split_string($contract->{submarket})});
+            } elsif ($contract->{market}) {
+                %no_business_data = (%no_business_data, %{_split_string($contract->{market})});
+            } elsif ($contract->{submarket}) {
+                %no_business_data = (%no_business_data, %{_split_string($contract->{submarket})});
+            } elsif ($contract->{underlying_symbol}) {
+                %no_business_data = (%no_business_data, %{_split_string($contract->{underlying_symbol})});
+            }
+        }
+
+    }
+
+    return %no_business_data;
 }
 
 1;
