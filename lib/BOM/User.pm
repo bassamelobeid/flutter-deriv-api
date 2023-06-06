@@ -27,7 +27,6 @@ use BOM::User::Affiliate;
 use BOM::User::Onfido;
 use BOM::User::LexisNexis;
 use BOM::User::SocialResponsibility;
-use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
 use BOM::Platform::Redis;
@@ -1677,6 +1676,10 @@ Returns a hashref of Trading account details on success, throws exception on err
 
 sub get_account_by_loginid {
     my ($self, $loginid) = @_;
+
+    # Using `require` to import at runtime and avoid circular dependency
+    # TODO: remove this subroutine once the callers are removed by https://github.com/regentmarkets/bom-user/pull/2125
+    require BOM::TradingPlatform;
 
     return BOM::TradingPlatform->new(
         platform => 'mt5',
