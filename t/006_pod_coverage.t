@@ -18,7 +18,6 @@ my $allowed_naked_packages = {
     'BOM::Event::Actions::CustomerStatement'            => 2,
     'BOM::Event::Services::Track'                       => 9,
     'BOM::Event::Actions::Client::IdentityVerification' => 3,
-    'BOM::Event::Actions::Common'                       => 1,
     'BOM::Event::Actions::Anonymization'                => 1,
 };
 

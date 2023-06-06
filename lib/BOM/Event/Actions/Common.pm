@@ -152,8 +152,30 @@ sub _send_CS_email_POA_pending {
         ->text_body('There is a pending proof of address document for ' . $client->loginid)->send();
 }
 
+=head2 handle_under_age_client
+
+Apply side effects on underage clients.
+
+It might disable the client all its related siblings if the account has no balance nor real dxtrade/mt5 accounts.
+
+It takes the following parameters:
+
+=over 4
+
+=item * C<$client> - a L<BOM::User::Client> to apply side affects on
+
+=item * C<$provider> - common name of the provider that's performing the authentication
+
+=item * C<$from_client> - an optional L<BOM::User::Client> instance, it could be that the underage detection come from documents uploaded from a previous underage client.
+
+=back
+
+Returns C<undef>
+
+=cut
+
 sub handle_under_age_client {
-    my ($client, $provider) = @_;
+    my ($client, $provider, $from_client) = @_;
 
     # check if there is balance
     my $siblings     = $client->real_account_siblings_information(include_disabled => 0);
@@ -180,6 +202,7 @@ sub handle_under_age_client {
         dx_loginids  => [@dx_loginids],
         loginid      => $loginid,
         title        => $subject,
+        from_client  => $from_client,
     };
 
     # We will send an LC ticket to authentications if the client has real balance
@@ -205,7 +228,11 @@ sub handle_under_age_client {
         # if all of the account doesn't have any balance, disable them
         for my $each_siblings (keys %{$siblings}) {
             my $current_client = BOM::User::Client->new({loginid => $each_siblings});
-            $current_client->status->setnx('disabled', 'system', "$provider - client is underage");
+            my $reason         = sprintf("%s - client is underage", $provider);
+
+            $reason = sprintf("%s - client is underage - same documents as %s", $provider, $from_client->loginid) if $from_client;
+
+            $current_client->status->setnx('disabled', 'system', $reason);
         }
 
         # need to send email to client
@@ -221,6 +248,8 @@ sub handle_under_age_client {
                     tnc_approval => $brand->tnc_approval_url($params),
                 }});
     }
+
+    return undef;
 }
 
 =head2 _email_client_age_verified

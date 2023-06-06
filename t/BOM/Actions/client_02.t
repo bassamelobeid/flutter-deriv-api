@@ -102,4 +102,75 @@ subtest 'POA updated' => sub {
     cmp_deeply grab_issuance_date($user), [], 'Delete operation';
 };
 
+subtest 'underage_client_detected' => sub {
+    my $args      = {};
+    my $exception = exception {
+        BOM::Event::Actions::Client::underage_client_detected($args);
+    };
+
+    ok $exception =~ /provider is mandatory/, 'Provider is mandatory to this event';
+
+    $args->{provider} = 'qa';
+
+    $exception = exception {
+        BOM::Event::Actions::Client::underage_client_detected($args);
+    };
+
+    ok $exception =~ /No client login ID supplied/, 'loginid is mandatory to this event';
+
+    $args->{loginid} = 'CR0';
+
+    $exception = exception {
+        BOM::Event::Actions::Client::underage_client_detected($args);
+    };
+
+    ok $exception =~ /Could not instantiate client for login ID/, 'legit loginid is mandatory to this event';
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $provider;
+    my $client_proc;
+    my $from_proc;
+    my $from;
+
+    my $mock_common = Test::MockModule->new('BOM::Event::Actions::Common');
+    $mock_common->mock(
+        'handle_under_age_client',
+        sub {
+            my ($client_proc, $provider, $from_proc) = @_;
+            is $client_proc->loginid, $client->loginid, 'Expected client';
+            is $provider,             'qa',             'Expected provider';
+            ok !$from_proc, 'No from client specified' unless $from;
+            is $from_proc->loginid, $from->loginid, 'Expected client' if $from;
+            return undef;
+        });
+
+    $exception = exception {
+        $args->{loginid} = $client->loginid;
+        $provider        = undef;
+        $client_proc     = undef;
+        $from_proc       = undef;
+        BOM::Event::Actions::Client::underage_client_detected($args);
+    };
+
+    ok !$exception, 'No exception';
+
+    $from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $exception = exception {
+        $provider             = undef;
+        $client_proc          = undef;
+        $from_proc            = undef;
+        $args->{from_loginid} = $from->loginid;
+        BOM::Event::Actions::Client::underage_client_detected($args);
+    };
+
+    ok !$exception, 'No exception';
+    $mock_common->unmock_all;
+};
+
 done_testing();

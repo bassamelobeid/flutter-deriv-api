@@ -4002,4 +4002,46 @@ async sub payops_event_email {
     );
 }
 
+=head2 underage_client_detected
+
+Handles Underage clients.
+
+It might disable the account if some conditions are met, otherwise it will inform the proper team via livechat.
+
+Takes as hashref parameters:
+
+=over 4
+
+=item * C<loginid> - loginid of the client
+
+=item * C<provider> - provider that detected the underage client
+
+=item * C<from_loginid> - optional, in case the underage detection came from already uploaded docs
+
+=back
+
+Returns C<undef>
+
+=cut
+
+sub underage_client_detected {
+    my $args = shift // {};
+
+    my $provider = $args->{provider} or die 'provider is mandatory';
+
+    my $loginid = $args->{loginid}
+        or die 'No client login ID supplied?';
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die 'Could not instantiate client for login ID ' . $loginid;
+
+    my $from_client;
+
+    $from_client = BOM::User::Client->new({loginid => $args->{from_loginid}}) if $args->{from_loginid};
+
+    BOM::Event::Actions::Common::handle_under_age_client($client, $provider, $from_client);
+
+    return undef;
+}
+
 1;

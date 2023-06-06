@@ -14,6 +14,7 @@ use IO::Async::Loop;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Email;
+use BOM::Platform::Context qw( request );
 
 use BOM::Event::Actions::Common;
 use BOM::User;
@@ -432,5 +433,150 @@ $status_mock->unmock_all;
 $countries_mock->unmock_all;
 $landing_company_mock->unmock_all;
 $p2p_mock->unmock_all;
+
+subtest 'underage handling' => sub {
+    my $user = BOM::User->create(
+        email          => 'underage+handle.me@binary.com',
+        password       => 'hey you',
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $user->email,
+    });
+
+    my $from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'underage+prev@binary.com',
+    });
+
+    my $emissions    = {};
+    my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $emitter_mock->mock(
+        'emit',
+        sub {
+            my ($event, $args) = @_;
+
+            $emissions->{$event} = $args;
+        });
+
+    my $siblings    = {};
+    my $client_mock = Test::MockModule->new(ref($client));
+    $client_mock->mock(
+        'real_account_siblings_information',
+        sub {
+            return $siblings;
+        });
+
+    my $user_mock    = Test::MockModule->new(ref($user));
+    my $mt5_loginids = [];
+    my $dxt_loginids = [];
+    $user_mock->mock(
+        'get_trading_platform_loginids',
+        sub {
+            my (undef, $platform) = @_;
+            return $dxt_loginids->@* if $platform eq 'dxtrader';
+            return $mt5_loginids->@* if $platform eq 'mt5';
+            return ();
+        });
+
+    my $tests = [{
+            balance => 1,
+            mt5     => [],
+            dxtrade => [],
+            result  => 'email',
+        },
+        {
+            balance => 0,
+            mt5     => ['MTR1001'],
+            dxtrade => [],
+            result  => 'email',
+        },
+        {
+            balance => 0,
+            mt5     => [],
+            dxtrade => ['DXR1001'],
+            result  => 'email',
+        },
+        {
+            balance => 0,
+            mt5     => [],
+            dxtrade => ['DXR1001'],
+            result  => 'email',
+            from    => $from,
+        },
+        {
+            balance => 0,
+            mt5     => [],
+            dxtrade => [],
+            result  => 'track',
+            reason  => 'qa - client is underage',
+        },
+        {
+            balance => 0,
+            mt5     => [],
+            dxtrade => [],
+            result  => 'track',
+            reason  => 'qa - client is underage - same documents as ' . $from->loginid,
+            from    => $from,
+        },
+    ];
+
+    my $brand = request->brand;
+    for my $test ($tests->@*) {
+        my ($balance, $mt5, $dxtrade, $result, $reason, $from) = @{$test}{qw/balance mt5 dxtrade result reason from/};
+
+        $siblings->{$client->loginid}->{balance} = $balance;
+        $mt5_loginids                            = $mt5;
+        $dxt_loginids                            = $dxtrade;
+
+        mailbox_clear();
+        $emissions = {};
+        $client->status->clear_disabled;
+        $client->status->_clear_all;
+        $client->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_under_age_client($client, 'qa', $from);
+
+        my $email = mailbox_search(subject => qr/Underage client detection/);
+
+        if ($result eq 'email') {
+            cmp_deeply $emissions, {}, 'No emissions';
+
+            ok $email, 'Expected email sent';
+
+            ok !$client->status->disabled, 'client is not disabled';
+
+            ok index($email->{body}, $_) > -1, 'contains ' . $_ . ' mention' for $mt5_loginids->@*;
+            ok index($email->{body}, $_) > -1, 'contains ' . $_ . ' mention' for $dxtrade->@*;
+            ok index($email->{body}, 'The client tried to authenticate underage documents from ' . $from->loginid) > -1 if $from;
+            is index($email->{body}, 'The client tried to authenticate underage documents from'), -1 unless $from;
+        } else {
+            my $params = {
+                language => uc($client->user->preferred_language // request->language // 'en'),
+            };
+            cmp_deeply $emissions,
+                {
+                underage_account_closed => {
+                    loginid    => $client->loginid,
+                    properties => {
+                        tnc_approval => $brand->tnc_approval_url($params),
+                    }}
+                },
+                'Expected emissions';
+
+            ok $client->status->disabled, 'client has been disabled';
+
+            is $client->status->reason('disabled'), $reason, 'Expected disabled reason';
+
+            ok !$email, 'No email sent';
+        }
+    }
+
+    $emitter_mock->unmock_all;
+    $client_mock->unmock_all;
+    $user_mock->unmock_all;
+};
 
 done_testing();
