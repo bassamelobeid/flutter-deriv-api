@@ -17,6 +17,24 @@ use BOM::Config::Quants qw(minimum_stake_limit);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
+=head2 BUILD
+
+Do necessary parameters check here
+
+=cut
+
+sub BUILD {
+    my $self = shift;
+
+    if ($self->risk_level eq 'no_business' and $self->pricing_new and not $self->for_sale) {
+        BOM::Product::Exception->throw(
+            error_code => 'TradingIsDisabled',
+            error_args => [$self->category_code, $self->underlying->display_name],
+            details    => {field => 'basis'},
+        );
+    }
+}
+
 =head2 quants_config
 
 QuantsConfig object attribute
@@ -407,6 +425,9 @@ sub _build_min_stake {
     my $distance          = abs($self->entry_tick->quote - $self->barrier->as_absolute);
     my $min_stake         = max($min_default_stake, $self->_contracts_limit->{min} * $distance);
 
+    # if min_stake > max_stake happens we lessen the min_stake to max_stake
+    $min_stake = min($min_stake, $self->max_stake);
+
     return financialrounding('price', $self->currency, $min_stake);
 }
 
@@ -419,10 +440,31 @@ get current max stake
 sub _build_max_stake {
     my $self = shift;
 
-    my $distance  = abs($self->entry_tick->quote - $self->barrier->as_absolute);
-    my $max_stake = $self->_contracts_limit->{max} * $distance;
+    my $distance                   = abs($self->entry_tick->quote - $self->barrier->as_absolute);
+    my $max_stake                  = $self->_contracts_limit->{max} * $distance;
+    my $max_stake_per_risk_profile = $self->quants_config->get_max_stake_per_risk_profile($self->risk_level);
 
-    return financialrounding('price', $self->currency, $max_stake);
+    return min(financialrounding('price', $self->currency, $max_stake), $max_stake_per_risk_profile->{$self->currency});
+}
+
+=head2 risk_level
+
+Defines the risk_level per_symbol or per_market
+
+=cut
+
+sub risk_level {
+    my $self = shift;
+
+    my $risk_profile_per_symbol = $self->quants_config->get_risk_profile_per_symbol;
+    my $risk_profile_per_market = $self->quants_config->get_risk_profile_per_market;
+    my $symbol                  = $self->underlying->symbol;
+    my $market                  = $self->market;
+
+    return $risk_profile_per_symbol->{$symbol}       if ($risk_profile_per_symbol and $risk_profile_per_symbol->{$symbol});
+    return $risk_profile_per_market->{$market->name} if ($risk_profile_per_market and $risk_profile_per_market->{$market->name});
+    return $market->{risk_profile};
+
 }
 
 override 'shortcode' => sub {

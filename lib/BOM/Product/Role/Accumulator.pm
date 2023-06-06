@@ -68,10 +68,9 @@ sub BUILD {
 
     if ($self->pricing_new and $self->_user_input_stake > $self->max_stake) {
         if ($self->risk_level eq 'no_business') {
-            my $display_name = $self->underlying->display_name;
             BOM::Product::Exception->throw(
-                error_code => 'TradingAccumulatorIsDisabled',
-                error_args => [$display_name],
+                error_code => 'TradingIsDisabled',
+                error_args => [$self->category_code, $self->underlying->display_name],
                 details    => {field => 'basis'},
             );
         } else {
