@@ -672,4 +672,42 @@ sub get_pending_lock {
     return $redis->get(IDV_LOCK_PENDING . $self->user_id);
 }
 
+=head2 is_underage_blocked
+
+Calls the DB function that determines if a given document has been underage blocked the last year.
+
+It takes a hashref as parameteres:
+
+=over
+
+=item * C<issuing_country> - country of the document
+
+=item * C<number> - number of the document
+
+=item * C<type> - type of the document
+
+=item * C<additional> - (optional) additional document numbers
+
+=back
+
+Returns C<undef> if not underage blocked, a binary user id from the the underage document otherwise.
+
+=cut
+
+sub is_underage_blocked {
+    my (undef, $args) = @_;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    my ($binary_user_id) = $dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                'SELECT idv.is_underage_blocked(?::TEXT , ?::TEXT, ?::TEXT, ?::TEXT)',
+                {Slice => {}},
+                @{$args}{qw/issuing_country number type additional/});
+        });
+
+    return $binary_user_id;
+}
+
 1;

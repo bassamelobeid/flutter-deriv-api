@@ -14,8 +14,10 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User;
 use BOM::User::IdentityVerification;
 use BOM::Config::Redis;
+use BOM::Database::UserDB;
+use Date::Utility;
 
-use JSON::MaybeUTF8 qw( decode_json_utf8 );
+use JSON::MaybeUTF8 qw( decode_json_utf8 encode_json_utf8 );
 
 use constant IDV_REQUEST_PER_USER_PREFIX => 'IDV::REQUEST::PER::USER::';
 use constant IDV_LOCK_PENDING            => 'IDV::LOCK::PENDING::';
@@ -833,6 +835,157 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     ok !BOM::User::IdentityVerification::is_idv_disallowed($client), 'IDV allowed for age verified status when idv status is expired';
 
     $client_mock->unmock_all;
+};
+
+subtest 'is underage blocked' => sub {
+    ok !$idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '12345',
+            type            => 'cpf',
+        }
+        ),
+        'document is not underage blocked';
+
+    my $document = $idv_model_ccr->add_document({
+        issuing_country => 'br',
+        number          => '12345',
+        type            => 'cpf',
+    });
+
+    ok !$idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '12345',
+            type            => 'cpf',
+        }
+        ),
+        'document is not yet underage blocked';
+
+    $idv_model_ccr->update_document_check({
+        document_id => $document->{id},
+        status      => 'verified',
+        messages    => ['UNDERAGE'],
+        provider    => 'zaig'
+    });
+
+    is $idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '12345',
+            type            => 'cpf',
+        }
+        ),
+        $client_cr->binary_user_id,
+        'document is underage blocked';
+
+    ok !$idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '123456',
+            type            => 'cpf',
+            additional      => 'test',
+        }
+        ),
+        'other document is not underage blocked';
+
+    ok !$idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '123456',
+            type            => 'cpf',
+        }
+        ),
+        'other document is not underage blocked';
+
+    $document = $idv_model_ccr->add_document({
+        issuing_country => 'br',
+        number          => '123456',
+        type            => 'cpf',
+        additional      => 'test',
+    });
+
+    ok !$idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '123456',
+            type            => 'cpf',
+        }
+        ),
+        'other document is not underage blocked';
+
+    $idv_model_ccr->update_document_check({
+        document_id => $document->{id},
+        status      => 'verified',
+        messages    => ['UNDERAGE'],
+        provider    => 'zaig'
+    });
+
+    ok !$idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '123456',
+            type            => 'cpf',
+        }
+        ),
+        'other document is not underage blocked';
+
+    is $idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '123456',
+            type            => 'cpf',
+            additional      => 'test'
+        }
+        ),
+        $client_cr->binary_user_id,
+        'other document with additional is underage blocked';
+
+    # client became legal age
+    $idv_model_ccr->update_document_check({
+            document_id => $document->{id},
+            status      => 'verified',
+            messages    => ['UNDERAGE'],
+            provider    => 'zaig',
+            report      => encode_json_utf8({birthdate => Date::Utility->new->minus_time_interval('18y')->date_yyyymmdd})});
+
+    ok !$idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '123456',
+            type            => 'cpf',
+            additional      => 'test'
+        }
+        ),
+        'became legal age';
+
+    # client became underage age
+    $idv_model_ccr->update_document_check({
+            document_id => $document->{id},
+            status      => 'verified',
+            messages    => ['UNDERAGE'],
+            provider    => 'zaig',
+            report      => encode_json_utf8({birthdate => Date::Utility->new->minus_time_interval('18y')->plus_time_interval('1d')->date_yyyymmdd})});
+
+    is $idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '123456',
+            type            => 'cpf',
+            additional      => 'test'
+        }
+        ),
+        $client_cr->binary_user_id,
+        'became underage';
+
+    # client became legal age
+    $idv_model_ccr->update_document_check({
+            document_id => $document->{id},
+            status      => 'verified',
+            messages    => ['UNDERAGE'],
+            provider    => 'zaig',
+            report      => encode_json_utf8({birthdate => Date::Utility->new->minus_time_interval('18y')->minus_time_interval('1d')->date_yyyymmdd})}
+    );
+
+    ok !$idv_model_ccr->is_underage_blocked({
+            issuing_country => 'br',
+            number          => '123456',
+            type            => 'cpf',
+            additional      => 'test'
+        }
+        ),
+        'became legal age';
+
 };
 
 done_testing();
