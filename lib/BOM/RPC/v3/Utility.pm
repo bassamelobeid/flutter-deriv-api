@@ -682,6 +682,7 @@ sub error_map {
         ),
         ExpiredDocument           => localize("The document you used appears to be expired. Please use a valid document."),
         InvalidDocumentAdditional => localize("It looks like the document details you entered are invalid. Please check and try again."),
+        UnderageBlocked           => localize("The document you used appears to be from an underage individual. Please use a valid document."),
     };
 }
 

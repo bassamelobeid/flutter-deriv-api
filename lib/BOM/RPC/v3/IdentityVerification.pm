@@ -65,6 +65,32 @@ rpc identity_verification_document_add => sub {
             document_additional => $additional,
         );
     } catch ($err) {
+
+        # for early underage detection we need to try to disable the account
+
+        if (ref $err eq 'HASH') {
+            my $error_code       = $err->{error_code};
+            my $params           = $err->{params} // {};
+            my $underage_user_id = $params->{underage_user_id};
+
+            # the from client param is informative, not critical if not found
+
+            my $from_user;
+            $from_user = BOM::User->new(id => $underage_user_id) if $underage_user_id;
+
+            my $from_client;
+            $from_client = $from_user->get_default_client(include_disabled => 1) if $from_user;
+
+            if ($error_code eq 'UnderageBlocked') {
+                BOM::Platform::Event::Emitter::emit(
+                    underage_client_detected => {
+                        $from_client ? (from_loginid => $from_client->loginid) : (),
+                        loginid  => $client->loginid,
+                        provider => 'idv',
+                    });
+            }
+        }
+
         return BOM::RPC::v3::Utility::rule_engine_error($err);
     };
 

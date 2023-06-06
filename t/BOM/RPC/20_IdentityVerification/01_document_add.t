@@ -338,6 +338,18 @@ subtest 'MF + CR idv test' => sub {
 };
 
 subtest 'add document with additional field' => sub {
+    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions    = {};
+
+    $mock_emitter->mock(
+        emit => sub {
+            my ($event, $args) = @_;
+
+            $emissions->{$event} = $args;
+
+            return undef;
+        });
+
     my $user = BOM::User->create(
         email    => 'additional.example@binary.com',
         password => 'test_passwd'
@@ -367,8 +379,10 @@ subtest 'add document with additional field' => sub {
         document_number => '12345678',
     };
 
+    $emissions = {};
     $c->call_ok('identity_verification_document_add', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidDocumentAdditional', 'Invalid document number.');
+    cmp_deeply $emissions, {}, 'No emissions were made';
 
     $params->{args} = {
         issuing_country => 'in',
@@ -377,8 +391,10 @@ subtest 'add document with additional field' => sub {
         additional      => '0'
     };
 
+    $emissions = {};
     $c->call_ok('identity_verification_document_add', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidDocumentAdditional', 'Invalid document number.');
+    cmp_deeply $emissions, {}, 'No emissions were made';
 
     $params->{args} = {
         issuing_country     => 'in',
@@ -387,7 +403,16 @@ subtest 'add document with additional field' => sub {
         document_additional => '123456789ABCDEF'
     };
 
+    $emissions = {};
     $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
+
+    cmp_deeply $emissions,
+        {
+        identity_verification_requested => {
+            loginid => $client_cr->loginid,
+        }
+        },
+        'Emission made to the IDV requested handler';
 
     my $document = $idv_model->get_standby_document();
     is $document->{document_number},     $params->{args}->{document_number},     'document number submitted correctly';
@@ -395,6 +420,105 @@ subtest 'add document with additional field' => sub {
     is $document->{issuing_country},     $params->{args}->{issuing_country},     'document issuing country submitted correctly';
     is $document->{document_additional}, $params->{args}->{document_additional}, 'document additional submitted correctly';
 
+    $mock_emitter->unmock_all;
+};
+
+subtest 'underage blocked' => sub {
+    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions    = {};
+
+    $mock_emitter->mock(
+        emit => sub {
+            my ($event, $args) = @_;
+
+            $emissions->{$event} = $args;
+
+            return undef;
+        });
+
+    my $is_underage_blocked;
+    my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
+    $mock_idv_model->mock(
+        'is_underage_blocked',
+        sub {
+            return $is_underage_blocked;
+        });
+    my $user = BOM::User->create(
+        email    => 'underageblocked@binary.com',
+        password => 'test_passwd'
+    );
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id
+    });
+
+    $user->add_client($client_cr);
+
+    my $token_model = BOM::Platform::Token::API->new;
+    my $token_cr    = $token_model->create_token($client_cr->loginid, 'test token');
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client_cr->binary_user_id);
+
+    my $params = {
+        token    => $token_cr,
+        language => 'EN',
+    };
+
+    $params->{args} = {
+        issuing_country     => 'in',
+        document_type       => 'passport',
+        document_number     => '12345670',
+        document_additional => '123456789ABCDEF'
+    };
+
+    $emissions           = {};
+    $is_underage_blocked = 1;
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('UnderageBlocked', 'The document has been underage blocked.');
+
+    cmp_deeply $emissions,
+        {
+        underage_client_detected => {
+            from_loginid => BOM::User->new(id => 1)->get_default_client->loginid,
+            loginid      => $client_cr->loginid,
+            provider     => 'idv',
+        }
+        },
+        'Expected emissions to the underage detector event';
+
+    $emissions           = {};
+    $is_underage_blocked = -1;
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('UnderageBlocked', 'The document has been underage blocked.');
+
+    cmp_deeply $emissions,
+        {
+        underage_client_detected => {
+            loginid  => $client_cr->loginid,
+            provider => 'idv',
+        }
+        },
+        'Expected emissions to the underage detector event';
+
+    $emissions           = {};
+    $is_underage_blocked = 0;
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply $emissions,
+        {
+        identity_verification_requested => {
+            loginid => $client_cr->loginid,
+        }
+        },
+        'Emission made to the IDV requested handler';
+
+    my $document = $idv_model->get_standby_document();
+    is $document->{document_number},     $params->{args}->{document_number},     'document number submitted correctly';
+    is $document->{document_type},       $params->{args}->{document_type},       'document type submitted correctly';
+    is $document->{issuing_country},     $params->{args}->{issuing_country},     'document issuing country submitted correctly';
+    is $document->{document_additional}, $params->{args}->{document_additional}, 'document additional submitted correctly';
+
+    $mock_emitter->unmock_all;
 };
 
 done_testing();
