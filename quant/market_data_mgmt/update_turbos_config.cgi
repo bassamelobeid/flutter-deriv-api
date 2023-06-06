@@ -31,6 +31,127 @@ my $qc = BOM::Config::QuantsConfig->new(
     chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader(),
 );
 
+if ($r->param('save_turbos_risk_profile')) {
+    my $output;
+    if ($disabled_write) {
+        $output = {error => "permission denied: no write access"};
+        print encode_json_utf8($output);
+        return;
+    }
+
+    try {
+        my $currency   = $r->param('currency');
+        my $risk_level = $r->param('risk_level');
+        my $amount     = $r->param('amount');
+
+        die 'Amount must be a number' unless looks_like_number($amount);
+        die 'Amount can not be negative' if $amount < 0;
+
+        my $existing_risk_profile = $qc->get_max_stake_per_risk_profile($risk_level);
+
+        if ($currency eq 'All') {
+            foreach my $ccy (keys %{$existing_risk_profile}) {
+                $existing_risk_profile->{$ccy} = $amount;
+            }
+        } else {
+            $existing_risk_profile->{$currency} = $amount;
+        }
+
+        my $redis_key = join('::', 'turbos', 'max_stake_per_risk_profile', $risk_level);
+        $qc->save_config($redis_key, $existing_risk_profile);
+
+        send_trading_ops_email("Turbos risk management tool: updated risk profile", $existing_risk_profile);
+        BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeTurbosConfig", $existing_risk_profile);
+
+        $output = {success => 1};
+    } catch ($e) {
+        my ($message) = $e =~ /(.*)\sat\s\//;
+        $output = {error => "$message"};
+    }
+
+    print encode_json_utf8($output);
+}
+
+if ($r->param('save_turbos_market_or_underlying_risk_profile')) {
+    my $market_risk_profiles = $qc->get_risk_profile_per_market // {};
+    my $symbol_risk_profiles = $qc->get_risk_profile_per_symbol // {};
+
+    my $output;
+    try {
+        my $limit_defs   = BOM::Config::quants()->{risk_profile};
+        my $risk_profile = $r->param('risk_profile');
+        die "invalid risk_profile" unless $risk_profile and $limit_defs->{$risk_profile};
+
+        my $market = trim($r->param('market'));
+        my $symbol = trim($r->param('symbol'));
+
+        my @existing_markets = Finance::Underlying::Market::Registry->instance->all_market_names;
+        die "invalid market" if $market and none { $market eq $_ } @existing_markets;
+
+        my @existing_underlyings = Finance::Underlying->symbols;
+        die "invalid underlying" if $symbol and none { $symbol eq $_ } @existing_underlyings;
+
+        die "market and symbol can not be both set"   if $market  && $symbol;
+        die "market and symbol can not be both empty" if !$market && !$symbol;
+
+        die "comma seperated markets are not allowed" if $market =~ /,/;
+        die "comma seperated symbols are not allowed" if $symbol =~ /,/;
+
+        if ($market) {
+            $market_risk_profiles->{$market} = $risk_profile;
+            my $redis_key = join('::', 'turbos', 'risk_profile_per_market');
+            $qc->save_config($redis_key, $market_risk_profiles);
+        } elsif ($symbol) {
+            $symbol_risk_profiles->{$symbol} = $risk_profile;
+            my $redis_key = join('::', 'turbos', 'risk_profile_per_symbol');
+            $qc->save_config($redis_key, $symbol_risk_profiles);
+        }
+
+        my $res = $market ? $market_risk_profiles : $symbol_risk_profiles;
+        send_trading_ops_email("Turbos risk management tool: updated risk profiles", $res);
+        BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeRiskProfiles", $res);
+
+        $output = {success => 1};
+    } catch ($e) {
+        $output = {error => "$e"};
+    }
+    print encode_json_utf8($output);
+
+}
+
+if ($r->param('delete_turbos_market_or_underlying_risk_profile')) {
+    my $market_risk_profiles = $qc->get_risk_profile_per_market // {};
+    my $symbol_risk_profiles = $qc->get_risk_profile_per_symbol // {};
+
+    my $output;
+    try {
+        my $market = $r->param('market');
+        my $symbol = $r->param('symbol');
+
+        if ($market) {
+            delete $market_risk_profiles->{$market};
+            my $redis_key = join('::', 'turbos', 'risk_profile_per_market');
+            $qc->save_config($redis_key, $market_risk_profiles);
+        } elsif ($symbol) {
+            delete $symbol_risk_profiles->{$symbol};
+            my $redis_key = join('::', 'turbos', 'risk_profile_per_symbol');
+            $qc->save_config($redis_key, $market_risk_profiles);
+        } else {
+            die "market and symbol can not be both empty";
+        }
+
+        my $res = $market ? $market_risk_profiles : $symbol_risk_profiles;
+        send_trading_ops_email("Turbos risk management tool: deleted custom risk profiles", $res);
+        BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeRiskProfiles", $res);
+
+        $output = {success => 1};
+    } catch ($e) {
+        $output = {error => "$e"};
+    }
+
+    print encode_json_utf8($output);
+}
+
 if ($r->param('save_turbos_affiliate_commission')) {
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -91,9 +212,9 @@ if ($r->param('save_turbos_per_symbol_config')) {
         my $ticks_commission_down_intraday = $r->param('ticks_commission_down_intraday');
         my $ticks_commission_down_daily    = $r->param('ticks_commission_down_daily');
         my $max_multiplier                 = $r->param('max_multiplier');
-        my $max_multiplier_stake           = $r->param('max_multiplier_stake');
+        my $max_multiplier_stake           = decode_json_utf8($r->param('max_multiplier_stake'));
         my $min_multiplier                 = $r->param('min_multiplier');
-        my $min_multiplier_stake           = $r->param('min_multiplier_stake');
+        my $min_multiplier_stake           = decode_json_utf8($r->param('min_multiplier_stake'));
         my $max_open_position              = $r->param('max_open_position');
         my $landing_company                = 'common';
 
@@ -110,6 +231,12 @@ if ($r->param('save_turbos_per_symbol_config')) {
         die "min multiplier must be a number"                 unless looks_like_number($min_multiplier);
         die "max open position must be a number"              unless looks_like_number($max_open_position);
 
+        for my $currency (keys %$min_multiplier_stake) {
+            my $min_multiplier_stake_for_currency = $min_multiplier_stake->{$currency};
+            my $max_multiplier_stake_for_currency = $max_multiplier_stake->{$currency};
+            die "min_multiplier * min_multiplier_stake($currency) can't be greater than max_multiplier * max_multiplier_stake($currency)"
+                if $min_multiplier * $min_multiplier_stake_for_currency > $max_multiplier * $max_multiplier_stake_for_currency;
+        }
         my $per_symbol_config = {
             num_of_barriers                => $num_of_barriers,
             min_distance_from_spot         => $min_distance_from_spot,
@@ -120,9 +247,9 @@ if ($r->param('save_turbos_per_symbol_config')) {
             ticks_commission_down_intraday => $ticks_commission_down_intraday,
             ticks_commission_down_daily    => $ticks_commission_down_daily,
             max_multiplier                 => $max_multiplier,
-            max_multiplier_stake           => decode_json_utf8($max_multiplier_stake),
+            max_multiplier_stake           => $max_multiplier_stake,
             min_multiplier                 => $min_multiplier,
-            min_multiplier_stake           => decode_json_utf8($min_multiplier_stake),
+            min_multiplier_stake           => $min_multiplier_stake,
             max_open_position              => $max_open_position,
         };
 

@@ -20,39 +20,17 @@ PrintContentType();
 BrokerPresentation('Accumulator Risk Management Tool');
 
 my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
-my $qc             = BOM::Config::QuantsConfig->new(
-    contract_category => 'accumulator',
-    chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader(),
-);
-my $limit_defs = BOM::Config::quants()->{risk_profile};
-my @currencies = sort keys %{$limit_defs->{no_business}{accumulator}};
-my @stake_rows;
-
-foreach my $risk_level (keys %$limit_defs) {
-    my $s = $qc->get_max_stake_per_risk_profile($risk_level);
-    my @stake;
-    foreach my $ccy (sort keys %{$s}) {
-        push @stake, $s->{$ccy};
-    }
-
-    push @stake_rows, [$risk_level, @stake];
-}
 
 Bar("Accumulator Risk Profile Definitions");
-BOM::Backoffice::Request::template()->process(
-    'backoffice/accumulator_profile_definitions.html.tt',
-    {
-        currencies  => \@currencies,
-        stake_rows  => \@stake_rows,
-        definitions => $limit_defs,
-    }) || die BOM::Backoffice::Request::template()->error;
+BOM::Backoffice::Request::template()->process('backoffice/accumulator_profile_definitions.html.tt', {%{_get_risk_profile_definition()},})
+    || die BOM::Backoffice::Request::template()->error;
 
 Bar("Market or Underlying symbol risk profile");
 BOM::Backoffice::Request::template()->process(
     'backoffice/accumulator_market_and_underlying_risk_profile.html.tt',
     {
         accumulator_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_accumulator_config.cgi'),
-        risk_profiles          => [sort keys %{BOM::Config::quants()->{risk_profile}}],
+        risk_profiles          => [sort keys %{_get_default_risk_profile()}],
         %{_get_existing_market_and_symbol_risk_profile()},
     }) || die BOM::Backoffice::Request::template()->error;
 
@@ -91,6 +69,37 @@ BOM::Backoffice::Request::template()->process(
         existing_config        => _get_existing_user_specific_limits(),
         disabled               => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
+
+sub _get_risk_profile_definition {
+    my $qc = BOM::Config::QuantsConfig->new(
+        contract_category => 'accumulator',
+        chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader(),
+    );
+
+    my $limit_defs = _get_default_risk_profile();
+    my @currencies = sort keys %{$limit_defs->{no_business}};
+    my @stake_rows;
+
+    foreach my $risk_level (keys %$limit_defs) {
+        my $max_stake = $qc->get_max_stake_per_risk_profile($risk_level);
+        my @stake;
+        foreach my $currency (sort keys %{$max_stake}) {
+            push @stake, $max_stake->{$currency};
+        }
+
+        push @stake_rows, [$risk_level, @stake];
+    }
+
+    return {
+        currencies  => \@currencies,
+        stake_rows  => \@stake_rows,
+        definitions => $limit_defs,
+    };
+}
+
+sub _get_default_risk_profile {
+    return LoadFile('/home/git/regentmarkets/bom-config/share/default_risk_profile_config.yml');
+}
 
 sub _get_existing_market_and_symbol_risk_profile {
     my $qc = BOM::Config::QuantsConfig->new(
@@ -171,7 +180,7 @@ sub _get_existing_accumulator_per_symbol_config {
 
     my $existing = [];
     #for now there's now specific config for different landing companies, so common is used.
-    my @symbols = sort keys %{$qc->get_config_default('per_symbol')->{'common'}};
+    my @symbols = sort keys %{$qc->get_default_config('per_symbol')->{'common'}};
     foreach my $symbol (@symbols) {
         my %existing_config = %{$qc->get_per_symbol_config({underlying_symbol => $symbol, need_latest_cache => 1})};
         $existing_config{symbol}         = $symbol;
@@ -195,7 +204,7 @@ sub _get_existing_accumulator_per_symbol_limits {
     my $existing = [];
 
     #for now there's now specific config for different landing companies, so common is used.
-    my @symbols = sort keys %{$qc->get_config_default('per_symbol_limits')->{'common'}};
+    my @symbols = sort keys %{$qc->get_default_config('per_symbol_limits')->{'common'}};
     foreach my $symbol (@symbols) {
         my %existing_config = %{$qc->get_per_symbol_limits({underlying_symbol => $symbol})};
         $existing_config{symbol}                     = $symbol;
