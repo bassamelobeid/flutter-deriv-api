@@ -50,8 +50,6 @@
     <input type="checkbox" id="show_one_authorised" name="show_one_authorised" [% IF show_one_authorised %] checked [% END %]>
     <label for="show_one_authorised"> Show One Authorised pending payouts </label>
     <br><br>
-    <button type="submit" class="btn btn--primary" name="view_action" value="auto_reject_insufficient">Auto-reject withdrawals with insufficient balance</button>
-    <br><br>
     Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>
 <!-- Tools -->
     <br><br>

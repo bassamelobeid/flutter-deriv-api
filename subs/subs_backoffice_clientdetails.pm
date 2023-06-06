@@ -53,6 +53,7 @@ use BOM::User::SocialResponsibility;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Doughflow;
 use BOM::User::LexisNexis;
+use BOM::Config::Compliance;
 
 my $compliance_config = BOM::Config::Compliance->new;
 
