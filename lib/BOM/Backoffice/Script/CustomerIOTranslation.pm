@@ -21,12 +21,6 @@ use constant {
     REQ_PER_SEC => 10,
 };
 
-# list of events that should be transactional compatible
-my @TRANSACTIONAL_EVENTS = qw(
-    pa_withdraw_confirm
-    request_change_email
-);
-
 my %rate_limit;
 
 =head2 new
@@ -77,7 +71,7 @@ sub update_campaigns_and_snippets {
         for my $id (keys %strings_by_id) {
             my $string   = $strings_by_id{$id};
             my $new_snip = $self->generate_snippet($string, $campaign->{name});
-            $new_snip = $self->_integrate_transactional($new_snip, $campaign->{event});
+            $new_snip = $self->_integrate_transactional($new_snip);
 
             next if exists $current_snips->{$id} and $current_snips->{$id} eq $new_snip;
 
@@ -209,7 +203,6 @@ sub get_campaigns {
             type       => $campaign->{type},
             template   => $template,
             live       => $live,
-            event      => $campaign->{event_name},
             updateable => (
                        $filter_campaign
                     or $updateable ? 1 : 0
@@ -370,8 +363,8 @@ sub process_camapign {
     }
 
     ## integrate transactioanl to add trigger liquid variable
-    $result->{subject} = $self->_integrate_transactional($subject,        $campaign->{event});
-    $result->{body}    = $self->_integrate_transactional($result->{body}, $campaign->{event});
+    $result->{subject} = $self->_integrate_transactional($subject);
+    $result->{body}    = $self->_integrate_transactional($result->{body});
 
     return $result;
 }
@@ -625,18 +618,6 @@ sub generate_snippet {
     return $res;
 }
 
-=head2 _is_transactional
-
-check if the passed event name in @TRANSACTIONAL_EVENTS list.
-
-=cut
-
-sub _is_transactional {
-    my $event = shift;
-    $event //= '';
-    return any { $event eq $_ } @TRANSACTIONAL_EVENTS;
-}
-
 =head2 _integrate_transactional
 
 replace all liquid variables in passed $text with transactional compatible 
@@ -644,11 +625,10 @@ replace all liquid variables in passed $text with transactional compatible
 =cut
 
 sub _integrate_transactional {
-    my ($self, $text, $event) = @_;
+    my ($self, $text) = @_;
 
     return $text
-        unless _is_transactional($event)
-        && BOM::Config::Runtime->instance->app_config->customerio->transactional_translations;
+        unless BOM::Config::Runtime->instance->app_config->customerio->transactional_translations;
     return $text unless $text;
 
     $text =~ s/(\{[\{\%].*?[\}\%]\})/$self->_process_liquid_placehoders($1)/ge;
