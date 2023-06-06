@@ -886,10 +886,24 @@ subtest 'rule idv.check_document_acceptability' => sub {
             claimed_docs => [{status => 'verified'},],
             error        => 'ClaimedDocument',
         },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            claimed_docs     => [{status => 'verified'},],
+            underage_blocked => 1,
+            error            => 'UnderageBlocked',
+            error_params     => {
+                underage_user_id => 1,
+            }
+        },
     ];
 
     for my $case ($test_cases->@*) {
         $mock_idv_model->mock('get_claimed_documents' => $case->{claimed_docs});
+        $mock_idv_model->mock('is_underage_blocked'   => $case->{underage_blocked});
 
         my %args = (
             loginid         => $client_cr->loginid,
@@ -898,10 +912,12 @@ subtest 'rule idv.check_document_acceptability' => sub {
             document_number => $case->{input}->{number});
 
         if (my $error = $case->{error}) {
+            my $params = $case->{error_params};
             is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
                 +{
                 error_code => $error,
-                rule       => $rule_name
+                rule       => $rule_name,
+                $params ? (params => $params) : (),
                 },
                 "Violated rule: $error";
         } else {

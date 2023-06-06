@@ -200,6 +200,14 @@ rule 'idv.check_document_acceptability' => {
 
         my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
+        my $underage_user_id = $idv_model->is_underage_blocked({
+            issuing_country => $issuing_country,
+            type            => $document_type,
+            number          => $document_number,
+        });
+
+        $self->fail('UnderageBlocked', params => {underage_user_id => $underage_user_id}) if $underage_user_id;
+
         my $claimed_documents = $idv_model->get_claimed_documents({
                 issuing_country => $issuing_country,
                 type            => $document_type,
