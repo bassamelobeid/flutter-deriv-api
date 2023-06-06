@@ -275,11 +275,20 @@ sub user_activity {
     my $acceptable_percentage         = $self->{acceptable_percentage}    // ACCEPTABLE_PERCENTAGE;
     my $total_withdrawal_amount       = $args{total_withdrawal_amount};
     my $total_withdrawal_amount_today = $args{total_withdrawal_amount_today} // 0;
+    my $withdrawal_amount_in_crypto   = $args{withdrawal_amount_in_crypto}   // 0;
     my $currency_code                 = $args{currency_code};
     my $binary_user_id                = $args{binary_user_id};
     my $client_loginid                = $args{client_loginid};
     my $response                      = {};
     $response->{total_withdrawal_amount_today_in_usd} = $total_withdrawal_amount_today;
+
+    my $client_balance = $self->get_client_balance($client_loginid);
+    if ($client_balance < $withdrawal_amount_in_crypto) {
+        $log->debugf('Client balance %s is lower than the withdrawal amount %s', $client_balance, $withdrawal_amount_in_crypto);
+        $response->{tag}          = 'INSUFFICIENT_BALANCE';
+        $response->{auto_approve} = 0;
+        return $response;
+    }
 
     if ($self->is_client_auto_approval_disabled($client_loginid)) {
         $log->debugf('Auto approval is not enabled for client %s', $client_loginid);

@@ -33,16 +33,22 @@ use constant {
     REJECTION_REASONS => {
         highest_deposit_method_is_not_crypto => {
             reason => 'highest deposit method is not crypto',
-            remark => 'Crypto net deposits are lower compared to other deposit methods. Initiate withdrawal request via most deposited method'
-        }
+            remark => 'Crypto net deposits are lower compared to other deposit methods. Initiate withdrawal request via most deposited method',
+        },
+        insufficient_balance => {
+            reason => 'client does not have sufficient balance',
+            remark => 'Insufficient balance',
+        },
     },
     TAGS => {
         no_non_crypto_deposits                  => 'NO_NON_CRYPTO_DEPOSITS_RECENTLY',
         highest_deposit_not_crypto              => 'HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO',
         high_crypto_deposit                     => 'HIGH_CRYPTOCURRENCY_DEPOSIT',
         auto_reject_disable_for_client          => 'AUTO_REJECT_IS_DISABLED_FOR_CLIENT',
-        crypto_non_crypto_net_deposits_negative => 'CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE'
-    }};
+        crypto_non_crypto_net_deposits_negative => 'CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE',
+        insufficient_balance                    => 'INSUFFICIENT_BALANCE',
+    },
+};
 
 =head2 new
 
@@ -116,7 +122,7 @@ sub run {
 
 Perform and collects details related to user activity on platform
 
-Takes the following arguments as named parameters
+Takes the following arguments as named parameters:
 
 =over 4
 
@@ -128,6 +134,8 @@ Takes the following arguments as named parameters
 
 =item * C<total_withdrawal_amount_today> - total withdrawal amount today
 
+=item * C<withdrawal_amount_in_crypto> - withdrawal amount of this transaction in crypto currency
+
 =item * C<currency_code> - Currency code
 
 =back
@@ -137,11 +145,25 @@ Takes the following arguments as named parameters
 sub user_activity {
     my ($self, %args) = @_;
     my $total_withdrawal_amount_today = $args{total_withdrawal_amount_today} // 0;
+    my $withdrawal_amount_in_crypto   = $args{withdrawal_amount_in_crypto}   // 0;
     my $currency_code                 = $args{currency_code};
     my $binary_user_id                = $args{binary_user_id};
     my $client_loginid                = $args{client_loginid};
     my $response                      = {};
     $response->{total_withdrawal_amount_today_in_usd} = $total_withdrawal_amount_today;
+
+    my $client_balance = $self->get_client_balance($client_loginid);
+    if ($client_balance < $withdrawal_amount_in_crypto) {
+        $log->debugf('Client balance %s is lower than the withdrawal amount %s', $client_balance, $withdrawal_amount_in_crypto);
+        $response->{tag}           = TAGS->{insufficient_balance};
+        $response->{reject_reason} = 'insufficient_balance';
+        $response->{auto_reject}   = 1;
+        $response->{reject_remark} = $self->generate_reject_remarks(
+            reject_reason => $response->{reject_reason},
+            reject_remark => $response->{meta_data},
+        );
+        return $response;
+    }
 
     if ($self->is_client_auto_reject_disabled($client_loginid)) {
         $log->debugf('Auto reject is not enabled for client %s', $client_loginid);
@@ -253,7 +275,8 @@ sub auto_update_withdrawal {
 
     if ($user_details->{auto_reject}) {
         $log->debugf('Rejecting withdrawal. Details - currency: %s, paymentID: %s.', $withdrawal_details->{currency_code}, $withdrawal_details->{id});
-        my $reject_code = $user_details->{reject_reason} . '--' . $user_details->{suggested_withdraw_method};
+        my $reject_code = $user_details->{reject_reason};
+        $reject_code .= '--' . $user_details->{suggested_withdraw_method} if $user_details->{suggested_withdraw_method};
         my ($result) = $self->db_reject_withdrawal(
             id            => $withdrawal_details->{id},
             reject_remark => $user_details->{reject_remark},
@@ -406,7 +429,10 @@ sub generate_reject_remarks () {
 
     if ($args{reject_reason} eq 'highest_deposit_method_is_not_crypto') {
         $rejection_reason =
-            sprintf("AutoRejected - %s, request payout via %s", REJECTION_REASONS->{$args{reject_reason}}->{reason}, $args{reject_remark});
+            sprintf("%s - %s, request payout via %s", $rejection_reason, REJECTION_REASONS->{$args{reject_reason}}->{reason}, $args{reject_remark});
+    } elsif ($args{reject_reason} eq 'insufficient_balance') {
+        $rejection_reason =
+            sprintf("%s - %s", $rejection_reason, REJECTION_REASONS->{$args{reject_reason}}->{reason});
     }
 
     return $rejection_reason;

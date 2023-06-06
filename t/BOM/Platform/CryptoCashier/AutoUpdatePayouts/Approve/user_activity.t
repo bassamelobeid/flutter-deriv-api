@@ -8,6 +8,9 @@ use Test::MockModule;
 
 use BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve;
 
+my $mock_autoupdate = Test::MockModule->new('BOM::Platform::CryptoCashier::AutoUpdatePayouts');
+$mock_autoupdate->mock(get_client_balance => sub { 9999 });
+
 my $mock             = Test::MockModule->new('BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve');
 my $auto_approve_obj = BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->new(broker_code => 'CR');
 
@@ -495,7 +498,60 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
             },
             "returns tag: ACCEPTABLE_NET_DEPOSIT"
         );
+
+        $mock->unmock_all();
+    };
+
+    $auto_approve_obj = BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->new(
+        broker_code => 'CR',
+    );
+
+    subtest 'INSUFFICIENT_BALANCE' => sub {
+        $mock_autoupdate->mock(get_client_balance => sub { 0.99 });
+        $mock->mock(
+            user_payment_details => sub {
+                return {
+                    count                             => 2,
+                    currency_wise_crypto_net_deposits => {
+                        BTC => 1,
+                    },
+                    payments => [{
+                            total_deposit_in_usd    => 15.00,
+                            total_withdrawal_in_usd => 0.00,
+                            net_deposit             => 15.00,
+                            currency_code           => 'USD',
+                            is_reversible           => 1,
+                            p_method                => 'Skrill',
+                            payment_time            => '2020-10-20 21:36:31',
+                            is_stable_method        => 1
+                        },
+                    ],
+                    has_stable_method_deposits => 1,
+                    method_wise_net_deposits   => {
+                        Skrill => -15,
+                    },
+                };
+            },
+        );
+
+        is_deeply(
+            $auto_approve_obj->user_activity(
+                total_withdrawal_amount     => 2,
+                currency_code               => 'BTC',
+                withdrawal_amount_in_crypto => 1,
+            ),
+            {
+                auto_approve                         => 0,
+                tag                                  => 'INSUFFICIENT_BALANCE',
+                total_withdrawal_amount_today_in_usd => 0,
+            },
+            'returns tag: INSUFFICIENT_BALANCE and does not approve'
+        );
+
+        $mock->unmock_all();
     };
 };
+
+$mock_autoupdate->unmock_all();
 
 done_testing;

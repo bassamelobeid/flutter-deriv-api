@@ -9,6 +9,9 @@ use Future::AsyncAwait;
 
 use BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject;
 
+my $mock_autoupdate = Test::MockModule->new('BOM::Platform::CryptoCashier::AutoUpdatePayouts');
+$mock_autoupdate->mock(get_client_balance => sub { 9999 });
+
 my $mock            = Test::MockModule->new('BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject');
 my $auto_reject_obj = BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->new(broker_code => 'CR');
 
@@ -412,6 +415,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
 
     };
     subtest 'CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE' => sub {
+        $mock_autoupdate->mock(get_client_balance => sub { 0.99 });
         $mock->mock(
             user_payment_details => sub {
                 return {
@@ -458,6 +462,59 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
         $mock->unmock_all();
     };
 
+    subtest 'INSUFFICIENT_BALANCE' => sub {
+        $mock->mock(
+            user_payment_details => sub {
+                return {
+                    count                             => 2,
+                    currency_wise_crypto_net_deposits => {
+                        BTC => 1,
+                    },
+                    payments => [{
+                            total_deposit_in_usd    => 15.00,
+                            total_withdrawal_in_usd => 0.00,
+                            net_deposit             => 15.00,
+                            currency_code           => "USD",
+                            is_reversible           => 1,
+                            p_method                => 'Skrill',
+                            payment_time            => "2020-10-20 21:36:31",
+                            is_stable_method        => 1
+                        },
+                    ],
+                    has_stable_method_deposits => 1,
+                    method_wise_net_deposits   => {
+                        Skrill => -15,
+                    },
+                };
+            },
+            is_client_auto_reject_disabled => sub {
+                return 0;
+            },
+            get_client_balance => sub { 0.99 },
+        );
+
+        is_deeply(
+            $auto_reject_obj->user_activity(
+                binary_user_id                => 1,
+                client_loginid                => 'CR90000000',
+                withdrawal_amount_in_crypto   => 1,
+                total_withdrawal_amount       => 1,
+                total_withdrawal_amount_today => 1,
+                currency_code                 => 'BTC'
+            ),
+            {
+                auto_reject                          => 1,
+                tag                                  => 'INSUFFICIENT_BALANCE',
+                reject_reason                        => 'insufficient_balance',
+                reject_remark                        => 'AutoRejected - client does not have sufficient balance',
+                total_withdrawal_amount_today_in_usd => 1,
+            },
+            "returns tag: INSUFFICIENT_BALANCE when client's balance is lower than the withdrawal amount"
+        );
+        $mock->unmock_all();
+    };
 };
+
+$mock_autoupdate->unmock_all();
 
 done_testing;

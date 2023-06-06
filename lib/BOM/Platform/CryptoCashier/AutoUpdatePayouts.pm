@@ -26,6 +26,7 @@ use Syntax::Keyword::Try;
 
 use BOM::Database::ClientDB;
 use BOM::Platform::CryptoCashier::InternalAPI;
+use BOM::User::Client;
 
 use constant RESTRICTED_CLIENT_STATUS => {
     cashier_locked           => 1,
@@ -136,7 +137,9 @@ sub process_locked_withdrawals {
             client_loginid                => $client_loginid,
             total_withdrawal_amount       => $withdrawal_record->{amount_in_usd},
             total_withdrawal_amount_today => $total_withdrawal_amount_today,
-            currency_code                 => $withdrawal_record->{currency_code});
+            currency_code                 => $withdrawal_record->{currency_code},
+            withdrawal_amount_in_crypto   => $withdrawal_record->{amount},          # amount in crypto currency
+        );
 
         $log->debugf('User activity summary %s', $user_activity);
 
@@ -736,6 +739,25 @@ sub map_clean_method_name {
 
     my $lc_method = lc($method);
     return STABLE_PAYMENT_METHODS->{$lc_method} ? STABLE_PAYMENT_METHODS->{$lc_method} : $lc_method;
+}
+
+=head2 get_client_balance
+
+Returns the client's balance.
+
+=over 4
+
+=item * C<$client_loginid> - Client's loginid
+
+=back
+
+=cut
+
+sub get_client_balance {
+    my ($self, $client_loginid) = @_;
+
+    my $client = BOM::User::Client->new({loginid => $client_loginid});
+    return $client->default_account->balance;
 }
 
 1;
