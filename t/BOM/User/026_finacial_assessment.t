@@ -4,20 +4,26 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::Fatal qw(exception lives_ok);
+use Test::MockModule;
 use Future;
 use List::Util      qw(first);
-use JSON::MaybeUTF8 qw(encode_json_utf8);
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::User::SocialResponsibility;
-use BOM::User::FinancialAssessment qw(is_section_complete);
+use BOM::User::FinancialAssessment qw(is_section_complete build_financial_assessment update_financial_assessment should_warn appropriateness_tests);
 
 my $email_cr = 'test-cr-fa' . '@binary.com';
 my $email_mf = 'test-mf-fa' . '@binary.com';
 
 my $user = BOM::User->create(
     email    => $email_cr,
+    password => 'hello'
+);
+
+my $user_mf = BOM::User->create(
+    email    => $email_mf,
     password => 'hello'
 );
 
@@ -34,6 +40,11 @@ my $client_mf_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my $client_mf_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
+
+$user->add_client($client_cr_1);
+
+$user_mf->add_client($client_mf_1);
+$user_mf->add_client($client_mf_2);
 
 subtest 'CR is_financial_assessment_complete' => sub {
 
@@ -225,6 +236,110 @@ subtest 'is_section_complete' => sub {
     $fa->{cfd_trading_frequency}  = '40 transactions or more in the past 12 months';
     $is_section_complete          = is_section_complete($fa, 'trading_experience', 'maltainvest');
     is $is_section_complete, 1, 'old TE present and cfd score was positive';
+};
+
+subtest 'update_financial_assessment' => sub {
+    my $financial_information = {
+        "employment_industry" => "Finance",
+        "education_level"     => "Secondary",
+        "income_source"       => "Self-Employed",
+        "net_income"          => '$25,000 - $50,000',
+        "estimated_worth"     => '$100,000 - $250,000',
+        "occupation"          => 'Senior Manager',
+        "employment_status"   => "Self-Employed",
+        "source_of_wealth"    => "Company Ownership",
+        "account_turnover"    => 'Less than $25,000'
+    };
+    my $updated_fa;
+
+    # CR user
+    update_financial_assessment($user, $financial_information);
+    $updated_fa = decode_json_utf8($client_cr_1->get_financial_assessment);
+    is $updated_fa->{'occupation'}, 'Senior Manager', 'Financial assessment was unpdated';
+
+    # MF user
+    my $mocked_maltainvest_fa = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+    $mocked_maltainvest_fa->{'occupation'} = 'Senior Manager';
+    update_financial_assessment($user_mf, $mocked_maltainvest_fa);
+    $updated_fa = decode_json_utf8($client_mf_1->get_financial_assessment);
+    is $updated_fa->{'occupation'}, 'Senior Manager', 'Financial assessment was unpdated';
+};
+
+subtest 'build_financial_assessment' => sub {
+
+    my $financial_information = {
+        "employment_industry" => "Finance",                # +15
+        "education_level"     => "Secondary",              # +1
+        "income_source"       => "Self-Employed",          # +0
+        "net_income"          => '$25,000 - $50,000',      # +1
+        "estimated_worth"     => '$100,000 - $250,000',    # +1
+        "occupation"          => 'Managers',               # +0
+        "employment_status"   => "Self-Employed",          # +0
+        "source_of_wealth"    => "Company Ownership",      # +0
+        "account_turnover"    => 'Less than $25,000'
+    };
+    my $financial_assessment;
+
+    $financial_assessment = build_financial_assessment();
+    is $financial_assessment->{scores}->{total_score}, 0, 'Financial information not provided';
+
+    $financial_assessment = build_financial_assessment($financial_information);
+    is $financial_assessment->{scores}->{total_score}, 18, 'Only financial information is provided';
+
+    my $mocked_te = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()->{trading_experience_regulated};
+    $financial_assessment = build_financial_assessment($mocked_te);
+    is $financial_assessment->{scores}->{total_score}, 10, 'Only trading experience is provided';
+
+    my $mocked_maltainvest_fa = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+    $financial_assessment = build_financial_assessment($mocked_maltainvest_fa);
+    is $financial_assessment->{scores}->{total_score}, 28, 'Financial information and trading experience are provided';
+
+};
+
+subtest 'should_warn' => sub {
+    my $mocked_maltainvest_fa = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+
+    my $should_warn = should_warn($mocked_maltainvest_fa);
+    ok !$should_warn, 'Trading score is greater or equal to 8';
+
+    my $mocked_maltainvest_fi = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()->{financial_information};
+    $should_warn = should_warn($mocked_maltainvest_fi);
+    ok $should_warn, 'Trading score is less than 8 and CFD score is less than 4';
+
+};
+
+subtest 'appropriateness_tests' => sub {
+    my $mocked_maltainvest_fa = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+    my $appropriateness_tests;
+    $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
+    is $appropriateness_tests->{result}, 1, "Passed appropriateness first questions";
+
+    $mocked_maltainvest_fa->{accept_risk} = 1;
+    $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
+    is $appropriateness_tests->{result}, 1, "Accepted risk";
+
+    delete $mocked_maltainvest_fa->{risk_tolerance};
+    $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
+    is $appropriateness_tests->{result}, 0, "Failed appropriateness first questions";
+
+    my $expected_result = $appropriateness_tests;
+    $mocked_maltainvest_fa->{risk_tolerance} = "Yes";
+    $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
+    cmp_deeply $appropriateness_tests, $expected_result, "still in cooldown period";
+
+    my $mocked_redis_db = Test::MockModule->new('RedisDB');
+
+    # To unlock account after cooldown period (1day)
+    $mocked_redis_db->mock(
+        ttl => sub {
+            my ($self, $key) = @_;
+            return 0;
+        });
+
+    $appropriateness_tests = appropriateness_tests($client_mf_1, $mocked_maltainvest_fa);
+    is $appropriateness_tests->{result}, 1, "Passed appropriateness first questions after cooldown";
+    $mocked_redis_db->unmock_all();
+
 };
 
 done_testing();
