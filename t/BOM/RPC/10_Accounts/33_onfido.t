@@ -110,6 +110,7 @@ subtest 'onfido dos websocket api' => sub {
     my $redis       = BOM::Config::Redis::redis_replicated_write();
     my $counter     = 0;
     my $onfido_mock = Test::MockModule->new('WebService::Async::Onfido');
+    my $token_mock  = Test::MockModule->new('BOM::Config');
     my $dog_mock    = Test::MockModule->new('DataDog::DogStatsd::Helper');
     my @metrics;
     $dog_mock->mock(
@@ -120,12 +121,29 @@ subtest 'onfido dos websocket api' => sub {
 
             return 1;
         });
+    $token_mock->mock(
+        'third_party',
+        sub {
+            return {onfido => {authorization_token => 'dummy'}};
+        });
+
     $onfido_mock->mock(
         'sdk_token',
         sub {
             $counter += 1;
             return Future->done({token => 'doge'});
         });
+    $onfido_mock->mock(
+        'applicant_create',
+        sub {
+            return Future->done(
+                bless {
+                    id => 'test1',
+                },
+                'WebService::Async::Onfido::Applicant'
+            );
+        });
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
