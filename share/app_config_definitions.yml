@@ -897,6 +897,8 @@ quants:
             1HZ50V_intraday: *vanilla_default_config
             1HZ75V_intraday: *vanilla_default_config
             1HZ100V_intraday: *vanilla_default_config
+            1HZ150V_intraday: *vanilla_default_config
+            1HZ250V_intraday: *vanilla_default_config
             R_10_daily: &vanilla_default_config_daily
               isa: json_string
               default: '{"delta_config" : [0.1,0.3,0.5,0.7,0.9],
@@ -922,6 +924,8 @@ quants:
             1HZ50V_daily: *vanilla_default_config_daily
             1HZ75V_daily: *vanilla_default_config_daily
             1HZ100V_daily: *vanilla_default_config_daily
+            1HZ150V_daily: *vanilla_default_config_daily
+            1HZ250V_daily: *vanilla_default_config_daily
         risk_profile:
           isa: section
           global: 1
