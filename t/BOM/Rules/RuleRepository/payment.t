@@ -24,6 +24,7 @@ populate_exchange_rates({
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
 use BOM::User;
+use BOM::TradingPlatform;
 
 my $user = BOM::User->create(
     email    => 'rules_payment@binary.com',
