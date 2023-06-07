@@ -203,7 +203,10 @@ subtest 'virtual contracts based on country code' => sub {
         country_code         => "es",
     };
 
-    my %expected = ("multiplier", 1);
+    my %expected = (
+        "multiplier" => 1,
+        "vanilla"    => 1
+    );
 
     my $offerings_obj           = get_offerings_obj($args);
     my %legal_allowed_contracts = virtual_offering_based_on_country_code($offerings_obj);
