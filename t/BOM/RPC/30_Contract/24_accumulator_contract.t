@@ -74,7 +74,7 @@ subtest 'accumulator - send_ask' => sub {
     delete $args->{duration};
 
     my $expected = {
-        'longcode'            => 'Win payout when every tick of your contract is within the barriers of the previous tick in Volatility 100 Index.',
+        'longcode'            => 'Your stake will grow at 1% per tick continuously for every tick that the spot price remains within the Range.',
         'spot'                => '100.00',
         'date_start'          => ignore(),
         'date_expiry'         => ignore(),
@@ -94,12 +94,13 @@ subtest 'accumulator - send_ask' => sub {
             'landing_company'       => 'virtual'
         },
         "contract_details" => {
-            "high_barrier"      => 100.065,
-            "last_tick_epoch"   => 123123123,
-            "low_barrier"       => 99.935,
-            "maximum_payout"    => ignore(),
-            "maximum_ticks"     => ignore(),
-            "tick_size_barrier" => 0.000648677482,
+            "high_barrier"          => 100.065,
+            "last_tick_epoch"       => 123123123,
+            "low_barrier"           => 99.935,
+            "maximum_payout"        => ignore(),
+            "maximum_ticks"         => ignore(),
+            "tick_size_barrier"     => 0.000648677482,
+            "barrier_spot_distance" => 0.065,
         },
         'auth_time'     => ignore(),
         'display_value' => '100.00',
@@ -133,7 +134,7 @@ subtest 'accumulator - send_ask' => sub {
     cmp_deeply($res, $expected, 'send_ask output as expected');
 
     $expected = {
-        'longcode'            => 'Win payout when every tick of your contract is within the barriers of the previous tick in Volatility 100 Index.',
+        'longcode'            => 'Your stake will grow at 1% per tick continuously for every tick that the spot price remains within the Range.',
         'spot'                => '100.00',
         'date_start'          => ignore(),
         'date_expiry'         => ignore(),
@@ -154,12 +155,13 @@ subtest 'accumulator - send_ask' => sub {
             'limit_order'           => {'take_profit' => 10}
         },
         "contract_details" => {
-            "high_barrier"      => 100.065,
-            "last_tick_epoch"   => 123123123,
-            "low_barrier"       => 99.935,
-            "maximum_payout"    => ignore(),
-            "maximum_ticks"     => ignore(),
-            "tick_size_barrier" => 0.000648677482
+            "high_barrier"          => 100.065,
+            "last_tick_epoch"       => 123123123,
+            "low_barrier"           => 99.935,
+            "maximum_payout"        => ignore(),
+            "maximum_ticks"         => ignore(),
+            "tick_size_barrier"     => 0.000648677482,
+            "barrier_spot_distance" => 0.065,
         },
         'limit_order' => {
             'take_profit' => {
@@ -262,21 +264,22 @@ subtest 'accumulator - get_bid' => sub {
         'bid_price'                => '100.00',
         'shortcode'                => ignore(),
         'contract_id'              => '490',
-        'longcode'           => 'Win payout when every tick of your contract is within the barriers of the previous tick in Volatility 100 Index.',
-        'is_valid_to_sell'   => 0,
-        'is_valid_to_cancel' => 0,
-        'entry_spot_display_value'  => '100.00',
-        'current_spot'              => 100,
-        'date_start'                => $now->epoch,
-        'status'                    => 'open',
-        'expiry_time'               => ignore(),
-        'tick_count'                => ignore(),
-        'tick_passed'               => 0,
-        'tick_stream'               => ignore(),
-        'validation_error'          => 'Contract cannot be sold at entry tick. Please wait for the next tick.',
-        'validation_error_code'     => 'General',
+        'longcode'                 => 'Your stake will grow at 1% per tick continuously for every tick that the spot price remains within the Range.',
+        'is_valid_to_sell'         => 0,
+        'is_valid_to_cancel'       => 0,
+        'entry_spot_display_value' => '100.00',
+        'current_spot'             => 100,
+        'date_start'               => $now->epoch,
+        'status'                   => 'open',
+        'expiry_time'              => ignore(),
+        'tick_count'               => ignore(),
+        'tick_passed'              => 0,
+        'tick_stream'              => ignore(),
+        'validation_error'         => 'Contract cannot be sold at entry tick. Please wait for the next tick.',
+        'validation_error_code'    => 'General',
         'current_spot_high_barrier' => 102.751,
         'current_spot_low_barrier'  => 97.249,
+        'barrier_spot_distance'     => 2.751,
     };
     my $res = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     cmp_deeply($res, $expected, 'get_bid as expected');
