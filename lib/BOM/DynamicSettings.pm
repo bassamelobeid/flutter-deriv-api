@@ -438,6 +438,7 @@ sub get_settings_by_group {
                 payments.crypto.restricted_countries
                 payments.crypto.auto_update.approve
                 payments.crypto.auto_update.reject
+                payments.crypto.auto_update.stable_payment_methods
                 payments.crypto.stablecoin.bounds.min
                 payments.crypto.stablecoin.bounds.max
                 payments.transfer_between_accounts.limits.fiat_to_crypto
