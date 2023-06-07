@@ -1051,9 +1051,37 @@ sub extra_info {
 
 sub pricing_details {
     my ($self, $action) = @_;
+    my @comment_fields;
+    my $tick;
 
-    # non of these information actually valid for multiplier and accumulator and turbos, skipping it here
-    return [] if ($self->category_code =~ /^(multiplier|accumulator|turbos)$/);
+    if ($action eq 'sell') {
+        # current tick is lazy, even though the realtime cache might have changed during the course of the transaction.
+        $tick = $self->current_tick;
+    } elsif ($action eq 'autosell_expired_contract') {
+        $tick = ($self->is_path_dependent and $self->hit_tick) ? $self->hit_tick : $self->exit_tick;
+    }
+
+    if ($tick) {
+        push @comment_fields, (exit_spot       => $tick->quote);
+        push @comment_fields, (exit_spot_epoch => $tick->epoch);
+    }
+
+    if ($self->entry_spot) {
+        push @comment_fields, (entry_spot       => $self->entry_spot);
+        push @comment_fields, (entry_spot_epoch => $self->entry_spot_epoch);
+    }
+
+    # the rest of the information is invalid for multiplier and accumulator and turbos, skipping it here
+    return \@comment_fields if ($self->category_code =~ /^(multiplier|accumulator|turbos)$/);
+
+    if ($tick) {
+        if ($self->two_barriers) {
+            push @comment_fields, (high_barrier => $self->high_barrier->as_absolute) if $self->high_barrier;
+            push @comment_fields, (low_barrier  => $self->low_barrier->as_absolute)  if $self->low_barrier;
+        } else {
+            push @comment_fields, (barrier => $self->barrier->as_absolute) if $self->barrier;
+        }
+    }
 
     # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
     my $iv   = $self->is_after_expiry ? 0 : $self->pricing_vol;
@@ -1065,7 +1093,8 @@ sub pricing_details {
     }
 
     # This way the order of the fields is well-defined.
-    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
+    push @comment_fields,
+        map { defined $_->[1] ? @$_ : (); } (
         [theo  => $self->theo_price],
         [iv    => $iv],
         [iv_2  => $iv_2],
@@ -1080,31 +1109,7 @@ sub pricing_details {
         [volga => $self->volga],
         [spot  => $self->current_spot],
         @{$self->extra_info('arrayref')},
-    );
-
-    my $tick;
-    if ($action eq 'sell') {
-        # current tick is lazy, even though the realtime cache might have changed during the course of the transaction.
-        $tick = $self->current_tick;
-    } elsif ($action eq 'autosell_expired_contract') {
-        $tick = ($self->is_path_dependent and $self->hit_tick) ? $self->hit_tick : $self->exit_tick;
-    }
-
-    if ($tick) {
-        push @comment_fields, (exit_spot       => $tick->quote);
-        push @comment_fields, (exit_spot_epoch => $tick->epoch);
-        if ($self->two_barriers) {
-            push @comment_fields, (high_barrier => $self->high_barrier->as_absolute) if $self->high_barrier;
-            push @comment_fields, (low_barrier  => $self->low_barrier->as_absolute)  if $self->low_barrier;
-        } else {
-            push @comment_fields, (barrier => $self->barrier->as_absolute) if $self->barrier;
-        }
-    }
-
-    if ($self->entry_spot) {
-        push @comment_fields, (entry_spot       => $self->entry_spot);
-        push @comment_fields, (entry_spot_epoch => $self->entry_spot_epoch);
-    }
+        );
 
     return \@comment_fields;
 }
