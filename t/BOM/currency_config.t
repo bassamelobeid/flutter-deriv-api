@@ -6,6 +6,7 @@ use Test::More;
 use Test::Fatal;
 use Test::MockModule;
 use JSON::MaybeUTF8;
+use JSON::MaybeXS;
 use Format::Util::Numbers            qw(get_min_unit financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use List::Util                       qw(max);
@@ -690,6 +691,46 @@ subtest 'get_crypto_payout_auto_update_global_status' => sub {
 
     $apps_config->payments->crypto->auto_update->reject(1);
     is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject'), 1, 'should return true when auto reject is enabled');
+
+    my $expected_result = {
+        skrill                 => 'Skrill',
+        neteller               => 'Neteller',
+        perfectm               => 'Perfect Money',
+        fasapay                => 'FasaPay',
+        paysafe                => 'PaySafe',
+        sticpay                => 'SticPay',
+        webmoney               => 'Webmoney',
+        airtm                  => 'AirTM',
+        paylivre               => 'Paylivre',
+        nganluong              => 'NganLuong',
+        astropay               => 'Astropay',
+        onlinenaira            => 'Onlinenaira',
+        directa24s             => 'Directa24',
+        zingpay                => 'ZingPay',
+        pix                    => 'PIX',
+        payrtransfer           => 'PayRTransfer',
+        advcash                => 'Advcash',
+        upi                    => 'UPI',
+        beyonicmt              => 'BeyonicMT',
+        imps                   => 'IMPS',
+        btc                    => 'BTCCOP',
+        ltc                    => 'BTCCOP',
+        eth                    => 'BTCCOP',
+        bch                    => 'BTCCOP',
+        solidpaywave           => 'SolidPayWave',
+        verve                  => 'Verve',
+        help2pay               => 'Help2pay',
+        p2p                    => 'Deriv P2P',
+        payment_agent_transfer => 'Payment Agent'
+    };
+    is_deeply(decode_json(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('stable_payment_methods')),
+        $expected_result, 'should return the correct result for default value of crypto stable payment methods');
+
+    $apps_config->payments->crypto->auto_update->stable_payment_methods('{"skrill" : "Skrill"}');
+
+    $expected_result = {skrill => 'Skrill'};
+    is_deeply(decode_json(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('stable_payment_methods')),
+        $expected_result, 'should return the correct result for updated value of crypto stable payment methods');
 
 };
 

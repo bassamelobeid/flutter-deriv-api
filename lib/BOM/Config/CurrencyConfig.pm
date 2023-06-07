@@ -777,6 +777,8 @@ sub get_crypto_payout_auto_update_global_status {
         return app_config()->payments->crypto->auto_update->approve;
     } elsif (lc($action) eq 'reject') {
         return app_config()->payments->crypto->auto_update->reject;
+    } elsif (lc($action) eq 'stable_payment_methods') {
+        return app_config()->payments->crypto->auto_update->stable_payment_methods;
     }
 
     return 0;
