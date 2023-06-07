@@ -26,6 +26,7 @@ use Syntax::Keyword::Try;
 
 use BOM::Database::ClientDB;
 use BOM::Platform::CryptoCashier::InternalAPI;
+use BOM::Config::CurrencyConfig;
 use BOM::User::Client;
 
 use constant RESTRICTED_CLIENT_STATUS => {
@@ -38,37 +39,8 @@ use constant RESTRICTED_CLIENT_STATUS => {
     unwelcome                => 1
 };
 
-use constant STABLE_PAYMENT_METHODS => {
-    skrill                 => 'Skrill',
-    neteller               => 'Neteller',
-    perfectm               => 'Perfect Money',
-    fasapay                => 'FasaPay',
-    paysafe                => 'PaySafe',
-    sticpay                => 'SticPay',
-    webmoney               => 'Webmoney',
-    airtm                  => 'AirTM',
-    paylivre               => 'Paylivre',
-    nganluong              => 'NganLuong',
-    astropay               => 'Astropay',
-    onlinenaira            => 'Onlinenaira',
-    directa24s             => 'Directa24',
-    zingpay                => 'ZingPay',
-    pix                    => 'PIX',
-    payrtransfer           => 'PayRTransfer',
-    advcash                => 'Advcash',
-    upi                    => 'UPI',
-    beyonicmt              => 'BeyonicMT',
-    imps                   => 'IMPS',
-    btc                    => 'BTCCOP',
-    ltc                    => 'BTCCOP',
-    eth                    => 'BTCCOP',
-    bch                    => 'BTCCOP',
-    solidpaywave           => 'SolidPayWave',
-    verve                  => 'Verve',
-    help2pay               => 'Help2pay',
-    p2p                    => 'Deriv P2P',
-    payment_agent_transfer => 'Payment Agent'
-};
+use constant STABLE_PAYMENT_METHODS =>
+    decode_json(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('stable_payment_methods'));
 
 my $doughflow_methods;
 
