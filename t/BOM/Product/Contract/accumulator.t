@@ -101,7 +101,7 @@ subtest 'shortcode and longcode' => sub {
     is $c->shortcode, 'ACCU_R_100_1.00_1_0.01_1_0.02_' . $now->epoch, 'shortcode populated correctly';
     is_deeply(
         $c->longcode,
-        ['Win payout when every tick of your contract is within the barriers of the previous tick in [_1].', ['Volatility 100 Index']],
+        ['Your stake will grow at [_1]% per tick continuously for every tick that the spot price remains within the Range.', [1]],
         'longcode matches'
     );
     is $c->growth_rate, 0.01, 'growth rate is 0.01';
@@ -197,6 +197,7 @@ subtest 'barrier' => sub {
         ok !$c->basis_spot,           'no basis_spot';
         is $c->current_spot_high_barrier, '91.800', 'current_spot_high_barrier is correct';
         is $c->current_spot_low_barrier,  '88.200', 'current_spot_low_barrier is correct';
+        is $c->barrier_spot_distance,     '1.800',  'barrier_spot_distance is correct';
     };
 
     subtest 'date_pricing after entry_tick' => sub {
@@ -214,11 +215,12 @@ subtest 'barrier' => sub {
         is $c->low_barrier->supplied_barrier,  '88.2',          'low supplied_barrier is correct';
         is $c->low_barrier->as_absolute,       '88.20',         'low barrier as_absolute is correct';
         is $c->display_low_barrier,            '88.200',        'display_low_barrier is correct';
-        is $c->current_spot_low_barrier,       '90.160',        'current_spot_high_barrier is correct';
+        is $c->current_spot_low_barrier,       '90.160',        'current_spot_low_barrier is correct';
         is $c->high_barrier->supplied_barrier, '91.8',          'high supplied_barrier is correct';
         is $c->high_barrier->as_absolute,      '91.80',         'high barrier as_absolute is correct';
         is $c->display_high_barrier,           '91.800',        'display_high_barrier is correct';
         is $c->current_spot_high_barrier,      '93.840',        'current_spot_high_barrier is correct';
+        is $c->barrier_spot_distance,          '1.840',         'barrier_spot_distance is correct';
         is $c->basis_spot,                     '90',            'basis_spot is correct';
     };
 

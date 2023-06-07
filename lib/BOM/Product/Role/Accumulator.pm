@@ -520,6 +520,19 @@ sub _build_barrier_pip_size {
     return $self->underlying->pip_size / 10;
 }
 
+=head2 barrier_spot_distance
+
+the absolute difference between high/low barrier with spot. used only in FE
+
+
+=cut
+
+sub barrier_spot_distance {
+    my $self = shift;
+
+    return roundcommon($self->barrier_pip_size, $self->current_spot_high_barrier - $self->current_spot);
+}
+
 =head2 roundup
 
 round up a value
