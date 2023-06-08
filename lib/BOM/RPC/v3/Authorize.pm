@@ -235,20 +235,18 @@ rpc logout => sub {
                 my $oauth  = BOM::Database::Model::OAuth->new;
                 my $app_id = $oauth->get_app_id_by_token($params->{token});
 
-                # Access token already has been removed from database. User is logged out.
-                return {status => 1} unless $app_id;
-
                 foreach my $c1 ($user->clients) {
                     $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
                 }
 
                 # revoke all refresh tokens per user_id and app.
                 $oauth->revoke_refresh_tokens_by_user_app_id($user->{id}, $app_id);
+
                 $user->add_login_history(
                     environment => request()->login_env($params),
                     successful  => 't',
                     action      => 'logout',
-                    app_id      => $app_id,
+                    app_id      => $app_id // $params->{source},
                     token       => $params->{token});
 
                 BOM::User::AuditLog::log("user logout", join(',', $email, $loginid // ''));
