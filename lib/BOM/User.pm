@@ -134,26 +134,27 @@ sub new {
 }
 
 sub add_client {
-    my ($self, $client) = @_;
+    my ($self, $client, $link_to_wallet_loginid) = @_;
     croak('need a client') unless $client;
 
     my $account_type = $client->get_account_type;
     die 'client does not have a account type' unless $account_type;
 
-    $self->add_loginid($client->loginid, $account_type->platform);
+    $self->add_loginid($client->loginid, $account_type->platform, undef, undef, undef, $link_to_wallet_loginid);
     return $self;
 }
 
 sub add_loginid {
-    my ($self, $loginid, $platform, $account_type, $currency, $attributes) = @_;
+    my ($self, $loginid, $platform, $account_type, $currency, $attributes, $link_to_wallet_loginid) = @_;
     croak('need a loginid') unless $loginid;
     $attributes = encode_json($attributes) if $attributes;
 
     my ($result) = $self->dbic->run(
         fixup => sub {
-            return $_->selectrow_array('select users.add_loginid(?, ?, ?, ?, ?, ?)',
-                undef, $self->{id}, $loginid, $platform, $account_type, $currency, $attributes);
+            return $_->selectrow_array('select users.add_loginid(?, ?, ?, ?, ?, ?, ?)',
+                undef, $self->{id}, $loginid, $platform, $account_type, $currency, $attributes, $link_to_wallet_loginid);
         });
+
     delete $self->{loginid_details} if $result;
     return $self;
 }
@@ -229,8 +230,10 @@ Takes one or more named parameters:
 sub create_client {
     my ($self, %args) = @_;
     $args{binary_user_id} = $self->{id};
+    my $wallet_loginid = delete $args{wallet_loginid};
+
     my $client = BOM::User::Client->register_and_return_new_client(\%args);
-    $self->add_client($client);
+    $self->add_client($client, $wallet_loginid);
 
     # Enable the trading_hub status if any siblings already has it enabled
     my $siblings = $client->get_siblings_information();

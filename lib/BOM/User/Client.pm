@@ -26,7 +26,7 @@ use JSON::MaybeXS;
 use Encode;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use POSIX                      qw(ceil);
-use JSON::MaybeUTF8            qw(encode_json_utf8);
+use JSON::MaybeUTF8            qw(encode_json_utf8 encode_json_text);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
@@ -101,8 +101,6 @@ use constant {
 
     # Redis key for SR keys expire
     SR_30_DAYS_EXP => 86400 * 30,
-
-    LEGACY_ACCOUNT_TYPE => 'binary',
 };
 
 # Redis key prefix for counting DoughFlow payouts
@@ -198,53 +196,39 @@ sub save {
     return $r;
 }
 
-sub store_details {
-    my ($self, $args) = @_;
-
-    $self->aml_risk_classification('low') unless $self->is_virtual;
-
-    $self->$_($args->{$_}) for sort keys %$args;
-
-    # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
-    for (qw(citizen address_2 state postcode salutation)) {
-        $self->$_ || $self->$_('');
-    }
-
-    # resolve Gender from Salutation
-    if ($self->salutation and not $self->gender) {
-        my $gender = (uc $self->salutation eq 'MR') ? 'm' : 'f';
-        $self->gender($gender);
-    }
-
-    $self->gender('m') unless $self->gender;
-
-    return undef;
-}
-
 sub register_and_return_new_client {
-    my $class = shift;
-    my $args  = shift;
+    my ($class, $args) = @_;
 
     my $broker = $args->{broker_code} || die "can't register a new client without a broker_code";
 
-    my $self = $class->rnew(broker => $broker);
+    if ($args->{salutation} and not $args->{gender}) {
+        $args->{gender} = (uc $args->{salutation} eq 'MR') ? 'm' : 'f';
+    }
 
-    store_details($self, $args);
+    if ($args->{date_of_birth}) {
+        $args->{date_of_birth} = Date::Utility->new($args->{date_of_birth})->date_yyyymmdd;
+    }
 
-    $self->set_db('write');
+    if ($args->{date_joined}) {
+        $args->{date_joined} = Date::Utility->new($args->{date_joined})->datetime_yyyymmdd_hhmmss;
+    }
 
-    my $sql    = "SELECT nextval('sequences.loginid_sequence_$broker')";
-    my $dbic   = $self->db->dbic;
-    my @seqnum = $dbic->run(
+    if ($args->{non_pep_declaration_time}) {
+        $args->{non_pep_declaration_time} = Date::Utility->new($args->{non_pep_declaration_time})->datetime_yyyymmdd_hhmmss;
+    }
+
+    my $dbic   = $class->rnew(broker => $broker)->db->dbic;
+    my $result = $dbic->run(
         fixup => sub {
-            my $sth = $_->prepare($sql);
-            $sth->execute();
-            return $sth->fetchrow_array();
+            return $_->selectrow_hashref("select * from betonmarkets.create_client(?::JSON)", undef, encode_json_text($args));
         });
 
-    $self->loginid("$broker$seqnum[0]");
+    my $self = $class->SUPER::new(%$result);
+    $self->set_db('write');
 
-    return $self->save;
+    $self->load;
+
+    return $self;
 }
 
 sub full_name {
@@ -8179,7 +8163,8 @@ Gets the account type as a BOM::Config::AccountType object.
 sub get_account_type {
     my $self = shift;
 
-    $self->{_account_type_obj} //= BOM::Config::AccountType::Registry->account_type_by_name($self->account_type // LEGACY_ACCOUNT_TYPE);
+    $self->{_account_type_obj} //=
+        BOM::Config::AccountType::Registry->account_type_by_name($self->account_type // BOM::Config::AccountType::LEGACY_TYPE);
 
     return $self->{_account_type_obj};
 }
