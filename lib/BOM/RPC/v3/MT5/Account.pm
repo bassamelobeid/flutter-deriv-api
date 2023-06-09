@@ -288,7 +288,7 @@ sub mt5_accounts_lookup {
             sub {
                 my ($setting) = @_;
 
-                if (exists $setting->{login} and exists $client->user->loginid_details->{$setting->{login}}) {
+                if (exists $setting->{login} and exists $client->user->loginid_details->{$setting->{login} // ''}) {
                     $setting->{status} = $client->user->loginid_details->{$setting->{login}}->{status};
                 }
                 $setting = _filter_settings($setting,

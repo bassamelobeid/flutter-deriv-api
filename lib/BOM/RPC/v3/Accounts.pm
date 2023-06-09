@@ -2956,12 +2956,16 @@ rpc set_account_currency => sub {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    my @clients      = ($client);
+    my $account_type = $client->get_account_type;
+    my $rule_engine  = BOM::Rules::Engine->new(client => $client);
     try {
         $rule_engine->verify_action(
             'set_account_currency',
-            loginid  => $client->loginid,
-            currency => $currency
+            loginid          => $client->loginid,
+            currency         => $currency,
+            account_category => $account_type->category->name,
+            account_type     => $account_type->name,
         );
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error, 'CurrencyTypeNotAllowed');

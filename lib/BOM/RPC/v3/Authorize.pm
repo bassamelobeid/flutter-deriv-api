@@ -52,7 +52,8 @@ sub _get_upgradeable_landing_companies {
             [qw/landing_company.accounts_limit_not_reached/],
             loginid         => $client->loginid,
             landing_company => $lc,
-            stop_on_failure => 0
+            stop_on_failure => 0,
+            account_type    => 'binary',
         )->has_failure;
 
         # check currency availability
