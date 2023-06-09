@@ -166,6 +166,7 @@ my $args = {
 
 lives_ok {
     $cl = create_client('VRTC');
+    $cl->residence('aq');
 
     #make sure client can trade
     ok(!BOM::Transaction::Validation->new({clients => [{client => $cl}]})->check_trade_status($cl),      "client can trade: check_trade_status");
