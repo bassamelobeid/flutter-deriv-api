@@ -95,6 +95,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     EXPIRYRANGEE => 1,
                 );
                 foreach my $contract_type (grep { !$equal{$_} } $offerings_obj->query({contract_category => $contract_category}, ['contract_type'])) {
+                    next if (($contract_type eq 'VANILLALONGCALL') or ($contract_type eq 'VANILLALONGPUT')); # we don't have slope defined for vanilla
                     my $args = {
                         bet_type     => $contract_type,
                         underlying   => $ul,

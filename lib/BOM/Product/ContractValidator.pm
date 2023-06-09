@@ -517,7 +517,14 @@ sub _validate_input_parameters {
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
         my $closing     = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
-        if ($self->category->has_user_defined_expiry and $closing and not $date_expiry->is_same_as($closing) and not $self->for_sale) {
+
+        # Vanilla closes at 10am NYT
+        if (    $self->category->has_user_defined_expiry
+            and $closing
+            and not $date_expiry->is_same_as($closing)
+            and not $self->for_sale
+            and ($self->category_code ne 'vanilla'))
+        {
             return {
                 message => 'daily expiry must expire at close '
                     . "[expiry: "

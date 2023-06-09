@@ -45,11 +45,14 @@ Contract will have value if exit tick price is higher than strike price.
 sub check_expiry_conditions {
     my $self = shift;
 
+    my $number_of_contracts = $self->number_of_contracts;
+    # we need to adjust payout per pip back to number of contracts for financials
+    $number_of_contracts = $number_of_contracts / $self->underlying->pip_size unless $self->is_synthetic;
     if ($self->exit_tick) {
         my $exit_quote = $self->exit_tick->quote;
         my $value =
               ($exit_quote > $self->barrier->as_absolute)
-            ? ($exit_quote - $self->barrier->as_absolute) * $self->number_of_contracts
+            ? ($exit_quote - $self->barrier->as_absolute) * $number_of_contracts
             : 0;
         $value = financialrounding('price', $self->currency, $value);
         $self->value($value);

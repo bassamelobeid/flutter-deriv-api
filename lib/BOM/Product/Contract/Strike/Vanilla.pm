@@ -12,6 +12,11 @@ use POSIX                 qw(ceil floor);
 use Format::Util::Numbers qw/roundnear roundcommon/;
 use Math::Round           qw(round);
 use BOM::Config::Runtime;
+use BOM::Product::Utils qw(roundup rounddown);
+use BOM::MarketData     qw(create_underlying);
+use VolSurface::Utils   qw(get_strike_for_spot_delta);
+use BOM::MarketData::Fetcher::VolSurface;
+use Number::Closest::XS qw(find_closest_numbers_around);
 
 =head2 SECONDS_IN_A_YEAR
 
@@ -20,67 +25,6 @@ How long is a 365 day year in seconds
 =cut
 
 use constant {SECONDS_IN_A_YEAR => 31536000};
-
-=head2 roundup
-
-round up a value
-roundup(63800, 1000) = 64000
-
-=cut
-
-sub roundup {
-    my ($value_to_round, $precision) = @_;
-
-    $precision = 1 if $precision == 0;
-    return ceil($value_to_round / $precision) * $precision;
-}
-
-=head2 rounddown
-
-round down a value
-roundown(63800, 1000) = 63000
-
-=cut
-
-sub rounddown {
-    my ($value_to_round, $precision) = @_;
-
-    $precision = 1 if $precision == 0;
-    return floor($value_to_round / $precision) * $precision;
-}
-
-=head2 calculate_implied_strike
-
-calculate strike price given delta
-
-=cut
-
-sub calculate_implied_strike {
-    my $args = shift;
-
-    my $spot  = $args->{current_spot};
-    my $vol   = $args->{pricing_vol};
-    my $t     = $args->{timeinyears};
-    my $delta = $args->{delta};
-
-    # This is for risk management,
-    # the idea is that we define the allowed delta that we can accept,
-    # and calculate the maximum/minimum Strike price from it
-    #
-    #                                            pnorm(d1) = Delta
-    #                                                   d1 = qnorm(Delta)
-    # (log(spot/strike) + ((vol**2)/2) * t) / vol*(t**0.5) = qnorm(Delta)
-    #                (log(spot/strike) + ((vol**2)/2) * t) = qnorm(Delta) * vol*(t**0.5)
-    #                                     log(spot/strike) = qnorm(Delta) * vol*(t**0.5) - ((vol**2)/2) * t)
-    #                              log(spot) - log(strike) = qnorm(Delta) * vol*(t**0.5) - ((vol**2)/2) * t)
-    #                                        - log(strike) = qnorm(Delta) * vol*(t**0.5) - ((vol**2)/2) * t) - log(spot)
-    #                                          log(strike) = - qnorm(Delta) * vol*(t**0.5) + ((vol**2)/2) * t) + log(spot)
-    #                                               strike = exp**(- qnorm(Delta) * vol*(t**0.5) + ((vol**2)/2) * t) + log(spot))
-
-    my $strike_price = exp((-(qnorm($delta) * $vol * ($t**0.5)) + (($vol**2) / 2) * $t) + log($spot));
-
-    return $strike_price;
-}
 
 =head2 strike_price_choices
 
@@ -95,23 +39,28 @@ sub strike_price_choices {
     my $is_intraday  = $args->{is_intraday};
     my $current_spot = $args->{current_spot};
     my $vol          = $args->{pricing_vol};
+    my $trade_type   = $args->{trade_type} // 'VANILLALONGCALL';
 
-    my $symbol = $ul->symbol;
-    my $expiry = $is_intraday ? 'intraday' : 'daily';
+    $args->{trade_type} = $trade_type =~ s/LONG/_/r;
 
-    my $expected_move    = $current_spot * $vol * ((60 / SECONDS_IN_A_YEAR)**0.5);
+    my $symbol             = $ul->symbol;
+    my $expiry             = $is_intraday ? 'intraday' : 'daily';
+    my $is_synthetic_index = $ul->market->name eq 'synthetic_index';
+
+    my $expected_move = $current_spot * $vol * ((60 / SECONDS_IN_A_YEAR)**0.5);
+    $expected_move = $current_spot * $vol * ((10 / SECONDS_IN_A_YEAR)**0.5) unless ($is_synthetic_index);
     my $number_of_digits = roundnear(1, (log(1 / $expected_move) / log(10))) - 1;
 
     $args->{expected_move}    = $expected_move;
     $args->{number_of_digits} = $number_of_digits;
     $args->{current_spot}     = roundnear(10**(-$args->{number_of_digits}), $args->{current_spot});
     $args->{per_symbol_config} =
-        JSON::MaybeXS::decode_json(BOM::Config::Runtime->instance->app_config->get("quants.vanilla.per_symbol_config.$symbol" . "_$expiry"));
+        $is_synthetic_index
+        ? JSON::MaybeXS::decode_json(BOM::Config::Runtime->instance->app_config->get("quants.vanilla.per_symbol_config.$symbol" . "_$expiry"))
+        : JSON::MaybeXS::decode_json(BOM::Config::Runtime->instance->app_config->get("quants.vanilla.fx_per_symbol_config.$symbol"));
 
-    if ($is_intraday) {
-        return intraday_strike_price_choices($args);
-    }
-
+    # we only offer intraday vanilla options for synthetic indices
+    return intraday_strike_price_choices($args) if ($is_intraday and $is_synthetic_index);
     return daily_strike_price_choices($args);
 }
 
@@ -132,8 +81,18 @@ sub intraday_strike_price_choices {
     my $delta_array = $per_symbol_config->{delta_config};
 
     for my $delta (@{$delta_array}) {
-        $args->{delta} = $delta;
-        my $strike_price = calculate_implied_strike($args);
+        my $volsurface_args = {
+            delta            => $delta,
+            option_type      => $args->{trade_type},
+            atm_vol          => $args->{pricing_vol},
+            t                => $args->{timeinyears},
+            r_rate           => 0,
+            q_rate           => 0,
+            spot             => $args->{current_spot},
+            premium_adjusted => 0
+        };
+
+        my $strike_price = get_strike_for_spot_delta($volsurface_args);
         $strike_price = roundnear($ul->pip_size * 10, ($strike_price - $current_spot));
         $strike_price = roundcommon($ul->pip_size, $strike_price);
         $strike_price = $strike_price >= 0 ? "+" . $strike_price : "" . $strike_price;
@@ -163,19 +122,64 @@ sub daily_strike_price_choices {
     my @strike_price_choices;
     my $delta_array = $per_symbol_config->{delta_config};
 
-    $args->{delta} = min @{$delta_array};
-    my $max_strike = rounddown(calculate_implied_strike($args), 10**(-$number_of_digits));
+    my $is_synthetic_index = $ul->market->name eq 'synthetic_index';
+    my $volsurface         = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul});
+    my $closest_term       = find_closest_numbers_around($args->{timeinyears} * 365, $volsurface->original_term_for_smile, 2);
 
-    $args->{delta} = max @{$delta_array};
-    my $min_strike = roundup(calculate_implied_strike($args), 10**(-$number_of_digits));
+    my $volsurface_args = {
+        delta            => (min @{$delta_array}),
+        option_type      => $args->{trade_type},
+        atm_vol          => $args->{pricing_vol},
+        t                => $args->{timeinyears},
+        r_rate           => 0,
+        q_rate           => 0,
+        spot             => $args->{current_spot},
+        premium_adjusted => 0
+    };
+
+    unless ($is_synthetic_index) {
+        my $volsurface_ul = create_underlying($ul->symbol);
+
+        # using VANILLA_CALL so that the strike price choices are more stable
+        $volsurface_args = {
+            delta            => (min @{$delta_array}),
+            option_type      => 'VANILLA_CALL',
+            atm_vol          => $volsurface->get_surface_volatility($closest_term->[0], 10),
+            t                => $args->{timeinyears},
+            r_rate           => $volsurface_ul->interest_rate_for($args->{timeinyears}),
+            q_rate           => $volsurface_ul->dividend_rate_for($args->{timeinyears}),
+            spot             => $args->{current_spot},
+            premium_adjusted => $volsurface_ul->{market_convention}->{delta_premium_adjusted}};
+    }
+
+    my $max_strike = get_strike_for_spot_delta($volsurface_args);
+
+    $volsurface_args->{delta}   = (max @{$delta_array});
+    $volsurface_args->{atm_vol} = $volsurface->get_surface_volatility($closest_term->[0], 90);
+    my $min_strike = get_strike_for_spot_delta($volsurface_args);
+
+    # we will have issue where min_strike > max_strike for puts
+    ($max_strike, $min_strike) = ($min_strike, $max_strike) if $min_strike > $max_strike;
+
+    $max_strike = rounddown($max_strike, 10**(-$number_of_digits));
+    $min_strike = roundup($min_strike, 10**(-$number_of_digits));
 
     ($min_strike, $max_strike) = ($max_strike, $min_strike) if $min_strike > $max_strike;
 
     my $central_strike = roundnear(10**(-$number_of_digits), $args->{current_spot});
 
-    my $adjusted_n      = ($n_max - 3) / 2;
-    my $strike_step_one = roundnear(10, ($central_strike - $min_strike) / ($adjusted_n + 1));
-    my $strike_step_two = roundnear(10, ($max_strike - $central_strike) / ($adjusted_n + 1));
+    my $adjusted_n = ($n_max - 3) / 2;
+    my $strike_step_one;
+    my $strike_step_two;
+
+    if ($is_synthetic_index) {
+        # rounding this to stabilize strike price flickering problem
+        $strike_step_one = roundnear(10, ($central_strike - $min_strike) / ($adjusted_n + 1));
+        $strike_step_two = roundnear(10, ($max_strike - $central_strike) / ($adjusted_n + 1));
+    } else {
+        $strike_step_one = ($central_strike - $min_strike) / ($adjusted_n + 1);
+        $strike_step_two = ($max_strike - $central_strike) / ($adjusted_n + 1);
+    }
 
     push @strike_price_choices, roundcommon($ul->pip_size, $central_strike);
     push @strike_price_choices, roundcommon($ul->pip_size, $min_strike);

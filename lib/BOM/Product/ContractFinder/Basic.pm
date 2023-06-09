@@ -28,6 +28,14 @@ use BOM::Product::Contract::Strike::Vanilla;
 
 my $cache = Cache::LRU->new(size => 500);
 
+=head2 app_config
+dynamic settings from backoffice
+=cut
+
+sub app_config {
+    return BOM::Config::Runtime->instance->app_config;
+}
+
 sub decorate {
     my $args = shift;
 
@@ -146,17 +154,35 @@ sub decorate {
         }
 
         if ($contract_category eq 'vanilla') {
+
+            # forex has dynamic max duration which is configurable from BO
+            if ($underlying->market->name ne 'synthetic_index') {
+                my $per_symbol_config = JSON::MaybeXS::decode_json(app_config->get("quants.vanilla.fx_per_symbol_config." . $underlying->symbol));
+                my @maturities_allowed_days  = @{$per_symbol_config->{maturities_allowed_days}};
+                my @maturities_allowed_weeks = @{$per_symbol_config->{maturities_allowed_weeks}};
+
+                my $max_day  = max @maturities_allowed_days;
+                my $max_week = max @maturities_allowed_weeks;
+
+                # because weekly contracts need to end on Friday
+                my $days_until_friday = (5 - Date::Utility->new->day_of_week) % 7;
+                $o->{max_contract_duration} = max($max_day, ($max_week * 7) + $days_until_friday) . "d";
+            }
+
             my $barrier_choices = _default_barrier_for_vanilla({
                     underlying   => $underlying,
                     duration     => $o->{min_contract_duration},
                     barrier_kind => 'high',
+                    trade_type   => $contract_type,
                     expiry       => $o->{expiry_type}});
 
-            my $barrier_choices_length = scalar @{$barrier_choices};
-            my $mid_barrier_choices    = $barrier_choices->[floor($barrier_choices_length / 2)];
+            if ($barrier_choices) {
+                my $barrier_choices_length = scalar @{$barrier_choices};
+                my $mid_barrier_choices    = $barrier_choices->[floor($barrier_choices_length / 2)];
 
-            $o->{barrier_choices} = $barrier_choices;
-            $o->{barrier}         = $mid_barrier_choices;
+                $o->{barrier_choices} = $barrier_choices;
+                $o->{barrier}         = $mid_barrier_choices;
+            }
         }
 
         if ($contract_category eq 'turbos' and my $config = _get_turbos_config($underlying->symbol)) {
@@ -210,7 +236,7 @@ calculates and return default barrier range for vanilla options
 sub _default_barrier_for_vanilla {
     my $args = shift;
 
-    my ($underlying, $duration, $barrier_kind, $expiry) = @{$args}{'underlying', 'duration', 'barrier_kind', 'expiry'};
+    my ($underlying, $duration, $barrier_kind, $trade_type, $expiry) = @{$args}{'underlying', 'duration', 'barrier_kind', 'trade_type', 'expiry'};
 
     $duration =~ s/t//g;
     $duration = Time::Duration::Concise->new(interval => $duration)->seconds;
@@ -233,6 +259,7 @@ sub _default_barrier_for_vanilla {
         pricing_vol  => $volatility,
         timeinyears  => $tiy,
         underlying   => $underlying,
+        trade_type   => $trade_type,
         is_intraday  => $expiry eq 'intraday' ? 1 : 0
     };
 

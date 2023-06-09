@@ -41,6 +41,13 @@ my $mocked_underlying = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_underlying->mock('spot_tick', sub { return $tick });
 my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => $now,
+    }) for qw(USD JPY AUD CAD AUD-USD EUR-USD GBP-USD USD-JPY CAD-USD XAG XAU);
+
 subtest 'test everything' => sub {
     my $expected = YAML::XS::LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/Engine/selection_config.yml');
     foreach my $symbol (LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg)->values_for_key('underlying_symbol')) {

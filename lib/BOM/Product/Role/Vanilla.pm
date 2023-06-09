@@ -6,10 +6,14 @@ use JSON::MaybeXS;
 use Math::CDF qw( qnorm );
 
 use List::Util            qw(max min);
+use List::MoreUtils       qw(any);
 use POSIX                 qw(ceil floor);
 use Format::Util::Numbers qw/financialrounding formatnumber roundnear roundcommon/;
 use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Vanilla;
+use BOM::Product::Utils qw(business_days_between weeks_between);
+use Math::Util::CalculatedValue;
+use Syntax::Keyword::Try;
 use BOM::Config::Quants qw(minimum_stake_limit);
 
 =head2 ADDED_CURRENCY_PRECISION
@@ -18,9 +22,33 @@ Added currency precision used in rounding number_of_contracts
 
 =cut
 
+=head2 SETTLEMENT_TIME
+
+settlement time for vanilla financials
+
+=cut
+
 use constant ADDED_CURRENCY_PRECISION => 3;
+use constant {SETTLEMENT_TIME => '10:00:00'};
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+
+=head2 BUILD
+
+This method is mainly to override date_expiry if market is not synthetic indices
+
+=cut
+
+sub BUILD {
+    my $self = shift;
+
+    unless ($self->is_synthetic) {
+        my $nyt_offset  = $self->date_expiry->timezone_offset('America/New_York');
+        my $date_expiry = $self->date_expiry;
+        $self->date_expiry(Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . SETTLEMENT_TIME)->minus_time_interval($nyt_offset));
+    }
+
+}
 
 =head2 _build_pricing_engine_name
 
@@ -40,6 +68,18 @@ Returns pricing engine used to price contract
 
 sub _build_pricing_engine {
     return BOM::Product::Pricing::Engine::BlackScholes->new({bet => shift});
+}
+
+=head2 is_synthetic
+
+return 1 if underlying is synthetic indices (independent indices)
+
+=cut
+
+sub is_synthetic {
+    my $self = shift;
+
+    return ($self->underlying->market->name eq 'synthetic_index');
 }
 
 has [qw(
@@ -142,12 +182,16 @@ We need to use entry tick to calculate this figure.
 sub _build_number_of_contracts {
     my $self = shift;
 
+    # we want payout per pip for financials
     my $number_of_contracts = $self->_user_input_stake / $self->initial_ask_probability->amount;
     my $currency_decimal_places =
         min(Format::Util::Numbers::get_precision_config()->{price}->{$self->currency} + ADDED_CURRENCY_PRECISION, 10);    # 10 dp is all we need
     my $rounding_precision = 10**($currency_decimal_places * -1);
     # Based on the documentation for roundcommon, this sub uses the same rounding technique as financialrounding, the only difference is that it acccepts precision
-    return roundcommon($rounding_precision, $number_of_contracts);
+    $number_of_contracts = roundcommon($rounding_precision, $number_of_contracts);
+    return $number_of_contracts if $self->is_synthetic;
+    return roundcommon($rounding_precision, $number_of_contracts * $self->underlying->pip_size);
+
 }
 
 =head2 per_symbol_config
@@ -163,6 +207,7 @@ sub per_symbol_config {
     my $symbol = $self->underlying->symbol;
     my $expiry = $self->is_intraday ? 'intraday' : 'daily';
 
+    return JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.fx_per_symbol_config.$symbol")) unless $self->is_synthetic;
     return JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.per_symbol_config.$symbol" . "_$expiry"));
 }
 
@@ -211,6 +256,7 @@ get vol markup from app_config (set from backoffice)
 sub vol_charge {
     my $self = shift;
 
+    return 0 unless $self->is_synthetic;
     return $self->per_symbol_config()->{vol_markup};
 }
 
@@ -223,7 +269,9 @@ get black scholes price markup from app_config (set from backoffice)
 sub bs_markup {
     my $self = shift;
 
-    my $bs_markup_config = $self->per_symbol_config()->{bs_markup};
+    my $bs_markup_config = 0;
+
+    $bs_markup_config = $self->per_symbol_config()->{bs_markup} if $self->is_synthetic;
 
     my $markup = Math::Util::CalculatedValue->new({
         name        => 'black_scholes_markup',
@@ -249,7 +297,8 @@ sub strike_price_choices {
         pricing_vol  => $self->pricing_vol,
         timeinyears  => $self->timeinyears->amount,
         underlying   => $self->underlying,
-        is_intraday  => $self->is_intraday
+        is_intraday  => $self->is_intraday,
+        trade_type   => $self->code
     };
 
     return BOM::Product::Contract::Strike::Vanilla::strike_price_choices($args);
@@ -299,6 +348,120 @@ override theo_price => sub {
     return $self->theo_probability->amount;
 };
 
+=head2 max_duration
+
+maximum duration (in days) offered for vanilla options on financials
+
+=cut
+
+sub max_duration {
+    my $self = shift;
+
+    return {
+        duration      => 365,
+        duration_unit => 'd'
+    } if $self->is_synthetic;
+
+    my $per_symbol_config = $self->per_symbol_config();
+
+    my @maturities_allowed_days  = @{$per_symbol_config->{maturities_allowed_days}};
+    my @maturities_allowed_weeks = @{$per_symbol_config->{maturities_allowed_weeks}};
+
+    my $max_day  = max @maturities_allowed_days;
+    my $max_week = max @maturities_allowed_weeks;
+
+    # there are 7 days in a week
+    return {
+        duration      => max($max_day, $max_week * 7),
+        duration_unit => 'd'
+    };
+}
+
+=head2 spread
+
+calculate commission for vanilla options
+
+=cut
+
+sub spread {
+    my $self = shift;
+
+    return Math::Util::CalculatedValue->new({
+            name        => 'spread',
+            description => 'vanilla options commission spread',
+            set_by      => 'Contract',
+            base_amount => 0
+        }) if $self->is_synthetic;    # only applicable to financial offerings
+
+    my $per_symbol_config        = $self->per_symbol_config();
+    my $symbol                   = $self->underlying->symbol;
+    my $delta                    = abs($self->delta);
+    my @delta_offered            = (keys %{$per_symbol_config->{spread_spot}->{delta}});
+    my @maturities_allowed_days  = @{$per_symbol_config->{maturities_allowed_days}};
+    my @maturities_allowed_weeks = @{$per_symbol_config->{maturities_allowed_weeks}};
+
+    my $closest_delta = $delta_offered[0];
+    foreach my $d (@delta_offered) {
+        if (abs($d - $delta) < abs($closest_delta - $delta)) {
+            $closest_delta = $d;
+        }
+    }
+
+    my $nyt_offset = $self->date_expiry->timezone_offset('America/New_York');
+    my $nyt        = $self->date_expiry->plus_time_interval($nyt_offset);
+
+    my $business_days_between = business_days_between($self->date_start, $nyt, $self->underlying);
+    my $weeks_between         = weeks_between($self->date_start, $nyt);
+
+    my $spread_spot_config = $per_symbol_config->{spread_spot}->{delta}->{$closest_delta};
+    my $spread_vol_config  = $per_symbol_config->{spread_vol}->{delta}->{$closest_delta};
+
+    my ($spread_spot, $spread_vol, $maturity);
+
+    if (any { $_ eq $business_days_between } @maturities_allowed_days) {
+        $spread_spot = $spread_spot_config->{day}->{$business_days_between};
+        $spread_vol  = $spread_vol_config->{day}->{$business_days_between};
+        $maturity    = $business_days_between . "D";
+    } elsif (any { $_ eq $weeks_between } @maturities_allowed_weeks) {
+        $spread_spot = $spread_spot_config->{week}->{$weeks_between};
+        $spread_vol  = $spread_vol_config->{week}->{$weeks_between};
+        $maturity    = $weeks_between . "W";
+    } else {
+        # it is not defined in config
+        return Math::Util::CalculatedValue->new({
+            name        => 'spread',
+            description => 'vanilla options commission spread',
+            set_by      => 'Contract',
+            base_amount => 0
+        });
+    }
+
+    my $fx_spread_specific_time = JSON::MaybeXS::decode_json($self->app_config->get('quants.vanilla.fx_spread_specific_time'));
+
+    my @existing_specific_spread = (keys %{$fx_spread_specific_time->{$symbol}->{$closest_delta}->{$maturity}});
+
+    my $spread_obj;
+    foreach my $entry (@existing_specific_spread) {
+        $spread_obj = $fx_spread_specific_time->{$symbol}->{$closest_delta}->{$maturity}->{$entry};
+
+        my $start_time = Date::Utility->new($spread_obj->{start_time});
+        my $end_time   = Date::Utility->new($spread_obj->{end_time});
+
+        if (($start_time->is_before($self->date_start)) and ($self->date_start->is_before($end_time))) {
+            $spread_spot = $spread_obj->{spread_spot};
+            $spread_vol  = $spread_obj->{spread_vol};
+        }
+    }
+
+    my $spread = Math::Util::CalculatedValue->new({
+            name        => 'spread',
+            description => 'vanilla options commission spread',
+            set_by      => 'Contract',
+            base_amount => 0.5 * ((abs($self->delta) * $spread_spot) + ($self->vega * $spread_vol))});
+
+    return $spread;
+}
+
 =head2 initial_ask_probability
 
 Calculates the ask probability for contract at date start.
@@ -318,6 +481,8 @@ sub initial_ask_probability {
 
         $self->_build_theo_probability;
     };
+
+    $ask_probability->include_adjustment('add', $self->spread);
     $ask_probability->include_adjustment('add', $self->delta_charge);
     $ask_probability->include_adjustment('add', $self->bs_markup);
     return $ask_probability;
@@ -338,6 +503,8 @@ sub _build_ask_probability {
         # don't wrap them in one scope as the changes will be reverted out of scope
         $self->_build_theo_probability;
     };
+
+    $ask_probability->include_adjustment('add', $self->spread);
     $ask_probability->include_adjustment('add', $self->delta_charge);
     $ask_probability->include_adjustment('add', $self->bs_markup);
     return $ask_probability;
@@ -356,6 +523,8 @@ sub _build_bid_probability {
         local $self->_pricing_args->{iv} = $self->pricing_vol * (1 - $self->vol_charge);
         $self->_build_theo_probability;
     };
+
+    $bid_probability->include_adjustment('subtract', $self->spread);
     $bid_probability->include_adjustment('subtract', $self->delta_charge);
     $bid_probability->include_adjustment('subtract', $self->bs_markup);
     return $bid_probability;
@@ -402,7 +571,8 @@ Values (spread_spot) come from backoffice
 sub delta_charge {
     my $self = shift;
 
-    my $spread_spot = $self->per_symbol_config()->{spread_spot};
+    my $spread_spot = 0;
+    $spread_spot = $self->per_symbol_config()->{spread_spot} if $self->is_synthetic;
     $spread_spot = abs($self->delta) * $spread_spot / 2;
 
     my $markup = Math::Util::CalculatedValue->new({
@@ -474,8 +644,8 @@ sub _validation_methods {
 
     # add vanilla specific validations
     push @validation_methods, '_validate_barrier_choice' unless $self->for_sale;
+    push @validation_methods, '_validate_expiry'         unless $self->is_synthetic;
     push @validation_methods, '_validate_stake'          unless $self->for_sale;
-
     return \@validation_methods;
 }
 
@@ -486,8 +656,12 @@ override _build_app_markup_dollar_amount => sub {
 override _build_bid_price => sub {
     my $self = shift;
 
+    my $number_of_contracts = $self->number_of_contracts;
+    # we need to adjust payout per pip back to number of contracts for financials
+    $number_of_contracts = $number_of_contracts / $self->underlying->pip_size unless $self->is_synthetic;
+
     return financialrounding('price', $self->currency, $self->value) if $self->is_expired;
-    return financialrounding('price', $self->currency, $self->_build_bid_probability->amount * $self->number_of_contracts);
+    return financialrounding('price', $self->currency, $self->_build_bid_probability->amount * $number_of_contracts);
 };
 
 override '_build_ask_price' => sub {
@@ -603,5 +777,87 @@ override _validate_price => sub {
     # not validating payout max as vanilla doesn't have a payout until expiry
     return undef;
 };
+
+=head2 _validate_expiry
+
+For vanilla financials, we only expire on 10am NYT and only specific durations are offered.
+This subroutine is to validate the expiry date and time.
+
+=cut
+
+sub _validate_expiry {
+    my $self = shift;
+
+    my $nyt_offset = $self->date_expiry->timezone_offset('America/New_York');
+    my $nyt        = $self->date_expiry->plus_time_interval($nyt_offset);
+
+    my $symbol = $self->underlying->symbol;
+    my @maturities_allowed_days =
+        @{JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.fx_per_symbol_config.$symbol"))->{maturities_allowed_days}};
+    my @maturities_allowed_weeks =
+        @{JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.fx_per_symbol_config.$symbol"))->{maturities_allowed_weeks}};
+
+    return {
+        message           => 'InvalidExpiry',
+        message_to_client => ['Contract cannot end at same day'],
+        details           => {
+            field           => 'amount',
+            min_stake       => $self->min_stake,
+            max_stake       => $self->max_stake,
+            barrier_choices => $self->strike_price_choices
+        },
+        }
+        if ($self->date_expiry->date eq $self->date_start->date);
+
+    # early return if it's not 10am NYT
+    return {
+        message           => 'InvalidExpiry',
+        message_to_client => ['Contract must end at 10:00 am New York Time'],
+        details           => {
+            field           => 'amount',
+            min_stake       => $self->min_stake,
+            max_stake       => $self->max_stake,
+            barrier_choices => $self->strike_price_choices
+        },
+        }
+        if ($nyt->time_hhmmss ne SETTLEMENT_TIME);
+
+    my $business_days_between = business_days_between($self->date_start, $nyt, $self->underlying);
+    my $weeks_between         = weeks_between($self->date_start, $nyt);
+    if (   (any { $_ eq $business_days_between } @maturities_allowed_days)
+        or (any { $_ eq $weeks_between } @maturities_allowed_weeks))
+    {
+
+        return {
+            message           => 'InvalidExpiry',
+            message_to_client => ['Contract more than 1 week must end on Friday'],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+            }
+            if (($nyt->full_day_name ne 'Friday')
+            and ($nyt->time_hhmmss eq SETTLEMENT_TIME)
+            and ($business_days_between >= 7));
+
+        return;
+    } else {
+        return {
+            message           => 'InvalidExpiry',
+            message_to_client => [
+                "Invalid contract duration. Durations offered are (@maturities_allowed_days) days and every Friday after (@maturities_allowed_weeks) weeks."
+            ],
+            details => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+        };
+    }
+
+}
 
 1;

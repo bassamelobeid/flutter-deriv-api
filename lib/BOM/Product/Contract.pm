@@ -871,6 +871,17 @@ sub _build_exit_tick {
                 or ($closing and $self->date_expiry->is_same_as($closing))
         ) ? $underlying->closing_tick_on($self->date_expiry->date) : $self->_tick_accessor->tick_at($self->date_expiry->epoch);
 
+        # return closing tick if it is earlier that date expiry for vanilla fx,
+        # as it is expiring on 10am NYT
+        if ($self->category_code eq 'vanilla') {
+            unless ($self->is_synthetic) {
+                $valid_exit_tick_at_expiry =
+                    ($closing->is_before($self->date_expiry))
+                    ? $underlying->closing_tick_on($self->date_expiry_date)
+                    : $self->_tick_accessor->tick_at($self->date_expiry->epoch);
+            }
+        }
+
         # There are few scenarios where we still do not have valid exit tick as follow. In those case, we will use last available tick at the expiry time to determine the pre-settlement value but will not be settle based on that tick
         # 1) For long term contract, after expiry yet pass the settlement time, waiting for daily ohlc to be updated
         # 2) For short term contract, waiting for next tick to arrive after expiry to determine the valid exit tick at expiry
