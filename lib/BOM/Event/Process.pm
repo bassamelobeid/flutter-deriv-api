@@ -12,6 +12,7 @@ use Log::Any qw($log);
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
+use BOM::Event::Actions::DerivEZ;
 use BOM::Event::Actions::Client::DisputeNotification;
 use BOM::Event::Actions::Client::IdentityVerification;
 use BOM::Event::Actions::Client::Status;
@@ -195,6 +196,8 @@ my $action_mapping = {
         pa_first_time_approved                           => \&BOM::Event::Services::Track::pa_first_time_approved,
         pa_transfer_confirm                              => \&BOM::Event::Actions::Client::pa_transfer_confirm,
         pa_withdraw_confirm                              => \&BOM::Event::Actions::Client::pa_withdraw_confirm,
+        derivez_inactive_account_closed                  => \&BOM::Event::Actions::DerivEZ::derivez_inactive_account_closed,
+        derivez_inactive_notification                    => \&BOM::Event::Actions::DerivEZ::derivez_inactive_notification,
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,

@@ -164,12 +164,14 @@ my %EVENT_PROPERTIES = (
     p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url)],
     poi_poa_resubmission        =>
         [qw(first_name poi_reason poi_title poi_subtitle footnote poi_layout poa_reason poa_title poa_subtitle poa_layout title is_eu)],
-    professional_status_requested => [qw(first_name email request_professional_status)],
-    payops_event_email            => [qw(contents subject loginid email_template properties)],
-    p2p_limit_changed             => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
-    p2p_limit_upgrade_available   => [qw(loginid advertiser_id)],
-    dp_successful_login           => [qw(timestamp)],
-    pa_first_time_approved        => [qw(first_name contact_email tnc_url)],
+    professional_status_requested   => [qw(first_name email request_professional_status)],
+    payops_event_email              => [qw(contents subject loginid email_template properties)],
+    p2p_limit_changed               => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
+    p2p_limit_upgrade_available     => [qw(loginid advertiser_id)],
+    dp_successful_login             => [qw(timestamp)],
+    pa_first_time_approved          => [qw(first_name contact_email tnc_url)],
+    derivez_inactive_notification   => [qw(email name closure_date accounts)],
+    derivez_inactive_account_closed => [qw(name title derivez_accounts live_chat_url)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -1620,6 +1622,60 @@ for my $event_name (@COMMON_EVENT_METHODS) {
         );
         }
         unless __PACKAGE__->can($event_name);
+}
+
+=head2 derivez_inactive_notification
+
+It is triggered for each B<derivez_inactive_notification> event emitted, delivering it to Segment. It's called with following arguments:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<email> - required. Email address to which the notification should be sent.
+
+=item * C<closure_date> - required. The closure date of the accounts, represented as Linux epoch.
+
+=item * C<accounts> - required. An array-ref holding a list of derivez accounts with following structure:
+
+=over
+
+=item - C<loginid> - derivez account id.
+
+=item - C<account_type> - derivez account type.
+
+=back
+
+=back
+
+=cut
+
+sub derivez_inactive_notification {
+    my ($args) = @_;
+
+    my $loginid = delete $args->{loginid};
+    return track_event(
+        event      => 'derivez_inactive_notification',
+        loginid    => $loginid,
+        properties => $args,
+    );
+}
+
+=head2 derivez_inactive_account_closed
+
+Triggered for each B<derivez_inactive_account_closed> event emitted, delivering it to Segment.
+
+=cut
+
+sub derivez_inactive_account_closed {
+    my ($args) = @_;
+
+    my $loginid = delete $args->{loginid};
+    return track_event(
+        event      => 'derivez_inactive_account_closed',
+        loginid    => $loginid,
+        properties => $args,
+    );
 }
 
 1;
