@@ -19,7 +19,7 @@
             ],
             "properties": {
                 "trading": {
-                    "description": "Trading accounts types that are available to create or link to",
+                    "description": "Trading account types that are available to create or link to",
                     "type": "object",
                     "additionalProperties": false,
                     "patternProperties": {
