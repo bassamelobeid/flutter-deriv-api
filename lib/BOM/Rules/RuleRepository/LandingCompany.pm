@@ -32,7 +32,7 @@ rule 'landing_company.accounts_limit_not_reached' => {
         my $account_type = $args->{account_type} // '';
         # Regulated landing companies and trading accounts are limitted.
         # Landing companies for affiliates are also limited.
-        my $number_of_accounts_limited = ($landing_company->is_eu && ($account_type ne 'wallet')) || $landing_company->is_for_affiliates;
+        my $number_of_accounts_limited = ($landing_company->is_eu && ($account_type eq 'binary')) || $landing_company->is_for_affiliates;
 
         return 1 unless $number_of_accounts_limited;
 
@@ -44,6 +44,7 @@ rule 'landing_company.accounts_limit_not_reached' => {
         return 1 unless scalar @clients;
 
         $self->fail('FinancialAccountExists') if @enabled_clients && $args->{landing_company} eq 'maltainvest';
+
         $self->fail('NewAccountLimitReached');
     },
 };

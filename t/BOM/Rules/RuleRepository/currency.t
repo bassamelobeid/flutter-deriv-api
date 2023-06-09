@@ -122,7 +122,10 @@ subtest 'rule currency.experimental_currency' => sub {
 
 my $rule_name = 'currency.is_available_for_new_account';
 subtest $rule_name => sub {
-    my %args        = (loginid => $client_cr_usd->loginid);
+    my %args = (
+        loginid      => $client_cr_usd->loginid,
+        account_type => 'binary'
+    );
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr_usd);
 
     subtest 'trading  account' => sub {
@@ -158,6 +161,7 @@ subtest $rule_name => sub {
 
         %args = (
             loginid         => $client_cr_usd->loginid,
+            account_type    => 'binary',
             landing_company => 'malta',
             currency        => 'USD'
         );

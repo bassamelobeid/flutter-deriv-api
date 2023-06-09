@@ -13,32 +13,42 @@ This modules declares rules and regulations concerning the context residence.
 use strict;
 use warnings;
 
-use List::Util;
+use List::Util qw(any);
 
 use BOM::Rules::Registry qw(rule);
 
-rule 'residence.market_type_is_available' => {
+rule 'residence.account_type_is_available' => {
     description => "The market_type in args should be allowed in the context residence",
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $market_type     = $args->{market_type}  // '';
-        my $account_type    = $args->{account_type} // '';
-        my $category        = $args->{category}     // '';
-        my $residence       = $context->residence($args);
-        my $landing_company = $context->landing_company_object($args);
+        my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // BOM::Config::AccountType::LEGACY_TYPE);
 
-        my $countries_instance = $context->brand($args)->countries_instance;
+        $self->fail('InvalidAccount')
+            unless $account_type->is_supported($context->brand($args), $context->residence($args), $context->landing_company($args));
 
-        my $companies = {
-            synthetic => $countries_instance->gaming_company_for_country($context->residence($args)),
-            financial => $countries_instance->financial_company_for_country($context->residence($args)),
-        };
+        if ($account_type->name eq 'standard') {
+            my $wallet      = $context->client($args);
+            my $wallet_type = $wallet->get_account_type->name;
 
-        if ($category eq 'wallet') {
-            $self->fail('InvalidAccount') unless List::Util::any { $_ } values %$companies;
-        } else {
-            $self->fail('InvalidAccount') if $context->landing_company($args) ne ($companies->{$market_type} // '');
+            return $self->fail('InvalidAccount') unless any { $_ eq $wallet_type } $account_type->linkable_wallet_types->@*;
+
+            my @account_links = ($wallet->user->get_accounts_links({wallet_loginid => $wallet->loginid})->{$wallet->loginid} // [])->@*;
+
+            for my $account_link (@account_links) {
+                next if $account_link->{platform} ne $account_type->platform;
+
+                my $sibling = BOM::User::Client->new({loginid => $account_link->{loginid}});
+
+                # At least for now we're planning to allow only one Deriv trading account per type linked to the same wallet
+                # In future we may introduce more.. but i hope we'll be introducing separate account types for those
+                next if $sibling->get_account_type->name ne $account_type->name;
+
+                # skip closed accounts
+                next if $sibling->status->duplicate_account;
+
+                return $self->fail('InvalidAccount');
+            }
         }
 
         return 1;
@@ -67,8 +77,9 @@ rule 'residence.account_type_is_available_for_real_account_opening' => {
 
         die 'Account type is required' unless $args->{account_type};
         return 1 if $args->{account_type} eq 'binary';
-        return 1 if $args->{account_type} eq 'trading';
         return 1 if $args->{account_type} eq 'affiliate';
+
+        return 1 if $args->{account_type} eq 'standard';
 
         my $countries_instance = $context->brand($args)->countries_instance;
 

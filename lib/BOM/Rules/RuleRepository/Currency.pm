@@ -19,6 +19,8 @@ use List::Util qw(any);
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::CurrencyConfig;
 
+use Carp;
+
 rule 'currency.is_currency_suspended' => {
     description => "Fails if currency is suspended or invalid; otherwise passes.",
     code        => sub {
@@ -201,8 +203,26 @@ rule 'currency.is_available_for_new_account' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        return _currency_is_available($self, $context, $args, 1),;
-    },
+        my $currency = $args->{currency};
+
+        my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // BOM::Config::AccountType::LEGACY_TYPE);
+
+        if ($account_type->name eq 'binary') {
+            return _currency_is_available($self, $context, $args, 1);
+        } elsif ($account_type->category->name eq 'trading') {
+            my $wallet_currency = $context->client({loginid => $args->{loginid}})->default_account->currency_code;
+
+            $self->fail('CurrencyNotAllowed') unless $wallet_currency eq $currency;
+
+            return 1;
+        } elsif ($account_type->category->name eq 'wallet') {
+            # TODO: For now the same logic as for legacy account but it needs adjustments for sure
+            return _currency_is_available($self, $context, $args, 1);
+        } else {
+            #How do we get here?
+            confess "Unexpected account type $args->{account_type}";
+        }
+    }
 };
 
 rule 'currency.is_available_for_change' => {
@@ -210,7 +230,24 @@ rule 'currency.is_available_for_change' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        return _currency_is_available($self, $context, $args, 0),;
+        my $currency = $args->{currency};
+
+        my $client = $context->client({loginid => $args->{loginid}});
+
+        my $account_type = $client->get_account_type;
+
+        if ($account_type->name eq 'binary') {
+            return _currency_is_available($self, $context, $args, 0);
+        } elsif ($account_type->category->name eq 'trading') {
+            # We don't allow to change currency for trading accounts, because currency is inherited from wallet account.
+            $self->fail('CurrencyChangeIsNotPossible');
+        } elsif ($account_type->category->name eq 'wallet') {
+            # TODO: For now the same logic as for legacy account but it needs adjustments for sure
+            return _currency_is_available($self, $context, $args, 0);
+        } else {
+            # How do we get here?
+            confess "Unexpected account type $args->{account_type}";
+        }
     },
 };
 

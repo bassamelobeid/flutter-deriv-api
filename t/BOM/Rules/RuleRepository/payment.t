@@ -10,6 +10,7 @@ use Syntax::Keyword::Try;
 use Format::Util::Numbers            qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::TradingPlatform;
 
 populate_exchange_rates({
     USD => 1,

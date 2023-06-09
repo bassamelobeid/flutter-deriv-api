@@ -33,7 +33,10 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     my $rule_name = 'landing_company.accounts_limit_not_reached';
 
     like exception { $rule_engine->apply_rules($rule_name) }, qr/landing_company is required/, 'Fails without landing company';
-    my %args = (landing_company => 'malta');
+    my %args = (
+        landing_company => 'malta',
+        account_type    => 'binary'
+    );
     like exception { $rule_engine->apply_rules($rule_name, %args) }, qr/Client loginid is missing/, 'Fails without client loginid';
     $args{loginid} = $client->loginid;
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'There is no malta account so it is ok';
@@ -75,18 +78,14 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     lives_ok { $engine->apply_rules($rule_name, %args) } 'Wallet accounts is not restricted';
     $mock_client->unmock_all;
 
-    $args{account_type} = 'trading';
+    $args{account_type} = 'standart';
     $client_mf->status->set('duplicate_account', 'test', 'test');
     lives_ok { $engine->apply_rules($rule_name, %args) } 'Duplicate accounts are ignored';
     $client_mf->status->clear_duplicate_account;
 
     $client_mf->status->set('disabled', 'test', 'test');
-    is_deeply exception { $engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'NewAccountLimitReached',
-        rule       => 'landing_company.accounts_limit_not_reached'
-        },
-        'Number of MF accounts is limited - disabled accounts included';
+    is_deeply exception { $engine->apply_rules($rule_name, %args) }, undef,
+        'No limits for new flow, trading account  should be only limited by wallets';
 };
 
 subtest 'rule landing_company.required_fields_are_non_empty' => sub {

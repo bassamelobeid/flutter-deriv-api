@@ -16,7 +16,7 @@ new_trading_account:
           - trading_account.should_complete_financial_assessment
           - trading_account.should_provide_tax_details
         demo:
-          - pass
+          - trading_account.client_should_be_legacy_or_virtual_wallet
 trading_account_deposit:
   description: Contains rules to be applied on deposit to trading platform accounts
   ruleset:

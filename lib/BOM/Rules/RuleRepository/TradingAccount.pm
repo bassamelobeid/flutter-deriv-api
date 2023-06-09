@@ -120,6 +120,20 @@ rule 'trading_account.client_should_be_real' => {
     },
 };
 
+rule 'trading_account.client_should_be_legacy_or_virtual_wallet' => {
+    description => 'Checks whether the context client is real',
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $account_type = $context->client($args)->get_account_type;
+
+        $self->fail('AccountTypesMismatch')
+            if $account_type->name ne 'binary'      # Legacy Flow
+            && $account_type->name ne 'virtual';    # Wallet flow
+
+        return 1;
+    },
+};
+
 rule 'trading_account.allowed_currency' => {
     description => 'Checks whether the given currency is allowed to open a trading account',
     code        => sub {
