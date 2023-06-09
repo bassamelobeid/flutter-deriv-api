@@ -18,6 +18,8 @@ use LandingCompany::Registry;
 use BOM::Config;
 use BOM::Config::Runtime;
 
+use constant {LEGACY_TYPE => 'binary'};
+
 =head1 METHODS - Accessors
 
 =head2 name
