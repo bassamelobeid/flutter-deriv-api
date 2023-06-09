@@ -542,10 +542,13 @@ sub calculate_max_open_bets {
 sub get_vanilla_per_symbol_config {
     my $self = shift;
 
-    my $symbol = $self->contract->underlying->symbol;
-    my $expiry = $self->contract->is_intraday ? 'intraday' : 'daily';
+    my $symbol       = $self->contract->underlying->symbol;
+    my $expiry       = $self->contract->is_intraday ? 'intraday' : 'daily';
+    my $is_synthetic = $self->contract->underlying->market->name eq 'synthetic_index';
 
+    return decode_json(BOM::Config::Runtime->instance->app_config->get("quants.vanilla.fx_per_symbol_config.$symbol")) unless $is_synthetic;
     return decode_json(BOM::Config::Runtime->instance->app_config->get("quants.vanilla.per_symbol_config.$symbol" . "_$expiry"));
+
 }
 
 sub get_vanilla_user_specific_limit {
