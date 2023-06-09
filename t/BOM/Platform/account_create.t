@@ -63,7 +63,7 @@ $client_mocked->mock('add_note', sub { return 1 });
 
 my $vr_details = {
     CR => [{
-            account_type       => 'standard',
+            account_type       => 'binary',
             email              => 'foo+id@binary.com',
             client_password    => 'foobar',
             residence          => 'id',                  # Indonesia
@@ -75,7 +75,7 @@ my $vr_details = {
         }
     ],
     MF => [{
-            account_type       => 'standard',
+            account_type       => 'binary',
             email              => 'foo+gb@binary.com',
             client_password    => 'foobar',
             residence          => 'gb',                  # UK
@@ -87,7 +87,7 @@ my $vr_details = {
             stopped            => 1,                     # this special flag indicates the account wont be created
         },
         {
-            account_type       => 'standard',
+            account_type       => 'binary',
             email              => 'foo+pt@binary.com',
             client_password    => 'foobar',
             residence          => 'pt',
@@ -101,7 +101,7 @@ my $vr_details = {
 };
 
 my %real_client_details = (
-    account_type                  => 'standard',
+    account_type                  => 'binary',
     salutation                    => 'Ms',
     last_name                     => 'binary',
     date_of_birth                 => '1990-01-01',

@@ -14,8 +14,8 @@ use BOM::User::FinancialAssessment qw(should_warn update_financial_assessment);
 
 sub create_account {
     my $args = shift;
-    my ($account_type, $from_client, $user, $country, $details, $params) =
-        @{$args}{'account_type', 'from_client', 'user', 'country', 'details', 'params'};
+    my ($account_type, $from_client, $user, $country, $details, $params, $wallet) =
+        @{$args}{'account_type', 'from_client', 'user', 'country', 'details', 'params', 'wallet'};
 
     my $accept_risk = $params->{accept_risk};
     my $should_warn = should_warn($params);
@@ -24,7 +24,8 @@ sub create_account {
         user         => $user,
         details      => $details,
         from_client  => $from_client,
-        account_type => $account_type
+        account_type => $account_type,
+        wallet       => $wallet,
     });
     return $register if ($register->{error});
 

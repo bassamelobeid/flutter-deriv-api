@@ -31,6 +31,11 @@ sub create_account {
     my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name)
         or return {error => {code => 'InvalidAccountType'}};
 
+    if ($account_type->name ne 'binary' and $account_type->category->name eq 'trading') {
+        my $wallet = delete $args->{wallet} || die 'Trading account cannot be orphant';
+        $details->{wallet_loginid} = $wallet->loginid;
+    }
+
     my $client;
     try {
         if ($account_type->name eq 'affiliate') {
