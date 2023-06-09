@@ -88,7 +88,7 @@ mini:
                 max: 0.036
             PUT:
                 avg: 0.0178
-                max: 0.0653
+                max: 0.0654
     sdeq:
         DJI:
             ONETOUCH:
