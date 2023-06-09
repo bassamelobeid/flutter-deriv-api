@@ -931,6 +931,32 @@ quants:
             1HZ100V_daily: *vanilla_default_config_daily
             1HZ150V_daily: *vanilla_default_config_daily
             1HZ250V_daily: *vanilla_default_config_daily
+        fx_per_symbol_config:
+          isa: section
+          contains:
+            frxAUDUSD: &vanilla_fx_default_config
+              isa: json_string
+              global: 1
+              default: '{"maturities_allowed_days" : [1,2,3,4,5],
+                         "maturities_allowed_weeks" : [1,2,3,4,5,6,7,8,9],
+                         "delta_config" : [0.1,0.3,0.5,0.7,0.9],
+                         "max_strike_price_choice" : 5,
+                         "min_number_of_contracts": {"USDC":0.1,"USB":0.1,"DAI":0.1,"GBP":0.1,"TUSD":0.1,"PAX":0.1,"tUSDT":0.1,"BTC":0.00000015,"EUR":0.1,"UST":0.1,"EURS":0.1,"AUD":0.1,"BUSD":0.1,"eUSDT":0.1,"USDK":0.1,"LTC":0.00045,"USD":0.1,"ETH":0.000025,"IDK":1.39},
+                         "max_number_of_contracts": {"USDC":1000,"USB":1000,"DAI":1000,"GBP":1000,"TUSD":1000,"PAX":1000,"tUSDT":1000,"BTC":0.015,"EUR":1000,"UST":1000,"EURS":1000,"AUD":1000,"BUSD":1000,"eUSDT":1000,"USDK":1000,"LTC":4.5,"USD":1000,"ETH":0.25,"IDK":13900},
+                         "max_open_position": 10,
+                         "max_daily_volume": 5000,
+                         "max_daily_pnl": 3000,
+                         "risk_profile":"low_risk",
+                         "spread_spot":{"delta":{"0.1":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.3":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.5":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.7":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.9":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}}}}
+                         ,
+                         "spread_vol":{"delta":{"0.1":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.3":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.5":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.7":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.9":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}}}}
+                          }'
+            frxEURUSD: *vanilla_fx_default_config
+            frxGBPUSD: *vanilla_fx_default_config
+            frxUSDCAD: *vanilla_fx_default_config
+            frxUSDJPY: *vanilla_fx_default_config
+            frxXAUUSD: *vanilla_fx_default_config
+            frxXAGUSD: *vanilla_fx_default_config
         risk_profile:
           isa: section
           global: 1
@@ -1080,6 +1106,10 @@ quants:
                          }'
               global: 1
         user_specific_limits:
+          isa: json_string
+          default: '{}'
+          global: 1
+        fx_spread_specific_time:
           isa: json_string
           default: '{}'
           global: 1
