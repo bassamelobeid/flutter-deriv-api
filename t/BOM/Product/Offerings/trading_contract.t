@@ -52,7 +52,6 @@ subtest 'by landing company' => sub {
             'callputspread' => 4,
             'accumulator'   => 1,
             'vanilla'       => 8,
-            'turbos'        => 6,
         );
         lives_ok {
             my $contracts = get_contracts($args);
@@ -119,17 +118,17 @@ subtest 'by app id' => sub {
         };
 
         my %expected = (
-            11780 => 51,
-            1411  => 51,
-            16303 => 51,
-            16929 => 51,
+            11780 => 45,
+            1411  => 45,
+            16303 => 45,
+            16929 => 45,
             19111 => 54,
             19112 => 54,
             22168 => 55,
             23789 => 28,
             27315 => 55,
             29864 => 52,
-            30767 => 51,
+            30767 => 45,
             30768 => 55
         );
         my $apps = $deriv->whitelist_apps;
