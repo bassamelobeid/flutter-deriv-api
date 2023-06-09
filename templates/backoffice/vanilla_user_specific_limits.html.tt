@@ -80,8 +80,6 @@ function SaveVanillaUserSpecificLimits(){
 
     result.text('processing ...').css('color', 'black');
 
-    console.log(max_open_position);
-    console.log(loginid);
     \$.ajax({
         url: vanilla_upload_url,
         data: {

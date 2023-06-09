@@ -17,6 +17,7 @@ use BOM::Config::Runtime;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use Log::Any                          qw($log);
 use Digest::MD5                       qw(md5_hex);
+use Data::Dump                        qw(pp);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
@@ -251,6 +252,9 @@ if ($r->param('save_vanilla_per_symbol_config')) {
         die "max open position must be a number"       unless looks_like_number($max_open_position);
         die "max daily volume must be a number"        unless looks_like_number($max_daily_volume);
         die "max daily pnl must be a number"           unless looks_like_number($max_daily_pnl);
+        die "max open position cannot be negative" if ($max_open_position < 0);
+        die "max daily volume cannot be negative"  if ($max_daily_volume < 0);
+        die "max daily pnl cannot be negative"     if ($max_daily_pnl < 0);
 
         unless ($risk_profile ~~ ['low_risk', 'medium_risk', 'moderate_risk', 'high_risk', 'extreme_risk', 'no_business']) {
             die 'risk profile is incorrect';
@@ -280,6 +284,236 @@ if ($r->param('save_vanilla_per_symbol_config')) {
     } catch ($e) {
         my ($message) = $e =~ /(.*)\sat\s\//;
         $output = {error => "$message"};
+    }
+
+    print encode_json_utf8($output);
+}
+
+if ($r->param('save_vanilla_fx_per_symbol_config')) {
+    my $output;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    if ($disabled_write) {
+        $output = {error => "permission denied: no write access"};
+        print encode_json_utf8($output);
+        return;
+    }
+
+    try {
+        my $symbol                  = $r->param('symbol');
+        my $delta_config            = $r->param('delta_config');
+        my $max_strike_price_choice = $r->param('max_strike_price_choice');
+        my $min_number_of_contracts = $r->param('min_number_of_contracts');
+        my $max_number_of_contracts = $r->param('max_number_of_contracts');
+        my $max_open_position       = $r->param('max_open_position');
+        my $max_daily_volume        = $r->param('max_daily_volume');
+        my $max_daily_pnl           = $r->param('max_daily_pnl');
+        my $risk_profile            = $r->param('risk_profile');
+        my $maturities_days         = $r->param('maturities_days');
+        my $maturities_weeks        = $r->param('maturities_weeks');
+
+        die "Symbol is not defined" if $symbol eq '';
+        die "max strike price choice must be a number" unless looks_like_number($max_strike_price_choice);
+        die "max open position must be a number"       unless looks_like_number($max_open_position);
+        die "max daily volume must be a number"        unless looks_like_number($max_daily_volume);
+        die "max daily pnl must be a number"           unless looks_like_number($max_daily_pnl);
+
+        die 'risk profile is incorrec'
+            unless ($risk_profile ~~ ['low_risk', 'medium_risk', 'moderate_risk', 'high_risk', 'extreme_risk', 'no_business']);
+
+        my $vanilla_config = decode_json_utf8($app_config->get("quants.vanilla.fx_per_symbol_config.$symbol"));
+
+        my $existing_spread_spot = delete $vanilla_config->{spread_spot};
+        my $existing_spread_vol  = delete $vanilla_config->{spread_vol};
+
+        my ($new_spread_spot, $new_spread_vol);
+        # remove the maturities offered in spread spot and spread vol
+        foreach my $delta (@{decode_json_utf8($delta_config)}) {
+            foreach my $day (@{decode_json_utf8($maturities_days)}) {
+                $new_spread_spot->{delta}->{$delta}->{day}->{$day} = $existing_spread_spot->{delta}->{$delta}->{day}->{$day};
+                $new_spread_vol->{delta}->{$delta}->{day}->{$day}  = $existing_spread_vol->{delta}->{$delta}->{day}->{$day};
+            }
+            foreach my $week (@{decode_json_utf8($maturities_weeks)}) {
+                $new_spread_spot->{delta}->{$delta}->{week}->{$week} = $existing_spread_spot->{delta}->{$delta}->{week}->{$week};
+                $new_spread_vol->{delta}->{$delta}->{week}->{$week}  = $existing_spread_vol->{delta}->{$delta}->{week}->{$week};
+            }
+        }
+
+        $vanilla_config = {
+            delta_config             => decode_json_utf8($delta_config),
+            max_strike_price_choice  => $max_strike_price_choice,
+            min_number_of_contracts  => decode_json_utf8($min_number_of_contracts),
+            max_number_of_contracts  => decode_json_utf8($max_number_of_contracts),
+            max_open_position        => $max_open_position,
+            max_daily_volume         => $max_daily_volume,
+            max_daily_pnl            => $max_daily_pnl,
+            risk_profile             => $risk_profile,
+            maturities_allowed_days  => decode_json_utf8($maturities_days),
+            maturities_allowed_weeks => decode_json_utf8($maturities_weeks),
+            spread_spot              => $new_spread_spot,
+            spread_vol               => $new_spread_vol,
+        };
+
+        my $encoded_vanilla_config = encode_json_utf8($vanilla_config);
+        $app_config->set({"quants.vanilla.fx_per_symbol_config.$symbol" => $encoded_vanilla_config});
+
+        send_trading_ops_email("Vanilla risk management tool: updated $symbol configuration", $vanilla_config);
+        BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeVanillaConfig", $vanilla_config);
+        $output = {success => 1};
+    } catch ($e) {
+        my ($message) = $e =~ /(.*)\sat\s\//;
+        $output = {error => "$message"};
+    }
+
+    print encode_json_utf8($output);
+}
+
+if ($r->param('save_vanilla_fx_spread_specific_time')) {
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    my ($output, $spread_spot, $spread_vol, $underlying, $delta, $maturity, $start_time, $end_time);
+
+    try {
+        $start_time  = $r->param('start_time');
+        $end_time    = $r->param('end_time');
+        $underlying  = $r->param('underlying');
+        $delta       = $r->param('delta');
+        $maturity    = $r->param('maturity');
+        $spread_spot = $r->param('spread_spot');
+        $spread_vol  = $r->param('spread_vol');
+
+        die 'Start time does not match date utility format' unless Date::Utility->new($start_time);
+        die 'End time does not match date utility format'   unless Date::Utility->new($end_time);
+        die 'Start time must be smaller than end time'      unless Date::Utility->new($start_time)->is_before(Date::Utility->new($end_time));
+
+        die 'Spread must be a number' unless looks_like_number($spread_spot);
+        die 'Spread must be a number' unless looks_like_number($spread_vol);
+
+        die 'Invalid Maturity' unless ($maturity =~ /\d(D|W)/);    #regex match 1D , 7W etc
+
+        die 'Delta must be a number'        unless looks_like_number($delta);
+        die 'Delta must be between 0 and 1' unless ((0 < $delta) and ($delta < 1));
+
+        my $fx_spread_specific_time = decode_json_utf8($app_config->get('quants.vanilla.fx_spread_specific_time'));
+
+        my $id = substr(md5_hex($start_time, $end_time, $underlying, $delta, $maturity, $spread_spot, $spread_vol), 0, 16);
+
+        $fx_spread_specific_time->{$underlying}->{$delta}->{$maturity}->{$id} = {
+            start_time  => $start_time,
+            end_time    => $end_time,
+            spread_spot => $spread_spot,
+            spread_vol  => $spread_vol
+        };
+
+        $app_config->set({'quants.vanilla.fx_spread_specific_time' => encode_json_utf8($fx_spread_specific_time)});
+
+        send_trading_ops_email(
+            "Vanilla risk management tool: updated vanilla fx specific time spread config",
+            {
+                start_time  => $start_time,
+                end_time    => $end_time,
+                underlying  => $underlying,
+                delta       => $delta,
+                spread_spot => $spread_spot,
+                spread_vol  => $spread_vol
+            });
+
+        BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeVanillaFxSpecificTimeSpreadConfig",
+                  "start time : $start_time \n"
+                . "end time : $end_time \n"
+                . "underlying :  $underlying \n"
+                . "delta : $delta \n"
+                . "spread spot : $spread_spot \n"
+                . "spread vol : $spread_vol");
+
+        $output = {success => 1};
+    } catch ($e) {
+        $output = {error => "$e"};
+    }
+
+    print encode_json_utf8($output);
+}
+
+if ($r->param('delete_vanilla_fx_spread_specific_time')) {
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    my ($output, $id, $underlying, $delta, $maturity);
+
+    try {
+        $id         = $r->param('id');
+        $underlying = $r->param('underlying');
+        $delta      = $r->param('delta');
+        $maturity   = $r->param('maturity');
+
+        my $fx_spread_specific_time = decode_json_utf8($app_config->get('quants.vanilla.fx_spread_specific_time'));
+
+        delete $fx_spread_specific_time->{$underlying}->{$delta}->{$maturity}->{$id};
+
+        $app_config->set({'quants.vanilla.fx_spread_specific_time' => encode_json_utf8($fx_spread_specific_time)});
+
+        send_trading_ops_email("Vanilla risk management tool: delete vanilla fx specific time spread config", {id => $id});
+
+        BOM::Backoffice::QuantsAuditLog::log($staff, "RemovedVanillaFxSpecificTimeSpreadConfig", "id time : $id \n");
+
+        $output = {success => 1};
+    } catch ($e) {
+        $output = {error => "$e"};
+    }
+
+    print encode_json_utf8($output);
+}
+
+if ($r->param('save_vanilla_fx_spread')) {
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    my ($output, $symbol, $spread_config);
+    try {
+        $symbol        = $r->param('symbol');
+        $spread_config = decode_json_utf8($r->param('spread_config'));
+
+        # Rearranging the convoluted json here to match with our schema
+        my $spread_spot_to_send;
+        my $spread_vol_to_send;
+        foreach my $delta (keys %{$spread_config}) {
+            foreach my $maturity (keys %{$spread_config->{$delta}}) {
+                my $spread_spot = $spread_config->{$delta}->{$maturity}->{spot};
+                my $spread_vol  = $spread_config->{$delta}->{$maturity}->{vol};
+
+                my $maturity_type = chop($maturity);    #D or W
+
+                if ($maturity_type eq 'D') {
+                    $spread_spot_to_send->{delta}->{$delta}->{day}->{$maturity} = $spread_spot;
+                    $spread_vol_to_send->{delta}->{$delta}->{day}->{$maturity}  = $spread_vol;
+                } else {
+                    $spread_spot_to_send->{delta}->{$delta}->{week}->{$maturity} = $spread_spot;
+                    $spread_vol_to_send->{delta}->{$delta}->{week}->{$maturity}  = $spread_vol;
+                }
+
+            }
+        }
+
+        my $vanilla_config = decode_json_utf8($app_config->get("quants.vanilla.fx_per_symbol_config.$symbol"));
+
+        $vanilla_config->{spread_spot} = $spread_spot_to_send;
+        $vanilla_config->{spread_vol}  = $spread_vol_to_send;
+
+        my $encoded_vanilla_config = encode_json_utf8($vanilla_config);
+        $app_config->set({"quants.vanilla.fx_per_symbol_config.$symbol" => $encoded_vanilla_config});
+
+        send_trading_ops_email("Vanilla risk management tool: updated vanilla spread config", {pp($vanilla_config)});
+
+        BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeVanillaFxSpreadConfig", pp($vanilla_config));
+
+        $output = {success => 1};
+    } catch ($e) {
+        $output = {error => "$e"};
     }
 
     print encode_json_utf8($output);

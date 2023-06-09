@@ -674,7 +674,7 @@ sub _debug_price {
             . $contract->$type . '</a>'
             . '</a></li><li><a>'
             . 'theo price' . ' '
-            . $contract->theo_price * $contract->number_of_contracts;
+            . $contract->theo_price;
 
         $table .= '</li></ul>';
 

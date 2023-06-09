@@ -1,0 +1,102 @@
+<form id='vanilla_fx_spread_config'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table class="small full-width hover alternate border">
+    [% FOREACH data IN existing_config %]
+        <table class="small full-width hover alternate border">
+            <thead>
+                <tr>
+                    <th>[% data.symbol %]</th>
+                    [% FOREACH delta IN data.delta_config %]
+                        <th>[% delta %]</th>
+                    [% END %]
+                </tr>
+            </thead>
+            <tbody>
+                  [% FOREACH day IN data.maturities_days %]
+                      <tr id="[% data.symbol %]-spread_config">
+                          <td>Maturity: [% day %] D</td>
+                          [% FOREACH delta IN data.delta_config %]
+                                  <td>
+                                      <label>Spread Spt</label>
+                                      <input type="text" spread="spot" delta=[% delta %] maturity="[% day %]D" value="[% data.spread_spot.delta.$delta.day.$day %]"></input><br>
+                                      <label>Spread Vol </label>
+                                      <input type="text" spread="vol"  delta=[% delta %] maturity="[% day %]D" value="[% data.spread_vol.delta.$delta.day.$day %]"></input>
+                                  </td>
+                          [% END %]
+                      </t>
+                  [% END %]
+                  [% FOREACH week IN data.maturities_weeks %]
+                      <tr id="[% data.symbol %]-spread_config">
+                          <td>Maturity: [% week %] W</td>
+                          [% FOREACH delta IN data.delta_config %]
+                                  <td>
+                                      <label>Spread Spt</label>
+                                      <input type="text" spread="spot" delta=[% delta %] maturity="[% week %]W" value="[% data.spread_spot.delta.$delta.week.$week %]"></input><br>
+                                      <label>Spread Vol </label>
+                                      <input type="text" spread="vol" delta=[% delta %] maturity="[% week %]W" value="[% data.spread_vol.delta.$delta.week.$week %]"></input>
+                                  </td>
+                          [% END %]
+                      </tr>
+                  [% END %]
+                  <tr id="[% data.symbol %]-spread_config">
+                      <td><button onClick="SaveVanillaFxSpreadConfig('[% data.symbol %]')" type="button" class="btn btn--primary">Save</button></td>
+                      <td class='vanilla_fx_spread_config'>..</td>
+                  </tr>
+            </tbody>
+        </table>
+    [% END %]
+</table>
+</form>
+
+
+<script>
+var vanilla_upload_url = "[% vanilla_upload_url | none %]";
+
+function SaveVanillaFxSpreadConfig(symbol){
+
+    var el = \$('#vanilla_fx_spread_config').find('tr#' + symbol + '-spread_config');
+    var result = el.find('.vanilla_fx_spread_config');
+
+    var all_input = el.find('input');
+    console.log(result);
+
+    result.text('Saving... ');
+    var spread_config = {};
+    for (let i = 0; i < all_input.length; i++){
+        var elem = all_input[i];
+        var val = elem.value;
+        var delta = elem.getAttribute('delta');
+        var maturity = elem.getAttribute('maturity');
+        var spread_type = elem.getAttribute('spread');
+
+        if (!spread_config[delta]){
+            spread_config[delta] = {};
+        }
+
+        if (!spread_config[delta][maturity]){
+            spread_config[delta][maturity] = {};
+        }
+        spread_config[delta][maturity][spread_type] = val;
+    }
+
+    console.log(spread_config);
+    \$.ajax({
+        url: vanilla_upload_url,
+        data: {
+            save_vanilla_fx_spread: 1,
+            symbol: symbol,
+            spread_config: JSON.stringify(spread_config)
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('Spread configuration saved. Please refresh page to see latest configuration').css('color', 'var(--color-green)');
+            }
+        }
+    });
+
+
+}
+</script>

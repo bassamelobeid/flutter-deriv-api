@@ -1,0 +1,158 @@
+<form id='vanilla_fx_spread_specific_time'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table>
+    <tr>
+        <td>Start Date: </td>
+        <td><input type="text" name="start_time"></input></td>
+        <td>Accepts valid date utility format, e.g. epoch of '2020-01-01 00:42:00'</td>
+    </tr>
+    <tr>
+        <td>End Date: </td>
+        <td><input type="text" name="end_time"></input></td>
+        <td>Accepts valid date utility format, e.g. epoch of '2020-01-01 00:42:00'</td>
+    </tr>
+    <tr>
+        <td>Underlying: </td>
+        <td>
+            <select name="underlying">
+            [% FOREACH data IN existing_config %]
+                <option value=[% data.symbol %]>[% data.symbol %]</option>
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Delta Point:</td>
+        <td><input type="text" name="delta"></input></td>
+        <td>Delta, e.g. 0.1</td>
+    </tr>
+    <tr>
+        <td>Maturity:</td>
+        <td><input type="text" name="maturity"></input></td>
+        <td>Maturity, e.g. 1D , 1W</td>
+    </tr>
+    <tr>
+        <td>Spread Spot: </td>
+        <td><input type="text" name="spread_spot"></input></td>
+    </tr>
+    <tr>
+        <td>Spread Vol: </td>
+        <td><input type="text" name="spread_vol"></input></td>
+    </tr>
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveVanillaFxSpreadSpecificTime()" value="Save"></td>
+        <td class="save_vanilla_fx_spread_specific_time"></td>
+    </tr>
+</table>
+</form>
+
+<hr/>
+
+<h3>EXISTING LIMITS</h3>
+<form id='vanilla_fx_existing_spread_specific_time'>
+<table class="small full-width hover alternate border">
+    <thead>
+    <tr align="center">
+        <th>ID</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Underlying</th>
+        <th>Delta</th>
+        <th>Maturity</th>
+        <th>Spread Spot</th>
+        <th>Spread Vol</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN table_data %]
+    <tr align="center" id="[% data.id %]">
+        <td>[% data.id %]</td>
+        <td>[% data.start_time %]</td>
+        <td>[% data.end_time %]</td>
+        <td>[% data.underlying %]</td>
+        <td>[% data.delta %]</td>
+        <td>[% data.maturity %]</td>
+        <td>[% data.spread_spot %]</td>
+        <td>[% data.spread_vol %]</td>
+        <td><button
+            onClick="DeleteVanillaFxSpreadSpecificTime('[% data.id %]', '[% data.underlying %]', '[% data.delta %]', '[% data.maturity %]')"
+            type="button" class="btn btn--secondary">Delete</button>
+        </td>
+        <td class='vanilla_fx_spread_specific_time_progress'>..</td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
+
+
+<script>
+var vanilla_upload_url = "[% vanilla_upload_url | none %]";
+
+function SaveVanillaFxSpreadSpecificTime(){
+
+    var el = \$('#vanilla_fx_spread_specific_time');
+
+    var result = el.find('.save_vanilla_fx_spread_specific_time');
+    var start_time = el.find('input[name="start_time"]').val();
+    var end_time = el.find('input[name="end_time"]').val();
+    var underlying = el.find('select[name="underlying"]').val();
+    var delta = el.find('input[name="delta"]').val();
+    var maturity = el.find('input[name="maturity"]').val();
+    var spread_spot = el.find('input[name="spread_spot"]').val();
+    var spread_vol = el.find('input[name="spread_vol"]').val();
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: vanilla_upload_url,
+        data: {
+            save_vanilla_fx_spread_specific_time: 1,
+            start_time: start_time,
+            end_time: end_time,
+            underlying: underlying,
+            delta: delta,
+            maturity: maturity,
+            spread_spot: spread_spot,
+            spread_vol: spread_vol,
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('User specific config for vanilla is updated successfully. Please refresh the page to see the latest limits.').css('color', 'var(--green-2)');
+            }
+        }
+    });
+}
+
+function DeleteVanillaFxSpreadSpecificTime(id, underlying, delta, maturity) {
+
+    var el = \$('#vanilla_fx_existing_spread_specific_time').find('tr#' + id);
+    var result = el.find('.vanilla_fx_spread_specific_time_progress');
+
+    result.text('processing ...');
+
+    \$.ajax({
+        url: vanilla_upload_url,
+        data: {
+            delete_vanilla_fx_spread_specific_time: 1,
+            id: id,
+            underlying: underlying,
+            delta: delta,
+            maturity: maturity
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('Entry removed. Please refresh the page to see latest limits').css('color', 'var(--color-green)');
+            }
+        }
+    });
+}
+
+
+</script>
