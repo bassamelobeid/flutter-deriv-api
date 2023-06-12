@@ -19,9 +19,9 @@
       "preferred_language"
    ],
    "additionalProperties" : false,
-   "title" : "",
+   "title" : null,
    "type" : "object",
-   "description" : "",
+   "description" : null,
    "properties" : {
       "scopes" : {
          "minItems" : 4,
@@ -76,35 +76,19 @@
                },
                "account_type": {
                    "description": "Account type.",
-                   "type": "string"
+                   "type": "string",
+                   "enum": [
+                       "trading",
+                       "wallet"
+                   ]
                },
-               "account_category": {
-                  "description": "Account category.",
-                  "type": "string",
-                  "enum" : [
-                     "trading",
-                     "wallet"
-                  ]
-              },
-              "linked_to": {
-                  "description": "list of linked accounts.",
-                  "type": "array",
-                  "items" : {
-                     "type" : "object",
-                     "additionalProperties" : false,
-                     "required" : [
-                        "loginid",
-                        "platform"
-                     ],
-                     "properties" : {
-                        "loginid": {
-                           "type": "string"
-                        },
-                        "platform": {
-                           "type": "string"
-                        }
-                     }
-                  }
+               "trading": {
+                  "description": "Details of the Trading account.",
+                  "type": "object"
+               },
+               "wallet": {
+                  "description": "Details of the Wallet account.",
+                  "type": "object"
                },
                "created_at": {
                   "description": "Creation time of the account as epoch.",
@@ -135,26 +119,6 @@
                   }
               }
           }
-      },
-      "linked_to": {
-         "description": "list of linked accounts.",
-         "type": "array",
-         "items" : {
-            "type" : "object",
-            "additionalProperties" : false,
-            "required" : [
-               "loginid",
-               "platform"
-            ],
-            "properties" : {
-               "loginid": {
-                  "type": "string"
-               },
-               "platform": {
-                  "type": "string"
-               }
-            }
-         }
       },
       "loginid" : {
          "pattern" : "^VRTC",

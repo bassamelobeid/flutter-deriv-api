@@ -3372,7 +3372,7 @@ rpc get_account_types => sub {
     my $landing_company = $args->{company} // $client->landing_company->short;
     my $brand           = request()->brand;
 
-    if ($brand->countries_instance->restricted_country($country)) {
+    if (request()->brand->countries_instance->restricted_country($country)) {
         return {error => {code => 'RestrictedCountry'}};
     }
 
