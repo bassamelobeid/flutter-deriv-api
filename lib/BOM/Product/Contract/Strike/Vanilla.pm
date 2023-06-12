@@ -101,6 +101,7 @@ sub intraday_strike_price_choices {
     }
 
     @strike_price_choices = uniq(@strike_price_choices);
+    @strike_price_choices = sort { $a <=> $b } @strike_price_choices;
 
     return \@strike_price_choices;
 }

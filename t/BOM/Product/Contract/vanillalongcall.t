@@ -351,7 +351,8 @@ subtest 'strike price choices intraday' => sub {
     $args->{duration} = '10h';
     my $c = produce_contract($args);
 
-    my @expected_strike_price_choices = ('+3049.60', '+1255.10', '+38.80', '-1156.10', '-2844.40');
+    my @expected_strike_price_choices = ('-2844.40', '-1156.10', '+38.80', '+1255.10', '+3049.60');
+
     cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
 };
 
@@ -377,7 +378,7 @@ subtest 'strike price choice validation' => sub {
 
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message, 'InvalidBarrier', 'correct error message';
-    is $c->primary_validation_error->message_to_client->[0], 'Barriers available are +3049.60, +1255.10, +38.80, -1156.10, -2844.40',
+    is $c->primary_validation_error->message_to_client->[0], 'Barriers available are -2844.40, -1156.10, +38.80, +1255.10, +3049.60',
         'correct error message to client';
 
     $args->{duration} = '10h';
