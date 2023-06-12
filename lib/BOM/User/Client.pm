@@ -7468,19 +7468,16 @@ sub get_account_details {
     my $exclude_until = $self->get_self_exclusion_until_date;
     my $created_at    = $self->date_joined ? Date::Utility->new($self->date_joined)->epoch : undef;
 
-    my $acc          = $self->account;
-    my $account_type = $self->get_account_type;
-
     return {
-        account_type         => $account_type->name,
-        account_category     => $account_type->category->name,
+        account_type         => $self->get_account_type->category->name,               # 'trading' or 'wallet'
         loginid              => $self->loginid,
-        currency             => $acc ? $acc->currency_code : '',
+        currency             => $self->account ? $self->account->currency_code : '',
         landing_company_name => $self->landing_company->short,
         is_disabled          => $self->status->disabled ? 1 : 0,
         is_virtual           => $self->is_virtual       ? 1 : 0,
         created_at           => $created_at,
         $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : (),
+        $self->linked_accounts->%*
     };
 }
 
@@ -8377,10 +8374,28 @@ Returns L<BOM::User::Wallet> account details linked to a L<BOM::User::Client> in
 sub linked_accounts {
     my $self = shift;
 
-    my $loginid       = $self->loginid;
-    my $account_links = $self->user->get_accounts_links({trading_loginid => $loginid});
+    my $linked_wallet = $self->user->linked_wallet;
 
-    return $account_links->{$loginid} // [];
+    my $link = first { $_->{loginid} eq $self->loginid } @{$linked_wallet};
+
+    return {trading => {}} unless $link;
+
+    my $wallet  = $self->user->get_wallet_by_loginid($link->{wallet_loginid});
+    my $account = $self->user->get_account_by_loginid($link->{loginid});
+    return {
+        trading => {
+            # keeping it as an array for consistency with Wallet
+            linked_to => [{
+                    account_id     => $wallet->loginid,
+                    balance        => formatnumber('amount', $wallet->currency, $wallet->default_account->balance),
+                    currency       => $wallet->currency,
+                    payment_method => $wallet->account_type,
+                }
+            ],
+            account_id => $account->{account_id},
+            balance    => $account->{display_balance},
+            currency   => $account->{currency},
+            platform   => $account->{platform}}};
 }
 
 =head2 latest_poi_by

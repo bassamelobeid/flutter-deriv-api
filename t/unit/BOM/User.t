@@ -108,7 +108,9 @@ subtest 'get_trading_platform_loginids' => sub {
 subtest 'get_mt5_loginids' => sub {
     my @loginids;
     $user_mock->mock(
-        loginids          => sub { return @loginids },
+        loginids => sub {
+            return @loginids;
+        },
         is_active_loginid => 1,
     );
 
@@ -147,98 +149,55 @@ subtest 'filter_active_ids with status' => sub {
         });
 
     my $tests = [{
-            loginids => {
-                MTR1000 => {
-                    status   => 'poa_outdated',
-                    platform => 'mt5'
-                }
-            },
+            loginids => {MTR1000 => {status => 'poa_outdated'}},
             expected => [qw/MTR1000/],
         },
         {
-            loginids => {
-                MTR1000 => {
-                    status   => 'xxx',
-                    platform => 'mt5'
-                }
-            },
+            loginids => {MTR1000 => {status => 'xxx'}},
             expected => [qw//],
         },
         {
-            loginids => {
-                MTR1001 => {
-                    status   => 'poa_pending',
-                    platform => 'mt5'
-                }
-            },
+            loginids => {MTR1001 => {status => 'poa_pending'}},
             expected => [qw/MTR1001/],
         },
         {
-            loginids => {
-                MTR1002 => {
-                    status   => 'poa_rejected',
-                    platform => 'mt5'
-                }
-            },
+            loginids => {MTR1002 => {status => 'poa_rejected'}},
             expected => [qw/MTR1002/],
         },
         {
-            loginids => {
-                MTR1003 => {
-                    status   => 'poa_failed',
-                    platform => 'mt5'
-                }
-            },
+            loginids => {MTR1003 => {status => 'poa_failed'}},
             expected => [qw/MTR1003/],
         },
         {
-            loginids => {
-                MTR1004 => {
-                    status   => 'proof_failed',
-                    platform => 'mt5'
-                }
-            },
+            loginids => {MTR1004 => {status => 'proof_failed'}},
             expected => [qw/MTR1004/],
         },
         {
-            loginids => {
-                MTR1005 => {
-                    status   => 'verification_pending',
-                    platform => 'mt5'
-                }
-            },
+            loginids => {MTR1005 => {status => 'verification_pending'}},
             expected => [qw/MTR1005/],
         },
         {
             loginids => {
                 MTR1006 => {
-                    status   => undef,
-                    platform => 'mt5',
+                    status => undef,
                 }
             },
             expected => [qw/MTR1006/],
         },
         {
-            loginids => {MTR1007 => {platform => 'mt5'}},
+            loginids => {MTR1007 => {}},
             expected => [qw/MTR1007/],
         },
         {
             loginids => {
                 MTD1000 => {
-                    platform => 'mt5',
+
                 },
                 MTD1001 => {
-                    status   => undef,
-                    platform => 'mt5',
+                    status => undef,
                 },
-                MTD1002 => {
-                    status   => 'dunno',
-                    platform => 'mt5'
-                },
-                MTD1003 => {
-                    status   => 'poa_outdated',
-                    platform => 'mt5'
-                },
+                MTD1002 => {status => 'dunno'},
+                MTD1003 => {status => 'poa_outdated'},
             },
             expected => [qw/MTD1000 MTD1001 MTD1003/],
         },

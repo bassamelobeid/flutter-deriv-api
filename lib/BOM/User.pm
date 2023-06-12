@@ -933,7 +933,7 @@ sub is_payment_agents_suspended_in_country {
 
 =head2 filter_active_ids
 
-my $loginids = Reference list of all accounts associated with current client account;
+my $loginids = Reference list of all MT5 accounts associated with current client account;
 
 Filter the list of MT5 accounts to only get active accounts.
 
@@ -974,6 +974,7 @@ sub is_active_loginid {
     return 0 unless $details;
 
     # Currently we have statuses only for mt5 and derivez accounts
+    $details->{platform} //= $loginid =~ MT5_REGEX ? 'mt5' : '';
     return 1 unless ($details->{platform} // '') =~ /^(?:mt5|derivez)$/;
 
     # Since there are no plans to add "active" to status of active account in DB, current active accounts
@@ -1737,6 +1738,37 @@ sub get_account_by_loginid {
         display_balance => $account            ? formatnumber('amount', $account->currency_code, $account->balance) : '0.00',
         platform        => 'deriv',
     };
+}
+
+=head2 linked_wallet
+
+Calls a db function to get a list of linked wallet for a user.
+
+=over 4
+
+=item * C<$loginid> - a L<BOM::User::Client> or L<BOM::User::Wallet> loginid
+
+=back
+
+Returns a list of linked wallet.
+
+=cut
+
+sub linked_wallet {
+    my ($self, $wallet_loginid) = @_;
+
+    return $self->{linked_wallet} if $self->{linked_wallet};
+
+    $self->{linked_wallet} = $self->dbic->run(
+        fixup => sub {
+            return $_->selectall_arrayref(
+                'select loginid, wallet_loginid from users.get_linked_wallet(?,?,?)',
+                {Slice => {}},
+                undef, $self->{id}, $wallet_loginid
+            );
+        });
+
+    return $self->{linked_wallet};
 }
 
 =head2 get_accounts_links
