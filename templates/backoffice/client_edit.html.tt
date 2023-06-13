@@ -829,6 +829,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 [% client.account_opening_reason %]
             [% ELSE %]
                 <select name="account_opening_reason">
+                <option value="" [% IF client.account_opening_reason == '' %]selected="selected"[% END %]></option>
                     [% FOREACH reason IN account_opening_reasons %]
                         <option value="[% reason %]" [% IF reason == client.account_opening_reason %]selected="selected"[% END %]>[% reason %]</option>
                     [% END %]
