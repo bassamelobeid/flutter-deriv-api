@@ -45,3 +45,6 @@ cover:
 
 unit:
 	@$(PROVE) t/unit/
+
+create_jwt_keys:
+	perl bin/create_jwt_keys.pl
