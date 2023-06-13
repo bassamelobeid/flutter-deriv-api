@@ -99,6 +99,16 @@ BOM::Backoffice::Request::template()->process(
         disabled           => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
+Bar("Vanilla Strike Price Range Markup");
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/vanilla_strike_price_range_markup.html.tt',
+    {
+        vanilla_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_vanilla_config.cgi'),
+        existing_config    => _get_existing_strike_price_range_markup(),
+        disabled           => $disabled_write,
+    }) || die BOM::Backoffice::Request::template()->error;
+
 Bar("Vanilla Per Symbol Config (FX)");
 
 BOM::Backoffice::Request::template()->process(
@@ -138,6 +148,24 @@ sub _get_existing_vanilla_commission_config {
         financial     => $app_config->get('quants.vanilla.affiliate_commission.financial'),
         non_financial => $app_config->get('quants.vanilla.affiliate_commission.non_financial')};
 
+}
+
+sub _get_existing_strike_price_range_markup {
+    my $app_config                = BOM::Config::Runtime->instance->app_config;
+    my $strike_price_range_markup = decode_json_utf8($app_config->get('quants.vanilla.strike_price_range_markup'));
+
+    my @existing;
+    for my $symbol (keys $strike_price_range_markup->%*) {
+        my $data = $strike_price_range_markup->{$symbol};
+        for my $id (keys $data->%*) {
+            my $table_data = $data->{$id};
+            $table_data->{strike_price_range} = JSON::MaybeUTF8::encode_json($table_data->{strike_price_range});
+            $table_data->{contract_duration}  = JSON::MaybeUTF8::encode_json($table_data->{contract_duration});
+            $table_data->{id}                 = $id;
+            push @existing, $table_data;
+        }
+    }
+    return \@existing;
 }
 
 sub _get_existing_vanilla_spread_config {

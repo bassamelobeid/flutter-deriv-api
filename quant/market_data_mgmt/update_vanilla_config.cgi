@@ -174,6 +174,103 @@ if ($r->param('delete_vanilla_user_specific_limit')) {
     print encode_json_utf8($output);
 }
 
+if ($r->param('save_strike_price_range_markup')) {
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    my ($output, $symbol, $strike_price_range, $trade_type, $contract_duration, $markup, $disable_offering);
+
+    try {
+        $symbol             = $r->param('symbol');
+        $strike_price_range = decode_json_utf8($r->param('strike_price_range'));
+        $markup             = $r->param('markup');
+        $trade_type         = $r->param('trade_type');
+        $disable_offering   = $r->param('disable_offering');
+        $contract_duration  = decode_json_utf8($r->param('contract_duration'));
+
+        # Optional: Add some validations if required. e.g.
+        die 'Invalid symbol'                                                  if $symbol eq '';
+        die 'Invalid strike price range'                                      if $strike_price_range eq '';
+        die 'Invalid markup'                                                  if $markup <= 0;
+        die 'Strike price range must have min and max'                        if $strike_price_range->{min} eq '' || $strike_price_range->{max} eq '';
+        die 'Strike price range min must be less than max'                    if $strike_price_range->{min} >= $strike_price_range->{max};
+        die 'Trade type can only be either VANILLALONGCALL or VANILLALONGPUT' if $trade_type ne 'VANILLALONGCALL' and $trade_type ne 'VANILLALONGPUT';
+        die 'Disable offering can only be 1 or 0'                             if $disable_offering ne '1'         and $disable_offering ne '0';
+        die 'Contract duration range must have min and max'                   if $contract_duration->{min} eq '' || $contract_duration->{max} eq '';
+        die 'Contract duration range min must be less than max'               if $contract_duration->{min} >= $contract_duration->{max};
+
+        my $strike_price_config = decode_json_utf8($app_config->get('quants.vanilla.strike_price_range_markup'));
+        my $id                  = substr(md5_hex($symbol, $strike_price_range, $markup, $trade_type), 0, 16);
+
+        my $config = {
+            symbol             => $symbol,
+            strike_price_range => $strike_price_range,
+            markup             => $markup,
+            trade_type         => $trade_type,
+            disable_offering   => $disable_offering,
+            contract_duration  => $contract_duration
+        };
+
+        $strike_price_config->{$symbol}->{$id} = $config;
+
+        $app_config->set({'quants.vanilla.strike_price_range_markup' => encode_json_utf8($strike_price_config)});
+
+        send_trading_ops_email("Strike Price Range Markup: updated configuration",
+            {"symbol : $symbol", "strike price range : $strike_price_range", "markup : $markup", "trade type : $trade_type"});
+        BOM::Backoffice::QuantsAuditLog::log(
+            $staff,
+            "ChangeStrikePriceRangeMarkupConfig",
+            "symbol : $symbol",
+            "strike price range : $strike_price_range",
+            "markup : $markup",
+            "trade type : $trade_type",
+            "disable offering : $disable_offering",
+            "contract duration : $contract_duration"
+        );
+
+        $output = {success => 1};
+    } catch ($e) {
+        $output = {error => "$e"};
+    }
+
+    print encode_json_utf8($output);
+}
+
+if ($r->param('delete_strike_price_range_markup')) {
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    my ($id, $symbol, $output);
+
+    try {
+        $id     = $r->param('id');
+        $symbol = $r->param('symbol');
+
+        my $strike_price_range_markup = decode_json_utf8($app_config->get('quants.vanilla.strike_price_range_markup'));
+
+        delete $strike_price_range_markup->{$symbol}->{$id};
+
+        $app_config->set({'quants.vanilla.strike_price_range_markup' => encode_json_utf8($strike_price_range_markup)});
+
+        send_trading_ops_email(
+            "Vanilla risk management tool: delete vanilla strike price range markup config",
+            {
+                id     => $id,
+                symbol => $symbol
+            });
+
+        BOM::Backoffice::QuantsAuditLog::log($staff, "RemovedVanillaStrikePriceRangeMarkup", "id time : $id $symbol \n");
+
+        $output = {success => 1};
+    } catch ($e) {
+        $output = {error => "$e"};
+    }
+
+    print encode_json_utf8($output);
+}
+
 if ($r->param('save_vanilla_risk_profile')) {
     my $output;
     my $now        = time;
