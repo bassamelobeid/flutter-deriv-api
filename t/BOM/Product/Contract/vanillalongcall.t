@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 19;
+use Test::More tests => 20;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -475,6 +475,72 @@ subtest 'check if spread is applied properly' => sub {
     ok $c->bid_probability->amount < $bid, 'spread applied properly';
     ok $c->ask_probability->amount > $ask, 'spread applied properly';
 
+};
+
+subtest 'check if strike price based markup is applied properly' => sub {
+
+    $args->{duration} = '10h';
+    my $c                   = produce_contract($args);
+    my $number_of_contracts = $c->number_of_contracts;
+
+    my $markup_config = {
+        "R_100" => {
+            "id" => {
+                "strike_price_range" => {
+                    "min" => 0,
+                    "max" => 99999
+                },
+                "contract_duration" => {
+                    "min" => 0,
+                    "max" => 1
+                },
+                "markup"           => 20,
+                "trade_type"       => "VANILLALONGCALL",
+                "disable_offering" => 0
+            }}};
+    $app_config->set({'quants.vanilla.strike_price_range_markup' => JSON::MaybeXS::encode_json($markup_config)});
+
+    my $max_barrier = 5280;
+    my $min_barrier = 4000;
+    $markup_config = {
+        "R_100" => {
+            "id" => {
+                "strike_price_range" => {
+                    "min" => $min_barrier,
+                    "max" => $max_barrier
+                },
+                "contract_duration" => {
+                    "min" => 0,
+                    "max" => 0.00125571    #11 hours
+                },
+                "markup"           => 20,
+                "trade_type"       => "VANILLALONGCALL",
+                "disable_offering" => 1
+            }}};
+    $app_config->set({'quants.vanilla.strike_price_range_markup' => JSON::MaybeXS::encode_json($markup_config)});
+
+    $args->{barrier} = '+3.00';
+    $c = produce_contract($args);
+
+    ok $c->barrier->as_absolute < $max_barrier, 'barrier is less than max barrier';
+    ok $c->barrier->as_absolute > $min_barrier, 'barrier is greater than min barrier';
+    ok !$c->is_valid_to_buy,                    'not valid to buy now because strike price ranged from min_barrier and max_barrier is disabled';
+    is $c->primary_validation_error->message, 'BarrierOutOfRange', 'got the right error message';
+
+    $args->{duration} = '12h';
+    $args->{barrier}  = '+3.60';
+    $c                = produce_contract($args);
+    ok $c->barrier->as_absolute < $max_barrier, 'barrier is less than max barrier';
+    ok $c->barrier->as_absolute > $min_barrier, 'barrier is greater than min barrier';
+    ok $c->is_valid_to_buy,                     'valid to buy now because contract duration is out of range';
+    is $c->primary_validation_error, undef, 'got the right error message';
+
+    $args->{barrier}  = '+233.20';
+    $args->{duration} = '10h';
+    $c                = produce_contract($args);
+    ok $c->barrier->as_absolute > $max_barrier, 'barrier is greater than max barrier';
+    ok $c->is_valid_to_buy,                     'valid to buy now because strike price is out of range';
+    is $c->primary_validation_error, undef, 'got the right error message';
 };
 
 subtest 'min stake can never be greater than max stake check' => sub {

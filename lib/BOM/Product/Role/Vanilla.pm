@@ -260,6 +260,50 @@ sub vol_charge {
     return $self->per_symbol_config()->{vol_markup};
 }
 
+=head2 get_strike_price_offering_and_markup
+
+get strike price offering and markup from app_config (set from backoffice)
+returns a hash if markup is found, otherwise returns undef
+
+=cut
+
+sub get_strike_price_offering_and_markup {
+    my $self = shift;
+
+    my $strike_price_range_markup = $self->app_config->get("quants.vanilla.strike_price_range_markup");
+    # since daily contract ends at 23:59:59, it's possible that t is slightly bigger than 1
+    my $time_to_expiry = min(1, $self->timeinyears->amount);
+
+    if ($strike_price_range_markup) {
+        $strike_price_range_markup = JSON::MaybeXS::decode_json($strike_price_range_markup);
+        if (my $markup_config = $strike_price_range_markup->{$self->underlying->symbol}) {
+            for my $entry_id (keys $markup_config->%*) {
+                my $entry              = $markup_config->{$entry_id};
+                my $strike_price_range = $entry->{strike_price_range};
+                my $duration_range     = $entry->{contract_duration};
+                my $barrier            = $self->barrier->as_absolute;
+
+                # apply markup if barrier is between min and max strike price
+                # and between min and max duration
+                if (    ($barrier >= $strike_price_range->{min})
+                    and ($barrier <= $strike_price_range->{max})
+                    and ($time_to_expiry >= $duration_range->{min})
+                    and ($time_to_expiry <= $duration_range->{max})
+                    and ($self->code eq $entry->{trade_type}))
+                {
+
+                    return {
+                        disable_offering => $entry->{disable_offering},
+                        markup           => $entry->{markup}};
+                }
+
+            }
+        }
+    }
+
+    return undef;
+}
+
 =head2 bs_markup
 
 get black scholes price markup from app_config (set from backoffice)
@@ -273,14 +317,29 @@ sub bs_markup {
 
     $bs_markup_config = $self->per_symbol_config()->{bs_markup} if $self->is_synthetic;
 
-    my $markup = Math::Util::CalculatedValue->new({
+    my $bs_markup = Math::Util::CalculatedValue->new({
         name        => 'black_scholes_markup',
         description => 'black_scholes_markup',
         set_by      => 'Contract',
         base_amount => $bs_markup_config,
     });
 
-    return $markup;
+    # since we can't short
+    # only apply this markup
+    # during buy
+    unless ($self->for_sale) {
+        if (my $offering_and_markup = $self->get_strike_price_offering_and_markup) {
+            my $extra_markup = Math::Util::CalculatedValue->new({
+                name        => 'extra black_scholes_markup',
+                description => 'extra black_scholes_markup',
+                set_by      => 'Contract',
+                base_amount => $offering_and_markup->{markup},
+            });
+            $bs_markup->include_adjustment('add', $extra_markup) unless $offering_and_markup->{disable_offering};
+        }
+    }
+
+    return $bs_markup;
 }
 
 =head2 strike_price_choices
@@ -718,6 +777,22 @@ sub _validate_barrier_choice {
     my $self = shift;
 
     my $strike_price_choices = $self->strike_price_choices;
+
+    if (my $offering_and_markup = $self->get_strike_price_offering_and_markup) {
+        if ($offering_and_markup->{disable_offering}) {
+            return {
+                message           => 'BarrierOutOfRange',
+                message_to_client => ['Barrier is out of acceptable range. Please choose another barrier or the opposite contract type.'],
+                details           => {
+                    field           => 'barrier',
+                    min_stake       => $self->min_stake,
+                    max_stake       => $self->max_stake,
+                    barrier_choices => $strike_price_choices
+                },
+            };
+        }
+
+    }
 
     foreach my $strike (@{$strike_price_choices}) {
         if ($self->supplied_barrier eq $strike) {
