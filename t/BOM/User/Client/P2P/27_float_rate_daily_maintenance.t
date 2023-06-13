@@ -313,7 +313,7 @@ subtest 'quants alert email' => sub {
         },
         NGN => {
             quote  => 123,
-            epoch  => Date::Utility->new('1999-12-30')->epoch,
+            epoch  => Date::Utility->new('1999-07-01')->epoch,
             source => 'manual'
         },
     );

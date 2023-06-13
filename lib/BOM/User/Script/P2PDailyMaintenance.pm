@@ -34,7 +34,7 @@ use constant {
     AD_ARCHIVE_KEY                        => 'P2P::AD_ARCHIVAL_DATES',
     AD_ACTIVATION_KEY                     => 'P2P::AD_ACTIVATION',
     P2P_USERS_ONLINE_KEY                  => 'P2P::USERS_ONLINE',
-    MAX_QUOTE_SECS                        => 24 * 60 * 60,                               # 1 day
+    MAX_QUOTE_HOURS                       => 24,
     P2P_ONLINE_USER_PRUNE                 => 26 * 7 * 24 * 60 * 60,                      # 26 weeks
     DAILY_TOTALS_PRUNE_DAYS               => 60,
     P2P_STATS_REDIS_PREFIX                => 'P2P::ADVERTISER_STATS',
@@ -410,8 +410,9 @@ sub run {
     my $exchange         = Finance::Exchange->create_exchange('FOREX');
     my %all_currencies   = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
 
-    # 9. send internal email if any floating rate countries have exchange rates older than MAX_QUOTE_SECS
+    # 9. send internal email if any floating rate countries have exchange rates older than MAX_QUOTE_HOURS
     my @alerts;
+
     for my $currency (keys %all_currencies) {
         my @float_countries = grep { $ad_config->{$_} and $ad_config->{$_}{float_ads} ne 'disabled' } $all_currencies{$currency}->{countries}->@*;
         next unless @float_countries;
@@ -427,16 +428,25 @@ sub run {
                 };
             next;
         }
-        my $date = Date::Utility->new($rate->{epoch});
-        my $age  = $trading_calendar->seconds_of_trading_between_epochs($exchange, $date, Date::Utility->new);
+        my $date      = Date::Utility->new($rate->{epoch});
+        my $diff_days = $now->days_between($date);
+        my $age_hours = 50 * 24;
+
+        # seconds_of_trading_between_epochs() has deep recursion error with big date intervals
+        if ($diff_days < 50) {
+            my $age_sec = $trading_calendar->seconds_of_trading_between_epochs($exchange, $date, Date::Utility->new);
+            $age_hours = ceil($age_sec / 60);
+        }
+
         push @alerts,
             {
             %$rate,
             currency  => $currency,
             countries => \@float_countries,
-            age       => $age,
-            date      => $date
-            } if ($age > MAX_QUOTE_SECS);
+            age_hours => $age_hours,
+            date      => $date,
+            }
+            if $age_hours > MAX_QUOTE_HOURS;
     }
 
     if (@alerts) {
@@ -453,7 +463,7 @@ sub run {
             if ($alert->{quote}) {
                 push @lines,
                     (
-                    '<td>' . ceil($alert->{age} / 3600) . '</td>',
+                    '<td>' . ($alert->{age_hours} == 50 * 24 ? 'more than ' : '') . $alert->{age_hours} . '</td>',
                     '<td>' . $alert->{source} . '</td>',
                     '<td>' . $alert->{date}->datetime . '</td>',
                     '<td>' . $alert->{quote} . '</td>',
