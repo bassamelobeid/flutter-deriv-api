@@ -219,7 +219,8 @@ subtest 'new_real_account with currency provided' => sub {
     $t->await::authorize({authorize => $token});
 
     $res = $t->await::new_account_real(\%details);
-    is($res->{error}->{code}, 'CurrencyTypeNotAllowed', 'Second account with the same currency is not allowed');
+
+    is($res->{error}->{code}, 'DuplicateCurrency', 'Second account with the same currency is not allowed');
 
     $details{currency} = 'LTC';
     $res = $t->await::new_account_real(\%details);
