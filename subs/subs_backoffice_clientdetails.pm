@@ -51,6 +51,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
 use BOM::User::IdentityVerification;
+use BOM::Rules::Engine;
 use BOM::Platform::Doughflow;
 use BOM::User::LexisNexis;
 use BOM::Config::Compliance;

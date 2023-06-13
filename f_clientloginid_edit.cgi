@@ -372,8 +372,8 @@ if ($input{document_list}) {
 }
 
 # Deleting checked statuses
-my $status_op_summary = BOM::User::Utility::status_op_processor($client, \%input);
-print $status_op_summary if $status_op_summary;
+my $status_op_summary = BOM::Platform::Utility::status_op_processor($client, \%input);
+print BOM::Backoffice::Utility::transform_summary_status_to_html($status_op_summary, $input{status_op}) if $status_op_summary;
 
 if ($broker eq 'MF') {
     if ($input{view_action} eq "mifir_reset") {

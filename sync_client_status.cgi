@@ -106,25 +106,19 @@ sub handle_request {
 
         return (@notifications, '<br>Go back to ' . link_to_edit_client($client));
     } elsif ($action eq 'remove') {
-        my $updated_client_loginids = $client->clear_status_and_sync_to_siblings($status_code);
+        my ($updated, $failed) = clear_status_from_siblings($client, $status_code);
 
-        my @notifications = map {
-            my $client = $_;
-
-            if (grep { $_ eq $client->loginid } @{$updated_client_loginids}) {
-                notify_remove_status_succeeded($client, $status_code);
-            } else {
-                notify_remove_status_failed($client, $status_code);
-            }
-        } $client->user->clients_for_landing_company($client->landing_company->short);    # must include current client
+        my @notifications = map { notify_remove_status_succeeded($_, $status_code) } @$updated;
+        push @notifications, map { notify_remove_status_failed($_, $status_code) } @$failed;
 
         # when real siblings are enabled, we'll try to enable a virtual sibling automatically
         if ($status_code eq 'disabled') {
             my @vr_siblings = $client->user->clients_for_landing_company('virtual');
-            if (@vr_siblings && all { $_->status->disabled } @vr_siblings) {
+            if (@vr_siblings && all { $_->status->disabled || $_->status->duplicate_account } @vr_siblings) {
                 # some users have more than one virtual accounts. Let's enable the latest one.
                 my ($vr_sibling) = sort { $b->date_joined cmp $a->date_joined } @vr_siblings;
                 $vr_sibling->status->clear_disabled;
+                $vr_sibling->status->clear_duplicate_account;
                 push @notifications, notify_remove_status_succeeded($vr_sibling, 'disabled');
             }
         }

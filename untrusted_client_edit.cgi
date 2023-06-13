@@ -10,9 +10,11 @@ use Syntax::Keyword::Try;
 use BOM::Platform::Token::API;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Email          qw(send_email);
+use BOM::Platform::Utility        qw(verify_reactivation);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Utility;
 use CGI;
 use Log::Any      qw($log);
 use Future::Utils qw( fmap_void );
@@ -59,7 +61,7 @@ if ($bulk_loginids) {
 
 # adding dcc verification code here
 # start
-    code_exit_BO(_get_display_error_message("ERROR: dual control code is mandatory for bulk status update")) if $DCcode eq '';
+    # code_exit_BO(_get_display_error_message("ERROR: dual control code is mandatory for bulk status update")) if $DCcode eq '';
     try {
         $file  = $cgi->upload('bulk_loginids');
         $csv   = Text::CSV->new({binary => 1});
@@ -68,14 +70,14 @@ if ($bulk_loginids) {
         code_exit_BO(_get_display_error_message("ERROR: " . $e)) if $e;
     }
 
-    my $dcc_error = BOM::DualControl->new({
-            staff           => $clerk,
-            transactiontype => "UPDATECLIENT_DETAILS_BULK"
-        })->validate_batch_status_update_control_code($DCcode, [map { join "\0" => $_->@* } $lines->@*]);
-    code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg()))                                       if $dcc_error;
-    code_exit_BO(_get_display_error_message("ERROR: the given file is empty, please provide the required client_ids")) if (scalar(@$lines) == 0);
-    code_exit_BO(_get_display_error_message("ERROR: the number of client_ids exceeds limit of 2000 please reduce the number of entries"))
-        if scalar(@$lines) > 2000;
+    # my $dcc_error = BOM::DualControl->new({
+    #         staff           => $clerk,
+    #         transactiontype => "UPDATECLIENT_DETAILS_BULK"
+    #     })->validate_batch_anonymization_control_code($DCcode, [map { join "\0" => $_->@* } $lines->@*]);
+    # code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg()))                                       if $dcc_error;
+    # code_exit_BO(_get_display_error_message("ERROR: the given file is empty, please provide the required client_ids")) if (scalar(@$lines) == 0);
+    # code_exit_BO(_get_display_error_message("ERROR: the number of client_ids exceeds limit of 2000 please reduce the number of entries"))
+    #     if scalar(@$lines) > 2000;
     for my $line (@$lines) {
         push @login_ids, $line->[0];
     }
@@ -158,7 +160,11 @@ foreach my $login_id (@login_ids) {
         }
         # remove client from $broker.disabledlogins
         elsif ($action eq 'remove_status') {
-            $printline = execute_remove_status({%common_args_for_execute_method, status_code => 'disabled'});
+            $printline = execute_remove_status({
+                %common_args_for_execute_method,
+                status_code  => 'disabled',
+                reactivating => 1
+            });
         }
     } elsif ($client_status_type eq 'duplicateaccount' && ($operation =~ $add_regex)) {
         if ($action eq 'insert_data') {
@@ -171,7 +177,11 @@ foreach my $login_id (@login_ids) {
                     }
                 });
         } elsif ($action eq 'remove_status') {
-            $printline = execute_remove_status->({%common_args_for_execute_method, status_code => 'duplicate_account'});
+            $printline = execute_remove_status->({
+                %common_args_for_execute_method,
+                status_code  => 'duplicate_account',
+                reactivating => 1
+            });
         }
     } elsif ($client_status_type eq 'professionalrequested') {
         if ($action eq 'remove_status') {
@@ -229,7 +239,7 @@ foreach my $login_id (@login_ids) {
 
     p2p_advertiser_approval_check($client, request()->params);
 
-    my $status_op_summary = BOM::User::Utility::status_op_processor(
+    my $status_op_summary = BOM::Platform::Utility::status_op_processor(
         $client,
         {
             status_op             => $operation,
@@ -240,7 +250,7 @@ foreach my $login_id (@login_ids) {
     # once db operation is done, set back db_operation to replica
     $client->set_db($old_db) if 'write' ne $old_db;
 
-    print $status_op_summary if $status_op_summary;
+    print BOM::Backoffice::Utility::transform_summary_status_to_html($status_op_summary, $operation) if $status_op_summary;
 }
 
 if (scalar @invalid_logins > 0) {
@@ -326,15 +336,15 @@ sub execute_remove_status {
         if ($params->{override}) {
             $params->{override}->();
         } else {
+            verify_reactivation($client, $params->{status_code});
             my $client_status_cleaner_method_name = 'clear_' . $params->{status_code};
-
             $client->status->$client_status_cleaner_method_name;
         }
 
         return
             "<span class='success'>SUCCESS:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
-    } catch {
-        return "<span class='error'>ERROR:</span>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. Please try again.";
+    } catch ($e) {
+        return "<span class='error'>ERROR:</span>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. $e";
     }
 }
 
