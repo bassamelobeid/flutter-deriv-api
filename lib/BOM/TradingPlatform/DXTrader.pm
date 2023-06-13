@@ -589,7 +589,7 @@ sub deposit {
             id            => $self->unique_id,                        # must be unique for deposits on this login
             amount        => $tx_amounts->{recv_amount},
             currency      => $account->{currency},
-            defined($args{from_account}) ? (description => $args{from_account} . '_' . $args{to_account} . '#' . $txn->transaction_id) : (),
+            defined($args{from_account}) ? (description => $args{from_account} . '#' . $txn->transaction_id) : (),
 
         );
     } catch {

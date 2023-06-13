@@ -545,7 +545,7 @@ sub deposit {
 
     my $txn_id = $txn->transaction_id;
     # 31 character limit for MT5 comments
-    my $derivez_comment = "${fm_loginid}_${to_derivez}#$txn_id";
+    my $derivez_comment = "${fm_loginid}#$txn_id";
 
     # deposit to Derivez a/c
     my $transaction_status = do_derivez_deposit($to_derivez, $response->{derivez_amount}, $derivez_comment, $txn_id);
