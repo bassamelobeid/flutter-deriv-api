@@ -283,8 +283,8 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
         }];
 
     # check access of each memory tab before adding to list
-    @$main_sections_list = grep { BOM::Backoffice::Sysinit::_check_access(sprintf("/%s.cgi", $_->{link})) } @$main_sections_list;
-    @$misc_tools_list    = grep { BOM::Backoffice::Sysinit::_check_access(sprintf("/%s.cgi", $_->{link})) } @$misc_tools_list;
+    @$main_sections_list = grep { BOM::Backoffice::Sysinit::authorise(sprintf("/%s.cgi", $_->{link})) } @$main_sections_list;
+    @$misc_tools_list    = grep { BOM::Backoffice::Sysinit::authorise(sprintf("/%s.cgi", $_->{link})) } @$misc_tools_list;
     my @menu_items = ({
             text => 'Main Sections',
             list => $main_sections_list

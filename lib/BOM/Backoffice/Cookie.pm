@@ -43,8 +43,8 @@ sub get_cookie {
     my $name = shift;
 
     my %bo_cookies = CGI::Cookie->fetch;
-    my $value;
 
+    my $value;
     if ($bo_cookies{$name}) {
         $value = CGI::Util::escape($bo_cookies{$name}->value);
     }

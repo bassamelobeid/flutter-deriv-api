@@ -33,6 +33,7 @@ A module manages the requests and the permissions of the pages.
 my $permissions = {
     'f_broker_login.cgi'   => ['ALL'],
     'login.cgi'            => ['ALL'],
+    'logout.cgi'           => ['ALL'],
     'second_step_auth.cgi' => ['ALL'],
 
     'batch_payments.cgi'             => ['Payments'],
@@ -233,9 +234,7 @@ sub init {
 
         request()->http_handler($http_handler);
 
-        if (!_check_access($http_handler->script_name)) {
-            _show_error_and_exit('Access to ' . $http_handler->script_name . ' is not allowed');
-        }
+        _show_error_and_exit('Access to ' . $http_handler->script_name . ' is not allowed') unless authorise($http_handler->script_name);
     } else {
         # We can ignore the alarm because we're not serving a web request here.
         # This is most likely happening in tests, long execution of which should be caught elsewhere.
@@ -320,9 +319,10 @@ sub _show_error_and_exit {
     exit;
 }
 
-sub _check_access {
+sub authorise {
     my $script = shift // '';
     $script =~ s/^\///;
+
     # don't allow access to unknown scripts
     return 0 unless defined $permissions->{$script};
     return 1 if any { $_ eq 'ALL' } @{$permissions->{$script}};

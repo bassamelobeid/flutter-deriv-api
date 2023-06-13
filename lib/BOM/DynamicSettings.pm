@@ -328,6 +328,7 @@ sub get_settings_by_group {
                 system.services.fraud_prevention
                 system.services.identity_verification
                 system.suspend.ctrader_oauth_api
+                system.backoffice.disable_auth0_login
             )
         ],
         quant => [qw(
