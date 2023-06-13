@@ -3833,7 +3833,7 @@ properties argument
 async sub bulk_client_status_update {
     my ($args) = @_;
     my $loginids = $args->{loginids};
-    my (@invalid_logins, @message, $status_op_summary, $summary, $p2p_approved);
+    my (@invalid_logins, @message, $status_op_summaries, $summary, $p2p_approved);
     my $properties = $args->{properties};
     my ($operation, $client_status_type, $status_checked, $reason, $clerk, $action, $req_params, $status_code) =
         @{$properties}{qw/status_op untrusted_action_type status_checked reason clerk action req_params status_code/};
@@ -3847,8 +3847,8 @@ async sub bulk_client_status_update {
 
     LOGIN:
     foreach my $loginid ($loginids->@*) {
-        $status_op_summary = "";
-        $summary           = "";
+        $status_op_summaries = "";
+        $summary             = "";
         my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid}) };
         try {
             if (not $client) {
@@ -3899,7 +3899,7 @@ async sub bulk_client_status_update {
                     BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid});
                 }
             }
-            $status_op_summary = BOM::User::Utility::status_op_processor(
+            $status_op_summaries = BOM::Platform::Utility::status_op_processor(
                 $client,
                 {
                     status_op             => $operation,
@@ -3916,8 +3916,22 @@ async sub bulk_client_status_update {
         if ($summary =~ /ERROR/) {
             push @failed_update, "<tr><td>" . $summary . "</td></tr>";
         }
-        if ($status_op_summary =~ /ERROR/) {
-            push @failed_update, "<tr><td>" . $status_op_summary . "</td></tr>";
+        if ($status_op_summaries && scalar $status_op_summaries->@*) {
+            for my $status_op_summary ($status_op_summaries->@*) {
+                my $status = $status_op_summary->{status};
+                if (!$status_op_summary->{passed}) {
+                    my $fail_op = 'process';
+                    $fail_op = 'remove'                                                                        if $operation eq 'remove';
+                    $fail_op = 'remove from siblings'                                                          if $operation eq 'remove_siblings';
+                    $fail_op = 'copy to siblings'                                                              if $operation eq 'sync';
+                    $fail_op = 'copy to accounts, only DISABLED ACCOUNTS can be synced to all accounts'        if $operation eq 'sync_accounts';
+                    $fail_op = 'remove from accounts, only DISABLED ACCOUNTS can be removed from all accounts' if $operation eq 'remove_accounts';
+                    $summary .=
+                        "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.</div>";
+                }
+
+            }
+            push @failed_update, "<tr><td>" . $summary . "</td></tr>";
         }
     }
     if (@invalid_logins) {
