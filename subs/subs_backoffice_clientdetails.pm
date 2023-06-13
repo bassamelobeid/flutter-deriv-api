@@ -1103,6 +1103,9 @@ sub get_untrusted_client_reason {
                 'PA application - pending COC',
                 'Affiliate account - pending COC/ROD',
                 'Affiliate account - pending info/documents',
+                'PA dispute',
+                'App developer - pending info/documents',
+                'Affiliate - reputation check',
             ],
         },
         account => {
