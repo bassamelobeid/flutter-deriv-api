@@ -1109,6 +1109,10 @@ quants:
           isa: json_string
           default: '{}'
           global: 1
+        strike_price_range_markup:
+          isa: json_string
+          default: '{}'
+          global: 1
         fx_spread_specific_time:
           isa: json_string
           default: '{}'
