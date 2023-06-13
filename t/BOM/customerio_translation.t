@@ -12,9 +12,7 @@ use BOM::Platform::Context;
 my $cio = BOM::Backoffice::Script::CustomerIOTranslation->new(token => 'x');
 
 subtest 'email parsing' => sub {
-    my $mock_cio = Test::MockModule->new('BOM::Backoffice::Script::CustomerIOTranslation');
-    $mock_cio->mock(_is_transactional => sub { return 0; });
-
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_translations(0);
     my $subject = ' {{event.x}}  ';
     cmp_deeply(
         $cio->process_camapign({
@@ -356,9 +354,8 @@ subtest 'update campaigns and snippets' => sub {
 };
 
 subtest 'transactional integration' => sub {
-    my $mock_cio = Test::MockModule->new('BOM::Backoffice::Script::CustomerIOTranslation');
+
     BOM::Config::Runtime->instance->app_config->customerio->transactional_translations(1);
-    $mock_cio->mock(_is_transactional => sub { return 1 });
 
     subtest 'process placehoders' => sub {
         my $item = [
