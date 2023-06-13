@@ -4,15 +4,16 @@ use strict;
 use warnings;
 
 use Clone::PP  qw(clone);
-use List::Util qw(any);
+use List::Util qw(any uniq);
+use Syntax::Keyword::Try;
 use Brands::Countries;
 
-use BOM::Platform::Context qw/localize/;
+use BOM::Platform::Context qw(request localize);
 use BOM::Config::Runtime;
 use BOM::User::Client;
 
 use base qw( Exporter );
-our @EXPORT_OK = qw(error_map create_error);
+our @EXPORT_OK = qw(error_map create_error verify_reactivation);
 
 =head1 NAME
 
@@ -528,6 +529,250 @@ sub create_error {
             message_to_client => $message,
             $options{details} ? (details => $options{details}) : (),
         }};
+}
+
+=head2 status_op_processor
+
+Given an input and a client, this sub will process the given statuses expecting multiple
+statuses passed.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<client> - the client instance
+
+=item * C<input> - a hashref of the user inputs
+
+=back
+
+The input should have a B<status_op> key that may contain:
+
+=over 4
+
+=item * C<remove> - this op performs a status removal from the client
+
+=item * C<remove_siblings> - the same as `remove` but will also remove the status from siblings
+
+=item * C<sync> - this op copies the given statuses to the siblings
+
+=back
+
+From the input hashref we will look for a `status_checked` value that can either be an arrayref or string (must check for that).
+This value represents the given status codes.
+
+Returns a summary to print out or undef if nothing happened.
+
+=cut
+
+sub status_op_processor {
+    my ($client, $args) = @_;
+    my $status_op      = $args->{status_op};
+    my $status_checked = $args->{status_checked} // [];
+    $status_checked = [$status_checked] unless ref($status_checked);
+    my $client_status_type = $args->{untrusted_action_type};
+    my $reason             = $args->{reason};
+    my $clerk              = $args->{clerk} // BOM::Backoffice::Auth0::get_staffname();
+    my $status_map         = {
+        disabledlogins            => 'disabled',
+        lockcashierlogins         => 'cashier_locked',
+        unwelcomelogins           => 'unwelcome',
+        nowithdrawalortrading     => 'no_withdrawal_or_trading',
+        lockwithdrawal            => 'withdrawal_locked',
+        lockmt5withdrawal         => 'mt5_withdrawal_locked',
+        duplicateaccount          => 'duplicate_account',
+        allowdocumentupload       => 'allow_document_upload',
+        internalclient            => 'internal_client',
+        notrading                 => 'no_trading',
+        sharedpaymentmethod       => 'shared_payment_method',
+        cryptoautorejectdisabled  => 'crypto_auto_reject_disabled',
+        cryptoautoapprovedisabled => 'crypto_auto_approve_disabled',
+    };
+
+    if ($client_status_type && $status_map->{$client_status_type}) {
+        push(@$status_checked, $client_status_type);
+    }
+    @$status_checked = uniq @$status_checked;
+    return undef unless $status_op;
+    return undef unless scalar $status_checked->@*;
+
+    my $loginid       = $client->loginid;
+    my $summary_stack = [];
+    my $old_db        = $client->get_db();
+    # assign write access to db_operation to perform client_status delete/copy operation
+    $client->set_db('write') if 'write' ne $old_db;
+
+    for my $status ($status_checked->@*) {
+        try {
+            if ($status_op eq 'remove') {
+                verify_reactivation($client, $status);
+                my $client_status_clearer_method_name = 'clear_' . $status;
+                $client->status->$client_status_clearer_method_name;
+                push $summary_stack->@*,
+                    {
+                    status => $status,
+                    passed => 1,
+                    ids    => $loginid
+                    };
+            } elsif ($status_op eq 'remove_siblings' or $status_op eq 'remove_accounts') {
+
+                my ($updated, $failed) = clear_status_from_siblings($client, $status, $status_op eq 'remove_accounts');
+                if (scalar @$updated) {
+                    my $siblings = join ', ', map { $_->{loginid} } @$updated;
+                    push $summary_stack->@*,
+                        {
+                        status => $status,
+                        passed => 1,
+                        ids    => $siblings,
+                        };
+                }
+
+                if (scalar @$failed) {
+                    my $failed_errors   = join ', ', map { $_->{error} } @$failed;
+                    my $failed_siblings = join ', ', map { $_->{loginid} } @$failed;
+                    push $summary_stack->@*,
+                        {
+                        status => $status,
+                        passed => 0,
+                        ids    => $failed_siblings,
+                        errors => $failed_errors
+                        };
+                }
+
+            } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
+                $status = $status_map->{$status}       ? $status_map->{$status}           : $status;
+                $reason = $reason =~ /SELECT A REASON/ ? $client->status->reason($status) : $reason;
+                my $updated_client_loginids = $client->copy_status_to_siblings($status, $clerk, $status_op eq 'sync_accounts', $reason);
+                my $siblings = join ', ', $updated_client_loginids->@*;
+                if (scalar $updated_client_loginids->@*) {
+                    push $summary_stack->@*,
+                        {
+                        status => $status,
+                        passed => 1,
+                        ids    => $siblings
+                        };
+                }
+            }
+        } catch {
+            push $summary_stack->@*,
+                {
+                status => $status,
+                passed => 0,
+                ids    => $loginid
+                };
+        }
+    }
+    # once db operation is done, set back db_operation to replica
+    $client->set_db($old_db) if 'write' ne $old_db;
+    return $summary_stack;
+}
+
+=head2 clear_status_from_siblings
+
+Clear the speciefied from account siblings
+
+=over 4
+
+=item * C<client> - the client instance
+
+=item * C<status> - a hashref of the user inputs
+
+=item * C<remove_accounts> - specifies whether we should remove accounts within same landing company or all landing companie wit virtuals
+
+=back
+
+Returns array ref of success and failed accounts
+
+=over 4
+
+=item * C<successed> - array ref of successful removals
+
+=item * C<failed> - array ref of failed removals
+
+=back
+
+=cut
+
+sub clear_status_from_siblings {
+    my ($client, $status, $remove_accounts) = @_;
+
+    my $sub_name = "clear_$status";
+    my (@successed, @failed);
+    my @siblings =
+          $remove_accounts
+        ? $client->user->clients(include_disabled => 1)
+        : $client->user->clients_for_landing_company($client->landing_company->short);
+    push @siblings, $client if ($remove_accounts);
+    for my $sibling (@siblings) {
+        try {
+            verify_reactivation($sibling, $status);
+            $sibling->status->$sub_name;
+            push @successed, $sibling;
+        } catch ($e) {
+            my %fail = (
+                loginid => $sibling->{loginid},
+                error   => $e
+            );
+            push @failed, \%fail;
+        }
+
+    }
+    return (\@successed, \@failed);
+}
+
+=head2 verify_reactivation
+
+verify the reactivation of an account, which means the removal of the disabled or duplicate_account
+
+=over 4
+
+=item * C<client> - the client instance
+
+=item * C<status> - the client status to be cleared
+
+=back
+
+It return either an error or a 1 which means success
+
+=cut
+
+sub verify_reactivation {
+    my ($client, $status) = @_;
+
+    return 0 unless ($status eq 'disabled'     or $status eq 'duplicate_account');
+    return 0 unless ($client->status->disabled or $client->status->duplicate_account);
+
+    my @required_args = qw(loginid currency date_of_birth place_of_birth citizen residence account_type
+        promo_code_status promo_code non_pep_declaration_time address_line_1 address_line_2 address_postcode);
+
+    try {
+        my $rule_engine     = BOM::Rules::Engine->new(client => $client);
+        my $landing_company = $client->landing_company->short;
+        my $market_type;
+        if ($landing_company eq 'maltainvest') {
+            $market_type = 'financial';
+        } else {
+            my $countries_instance = request()->brand->countries_instance;
+            my $company            = $countries_instance->gaming_company_for_country($client->residence);
+            $market_type = $company ? 'financial' : 'synthetic';
+        }
+
+        $rule_engine->verify_action(
+            'new_account',
+            action_type     => 'reactivate',
+            market_type     => $market_type,
+            landing_company => $landing_company,
+            (map { $_ => $client->$_ } @required_args),
+            promo_code_status => undef,
+
+        );
+    } catch ($e) {
+        my $error = ref($e) ? $e->{error_code} // '' : $e;
+        $error =~ s/([A-Z])/ $1/g;
+        die "$error\n";
+    };
+
+    return 1;
 }
 
 =head2 get_fiat_sibling_account_currency_for
