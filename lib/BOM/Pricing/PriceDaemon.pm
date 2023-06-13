@@ -205,8 +205,9 @@ sub run {
             $tv_appconfig = $tv_now;
         }
 
-        my $next = $key->[1];
-        next unless $next =~ s/^PRICER_ARGS:://;
+        my ($prefix, $next) = split /::/, $key->[1];
+        next unless $next and $prefix eq 'PRICER_ARGS';
+        $key->[1] = $prefix . "::" . $next;
         my $payload = decode_json_utf8($next);
         my $params  = {@{$payload}};
 
