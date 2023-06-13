@@ -108,8 +108,7 @@ subtest 'copy_status_to_siblings' => sub {
 };
 
 subtest 'copy_status_to_all_accounts' => sub {
-    my $status_code = 'disabled';
-
+    my $status_code   = 'disabled';
     my $user          = create_user();
     my $usd_client    = create_client($user, 'USD');
     my $btc_client    = create_client($user, 'BTC');
@@ -156,7 +155,7 @@ subtest 'copy_status_to_all_accounts' => sub {
     is $usd_vr_client->status->$status_code->{reason},     'reason', "USD VRTC client's status has been set with the correct reason";
 
     cmp_bag(
-        $usd_client->clear_status_and_sync_to_siblings($status_code),
+        $usd_client->clear_status_and_sync_to_siblings($status_code, 0, 1),
         [$usd_client->loginid, $btc_client->loginid, $eth_client->loginid, $usd_vr_client->loginid],
         'disabled removed from all clients'
     );
@@ -288,12 +287,12 @@ subtest 'clear_status_and_sync_to_siblings' => sub {
     # /prerequisites
 
     cmp_bag(
-        $btc_client->clear_status_and_sync_to_siblings($status_code),
+        $btc_client->clear_status_and_sync_to_siblings($status_code, 0, 1),
         [$usd_client->loginid, $btc_client->loginid],
         'returns an array with the loginid of the updated siblings'
     );
 
-    cmp_bag($btc_client->clear_status_and_sync_to_siblings($status_code), [], 'returns an empty array');
+    cmp_bag($btc_client->clear_status_and_sync_to_siblings($status_code, 0, 1), [], 'returns an empty array');
 
     $usd_client = BOM::User::Client->new({loginid => $usd_client->loginid});
     $btc_client = BOM::User::Client->new({loginid => $btc_client->loginid});
@@ -325,12 +324,12 @@ subtest 'clear_status_and_sync_to_all_accounts' => sub {
     # /prerequisites
 
     cmp_bag(
-        $btc_client->clear_status_and_sync_to_siblings($status_code, 'user01', 1),
+        $btc_client->clear_status_and_sync_to_siblings($status_code, 1, 1),
         [$usd_client->loginid, $btc_client->loginid, $usd_vr_client->loginid],
         'returns an array with the loginid of the updated accounts'
     );
 
-    cmp_bag($btc_client->clear_status_and_sync_to_siblings($status_code, 'user01', 1), [], 'returns an empty array');
+    cmp_bag($btc_client->clear_status_and_sync_to_siblings($status_code, 1, 1), [], 'returns an empty array');
 
     $usd_client    = BOM::User::Client->new({loginid => $usd_client->loginid});
     $btc_client    = BOM::User::Client->new({loginid => $btc_client->loginid});
@@ -419,6 +418,8 @@ subtest 'get_siblings_information' => sub {
         broker_code  => 'VRW',
         account_type => 'virtual'
     );
+    my $client_duplicated = create_client($user, 'ETH', broker_code => 'CR');
+    $client_duplicated->status->set('duplicate_account', 'test', 'test');
 
     my $all_accounts = {
         $client_real->loginid => {
@@ -508,6 +509,28 @@ subtest 'get_siblings_information' => sub {
         ),
         {},
         'virual is excluded';
+
+    is_deeply $client_real->get_siblings_information(
+        include_self       => 0,
+        include_disabled   => 0,
+        include_wallet     => 0,
+        include_virtual    => 0,
+        include_duplicated => 1,
+        ),
+        {
+        $client_duplicated->loginid => {
+            'demo_account'         => 0,
+            'account_type'         => 'binary',
+            'category'             => 'trading',
+            'disabled'             => 0,
+            'duplicate'            => 1,
+            'balance'              => '0.00000000',
+            'currency'             => 'ETH',
+            'loginid'              => $client_duplicated->loginid,
+            'landing_company_name' => 'svg',
+        }
+        },
+        'Duplicate account is included';
 
 };
 
