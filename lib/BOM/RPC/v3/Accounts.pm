@@ -200,8 +200,7 @@ rpc "payout_currencies",
 rpc "landing_company",
     auth => [],    # unauthenticated
     sub {
-    my $params = shift;
-
+    my $params   = shift;
     my $country  = $params->{args}->{landing_company};
     my $configs  = request()->brand->countries_instance->countries_list;
     my $c_config = $configs->{$country};

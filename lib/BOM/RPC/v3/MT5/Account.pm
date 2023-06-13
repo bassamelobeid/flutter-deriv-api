@@ -1877,7 +1877,7 @@ async_rpc "mt5_deposit",
 
             my $txn_id = $txn->transaction_id;
             # 31 character limit for MT5 comments
-            my $mt5_comment = "${fm_loginid}_${to_mt5}#$txn_id";
+            my $mt5_comment = "${fm_loginid}#$txn_id";
 
             # deposit to MT5 a/c
             return do_mt5_deposit($to_mt5, $response->{mt5_amount}, $mt5_comment, $txn_id)->then(
