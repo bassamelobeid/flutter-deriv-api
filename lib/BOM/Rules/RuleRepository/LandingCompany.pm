@@ -28,11 +28,18 @@ rule 'landing_company.accounts_limit_not_reached' => {
 
         my $client          = $context->client($args);
         my $landing_company = $context->landing_company_object($args);
+        my $is_virtual      = $landing_company->short eq 'virtual';
+        my $action_type     = $args->{action_type} // 'create';
 
         my $account_type = $args->{account_type} // '';
+
+        # Only virtual and regulated trading accounts are limitted.
+        # my $number_of_accounts_limited = $is_virtual || ($landing_company->is_eu && $account_type ne 'wallet');
+
         # Regulated landing companies and trading accounts are limitted.
         # Landing companies for affiliates are also limited.
-        my $number_of_accounts_limited = ($landing_company->is_eu && ($account_type eq 'binary')) || $landing_company->is_for_affiliates;
+        my $number_of_accounts_limited =
+            ($landing_company->is_eu && ($account_type eq 'binary')) || $landing_company->is_for_affiliates || $is_virtual;
 
         return 1 unless $number_of_accounts_limited;
 
@@ -40,11 +47,13 @@ rule 'landing_company.accounts_limit_not_reached' => {
         # (it's a common workaround for currency change after deposit).
         my @clients         = grep { not($_->status->duplicate_account) } $client->user->clients_for_landing_company($args->{landing_company});
         my @enabled_clients = grep { not($_->status->disabled) } @clients;
+        # disabled accounts should be always ignored when reactivating ccounts
+        @clients = @enabled_clients if $action_type eq 'reactivate';
 
         return 1 unless scalar @clients;
 
         $self->fail('FinancialAccountExists') if @enabled_clients && $args->{landing_company} eq 'maltainvest';
-
+        $self->fail('VirtualAccountExists')   if $is_virtual;
         $self->fail('NewAccountLimitReached');
     },
 };

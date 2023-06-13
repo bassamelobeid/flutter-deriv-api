@@ -151,12 +151,15 @@ Arguments:
 
 =item include_self: if true, the context client will be included in the siblings (useful for account opening); otherwise it will be excluded (used for changing currency of an existing account).
 
+=item reactivate: indicates if the rule is checked for reactivation, in which case only active accounts will be checked.
+
+
 =back
 
 =cut
 
 sub _currency_is_available {
-    my ($self, $context, $args, $include_self) = @_;
+    my ($self, $context, $args, $include_self, $reactivate) = @_;
 
     my $currency         = $args->{currency};
     my $currency_type    = LandingCompany::Registry::get_currency_type($currency);
@@ -172,27 +175,39 @@ sub _currency_is_available {
         ? $cached_siblings->@*
         : values $context->client($args)->real_account_siblings_information(
         exclude_disabled_no_currency => 1,
+        include_duplicated           => 1,
         include_self                 => $include_self
     )->%*;
 
     for my $sibling (@siblings) {
+
         next if $account_category ne $sibling->{category};
+        my $sibling_duplicate = $sibling->{duplicate} // 0;
+
+        # If we are reactivating an account, currency should be checked against active siblings only.
+        next if $reactivate && ($sibling->{disabled} || $sibling->{duplicate});
 
         # Note: Landing company is matched for trading acccounts only.
         #       Wallet landing company is skipped to avoid failure when we switch from samoa to svg.
         next if $account_category eq 'trading' and $sibling->{landing_company_name} ne $landing_company;
 
-        # Only one fiat trading account is allowed
-        if ($account_category eq 'trading' && $currency_type eq 'fiat') {
+        my $sibling_account_category = $sibling->{category} // '';
+        my $error_code               = $sibling_account_category eq 'trading' ? 'DuplicateCurrency' : 'DuplicateWallet';
+        my $sibling_account_type     = $sibling->{account_type} // '';
+
+        # Accounts of the same currency are not acceptable (duplicate accounts included)
+        # Account type, currency and account category should match
+        $self->fail($error_code, params => $currency)
+            if $account_category eq $sibling_account_category
+            and $currency eq ($sibling->{currency} // '')
+            and $account_type eq $sibling_account_type;
+
+        # Only one fiat trading account is allowed (duplicate accounts excluded)
+        if ($account_category eq 'trading' && $currency_type eq 'fiat' && !$sibling_duplicate) {
             my $sibling_currency_type = LandingCompany::Registry::get_currency_type($sibling->{currency});
+
             $self->fail('CurrencyTypeNotAllowed') if $sibling_currency_type eq 'fiat';
         }
-        my $error_code = $sibling->{category} eq 'trading' ? 'DuplicateCurrency' : 'DuplicateWallet';
-
-        # Account type and currency should match
-        $self->fail($error_code, params => $currency)
-            if $currency eq ($sibling->{currency} // '')
-            and $account_type eq ($sibling->{account_type} // '');
     }
 
     return 1;
@@ -208,7 +223,7 @@ rule 'currency.is_available_for_new_account' => {
         my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // BOM::Config::AccountType::LEGACY_TYPE);
 
         if ($account_type->name eq 'binary') {
-            return _currency_is_available($self, $context, $args, 1);
+            return _currency_is_available($self, $context, $args, 1, 0);
         } elsif ($account_type->category->name eq 'trading') {
             my $wallet_currency = $context->client({loginid => $args->{loginid}})->default_account->currency_code;
 
@@ -217,7 +232,7 @@ rule 'currency.is_available_for_new_account' => {
             return 1;
         } elsif ($account_type->category->name eq 'wallet') {
             # TODO: For now the same logic as for legacy account but it needs adjustments for sure
-            return _currency_is_available($self, $context, $args, 1);
+            return _currency_is_available($self, $context, $args, 1, 0);
         } else {
             #How do we get here?
             confess "Unexpected account type $args->{account_type}";
@@ -230,6 +245,17 @@ rule 'currency.is_available_for_change' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
+        return _currency_is_available($self, $context, $args, 0, 0);
+    },
+};
+
+rule 'currency.is_available_for_reactivation' => {
+    description => "Succeeds if the selected currency does not conflict with active account.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $args->{currency} = $context->client($args)->currency // '';
+
         my $currency = $args->{currency};
 
         my $client = $context->client({loginid => $args->{loginid}});
@@ -237,13 +263,13 @@ rule 'currency.is_available_for_change' => {
         my $account_type = $client->get_account_type;
 
         if ($account_type->name eq 'binary') {
-            return _currency_is_available($self, $context, $args, 0);
+            return _currency_is_available($self, $context, $args, 0, 1);
         } elsif ($account_type->category->name eq 'trading') {
             # We don't allow to change currency for trading accounts, because currency is inherited from wallet account.
             $self->fail('CurrencyChangeIsNotPossible');
         } elsif ($account_type->category->name eq 'wallet') {
             # TODO: For now the same logic as for legacy account but it needs adjustments for sure
-            return _currency_is_available($self, $context, $args, 0);
+            return _currency_is_available($self, $context, $args, 0, 1);
         } else {
             # How do we get here?
             confess "Unexpected account type $args->{account_type}";

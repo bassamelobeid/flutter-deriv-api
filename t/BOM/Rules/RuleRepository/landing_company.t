@@ -61,8 +61,12 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
     $user->add_client($client_mf);
-    $engine = BOM::Rules::Engine->new(client => [$client_mlt, $client_mf]);
+    $user->add_client($client_vr);
+    $engine = BOM::Rules::Engine->new(client => [$client_mlt, $client_mf, $client_vr]);
     is_deeply exception { $engine->apply_rules($rule_name, %args) },
         {
         error_code => 'FinancialAccountExists',
