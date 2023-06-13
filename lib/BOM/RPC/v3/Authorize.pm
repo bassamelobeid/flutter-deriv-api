@@ -9,24 +9,23 @@ use Convert::Base32;
 use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
-use BOM::RPC::v3::Utility  qw(log_exception);
+use BOM::RPC::v3::Utility qw(log_exception);
+use BOM::RPC::v3::Accounts;
 use BOM::Platform::Context qw (localize request);
 use BOM::User;
 use BOM::User::AuditLog;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::Config::Runtime;
+use BOM::Config::AccountType::Registry;
 
 use LandingCompany::Registry;
 
-sub _get_upgradeable_landing_companies {
+sub get_client_landing_companies {
     my ($client) = @_;
-
+    my %upgradeable_landing_companies = ();
     # this field only for legacy accounts in future we'll use separate API call for returning this information
-    return [] unless $client->get_account_type->name eq 'binary';
-
-    # List to store upgradeable companies
-    my @upgradeable_landing_companies;
+    return %upgradeable_landing_companies unless $client->get_account_type->name eq 'binary';
 
     my $countries_instance = request()->brand->countries_instance;
 
@@ -43,12 +42,12 @@ sub _get_upgradeable_landing_companies {
         siblings        => {$client->loginid => \@siblings},
         stop_on_failure => 0
     );
+
     for my $lc (uniq($gaming_company, $financial_company)) {
         next unless $lc;
 
-        # check accounts limit
-        next
-            if $rule_engine->apply_rules(
+        # check account limits
+        my $is_upgradeable = !$rule_engine->apply_rules(
             [qw/landing_company.accounts_limit_not_reached/],
             loginid         => $client->loginid,
             landing_company => $lc,
@@ -56,25 +55,33 @@ sub _get_upgradeable_landing_companies {
             account_type    => 'binary',
         )->has_failure;
 
-        # check currency availability
-        for my $currency (keys LandingCompany::Registry->by_name($lc)->legal_allowed_currencies->%*) {
-            unless (
-                $rule_engine->apply_rules(
-                    [qw/landing_company.currency_is_allowed currency.is_available_for_new_account currency.is_currency_suspended/],
-                    loginid         => $client->loginid,
-                    landing_company => $lc,
-                    currency        => $currency,
-                    account_type    => 'binary'
-                )->has_failure
-                )
-            {
-                push @upgradeable_landing_companies, $lc;
-                last;
-            }
+        my @available_currencies;
+        my %currency_hash = map { $_ => 0 } (keys LandingCompany::Registry->by_name($lc)->legal_allowed_currencies->%*);
+
+        for my $currency (keys %currency_hash) {
+            next
+                if $rule_engine->apply_rules(
+                [qw/landing_company.currency_is_allowed currency.is_available_for_new_account currency.is_currency_suspended/],
+                loginid         => $client->loginid,
+                landing_company => $lc,
+                currency        => $currency,
+                account_type    => $client->get_account_type->name,
+            )->has_failure;
+
+            push @available_currencies, $currency;
+            $currency_hash{$currency} = 1;
         }
+
+        # landing company is not upgradeable if there is no currency left
+        $is_upgradeable = 0 unless scalar @available_currencies;
+
+        $upgradeable_landing_companies{$lc} = {
+            is_upgradeable       => $is_upgradeable,
+            available_currencies => \%currency_hash
+        };
     }
 
-    return \@upgradeable_landing_companies;
+    return %upgradeable_landing_companies;
 }
 
 rpc authorize => sub {
@@ -173,6 +180,10 @@ rpc authorize => sub {
         grep { defined $_ } ($client->local_currency);
 
     my $account = $client->default_account;
+
+    my %companies             = get_client_landing_companies($client);
+    my @upgradeable_companies = grep { $companies{$_}->{is_upgradeable} } sort keys %companies;
+
     return {
         fullname                      => $client->full_name,
         user_id                       => $client->binary_user_id,
@@ -187,9 +198,10 @@ rpc authorize => sub {
         preferred_language            => $user->preferred_language,
         scopes                        => $scopes,
         is_virtual                    => $client->is_virtual ? 1 : 0,
-        upgradeable_landing_companies => _get_upgradeable_landing_companies($client),
-        account_list                  => \@account_list,
-        stash                         => {
+        upgradeable_landing_companies => \@upgradeable_companies,
+        # available_currencies          => \%available_currencies,
+        account_list => \@account_list,
+        stash        => {
             loginid              => $client->loginid,
             email                => $client->email,
             token                => $token,

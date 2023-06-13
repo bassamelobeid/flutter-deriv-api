@@ -745,6 +745,7 @@ sub create_new_real_account {
         $rule_engine->verify_action(
             'new_account',
             %$args,
+            action_type     => 'create',
             loginid         => $client->loginid,
             landing_company => $params{landing_company},
         );
@@ -833,6 +834,7 @@ sub create_trading_account {
         $rule_engine->verify_action(
             'new_account',
             %$args,
+            action_type     => 'create',
             loginid         => $client->loginid,
             landing_company => $params{landing_company},
         );
