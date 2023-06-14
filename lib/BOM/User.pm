@@ -1287,43 +1287,13 @@ sub get_client_using_replica {
     return $cl;
 }
 
-=head2 total_deposits
-
-get the total value of deposits for this user
-
-=over
-
-=back
-
-total value of all deposits in USD
-
-=cut
-
-sub total_deposits {
-    my ($self) = @_;
-
-    my @clients = $self->clients(include_disabled => 0);
-
-    # filter out virtual clients
-    @clients = grep { not $_->is_virtual } @clients;
-
-    my $total = 0;
-    for my $client (@clients) {
-        my $replica_client = $self->get_client_using_replica($client->loginid);
-        my $count          = $replica_client->db->dbic->run(
-            fixup => sub {
-                $_->selectrow_hashref("select payment.get_total_deposit(?);", undef, $client->loginid);
-            });
-        $total += in_usd($count->{get_total_deposit}, $client->currency) if $count->{get_total_deposit};
-    }
-    return $total;
-}
-
 =head2 total_trades
 
 get the total value of all trades of this user
 
 =over
+
+=item C<start_date> - (required) starting date from which we need to calculate total trade
 
 =back
 
@@ -1332,7 +1302,7 @@ total value of all trades in USD
 =cut
 
 sub total_trades {
-    my ($self) = @_;
+    my ($self, $start_date) = @_;
 
     my @clients = $self->clients(include_disabled => 0);
 
@@ -1345,43 +1315,13 @@ sub total_trades {
         next unless $client->account;
 
         my $replica_client = $self->get_client_using_replica($client->loginid);
-        my $count          = $replica_client->db->dbic->run(
+        my ($amount) = $replica_client->db->dbic->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT SUM(buy_price) as amount FROM bet.financial_market_bet WHERE account_id = ?;',
-                    undef, $client->account->id);
+                $_->selectrow_array('SELECT * FROM bet.get_total_trades(?, ?)', undef, $client->account->id, $start_date);
             });
-        $total += in_usd($count->{amount}, $client->currency) if $count->{amount};
+        $total += in_usd($amount, $client->currency) if $amount;
     }
     return $total;
-}
-
-=head2 is_crypto_withdrawal_suspicious
-
-check if the client is suspicious based in the following requirements:
-
-1 - The client has no trade on crypto and fiat
-2 - The client has traded on crypto or fiat but the amount he traded is 25% less than the amount he had deposited
-
-=over
-
-=back
-
-return 1 for suspicious client 0 for non suspicious client
-
-=cut
-
-sub is_crypto_withdrawal_suspicious {
-    my ($self) = @_;
-
-    my $total_deposits = $self->total_deposits();
-    my $total_trades   = $self->total_trades();
-    my $percent        = $total_deposits / 4;
-
-    if ($total_trades == 0 || $total_trades < $percent) {
-        return 1;
-    }
-
-    return 0;
 }
 
 =head2 set_tnc_approval
