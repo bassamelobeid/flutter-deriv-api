@@ -5,6 +5,7 @@ use Test::Most;
 use Test::MockTime qw/:all/;
 use Encode;
 use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
@@ -52,8 +53,16 @@ $t = $t->json_message_has('/proposal/id', 'Should return id')->json_message_is('
 
 $t = $t->send_ok({json => $req})->message_ok->json_message_is('/error/code', 'AlreadySubscribed');
 
+Time::HiRes::sleep(0.3);
+
 # check that pricing-daemon is still streaming the original contract
 for (0 .. 2) {
+    my $payload = {
+        symbol => 'R_50',
+        epoch => int(time + $_),
+        quote => 700 + $_,
+    };
+    BOM::Config::Redis::redis_feed_master_write()->publish("TICK_ENGINE::R_50", encode_json_utf8($payload));
     $t = $t->message_ok->json_message_is('/proposal/id', $uuid)->json_message_is('/subscription/id', $uuid)
         ->json_message_is('/proposal/payout', $req->{amount});
 }
