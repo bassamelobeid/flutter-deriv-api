@@ -52,14 +52,6 @@ Flag to enable or disable recording of pricing metrics.
 
 sub record_price_metrics { shift->{record_price_metrics} }
 
-=head2 price_duplicate_spot
-
-Flag to enable or disable prcing duplicate spots.
-
-=cut
-
-sub price_duplicate_spot { shift->{price_duplicate_spot} }
-
 =head2 stop
 
 Stops the loop after the current price.
@@ -74,12 +66,10 @@ sub stop {
 my $commands = {
     price => {
         required_params => [qw(contract_type currency symbol)],
-        get_underlying  => \&_get_underlying_price,
         process         => \&_process_price,
     },
     bid => {
         required_params => [qw(contract_id short_code currency landing_company)],
-        get_underlying  => \&_get_underlying_bid,
         process         => \&_process_bid,
     },
 };
@@ -89,28 +79,7 @@ my $eco_snapshot = 0;
 sub process_job {
     my ($self, $redis_pricer, $next, $params) = @_;
 
-    my $cmd          = $params->{price_daemon_cmd};
-    my $current_time = time;
-
-    unless (
-        $self->price_duplicate_spot
-        # we must not wait for the next tick if a poc is sold
-        || ($cmd eq 'bid' && $params->{is_sold} == 1))
-    {
-        my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
-        my $current_spot_ts      = $underlying->spot_tick->epoch;
-        my $last_priced_contract = eval { decode_json_utf8($redis_pricer->get($next) // die 'default') } || {time => 0};
-        my $last_price_ts        = $last_priced_contract->{time};
-
-        # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
-        # than 10 seconds ago - just ignore it.
-        if (    $current_spot_ts == $last_price_ts
-            and $current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT)
-        {
-            stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
-            return undef;
-        }
-    }
+    my $cmd = $params->{price_daemon_cmd};
 
     my $r = BOM::Platform::Context::Request->new({language => $params->{language} // 'EN'});
     BOM::Platform::Context::request($r);
@@ -120,21 +89,6 @@ sub process_job {
 
     # contract parameters are stored after first call, no need to send them with every stream message
     delete $response->{contract_parameters};
-
-    unless ($self->price_duplicate_spot) {
-        # when it reaches here, contract is considered priced.
-        $redis_pricer->set(
-            $next => encode_json_utf8({
-                    # - for proposal open contract, don't use $current_time here since we are using this time to
-                    #   check if we want to skip repricing contract with the same spot price.
-                    # - for proposal, because $response doesn't have current_spot_time, we will resort to $current_time
-                    time     => $response->{current_spot_time} // $current_time,
-                    contract => $response,
-                }
-            ),
-            'EX' => DURATION_DONT_PRICE_SAME_SPOT
-        );
-    }
 
     my $log_price_daemon_cmd = $params->{log_price_daemon_cmd} // $cmd;
     stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
@@ -205,15 +159,23 @@ sub run {
             $tv_appconfig = $tv_now;
         }
 
-        my ($prefix, $next) = split /::/, $key->[1];
-        next unless $next and $prefix eq 'PRICER_ARGS';
-        $key->[1] = $prefix . "::" . $next;
+        my ($prefix, $next, $tick) = split "::", $key->[1];
+        next unless $prefix eq "PRICER_ARGS" and $next;
+        my $rkey    = $prefix . "::" . $next;
         my $payload = decode_json_utf8($next);
         my $params  = {@{$payload}};
+        if ($tick) {
+            $params->{current_tick} = Postgres::FeedDB::Spot::Tick->new(decode_json_utf8($tick));
+            if (my $recv = $params->{received}) {
+                stats_timing('pricer_daemon.queue.time', 1000 * ($recv - Time::HiRes::time()), {tags => $self->tags});
+            }
+        }
 
         # for proposal open_contract, we will fetch contract data with contract id and landing company.
         if ($params->{contract_id} and $params->{landing_company}) {
+            my $current_tick = $params->{current_tick};
             $params = BOM::Pricing::v3::Utility::get_poc_parameters($params->{contract_id}, $params->{landing_company});
+            $params->{current_tick} = $current_tick if $current_tick;
         }
 
         my $contract_type = $params->{contract_type};
@@ -222,7 +184,7 @@ sub run {
         # delete them here.
         unless ($self->_validate_params($next, $params)) {
             $log->warnf('Invalid parameters: %s', $next);
-            $redis_pricer->del($key->[1], $next);
+            $redis_pricer->del($rkey, $next);
             next LOOP;
         }
 
@@ -244,7 +206,7 @@ sub run {
             $response = $self->process_job($redis_pricer, $next, $params) // next LOOP;
         } catch ($e) {
             $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $e, $params);
-            $redis_pricer->del($key->[1], $next);
+            $redis_pricer->del($rkey, $next);
             next LOOP;
         }
 
@@ -265,13 +227,13 @@ sub run {
 
             # delete the job if no-one is subscribed, or the contract is sold
             if (!$subscribers_count || $response->{is_sold}) {
-                $redis_pricer->del($key->[1], $next);
+                $redis_pricer->del($rkey, $next);
             }
         }
         # proposal
         else {
             # on websocket, multiple clients are subscribed to $pricer_args::$subchannel
-            my $pricer_args = $key->[1];
+            my $pricer_args = $rkey;
             my $subchannels = $redis_pricer->smembers($pricer_args);
 
             # we adjust and publish the price for each of them
@@ -333,47 +295,6 @@ sub run {
         $tv = $tv_now;
     }
     return undef;
-}
-
-sub _get_underlying_or_log {
-    my ($self, $next, $params) = @_;
-    my $cmd = $params->{price_daemon_cmd};
-
-    my $underlying = $commands->{$cmd}->{get_underlying}->($self, $params);
-
-    if (not $underlying or not ref($underlying)) {
-        $log->warnf('Have legacy underlying - %s with params %s', $underlying, $params) if not ref($underlying);
-        stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
-        return undef;
-    }
-
-    unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
-        $log->warnf('Underlying spot_tick %s', $underlying->spot_tick) if defined $underlying->spot_tick;
-        $log->warnf('%s has invalid spot tick (request: %s)', $underlying->system_symbol, $next)
-            if $underlying->calendar->is_open($underlying->exchange);
-        stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
-        return undef;
-    }
-    return $underlying;
-}
-
-sub _get_underlying_price {
-    my ($self, $params) = @_;
-    unless (exists $params->{symbol}) {
-        $log->warn("symbol is not provided price daemon for price");
-        return undef;
-    }
-    return create_underlying($params->{symbol});
-}
-
-sub _get_underlying_bid {
-    my ($self, $params) = @_;
-    unless (exists $params->{short_code} and $params->{currency}) {
-        $log->warn("short_code or currency is not provided price daemon for bid");
-        return undef;
-    }
-    my $from_shortcode = shortcode_to_parameters($params->{short_code}, $params->{currency});
-    return create_underlying($from_shortcode->{underlying});
 }
 
 sub _process_price {

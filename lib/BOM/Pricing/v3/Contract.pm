@@ -246,11 +246,9 @@ sub _get_ask {
                             'order_amount' => $contract->take_profit->{amount}}};
                 }
 
-                my $redis               = BOM::Config::Redis::redis_replicated_read();
-                my $unerlying_key       = join('::', $contract->underlying->symbol, 'growth_rate_' . $contract->growth_rate);
-                my $last_tick_processed = $redis->hget("accumulator::previous_tick_barrier_status", $unerlying_key);
-                $last_tick_processed = decode_json($last_tick_processed) if $last_tick_processed;
-                my $stat_key = join('::', 'accumulator', 'stat_history', $unerlying_key);
+                my $redis          = BOM::Config::Redis::redis_replicated_read();
+                my $underlying_key = join('::', $contract->underlying->symbol, 'growth_rate_' . $contract->growth_rate);
+                my $stat_key       = join('::', 'accumulator', 'stat_history', $underlying_key);
 
                 #if the request is coming from Websocket we should return all data(100 numbers) to build the stat chart.
                 #after that(when the request is coming from pricer) we only need to return the last value to update it
@@ -258,6 +256,31 @@ sub _get_ask {
                       $streaming_params->{from_pricer}
                     ? $redis->lrange($stat_key, -1, -1)
                     : $redis->lrange($stat_key, 0,  -1);
+
+                my $last_tick_processed_json = $redis->hget("accumulator::previous_tick_barrier_status", $underlying_key);
+                my $last_tick_processed;
+                $last_tick_processed = decode_json($last_tick_processed_json) if $last_tick_processed_json;
+                if ($last_tick_processed && @$ticks_stayed_in) {
+                    # ticks_stayed_in does not include the latest tick yet, we
+                    # need to calculate what it should be if we include the
+                    # latest tick
+                    if ($last_tick_processed->{tick_epoch} < $contract->current_tick->epoch) {
+                        if (    $contract->current_spot > $last_tick_processed->{low_barrier}
+                            and $contract->current_spot < $last_tick_processed->{high_barrier})
+                        {
+                            # the latest tick stayed in
+                            $ticks_stayed_in->[-1]++;
+                        } else {
+                            # the latest tick got out
+                            if ($streaming_params->{from_pricer}) {
+                                $ticks_stayed_in->[-1] = 0;
+                            } else {
+                                push @{$ticks_stayed_in}, 0;
+                                pop @{$ticks_stayed_in} if @{$ticks_stayed_in} > 100;
+                            }
+                        }
+                    }
+                }
 
                 #barriers in PP should be calculated based on the current tick
                 my $high_barrier = $contract->current_spot_high_barrier;
@@ -376,8 +399,9 @@ sub get_bid {
         $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         $bet_params->{landing_company}       = $landing_company;
-        $bet_params->{sell_time}             = $sell_time  if $is_sold;
-        $bet_params->{sell_price}            = $sell_price if defined $sell_price;
+        $bet_params->{sell_time}             = $sell_time              if $is_sold;
+        $bet_params->{sell_price}            = $sell_price             if defined $sell_price;
+        $bet_params->{current_tick}          = $params->{current_tick} if $params->{current_tick};
         $contract                            = produce_contract($bet_params);
     } catch {
         warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . $json->encode($bet_params);

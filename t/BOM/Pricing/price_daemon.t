@@ -24,7 +24,6 @@ my $redis_pricer = BOM::Config::Redis::redis_pricer(timeout => 0);
 my $daemon       = BOM::Pricing::PriceDaemon->new(
     tags                 => ["tag:test"],
     record_price_metrics => 0,
-    price_duplicate_spot => 0,
 );
 
 subtest '_validate_params daemon' => sub {

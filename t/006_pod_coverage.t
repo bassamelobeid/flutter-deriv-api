@@ -9,7 +9,7 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::Pricing::PriceDaemon'    => 9,
+    'BOM::Pricing::PriceDaemon'    => 6,
     'BOM::Pricing::v3::Contract'   => 11,
     'BOM::Pricing::v3::MarketData' => 8,
     'BOM::Pricing::v3::Utility'    => 4,

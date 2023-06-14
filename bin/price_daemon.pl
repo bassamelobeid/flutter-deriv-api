@@ -31,13 +31,11 @@ GetOptions(
     "queues=s"               => \my $queues,
     "no-warmup=i"            => \my $nowarmup,
     'record_price_metrics:i' => \my $record_price_metrics,
-    'price_duplicate_spot:i' => \my $price_duplicate_spot,
     'pid-file=s'             => \my $pid_file,
 );
 $queues               ||= 'pricer_jobs';
 $workers              ||= max(1, Sys::Info->new->device("CPU")->count);
 $record_price_metrics ||= 0;
-$price_duplicate_spot ||= 0;
 
 path($pid_file)->spew($$) if $pid_file;
 
@@ -90,7 +88,6 @@ while (1) {
     my $daemon = BOM::Pricing::PriceDaemon->new(
         tags                 => ['tag:' . $internal_ip],
         record_price_metrics => $record_price_metrics,
-        price_duplicate_spot => $price_duplicate_spot,
     );
     # Allow graceful shutdown
     $SIG{TERM} = sub {
