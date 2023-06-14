@@ -648,6 +648,13 @@ override '_build_ticks_for_tick_expiry' => sub {
                     start_time => $start_time,
                     end_time   => $end_time
                 })};
+        if (    $self->current_tick
+            and $self->current_tick->epoch <= $end_time
+            and $self->current_tick->epoch >= $start_time
+            and (not @ticks or $ticks[-1]->epoch < $self->current_tick->epoch))
+        {
+            push @ticks, $self->current_tick;
+        }
 
         return [@ticks[0 .. $self->ticks_to_expiry - 1]] if scalar @ticks > $self->ticks_to_expiry;
 
@@ -663,6 +670,13 @@ override '_build_ticks_for_tick_expiry' => sub {
                     start_time => $start_time,
                     limit      => $self->ticks_to_expiry,
                 })};
+        if (    $self->current_tick
+            and @ticks < $self->ticks_to_expiry
+            and $self->current_tick->epoch >= $start_time
+            and (not @ticks or $ticks[-1]->epoch < $self->current_tick->epoch))
+        {
+            push @ticks, $self->current_tick;
+        }
     }
 
     #sometimes when barrier violation happends there is a delay between sell_time and expiry_time
@@ -733,6 +747,12 @@ override '_build_tick_stream' => sub {
                 end_time => $end_time,
                 limit    => $limit
             })};
+    if ($self->current_tick and $self->current_tick->epoch <= $end_time and (not @ticks or $ticks[-1]->epoch < $self->current_tick->epoch)) {
+        push @ticks, $self->current_tick;
+        if (@ticks > $limit) {
+            shift @ticks;
+        }
+    }
 
     return [map { {epoch => $_->epoch, tick => $_->quote, tick_display_value => $self->underlying->pipsized_value($_->quote)} } @ticks];
 };
