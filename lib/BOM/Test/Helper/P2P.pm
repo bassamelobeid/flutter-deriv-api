@@ -168,10 +168,13 @@ sub populate_trade_band_db {
     $client->db->dbic->dbh->do(
         "INSERT INTO p2p.p2p_country_trade_band 
                (trade_band, country, currency, max_daily_buy, max_daily_sell, min_joined_days, max_allowed_dispute_rate,
-                min_completion_rate, min_completed_orders, max_allowed_fraud_cases, poa_required, email_alert_required, automatic_approve)
+                min_completion_rate, min_completed_orders, max_allowed_fraud_cases, poa_required, email_alert_required, automatic_approve,
+                min_order_amount, max_order_amount, block_trade_min_order_amount, block_trade_max_order_amount)
          VALUES 
-               ('medium', 'default', 'USD', 5000, 2000, 90, 0.02, 0.94, 3, 0, TRUE, FALSE, TRUE),
-               ('high', 'default', 'USD', 10000, 10000, 180, 0, 0.98, 3, 0, TRUE, TRUE, FALSE)"
+               ('medium', 'default', 'USD', 5000, 2000, 90, 0.02, 0.94, 3, 0, TRUE, FALSE, TRUE, NULL, NULL, NULL, NULL),
+               ('high', 'default', 'USD', 10000, 10000, 180, 0, 0.98, 3, 0, TRUE, TRUE, FALSE, NULL, NULL, NULL, NULL),
+               ('block_trade_medium', 'default', 'USD', 20000, 20000, 365, NULL, NULL, NULL, NULL, FALSE, TRUE, FALSE, 5, 500, 1000, 10000),
+               ('block_trade_high', 'default', 'USD', 50000, 50000, 730, NULL, NULL, NULL, NULL, FALSE, TRUE, FALSE, 5, 500, 1000, 20000)"
     );
 
     return 1;
