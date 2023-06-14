@@ -850,6 +850,7 @@ subtest 'P2P Order Info' => sub {
             id             => re('\d+'),
             description    => 'Test advert',
             type           => 'buy',
+            block_trade    => 0,
         },
         payment_info       => 'Bank: 123456',
         created_time       => re('\d+'),

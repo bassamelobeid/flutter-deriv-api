@@ -399,8 +399,13 @@ rpc website_status => sub {
             feature_level            => $p2p_config->feature_level,
             local_currencies         => \@local_currencies,
             cross_border_ads_enabled => (any { lc($_) eq $country } $p2p_config->cross_border_ads_restricted_countries->@*) ? 0 : 1,
+            block_trade              => {
+                disabled              => $p2p_config->block_trade->enabled ? 0 : 1,
+                maximum_advert_amount => $p2p_config->block_trade->maximum_advert,
+            },
         };
     }
+
     return $result;
 };
 

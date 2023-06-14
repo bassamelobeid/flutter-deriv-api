@@ -207,6 +207,8 @@ our %ERROR_MAP = do {
         InvalidVerificationToken      => localize('The link that you used appears to be invalid. Please check and try again.'),
         ExcessiveVerificationRequests => localize('Please wait for [_1] seconds before requesting another email.'),
         InvalidLocalCurrency          => localize('Invalid currency provided.'),
+        BlockTradeNotAllowed          => localize("You're not eligible for block trading. Contact our Customer Support team for more information."),
+        BlockTradeDisabled            => localize('Block trading is currently unavailable. Please try again later.'),
     );
 };
 

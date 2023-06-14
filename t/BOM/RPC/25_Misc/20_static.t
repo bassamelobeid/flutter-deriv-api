@@ -517,6 +517,10 @@ subtest 'p2p_config' => sub {
                 has_adverts  => 1,
             },
         ],
+        block_trade => {
+            disabled              => 0,
+            maximum_advert_amount => 15,
+        },
     );
 
     $p2p_config->available(1);
@@ -551,6 +555,9 @@ subtest 'p2p_config' => sub {
                     manual_quote       => 123.45,
                     manual_quote_epoch => time + 100,
                 }}));
+
+    $p2p_config->block_trade->enabled(1);
+    $p2p_config->block_trade->maximum_advert(15);
 
     my %params = (
         website_status => {
