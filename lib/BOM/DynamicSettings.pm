@@ -512,6 +512,8 @@ sub get_settings_by_group {
                 payments.p2p.feature_level
                 payment_agents.initial_deposit_per_country
                 payments.payments_limit
+                payments.p2p.block_trade.enabled
+                payments.p2p.block_trade.maximum_advert
                 payments.p2p.cross_border_ads_restricted_countries
                 payments.p2p.fiat_deposit_restricted_countries
                 payments.p2p.fiat_deposit_restricted_lookback

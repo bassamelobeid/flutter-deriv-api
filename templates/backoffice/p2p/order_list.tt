@@ -56,6 +56,7 @@
         <th>Rate</th>
         <th>Local Amount</th>
         <th>Local Currency</th>
+        <th>Block Trade</th>
     </tr></thead>
     <tbody>
     [% FOREACH order IN orders %]
@@ -75,6 +76,7 @@
             <td>[% order.rate %]</td>
             <td>[% order.price_display %]</td>
             <td>[% order.local_currency %]</td>
+            <td>[% IF order.advert_block_trade %]&#9989;[% ELSE %]&#10060;[% END %]</td>
         </tr>
     [% END %]
     </tbody>

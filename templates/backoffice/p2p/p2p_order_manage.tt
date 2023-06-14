@@ -169,6 +169,11 @@
             <td>Advert ID</td>
             <td>[% order.advert_id %]</td>
         </tr>
+        </tr>
+        <tr>
+            <td>Block Trade</td>
+            <td>[% IF order.advert_block_trade %]Yes[% ELSE %]No[% END %]</td>
+        </tr>           
         <tr>
             <td>Escrow</td>
             <td>[% escrow %]</td>

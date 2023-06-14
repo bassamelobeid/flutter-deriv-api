@@ -39,16 +39,15 @@ $input{sort_order} = 'asc' unless ($input{sort_order} // '') eq 'desc';
 $input{sort_by}   //= 'id';
 $input{date_from} //= Date::Utility->new->minus_months(3)->date;
 $input{offset}    //= 0;
+$input{limit} = PAGE_LIMIT + 1;
 
 my $results = [];
 $results = $db->run(
     fixup => sub {
         $_->selectall_arrayref(
-            'SELECT * FROM p2p.advertiser_search(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'SELECT * FROM p2p.advertiser_search(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             {Slice => {}},
-            @input{qw/nickname email residence date_from pa_status include_disabled sort_by sort_order offset/},
-            PAGE_LIMIT + 1,
-        );
+            @input{qw/nickname email residence date_from pa_status include_disabled sort_by sort_order offset limit trade_band/});
     }) if $input{search};
 
 my %link_params;
@@ -74,6 +73,11 @@ $link_params{next} = @$results > PAGE_LIMIT ? {%input, offset => $input{offset} 
 
 splice(@$results, PAGE_LIMIT);
 
+my $trade_bands = $db->run(
+    fixup => sub {
+        $_->selectcol_arrayref('SELECT DISTINCT trade_band FROM p2p.p2p_country_trade_band ORDER BY 1');
+    });
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_advertiser_list.tt',
     {
@@ -82,6 +86,7 @@ BOM::Backoffice::Request::template()->process(
         link_params => \%link_params,
         sort_flag   => {$input{sort_by} => $input{sort_order} eq 'asc' ? '&#9660;' : '&#9650;'},
         countries   => BOM::Config::P2P::available_countries,
+        trade_bands => $trade_bands,
     });
 
 code_exit_BO();

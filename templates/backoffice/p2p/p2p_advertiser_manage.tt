@@ -133,10 +133,21 @@
                 [% END %]
                 &nbsp;&nbsp;(Band country: [% advertiser.band_country %])
                 <br/>Daily turnover limits: buy [% advertiser.daily_buy_limit %], sell [% advertiser.daily_sell_limit %]
-                <br/>Ad order amount limits: min [% advertiser.min_order_amount %], max [% advertiser.max_order_amount || '-' %]
-                <br/>Minimum balance: [% advertiser.min_balance %]
+                <br/>Ad limits: min order [% advertiser.min_order_amount || '-' %], max order [% advertiser.max_order_amount || '-' %]
+                [% IF advertiser.block_trade_min_order_amount && advertiser.block_trade_max_order_amount %]
+                <br/>Block trade ad limits: min order [% advertiser.block_trade_min_order_amount %], max order [% advertiser.block_trade_max_order_amount %]
+                [% END %]
+                <br/>Minimum balance: [% advertiser.min_balance || '-' %]
             </td>
         </tr>
+        [% IF band_upgrade %]
+        <tr>
+            <td>Eligible band upgrade</td>
+            <td>New band: [% band_upgrade.target_trade_band %], daily buy limit: [% band_upgrade.target_max_daily_buy %], daily sell limit: [% band_upgrade.target_max_daily_sell %],
+                block trade: [% IF band_upgrade.target_block_trade %]yes[% ELSE %]no[% END %]
+            </td>
+        </tr>        
+        [% END %]
         <tr>
             <td>Today turnover</td>
             <td>Buy: [% advertiser.account_currency %] [% daily_buy_formatted %]<br/>

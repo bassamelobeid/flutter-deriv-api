@@ -1,12 +1,3 @@
-<p>Bands will be assigned to an advertiser by the first matching condition:</p>
-    <ol>
-        <li>Level matches, country matches, curency matches</li>
-        <li>Level matches, country matches, band currency is USD</li>
-        <li>Level matches, band country is default, currency matches</li>
-        <li>Level matches, band country is default, band currency is USD</li>
-        <li>Band is low, country is default, currency is USD</li>
-    </ol>
-
 <table class="sortable border">
     <thead>
         <tr>
@@ -18,21 +9,25 @@
             <th scope="col">Min Order</th>
             <th scope="col">Max Order</th>
             <th scope="col">Min Balance</th>
+            <th scope="col">Block Trade Min</th>
+            <th scope="col">Block Trade Max</th>
+            <th scope="col">Upgrade Type</th>
             <th scope="col">Min Joined Days</th>
             <th scope="col">Max Dispute Rate</th>
             <th scope="col">Min Completion Rate</th>
             <th scope="col">Min Completed Order</th>
             <th scope="col">Max Fraud Cases</th>
-            <th scope="col">Automatic Approve</th>
             <th scope="col">POA Required</th>
-            <th scope="col">Email Alert Required</th>
+            <th scope="col">Min 30 day turnover</th>
+            <th scope="col">Payment Agent Tier</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
 
     [% FOREACH b = bands %]
-        <tr[% IF b.country == 'default' %] class="bg-highlight"[% END %]>
+        [% default_band = b.trade_band == 'low' and b.country == 'default' and b.currency == 'USD' %]
+        <tr[% IF default_band %] class="bg-highlight"[% END %]>
             <td>
                 [% IF countries_list.${b.country} %]
                     [% countries_list.${b.country}.name %] ([% b.country %])
@@ -47,35 +42,31 @@
             <td>[% b.min_order_amount || '-' %]</td>
             <td>[% b.max_order_amount || '-' %]</td>
             <td>[% b.min_balance || '-' %]</td>
+            <td>[% b.block_trade_min_order_amount || '-' %]</td>
+            <td>[% b.block_trade_max_order_amount || '-' %]</td>            
+            <td>
+                [% IF b.upgrade_type == 'none' %]No upgrade
+                [% ELSIF b.upgrade_type == 'auto' %]Automatic
+                [% ELSIF b.upgrade_type == 'manual' %]Offer to client
+                [% ELSIF b.upgrade_type == 'manual_with_email' %]Offer to client + internal email
+                [% END %]
+            </td>
             <td>[% b.min_joined_days || '-' %]</td>
-            <td>[% IF b.max_allowed_dispute_rate.size %][% b.max_allowed_dispute_rate %][% ELSE %][%  '-'  %][% END %]</td>
+            <td>[% IF b.max_allowed_dispute_rate.size %][% b.max_allowed_dispute_rate %][% ELSE %]-[% END %]</td>
             <td>[% b.min_completion_rate || '-' %]</td>
             <td>[% b.min_completed_orders || '-' %]</td>
-            <td>[% IF b.max_allowed_fraud_cases.size %][% b.max_allowed_fraud_cases %][% ELSE %][%  '-'  %][% END %]</td>
-            <td>[% b.automatic_approve %]</td>
-            <td>[% b.poa_required %]</td>
-            <td>[% b.email_alert_required %]</td>
+            <td>[% IF b.max_allowed_fraud_cases.size %][% b.max_allowed_fraud_cases %][% ELSE %]-[% END %]</td>
+            <td>[% IF b.poa_required %]yes[% ELSE %]no[% END %]</td>
+            <td>[% IF b.min_turnover.size %][% b.min_turnover %][% ELSE %]-[% END %]</td>
+            <td>[% b.payment_agent_tier || '-' %]</td>
             <td>
                 <form style="margin-block-end:0;" action="[% request.url_for('backoffice/p2p_band_management.cgi', {broker => broker}) %]" method="post">
-                    <input type="hidden" name="country" value="[% b.country %]"/>
-                    <input type="hidden" name="trade_band" value="[% b.trade_band %]"/>
-                    <input type="hidden" name="currency" value="[% b.currency %]"/>
-                    <input type="hidden" name="max_daily_buy" value="[% b.max_daily_buy %]"/>
-                    <input type="hidden" name="max_daily_sell" value="[% b.max_daily_sell %]"/>
-                    <input type="hidden" name="min_order_amount" value="[% b.min_order_amount %]"/>
-                    <input type="hidden" name="max_order_amount" value="[% b.max_order_amount %]"/>
-                    <input type="hidden" name="min_balance" value="[% b.min_balance %]"/>
-                    <input type="hidden" name="min_joined_days" value="[% b.min_joined_days %]"/>
-                    <input type="hidden" name="max_allowed_dispute_rate" value="[% b.max_allowed_dispute_rate %]"/>
-                    <input type="hidden" name="min_completion_rate" value="[% b.min_completion_rate %]"/>
-                    <input type="hidden" name="min_completed_orders" value="[% b.min_completed_orders %]"/>
-                    <input type="hidden" name="max_allowed_fraud_cases" value="[% b.max_allowed_fraud_cases %]"/>
-                    <input type="hidden" name="automatic_approve" value="[% b.automatic_approve %]"/>
-                    <input type="hidden" name="poa_required" value="[% b.poa_required %]"/>
-                    <input type="hidden" name="email_alert_required" value="[% b.email_alert_required %]"/>
+                    [% FOREACH k IN b.keys %]
+                        <input type="hidden" name="[% k %]" value="[% b.$k %]"/>
+                    [% END %]
                     <select name="action" style="width:80;">
                         <option value="edit">Edit</option>
-                        [% IF b.country != 'default' %]<option value="delete">Delete</option>[% END %]
+                        [% IF !default_band %]<option value="delete">Delete</option>[% END %]
                         <option value="copy">Copy</option>
                     </select>
                     <button class="btn btn--primary" type="submit">Go</button>

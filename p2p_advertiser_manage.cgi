@@ -22,6 +22,7 @@ use List::Util   qw(min max first any);
 use Data::Dumper;
 use DateTime::Format::Pg;
 use Date::Utility;
+use JSON::MaybeUTF8 qw(:v1);
 
 use constant {
     P2P_ADVERTISER_BLOCK_ENDS_AT        => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
@@ -94,20 +95,18 @@ if (my $id = $input{update}) {
             my $update = $db->run(
                 fixup => sub {
                     $_->selectrow_hashref(
-                        "UPDATE p2p.p2p_advertiser SET name = ?, is_enabled = ?, is_listed = ?, blocked_until = NULLIF(?,'')::TIMESTAMP, default_advert_description = ?, 
-                            payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band), show_name = ? WHERE id = ? RETURNING *",
+                        'SELECT * FROM p2p.advertiser_update_v2(?, NULL, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, NULL)',
                         undef,
                         @input{
-                            qw/update_name is_enabled is_listed blocked_until default_advert_description payment_info contact_info trade_band show_name update_id/
-                        },
-                    );
+                            qw(update_id is_listed update_name default_advert_description payment_info contact_info trade_band is_enabled blocked_until show_name)
+                        });
                 });
             die "Invalid advertiser ID\n" unless $update;
 
             my $redis = BOM::Config::Redis->redis_p2p_write();
 
             # if user was eligible for a band upgrade before this change, will delete his field in redis
-            $redis->hdel(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $id) if ($existing->{trade_band} // "") ne $input{trade_band};
+            $redis->hdel(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $id) if $existing->{trade_band} ne $input{trade_band};
 
             if (my $blocked_until = $update->{blocked_until}) {
                 my $blocked_du = Date::Utility->new($blocked_until);
@@ -257,6 +256,14 @@ if ($output{advertiser}) {
         . $output{advertiser}->{recommended_count}
         . ' users)'
         : 'no recommentations yet';
+
+    if (my $band_upgrade = BOM::Config::Redis->redis_p2p->hget(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $output{advertiser}->{id})) {
+        try {
+            $output{band_upgrade} = decode_json_utf8($band_upgrade);
+        } catch {
+            $output{error} = 'Invalid pending upgrade JSON stored for advertiser ' . $output{advertiser}->{id} . '. Please inform backend team.';
+        }
+    }
 
     if (my $blocked_until = $output{advertiser}->{blocked_until}) {
         $output{advertiser}->{barred} = Date::Utility->new($blocked_until)->is_after(Date::Utility->new);

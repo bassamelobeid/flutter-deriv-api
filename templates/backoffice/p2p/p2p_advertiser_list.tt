@@ -24,6 +24,13 @@
                     <option value="suspended" [% input.pa_status == 'suspended' && 'selected' %]>Suspended</option>
                     <option value="rejected" [% input.pa_status == 'rejected' && 'selected' %]>Rejected</option>
                 </select>
+            <label>Band:</label>
+                <select name="trade_band">
+                    <option value="">All</option>
+                    [% FOR band IN trade_bands %]
+                        <option value="[% band %]" [% input.trade_band == band && 'selected' %]>[% band %]</option>
+                    [% END %]
+                </select>                
         </div>
         <div class="row">            
             <label>Aggregate transactions since:</label>
