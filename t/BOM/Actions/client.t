@@ -5227,46 +5227,92 @@ subtest 'crypto_withdrawal_rejected_email_v2' => sub {
     my $client_fiat_account = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($client->loginid);
     is $client_fiat_account, undef, 'no fiat account curency yet';
     $user->add_client($fiat_client);
-    undef @track_args;
 
     $client_fiat_account = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($client->loginid);
     is $client_fiat_account, 'USD', 'correct fiat account curency';
-    BOM::Event::Actions::Client::crypto_withdrawal_rejected_email_v2({
-            loginid       => $client->loginid,
-            reject_code   => 'highest_deposit_method_is_not_crypto--Skrill',
-            reject_remark => '',
-            amount        => '0.09',
-            currency      => $currency_code,
-            live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
-            reference_no  => 1
-        })->get;
 
-    my ($customer, %args) = @track_args;
-    ok 1, 'is ok';
+    subtest 'highest_deposited_method_is_not_crypto' => sub {
+        undef @track_args;
 
-    is $args{event}, 'crypto_withdrawal_rejected_email_v2', "got correct event name";
+        BOM::Event::Actions::Client::crypto_withdrawal_rejected_email_v2({
+                loginid       => $client->loginid,
+                reject_code   => 'highest_deposit_method_is_not_crypto--Skrill',
+                reject_remark => '',
+                amount        => '0.09',
+                currency      => $currency_code,
+                live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
+                reference_no  => 1
+            })->get;
 
-    cmp_deeply(
-        $args{properties},
-        {
-            "lang"          => "EN",
-            "brand"         => "deriv",
-            "title"         => sprintf("Your %s withdrawal is declined", $currency_code),
-            "amount"        => 0.09,
-            "loginid"       => $client->loginid,
-            "currency"      => "BTC",
-            "live_chat_url" => 'https://deriv.com/en/?is_livechat_open=true',
-            "reject_code"   => "highest_deposit_method_is_not_crypto",
-            "reject_remark" => "",
-            'reference_no'  => 1,
-            "fiat_account"  => "USD",
-            "meta_data"     => "Skrill",
-        },
-        'event properties are ok'
-    );
+        my ($customer, %args) = @track_args;
+        ok 1, 'is ok';
 
-    is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
-    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+        is $args{event}, 'crypto_withdrawal_rejected_email_v2', "got correct event name";
+
+        cmp_deeply(
+            $args{properties},
+            {
+                "lang"          => "EN",
+                "brand"         => "deriv",
+                "title"         => sprintf("Your %s withdrawal is declined", $currency_code),
+                "amount"        => 0.09,
+                "loginid"       => $client->loginid,
+                "currency"      => "BTC",
+                "live_chat_url" => 'https://deriv.com/en/?is_livechat_open=true',
+                "reject_code"   => "highest_deposit_method_is_not_crypto",
+                "reject_remark" => "",
+                'reference_no'  => 1,
+                "fiat_account"  => "USD",
+                "meta_data"     => "Skrill",
+            },
+            'event properties are ok'
+        );
+
+        is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+        ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    };
+
+    subtest 'low_trade' => sub {
+        undef @track_args;
+
+        BOM::Event::Actions::Client::crypto_withdrawal_rejected_email_v2({
+                loginid       => $client->loginid,
+                reject_code   => 'low_trade',
+                reject_remark => '',
+                amount        => '0.09',
+                currency      => $currency_code,
+                live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
+                reference_no  => 1
+            })->get;
+
+        my ($customer, %args) = @track_args;
+        ok 1, 'is ok';
+
+        is $args{event}, 'crypto_withdrawal_rejected_email_v2', "got correct event name";
+
+        cmp_deeply(
+            $args{properties},
+            {
+                "lang"          => "EN",
+                "brand"         => "deriv",
+                "title"         => sprintf("Your %s withdrawal is declined", $currency_code),
+                "amount"        => 0.09,
+                "loginid"       => $client->loginid,
+                "currency"      => "BTC",
+                "live_chat_url" => 'https://deriv.com/en/?is_livechat_open=true',
+                "reject_code"   => "low_trade",
+                "reject_remark" => "",
+                'reference_no'  => 1,
+                "fiat_account"  => "USD",
+                "meta_data"     => "",
+            },
+            'event properties are ok'
+        );
+
+        is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+        ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    };
+
 };
 
 subtest 'account_verification_for_pending_payout event' => sub {
