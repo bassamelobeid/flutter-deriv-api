@@ -184,7 +184,8 @@ sub get_sold {
                         AND is_sold = true
                         AND purchase_time < $2
                         AND purchase_time > $3
-                    ORDER BY purchase_time } . $sort_order . q{
+                    ORDER BY purchase_time } . $sort_order    ## SQL safe($sort_order)
+        . q{
                     LIMIT $4
                 ) b,
                 transaction.transaction t
@@ -192,7 +193,7 @@ sub get_sold {
                 t.financial_market_bet_id = b.id
                 AND t.action_type = 'buy'
             ORDER BY b.purchase_time DESC
-        };
+        };                                                    ## SQL safe($sort_order)
 
     my $before = $args->{before} || Date::Utility->new()->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
     my $after  = $args->{after}  || '1970-01-01 00:00:00';

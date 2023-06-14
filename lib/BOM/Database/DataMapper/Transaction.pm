@@ -405,15 +405,12 @@ sub get_monthly_balance {
 sub unprocessed_bets {
     my ($self, $last_processed_id, $unsold_ids) = @_;
 
-    my $where_unsold_ids = '';
     my @binds            = ($self->account->id, $last_processed_id);
-    if (@$unsold_ids) {
-        $where_unsold_ids = 'OR id IN(' . join(',', ('?') x scalar(@$unsold_ids)) . ')';
-        push @binds, @$unsold_ids;
-    }
+    my @unsold_ids       = @{$unsold_ids // []};
+    my $where_unsold_ids = 'ARRAY(' . join(',', @unsold_ids) . ')::bigint[]';
 
     # Limit selecting time range to decrease DB load
-    my $sql = qq{
+    my $sql = q{
         SELECT
             id, is_sold, underlying_symbol,
             date_part('epoch', (sell_time - start_time)::interval) as duration_seconds,
@@ -427,12 +424,12 @@ sub unprocessed_bets {
             bet.financial_market_bet
         WHERE
             account_id = ?
-            AND (id > ? $where_unsold_ids)
+            AND (id > ? or id = ANY(?))
             AND  purchase_time >= '2016-06-01'::TIMESTAMP
         ORDER BY id ASC
     };
 
-    return $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
+    return $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds, $where_unsold_ids) });
 }
 
 =head2 $self->get_transactions($parameters)
