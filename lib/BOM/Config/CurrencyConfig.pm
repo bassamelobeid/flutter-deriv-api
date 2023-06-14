@@ -760,7 +760,7 @@ Takes the following argument(s)
 
 =over 4
 
-=item * C<$action> - required - Action to check  - approve or reject
+=item * C<$action> - required - Action to check  - possible values {approve, reject, approve_dry_run, reject_dry_run}
 
 =back
 
@@ -779,6 +779,10 @@ sub get_crypto_payout_auto_update_global_status {
         return app_config()->payments->crypto->auto_update->reject;
     } elsif (lc($action) eq 'stable_payment_methods') {
         return app_config()->payments->crypto->auto_update->stable_payment_methods;
+    } elsif (lc($action) eq 'approve_dry_run') {
+        return app_config()->payments->crypto->auto_update->approve_dry_run;
+    } elsif (lc($action) eq 'reject_dry_run') {
+        return app_config()->payments->crypto->auto_update->reject_dry_run;
     }
 
     return 0;

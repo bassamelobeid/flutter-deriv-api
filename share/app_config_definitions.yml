@@ -561,9 +561,19 @@ payments:
               description: "Enable this to start running auto approval service for crypto payouts"
               default: 1
               global: 1
+            approve_dry_run:
+              isa: Bool
+              description: "Flag to enable dry run for auto approval service for crypto payouts"
+              default: 0
+              global: 1
             reject:
               isa: Bool
               description: "Enable this to start running auto reject service for crypto payouts"
+              default: 0
+              global: 1
+            reject_dry_run:
+              isa: Bool
+              description: "Flag to enable dry run for auto reject service for crypto payouts"
               default: 0
               global: 1
             stable_payment_methods:

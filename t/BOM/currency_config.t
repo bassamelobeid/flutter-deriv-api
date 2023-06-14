@@ -732,6 +732,21 @@ subtest 'get_crypto_payout_auto_update_global_status' => sub {
     is_deeply(decode_json(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('stable_payment_methods')),
         $expected_result, 'should return the correct result for updated value of crypto stable payment methods');
 
+    $apps_config->payments->crypto->auto_update->approve_dry_run(0);
+    $apps_config->payments->crypto->auto_update->reject_dry_run(0);
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('approve_dry_run'),
+        0, 'should return false when approve_dry_run is disabled');
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject_dry_run'),
+        0, 'should returns false when reject_dry_run is disabled');
+
+    $apps_config->payments->crypto->auto_update->approve_dry_run(1);
+    $apps_config->payments->crypto->auto_update->reject_dry_run(1);
+
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('approve_dry_run'),
+        1, 'should return true when approve_dry_run is enabled');
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject_dry_run'),
+        1, 'should return true when reject_dry_run is enabled');
+
 };
 
 subtest 'local currencies' => sub {
