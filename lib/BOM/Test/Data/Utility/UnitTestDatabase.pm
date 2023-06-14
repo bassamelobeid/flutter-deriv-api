@@ -141,7 +141,7 @@ sub create_client {
     my $dbic = $db->dbic;
 
     my $sequence_name        = 'sequences.loginid_sequence_' . $broker_code;
-    my $loginid_sequence_sql = "SELECT nextval('$sequence_name')";
+    my $loginid_sequence_sql = "SELECT nextval('$sequence_name')";             ## SQL safe($sequence_name)
     my @loginid_sequence     = $dbic->run(
         sub {
             my $loginid_sequence_sth = $_->prepare($loginid_sequence_sql);
@@ -391,7 +391,7 @@ sub setup_db_underlying_mapping {
     my @data = map { [$_->{symbol}, $_->{market}, $_->{submarket}, $_->{market_type}] } @uls;
     $db->dbic->run(
         ping => sub {
-            my $sth = $_->prepare("INSERT INTO bet.$table VALUES(?,?,?,?)");
+            my $sth = $_->prepare("INSERT INTO bet.$table VALUES(?,?,?,?)");    ## SQL safe($table)
             $sth->execute(@$_) foreach @data;
         });
     return;

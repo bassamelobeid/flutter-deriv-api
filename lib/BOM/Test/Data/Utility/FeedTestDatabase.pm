@@ -328,7 +328,7 @@ sub _create_table_for_date {
             CHECK(ts>= ? and ts<?::DATE + interval '1 month'),
             CHECK(DATE_TRUNC('second', ts) = ts)
         )
-        INHERITS (feed.tick)}, undef, $date_str, $date_str
+        INHERITS (feed.tick)}, undef, $date_str, $date_str    ## SQL safe($table_name)
         );
         $dbh->do("GRANT SELECT ON feed.$table_name  TO readonly");
 

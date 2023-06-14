@@ -135,8 +135,11 @@ sub create_order {
 sub expire_order {
     my ($client, $order_id, $interval) = @_;
     $interval //= '-1 day';
-
-    return $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET expire_time = NOW() + INTERVAL '$interval' WHERE id = $order_id");
+    $interval = $client->db->dbic->dbh->quote($interval);
+    return $client->db->dbic->dbh->do(
+        "UPDATE p2p.p2p_order SET expire_time = NOW() + INTERVAL $interval WHERE id = ?",    ## SQL safe($interval)
+        undef, $order_id
+    );
 }
 
 sub ready_to_refund {
@@ -193,8 +196,9 @@ Takes the following arguments:
 
 sub set_advertiser_created_time_by_day {
     my ($advertiser, $day) = @_;
-    my $time = $day < 0 ? ("NOW() - interval '" . abs($day) . " day'") : ("NOW() + interval '" . abs($day) . " day'");
-    my $sql  = "update p2p.p2p_advertiser set created_time = $time WHERE client_loginid = ?";
+    my $day_str = $advertiser->db->dbic->dbh->quote(abs($day) . ' day');
+    my $time    = $day < 0 ? ("NOW() - interval $day_str") : ("NOW() + interval $day_str");
+    my $sql     = "update p2p.p2p_advertiser set created_time = $time WHERE client_loginid = ?";    ## SQL safe($time)
     $advertiser->db->dbic->dbh->do($sql, undef, $advertiser->loginid);
     return 1;
 }
@@ -350,8 +354,9 @@ Takes the following arguments:
 
 sub set_advertiser_blocked_until {
     my ($advertiser, $temp_blocked_hours) = @_;
+    carp "temp_blocked_hours must be a positive integer" if defined($temp_blocked_hours) && $temp_blocked_hours !~ /^\d+$/;
     $temp_blocked_hours = $temp_blocked_hours ? "NOW() + INTERVAL '" . $temp_blocked_hours . " hour'" : "NULL";
-    my $sql = "update p2p.p2p_advertiser set blocked_until=$temp_blocked_hours WHERE client_loginid = ?";
+    my $sql = "update p2p.p2p_advertiser set blocked_until=$temp_blocked_hours WHERE client_loginid = ?";    ## SQL safe($temp_blocked_hours)
     $advertiser->db->dbic->dbh->do($sql, undef, $advertiser->loginid);
     return 1;
 }

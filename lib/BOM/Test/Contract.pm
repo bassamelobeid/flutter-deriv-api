@@ -119,7 +119,7 @@ sub get_transaction_from_db {
     my $bet_class = shift;
     my $txnid     = shift;
 
-    my $stmt = <<"SQL";
+    my $stmt = <<"SQL";    ## SQL safe($bet_class)
 SELECT t.*, b.*, c.*, v1.*, v2.*, t2.*
   FROM transaction.transaction t
   LEFT JOIN bet.financial_market_bet b ON t.financial_market_bet_id=b.id

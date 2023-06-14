@@ -177,7 +177,6 @@ sub _update_sequence_of {
     my $sequence = $arg_ref->{'sequence'};
 
     my $dbh = $self->db_handler;
-
     my $statement;
     my $last_value;
     my $query_result;
@@ -185,14 +184,14 @@ sub _update_sequence_of {
 
     $statement = qq{
         SELECT MAX(id) FROM $table;
-    };
+    };    ## SQL safe($table)
     $query_result = $dbh->selectrow_hashref($statement);
     $last_value   = $query_result->{'max'};
 
     while ($current_sequence_value <= $last_value) {
         $statement = qq{
             SELECT nextval('sequences.$sequence'::regclass);
-        };
+        };    ## SQL safe($sequence)
         $query_result = $dbh->selectrow_hashref($statement);
 
         $current_sequence_value = $query_result->{'nextval'};
@@ -257,7 +256,7 @@ sub _kill_all_pg_connections {
                     FROM pg_stat_activity
                    WHERE pid <> pg_backend_pid()
                      AND application_name NOT LIKE '%pglogical%'
-                     AND datname = '$db_name'"
+                     AND datname = ?", undef, $db_name
         );
     }
 
