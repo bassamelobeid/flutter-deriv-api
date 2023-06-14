@@ -667,7 +667,7 @@ sub update_local_currencies {
 
     # if we ever support multiple brokers in P2P, this will need reworking
     for my $broker (map { $_->broker_codes->@* } grep { $_->p2p_available } LandingCompany::Registry::get_all) {
-        my $clientdb = BOM::Database::ClientDB->new({broker_code => uc $broker}, operation => 'backoffice_replica');
+        my $clientdb = BOM::Database::ClientDB->new({broker_code => uc $broker, operation => 'backoffice_replica'});
         push @currencies, $clientdb->db->dbic->run(
             fixup => sub {
                 $_->selectcol_arrayref('SELECT * FROM p2p.active_local_currencies()');
