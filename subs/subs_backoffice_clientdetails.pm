@@ -1149,6 +1149,7 @@ sub show_client_id_docs {
 
     my %doc_types_categories = get_document_type_category_mapping($client);
     my @poi_doctypes         = $client->documents->poi_types->@*;
+    my @poa_doctypes         = $client->documents->poa_types->@*;
     my @dateless_doctypes    = $client->documents->dateless_types->@*;
     my @expirable_doctypes   = $client->documents->expirable_types->@*;
     my @numberless_doctypes  = $client->documents->numberless->@*;
@@ -1202,6 +1203,7 @@ sub show_client_id_docs {
         }
 
         my $poi_doc       = any { $_ eq $document_type } @poi_doctypes;
+        my $poa_doc       = any { $_ eq $document_type } @poa_doctypes;
         my $expirable_doc = any { $_ eq $document_type } @expirable_doctypes;
         my $dateless_doc  = any { $_ eq $document_type } @dateless_doctypes;
         my $numberless    = any { $_ eq $document_type } @numberless_doctypes;
@@ -1259,7 +1261,9 @@ sub show_client_id_docs {
         $links .=
             qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td style="width:400px;overflow:hidden;"><a class="link" href="$url" data-document-id="$id" target="_blank">$file_name</a></td>$age_display$input};
 
-        $links .= qq{<td><input type="checkbox" class='files_checkbox' name="document_list" value="$id-$loginid-$file_name"><td>};
+        my $is_poa = $poa_doc ? 1 : 0;
+        $links .=
+            qq{<td><input data-is-poa="$is_poa" type="checkbox" class='files_checkbox' name="document_list" value="$id-$loginid-$file_name"><td>};
 
         $links .= "</tr>";
     }

@@ -352,6 +352,14 @@ if ($input{document_list}) {
             }
         } else {
             $doc->status($new_doc_status);
+
+            # Update other fields as well
+            foreach my $field ('issue_date', 'document_id', 'comments') {
+                my $input_key = $field . '_' . $doc_id;
+                if (defined $input{$input_key}) {
+                    $doc->$field($input{$input_key});
+                }
+            }
             $full_msg .= (
                 $doc->save
                 ? "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>"

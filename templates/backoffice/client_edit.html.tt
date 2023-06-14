@@ -1030,18 +1030,51 @@ function get_checked_files() {
     }
 }
 
+function get_issue_date(doc_id) {
+    return document.getElementsByName('issue_date_' + doc_id)[0].value;
+}
+
 function get_to_verify_files() {
-    var checkboxes = document.getElementsByClassName('files_checkbox');
-    var doc_array = [];
+    const checkboxes = document.getElementsByClassName('files_checkbox');
+
+    const doc_id = [];
+    const doc_array = [];
+    const doc_is_poa = [];
+    
     for (var i=0, n=checkboxes.length;i<n;i++)
     {
         if (checkboxes[i].checked)
         {
             let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
+            doc_id.push(match[1]);
             doc_array.push(match[3]);
+            
+            doc_is_poa.push(checkboxes[i].getAttribute('data-is-poa'));
         }
     }
+
     if (doc_array.length > 0){
+        for (var i=0, n=doc_array.length;i<n;i++) {
+            if (doc_is_poa[i] == '1') {
+                let date = get_issue_date(doc_id[i]);
+
+                if (!date || date.length == 0){
+                    alert("Issue date is required.\n");
+                    return false;
+                }
+                else {
+                    let issue_date = new Date(date);
+                    if(issue_date == 'Invalid Date'){
+                        alert("Invalid issue date. Please match the requested format.\n");
+                        return false;
+                    }  
+                    else if(issue_date > new Date()){
+                        alert("Issue date must be a past date.\n");
+                        return false;
+                    }
+                }
+            }
+        }
         return confirm('Are you sure you want to verify:\n\n' + doc_array.join('\n') + '\n\nVerified documents will be taken into consideration for authentication checkups (including expiry)');
     } else {
         alert('No files selected');

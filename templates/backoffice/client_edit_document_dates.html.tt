@@ -17,7 +17,7 @@
     [% ELSE %]
         [% UNLESS dateless_doc %]
             <span><label id="required_star_[% id %]">Issued on: *</label><br/></span>
-            <input type="text" value="[% issue_date %]" size=11 name="issue_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" required/>
+            <input type="text" value="[% issue_date %]" size=11 name="issue_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true"/>
         [% END %]
     [% END %]
 </td>
