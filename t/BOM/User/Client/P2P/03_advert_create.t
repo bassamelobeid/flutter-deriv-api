@@ -68,6 +68,7 @@ my %advert_params = (
     rate_type         => 'fixed',
     type              => 'sell',
     counterparty_type => 'buy',
+    block_trade       => 0,
 );
 
 # advert fields that should only be shown to the owner
@@ -448,6 +449,7 @@ subtest 'Creating advert' => sub {
         effective_rate         => num($params{rate}),
         effective_rate_display => num($params{rate}),
         rate_type              => $params{rate_type},
+        block_trade            => 0,
     };
 
     cmp_deeply(

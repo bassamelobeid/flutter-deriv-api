@@ -160,7 +160,8 @@ subtest 'Creating new buy order' => sub {
             id             => $advert_info->{id},
             description    => $ad_params{description},
             type           => $ad_params{type},
-            payment_method => $ad_params{payment_method}
+            payment_method => $ad_params{payment_method},
+            block_trade    => 0,
         },
         client_details => {
             id               => $client->p2p_advertiser_info->{id},

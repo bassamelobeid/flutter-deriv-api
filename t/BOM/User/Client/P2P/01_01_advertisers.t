@@ -299,7 +299,8 @@ subtest 'advertiser band upgrade information' => sub {
     my $data = +{
         target_max_daily_buy  => 10000,
         target_max_daily_sell => 10000,
-        target_trade_band     => "high",
+        target_trade_band     => 'high',
+        target_block_trade    => 1,
     };
     $redis->hset('P2P::ADVERTISER_BAND_UPGRADE_PENDING', $info1->{id}, encode_json_utf8($data));
 
@@ -307,8 +308,9 @@ subtest 'advertiser band upgrade information' => sub {
         $advertiser1->p2p_advertiser_info,
         superhashof({
                 upgradable_daily_limits => {
-                    max_daily_sell => 10000,
-                    max_daily_buy  => 10000,
+                    max_daily_sell => '10000.00',
+                    max_daily_buy  => '10000.00',
+                    block_trade    => 1,
                 }}
         ),
         'advertiser next available band information returned'
@@ -356,6 +358,7 @@ subtest 'advertiser band update' => sub {
         target_trade_band     => "high",
         email_alert_required  => 1,
         account_currency      => $advertiser->currency,
+        target_block_trade    => 0,
     };
 
     $redis->hset('P2P::ADVERTISER_BAND_UPGRADE_PENDING', $info->{id}, encode_json_utf8($data));
@@ -381,6 +384,7 @@ subtest 'advertiser band update' => sub {
                     account_currency  => $advertiser->currency,
                     change            => 1,
                     automatic_approve => 0,
+                    block_trade       => 0,
                 }
             ],
         ],

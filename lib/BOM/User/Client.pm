@@ -2577,6 +2577,12 @@ sub p2p_advertiser_update {
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
     die +{error_code => 'AdvertiserNotApproved'}   unless $advertiser_info->{is_approved} or defined $param{is_approved};
 
+    # Return the current information of the advertiser if nothing changed
+    return $advertiser_info
+        unless grep { exists $advertiser_info->{$_} and $param{$_} ne $advertiser_info->{$_} } keys %param
+        or exists $param{show_name}
+        or $param{upgrade_limits};
+
     if (exists $param{name}) {
         $param{name} = trim($param{name});
         die +{error_code => 'AdvertiserNameRequired'} unless $param{name};
@@ -2586,33 +2592,27 @@ sub p2p_advertiser_update {
 
     die +{error_code => 'AdvertiserCannotListAds'} if $param{is_listed} and not $advertiser_info->{is_approved} and not $param{is_approved};
     $param{is_listed} = 0 if defined $param{is_approved} and not $param{is_approved};
-    my ($band, $max_daily_sell, $max_daily_buy, $email_alert_required, $target);
-    my $redis = BOM::Config::Redis->redis_p2p();
+
+    my $redis = BOM::Config::Redis->redis_p2p_write();
+    my $band_upgrade;
+
     if ($param{upgrade_limits}) {
-        $target = $redis->hget(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser_info->{id});
-        die +{error_code => 'AdvertiserNotEligibleForLimitUpgrade'} unless $target;
+        $band_upgrade = $redis->hget(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser_info->{id})
+            or die +{error_code => 'AdvertiserNotEligibleForLimitUpgrade'};
 
         try {
-            $target = decode_json_utf8($target);
-            ($band, $max_daily_sell, $max_daily_buy, $email_alert_required) =
-                $target->@{qw(target_trade_band target_max_daily_sell target_max_daily_buy email_alert_required)};
-            $param{trade_band} = lc($band);
+            $band_upgrade = decode_json_utf8($band_upgrade);
+            $param{trade_band} = lc($band_upgrade->{target_trade_band});
         } catch ($e) {
             $log->warnf(
                 'Invalid JSON stored for advertiser id: %s with data: %s at REDIS HASH KEY: %s. Error: %s',
                 $advertiser_info->{id},
-                $target, P2P_ADVERTISER_BAND_UPGRADE_PENDING, $e
+                $band_upgrade, P2P_ADVERTISER_BAND_UPGRADE_PENDING, $e
             );
             die +{error_code => 'P2PLimitUpgradeFailed'};
         }
     }
 
-    # Return the current information of the advertiser if nothing changed
-
-    return $advertiser_info
-        unless grep { exists $advertiser_info->{$_} and $param{$_} ne $advertiser_info->{$_} } keys %param
-        or exists $param{show_name}
-        or ($param{upgrade_limits} // 0);
     my $update = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
@@ -2621,6 +2621,7 @@ sub p2p_advertiser_update {
                 $advertiser_info->{id},
                 @param{qw/is_approved is_listed name default_advert_description payment_info contact_info trade_band show_name/});
         });
+
     BOM::Platform::Event::Emitter::emit(
         p2p_advertiser_updated => {
             client_loginid => $self->loginid,
@@ -2631,29 +2632,34 @@ sub p2p_advertiser_update {
         p2p_adverts_updated => {
             advertiser_id => $advertiser_info->{id},
         });
-    $self->_p2p_convert_advertiser_limits($update);
-    my $response = $self->_advertiser_details($update);
 
     # double check if band upgrade was successfull
     if ($param{trade_band}) {
         $redis->hdel(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser_info->{id});
-        delete $response->{upgradable_daily_limits};
-        $target->@{qw(old_sell_limit old_buy_limit country upgrade_date)} =
+
+        # save data for internal email
+        $band_upgrade->@{qw(old_sell_limit old_buy_limit country upgrade_date)} =
             ($advertiser_info->@{qw/daily_sell_limit daily_buy_limit/}, $self->residence, time);
-        $redis->hset(P2P_ADVERTISER_BAND_UPGRADE_COMPLETED, $advertiser_info->{id}, encode_json_utf8($target)) if $email_alert_required;
+        $band_upgrade->{old_block_trade} = exists $advertiser_info->{block_trade} ? 1 : 0;
+
+        $redis->hset(P2P_ADVERTISER_BAND_UPGRADE_COMPLETED, $advertiser_info->{id}, encode_json_utf8($band_upgrade))
+            if $band_upgrade->{email_alert_required};
 
         BOM::Platform::Event::Emitter::emit(
             p2p_limit_changed => {
                 loginid           => $self->loginid,
                 advertiser_id     => $advertiser_info->{id},
-                new_sell_limit    => formatnumber('amount', $target->{account_currency}, $target->{target_max_daily_sell}),
-                new_buy_limit     => formatnumber('amount', $target->{account_currency}, $target->{target_max_daily_buy}),
-                account_currency  => $target->{account_currency},
+                new_sell_limit    => formatnumber('amount', $band_upgrade->{account_currency}, $band_upgrade->{target_max_daily_sell}),
+                new_buy_limit     => formatnumber('amount', $band_upgrade->{account_currency}, $band_upgrade->{target_max_daily_buy}),
+                block_trade       => $band_upgrade->{target_block_trade},
+                account_currency  => $band_upgrade->{account_currency},
                 change            => 1,
                 automatic_approve => 0,
             });
     }
 
+    $self->_p2p_convert_advertiser_limits($update);
+    my $response = $self->_advertiser_details($update);
     return $response;
 }
 
@@ -2759,8 +2765,9 @@ sub p2p_advert_create {
     $param{advertiser_id}  = $advertiser_info->{id};
     $param{is_active}      = 1;                            # we will validate this as an active ad
     $param{local_currency} = uc($param{local_currency});
-    $self->_validate_cross_border_availability if $param{local_currency} ne uc($self->local_currency);
 
+    $self->_validate_cross_border_availability if $param{local_currency} ne uc($self->local_currency);
+    $self->_validate_block_trade_availability  if $param{block_trade};
     $self->_validate_advert(%param);
 
     my $market_rate = p2p_exchange_rate($param{local_currency})->{quote};
@@ -2769,10 +2776,10 @@ sub p2p_advert_create {
     my ($id) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 @param{
-                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids payment_method_names rate_type/
+                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids payment_method_names rate_type block_trade/
                 });
         });
 
@@ -2892,6 +2899,10 @@ Inactive adverts, unlisted or unapproved advertisers, and max < min are excluded
 
 sub p2p_advert_list {
     my ($self, %param) = @_;
+
+    if ($param{block_trade} //= 0) {
+        die +{error_code => 'BlockTradeDisabled'} unless BOM::Config::Runtime->instance->app_config->payments->p2p->block_trade->enabled;
+    }
 
     if ($param{counterparty_type}) {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
@@ -3062,6 +3073,7 @@ sub p2p_order_create {
     die +{error_code => 'AdvertNotFound'} unless $advert and $advert_id;
 
     $self->_validate_cross_border_availability if lc($advert->{country}) ne lc($self->residence);
+    $self->_validate_block_trade_availability  if $advert->{block_trade};
 
     my $legacy_ad = !($advert->{payment_method_names} and $advert->{payment_method_names}->@*);
 
@@ -4144,6 +4156,20 @@ sub _validate_cross_border_availability {
     return 1;
 }
 
+=head2 _validate_block_trade_availability
+
+Check if client is allowed to do block trade and block trading is globally enabled.
+
+=cut
+
+sub _validate_block_trade_availability {
+    my $self = shift;
+
+    die +{error_code => 'BlockTradeNotAllowed'}
+        if any { !defined $self->_p2p_advertiser_cached->{$_} } qw(block_trade_min_order_amount block_trade_max_order_amount);
+    die +{error_code => 'BlockTradeDisabled'} unless BOM::Config::Runtime->instance->app_config->payments->p2p->block_trade->enabled;
+}
+
 =head2 _p2p_advertisers
 
 Returns a list of advertisers filtered by id and/or loginid.
@@ -4253,13 +4279,13 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
                         client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
                         use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map country_payment_methods
-                        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback/
+                        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback block_trade/
                 });
         }) // [];
 }
@@ -4328,8 +4354,9 @@ Validation of advert amount field.
 sub _validate_advert_amount {
     my ($self, %param) = @_;
 
+    my $limit_key = $param{block_trade} ? 'block_trade' : 'limits';
     my $global_max_ad =
-        convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert, 'USD', $param{account_currency});
+        convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->$limit_key->maximum_advert, 'USD', $param{account_currency});
 
     if ($param{remaining_amount}) {
         # calculate amount for validation purposes, but it will be reculated in the db to avoid race conditions
@@ -4427,7 +4454,15 @@ Validation of advert min and max order fields.
 sub _validate_advert_min_max {
     my ($self, %param) = @_;
 
-    my ($band_min_order, $band_max_order) = $self->_p2p_advertiser_cached->@{qw/min_order_amount max_order_amount/};
+    my ($band_min_order, $band_max_order, $global_max_order);
+
+    if ($param{block_trade}) {
+        ($band_min_order, $band_max_order) = $self->_p2p_advertiser_cached->@{qw(block_trade_min_order_amount block_trade_max_order_amount)};
+    } else {
+        ($band_min_order, $band_max_order) = $self->_p2p_advertiser_cached->@{qw(min_order_amount max_order_amount)};
+        $global_max_order =
+            convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $param{account_currency});
+    }
 
     # min_order_amount limit
     if (defined $band_min_order and $param{min_order_amount} < $band_min_order) {
@@ -4449,10 +4484,8 @@ sub _validate_advert_min_max {
     }
 
     # max_order_amount limit
-    my $global_max_order =
-        convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $param{account_currency});
     my $max_order = min grep { defined $_ } ($global_max_order, $band_max_order);
-    if ($param{max_order_amount} > $max_order) {
+    if ($max_order and $param{max_order_amount} > $max_order) {
         die +{
             error_code     => 'MaxPerOrderExceeded',
             message_params => [financialrounding('amount', $param{account_currency}, $max_order), $param{account_currency}],
@@ -4493,6 +4526,7 @@ sub _validate_advert_duplicates {
         advertiser_id => $param{advertiser_id},
         is_active     => 1,
         country       => $self->residence,
+        block_trade   => $param{block_trade} // 0,
     )->@*;
 
     # exclude ads that ran out of money - this should be removed when FE can enable/disable ads
@@ -4950,6 +4984,12 @@ sub _advertiser_details {
                 if defined $advertiser->{$limit};
         }
 
+        $details->{block_trade} = {
+            min_order_amount => financialrounding('amount', $advertiser->{account_currency}, $advertiser->{block_trade_min_order_amount}),
+            max_order_amount => financialrounding('amount', $advertiser->{account_currency}, $advertiser->{block_trade_max_order_amount}),
+            }
+            if all { defined $advertiser->{$_} } qw(block_trade_min_order_amount block_trade_max_order_amount);
+
         if ($advertiser->{blocked_until}) {
             my $block_time = Date::Utility->new($advertiser->{blocked_until});
             $details->{blocked_until} = $block_time->epoch if Date::Utility->new->is_before($block_time);
@@ -4971,19 +5011,19 @@ sub _advertiser_details {
 
         if ($advertiser->{is_approved} and not($details->{blocked_until})) {
             my $redis = BOM::Config::Redis->redis_p2p();
-            if (my $target = $redis->hget(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser->{id})) {
+            if (my $upgrade = $redis->hget(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser->{id})) {
                 try {
-                    $target = decode_json_utf8($target);
-                    my ($max_daily_sell, $max_daily_buy) = $target->@{qw(target_max_daily_sell target_max_daily_buy)};
+                    $upgrade = decode_json_utf8($upgrade);
 
                     $details->{upgradable_daily_limits} = {
-                        max_daily_sell => $max_daily_sell,
-                        max_daily_buy  => $max_daily_buy,
+                        max_daily_sell => financialrounding('amount', $advertiser->{account_currency}, $upgrade->{target_max_daily_sell}),
+                        max_daily_buy  => financialrounding('amount', $advertiser->{account_currency}, $upgrade->{target_max_daily_buy}),
+                        block_trade    => $upgrade->{target_block_trade},
                     };
 
                 } catch ($e) {
-                    $log->warnf('Invalid JSON stored for advertiser id: %s with data: %s at REDIS HASH KEY: %s. Error: %s',
-                        $advertiser->{id}, $target, P2P_ADVERTISER_BAND_UPGRADE_PENDING, $e);
+                    $log->warnf("Invalid JSON stored for advertiser id %s with data '%s' in redis hash key %s: %s",
+                        $advertiser->{id}, $upgrade, P2P_ADVERTISER_BAND_UPGRADE_PENDING, $e);
                 }
             }
         }
@@ -5040,6 +5080,7 @@ sub _advert_details {
             min_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
             max_order_amount_limit         => $advert->{max_order_amount_actual},
             max_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
+            block_trade                    => $advert->{block_trade},
             # to match p2p_advert_list params, plus checking if advertiser blocked
             is_visible => (
                         $advert->{is_active}
@@ -5133,7 +5174,8 @@ sub _advert_details {
                 push @reasons, 'advertiser_daily_limit'
                     if defined($advert->{advertiser_available_limit})
                     and $advert->{advertiser_available_limit} < $advert->{min_order_amount};
-                push @reasons, 'advertiser_temp_ban' if $advert->{advertiser_temp_ban};
+                push @reasons, 'advertiser_temp_ban'               if $advert->{advertiser_temp_ban};
+                push @reasons, 'advertiser_block_trade_ineligible' if $advert->{block_trade} and not $advert->{advertiser_can_block_trade};
                 $result->{visibility_status} = \@reasons;
             }
         }
@@ -5202,6 +5244,7 @@ sub _order_details {
                 description    => $order->{advert_description} // '',
                 type           => $order->{advert_type},
                 payment_method => 'bank_transfer',                      # must be bank_transfer to not break mobile!
+                block_trade    => $order->{advert_block_trade},
             },
             dispute_details => {
                 dispute_reason   => $order->{dispute_reason},

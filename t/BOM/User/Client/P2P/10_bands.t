@@ -8,7 +8,6 @@ use Test::Warn;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
@@ -18,7 +17,6 @@ use Guard;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
-populate_exchange_rates({EUR => 2});
 BOM::Test::Helper::P2P::bypass_sendbird();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
@@ -26,15 +24,14 @@ $config->limits->maximum_advert(1000);
 $config->limits->maximum_order(1000);
 
 my $escrow_client = BOM::Test::Helper::Client::create_client();
-$escrow_client->account('EUR');
+$escrow_client->account('USD');
 $config->escrow([$escrow_client->loginid]);
 
 my ($client, $advertiser, $ad);
 
 subtest 'Default band' => sub {
     $advertiser = BOM::Test::Helper::P2P::create_advertiser(
-        balance  => 1000,
-        currency => 'EUR'
+        balance => 1000,
     );
     $ad = $advertiser->p2p_advert_create(
         amount           => 500,
@@ -42,24 +39,24 @@ subtest 'Default band' => sub {
         rate             => 1,
         rate_type        => 'fixed',
         min_order_amount => 1,
-        max_order_amount => 50,
+        max_order_amount => 100,
         local_currency   => 'myr',
         payment_method   => 'bank_transfer',
         payment_info     => 'test',
         contact_info     => 'test'
     );
-    order($ad->{id}, 30);
+    order($ad->{id}, 60);
 
-    # current limit is USD 100 = EUR 50
+    # current limit is USD 100
     my $err = exception {
-        order($ad->{id}, 30);
+        order($ad->{id}, 60);
     };
 
     cmp_deeply(
         $err,
         {
             error_code     => 'OrderMaximumTempExceeded',
-            message_params => ['20.00', 'EUR']
+            message_params => ['40.00', 'USD']
         },
         'cannot create order that exceeds band limit'
     );
@@ -69,38 +66,38 @@ subtest 'Medium band for country' => sub {
     $advertiser->db->dbic->dbh->do("INSERT INTO p2p.p2p_country_trade_band VALUES ('id','medium','USD',200,200)");
     $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET trade_band = 'medium' WHERE id = " . $advertiser->p2p_advertiser_info->{id});
 
-    # current limit is USD 200 = EUR 100, current orders are EUR 30
-    lives_ok { order($ad->{id}, 30) } 'order can be created now ';
+    # current limit is USD 200 current orders are 60
+    lives_ok { order($ad->{id}, 60) } 'order can be created now ';
 
-    # current orders are EUR 60
+    # current orders are 120
     my $err = exception {
-        order($ad->{id}, 50);
+        order($ad->{id}, 100);
     };
 
     cmp_deeply(
         $err,
         {
             error_code     => 'OrderMaximumTempExceeded',
-            message_params => ['40.00', 'EUR']
+            message_params => ['80.00', 'USD']
         },
         'cannot create order that exceeds band limit'
     );
 };
 
 subtest 'High band for country & currency' => sub {
-    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('id','high','EUR',110,110)");
+    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('id','high','USD',220,220)");
     $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET trade_band = 'high' WHERE id = " . $advertiser->p2p_advertiser_info->{id});
 
-    # current limit EUR 110, current orders are EUR 60
-    lives_ok { order($ad->{id}, 50) } 'order can be created now ';
+    # current limit 220, current orders are 120
+    lives_ok { order($ad->{id}, 100) } 'order can be created now ';
 
-    # current orders are EUR 110
+    # current orders are 220
     my $err = exception {
         order($ad->{id}, 10);
     };
 
     # Advert should be filtered out in db when limit currency is same as ad
-    cmp_deeply($err, {error_code => 'AdvertNotFound'}, 'error is AdvertNotFound when the limit currency equals order currency');
+    cmp_deeply($err, {error_code => 'AdvertNotFound'}, 'error is AdvertNotFound when max order is 0');
 };
 
 subtest 'Check client band limits' => sub {
@@ -109,8 +106,7 @@ subtest 'Check client band limits' => sub {
     # test client will not be able to create order for ad2 because he will be exceeding himself daily buy limit
 
     my $test_client = BOM::Test::Helper::P2P::create_advertiser(
-        balance  => 1000,
-        currency => 'EUR'
+        balance => 1000,
     );
     my $ad_cl = $test_client->p2p_advert_create(
         amount           => 500,
@@ -118,7 +114,7 @@ subtest 'Check client band limits' => sub {
         rate             => 1,
         rate_type        => 'fixed',
         min_order_amount => 1,
-        max_order_amount => 50,
+        max_order_amount => 100,
         local_currency   => 'myr',
         payment_method   => 'bank_transfer',
         payment_info     => 'test',
@@ -126,8 +122,7 @@ subtest 'Check client band limits' => sub {
     );
 
     my $advertiser_1 = BOM::Test::Helper::P2P::create_advertiser(
-        balance  => 1000,
-        currency => 'EUR'
+        balance => 1000,
     );
     my $ad_1 = $advertiser_1->p2p_advert_create(
         amount           => 500,
@@ -135,7 +130,7 @@ subtest 'Check client band limits' => sub {
         rate             => 1,
         rate_type        => 'fixed',
         min_order_amount => 1,
-        max_order_amount => 50,
+        max_order_amount => 100,
         local_currency   => 'myr',
         payment_method   => 'bank_transfer',
         payment_info     => 'test',
@@ -145,13 +140,13 @@ subtest 'Check client band limits' => sub {
     # test client can create order for ad_1
     $test_client->p2p_order_create(
         advert_id   => $ad_1->{id},
-        amount      => 30,
+        amount      => 60,
         rule_engine => $rule_engine,
     );
 
     my $advertiser_2 = BOM::Test::Helper::P2P::create_advertiser(
         balance  => 1000,
-        currency => 'EUR'
+        currency => 'USD'
     );
     my $ad_2 = $advertiser_2->p2p_advert_create(
         amount           => 500,
@@ -159,7 +154,7 @@ subtest 'Check client band limits' => sub {
         rate             => 1,
         rate_type        => 'fixed',
         min_order_amount => 1,
-        max_order_amount => 50,
+        max_order_amount => 100,
         local_currency   => 'myr',
         payment_method   => 'bank_transfer',
         payment_info     => 'test',
@@ -173,7 +168,7 @@ subtest 'Check client band limits' => sub {
     my $err = exception {
         $test_client->p2p_order_create(
             advert_id   => $ad_2->{id},
-            amount      => 25,
+            amount      => 50,
             rule_engine => $rule_engine,
         );
     };
@@ -182,7 +177,7 @@ subtest 'Check client band limits' => sub {
         $err,
         {
             error_code     => 'OrderMaximumTempExceeded',
-            message_params => ['20.00', 'EUR']
+            message_params => ['40.00', 'USD']
         },
         'client cannot create order if exceeds daily buy limit'
     );
@@ -239,15 +234,12 @@ subtest 'min balance' => sub {
 
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
         balance        => 9,
-        currency       => 'EUR',
         client_details => {residence => 'za'},
     );
 
-    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('za','low','USD',100,100,NULL,NULL,20)");
-    cmp_ok $advertiser->p2p_advertiser_info->{min_balance}, '==', 10, 'min balance from low band, converted from USD';
+    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('za','low','USD',100,100,NULL,NULL,10)");
+    cmp_ok $advertiser->p2p_advertiser_info->{min_balance}, '==', 10, 'min balance from low band';
 
-    # we don't convert band currency in the db yet, so need to have a band with same currency
-    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('za','low','EUR',100,100,NULL,NULL,10)");
     my $advert = BOM::Test::Helper::P2P::create_advert(
         client           => $advertiser,
         type             => 'sell',
@@ -257,7 +249,7 @@ subtest 'min balance' => sub {
 
     cmp_deeply($advert->{id}, none(map { $_->{id} } $advertiser->p2p_advert_list(type => 'sell')->@*), 'ad is hidden due to low balance');
 
-    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('za','medium','EUR',100,100,NULL,NULL,5)");
+    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('za','medium','USD',100,100,NULL,NULL,5)");
     $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET trade_band = 'medium' WHERE id = " . $advertiser->p2p_advertiser_info->{id});
     delete $advertiser->{_p2p_advertiser_cached};
     cmp_ok $advertiser->p2p_advertiser_info->{min_balance}, '==', 5, 'min balance from medium band';
@@ -267,14 +259,13 @@ subtest 'min balance' => sub {
 
 subtest 'ad limits' => sub {
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
-        currency       => 'EUR',
         client_details => {residence => 'ng'},
     );
     $advertiser->db->dbic->dbh->do(
-        "INSERT into p2p.p2p_country_trade_band VALUES ('ng','low','USD',100,100,10,100), ('ng','medium','USD',100,100,1,200)");
+        "INSERT into p2p.p2p_country_trade_band VALUES ('ng','low','USD',100,100,10,100), ('ng','medium','USD',200,200,1,200)");
 
-    cmp_ok $advertiser->p2p_advertiser_info->{min_order_amount}, '==', 5,  'min_order_amount from low band, converted from USD';
-    cmp_ok $advertiser->p2p_advertiser_info->{max_order_amount}, '==', 50, 'max_order_amount from low band, converted from USD';
+    cmp_ok $advertiser->p2p_advertiser_info->{min_order_amount}, '==', 10,  'min_order_amount from low band';
+    cmp_ok $advertiser->p2p_advertiser_info->{max_order_amount}, '==', 100, 'max_order_amount from low band';
 
     cmp_deeply(
         exception {
@@ -292,7 +283,7 @@ subtest 'ad limits' => sub {
         },
         {
             error_code     => 'BelowPerOrderLimit',
-            message_params => ['5.00', 'EUR']
+            message_params => ['10.00', 'USD']
         },
         'min order amount'
     );
@@ -305,7 +296,7 @@ subtest 'ad limits' => sub {
                 rate             => 1,
                 rate_type        => 'fixed',
                 min_order_amount => 10,
-                max_order_amount => 100,
+                max_order_amount => 101,
                 payment_method   => 'bank_transfer',
                 payment_info     => 'x',
                 contact_info     => 'x'
@@ -313,7 +304,7 @@ subtest 'ad limits' => sub {
         },
         {
             error_code     => 'MaxPerOrderExceeded',
-            message_params => ['50.00', 'EUR']
+            message_params => ['100.00', 'USD']
         },
         'max order amount'
     );
@@ -321,8 +312,8 @@ subtest 'ad limits' => sub {
     $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET trade_band = 'medium' WHERE id = " . $advertiser->p2p_advertiser_info->{id});
     delete $advertiser->{_p2p_advertiser_cached};
 
-    cmp_ok $advertiser->p2p_advertiser_info->{min_order_amount}, '==', 0.5, 'min_order_amount from low band, converted from USD';
-    cmp_ok $advertiser->p2p_advertiser_info->{max_order_amount}, '==', 100, 'max_order_amount from low band, converted from USD';
+    cmp_ok $advertiser->p2p_advertiser_info->{min_order_amount}, '==', 1,   'min_order_amount from low band';
+    cmp_ok $advertiser->p2p_advertiser_info->{max_order_amount}, '==', 200, 'max_order_amount from low band';
 
     cmp_deeply(
         exception {
@@ -345,7 +336,7 @@ subtest 'ad limits' => sub {
 
 sub order {
     my ($advert_id, $amount) = @_;
-    $client = BOM::Test::Helper::P2P::create_advertiser(currency => 'EUR');
+    $client = BOM::Test::Helper::P2P::create_advertiser(currency => 'USD');
     $client->p2p_order_create(
         advert_id   => $advert_id,
         amount      => $amount,
