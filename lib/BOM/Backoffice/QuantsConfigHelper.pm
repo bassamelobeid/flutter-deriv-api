@@ -156,7 +156,7 @@ sub rebuild_aggregate_tables {
                 my $dbic = $db->dbic;
                 $dbic->run(
                     ping => sub {
-                        $_->do(qq{SELECT bet.$method(?)}, undef, $duration);
+                        $_->do(qq{SELECT bet.$method(?)}, undef, $duration);    ## SQL safe($method)
                     },
                 );
             }

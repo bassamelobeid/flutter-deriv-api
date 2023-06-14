@@ -294,15 +294,16 @@ sub active_promocodes {
     my $db_codes = $db->run(
         fixup => sub {
             return $_->selectall_arrayref(
-                "SELECT EXTRACT (day FROM (expiry_date - to_timestamp($ts))) days_left, 
+                'SELECT EXTRACT (day FROM (expiry_date - to_timestamp(?))) days_left, 
                         EXTRACT (epoch from start_date) start_date,
                         EXTRACT (epoch from expiry_date) expiry_date,
                         UPPER(code) code, promo_code_type, promo_code_config 
                 FROM betonmarkets.promo_code 
                     WHERE status 
-                        AND ( start_date IS NULL OR extract(epoch from start_date) <= $ts )
-                        AND ( expiry_date IS NULL OR extract (epoch from expiry_date) >= $ts )",
-                {Slice => {}});
+                        AND ( start_date IS NULL OR extract(epoch from start_date) <= ? )
+                        AND ( expiry_date IS NULL OR extract (epoch from expiry_date) >= ? )',
+                {Slice => {}}, $ts, $ts, $ts
+            );
         });
 
     for my $code (@$db_codes) {
