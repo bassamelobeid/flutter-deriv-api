@@ -542,7 +542,21 @@ payments:
           isa: Int
           description: 'Fiat cashier deposits made during this number of days in the past are excluded for fiat_deposit_restricted_countries.'
           default: 180
-          global: 1          
+          global: 1
+        block_trade:
+          description: 'P2P block trading parameters'
+          isa: section
+          contains:
+            enabled:
+              description: 'Enables block trading system-wide.'
+              isa: Bool
+              global: 1
+              default: 0
+            maximum_advert:
+              isa: Num
+              description: 'Maximum amount per block trade advert (in USD)'
+              default: 20000
+              global: 1
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
