@@ -35,6 +35,7 @@ use BOM::Rules::Engine;
 use BOM::Config::AccountType::Registry;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Services::CellxpertService;
+use BOM::RPC::v3::Services::MyAffiliates;
 use BOM::RPC::v3::VerifyEmail::Functions;
 use Data::Dumper;
 
@@ -1198,7 +1199,7 @@ rpc "affiliate_add_person",
     sub {
     my $params = shift;
 
-    $params->{third_party_function} = \&BOM::RPC::v3::Services::CellxpertService::affiliate_add_person;
+    $params->{third_party_function} = \&BOM::RPC::v3::Services::MyAffiliates::affiliate_add_person;
     return _do_affiliate($params);
     };
 
@@ -1341,7 +1342,7 @@ sub _do_affiliate {
 
     my $cx_response = $params->{third_party_function}->($email, $args);
 
-    if ($cx_response->{code} eq "CXRuntimeError") {
+    if ($cx_response->{code} eq "MYAFFRuntimeError") {
         return BOM::RPC::v3::Utility::create_error($cx_response);
     }
 

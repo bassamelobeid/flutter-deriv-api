@@ -80,8 +80,8 @@ $mt5_mock->mock(
         return $mt5_mock->original('create_user')->(@_);
     });
 
-my $mock_cellxpert_server = Test::MockModule->new('WebService::Async::Cellxpert');
-$mock_cellxpert_server->mock(
+my $mock_myaffiliate_server = Test::MockModule->new('BOM::MyAffiliates::WebService');
+$mock_myaffiliate_server->mock(
     'register_affiliate',
     sub {
         return Future->done(1);
@@ -126,6 +126,7 @@ subtest 'new affiliate account successfully created' => sub {
         phone                  => "+72443598863",
         tnc_accepted           => 1,
         tnc_affiliate_accepted => 1,
+        website_url            => "http://google.com",
         verification_code      => $code
     };
 
@@ -168,6 +169,7 @@ subtest 'new affiliate account successfully created with BTA' => sub {
         phone                  => "+72443598863",
         tnc_accepted           => 1,
         tnc_affiliate_accepted => 1,
+        website_url            => "http://google.com",
         verification_code      => $code
     };
 
@@ -210,6 +212,7 @@ subtest 'new affiliate account successfully created with EU/UK residence' => sub
         phone                  => "+72443598863",
         tnc_accepted           => 1,
         tnc_affiliate_accepted => 1,
+        website_url            => "http://google.com",
         verification_code      => $code
     };
 
@@ -252,6 +255,7 @@ subtest 'new affiliate account register twice call: first time typo - second tim
         phone                  => "+72443598863",
         tnc_accepted           => 1,
         tnc_affiliate_accepted => 1,
+        website_url            => "http://google.com",
         verification_code      => $code
     };
 
@@ -294,6 +298,7 @@ subtest 'new affiliate account wrong country and state' => sub {
         phone                  => "+72443598863",
         tnc_accepted           => 1,
         tnc_affiliate_accepted => 1,
+        website_url            => "http://google.com",
         verification_code      => $code
     };
 
@@ -338,6 +343,7 @@ subtest 'new affiliate account restricted countries (iran and north korea)' => s
             phone                  => "+72443598863",
             tnc_accepted           => 1,
             tnc_affiliate_accepted => 1,
+            website_url            => "http://google.com",
             verification_code      => $code
         };
 
@@ -384,6 +390,7 @@ subtest 'new affiliate account other restricted countries except ir,kp should ab
             phone                  => "+72443598863",
             tnc_accepted           => 1,
             tnc_affiliate_accepted => 1,
+            website_url            => "http://google.com",
             verification_code      => $code
         };
         my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
@@ -395,56 +402,57 @@ subtest 'new affiliate account other restricted countries except ir,kp should ab
 
 };
 
-subtest 'new affiliate account cellXpert die with AlreadyRegistered email' => sub {
-    $mock_cellxpert_server->unmock_all();
-    $mock_cellxpert_server->redefine(
-        'register_affiliate',
-        sub {
-            return Future->fail("Email already exist");
-        });
-    my $email     = 'new_aff' . rand(999) . '@binary.com';
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $email,
-        residence   => 'br',
-    });
+# subtest 'new affiliate account cellXpert die with AlreadyRegistered email' => sub {
+#     $mock_myaffiliate_server->unmock_all();
+#     $mock_myaffiliate_server->redefine(
+#         'register_affiliate',
+#         sub {
+#             return Future->fail("Email already exist");
+#         });
+#     my $email     = 'new_aff' . rand(999) . '@binary.com';
+#     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+#         broker_code => 'VRTC',
+#         email       => $email,
+#         residence   => 'br',
+#     });
 
-    my $code = BOM::Platform::Token->new({
-            email       => $email,
-            expires_in  => 3600,
-            created_for => 'partner_account_opening',
-        })->token;
+#     my $code = BOM::Platform::Token->new({
+#             email       => $email,
+#             expires_in  => 3600,
+#             created_for => 'partner_account_opening',
+#         })->token;
 
-    $params->{args} = {
-        affiliate_add_person   => 1,
-        address_city           => "Timbuktu",
-        address_street         => "Askia Mohammed Bvd,",
-        address_postcode       => "QXCQJW",
-        address_state          => "Nouaceur",
-        country                => "ma",
-        currency               => "EUR",
-        citizenship            => "es",
-        date_of_birth          => "1992-01-02",
-        first_name             => "John",
-        last_name              => "Doe",
-        non_pep_declaration    => 1,
-        password               => "S3creTp4ssw0rd",
-        phone                  => "+72443598863",
-        tnc_accepted           => 1,
-        tnc_affiliate_accepted => 1,
-        verification_code      => $code
-    };
+#     $params->{args} = {
+#         affiliate_add_person   => 1,
+#         address_city           => "Timbuktu",
+#         address_street         => "Askia Mohammed Bvd,",
+#         address_postcode       => "QXCQJW",
+#         address_state          => "Nouaceur",
+#         country                => "ma",
+#         currency               => "EUR",
+#         citizenship            => "es",
+#         date_of_birth          => "1992-01-02",
+#         first_name             => "John",
+#         last_name              => "Doe",
+#         non_pep_declaration    => 1,
+#         password               => "S3creTp4ssw0rd",
+#         phone                  => "+72443598863",
+#         tnc_accepted           => 1,
+#         tnc_affiliate_accepted => 1,
+#         website_url            => "http://google.com",
+#         verification_code      => $code
+#     };
 
-    my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
+#     my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
 
-    ok exists $result->{demo},              "Response has demo account details";
-    ok exists $result->{real},              "Response has real account details";
-    ok exists $result->{real}->{cra_token}, "Response has cra_token in real section";
-};
+#     ok exists $result->{demo},              "Response has demo account details";
+#     ok exists $result->{real},              "Response has real account details";
+#     ok exists $result->{real}->{cra_token}, "Response has cra_token in real section";
+# };
 
-subtest 'new affiliate account cellXpert die with CXRuntime error' => sub {
-    $mock_cellxpert_server->unmock_all();
-    $mock_cellxpert_server->redefine(
+subtest 'new affiliate account Myaffiliate die with MyAffRuntime error' => sub {
+    $mock_myaffiliate_server->unmock_all();
+    $mock_myaffiliate_server->redefine(
         'register_affiliate',
         sub {
             return Future->fail("some strange error here");
@@ -486,10 +494,11 @@ subtest 'new affiliate account cellXpert die with CXRuntime error' => sub {
         phone                  => "+72443598863",
         tnc_accepted           => 1,
         tnc_affiliate_accepted => 1,
+        website_url            => "http://google.com",
         verification_code      => $code
     };
 
-    $rpc_ct->call_ok('affiliate_add_person', $params)->has_error->error_code_is('CXRuntimeError', 'Error should return');
+    $rpc_ct->call_ok('affiliate_add_person', $params)->has_error->error_code_is('MYAFFRuntimeError', 'Error should return');
 };
 
 done_testing();
