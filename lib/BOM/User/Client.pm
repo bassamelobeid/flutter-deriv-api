@@ -3369,7 +3369,7 @@ sub p2p_order_confirm {
         my $txn_time = Date::Utility->new->datetime;
         my $result   = $self->db->dbic->txn(
             fixup => sub {
-                my $confirm_result = $_->selectrow_hashref("SELECT * FROM $db_confirm_func(?)", undef, $order->{id});
+                my $confirm_result = $_->selectrow_hashref("SELECT * FROM $db_confirm_func(?)", undef, $order->{id});    ## SQL safe($db_confirm_func)
                 return $confirm_result if $confirm_result->{error_code};
                 return $_->selectrow_hashref('SELECT * FROM p2p.order_complete_v2(?, ?, ?, ?, ?, FALSE, FALSE)',
                     undef, $order->{id}, $escrow->loginid, $param{source}, $self->loginid, $txn_time);
@@ -3395,11 +3395,11 @@ sub p2p_order_confirm {
 
         my $result = $self->db->dbic->run(
             fixup => sub {
-                $_->selectrow_hashref("SELECT * FROM $db_confirm_func(?)", undef, $order->{id});
+                $_->selectrow_hashref("SELECT * FROM $db_confirm_func(?)", undef, $order->{id});    ## SQL safe($db_confirm_func)
             });
 
         $self->_p2p_db_error_handler($result);
-        $self->_p2p_order_buy_confirmed($order);    # this function does not consider status
+        $self->_p2p_order_buy_confirmed($order);                                                    # this function does not consider status
         $new_status = $result->{status};
         $self->_set_last_seen_status(
             order_id => $id,

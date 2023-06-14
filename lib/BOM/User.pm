@@ -104,7 +104,7 @@ sub create {
     shift @new_values;    #remove id value
     my $placeholders = join ",", ('?') x @new_values;
 
-    my $sql    = "select * from users.create_user($placeholders)";
+    my $sql    = "select * from users.create_user($placeholders)";    ## SQL safe($placeholders)
     my $result = $class->dbic->run(
         fixup => sub {
             $_->selectrow_hashref($sql, undef, @new_values);
@@ -126,7 +126,7 @@ sub new {
     my $v    = $args{$k};
     my $self = $class->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref("select * from users.get_user_by_$k(?)", undef, $v);
+            $_->selectrow_hashref("select * from users.get_user_by_$k(?)", undef, $v);    ## SQL safe($k)
         });
 
     return undef unless $self;
@@ -806,11 +806,12 @@ sub failed_login {
 sub login_history {
     my ($self, %args) = @_;
     $args{order} //= 'desc';
-    my $limit = looks_like_number($args{limit}) ? "limit $args{limit}" : '';
-    my $sql   = "select * from users.get_login_history(?,?,?) $limit";
+    my $limit = looks_like_number($args{limit}) ? "limit ?" : '';
+    my $sql   = "select * from users.get_login_history(?,?,?) $limit";    ## SQL safe($limit)
     return $self->dbic(operation => 'replica')->run(
         fixup => sub {
-            $_->selectall_arrayref($sql, {Slice => {}}, $self->{id}, $args{order}, $args{show_impersonate_records} // 0);
+            $_->selectall_arrayref($sql, {Slice => {}}, $self->{id}, $args{order}, $args{show_impersonate_records} // 0,
+                $limit ? ($args{limit}) : ());
         });
 }
 
@@ -842,7 +843,7 @@ sub add_login_history {
     my @new_values     = @args{@history_fields};
 
     my $placeholders = join ",", ('?') x @new_values;
-    my $sql          = "select * from users.add_login_history($placeholders)";
+    my $sql          = "select * from users.add_login_history($placeholders)";    ## SQL safe($placeholders)
     $self->dbic->run(
         fixup => sub {
             $_->do($sql, undef, @new_values);
