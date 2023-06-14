@@ -79,14 +79,14 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve" => sub {
 
         $db_approve_withdrawal_called_times = 0;
 
-        $auto_approve_obj->run(enable_approval => 1);
+        $auto_approve_obj->run(is_dry_run => 0);
 
-        is($db_approve_withdrawal_called_times, 0, 'the payout has not been approved, even with the flag `enable_approval` => 1');
+        is($db_approve_withdrawal_called_times, 0, 'the payout has not been approved, even with the flag `is_dry_run` => 0');
 
         $mock->unmock_all();
     };
 
-    subtest 'does not approve the payout when the user is set to autoapprove payouts but flag `enable_approval` has not been set to 1' => sub {
+    subtest 'does not approve the payout when the user is set to autoapprove payouts but flag `is_dry_run` is set to 1' => sub {
         $db_approve_withdrawal_called_times = 0;
 
         mock_clientdb(
@@ -95,13 +95,13 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve" => sub {
                 tag          => 'does not really matter, it just to avoid code warnings'
             });
 
-        $auto_approve_obj->run();
+        $auto_approve_obj->run(is_dry_run => 1);
         is($db_approve_withdrawal_called_times, 0, 'the payout has not been approved');
 
         $mock->unmock_all();
     };
 
-    subtest 'approves the payout when the user is set to autoapprove payouts and the flag `enable_approval` has been set to 1' => sub {
+    subtest 'approves the payout when the user is set to autoapprove payouts and the flag `is_dry_run => 0` has been set to 0' => sub {
         $db_approve_withdrawal_called_times = 0;
 
         mock_clientdb(
@@ -110,7 +110,7 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve" => sub {
                 tag          => 'does not really matter, it just to avoid code warnings'
             });
 
-        $auto_approve_obj->run(enable_approval => 1);
+        $auto_approve_obj->run(is_dry_run => 0);
         is($db_approve_withdrawal_called_times, 1, 'the payout has been approved, yay!');
 
         $mock->unmock_all();
@@ -132,7 +132,7 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve" => sub {
 
         like(
             exception {
-                $auto_approve_obj->run(enable_approval => 1);
+                $auto_approve_obj->run(is_dry_run => 0);
             },
             qr/The crypto autoapproval script tried to process an withdrawal with no exchange rates. Please raise it with the back-end team/
         );

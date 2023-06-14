@@ -113,7 +113,7 @@ Takes the following arguments as named parameters
 
 =over 4
 
-=item * C<enable_approval> boolean flag to enable actual approval of payouts, if false, no changes will be performed
+=item * C<is_dry_run> boolean flag to enable actual approval of payouts, if true, no changes will be performed
 
 =item * C<excluded_currencies> [OPTIONAL] comma separated currency_code(s) to exclude specific currencies from auto-approval
 
@@ -136,7 +136,7 @@ sub run {
         my @user_withdraw_pairs = $self->process_locked_withdrawals(
             locked_withdrawals => $locked_withdrawals,
             withdrawals_today  => $withdrawals_today,
-            is_enabled         => $args{enable_approval},
+            is_dry_run         => $args{is_dry_run},
         );
 
         my $csv_file_name = $self->csv_export(\@user_withdraw_pairs);
@@ -418,7 +418,7 @@ Takes the following arguments as named parameters
 
 =item * C<withdrawal_details> - see C<db_load_locked_crypto_withdrawals>'s response
 
-=item * C<is_enabled> - boolean flag to enable actual approval of payouts, if false, will be a dry run and no changes will be performed
+=item * C<is_dry_run> - boolean flag to enable actual approval of payouts, if true, will be a dry run and no changes will be performed
 
 =item * C<user_details> - contains data returned by C<user_activity>. the return values differ from case to case.
 
@@ -429,13 +429,13 @@ Takes the following arguments as named parameters
 sub auto_update_withdrawal {
     my ($self, %args) = @_;
 
-    my $withdrawal_details  = $args{withdrawal_details};
-    my $is_approval_enabled = $args{is_enabled};
-    my $user_details        = $args{user_details};
-    my $threshold_amount    = $self->{threshold_amount} // THRESHOLD_AMOUNT;
+    my $withdrawal_details = $args{withdrawal_details};
+    my $is_dry_run         = $args{is_dry_run};
+    my $user_details       = $args{user_details};
+    my $threshold_amount   = $self->{threshold_amount} // THRESHOLD_AMOUNT;
 
-    unless ($is_approval_enabled) {
-        $log->debug('Approvals are not enabled. It will not approve any withdrawals.');
+    if ($is_dry_run) {
+        $log->debug('Approvals are not enabled (dry_run=1). It will not approve any withdrawals.');
         return;
     }
 

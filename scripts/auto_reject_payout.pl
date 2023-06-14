@@ -45,7 +45,6 @@ sub print_help {
 GetOptions(
     'h|?|help'                => \my $help,
     'l|log=s'                 => \my $log_level,
-    'reject=i'                => \my $enable_reject,
     'b|broker_code=s'         => \my $broker_code,
     'e|excluded_currencies=s' => \my $excluded_currencies,
 ) or print_help;
@@ -59,12 +58,13 @@ Log::Any::Adapter->import(
 
 stats_inc('crypto.payments.autoreject.heartbeat');
 
-my $is_reject_enabled_globally = BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject') // 0;
+my $is_reject_enabled_globally = BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject')         // 0;
+my $is_dry_run                 = BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject_dry_run') // 0;
 
 if ($is_reject_enabled_globally) {
     my $auto_reject = BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->new(broker_code => $broker_code // 'CR');
     $auto_reject->run(
-        enable_reject       => $enable_reject // 0,
+        is_dry_run          => $is_dry_run,
         excluded_currencies => $excluded_currencies
     );
 }

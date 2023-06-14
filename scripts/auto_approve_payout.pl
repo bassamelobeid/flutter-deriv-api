@@ -49,7 +49,6 @@ sub print_help {
 GetOptions(
     'h|?|help'                    => \my $help,
     'l|log=s'                     => \my $log_level,
-    'approve=i'                   => \my $enable_approval,
     'p|acceptable_percentage=i'   => \my $acceptable_percentage,
     't|threshold_amount=i'        => \my $threshold_amount,
     'threshold_amount_per_day=i'  => \my $threshold_amount_per_day,
@@ -67,7 +66,8 @@ Log::Any::Adapter->import(
 
 stats_inc('crypto.payments.autoapprove.heartbeat');
 
-my $is_approval_enabled_globally = BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('approve') // 0;
+my $is_approval_enabled_globally = BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('approve')         // 0;
+my $is_dry_run                   = BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('approve_dry_run') // 0;
 
 if ($is_approval_enabled_globally) {
 
@@ -80,7 +80,7 @@ if ($is_approval_enabled_globally) {
     );
 
     $auto_approve->run(
-        enable_approval     => $enable_approval     // 0,
+        is_dry_run          => $is_dry_run,
         excluded_currencies => $excluded_currencies // ''
     );
 }

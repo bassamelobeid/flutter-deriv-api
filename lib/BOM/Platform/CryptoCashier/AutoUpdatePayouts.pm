@@ -79,7 +79,7 @@ Loops over each locked withdrawal, rejects withdrawal requests based on the pred
 
 =item * C<withdrawals_today> see C<get_withdrawals_today_per_user>'s response
 
-=item * C<is_enabled> -  Boolean flag to check if this is a dry run
+=item * C<is_dry_run> -  Boolean flag to check if this is a dry run
 
 =back
 
@@ -120,7 +120,7 @@ sub process_locked_withdrawals {
         $self->auto_update_withdrawal(
             user_details       => $user_activity,
             withdrawal_details => $withdrawal_record,
-            is_enabled         => $args{is_enabled},
+            is_dry_run         => $args{is_dry_run},
         );
 
         push(

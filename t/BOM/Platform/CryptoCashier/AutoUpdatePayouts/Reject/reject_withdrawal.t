@@ -82,7 +82,7 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject" => sub {
                 suggested_withdraw_method => "Skrill",
                 auto_reject               => 1
             });
-        $auto_reject_obj->run(enable_reject => 0);
+        $auto_reject_obj->run(is_dry_run => 1);
         is($db_reject_withdrawal_called_times, 0, 'the payment has not been rejected for dry run');
 
         $mock->unmock_all();
@@ -99,9 +99,9 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject" => sub {
                 auto_reject               => 0
             });
         $auto_reject_obj->run(
-            enable_reject => 1,
+            is_dry_run => 0,
         );
-        is($db_reject_withdrawal_called_times, 0, 'the payment has not been rejected even with the flag `enable_reject` set to 1');
+        is($db_reject_withdrawal_called_times, 0, 'the payment has not been rejected even with the flag `is_dry_run` set to 0');
 
         $mock->unmock_all();
 
@@ -117,9 +117,9 @@ subtest "BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject" => sub {
                 suggested_withdraw_method => "Skrill",
                 auto_reject               => 1
             });
-        $auto_reject_obj->run(enable_reject => 1);
+        $auto_reject_obj->run(is_dry_run => 0);
 
-        is($db_reject_withdrawal_called_times, 1, 'the payment has been auto rejected since both auto_reject and enable_reject is set to 1');
+        is($db_reject_withdrawal_called_times, 1, 'the payment has been auto rejected since auto_reject is enabled and is_dry_run is disabled');
 
         $mock->unmock_all();
 

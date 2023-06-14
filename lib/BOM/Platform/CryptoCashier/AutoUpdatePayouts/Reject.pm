@@ -85,7 +85,7 @@ Takes the following arguments as named parameters
 
 =over 4
 
-=item * C<enable_reject> boolean flag to dry run, if false, will be a dry run and  no changes will be performed in the Database
+=item * C<is_dry_run> boolean flag to dry run, if true, will be a dry run and  no changes will be performed in the Database
 
 =item * C<excluded_currencies> [OPTIONAL] comma separated currency_code(s) to exclude specific currencies from auto-reject
 
@@ -109,7 +109,7 @@ sub run {
         my @user_withdraw_pairs = $self->process_locked_withdrawals(
             locked_withdrawals => $locked_withdrawals,
             withdrawals_today  => $withdrawals_today,
-            is_enabled         => $args{enable_reject},
+            is_dry_run         => $args{is_dry_run},
         );
 
         my $csv_file_name = $self->csv_export(\@user_withdraw_pairs);
@@ -278,7 +278,7 @@ Takes the following arguments as named parameters
 
 =item * C<withdrawal_details> - see C<db_load_locked_crypto_withdrawals>'s response
 
-=item * C<is_enabled> - boolean flag to enable actual reject of payouts, if false, will be a dry rub and no db changes will be performed
+=item * C<is_dry_run> - boolean flag to enable actual reject of payouts, if true, will be a dry run and no db changes will be performed
 
 =item * C<user_details> - contains data returned by C<user_activity>. the return values differ from case to case.
 
@@ -291,11 +291,11 @@ Returns 1 if withdrawal is successfully rejected else returns 0
 sub auto_update_withdrawal {
     my ($self, %args) = @_;
     my $withdrawal_details = $args{withdrawal_details};
-    my $is_reject_enabled  = $args{is_enabled};
+    my $is_dry_run         = $args{is_dry_run};
     my $user_details       = $args{user_details};
 
-    if (!$is_reject_enabled) {
-        return $log->debugf('Rejection is not enabled. It will not reject any withdrawals.');
+    if ($is_dry_run) {
+        return $log->debugf('Rejection is not enabled (dry_run=1). It will not reject any withdrawals.');
     }
 
     if ($user_details->{auto_reject}) {
