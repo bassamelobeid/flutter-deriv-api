@@ -21,5 +21,6 @@ nytprof.out
 /_eumm/
 *.swp
 *.bak
+*.csv
 .DS_Store
 *~

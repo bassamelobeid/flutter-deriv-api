@@ -7,12 +7,23 @@ use Test::Fatal;
 use Test::MockModule;
 
 use BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve;
+use BOM::Test::Helper::Utility qw(random_email_address);
+use BOM::User;
+
+my $mock_user = Test::MockModule->new('BOM::User');
 
 my $mock_autoupdate = Test::MockModule->new('BOM::Platform::CryptoCashier::AutoUpdatePayouts');
 $mock_autoupdate->mock(get_client_balance => sub { 9999 });
 
 my $mock             = Test::MockModule->new('BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve');
 my $auto_approve_obj = BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->new(broker_code => 'CR');
+
+my $dummy_user = BOM::User->create(
+    email    => random_email_address,
+    password => 'test',
+);
+# We are initially mocking this to a high value so that tests not related to trade should pass this.
+$mock_user->mock('total_trades', sub { return 50 });
 
 subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity' => sub {
     subtest "ACCEPTABLE_NET_DEPOSIT" => sub {
@@ -22,7 +33,10 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
                 return {};
             });
 
-        my $response = $auto_approve_obj->user_activity(total_withdrawal_amount => undef);
+        my $response = $auto_approve_obj->user_activity(
+            binary_user_id          => $dummy_user->id,
+            total_withdrawal_amount => undef
+        );
 
         is_deeply(
             $response,
@@ -45,6 +59,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
 
             is_deeply(
                 $auto_approve_obj->user_activity(
+                    binary_user_id                => $dummy_user->id,
                     total_withdrawal_amount       => 2,
                     total_withdrawal_amount_today => 4
                 ),
@@ -81,15 +96,19 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
                             is_stable_method        => 1
                         }
                     ],
+                    total_crypto_deposits             => 35,
+                    non_crypto_deposit_amount         => 34.59,
+                    non_crypto_withdraw_amount        => -15,
                     currency_wise_crypto_net_deposits => {
-                        ETH => 19.09,
-                        BTC => 18.86,
+                        ETH => 17.00,
+                        BTC => 18.00,
                     },
                     method_wise_net_deposits => {payment_agent_transfer => 19.59}};
             });
 
         is_deeply(
             $auto_approve_obj->user_activity(
+                binary_user_id                => $dummy_user->id,
                 total_withdrawal_amount       => 1,
                 total_withdrawal_amount_today => 4,
                 currency_code                 => 'BTC'
@@ -127,9 +146,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
                             is_stable_method        => 1
                         }
                     ],
+                    total_crypto_deposits             => 43,
+                    non_crypto_deposit_amount         => 30.1,
+                    non_crypto_withdraw_amount        => 0,
                     currency_wise_crypto_net_deposits => {
                         ETH => 25,
-                        BTC => 18.86
+                        BTC => 18.00
                     },
                     method_wise_net_deposits => {
                         payment_agent_transfer => 10.1,
@@ -139,6 +161,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
 
         is_deeply(
             $auto_approve_obj->user_activity(
+                binary_user_id                => $dummy_user->id,
                 total_withdrawal_amount       => 1,
                 total_withdrawal_amount_today => 4,
                 currency_code                 => 'BTC'
@@ -156,7 +179,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
                 return {
                     count    => 2,
                     payments => [{
-                            total_deposit_in_usd    => 10.1,
+                            total_deposit_in_usd    => 11,
                             total_withdrawal_in_usd => 0,
                             net_deposit             => 10.1,
                             currency_code           => "USD",
@@ -186,12 +209,15 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
                             is_stable_method        => 1
                         }
                     ],
+                    total_crypto_deposits             => 34,
+                    non_crypto_deposit_amount         => 35,
+                    non_crypto_withdraw_amount        => 0,
                     currency_wise_crypto_net_deposits => {
                         ETH => 25,
-                        BTC => 18.86
+                        BTC => 18.00
                     },
                     method_wise_net_deposits => {
-                        payment_agent_transfer => 10.1,
+                        payment_agent_transfer => 11,
                         p2p                    => 5,
                         Skrill                 => 19
                     }};
@@ -199,6 +225,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
 
         is_deeply(
             $auto_approve_obj->user_activity(
+                binary_user_id                => $dummy_user->id,
                 total_withdrawal_amount       => 1,
                 total_withdrawal_amount_today => 4,
                 currency_code                 => 'BTC'
@@ -223,15 +250,19 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
             user_payment_details => sub {
                 return {
                     count                             => 0,
+                    total_crypto_deposits             => 43,
+                    non_crypto_deposit_amount         => 0,
+                    non_crypto_withdraw_amount        => 0,
                     currency_wise_crypto_net_deposits => {
                         ETH => 25,
-                        BTC => 18.86
+                        BTC => 18.00
                     },
                     method_wise_net_deposits => {}};
             });
 
         is_deeply(
             $auto_approve_obj->user_activity(
+                binary_user_id                => $dummy_user->id,
                 total_withdrawal_amount       => 1,
                 total_withdrawal_amount_today => 4,
                 currency_code                 => 'BTC'
@@ -249,11 +280,15 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
                 return {
                     count                             => 0,
                     currency_wise_crypto_net_deposits => {},
+                    total_crypto_deposits             => 0,
+                    non_crypto_deposit_amount         => 0,
+                    non_crypto_withdraw_amount        => 0,
                     method_wise_net_deposits          => {}};
             });
 
         is_deeply(
             $auto_approve_obj->user_activity(
+                binary_user_id                => $dummy_user->id,
                 total_withdrawal_amount       => 1,
                 total_withdrawal_amount_today => 4,
                 currency_code                 => 'BTC'
@@ -296,6 +331,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
 
         is_deeply(
             $auto_approve_obj->user_activity(
+                binary_user_id          => $dummy_user->id,
                 total_withdrawal_amount => 2,
                 currency_code           => 'BTC'
             ),
@@ -309,6 +345,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
 
         is_deeply(
             $auto_approve_obj->user_activity(
+                binary_user_id                => $dummy_user->id,
                 threshold_amount              => 1,
                 threshold_amount_per_day      => 2,
                 total_withdrawal_amount       => 1,
@@ -336,9 +373,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         $mock->mock(
             user_payment_details => sub {
                 return {
-                    count                   => 1,
-                    has_reversible_payment  => 1,
-                    last_reversible_deposit => {
+                    count                      => 1,
+                    has_reversible_payment     => 1,
+                    total_crypto_deposits      => 0,
+                    non_crypto_deposit_amount  => 0,
+                    non_crypto_withdraw_amount => 0,
+                    last_reversible_deposit    => {
                         payment_time  => undef,
                         amount        => 0.5,
                         amount_in_usd => 56,
@@ -350,6 +390,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
             });
 
         my $response = $auto_approve_obj->user_activity(
+            binary_user_id          => $dummy_user->id,
             total_withdrawal_amount => 2,
             currency_code           => 'BTC'
         );
@@ -364,9 +405,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         $mock->mock(
             user_payment_details => sub {
                 return {
-                    count                   => 1,
-                    has_reversible_payment  => 1,
-                    last_reversible_deposit => {
+                    count                      => 1,
+                    total_crypto_deposits      => 0,
+                    non_crypto_deposit_amount  => 50,
+                    non_crypto_withdraw_amount => 0,
+                    has_reversible_payment     => 1,
+                    last_reversible_deposit    => {
                         total_deposit_in_usd    => 50,
                         total_withdrawal_in_usd => 0,
                         net_deposit             => 50,
@@ -382,6 +426,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
             });
 
         my $response = $auto_approve_obj->user_activity(
+            binary_user_id                => $dummy_user->id,
             total_withdrawal_amount       => 2,
             total_withdrawal_amount_today => 2,
             currency_code                 => 'BTC'
@@ -410,9 +455,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         $mock->mock(
             user_payment_details => sub {
                 return {
-                    count                   => 1,
-                    has_reversible_payment  => 1,
-                    last_reversible_deposit => {
+                    count                      => 1,
+                    total_crypto_deposits      => 0,
+                    non_crypto_deposit_amount  => 50,
+                    non_crypto_withdraw_amount => 0,
+                    has_reversible_payment     => 1,
+                    last_reversible_deposit    => {
                         total_deposit_in_usd    => 50,
                         total_withdrawal_in_usd => 0,
                         net_deposit             => 50,
@@ -427,6 +475,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
             });
 
         my $response = $auto_approve_obj->user_activity(
+            binary_user_id                => $dummy_user->id,
             total_withdrawal_amount       => 2,
             total_withdrawal_amount_today => 2,
             currency_code                 => 'BTC'
@@ -460,11 +509,14 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
                     last_reversible_deposit    => undef,
                     reversible_deposit_amount  => 0,
                     reversible_withdraw_amount => 0,
-                    deposit_amount             => 100,
-                    withdraw_amount            => 50
+                    non_crypto_deposit_amount  => 100,
+                    non_crypto_withdraw_amount => 50,
+                    total_crypto_deposits      => 0,
+
                 };
             });
         my $response = $auto_approve_obj->user_activity(
+            binary_user_id                => $dummy_user->id,
             total_withdrawal_amount       => 2,
             total_withdrawal_amount_today => 2,
             currency_code                 => 'BTC'
@@ -484,6 +536,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
             acceptable_percentage => 60
         );
         $response = $auto_approve_obj->user_activity(
+            binary_user_id                => $dummy_user->id,
             total_withdrawal_amount       => 2,
             total_withdrawal_amount_today => 2,
             currency_code                 => 'BTC'
@@ -549,6 +602,45 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         );
 
         $mock->unmock_all();
+    };
+    subtest "LOW_TRADE" => sub {
+        $mock_user->mock('total_trades', sub { return 5 });
+
+        $mock->mock(
+            user_restricted => sub {
+                return undef;
+            });
+
+        $mock->mock(
+            user_payment_details => sub {
+                return {
+                    count                             => 0,
+                    total_crypto_deposits             => 43,
+                    non_crypto_deposit_amount         => 3,
+                    non_crypto_withdraw_amount        => 0,
+                    currency_wise_crypto_net_deposits => {
+                        ETH => 25,
+                        BTC => 18.00
+                    },
+                    method_wise_net_deposits => {}};
+            });
+
+        is_deeply(
+            $auto_approve_obj->user_activity(
+                binary_user_id                => $dummy_user->id,
+                total_withdrawal_amount       => 1,
+                total_withdrawal_amount_today => 4,
+                currency_code                 => 'BTC'
+            ),
+            {
+                auto_approve                         => 0,
+                tag                                  => 'LOW_TRADE',
+                total_withdrawal_amount_today_in_usd => 4,
+            },
+            "returns tag: LOW_TRADE when total trade amount is less than 25 percent of total deposits"
+        );
+        $mock->unmock_all();
+        $mock_user->unmock_all();
     };
 };
 

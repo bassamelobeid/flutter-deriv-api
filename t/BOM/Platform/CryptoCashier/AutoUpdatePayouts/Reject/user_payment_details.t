@@ -195,11 +195,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
             $auto_reject_obj->user_payment_details(),
             {
                 count                             => 0,
-                deposit_amount                    => 0,
+                total_crypto_deposits             => 0,
+                non_crypto_deposit_amount         => 0,
                 has_reversible_payment            => 0,
                 reversible_deposit_amount         => 0,
                 reversible_withdraw_amount        => 0,
-                withdraw_amount                   => 0,
+                non_crypto_withdraw_amount        => 0,
                 last_reversible_deposit           => undef,
                 payments                          => [],
                 method_wise_net_deposits          => {},
@@ -222,15 +223,16 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
         is_deeply(
             $auto_reject_obj->user_payment_details(),
             {
-                count          => 6,
-                deposit_amount => $atmdeposit01->{net_deposit} +
-                    $wcdeposit01->{net_deposit} +
-                    $pmdeposit03->{net_deposit} +
-                    $payment_agent_deposit02->{net_deposit},
+                count                     => 6,
+                total_crypto_deposits     => $crypto_net_deposit01->{total_deposit_in_usd} + $cryptodeposit03->{total_deposit_in_usd},
+                non_crypto_deposit_amount => $atmdeposit01->{total_deposit_in_usd} +
+                    $wcdeposit01->{total_deposit_in_usd} +
+                    $pmdeposit03->{total_deposit_in_usd} +
+                    $payment_agent_deposit02->{total_deposit_in_usd},
                 has_reversible_payment     => 1,
-                reversible_deposit_amount  => $wcdeposit01->{net_deposit},
-                reversible_withdraw_amount => $wcwithdraw01->{net_deposit},
-                withdraw_amount            => $wcwithdraw01->{net_deposit} + $atmwithdraw02->{net_deposit},
+                reversible_deposit_amount  => $wcdeposit01->{total_deposit_in_usd},
+                reversible_withdraw_amount => $wcwithdraw01->{total_withdrawal_in_usd},
+                non_crypto_withdraw_amount => $wcwithdraw01->{total_withdrawal_in_usd} + $atmwithdraw02->{total_withdrawal_in_usd},
                 last_reversible_deposit    => $wcdeposit01,
                 payments                   => [$atmdeposit01, $atmwithdraw02, $wcdeposit01, $wcwithdraw01, $pmdeposit03, $payment_agent_deposit02],
                 method_wise_net_deposits   => {
@@ -259,11 +261,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
             $auto_reject_obj->user_payment_details(),
             {
                 count                      => 3,
-                deposit_amount             => $wcdeposit01->{total_deposit_in_usd} + $pmdeposit03->{total_deposit_in_usd},
+                total_crypto_deposits      => $crypto_net_deposit01->{total_deposit_in_usd},
+                non_crypto_deposit_amount  => $wcdeposit01->{total_deposit_in_usd} + $pmdeposit03->{total_deposit_in_usd},
                 has_reversible_payment     => 1,
                 reversible_deposit_amount  => $wcdeposit01->{total_deposit_in_usd},
                 reversible_withdraw_amount => 0,
-                withdraw_amount            => $atmwithdraw02->{total_withdrawal_in_usd},
+                non_crypto_withdraw_amount => $atmwithdraw02->{total_withdrawal_in_usd},
                 last_reversible_deposit    => $wcdeposit01,
                 payments                   => [$wcdeposit01, $atmwithdraw02, $pmdeposit03],
                 method_wise_net_deposits   => {
@@ -286,14 +289,15 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
         is_deeply(
             $auto_reject_obj->user_payment_details(),
             {
-                count          => 5,
-                deposit_amount => $payment_agent_deposit01->{total_deposit_in_usd} +
+                count                     => 5,
+                total_crypto_deposits     => 0,
+                non_crypto_deposit_amount => $payment_agent_deposit01->{total_deposit_in_usd} +
                     $payment_agent_deposit02->{total_deposit_in_usd} +
                     $p2p_deposit->{total_deposit_in_usd},
                 has_reversible_payment     => 0,
                 reversible_deposit_amount  => 0,
                 reversible_withdraw_amount => 0,
-                withdraw_amount            => $payment_agent_withdrawal01->{total_withdrawal_in_usd} + $p2p_withdrawal->{total_withdrawal_in_usd},
+                non_crypto_withdraw_amount => $payment_agent_withdrawal01->{total_withdrawal_in_usd} + $p2p_withdrawal->{total_withdrawal_in_usd},
                 last_reversible_deposit    => undef,
                 payments => [$payment_agent_deposit01, $payment_agent_deposit02, $payment_agent_withdrawal01, $p2p_deposit, $p2p_withdrawal],
                 method_wise_net_deposits => {
@@ -321,15 +325,16 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
         is_deeply(
             $auto_reject_obj->user_payment_details(),
             {
-                count          => 6,
-                deposit_amount => $payment_agent_deposit01->{total_deposit_in_usd} +
+                count                     => 6,
+                total_crypto_deposits     => 0,
+                non_crypto_deposit_amount => $payment_agent_deposit01->{total_deposit_in_usd} +
                     $payment_agent_deposit02->{total_deposit_in_usd} +
                     $p2p_deposit->{total_deposit_in_usd} +
                     $mastercarddeposit->{total_deposit_in_usd},
                 has_reversible_payment     => 1,
                 reversible_deposit_amount  => $mastercarddeposit->{total_deposit_in_usd},
                 reversible_withdraw_amount => 0,
-                withdraw_amount            => $payment_agent_withdrawal01->{total_withdrawal_in_usd} + $p2p_withdrawal->{total_withdrawal_in_usd},
+                non_crypto_withdraw_amount => $payment_agent_withdrawal01->{total_withdrawal_in_usd} + $p2p_withdrawal->{total_withdrawal_in_usd},
                 last_reversible_deposit    => $mastercarddeposit,
                 payments                   => [
                     $payment_agent_deposit01,    $mastercarddeposit, $payment_agent_deposit02,
@@ -358,11 +363,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
             $auto_reject_obj->user_payment_details(),
             {
                 count                             => 1,
-                deposit_amount                    => 0,
+                total_crypto_deposits             => 0,
+                non_crypto_deposit_amount         => 0,
                 has_reversible_payment            => 0,
                 reversible_deposit_amount         => 0,
                 reversible_withdraw_amount        => 0,
-                withdraw_amount                   => $atmwithdraw02->{total_withdrawal_in_usd},
+                non_crypto_withdraw_amount        => $atmwithdraw02->{total_withdrawal_in_usd},
                 last_reversible_deposit           => undef,
                 payments                          => [$atmwithdraw02],
                 method_wise_net_deposits          => {$atmwithdraw02->{p_method} => $atmwithdraw02->{net_deposit}},
@@ -383,11 +389,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
             $auto_reject_obj->user_payment_details(),
             {
                 count                             => 0,
-                deposit_amount                    => 0,
+                total_crypto_deposits             => $crypto_net_deposit02->{total_deposit_in_usd},
+                non_crypto_deposit_amount         => 0,
                 has_reversible_payment            => 0,
                 reversible_deposit_amount         => 0,
                 reversible_withdraw_amount        => 0,
-                withdraw_amount                   => 0,
+                non_crypto_withdraw_amount        => 0,
                 last_reversible_deposit           => undef,
                 payments                          => [],
                 method_wise_net_deposits          => {},
@@ -408,11 +415,12 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
             $auto_reject_obj->user_payment_details(),
             {
                 count                             => 1,
-                deposit_amount                    => $wcdeposit01->{total_deposit_in_usd},
+                total_crypto_deposits             => 0,
+                non_crypto_deposit_amount         => $wcdeposit01->{total_deposit_in_usd},
                 has_reversible_payment            => 1,
                 reversible_deposit_amount         => $wcdeposit01->{total_deposit_in_usd},
                 reversible_withdraw_amount        => 0,
-                withdraw_amount                   => 0,
+                non_crypto_withdraw_amount        => 0,
                 last_reversible_deposit           => $wcdeposit01,
                 payments                          => [$wcdeposit01],
                 method_wise_net_deposits          => {},

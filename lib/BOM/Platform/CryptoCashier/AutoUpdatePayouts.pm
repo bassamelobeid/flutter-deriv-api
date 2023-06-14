@@ -166,9 +166,11 @@ Returns a hash ref with the following keys:
 
 =item * C<reversible_withdraw_amount> - total amount of reversible withdrawal in USD
 
-=item * C<deposit_amount> - total deposit amount in USD
+=item * C<non_crypto_deposit_amount> - total non crypto deposit amount in USD
 
-=item * C<withdraw_amount> - total withdraw amount in USD
+=item * C<non_crypto_withdraw_amount> - total non crypto withdraw amount in USD
+
+=item * C<total_crypto_deposit> - total crypto deposit amount in USD
 
 =item * C<method_wise_total_deposits> -  methodwise total deposits of all gateways like doughflow, ctc, payment_agent_transfer
 
@@ -198,9 +200,11 @@ sub user_payment_details {
     my $method_wise_net_deposits          = {};
     my $currency_wise_crypto_net_deposits = {};
     my $has_stable_method_deposits        = 0;
+    my $total_crypto_deposits             = 0;
 
     my @crypto_payments = grep { $_->{p_method} eq 'ctc' } $user_payments->@*;
 
+    $total_crypto_deposits += $_->{total_deposit_in_usd} for @crypto_payments;
     $currency_wise_crypto_net_deposits->{$_->{currency_code}} = $_->{net_deposit} for @crypto_payments;
 
     #get non crypto user payments
@@ -220,6 +224,7 @@ sub user_payment_details {
         $total_deposit_amount_in_usd  += $payment->{total_deposit_in_usd};
         $total_withdraw_amount_in_usd += $payment->{total_withdrawal_in_usd};
 
+        # Net deposits needs to be calculated only for the stable payment methods.
         if ($self->is_stable_payment_method($payment->{p_method})) {
             $has_stable_method_deposits = 1 if ($payment->{total_deposit_in_usd} > 0);
             $method_wise_net_deposits->{$payment->{p_method}} += $payment->{net_deposit};
@@ -234,8 +239,9 @@ sub user_payment_details {
         last_reversible_deposit           => $last_reversible_deposit,
         reversible_deposit_amount         => $total_reversible_deposit_amount_in_usd,
         reversible_withdraw_amount        => $total_reversible_withdraw_amount_in_usd,
-        deposit_amount                    => $total_deposit_amount_in_usd,
-        withdraw_amount                   => $total_withdraw_amount_in_usd,
+        non_crypto_deposit_amount         => $total_deposit_amount_in_usd,
+        non_crypto_withdraw_amount        => $total_withdraw_amount_in_usd,
+        total_crypto_deposits             => $total_crypto_deposits,
         method_wise_net_deposits          => $method_wise_net_deposits,
         currency_wise_crypto_net_deposits => $currency_wise_crypto_net_deposits,
         has_stable_method_deposits        => $has_stable_method_deposits
@@ -613,11 +619,14 @@ sub find_highest_deposit {
         grep { $_->{is_stable_method} } $payments->@*
     );
     my $stable_net_deposits = $args->{method_wise_net_deposits};
-
+    # If there are any payment methods having equal net deposit, highest will be chosen randomly.
     my $highest_deposit = max_by { $stable_net_deposits->{$_} } keys $stable_net_deposits->%*;
 
     return $response unless $highest_deposit;
 
+    # Since stable_net_deposits is a hash, order cannot be predicted.
+    # Hence we will again loop through the sorted stable payment methods array in order to
+    # find the latest payment method with highest net deposit.
     foreach my $payment (@stable_payment_methods) {
         if ($stable_net_deposits->{$payment->{p_method}} >= $stable_net_deposits->{$highest_deposit}) {
             $response->{highest_deposit_method} = $payment->{p_method};

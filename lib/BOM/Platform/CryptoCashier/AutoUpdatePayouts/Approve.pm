@@ -56,6 +56,7 @@ use Time::Moment;
 use URI;
 use JSON::MaybeXS;
 use Date::Utility;
+use BOM::User;
 
 use parent qw(BOM::Platform::CryptoCashier::AutoUpdatePayouts);
 
@@ -280,6 +281,7 @@ sub user_activity {
     my $binary_user_id                = $args{binary_user_id};
     my $client_loginid                = $args{client_loginid};
     my $response                      = {};
+    my $user                          = BOM::User->new(id => $binary_user_id);
     $response->{total_withdrawal_amount_today_in_usd} = $total_withdrawal_amount_today;
 
     my $client_balance = $self->get_client_balance($client_loginid);
@@ -322,6 +324,14 @@ sub user_activity {
         from_date      => $start_date_to_inspect->to_string,
     );
 
+    my $total_user_deposit_amount = $user_payments->{non_crypto_deposit_amount} + $user_payments->{total_crypto_deposits};
+    my $total_trade_volume        = $user->total_trades($start_date_to_inspect);
+    if ($total_trade_volume < $total_user_deposit_amount / 4) {
+        $response->{tag}          = 'LOW_TRADE';
+        $response->{auto_approve} = 0;
+        return $response;
+    }
+
     if (!$user_payments->{count}) {
         $log->debugf('User has no payments since %s', $start_date_to_inspect->to_string);
         $response->{tag}          = 'NO_RECENT_PAYMENT';
@@ -342,8 +352,8 @@ sub user_activity {
 
     $log->debugf('Total user payment records %s', $user_payments);
 
-    my $risk_deposit_amount    = $user_payments->{deposit_amount};
-    my $risk_withdrawal_amount = $user_payments->{withdraw_amount};
+    my $risk_deposit_amount    = $user_payments->{non_crypto_deposit_amount};
+    my $risk_withdrawal_amount = $user_payments->{non_crypto_withdraw_amount};
 
     if ($user_payments->{has_reversible_payment}) {
         my $last_reversible_deposit = $user_payments->{last_reversible_deposit};
