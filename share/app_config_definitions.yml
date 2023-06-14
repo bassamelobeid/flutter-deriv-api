@@ -2133,6 +2133,20 @@ customerio:
       isa: Bool
       default: 1
       global: 1
+social_login:
+  description: "Social login configuration settings"
+  isa: section
+  contains:
+    use_oneall_web:
+      description: "if enabled, third-party OneAll provider will be used for social login on web platfrom, if disabled, Social Login Service will be used."
+      isa: Bool
+      default: 1
+      global: 1
+    use_oneall_mobile:
+      description: "if enabled, third-party OneAll provider will be used for social login on mobile platfrom, if disabled, Social Login Service will be used."
+      isa: Bool
+      default: 1
+      global: 1
 payment_agents:
   description: "Payment Agents program settings"
   isa: section
