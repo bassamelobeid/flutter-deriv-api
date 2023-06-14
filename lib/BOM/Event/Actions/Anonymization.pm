@@ -175,13 +175,12 @@ async sub auto_anonymize_candidates {
         fixup => sub {
             # Select clients only if all siblings are ready for anonymization: user_can_anon = TRUE and compliance_confirmation = 'approved'
             # (we don't expect it happen in normal circumstances; but it's better to safeguard the code against currupt data)
-            return $_->selectcol_arrayref(
-                "SELECT STRING_AGG(loginids, ' ' ORDER BY loginids) FROM users.get_anonymization_candidates(?, ?, TRUE) c"
-                    . " LEFT JOIN users.anonymization_candidates sibling ON c.binary_user_id = sibling.binary_user_id AND NOT (sibling.user_can_anon AND sibling.compliance_confirmation = 'approved')"
-                    . " WHERE sibling.loginid IS NULL"
-                    . " GROUP BY c.binary_user_id LIMIT $limit",
-                undef, '', 'approved'
-            );
+            return $_->selectcol_arrayref(<<~"SQL", undef, '', 'approved', $limit);
+                SELECT STRING_AGG(loginids, ' ' ORDER BY loginids) FROM users.get_anonymization_candidates(?, ?, TRUE) c
+                    LEFT JOIN users.anonymization_candidates sibling ON c.binary_user_id = sibling.binary_user_id AND NOT (sibling.user_can_anon AND sibling.compliance_confirmation = 'approved')
+                    WHERE sibling.loginid IS NULL
+                    GROUP BY c.binary_user_id LIMIT ?
+                SQL
         })->@*;
 
     # keep just a single logindid for each user to avoid "already anonymized" error
