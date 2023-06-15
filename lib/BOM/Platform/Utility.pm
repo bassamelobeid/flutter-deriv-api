@@ -742,7 +742,7 @@ sub verify_reactivation {
     return 0 unless ($status eq 'disabled'     or $status eq 'duplicate_account');
     return 0 unless ($client->status->disabled or $client->status->duplicate_account);
 
-    my @required_args = qw(loginid currency date_of_birth place_of_birth citizen residence account_type
+    my @required_args = qw(loginid currency date_of_birth place_of_birth citizen residence
         promo_code_status promo_code non_pep_declaration_time address_line_1 address_line_2 address_postcode);
 
     try {
@@ -760,6 +760,7 @@ sub verify_reactivation {
         $rule_engine->verify_action(
             'new_account',
             action_type     => 'reactivate',
+            account_type    => $client->get_account_type->name,
             market_type     => $market_type,
             landing_company => $landing_company,
             (map { $_ => $client->$_ } @required_args),
