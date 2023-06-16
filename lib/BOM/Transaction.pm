@@ -1222,7 +1222,7 @@ sub batch_buy {
         }->{$self->contract->category_code};
         return Error::Base->cuss(
             -quiet             => 1,
-            -type              => 'UnsupportedBatchSell',
+            -type              => 'UnsupportedBatchBuy',
             -mesg              => ucfirst($self->contract->category_code) . " not supported in batch_buy",
             -message_to_client => $message_to_client,
         );
@@ -1396,7 +1396,7 @@ sub prepare_bet_data_for_sell {
 
     # we need to verify child table for multiplier and accumulator to avoid cases where a contract
     # is sold while it is being updated via a difference process.
-    if ($contract->category_code =~ /^(multiplier|accumulator)$/) {
+    if ($contract->category_code =~ /^(multiplier|accumulator|turbos)$/) {
         $bet_params->{verify_child} = _get_info_to_verify_child($self->contract_id, $contract);
     }
     my $quants_bet_variables;
@@ -2363,7 +2363,7 @@ sub sell_expired_contracts {
                     $bet->{hit_type}     = $contract->hit_type;
                 }
 
-                if ($contract->category_code eq 'accumulator') {
+                if ($contract->category_code =~ /^(accumulator|turbos)$/) {
                     $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
                 }
 
@@ -2482,7 +2482,7 @@ sub sell_expired_contracts {
                     $item->{fmb}->%*,
                     buy_transaction_id  => $item->{buy_txn_id},
                     sell_transaction_id => $item->{txn}{id}});
-            if ($bet->{bet_class} eq 'multiplier' or $bet->{bet_class} eq 'accumulator') {
+            if ($bet->{bet_class} =~ /^(multiplier|accumulator|turbos)$/) {
                 $poc_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
             }
 
@@ -2696,7 +2696,7 @@ sub _get_info_to_verify_child {
 
     return $contract->category_code eq 'multiplier'
         ? _multiplier_child_info($contract_id, $contract)
-        : _accumulator_child_info($contract_id, $contract);
+        : _take_profit_order_only_child_info($contract_id, $contract);
 }
 
 sub _multiplier_child_info {
@@ -2727,7 +2727,7 @@ sub _multiplier_child_info {
     return $info;
 }
 
-sub _accumulator_child_info {
+sub _take_profit_order_only_child_info {
     my ($contract_id, $contract) = @_;
 
     my $info = {financial_market_bet_id => $contract_id + 0};
