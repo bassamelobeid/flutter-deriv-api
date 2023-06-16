@@ -209,18 +209,12 @@ sub _get_ask {
 
             $response->{multiplier} = $contract->multiplier if $contract->can('multiplier');
 
-            if ($contract->category_code eq 'turbos') {
-                $response->{number_of_contracts} = $contract->number_of_contracts;
-                $response->{barrier_choices}     = $contract->strike_price_choices;
-                $response->{min_stake}           = $contract->min_stake;
-                $response->{max_stake}           = $contract->max_stake;
-            }
-
             if ($contract->category_code eq 'vanilla') {
-                $response->{min_stake}           = $contract->min_stake;
-                $response->{max_stake}           = $contract->max_stake;
-                $response->{number_of_contracts} = $contract->number_of_contracts;
-                $response->{barrier_choices}     = $contract->strike_price_choices;
+                $response->{min_stake}                   = $contract->min_stake;
+                $response->{max_stake}                   = $contract->max_stake;
+                $response->{number_of_contracts}         = $contract->number_of_contracts;
+                $response->{display_number_of_contracts} = $contract->number_of_contracts;
+                $response->{barrier_choices}             = $contract->strike_price_choices;
             }
 
             if ($contract->category_code eq 'multiplier') {
@@ -298,12 +292,19 @@ sub _get_ask {
                 $response->{contract_details}->{last_tick_epoch} = $last_tick_processed->{tick_epoch} if $last_tick_processed;
             }
 
-            if ($contract->category_code eq 'turbos' && $contract->take_profit) {
-                $response->{limit_order} = {
-                    'take_profit' => {
-                        'display_name' => 'Take profit',
-                        'order_date'   => $contract->take_profit->{date}->epoch,
-                        'order_amount' => $contract->take_profit->{amount}}};
+            if ($contract->category_code eq 'turbos') {
+                if ($contract->take_profit) {
+                    $response->{limit_order} = {
+                        'take_profit' => {
+                            'display_name' => 'Take profit',
+                            'order_date'   => $contract->take_profit->{date}->epoch,
+                            'order_amount' => $contract->take_profit->{amount}}};
+                }
+                $response->{number_of_contracts}         = $contract->number_of_contracts;
+                $response->{display_number_of_contracts} = $contract->number_of_contracts;
+                $response->{barrier_choices}             = $contract->strike_price_choices;
+                $response->{min_stake}                   = $contract->min_stake;
+                $response->{max_stake}                   = $contract->max_stake;
             }
 
             if (($contract->two_barriers) and ($contract->category_code ne 'accumulator')) {
@@ -940,7 +941,9 @@ sub _build_bid_response {
                     'order_date'   => $contract->take_profit->{date}->epoch,
                     'order_amount' => $contract->take_profit->{amount}}};
         }
-        $response->{barrier} = $contract->display_barrier;
+        $response->{barrier}                     = $contract->display_barrier;
+        $response->{number_of_contracts}         = $contract->number_of_contracts;
+        $response->{display_number_of_contracts} = $contract->number_of_contracts;
 
         # status of turbos is determined differently from other non-binary contracts
         if ($params->{is_sold} and $params->{is_expired}) {
@@ -953,7 +956,8 @@ sub _build_bid_response {
     }
 
     if ($contract->category_code eq 'vanilla') {
-        $response->{number_of_contracts} = $contract->number_of_contracts;
+        $response->{number_of_contracts}         = $contract->number_of_contracts;
+        $response->{display_number_of_contracts} = $contract->number_of_contracts;
     }
 
     if (    $contract->exit_tick
