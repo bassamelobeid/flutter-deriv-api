@@ -193,11 +193,14 @@ sub get_duplicate_client {
     my @params =
         (trim($args->{first_name}), trim($args->{last_name}), $args->{date_of_birth}, $args->{email}, $self->broker_code, $args->{phone});
     push @params, $args->{exclude_status} if $args->{exclude_status};
-
-    my $dbic        = $self->db->dbic;
-    my @dupe_record = $dbic->run(
+    my $client_info_place_holders = join(',', map { '?' } @params);
+    my $dbic                      = $self->db->dbic;
+    my @dupe_record               = $dbic->run(
         fixup => sub {
-            return $_->selectrow_array(q{select * from get_duplicate_client(} . join(',', map { '?' } @params) . q{)}, undef, @params);
+            return $_->selectrow_array(
+                qq{select * from get_duplicate_client( $client_info_place_holders)},    ## SQL safe($client_info_place_holders)
+                undef, @params
+            );
         });
     return @dupe_record;
 }

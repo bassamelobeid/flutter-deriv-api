@@ -203,10 +203,10 @@ sub set_global_limit {
     my $statement;
     if (@{$args->{underlying_symbol}}) {
         my $table_name = 'update_symbol_' . $args->{limit_type};
-        $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?, ?,?,?)};
+        $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?, ?,?,?)};    ## SQL safe($table_name);
     } else {
         my $table_name = 'update_market_' . $args->{limit_type};
-        $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?, ?,?,?)};
+        $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?, ?,?,?)};      ## SQL safe($table_name);
     }
 
     my $comment = $args->{comment} // '';
@@ -292,11 +292,11 @@ sub get_global_limit {
     die 'unsupported limit type ' . $args->{limit_type} unless $self->supported_config_type->{per_landing_company}{$lt};
 
     my $table_name = 'get_market_' . $lt;
-    my $statement  = qq{SELECT betonmarkets.$table_name (?,?,?,?)};
+    my $statement  = qq{SELECT betonmarkets.$table_name (?,?,?,?)};        ## SQL safe($table_name)
     my @key_list   = qw(market contract_group expiry_type barrier_type);
     if (my $us = $args->{underlying_symbol}) {
         $table_name = 'get_symbol_' . $lt;
-        $statement  = qq{SELECT betonmarkets.$table_name (?,?,?,?,?)};
+        $statement  = qq{SELECT betonmarkets.$table_name (?,?,?,?,?)};                        ## SQL safe($table_name)
         @key_list   = qw(market underlying_symbol contract_group expiry_type barrier_type);
     }
 
@@ -390,7 +390,9 @@ sub _get_all {
                 my $id_postfix = $type =~ /^symbol/ ? 'symbol' : 'market';
                 my $records    = $db->dbic->run(
                     fixup => sub {
-                        $_->selectall_arrayref(qq{SELECT *, $time_status FROM betonmarkets.$table_name}, {Slice => {}});
+                        $_->selectall_arrayref(
+                            qq{SELECT *, $time_status FROM betonmarkets.$table_name},    ## SQL safe($time_status, $table_name)
+                            {Slice => {}});
                     });
                 foreach my $record (@$records) {
                     my $id = substr(md5_hex(join '', sort map { $_ // 'undef' } values %$record, $id_postfix), 0, 16);
@@ -497,11 +499,11 @@ sub delete_global_limit {
 
     if ($type eq 'market') {
         my $table_name = 'update_market_' . $args->{limit_type};
-        $statement   = qq{SELECT betonmarkets.$table_name (?,?,?,?,?, ?,?,?)};
+        $statement   = qq{SELECT betonmarkets.$table_name (?,?,?,?,?, ?,?,?)};                                   ## SQL safe($table_name)
         @func_inputs = qw(market contract_group expiry_type barrier_type limit   comment start_time end_time);
     } else {
         my $table_name = 'update_symbol_' . $args->{limit_type};
-        $statement   = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?, ?,?,?)};
+        $statement   = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?, ?,?,?)};                                 ## SQL safe($table_name)
         @func_inputs = qw(market underlying_symbol contract_group expiry_type barrier_type limit   comment start_time end_time);
     }
 

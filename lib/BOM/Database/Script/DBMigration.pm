@@ -194,7 +194,7 @@ sub script_run {
         my $version_new = $migration->version;
         $version_new =~ s/\s//g;
 
-        $self->print_info("Update from version [$version_old] to version [$version_new]\n");
+        $self->print_info("Update from version [$version_old] to version [$version_new]\n");    ## no critic (PreventSQLInjection)
     } else {
         $self->print_info("Update had been cancelled.");
         exit 1;

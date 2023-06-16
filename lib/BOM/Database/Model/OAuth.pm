@@ -446,7 +446,7 @@ sub revoke_app {
     $dbic->run(
         ping => sub {
             foreach my $table ('user_scope_confirm', 'access_token') {
-                $_->do("DELETE FROM oauth.$table WHERE app_id = ? AND loginid = ?", undef, $app_id, $loginid);
+                $_->do("DELETE FROM oauth.$table WHERE app_id = ? AND loginid = ?", undef, $app_id, $loginid);    ## SQL safe($table)
             }
         });
     return 1;
