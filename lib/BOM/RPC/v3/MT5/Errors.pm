@@ -83,7 +83,6 @@ my %category_message_mapping = do {
         MissingAmount                => localize('Please enter the amount you want to transfer.'),
         WrongAmount                  => localize('Please enter a valid amount to transfer.'),
         MT5NotAllowed                => localize('MT5 [_1] account is not available in your country yet.'),
-        DerivezNotAllowed            => localize('Deriv EZ account is not available in your country yet.'),
         MT5SwapFreeNotAllowed        => localize('MT5 swap-free [_1] account is not available in your country yet.'),
         MT5CreateUserError           => localize('An error occured while creating your account. Please check your information and try again.'),
         InvalidLoginid               => localize("We can't find this login ID in our database. Please check the details and try again."),
@@ -120,6 +119,21 @@ my %category_message_mapping = do {
         POAVerificationFailed => localize('Proof of Address verification failed. Withdrawal operation suspended.'),
         ProofRequirementError => localize('Proof of Identity or Address requirements not met. Operation rejected.'),
         AccountShouldBeReal   => localize('Only real accounts are allowed to open [_1] real accounts'),
+
+        # Deriv EZ error codes
+        DerivEZMissingParams      => localize('The following parameters are missing: [_1]'),
+        DerivEZNotAllowed         => localize('Deriv EZ account is not available in your country yet.'),
+        DerivEZRealAccountMissing => localize('You are on a virtual account. To open an Deriv EZ account, please upgrade to a real account.'),
+        DerivEZAccountInactive    => localize('Your Deriv EZ account is inactive. Please contact us for more information.'),
+        ExpiredDocumentsDerivEZ   => localize(
+            'Your identity documents have expired. Visit your account profile to submit your valid documents and create your Deriv EZ account.'),
+        DerivEZCreateUserError => localize('An error occured while creating your account. Please check your information and try again.'),
+        DerivEZDuplicate       => localize(
+            "An account already exists with the information you provided. If you've forgotten your username or password, please contact us."),
+        DerivEZNoAccountDetails       => localize('We are retrieving your Deriv EZ details. Please give us a few more seconds.'),
+        DerivEZInvalidLandingCompany  => localize('This Deriv EZ account has an invalid Landing Company.'),
+        DerivEZMissingID              => localize('Your Deriv EZ login ID is missing. Please check the details and try again.'),
+        DerivEZInvalidAccountCurrency => localize('Invalid Deriv EZ account currency. Please check the details and try again.'),
     );
 };
 

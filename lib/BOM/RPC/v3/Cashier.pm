@@ -1621,7 +1621,10 @@ rpc transfer_between_accounts => sub {
             $params->{args}{currency_check} = $currency;    # Check that derivez account currency matches $currency
         }
 
+        # Making deposit or withdrawal request
         my $do_request = $method->($params);
+
+        # Return error
         return $do_request if $do_request->{error};
 
         my $derivez_data = delete $do_request->{derivez_data};
