@@ -10,7 +10,7 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'BOM::OAuth'               => 1,
-    'BOM::OAuth::O'            => 8,
+    'BOM::OAuth::O'            => 9,
     'BOM::OAuth::OneAll'       => 2,
     'BOM::OAuth::SingleSignOn' => 5,
     'BOM::OAuth::Common'       => 3,

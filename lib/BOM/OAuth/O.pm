@@ -21,6 +21,7 @@ use Text::Trim;
 use Brands;
 use LandingCompany::Registry;
 
+use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Database::Model::OAuth;
@@ -69,7 +70,7 @@ sub authorize {
         login_providers           => $c->stash('login_providers'),
         login_method              => undef,
         is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($app->{id}),
-    );
+        dd_rum_config             => _datadog_config());
     try {
         $template_params{website_domain} = $c->_website_domain($app->{id});
 
@@ -452,6 +453,21 @@ sub _website_domain {
     return 'deriv.be'  if $app_id == 30767;
 
     return lc $c->stash('brand')->website_name;
+}
+
+sub _datadog_config {
+    my $config        = BOM::Config::third_party()->{datadog};
+    my $is_production = BOM::Config::on_production;
+
+    return {
+        APP_ID                     => $config->{oauth_rum_app_id},
+        CLIENT_TOKEN               => $config->{oauth_rum_client_token},
+        SESSION_SAMPLE_RATE        => 10,
+        SESSION_REPLAY_SAMPLE_RATE => 10,
+        SERVICE_NAME               => 'oauth.deriv.com',
+        VERSION                    => '1.0',
+        ENV                        => $is_production ? 'production' : 'qa',
+    };
 }
 
 1;
