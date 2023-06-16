@@ -167,7 +167,7 @@ sub run {
         if ($tick) {
             $params->{current_tick} = Postgres::FeedDB::Spot::Tick->new(decode_json_utf8($tick));
             if (my $recv = $params->{received}) {
-                stats_timing('pricer_daemon.queue.time', 1000 * ($recv - Time::HiRes::time()), {tags => $self->tags});
+                stats_timing('pricer_daemon.job_queue.time', 1000 * ($recv - Time::HiRes::time()), {tags => $self->tags});
             }
         }
 
