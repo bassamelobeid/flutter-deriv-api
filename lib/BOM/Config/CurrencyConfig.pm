@@ -360,6 +360,25 @@ sub mt5_transfer_limits {
     return platform_transfer_limits('MT5', shift);
 }
 
+=head2 derivez_transfer_limits
+
+derivez transfer limits are returned as a {currency => {min => 1, max => 2500}, ... } hash ref.
+These values are extracted from app_config->payment.transfer_between_accounts.minimum/maximum.derivez editable in backoffice Dynamic Settings page.
+
+=over 4
+
+=item * C<brand> - The requester brand name (e.g. derivcrypto, binary, ....) (optional)
+
+=back
+
+Returns C<$platform_transfer_limits> for derivez for the requester brand.
+
+=cut
+
+sub derivez_transfer_limits {
+    return platform_transfer_limits('derivez', shift);
+}
+
 =head2 get_mt5_transfer_limit_by_brand
 
 Returns a hash reference of MT5 transfer limits config {maximum => {...}, minimum => {...}}.
