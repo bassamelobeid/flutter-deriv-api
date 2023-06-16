@@ -9,7 +9,7 @@ use BOM::Database::DataMapper::MyAffiliates;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
-use BOM::Test::Helper::ExchangeRates                    qw (populate_exchange_rates populate_exchange_rates_db);
+use BOM::Test::Helper::ExchangeRates                    qw (populate_exchange_rates);
 use BOM::Database::DataMapper::FinancialMarketBet;
 
 
@@ -42,14 +42,14 @@ cmp_ok($activities->{'MX1001'}->{'turnover_others'},    '==', 0,            'Che
 cmp_ok($activities->{'MX1001'}->{'turnover_intradays'}, '==', 0,            'Check if turnover_intradays factors is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'first_funded_date'},  'eq', '2011-03-09', 'Check if activity first_funded_date is correct for myaffiliate');
 
-#create client
+# create client
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code        => 'CR',
     myaffiliates_token => 'dummy_affiliate_token',
 });
 my $account = $client->set_default_account('USD');
 
-#deposit money
+# deposit money
 $client->payment_legacy_payment(
     currency         => 'USD',
     amount           => 1000,
