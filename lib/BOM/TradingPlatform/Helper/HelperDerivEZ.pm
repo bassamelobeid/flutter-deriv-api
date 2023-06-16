@@ -19,11 +19,12 @@ use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 use BOM::User::Utility               qw(parse_mt5_group);
 use Log::Any                         qw($log);
 use BOM::User::FinancialAssessment;
+use Scalar::Util qw( looks_like_number );
+use Math::BigFloat;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(
     new_account_trading_rights
-    create_error
     validate_new_account_params
     validate_user
     generate_password
@@ -46,6 +47,7 @@ our @EXPORT_OK = qw(
     do_derivez_withdrawal
     get_derivez_landing_company
     get_loginid_number
+    get_transfer_fee_remark
 );
 
 use constant USER_RIGHT_ENABLED        => 0x0000000000000001;
@@ -99,33 +101,6 @@ sub affiliate_trading_rights {
     return USER_RIGHT_TRADE_DISABLED;
 }
 
-=head2 create_error
-
-Returns future fail
-
-=cut
-
-my $error_handler = sub {
-    my $err = shift;
-
-    if (ref $err eq 'HASH' and $err->{code}) {
-        return create_error($err->{code}, {message => $err->{error}});
-    } else {
-        return $err;
-    }
-};
-
-sub create_error {
-    my ($error_code, $details, @extra) = @_;
-
-    my $error_registry = BOM::RPC::v3::MT5::Errors->new();
-    if (ref $details eq 'HASH' and ref $details->{message} eq 'HASH') {
-        return {$details->{message}};
-    }
-    return $error_registry->format_error($error_code, $details, @extra);
-
-}
-
 =head2 validate_new_account_params
 
 Validate the parameters for DerivEZ new account creation
@@ -136,15 +111,24 @@ Return future fail for any failed validation
 sub validate_new_account_params {
     my (%args) = @_;
 
-    if ($args{company} eq 'none') {
-        return 'DerivezNotAllowed';
-    }
+    # Check if any of the required params are missing
+    my @required_params = ("account_type", "market_type", "platform", "company");
+    my @missing_params  = grep { !defined $args{$_} } @required_params;
+    die +{
+        code   => 'DerivEZMissingParams',
+        params => [@missing_params]} if @missing_params;
 
-    return 'InvalidAccountType' if (not $args{account_type} or $args{account_type} !~ /^demo|real$/);
-    return 'InvalidMarketType'  if (not $args{market_type}  or $args{market_type}  !~ /^all$/);
-    return 'InvalidPlatform'    if $args{platform} ne 'derivez';
+    # Check if the country support derivez
+    die +{code => 'DerivEZNotAllowed'} if $args{company} eq 'none';
 
-    return;
+    # Account type should only be demo or real
+    die +{code => 'InvalidAccountType'} if (not $args{account_type} or $args{account_type} !~ /^demo|real$/);
+
+    # Market type for derivez should be "all"
+    die +{code => 'InvalidMarketType'} if (not $args{market_type} or $args{market_type} !~ /^all$/);
+
+    # Platform should be derivez
+    die +{code => 'InvalidPlatform'} if $args{platform} ne 'derivez';
 }
 
 =head2 validate_user
@@ -158,39 +142,37 @@ sub validate_user {
     my ($client, $new_account_params) = @_;
 
     # We need to make use that the user have default currency
-    return create_error('SetExistingAccountCurrency') unless $client->default_account;
+    die +{code => 'SetExistingAccountCurrency'} unless $client->default_account;
 
-    # Country legal validation
+    # Check if client country is allowed to singup
     my $residence          = $client->residence;
     my $brand              = request()->brand;
     my $countries_instance = $brand->countries_instance;
     my $countries_list     = $countries_instance->countries_list;
-    return create_error('InvalidAccountRegion') unless $countries_list->{$residence} && $countries_instance->is_signup_allowed($residence);
+    die +{code => 'InvalidAccountRegion'} unless $countries_list->{$residence} && $countries_instance->is_signup_allowed($residence);
 
     # Check is account is mismacth with account_type
-    return create_error('AccountTypesMismatch') if ($client->is_virtual() and $new_account_params->{account_type} ne 'demo');
+    die +{code => 'AccountTypesMismatch'} if ($client->is_virtual() and $new_account_params->{account_type} ne 'demo');
 
     # Check if any required params for signup is not available
     my $requirements        = LandingCompany::Registry->by_name($new_account_params->{landing_company_short})->requirements;
     my $signup_requirements = $requirements->{signup};
     my @missing_fields      = grep { !$client->$_ } @$signup_requirements;
-
-    return create_error(
-        'MissingSignupDetails',
-        {
-            override_code => 'ASK_FIX_DETAILS',
-            details       => {missing => [@missing_fields]}}) if ($new_account_params->{account_type} ne "demo" and @missing_fields);
+    die +{
+        code          => 'MissingSignupDetails',
+        override_code => 'ASK_FIX_DETAILS',
+        details       => {missing => [@missing_fields]}}
+        if ($new_account_params->{account_type} ne "demo" and @missing_fields);
 
     # Check if this country is one of the high risk country
     my $jurisdiction_ratings = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$new_account_params->{landing_company_short}}
         // {};
     my $high_risk_countries = {map { $_ => 1 } @{$jurisdiction_ratings->{high} // []}};
-    return create_error('DerivezNotAllowed') if $high_risk_countries->{$residence};
+    die +{code => 'DerivezNotAllowed'} if $high_risk_countries->{$residence};
 
     my $compliance_requirements = $requirements->{compliance};
-
     if ($new_account_params->{group} !~ /^demo/) {
-        return create_error('FinancialAssessmentRequired')
+        die +{code => 'FinancialAssessmentRequired'}
             unless _is_financial_assessment_complete(
             client                            => $client,
             group                             => $new_account_params->{group},
@@ -200,7 +182,7 @@ sub validate_user {
         # (Automatic Exchange of Financial Account Information) Regulation 2018,
         # we need to ask for tax details for selected countries if client wants
         # to open a financial account.
-        return create_error('TINDetailsMandatory')
+        die +{code => 'TINDetailsMandatory'}
             if ($compliance_requirements->{tax_information}
             and $countries_instance->is_tax_detail_mandatory($residence)
             and not $client->status->crs_tin_information);
@@ -211,32 +193,16 @@ sub validate_user {
         if ($client->fully_authenticated) {
             if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
                 $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
-                return create_error('ExpiredDocumentsMT5', {params => $client->loginid});
+                die +{code => 'ExpiredDocumentsMT5'};
             }
         } else {
             $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
-            return create_error('AuthenticateAccount', {params => $client->loginid});
+            die +{
+                code   => 'AuthenticateAccount',
+                params => $client->loginid
+            };
         }
     }
-
-    if (    $client->tax_residence
-        and $new_account_params->{account_type} ne 'demo'
-        and $new_account_params->{group} =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\(?:labuan|bvi)_stp_usd/)
-    {
-        # In case of having more than a tax residence, client residence will be replaced.
-        my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
-        my $tin_format             = $countries_instance->get_tin_format($selected_tax_residence);
-        if (    $countries_instance->is_tax_detail_mandatory($selected_tax_residence)
-            and $client->tax_identification_number
-            and $tin_format)
-        {
-            # Some countries has multiple tax format and we should check all of them
-            my $client_tin = $countries_instance->clean_tin_format($client->tax_identification_number);
-            stats_inc('bom_rpc.v_3.new_mt5_account.called_with_wrong_TIN_format.count') unless (any { $client_tin =~ m/$_/ } @$tin_format);
-        }
-    }
-
-    return;
 }
 
 =head2 generate_password
@@ -335,8 +301,21 @@ sub do_derivez_deposit {
     )->catch(
         sub {
             my $e = shift;
-            BOM::RPC::v3::Utility::log_exception('mt5_deposit') if $txn_id;
-            $error_handler->($e);
+
+            if (ref $e eq 'HASH' and $e->{code}) {
+                stats_inc("derivez.deposit.error", {tags => ["login:$login", "message:" . $e->{error}]});
+
+                die +{
+                    code    => $e->{code},
+                    message => $e->{error}};
+            } else {
+                stats_inc("derivez.deposit.error", {tags => ["login:$login", "message:$e"]});
+
+                die +{
+                    code    => 'DerivEZDepositError',
+                    message => $e
+                };
+            }
         })->get;
 }
 
@@ -520,6 +499,9 @@ NOTE: We are using the same MT5 server for DerivEZ
 
 sub derivez_accounts_lookup {
     my ($client, $account_type) = @_;
+    my @futures;
+
+    # Define a hash of allowed error codes to ignore
     my %allowed_error_codes = (
         ConnectionTimeout           => 1,
         MT5AccountInactive          => 1,
@@ -532,34 +514,36 @@ sub derivez_accounts_lookup {
         'Connection closed'         => 1
     );
 
-    my @futures;
+    # Determine whether to get real or demo accounts, or both
     $account_type = $account_type ? $account_type : 'all';
 
-    # Getting filtered account to only status as undef
+    # Getting filtered account to only status as undef and based on the specified account type
     my @clients = $client->user->get_derivez_loginids(type_of_account => $account_type);
+
+    # Loop through all the accounts and create a future for each one to retrieve its settings
     for my $login (@clients) {
         my $f = _get_settings($client, $login)->then(
             sub {
                 my ($setting) = @_;
 
+                # Filter the settings to only include certain keys, if there are no errors
                 $setting = _filter_settings($setting,
                     qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type server server_info/
                 ) if !$setting->{error};
+
                 return $setting;
             }
         )->catch(
             sub {
                 my ($resp) = @_;
 
-                if ((
-                        ref $resp eq 'HASH' && defined $resp->{error} && ref $resp->{error} eq 'HASH' && ($allowed_error_codes{$resp->{error}{code}}
-                            || $allowed_error_codes{$resp->{error}{message_to_client}}))
-                    || $allowed_error_codes{$resp})
-                {
-                    log_stats($login, $resp);
+                # Ignore certain error codes and log the error for all others
+                if (defined $resp->{code} and $allowed_error_codes{$resp->{code}}) {
+                    return Future->done(undef);
+                } elsif (defined $resp->{message} and $allowed_error_codes{$resp->{message}}) {
                     return Future->done(undef);
                 } else {
-                    $log->errorf("mt5_accounts_lookup Exception: %s", $resp);
+                    $log->errorf("mt5_accounts_lookup Exception: %s", $resp->{message});
                 }
 
                 return Future->fail($resp);
@@ -567,16 +551,14 @@ sub derivez_accounts_lookup {
         push @futures, $f;
     }
 
-    # The reason for using wait_all instead of fmap here is:
-    # to guaranty the MT5 circuit breaker test request will not be canceled when failing the other requests.
-    # Note: using ->without_cancel to avoid cancel the future is not working
-    # because our RPC is not totally async, where the worker will start processing another request after return the response
-    # so the future in the background will never end
+    # Wait for all the futures to complete, handling any failures
     return Future->wait_all(@futures)->then(
         sub {
             my @futures_result = @_;
-            my $failed_future  = first { $_->is_failed } @futures_result;
-            return Future->fail($failed_future->failure) if $failed_future;
+
+            # Returning failure if any is_failed
+            my $failed_future = first { $_->is_failed } @futures_result;
+            return Future->fail([$failed_future->failure]) if $failed_future;
 
             my @result = map { $_->result } @futures_result;
             return Future->done(@result);
@@ -594,50 +576,62 @@ It will return Future object.
 sub _get_settings {
     my ($client, $login) = @_;
 
-    return Future->fail(create_error('permission')) unless _check_logins($client, [$login]);
+    # Check if the loginid belongs to the client
+    return Future->fail({code => 'permission'}) unless _check_logins($client, [$login]);
 
+    # Check if the account is suspended
     if (BOM::MT5::User::Async::is_suspended('', {login => $login})) {
-        my $account_type  = BOM::MT5::User::Async::get_account_type($login);
-        my $server        = BOM::MT5::User::Async::get_trading_server_key({login => $login}, $account_type);
-        my $server_config = BOM::Config::MT5->new(
+
+        # Get account details to include in response
+        my $account_type = BOM::MT5::User::Async::get_account_type($login);
+        my $server       = BOM::MT5::User::Async::get_trading_server_key({login => $login}, $account_type);
+        my $server_info  = BOM::Config::MT5->new(
             group_type  => $account_type,
             server_type => $server
-        )->server_by_id();
+        )->server_by_id->{$server};
+
+        # Build response
         my $resp = {
-            error => {
-                code    => 'MT5AccountInaccessible',
-                details => {
-                    login        => $login,
-                    account_type => $account_type,
-                    server       => $server,
-                    server_info  => {
-                        id          => $server,
-                        geolocation => $server_config->{$server}{geolocation},
-                        environment => $server_config->{$server}{environment},
-                    }
+            code    => 'DerivEZAccountInaccessible',
+            details => {
+                login        => $login,
+                account_type => $account_type,
+                server       => $server,
+                server_info  => {
+                    id          => $server,
+                    geolocation => $server_info->{geolocation},
+                    environment => $server_info->{environment},
                 },
-                message_to_client => localize('MT5 is currently unavailable. Please try again later.'),
-            }};
-        return Future->done($resp);
+            },
+            message => localize('Deriv EZ is currently unavailable. Please try again later.'),
+        };
+        return Future->fail($resp);
     }
 
+    # Retrieve user settings and group details
     return _get_user_with_group($login)->then(
         sub {
             my ($settings) = @_;
 
-            return create_error('MT5AccountInactive') if !$settings->{active};
+            # Check if the account is active
+            return Future->fail({code => 'DerivEZAccountInactive'}) unless $settings->{active};
 
-            $settings = _filter_settings($settings,
-                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state zipCode server server_info/
+            # Filter the settings to only include necessary fields
+            $settings = _filter_settings(
+                $settings, qw/
+                    account_type address balance city company country currency display_balance email
+                    group landing_company_short leverage login market_type name phone phonePassword
+                    state zipCode server server_info/
             );
 
             return $settings;
         }
     )->catch(
         sub {
-            my $err = shift;
+            my ($err) = @_;
 
-            return create_error($err);
+            # Return formated error
+            return Future->fail($err);
         });
 }
 
@@ -651,48 +645,60 @@ It will return a future object
 sub _get_user_with_group {
     my ($loginid) = shift;
 
+    # Get user settings for a given login ID
     return BOM::MT5::User::Async::get_user($loginid)->then(
         sub {
-            my ($settings) = @_;
+            my ($user_settings) = @_;
 
-            return create_error({
-                    code    => 'DerivEZGetUserError',
-                    message => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
-            if (my $country = $settings->{country}) {
+            # Convert country name to country code using Locale::Country::Extra
+            if (my $country = $user_settings->{country}) {
                 my $country_code = Locale::Country::Extra->new()->code_from_country($country);
                 if ($country_code) {
-                    $settings->{country} = $country_code;
+                    $user_settings->{country} = $country_code;
                 } else {
                     $log->warnf("Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra");
                 }
             }
-            return $settings;
-        }
-    )->then(
-        sub {
-            my ($settings) = @_;
 
-            return BOM::MT5::User::Async::get_group($settings->{group})->then(
+            # Get group details for the user's group
+            return BOM::MT5::User::Async::get_group($user_settings->{group})->then(
                 sub {
-                    my ($group_details) = @_;
+                    my ($mt5_group_details) = @_;
 
-                    return create_error({
-                            code    => 'GetGroupError',
-                            message => $group_details->{error}}) if (ref $group_details eq 'HASH' and $group_details->{error});
-                    $settings->{currency}        = $group_details->{currency};
-                    $settings->{landing_company} = $group_details->{company};
-                    $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
+                    # Set user settings with group details
+                    $user_settings->{currency}        = $mt5_group_details->{currency};
+                    $user_settings->{landing_company} = $mt5_group_details->{company};
+                    $user_settings->{display_balance} = formatnumber('amount', $user_settings->{currency}, $user_settings->{balance});
 
-                    _set_derivez_account_settings($settings) if ($settings->{group});
+                    # Set Derivez account settings if user belongs to a group
+                    _set_derivez_account_settings($user_settings) if ($user_settings->{group});
 
-                    return $settings;
+                    return $user_settings;
+                }
+            )->catch(
+                sub {
+                    my ($err) = @_;
+
+                    # Log error and increment stats counter
+                    my $error_message = "Error in getting group details for user $loginid: $err->{message_to_client}";
+                    $log->errorf("_get_user_with_group failed for group %s: %s", $loginid, $error_message);
+                    stats_inc("derivez.get_group.error", {tags => ["login:$loginid", "error_message:$error_message"]});
+
+                    # Return a failed Future with the error
+                    return Future->fail({code => $err->{code}, message => $err->{message_to_client}});
                 });
         }
     )->catch(
         sub {
-            my $err = shift;
+            my ($err) = @_;
 
-            return create_error($err);
+            # Log error and increment stats counter
+            my $error_message = "Error in getting user details for user $loginid: $err->{message_to_client}";
+            $log->errorf("_get_user_with_group failed for user %s: %s", $loginid, $error_message);
+            stats_inc("derivez.get_user.error", {tags => ["login:$loginid", "error_message:$error_message"]});
+
+            # Return a failed Future with the error
+            return Future->fail({code => $err->{code}, message => $err->{message_to_client}});
         });
 }
 
@@ -703,10 +709,11 @@ populate derivez accounts with settings.
 =cut
 
 sub _set_derivez_account_settings {
-    my ($account) = shift;
+    my ($account) = @_;
 
     my $group_name = lc($account->{group});
     my $config     = BOM::Config::mt5_account_types()->{$group_name};
+
     $account->{server}                = $config->{server};
     $account->{active}                = $config->{landing_company_short} ? 1 : 0;
     $account->{landing_company_short} = $config->{landing_company_short};
@@ -739,31 +746,6 @@ sub _filter_settings {
     return $filtered_settings;
 }
 
-=head2 log_stats
-
-Adds DD metrics related to 'derivez_accounts_lookup' allowed error codes
-
-=cut
-
-sub log_stats {
-
-    my ($login, $resp) = @_;
-
-    my $error_code    = $resp;
-    my $error_message = $resp;
-
-    if (ref $resp eq 'HASH') {
-        $error_code    = $resp->{error}{code};
-        $error_message = $resp->{error}{message_to_client};
-    }
-
-    # 'NotFound' error occurs if a user has at least one archived MT5 account. Since it is very common for users to have multiple archived
-    # MT5 accounts and since this error is not critical, we will be excluding it from DD
-    unless ($error_code eq 'NotFound') {
-        stats_inc("mt5.accounts.lookup.error.code", {tags => ["login:$login", "error_code:$error_code", "error_messsage:$error_message"]});
-    }
-}
-
 =head2 get_derivez_landing_company
 
 Return the landing company for client
@@ -782,7 +764,7 @@ sub get_derivez_landing_company {
 
         return $countries_instance->all_company_for_country($client->residence);
     } catch {
-        return {error => 'DerivezNotAllowed'};
+        return undef;
     }
 }
 
@@ -848,160 +830,165 @@ Perform validation for account transfer and getting new updated amount
 =cut
 
 sub derivez_validate_and_get_amount {
-    my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code, $currency_check) = @_;
+    my ($authorized_client, $loginid, $derivez_loginid, $amount, $error_code, $currency_check) = @_;
     my $brand_name = request()->brand->name;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
-    return create_error('PaymentsSuspended', {override_code => $error_code})
-        if ($app_config->system->suspend->payments);
+    die +{code => 'PaymentsSuspended'} if ($app_config->system->suspend->payments);
 
-    my $mt5_transfer_limits = BOM::Config::CurrencyConfig::mt5_transfer_limits($brand_name);
+    # Parameters check from FE
+    die +{code => 'DerivEZMissingID'} unless $derivez_loginid;
+    die +{code => 'WrongAmount'} if ($amount <= 0);
+    die +{code => 'MissingAmount'} unless $amount;
 
     # MT5 login or binary loginid not belongs to user
-    my @loginids_list = ($mt5_loginid);
+    my @loginids_list = ($derivez_loginid);
     push @loginids_list, $loginid if $loginid;
 
-    return create_error('PermissionDenied', {message => 'Both accounts should belong to the authorized client.'})
+    die +{
+        code    => 'PermissionDenied',
+        message => 'Both accounts should belong to the authorized client.'
+        }
         unless _check_logins($authorized_client, \@loginids_list);
 
-    return _get_user_with_group($mt5_loginid)->then(
+    return _get_user_with_group($derivez_loginid)->then(
         sub {
-            my ($setting) = @_;
+            # Extract user setting
+            my ($user_setting) = @_;
 
-            return create_error(
-                'NoAccountDetails',
-                {
-                    override_code => $error_code,
-                    params        => $mt5_loginid
-                }) if (ref $setting eq 'HASH' && $setting->{error});
-
+            # Determine action based on error code
             my $action             = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
-            my $action_counterpart = ($error_code =~ /Withdrawal/) ? 'deposit'    : 'withdraw';
+            my $action_counterpart = ($action eq 'withdrawal')     ? 'deposit'    : 'withdraw';
 
-            my $mt5_group    = $setting->{group};
-            my $mt5_lc       = _fetch_derivez_lc($setting);
-            my $account_type = _is_account_demo($mt5_group) ? 'demo' : 'real';
+            # Extract user details
+            my $user_derivez_group           = $user_setting->{group};
+            my $user_derivez_landing_company = _fetch_derivez_lc($user_setting);
+            my $account_type                 = _is_account_demo($user_derivez_group) ? 'demo' : 'real';
+            my $user_derivez_currency        = $user_setting->{currency};
 
-            return create_error('InvalidMT5Group') unless $mt5_lc;
+            # Check if we have withdrawal_locked for the user
+            die +{code => $error_code}
+                if ($action eq 'withdrawal' and $user_setting->{status}->{withdrawal_locked});
 
-            my $requirements = $mt5_lc->requirements->{after_first_deposit}->{financial_assessment} // [];
-            if (
-                    $action eq 'withdrawal'
-                and $authorized_client->has_mt5_deposits($mt5_loginid)
-                and not _is_financial_assessment_complete(
-                    client                            => $authorized_client,
-                    group                             => $mt5_group,
-                    financial_assessment_requirements => $requirements
-                ))
-            {
-                return create_error('FinancialAssessmentRequired');
-            }
-
-            return create_error($setting->{status}->{withdrawal_locked}->{error}, {override_code => $error_code})
-                if ($action eq 'withdrawal' and $setting->{status}->{withdrawal_locked});
-
-            my $mt5_currency = $setting->{currency};
-            return create_error('CurrencyConflict', {override_code => $error_code})
-                if $currency_check && $currency_check ne $mt5_currency;
-
-            # Check if it's called for virtual top up
-            # If yes, then no need to validate client
+            # Skip validation for virtual topup
             if ($account_type eq 'demo' and $action eq 'deposit' and not $loginid) {
                 my $max_balance_before_topup = BOM::Config::payment_agent()->{minimum_topup_balance}->{DEFAULT};
 
-                return create_error(
-                    'DemoTopupBalance',
-                    {
-                        override_code => $error_code,
-                        params        => [formatnumber('amount', $mt5_currency, $max_balance_before_topup), $mt5_currency]}
-                ) if ($setting->{balance} > $max_balance_before_topup);
+                die +{
+                    code   => 'DemoTopupBalance',
+                    params => [formatnumber('amount', $user_derivez_currency, $max_balance_before_topup), $user_derivez_currency]}
+                    if ($user_setting->{balance} > $max_balance_before_topup);
 
                 return {top_up_virtual => 1};
             }
 
-            return create_error('MissingID', {override_code => $error_code}) unless $loginid;
+            # Check if the loginid is missing
+            die +{code => 'MissingID'} unless $loginid;
 
-            return create_error('MissingAmount', {override_code => $error_code}) unless $amount;
+            # Check landing company is valid
+            die +{code => 'DerivEZInvalidLandingCompany'} unless $user_derivez_landing_company;
 
-            return create_error('WrongAmount', {override_code => $error_code}) if ($amount <= 0);
+            # Check that derivez account currency matches with the tranfer currency parameters
+            die +{code => 'CurrencyConflict'} if $currency_check && $currency_check ne $user_derivez_currency;
 
-            my $client;
-            try {
-                $client = BOM::User::Client->get_client_instance($loginid, 'replica');
+            # We should not allow transfer between cfd account (example: mt5 to derivez)
+            # Will accept CR and MF only
+            die +{
+                code    => 'PermissionDenied',
+                message => 'Transfer between cfd account is not permitted.'
+            } if ($loginid =~ /^(?!CR|MF)/);
 
-            } catch {
-                BOM::RPC::v3::Utility::log_exception();
-                return create_error(
-                    'InvalidLoginid',
-                    {
-                        override_code => $error_code,
-                        params        => $loginid
-                    });
+            # Populate variables
+            my $requirements                     = $user_derivez_landing_company->requirements->{after_first_deposit}->{financial_assessment} // [];
+            my $client                           = BOM::User::Client->get_client_instance($loginid, 'replica');
+            my $brand                            = Brands->new(name => request()->brand);
+            my $client_currency                  = $client->account ? $client->account->currency_code() : undef;
+            my $user_derivez_currency_type       = LandingCompany::Registry::get_currency_type($user_derivez_currency);
+            my $client_currency_type             = LandingCompany::Registry::get_currency_type($client_currency);
+            my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
+            my $validate_amount_response         = _validate_amount($amount, $client_currency);
+            my $derivez_transfer_limits          = BOM::Config::CurrencyConfig::derivez_transfer_limits($brand_name);
+            my $min_transfer_limit               = $derivez_transfer_limits->{$client_currency}->{min};
+            my $max_transfer_limit               = $derivez_transfer_limits->{$client_currency}->{max};
+
+            # Parameters
+            my $derivez_transfer_amount = undef;
+            my $fees                    = 0;
+            my $fees_percent            = 0;
+            my $fees_in_client_currency = 0;       #when a withdrawal is done record the fee in the local amount
+            my ($min_fee, $fee_calculated_by_percent);
+
+            # Check if the amount is valid
+            die +{
+                code    => $error_code,
+                message => $validate_amount_response
+            } if $validate_amount_response;
+
+            # Check if financial assessment is required for withdrawals
+            if (
+                   $action eq 'withdrawal'
+                && $authorized_client->has_mt5_deposits($derivez_loginid)
+                && !_is_financial_assessment_complete(
+                    client                            => $authorized_client,
+                    group                             => $user_derivez_group,
+                    financial_assessment_requirements => $requirements
+                ))
+            {
+                die +{code => 'FinancialAssessmentRequired'};
             }
 
             # Transfer between real and demo accounts is not permitted
-            return create_error('AccountTypesMismatch') if $client->is_virtual xor ($account_type eq 'demo');
+            die +{code => 'AccountTypesMismatch'} if $client->is_virtual xor ($account_type eq 'demo');
+
             # Transfer between virtual trading and virtual mt5 is not permitted
-            return create_error('InvalidVirtualAccount') if $client->is_virtual and not $client->is_wallet;
+            die +{code => 'InvalidVirtualAccount'} if $client->is_virtual and not $client->is_wallet;
+
+            # Check if the amount does not meet the min requirements
+            die +{
+                code   => 'InvalidMinAmount',
+                params => [formatnumber('amount', $client_currency, $min_transfer_limit), $client_currency]}
+                if $amount < financialrounding('amount', $client_currency, $min_transfer_limit);
+
+            # Check if the amount exceed the max_transfer_limit requirements
+            die +{
+                code   => 'InvalidMaxAmount',
+                params => [formatnumber('amount', $client_currency, $max_transfer_limit), $client_currency]}
+                if $amount > financialrounding('amount', $client_currency, $max_transfer_limit);
 
             # Validate the binary client
-            my ($err, $params) = _validate_client($client, $mt5_lc);
-            return create_error(
-                $err,
-                {
-                    override_code => $error_code,
-                    params        => $params
-                }) if $err;
+            _validate_client($client, $user_derivez_landing_company);
 
             # Don't allow a virtual token/oauth to process a real account.
-            return create_error('PermissionDenied',
-                {message => localize('You cannot transfer between real accounts because the authorized client is virtual.')})
+            die +{
+                code    => 'PermissionDenied',
+                message => localize('You cannot transfer between real accounts because the authorized client is virtual.')}
                 if $authorized_client->is_virtual and not $client->is_virtual;
 
-            my $client_currency = $client->account ? $client->account->currency_code() : undef;
-            return create_error('TransferBetweenDifferentCurrencies')
-                unless $client_currency eq $mt5_currency || $client->landing_company->mt5_transfer_with_different_currency_allowed;
+            # Do not allow transfer between different currencies
+            die +{code => 'TransferBetweenDifferentCurrencies'}
+                unless $client_currency eq $user_derivez_currency || $client->landing_company->mt5_transfer_with_different_currency_allowed;
 
-            my $brand = Brands->new(name => request()->brand);
-
-            return create_error(
-                'WithdrawalLocked',
-                {
-                    override_code => $error_code,
-                    params        => $brand->emails('support')})
+            # Check for the client have withdrawal lock
+            die +{
+                code   => 'WithdrawalLocked',
+                params => $brand->emails('support')}
                 if ($action eq 'deposit'
                 and ($client->status->no_withdrawal_or_trading or $client->status->withdrawal_locked));
 
-            # Deposit should be locked if mt5 vanuatu/labuan account is disabled
-            if (    $action eq 'deposit'
-                and $mt5_group =~ /(?:labuan|vanuatu|bvi)/)
-            {
-                my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
-                my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
-                my %rights       = map { $_ => $setting->{rights} & $known_rights{$_} ? 1 : 0 } keys %known_rights;
-                if (not $rights{enabled} or $rights{trade_disabled}) {
-                    return create_error('MT5DepositLocked');
-                }
-            }
-
-            # Actual USD or EUR amount that will be deposited into the MT5 account.
-            # We have a currency conversion fees when transferring between currencies.
-            my $mt5_amount = undef;
-
-            my $source_currency = $client_currency;
-
-            my $mt5_currency_type    = LandingCompany::Registry::get_currency_type($mt5_currency);
-            my $source_currency_type = LandingCompany::Registry::get_currency_type($source_currency);
-
-            return create_error('TransferSuspended', {override_code => $error_code})
+            # Both currency type should be the same
+            die +{code => 'TransferSuspended'}
                 if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
-                and (($source_currency_type // '') ne ($mt5_currency_type // ''));
+                and (($client_currency_type // '') ne ($user_derivez_currency_type // ''));
 
-            return create_error('TransfersBlocked', {message => localize("Transfers are not allowed for these accounts.")})
-                if ($client->status->transfers_blocked && ($mt5_currency_type ne $source_currency_type));
+            # Check if the client transfer are blocked
+            die +{
+                code    => 'TransfersBlocked',
+                message => localize("Transfers are not allowed for these accounts.")}
+                if ($client->status->transfers_blocked && ($user_derivez_currency_type ne $client_currency_type));
 
-            unless ((LandingCompany::Registry::get_currency_type($client_currency) ne 'crypto')
-                || $mt5_currency eq $client_currency
+            # Check if the exchange rates is offered
+            unless (($client_currency_type ne 'crypto')
+                || $user_derivez_currency eq $client_currency
                 || offer_to_clients($client_currency))
             {
                 stats_event(
@@ -1010,119 +997,96 @@ sub derivez_validate_and_get_amount {
                     {
                         alert_type => 'warning',
                         tags       => ['currency:' . $client_currency . '_USD']});
-                return create_error('NoExchangeRates');
+                die +{code => 'NoExchangeRates'};
             }
 
-            my $fees                    = 0;
-            my $fees_percent            = 0;
-            my $fees_in_client_currency = 0;    #when a withdrawal is done record the fee in the local amount
-            my ($min_fee, $fee_calculated_by_percent);
-
-            if ($client_currency eq $mt5_currency) {
-                $mt5_amount = $amount;
+            # We have a currency conversion fees when transferring between currencies.
+            # Calculating exchange rate
+            if ($client_currency eq $user_derivez_currency) {
+                # We do not have any exchange rate for the same currency
+                $derivez_transfer_amount = $amount;
             } else {
-                # we don't allow transfer between these two currencies
-                my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
-
-                return create_error(
-                    'CurrencySuspended',
-                    {
-                        override_code => $error_code,
-                        params        => [$source_currency, $mt5_currency]}
-                ) if first { $_ eq $source_currency or $_ eq $mt5_currency } @$disabled_for_transfer_currencies;
+                # Check if the currency is one of the disabled tranfer currencies
+                die +{
+                    code   => 'CurrencySuspended',
+                    params => [$client_currency, $user_derivez_currency]}
+                    if first { $_ eq $client_currency or $_ eq $user_derivez_currency } @$disabled_for_transfer_currencies;
 
                 if ($action eq 'deposit') {
-
                     try {
-                        ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
+                        ($derivez_transfer_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees(
                             amount        => $amount,
                             from_currency => $client_currency,
-                            to_currency   => $mt5_currency,
+                            to_currency   => $user_derivez_currency,
                             country       => $client->residence,
                             );
 
-                        $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
+                        $derivez_transfer_amount = financialrounding('amount', $user_derivez_currency, $derivez_transfer_amount);
 
                     } catch ($e) {
-                        BOM::RPC::v3::Utility::log_exception();
-                        # usually we get here when convert_currency() fails to find a rate within $rate_expiry, $mt5_amount is too low, or no transfer fee are defined (invalid currency pair).
-                        $err        = $e;
-                        $mt5_amount = undef;
+                        stats_inc("derivez.deposit.validation.error");
+                        # usually we get here when convert_currency() fails to find a rate within $rate_expiry, $derivez_transfer_amount is too low, or no transfer fee are defined (invalid currency pair).
+
+                        die +{code => Date::Utility->new->is_a_weekend ? 'ClosedMarket' : 'NoExchangeRates'}
+                            if ($e =~ /No rate available to convert/);
+
+                        die +{
+                            code   => 'NoTransferFee',
+                            params => [$client_currency, $user_derivez_currency]} if ($e =~ /No transfer fee/);
+
+                        # Lower than min_unit in the receiving currency. The lower-bounds are not up to date, otherwise we should not accept the amount in sending currency.
+                        # To update them, transfer_between_accounts_fees is called again with force_refresh on.
+                        die +{
+                            code   => 'AmountNotAllowed',
+                            params => [$derivez_transfer_limits->{$client_currency}->{min}, $client_currency]}
+                            if ($e =~ /The amount .* is below the minimum allowed amount/);
+
+                        # Default error:
+                        die +{code => $error_code};
                     }
 
                 } elsif ($action eq 'withdrawal') {
-
                     try {
+                        $client_currency = $user_derivez_currency;
 
-                        $source_currency = $mt5_currency;
-
-                        ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
+                        ($derivez_transfer_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees(
                             amount        => $amount,
-                            from_currency => $mt5_currency,
+                            from_currency => $user_derivez_currency,
                             to_currency   => $client_currency,
                             country       => $client->residence,
                             );
 
-                        $mt5_amount = financialrounding('amount', $client_currency, $mt5_amount);
+                        $derivez_transfer_amount = financialrounding('amount', $client_currency, $derivez_transfer_amount);
 
                         # if last rate is expiered calculate_to_amount_with_fees would fail.
                         $fees_in_client_currency =
-                            financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency));
+                            financialrounding('amount', $client_currency, convert_currency($fees, $user_derivez_currency, $client_currency));
                     } catch ($e) {
-                        BOM::RPC::v3::Utility::log_exception();
-                        # same as previous catch
-                        $err = $e;
+                        stats_inc("derivez.withdrawal.validation.error");
+
+                        die +{code => Date::Utility->new->is_a_weekend ? 'ClosedMarket' : 'NoExchangeRates'}
+                            if ($e =~ /No rate available to convert/);
+
+                        die +{
+                            code   => 'NoTransferFee',
+                            params => [$client_currency, $user_derivez_currency]} if ($e =~ /No transfer fee/);
+
+                        # Lower than min_unit in the receiving currency. The lower-bounds are not up to date, otherwise we should not accept the amount in sending currency.
+                        # To update them, transfer_between_accounts_fees is called again with force_refresh on.
+                        die +{
+                            code   => 'AmountNotAllowed',
+                            params => [$derivez_transfer_limits->{$client_currency}->{min}, $client_currency]}
+                            if ($e =~ /The amount .* is below the minimum allowed amount/);
+
+                        # Default error:
+                        die +{code => $error_code};
                     }
                 }
             }
 
-            if ($err) {
-                return create_error(Date::Utility->new->is_a_weekend ? 'ClosedMarket' : 'NoExchangeRates', {override_code => $error_code})
-                    if ($err =~ /No rate available to convert/);
-
-                return create_error(
-                    'NoTransferFee',
-                    {
-                        override_code => $error_code,
-                        params        => [$client_currency, $mt5_currency]}) if ($err =~ /No transfer fee/);
-
-                # Lower than min_unit in the receiving currency. The lower-bounds are not uptodate, otherwise we should not accept the amount in sending currency.
-                # To update them, transfer_between_accounts_fees is called again with force_refresh on.
-                return create_error(
-                    'AmountNotAllowed',
-                    {
-                        override_code => $error_code,
-                        params        => [$mt5_transfer_limits->{$source_currency}->{min}, $source_currency]}
-                ) if ($err =~ /The amount .* is below the minimum allowed amount/);
-
-                #default error:
-                return create_error($error_code);
-            }
-
-            $err = BOM::RPC::v3::Cashier::validate_amount($amount, $source_currency);
-            return create_error($error_code, {message => $err}) if $err;
-
-            my $min = $mt5_transfer_limits->{$source_currency}->{min};
-
-            return create_error(
-                'InvalidMinAmount',
-                {
-                    override_code => $error_code,
-                    params        => [formatnumber('amount', $source_currency, $min), $source_currency]}
-            ) if $amount < financialrounding('amount', $source_currency, $min);
-
-            my $max = $mt5_transfer_limits->{$source_currency}->{max};
-
-            return create_error(
-                'InvalidMaxAmount',
-                {
-                    override_code => $error_code,
-                    params        => [formatnumber('amount', $source_currency, $max), $source_currency]}
-            ) if $amount > financialrounding('amount', $source_currency, $max);
-
-            unless ($client->is_virtual and _is_account_demo($mt5_group)) {
+            unless ($client->is_virtual and _is_account_demo($user_derivez_group)) {
                 my $rule_engine = BOM::Rules::Engine->new(client => $client);
                 my $validation  = BOM::Platform::Client::CashierValidation::validate(
                     loginid           => $loginid,
@@ -1132,25 +1096,36 @@ sub derivez_validate_and_get_amount {
                     rule_engine       => $rule_engine
                 );
 
-                return create_error(
-                    $error_code,
-                    {
-                        message       => $validation->{error}{message_to_client},
-                        original_code => $validation->{error}{code}}) if exists $validation->{error};
+                die +{
+                    code    => $error_code,
+                    message => $validation->{error}{message_to_client}} if exists $validation->{error};
             }
 
             return {
-                derivez_amount          => $mt5_amount,
+                derivez_amount          => $derivez_transfer_amount,
                 fees                    => $fees,
-                fees_currency           => $source_currency,
+                fees_currency           => $client_currency,
                 fees_percent            => $fees_percent,
                 fees_in_client_currency => $fees_in_client_currency,
-                derivez_currency_code   => $mt5_currency,
+                derivez_currency_code   => $user_derivez_currency,
                 min_fee                 => $min_fee,
                 calculated_fee          => $fee_calculated_by_percent,
-                derivez_data            => $setting,
+                derivez_data            => $user_setting,
                 account_type            => $account_type,
             };
+        }
+    )->catch(
+        sub {
+            my $e = shift;
+
+            if (ref $e eq 'HASH' and defined $e->{code}) {
+                die +{
+                    code    => $e->{code},
+                    message => $e->{message}};
+            } else {
+                $log->errorf("derivez_validate_and_get_amount: %s", $e);
+                die +{code => 'DerivEZNoAccountDetails'};
+            }
         })->get;
 }
 
@@ -1161,7 +1136,7 @@ Perform data insertion to mt5_transfer for DerivEZ transaction
 =cut
 
 sub record_derivez_transfer_to_mt5_transfer {
-    my ($dbic, $payment_id, $derivez_amount, $derivez_login_id, $mt5_currency_code) = @_;
+    my ($dbic, $payment_id, $derivez_amount, $derivez_login_id, $user_derivez_currency_code) = @_;
 
     $dbic->run(
         fixup => sub {
@@ -1170,7 +1145,7 @@ sub record_derivez_transfer_to_mt5_transfer {
             (payment_id, mt5_amount, mt5_account_id, mt5_currency_code)
             VALUES (?,?,?,?)'
             );
-            $sth->execute($payment_id, $derivez_amount, $derivez_login_id, $mt5_currency_code);
+            $sth->execute($payment_id, $derivez_amount, $derivez_login_id, $user_derivez_currency_code);
         });
     return 1;
 }
@@ -1264,38 +1239,56 @@ sub _validate_client {
     my $lc = $client_obj->landing_company->short;
 
     # We should not allow transfers between svg and maltainvest.
-    return 'SwitchAccount' unless $lc eq DERIVEZ_AVAILABLE_FOR;
+    die +{code => 'SwitchAccount'} unless $lc eq DERIVEZ_AVAILABLE_FOR;
 
     # Deposits and withdrawals are blocked for non-authenticated MF clients
-    return ('AuthenticateAccount', $loginid)
+    die +{
+        code   => 'AuthenticateAccount',
+        params => $loginid
+        }
         if ($lc eq 'maltainvest' and not $client_obj->fully_authenticated);
 
-    return ('AccountDisabled', $loginid) if ($client_obj->status->disabled);
+    die +{
+        code   => 'AccountDisabled',
+        params => $loginid
+    } if ($client_obj->status->disabled);
 
-    return ('CashierLocked', $loginid)
+    die +{
+        code   => 'CashierLocked',
+        params => $loginid
+        }
         if ($client_obj->status->cashier_locked);
 
     # check if binary client expired documents
     # documents->expired check internaly if landing company
     # needs expired documents check or not
-    return ('ExpiredDocuments', request()->brand->emails('support')) if ($client_obj->documents->expired());
+    die +{
+        code   => 'ExpiredDocuments',
+        params => request()->brand->emails('support')} if ($client_obj->documents->expired());
 
     # if mt5 financial accounts is used for deposit or withdraw
     # then check if client has valid documents or not
     # valid documents don't have additional landing companies check
     # that we have in documents->expired
     # TODO: Remove this once we have async mt5 in place
-    return ('ExpiredDocuments', request()->brand->emails('support'))
+    die +{
+        code   => 'ExpiredDocuments',
+        params => request()->brand->emails('support')}
         if ($mt5_lc->documents_expiration_check_required() and not $client_obj->documents->valid());
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
 
-    return ('SetExistingAccountCurrency', $loginid) unless $client_currency;
+    die +{
+        code   => 'SetExistingAccountCurrency',
+        params => request()->brand->emails('support')} unless $client_currency;
 
     my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->derivez;
     my $user_daily_transfer_count = $client_obj->user->daily_transfer_count('derivez');
 
-    return ('MaximumTransfers', $daily_transfer_limit)
+    die +{
+        code   => 'MaximumTransfers',
+        params => $daily_transfer_limit
+        }
         unless $user_daily_transfer_count < $daily_transfer_limit;
 
     return undef;
@@ -1315,7 +1308,26 @@ sub do_derivez_withdrawal {
             login   => $login,
             amount  => $amount,
             comment => $comment,
-        })->catch($error_handler)->get;
+        }
+    )->catch(
+        sub {
+            my $e = shift;
+
+            if (ref $e eq 'HASH' and $e->{code}) {
+                stats_inc("derivez.withdrawal.error", {tags => ["login:$login", "message:" . $e->{error}]});
+
+                die +{
+                    code    => $e->{code},
+                    message => $e->{error}};
+            } else {
+                stats_inc("derivez.withdrawal.error", {tags => ["login:$login", "message:$e"]});
+
+                die +{
+                    code    => 'DerivEZWithdrawalError',
+                    message => $e
+                };
+            }
+        });
 }
 
 =head2 _rand
@@ -1340,6 +1352,74 @@ sub get_loginid_number {
     my ($loginid_number) = $loginid =~ /([0-9]+)/;
 
     return $loginid_number;
+}
+
+=head2 _validate_amount
+
+validate deposit/withdrawal ammount
+
+=cut
+
+sub _validate_amount {
+    my ($amount, $currency) = @_;
+
+    return localize('Invalid amount.') unless (looks_like_number($amount));
+
+    my $num_of_decimals = Format::Util::Numbers::get_precision_config()->{amount}->{$currency};
+    return localize('Invalid currency.') unless defined $num_of_decimals;
+    my ($int, $precision) = Math::BigFloat->new($amount)->length();
+    return localize('Invalid amount. Amount provided can not have more than [_1] decimal places.', $num_of_decimals)
+        if ($precision > $num_of_decimals);
+
+    return undef;
+}
+
+=head2 get_transfer_fee_remark
+
+Returns a description for the fee applied to a transfer.
+Takes the following list of arguments:
+
+=over 4
+
+=item fees: actual amount of fee to be applied.
+
+=item fee_percent: the fee percentage used for the current transfer.
+
+=item currency: currency of the sending account.
+
+=item min_fee: the smallest amount meaningful in the sending currency.
+
+=item fee_calculated_by_percent: the fee amount calculated directly by applying the fee percent alone.
+
+=back
+
+Returns a string in one of the following forms:
+
+=over 4
+
+=item '': when fees = 0
+
+=item 'Includes transfer fee of USD 10 (0.5 %).': when fees >= min_fee
+
+=item 'Includes minimim transfer fee of USD 0.01.': when fees < min_fee
+
+=back
+
+=cut
+
+sub get_transfer_fee_remark {
+    my (%args) = @_;
+
+    return '' unless $args{fees};
+
+    return "Includes transfer fee of "
+        . formatnumber(
+        amount => $args{fees_currency},
+        $args{fee_calculated_by_percent})
+        . " $args{fees_currency} ($args{fees_percent}%)."
+        if $args{fee_calculated_by_percent} >= $args{min_fee};
+
+    return "Includes the minimum transfer fee of $args{min_fee} $args{fees_currency}.";
 }
 
 1;

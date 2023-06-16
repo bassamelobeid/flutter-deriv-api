@@ -14,7 +14,6 @@ use BOM::User::Client;
 use LandingCompany::Registry;
 use BOM::TradingPlatform::Helper::HelperDerivEZ qw(
     new_account_trading_rights
-    create_error
     validate_new_account_params
     validate_user
     generate_password
@@ -33,10 +32,11 @@ use BOM::TradingPlatform::Helper::HelperDerivEZ qw(
     send_transaction_email
     do_derivez_withdrawal
     get_derivez_landing_company
+    get_transfer_fee_remark
 );
 
-use constant MT5_SVG_FINANCIAL_MOCK_LEVERAGE => 1;
-use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
+use constant DERIVEZ_SVG_FINANCIAL_MOCK_LEVERAGE => 1;
+use constant DERIVEZ_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 use parent qw(BOM::TradingPlatform);
 
@@ -97,8 +97,7 @@ sub new_account {
     my ($self, %args) = @_;
 
     # We need to validate the params from FE
-    my $validate_new_account_params = validate_new_account_params(%args);
-    return create_error($validate_new_account_params) if $validate_new_account_params;
+    validate_new_account_params(%args);
 
     # Params/args from FE
     my $account_type          = delete $args{account_type};
@@ -121,7 +120,9 @@ sub new_account {
             account_type => $account_type
         );
     } catch ($error) {
-        return create_error($error->{error_code}, {params => 'DerivEZ'});
+        die +{
+            code => $error->{error_code},
+            {params => 'DerivEZ'}};
     }
 
     # Build client params if missing
@@ -131,7 +132,9 @@ sub new_account {
         } catch {
             if (not defined $landing_company_short) {
                 $landing_company_short = get_derivez_landing_company($client);
-                return create_error($landing_company_short->{error}, {params => $client->residence}) if $landing_company_short->{error};
+                die +{
+                    code => $landing_company_short->{error},
+                    {params => $client->residence}} if $landing_company_short->{error};
             }
         }
     }
@@ -139,7 +142,7 @@ sub new_account {
     # Validate if the client's country support derivez account creation
     my $all_company_landing_company = get_derivez_landing_company($client);
     unless ($all_company_landing_company) {
-        return create_error('DerivezNotAllowed');
+        die +{code => 'DerivEZNotAllowed'};
     }
 
     # Validate if currency is provided as params
@@ -151,7 +154,7 @@ sub new_account {
         : $available_currency{$default_currency}                              ? $default_currency
         :                                                                       $available->[0];
     my $account_currency = $currency // $selected_currency;
-    return create_error('permission') if $account_currency ne $selected_currency;
+    die +{code => 'DerivEZInvalidAccountCurrency'} if $account_currency ne $selected_currency;
 
     # Innitialize params
     my $client_info         = $client->get_mt5_details();
@@ -175,7 +178,7 @@ sub new_account {
     }
 
     # Check if a real mt5 accounts was being created with no real binary account existing
-    return create_error_future('RealAccountMissing')
+    die +{code => 'DerivEZRealAccountMissing'}
         if ($account_type ne 'demo' and scalar($user->clients) == 1 and $client->is_virtual());
 
     # Disable trading for affiliate accounts
@@ -187,14 +190,11 @@ sub new_account {
     # Get the group settings
     my $group_setting = BOM::MT5::User::Async::get_group($group)->catch(
         sub {
-            my $err = shift;
-
-            return create_error($err->{code}, {message => $err->{error}}) if (ref $err eq 'HASH' and $err->{code});
-            return $err;
+            return shift;
         })->get;
-    return $group_setting if $group_setting->{error};
+    die +{code => $group_setting->{code}} if $group_setting->{error};
 
-    $group_setting->{leverage} = MT5_SVG_FINANCIAL_REAL_LEVERAGE if $group_setting->{leverage} == MT5_SVG_FINANCIAL_MOCK_LEVERAGE;
+    $group_setting->{leverage} = DERIVEZ_SVG_FINANCIAL_REAL_LEVERAGE if $group_setting->{leverage} == DERIVEZ_SVG_FINANCIAL_MOCK_LEVERAGE;
 
     # Build all the params
     my $new_account_params = {
@@ -220,8 +220,7 @@ sub new_account {
     };
 
     # Before we create new derivez user we need to validate the user and params
-    my $validate_user = validate_user($client, $new_account_params,);
-    return $validate_user if $validate_user->{error};
+    validate_user($client, $new_account_params,);
 
     # This is for dry run mode
     return {
@@ -232,29 +231,38 @@ sub new_account {
     } if $dry_run;
 
     # We need to make sure the client dont have multiple account in one trade server
-    my $accounts = derivez_accounts_lookup($client, $account_type)->then(
+    derivez_accounts_lookup($client, $account_type)->then(
         sub {
             my (@logins) = @_;
 
             my (%existing_groups, $trade_server_error, $has_hr_account);
+
+            # Loop through the list of accounts
             foreach my $derivez_account (@logins) {
-                if ($derivez_account->{error} and $derivez_account->{error}{code} eq 'MT5AccountInaccessible') {
-                    $trade_server_error = $derivez_account->{error};
+                # Check for errors with the MT5 server
+                unless ($derivez_account) {
+                    die +{
+                        code    => 'DerivEZCreateUserError',
+                        message => localize('Some accounts are currently unavailable. Please try again later.')};
+                }
+
+                if (defined($derivez_account->{code})) {
+                    $trade_server_error = $derivez_account;
                     last;
                 }
 
+                # Keep track of the existing groups
                 $existing_groups{$derivez_account->{group}} = $derivez_account->{login} if $derivez_account->{group};
 
+                # Check if the client has a high-risk account
                 $has_hr_account = 1 if lc($derivez_account->{group}) =~ /synthetic/ and lc($derivez_account->{group}) =~ /(\-hr|highrisk)/;
             }
 
+            # Handle errors with the MT5 server
             if ($trade_server_error) {
-                return create_error(
-                    'MT5AccountCreationSuspended',
-                    {
-                        override_code => 'MT5CreateUserError',
-                        message       => $trade_server_error->{message_to_client},
-                    });
+                die +{
+                    code    => 'DerivEZCreateUserError',
+                    message => $trade_server_error->{message}};
             }
 
             # If one of client's account has been moved to high-risk groups
@@ -264,54 +272,37 @@ sub new_account {
                 my ($division) = $group =~ /\\[a-zA-Z]+_([a-zA-Z]+)_/;
                 my $new_group = $group =~ s/$division/$division-hr/r;
 
-                # We don't have counter for svg hr groups.
-                # Remove it from group name if the original has it
+                # Remove the counter for SVG HR groups
                 $new_group =~ s/\\\d+$//;
 
+                # Check if the high-risk group exists
                 if (get_derivez_account_type_config($new_group)) {
                     $group = $new_group;
                 } else {
+                    # Handle the case where the high-risk group does not exist
                     $log->warnf("Unable to find high risk group %s for client %s with original group of %s.", $new_group, $client->loginid, $group);
 
-                    return create_error('MT5CreateUserError');
+                    die +{code => 'DerivEZCreateUserError'};
                 }
             }
 
-            # Can't create account on the same group
+            # Check for duplicates of the selected group
             if (my $identical = is_identical_group($group, \%existing_groups)) {
-                return create_error(
-                    'MT5Duplicate',
-                    {
-                        override_code => 'MT5CreateUserError',
-                        params        => [$account_type, $existing_groups{$identical}]});
-            }
-        }
-    )->catch(
-        sub {
-            my $err = shift;
-
-            if (ref $err eq 'HASH' and $err->{code}) {
-                return create_error($err->{code}, {message => $err->{error}});
-            } else {
-                return $err;
+                die +{code => 'DerivEZDuplicate'};
             }
         })->get;
-    return $accounts if $accounts->{error};
 
-    # Create derivez account for user
+    # Create a DerivEZ account for a user
     return BOM::MT5::User::Async::create_user($new_account_params)->then(
         sub {
             my ($status) = shift;
 
-            if ($status->{error}) {
-                return create_error('permission') if $status->{error} =~ /Not enough permissions/;
-                return create_error('MT5CreateUserError', {message => $status->{error}});
-            }
-
+            # Extract account details from the response
             my $derivez_login = $status->{login};
             my ($derivez_currency, $derivez_leverage) = @{$new_account_params}{qw/currency leverage/};
             my $account_type = is_account_demo($new_account_params->{group}) ? 'demo' : 'real';
 
+            # Define additional account attributes
             my $derivez_attributes = {
                 group           => $group,
                 landing_company => $binary_company_name,
@@ -321,11 +312,12 @@ sub new_account {
                 leverage        => $derivez_leverage
             };
 
+            # Add DerivEZ account to user's login IDs
             $user->add_loginid($derivez_login, 'derivez', $account_type, $derivez_currency, $derivez_attributes);
 
-            # This is for linking new client to affiliate
+            # Link new client to affiliate (if applicable)
             my $group_config = get_derivez_account_type_config($group);
-            return create_error('permission') unless $group_config;
+            die +{'permission'} unless $group_config;
 
             if ($client->myaffiliates_token and $account_type ne 'demo') {
                 BOM::Platform::Event::Emitter::emit(
@@ -337,13 +329,14 @@ sub new_account {
                         server             => $group_config->{server}});
             }
 
-            # funds in Virtual money
+            # Deposit virtual funds into the new account (if it's a demo account)
             my $balance = 0;
             if ($account_type eq 'demo') {
                 $balance = 10000;
                 do_derivez_deposit($derivez_login, $balance, 'DerivEZ Virtual Money deposit');
             }
 
+            # Return account details
             return {
                 login                 => $derivez_login,
                 balance               => $balance,
@@ -355,6 +348,23 @@ sub new_account {
                 landing_company_short => $landing_company_short,
                 platform              => 'derivez',
             };
+        }
+    )->catch(
+        sub {
+            my $error = shift;
+
+            # Check for errors
+            if ($error->{error}) {
+                # Handle permissions error
+                die +{code => 'permission'} if $error->{error} =~ /Not enough permissions/;
+                # Handle other errors
+                die +{
+                    code    => 'DerivEZCreateUserError',
+                    message => $error->{error}};
+            }
+
+            # Handle the error appropriately, such as logging it or throwing a custom error
+            die +{code => 'DerivEZCreateUserError'};
         })->get;
 }
 
@@ -418,21 +428,27 @@ sub deposit {
     # Build client and user object
     my $client = $self->client;
 
-    return create_error('Experimental')
-        if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
-
     my $error_code = 'DerivEZDepositError';
     my $response   = derivez_validate_and_get_amount($client, $fm_loginid, $to_derivez, $amount, $error_code);
-    return $response if $response->{error};
 
-    my $account_type;
+    # Parameters
+    my $account_type              = $response->{account_type};
+    my $fees                      = $response->{fees};
+    my $fees_currency             = $response->{fees_currency};
+    my $fees_percent              = $response->{fees_percent};
+    my $derivez_currency_code     = $response->{derivez_currency_code};
+    my $fee_calculated_by_percent = $response->{calculated_fee};
+    my $min_fee                   = $response->{min_fee};
+    my $derivez_login_id          = $to_derivez =~ s/${\BOM::User->EZR_REGEX}//r;
+    my ($txn, $comment);
+
     if ($response->{top_up_virtual}) {
-
+        # This if for virtual topup
         my $amount_to_topup = 10000;
 
         my $top_up_virtual_status = do_derivez_deposit($to_derivez, $amount_to_topup, 'DerivEZ Virtual Money deposit');
         if ($top_up_virtual_status->{error}) {
-            return create_error($top_up_virtual_status->{code}) if $top_up_virtual_status->{error};
+            die +{code => $top_up_virtual_status->{code}} if $top_up_virtual_status->{error};
         } else {
             return {status => 1};
         }
@@ -442,22 +458,27 @@ sub deposit {
         if (    $client->status->mt5_withdrawal_locked
             and $client->status->mt5_withdrawal_locked->{'reason'} =~ /FA is required for the first deposit on regulated MT5./g)
         {
-            return create_error_future('FinancialAssessmentRequired');
+            die +{code => 'FinancialAssessmentRequired'};
         } elsif ($client->status->mt5_withdrawal_locked) {
-            return create_error('WithdrawalLocked', {override_code => $error_code});
+            die +{
+                code          => 'WithdrawalLocked',
+                override_code => $error_code
+            };
         }
 
         $account_type = $response->{account_type};
     }
+
+    # Populate required variables
     my $fm_client = BOM::User::Client->get_client_instance($fm_loginid, 'write');
     my $balance   = $fm_client->default_account->balance;
 
     # Checks if balance is exceeded
-    return create_error(
-        $error_code,
-        {
-            message => localize("The maximum amount you may transfer is: [_1].", $balance),
-        }) if $balance > 0 and $amount > $balance;
+    die +{
+        code    => $error_code,
+        message => localize("The maximum amount you may transfer is: [_1].", $balance)}
+        if $balance > 0
+        and $amount > $balance;
 
     # From the point of view of our system, we're withdrawing
     # money to deposit into MT5
@@ -473,25 +494,18 @@ sub deposit {
                 rule_engine  => $rule_engine,
             );
         } catch ($e) {
-            return create_error(
-                $error_code,
-                {
-                    message => $e->{message_to_client},
-                });
+            die +{
+                code    => $error_code,
+                message => $e->{message_to_client}};
         };
     }
 
-    my $fees                  = $response->{fees};
-    my $fees_currency         = $response->{fees_currency};
-    my $fees_percent          = $response->{fees_percent};
-    my $derivez_currency_code = $response->{derivez_currency_code};
-    my ($txn, $comment);
+    # We will deduct the ammount on our side and record it into our DB
     try {
-        my $fee_calculated_by_percent = $response->{calculated_fee};
-        my $min_fee                   = $response->{min_fee};
-        my $derivez_login_id          = $to_derivez =~ s/${\BOM::User->EZR_REGEX}//r;
+        # The comments that we store in DB under transaction.transaction table
         $comment = "Transfer from $fm_loginid to DerivEZ account $account_type $derivez_login_id";
-        # transaction metadata for statement remarks
+
+        # Transaction metadata for statement remarks
         my %txn_details = (
             derivez_account           => $derivez_login_id,
             fees                      => $fees,
@@ -501,9 +515,10 @@ sub deposit {
             fee_calculated_by_percent => $fee_calculated_by_percent
         );
 
-        my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(%txn_details);
+        my $additional_comment = get_transfer_fee_remark(%txn_details);
         $comment .= " $additional_comment" if $additional_comment;
 
+        # Record payment tranfer to our DB using payment.add_payment_transaction
         ($txn) = $self->client_payment(
             payment_type => 'mt5_transfer',    # We are still using mt5_transfer table for derivez
             amount       => -$amount,
@@ -511,6 +526,8 @@ sub deposit {
             remark       => $comment,
             txn_details  => \%txn_details,
         );
+
+        # Daily transfer limit increment
         $self->client->user->daily_transfer_incr({
             type     => 'derivez',
             amount   => $amount,
@@ -521,6 +538,7 @@ sub deposit {
         record_derivez_transfer_to_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{derivez_amount},
             $to_derivez, $response->{derivez_currency_code});
 
+        # Tracking transfer for data manipulation purposes
         BOM::Platform::Event::Emitter::emit(
             'transfer_between_accounts',
             {
@@ -540,31 +558,36 @@ sub deposit {
                     id                 => $txn->{id},
                     time               => $txn->{transaction_time}}});
     } catch ($e) {
-        return create_error($error_code, {message => $e});
+        stats_inc("derivez.deposit.error", {tags => ["login:$to_derivez", "code:record_fail"]});
+
+        die +{
+            code    => $error_code,
+            message => $e
+        };
     }
 
-    my $txn_id = $txn->transaction_id;
     # 31 character limit for MT5 comments
+    my $txn_id          = $txn->transaction_id;
     my $derivez_comment = "${fm_loginid}#$txn_id";
 
     # deposit to Derivez a/c
-    my $transaction_status = do_derivez_deposit($to_derivez, $response->{derivez_amount}, $derivez_comment, $txn_id);
-    if ($transaction_status->{error}) {
-        log_exception('derivez_deposit');
+    try {
+        do_derivez_deposit($to_derivez, $response->{derivez_amount}, $derivez_comment, $txn_id);
+
+        return {
+            status         => 1,
+            transaction_id => $txn_id,
+            $return_derivez_details ? (derivez_data => $response->{derivez_data}) : ()};
+    } catch ($e) {
         send_transaction_email(
             loginid      => $fm_loginid,
             mt5_id       => $to_derivez,
             amount       => $amount,
             action       => 'deposit',
-            error        => $transaction_status->{error},
+            error        => $e->{error},
             account_type => $account_type
         );
-        return create_error($transaction_status->{code});
-    } else {
-        return {
-            status         => 1,
-            transaction_id => $txn_id,
-            $return_derivez_details ? (derivez_data => $response->{derivez_data}) : ()};
+        die +{code => $e->{code}};
     }
 }
 
@@ -603,13 +626,6 @@ sub withdraw {
     # Build client and user object
     my $client = $self->client;
 
-    my $error_code = 'DerivEZWithdrawalError';
-
-    return create_error('Experimental')
-        if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
-
-    my $to_client = BOM::User::Client->get_client_instance($to_loginid, 'write');
-
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
     try {
@@ -619,22 +635,25 @@ sub withdraw {
             mt5_id          => $from_derivez,
             loginid_details => $client->user->loginid_details,
         );
-    } catch ($error) {
+    } catch ($e) {
         BOM::Platform::Event::Emitter::emit(
             'mt5_change_color',
             {
                 loginid => $from_derivez,
                 color   => 255,
-            }) if $error->{params}->{failed_by_expiry};
+            }) if $e->{params}->{failed_by_expiry};
 
-        return create_error($error->{error_code});
+        die +{
+            code    => $e->{error_code},
+            message => $e
+        };
     }
 
-    my $response = derivez_validate_and_get_amount($client, $to_loginid, $from_derivez, $amount, $error_code, $currency_check);
-    return $response if $response->{error};
+    my $error_code = 'DerivEZWithdrawalError';
+    my $response   = derivez_validate_and_get_amount($client, $to_loginid, $from_derivez, $amount, $error_code, $currency_check);
 
-    my $account_type = $response->{account_type};
-
+    # Parameters
+    my $account_type              = $response->{account_type};
     my $fees                      = $response->{fees};
     my $fees_currency             = $response->{fees_currency};
     my $fees_in_client_currency   = $response->{fees_in_client_currency};
@@ -643,9 +662,11 @@ sub withdraw {
     my $derivez_currency_code     = $response->{derivez_currency_code};
     my $fee_calculated_by_percent = $response->{calculated_fee};
     my $min_fee                   = $response->{min_fee};
+    my $derivez_login_id          = $from_derivez =~ s/${\BOM::User->EZR_REGEX}//r;
+    my $comment                   = "Transfer from DerivEZ account $account_type $derivez_login_id to $to_loginid.";
 
-    my $derivez_login_id = $from_derivez =~ s/${\BOM::User->EZR_REGEX}//r;
-    my $comment          = "Transfer from DerivEZ account $account_type $derivez_login_id to $to_loginid.";
+    # Populate required variables
+    my $to_client = BOM::User::Client->get_client_instance($to_loginid, 'write');
 
     # transaction metadata for statement remarks
     my %txn_details = (
@@ -657,24 +678,27 @@ sub withdraw {
         fee_calculated_by_percent => $fee_calculated_by_percent
     );
 
-    my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(%txn_details);
+    my $additional_comment = get_transfer_fee_remark(%txn_details);
     $comment = "$comment $additional_comment" if $additional_comment;
 
     # 31 character limit for MT5 comments
     my $derivez_comment = "${from_derivez}_${to_loginid}";
 
-    my $transaction_status = do_derivez_withdrawal($from_derivez, (($amount > 0) ? $amount * -1 : $amount), $derivez_comment);
-    return $transaction_status if (ref $transaction_status eq 'HASH' and $transaction_status->{error});
+    # Do withdrawal using API call from Derivez to CR account
+    do_derivez_withdrawal($from_derivez, (($amount > 0) ? $amount * -1 : $amount), $derivez_comment)->get;
 
+    # Record the transfer after we have deducted from server
     try {
-        # deposit to Binary a/c
+        # Record payment tranfer to our DB using payment.add_payment_transaction
         my ($txn) = $self->client_payment(
-            payment_type => 'mt5_transfer',             # We are still using mt5_transfer table for derivez
+            payment_type => 'mt5_transfer',
             amount       => $derivez_amount,
             fees         => $fees_in_client_currency,
             remark       => $comment,
             txn_details  => \%txn_details,
         );
+
+        # Daily transfer limit increment
         $self->client->user->daily_transfer_incr({
             type     => 'derivez',
             amount   => $amount,
@@ -684,6 +708,7 @@ sub withdraw {
         # We are recording derivez in mt5_transfer table
         record_derivez_transfer_to_mt5_transfer($to_client->db->dbic, $txn->payment_id, $amount, $from_derivez, $derivez_currency_code);
 
+        # Tracking transfer for data manipulation purposes
         BOM::Platform::Event::Emitter::emit(
             'transfer_between_accounts',
             {
@@ -708,7 +733,7 @@ sub withdraw {
             transaction_id => $txn->transaction_id
         };
     } catch ($e) {
-        BOM::RPC::v3::Utility::log_exception('derivez_withdrawal');
+        stats_inc("derivez.withdrawal.error", {tags => ["login:$from_derivez", "code:record_fail"]});
         send_transaction_email(
             loginid      => $to_loginid,
             mt5_id       => $from_derivez,
@@ -717,7 +742,10 @@ sub withdraw {
             error        => $e,
             account_type => $account_type,
         );
-        return create_error($error_code, {message => $e});
+        die +{
+            code    => $error_code,
+            message => $e
+        };
     }
 }
 

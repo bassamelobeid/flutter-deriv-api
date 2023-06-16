@@ -4,9 +4,11 @@ use warnings;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::More;
 use Test::Deep;
+use Test::Fatal;
 use Test::MockModule;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 
 # Setting up app config for demo and real server
 my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -35,8 +37,9 @@ subtest "able to create new derivez account using svg landing company (demo)" =>
 
     # Check for derivez TradingPlatform
     my $derivez = BOM::TradingPlatform->new(
-        platform => 'derivez',
-        client   => $client
+        platform    => 'derivez',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -97,8 +100,9 @@ subtest "able to create new derivez account using svg landing company (real)" =>
 
     # Check for derivez TradingPlatform
     my $derivez = BOM::TradingPlatform->new(
-        platform => 'derivez',
-        client   => $client
+        platform    => 'derivez',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -156,8 +160,9 @@ subtest "able to show derivez account using get_accounts (demo)" => sub {
 
     # Check for derivez TradingPlatform
     my $derivez = BOM::TradingPlatform->new(
-        platform => 'derivez',
-        client   => $client,
+        platform    => 'derivez',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -235,28 +240,27 @@ subtest "able to show derivez account using get_accounts (demo)" => sub {
 
         # Preparing the expected error response
         my $error_response = [{
-                'error' => {
-                    'details' => {
-                        'account_type' => 'demo',
-                        'login'        => 'EZD40100000',
-                        'server'       => 'p01_ts04',
-                        'server_info'  => {
-                            'environment' => 'Deriv-Demo',
-                            'geolocation' => {
-                                'location' => 'Frankfurt',
-                                'sequence' => 1,
-                                'group'    => 'derivez',
-                                'region'   => 'Europe'
-                            },
-                            'id' => 'p01_ts04'
+                'details' => {
+                    'account_type' => 'demo',
+                    'login'        => 'EZD40100000',
+                    'server'       => 'p01_ts04',
+                    'server_info'  => {
+                        'environment' => 'Deriv-Demo',
+                        'geolocation' => {
+                            'location' => 'Frankfurt',
+                            'sequence' => 1,
+                            'group'    => 'derivez',
+                            'region'   => 'Europe'
                         },
+                        'id' => 'p01_ts04'
                     },
-                    'code'              => 'MT5AccountInaccessible',
-                    'message_to_client' => 'MT5 is currently unavailable. Please try again later.',
-                }}];
+                },
+                'code'    => 'DerivEZAccountInaccessible',
+                'message' => 'Deriv EZ is currently unavailable. Please try again later.',
+            }];
 
-        # Run the test with exception
-        my $result = cmp_deeply($derivez->get_accounts(%params), $error_response, 'receive error when get derivez accounts (demo)');
+        # Perform test
+        cmp_deeply(exception { $derivez->get_accounts(%params) }, $error_response, 'receive error when get derivez accounts (demo)');
 
         # Finish test and unsuspeding the server
         $app_config->system->mt5->suspend->demo->p01_ts04->all(0);
@@ -277,8 +281,9 @@ subtest "able to show derivez account using get_accounts (real)" => sub {
 
     # Check for derivez TradingPlatform
     my $derivez = BOM::TradingPlatform->new(
-        platform => 'derivez',
-        client   => $client,
+        platform    => 'derivez',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -356,28 +361,27 @@ subtest "able to show derivez account using get_accounts (real)" => sub {
 
         # Preparing the expected error response
         my $error_response = [{
-                'error' => {
-                    'details' => {
-                        'account_type' => 'real',
-                        'login'        => 'EZR80000000',
-                        'server'       => 'p02_ts01',
-                        'server_info'  => {
-                            'environment' => 'Deriv-Server-02',
-                            'geolocation' => {
-                                'region'   => 'Africa',
-                                'location' => 'South Africa',
-                                'sequence' => 2,
-                                'group'    => 'africa_derivez'
-                            },
-                            'id' => 'p02_ts01'
+                'details' => {
+                    'account_type' => 'real',
+                    'login'        => 'EZR80000000',
+                    'server'       => 'p02_ts01',
+                    'server_info'  => {
+                        'environment' => 'Deriv-Server-02',
+                        'geolocation' => {
+                            'region'   => 'Africa',
+                            'location' => 'South Africa',
+                            'sequence' => 2,
+                            'group'    => 'africa_derivez'
                         },
+                        'id' => 'p02_ts01'
                     },
-                    'code'              => 'MT5AccountInaccessible',
-                    'message_to_client' => 'MT5 is currently unavailable. Please try again later.',
-                }}];
+                },
+                'code'    => 'DerivEZAccountInaccessible',
+                'message' => 'Deriv EZ is currently unavailable. Please try again later.',
+            }];
 
         # Run the test with exception
-        my $result = cmp_deeply($derivez->get_accounts(%params), $error_response, 'receive error when get derivez accounts (real)');
+        cmp_deeply(exception { $derivez->get_accounts(%params) }, $error_response, 'receive error when get derivez accounts (demo)');
 
         # Finish test and unsuspeding the server
         $app_config->system->mt5->suspend->real->p02_ts01->all(0);
