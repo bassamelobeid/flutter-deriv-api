@@ -1355,10 +1355,8 @@ has tick_stream => (
 sub _build_tick_stream {
     my $self = shift;
 
-    if (not $self->tick_expiry) {
+    return unless $self->tick_expiry;
 
-        return;
-    }
     my @all_ticks = @{$self->ticks_for_tick_expiry};
 
     # for path dependent contract, there should be no more tick after close tick

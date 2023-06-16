@@ -2,18 +2,25 @@ package BOM::Product::Role::Turbos;
 
 use Moose::Role;
 use Time::Duration::Concise;
-use Format::Util::Numbers qw/financialrounding formatnumber/;
+use Format::Util::Numbers qw/financialrounding roundcommon/;
 use Scalar::Util::Numeric qw(isint);
 use List::Util            qw/min max/;
 use YAML::XS              qw(LoadFile);
 use POSIX                 qw(ceil floor);
-use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Config::Redis;
 use BOM::Product::Exception;
 use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Turbos;
 use BOM::Config::Quants qw(minimum_stake_limit);
+
+=head2 ADDED_CURRENCY_PRECISION
+
+Added currency precision used in rounding number_of_contracts
+
+=cut
+
+use constant ADDED_CURRENCY_PRECISION => 3;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -129,6 +136,45 @@ sub _build_pricing_engine {
     return undef;
 }
 
+=head2 _redis_read
+
+Redis read from Replica instance
+
+=cut
+
+=head2 _redis_write
+
+Redis write instance
+
+=cut
+
+has [qw(_redis_read _redis_write)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 _build__redis_read
+
+Returns a Redis read Replica instance
+
+=cut
+
+sub _build__redis_read {
+
+    return BOM::Config::Redis::redis_replicated_read();
+}
+
+=head2 _build__redis_write
+
+Returns a Redis write instance
+
+=cut
+
+sub _build__redis_write {
+
+    return BOM::Config::Redis::redis_replicated_write();
+}
+
 =head2 take_profit
 
 Take profit amount. Contract will be closed automatically when the value of open position is at or greater than take profit amount.
@@ -176,7 +222,6 @@ has [qw(
     lazy_build => 1,
 );
 
-# has [qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl)] => (
 has [qw(number_of_contracts n_max)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -198,7 +243,9 @@ sub _build_n_max {
         BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
     }
 
-    return $max_multiplier_stake * $max_multiplier / $self->current_spot;
+    return $max_multiplier_stake * $max_multiplier / $self->current_spot if $self->pricing_new;
+    return $max_multiplier_stake * $max_multiplier / $self->entry_tick->quote;
+
 }
 
 =head2 theo_ask_probability
@@ -340,7 +387,33 @@ sub _build_number_of_contracts {
     my $self = shift;
 
     my $contract_price = $self->_contract_price;
-    return $contract_price ? sprintf("%.10f", $self->_user_input_stake / $contract_price) : $self->_contracts_limit->{min};
+
+    my $number_of_contracts = $contract_price ? ($self->_user_input_stake / $contract_price) : $self->_contracts_limit->{min};
+
+    my $currency_decimal_places = Format::Util::Numbers::get_precision_config()->{price}->{$self->currency} + ADDED_CURRENCY_PRECISION;
+    my $rounding_precision      = 10**($currency_decimal_places * -1);
+    # Based on the documentation for roundcommon, this sub uses the same rounding technique as financialrounding, the only difference is that it acccepts precision
+    return roundcommon($rounding_precision, $number_of_contracts);
+}
+
+=head2 available_orders
+
+Shows the most recent limit orders for a contract.
+
+This is formatted in a way that it can be directly put into PRICER_ARGS.
+
+=cut
+
+sub available_orders {
+    my $self = shift;
+
+    my @available_orders = ();
+
+    if ($self->take_profit) {
+        push @available_orders, ('take_profit', ['order_amount', $self->take_profit->{amount}, 'order_date', $self->take_profit->{date}->epoch]);
+    }
+
+    return \@available_orders;
 }
 
 =head2 _contracts_limit
@@ -477,21 +550,40 @@ override 'shortcode' => sub {
 
     return join '_',
         (
-        uc $self->code,
-        uc $self->underlying->symbol,
-        financialrounding('price', $self->currency, $self->_user_input_stake),
-        $self->entry_tick->epoch,
-        $shortcode_date_expiry,
-        $self->_barrier_for_shortcode_string($self->supplied_barrier),
-        $self->number_of_contracts
+        uc $self->code,                                                        uc $self->underlying->symbol,
+        financialrounding('price', $self->currency, $self->_user_input_stake), $self->date_start->epoch,
+        $shortcode_date_expiry,                                                $self->_barrier_for_shortcode_string($self->supplied_barrier),
+        $self->number_of_contracts,                                            $self->entry_tick->epoch
         );
 };
 
 override _build_entry_tick => sub {
     my $self = shift;
 
-    my $tick = $self->_tick_accessor->tick_at($self->date_start->epoch);
-    return defined($tick) ? $tick : $self->current_tick;
+    my $entry_epoch_from_shortcode = $self->build_parameters->{entry_epoch};
+
+    return $self->_tick_accessor->tick_at($entry_epoch_from_shortcode) if $entry_epoch_from_shortcode;
+
+    return $self->_tick_accessor->tick_at($self->date_start->epoch, {allow_inconsistent => 1});
+};
+
+override _build_tick_stream => sub {
+    my $self = shift;
+
+    return unless $self->tick_expiry;
+
+    my @all_ticks = @{$self->ticks_for_tick_expiry};
+    # for turbos we add the entry tick as the first element into the array
+    unshift @all_ticks, $self->entry_tick;
+
+    # for path dependent contract, there should be no more tick after close tick
+    # because the contract technically has expired
+    if ($self->is_path_dependent and $self->close_tick) {
+        @all_ticks = grep { $_->epoch <= $self->close_tick->epoch } @all_ticks;
+    }
+
+    return [map { {epoch => $_->epoch, tick => $_->quote, tick_display_value => $self->underlying->pipsized_value($_->quote)} } @all_ticks];
+
 };
 
 =head2 _build_hit_tick
@@ -549,16 +641,14 @@ all validation methods needed for turbos
 sub _validation_methods {
     my ($self) = @_;
 
-    my @validation_methods = qw(_validate_offerings _validate_input_parameters _validate_start_and_expiry_date);
+    my @validation_methods =
+        qw(_validate_offerings _validate_input_parameters _validate_start_and_expiry_date _validate_feed _validate_rollover_blackout);
     push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
-    push @validation_methods, '_validate_feed';
-    push @validation_methods, '_validate_price'      unless $self->skips_price_validation;
-    push @validation_methods, '_validate_volsurface' unless $self->underlying->volatility_surface_type eq 'flat';
-    push @validation_methods, '_validate_rollover_blackout';
+    push @validation_methods, '_validate_price'           unless $self->skips_price_validation;
+    push @validation_methods, '_validate_volsurface'      unless $self->underlying->volatility_surface_type eq 'flat';
 
     # add turbos specific validations
-    push @validation_methods, '_validate_barrier_choice' unless $self->for_sale;
-    push @validation_methods, '_validate_stake'          unless $self->for_sale;
+    push @validation_methods, qw(_validate_barrier_choice _validate_stake validate_take_profit) unless $self->for_sale;
 
     return \@validation_methods;
 }
@@ -588,32 +678,26 @@ sub strike_price_choices {
         num_of_barriers        => $num_of_barriers,
     };
 
-    my $code = $self->code;
-    my $key  = "turbos:${code}:${symbol}:${min_distance_from_spot}:${num_of_barriers}";
-    my $r    = BOM::Config::Redis::redis_replicated_write();
-
-    my $barrier_choises = [split(':', $r->get($key) || '')];
-    if (scalar @$barrier_choises) {
-        my $last_spot = shift @$barrier_choises;
+    my $code            = $self->code;
+    my $key             = "turbos:${code}:${symbol}:${min_distance_from_spot}:${num_of_barriers}";
+    my $barrier_choices = [split(':', $self->_redis_read->get($key) || '')];
+    if (scalar @$barrier_choices) {
+        my $last_spot = shift @$barrier_choices;
 
         my $treshold_coef = $sigma * sqrt(7200 / BOM::Product::Contract::Strike::Turbos::SECONDS_IN_A_YEAR);
         if (
             not(   $self->current_spot > (1 + $treshold_coef) * $last_spot
                 || $self->current_spot < (1 - $treshold_coef) * $last_spot))
         {
-            return $barrier_choises;
+            return $barrier_choices;
         }
     }
 
-    $barrier_choises = BOM::Product::Contract::Strike::Turbos::strike_price_choices($args);
+    $barrier_choices = BOM::Product::Contract::Strike::Turbos::strike_price_choices($args);
 
-    # using watch and multi to avoid race condition
-    $r->watch($key);
-    $r->multi();
-    $r->set($key, join(':', $self->current_spot, @$barrier_choises), EX => 60 * 60);
-    $r->exec();
+    $self->_redis_write->set($key, join(':', $self->current_spot, @$barrier_choices), EX => 60 * 60);
 
-    return $barrier_choises;
+    return $barrier_choices;
 }
 
 =head2 _validate_barrier_choice
@@ -654,8 +738,13 @@ override _validate_price => sub {
     if (not $ask_price or $ask_price == 0) {
         return {
             message           => 'Stake can not be zero .',
-            message_to_client => [$ERROR_MAPPING->{InvalidStake}],
-            details           => {field => 'amount'},
+            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
         };
     }
 
@@ -699,39 +788,18 @@ has _order => (
     is      => 'ro',
     default => sub { {} });
 
-#TODO:JB roundup & rounddown methods are common across non-binaries.
-#Refactor to utility method when all products are launched
+=head2 display_barrier
 
-=head2 roundup
-
-Utility method to round up a value
-roundup(638.4900001, 0.001) = 638.491
+Decimal places to dispaly barrier is equal to underlying's pip size.
 
 =cut
 
-sub roundup {
-    my ($value_to_round, $precision) = @_;
+sub display_barrier {
+    my $self = shift;
 
-    $precision = 1 if $precision == 0;
-    my $res = ceil($value_to_round / $precision) * $precision;
-    #use roundcommon on the result to add trailing zeros and return a string
-    return roundcommon($precision, $res);
-}
+    my $precision = $self->underlying->pip_size;
 
-=head2 rounddown
-
-Utility method to round down a value
-roundown(638.4209, 0.001) = 638.420
-
-=cut
-
-sub rounddown {
-    my ($value_to_round, $precision) = @_;
-
-    $precision = 1 if $precision == 0;
-    my $res = floor($value_to_round / $precision) * $precision;
-    #use roundcommon on the result to add trailing zeros and return a string
-    return roundcommon($precision, $res);
+    return roundcommon($precision, $self->barrier->as_absolute);
 }
 
 =head2 validate_take_profit
@@ -744,7 +812,7 @@ it should be 0 < amount <= max_take_profit
 sub validate_take_profit {
     my $self = shift;
     #take_profit will be an argument if we are validating contract update paramters
-    my $take_profit = shift // $self->take_profit;
+    my $take_profit = $self->pricing_new ? $self->take_profit : shift;
 
     #if there is no take profit order it should be valid
     # amount is undef if we want to cancel and it should always be valid
@@ -759,6 +827,17 @@ sub validate_take_profit {
             message           => 'take profit too low',
             message_to_client => [$ERROR_MAPPING->{TakeProfitTooLow}, financialrounding('price', $self->currency, 0)],
             details           => {field => 'take_profit'},
+            code              => 'TakeProfitTooLow'
+        };
+    }
+
+    if ($take_profit->{amount} > $self->_max_allowable_take_profit) {
+        return {
+            message           => 'take profit too high',
+            message_to_client =>
+                [$ERROR_MAPPING->{TakeProfitTooHigh}, financialrounding('price', $self->currency, $self->_max_allowable_take_profit)],
+            details => {field => 'take_profit'},
+            code    => 'TakeProfitTooHigh'
         };
     }
 
@@ -796,16 +875,30 @@ validate stake based on financial underlying risk profile defined in backoffice
 sub _validate_stake {
     my $self = shift;
 
-    my $stake = $self->_user_input_stake;
-    if ($stake < $self->min_stake) {
-        return {
-            message           => 'minimum stake limit',
-            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)]};
-    }
-    if ($stake > $self->max_stake) {
+    if ($self->_user_input_stake > $self->max_stake) {
         return {
             message           => 'maximum stake limit',
-            message_to_client => [$ERROR_MAPPING->{InvalidMaxStake}, financialrounding('price', $self->currency, $self->max_stake)]};
+            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $self->max_stake)],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+        };
+    }
+
+    if ($self->_user_input_stake < $self->min_stake) {
+        return {
+            message           => 'minimum stake limit exceeded',
+            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+        };
     }
 }
 
@@ -819,6 +912,32 @@ sub pnl {
     my $self = shift;
 
     return financialrounding('price', $self->currency, $self->bid_price - $self->_user_input_stake);
+}
+
+=head2 _get_symbol_volatility
+
+Gets volatility for symbols with Flat VolSurface.
+
+=cut
+
+sub _get_symbol_volatility {
+    my $symbol = shift;
+
+    my $vol = LoadFile('/home/git/regentmarkets/bom-market/config/files/flat_volatility.yml');
+
+    return $vol->{$symbol};
+}
+
+=head2 _max_allowable_take_profit
+
+Calculates maximum allowable take profit value.
+
+=cut
+
+sub _max_allowable_take_profit {
+    my $self = shift;
+
+    return _get_symbol_volatility($self->underlying->symbol) * $self->n_max * $self->_user_input_stake;
 }
 
 1;

@@ -80,7 +80,7 @@ subtest 'number of contracts' => sub {
     ok $c->pricing_new, 'this is a new contract';
     cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
     ok !$c->is_expired, 'not expired (obviously but just be safe)';
-    is $c->buy_commission, 0.529763542771197, 'correct buy commission';
+    is $c->buy_commission, 0.529763095440703, 'correct buy commission';
 
     $args->{date_pricing} = $now->plus_time_interval('1s');
     $c = produce_contract($args);
@@ -88,7 +88,7 @@ subtest 'number of contracts' => sub {
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
     is $c->bid_price,       '1.39',            'has bid price';
-    is $c->sell_commission, 0.530466689262102, 'correct sell commission';
+    is $c->sell_commission, 0.530466241337873, 'correct sell commission';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
@@ -112,7 +112,7 @@ subtest 'shortcode' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     $args->{duration}     = '5m';
     my $c         = produce_contract($args);
-    my $shortcode = 'TURBOSSHORT_1HZ25V_20.00_' . $now->epoch . '_' . $now->plus_time_interval('5m')->epoch . '_351610000000_0.0376600318';
+    my $shortcode = 'TURBOSSHORT_1HZ25V_20.00_' . $now->epoch . '_' . $now->plus_time_interval('5m')->epoch . '_351610000000_0.03766_1425945600';
 
     my $c_shortcode;
     lives_ok {
@@ -126,6 +126,7 @@ subtest 'shortcode' => sub {
     is $c->barrier->as_absolute, $c_shortcode->barrier->as_absolute, 'same strike price';
     is $c->date_start->epoch,    $c_shortcode->date_start->epoch,    'same date start';
     is $c->number_of_contracts,  $c_shortcode->number_of_contracts,  'same number of contracts';
+    is $c->entry_tick->epoch,    $c_shortcode->entry_tick->epoch,    'same entry tick epoch';
 };
 
 subtest 'longcode' => sub {
@@ -133,15 +134,15 @@ subtest 'longcode' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Your payout will be [_5] for each point below [_4] at expiry time',
+            'Your payout will grow by [_5] for every point below the barrier at the expiry time if the barrier is not touched during the contract duration. You will start making a profit when the payout is higher than your stake.',
             ['Volatility 25 (1s) Index'],
             ['contract start time'],
             {
-                class => 'Time::Duration::Concise::Localize',
-                value => 300
+                'value' => 300,
+                'class' => 'Time::Duration::Concise::Localize'
             },
             '351610.00',
-            '0.0376600318'
+            '0.03766'
         ],
         'longcode matches'
     );

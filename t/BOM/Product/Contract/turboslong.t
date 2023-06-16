@@ -43,8 +43,12 @@ my $args = {
     currency     => 'USD',
     amount_type  => 'stake',
     amount       => 100,
-    barrier      => '1690.00',
+    barrier      => '-73.00',
 };
+
+my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Turboslong');
+$mocked_contract->mock('strike_price_choices', sub { return ['-73.00', '-85.00', '-100.00'] }, '_max_allowable_take_profit',
+    sub { return '1000.00' });
 
 subtest 'config' => sub {
     my $c = eval { produce_contract($args); };
@@ -63,9 +67,9 @@ subtest 'config' => sub {
     is $c->n_max, 113.442994895065, 'correct n_max';
 
     my $barriers = $c->strike_price_choices;
-    is $barriers->[0],                               '-5.44',    'correct first barrier';
-    is $barriers->[5],                               '-20.75',   'correct 5th barrier';
-    is $barriers->[-1],                              '-881.51',  'correct last barrier';
+    is $barriers->[0],                               '-73.00',   'correct first barrier';
+    is $barriers->[1],                               '-85.00',   'correct 5th barrier';
+    is $barriers->[-1],                              '-100.00',  'correct last barrier';
     is sprintf("%.5f", $c->bid_probability->amount), '72.60042', 'correct bid probability';
     is sprintf("%.5f", $c->ask_probability->amount), '73.39958', 'correct ask probability';
 };
@@ -75,17 +79,18 @@ subtest 'number of contracts' => sub {
     # must be the same
     my $c = produce_contract($args);
     ok $c->pricing_new, 'this is a new contract';
-    cmp_ok sprintf("%.10f", $c->number_of_contracts), '==', '1.3624055686', 'correct number of contracts';
+    is $c->number_of_contracts, '1.36241', 'correct number_of_contracts';
     ok !$c->is_expired, 'not expired (obviously but just be safe)';
-    is $c->buy_commission, 0.544393493773682, 'buy commission';
+    is $c->buy_commission, 0.544395264483802, 'buy commission';
 
+    $args->{currency}     = 'USD';
     $args->{date_pricing} = $now->plus_time_interval('1s');
-    $c = produce_contract($args);
+    $c                    = produce_contract($args);
     cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '1.36241', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
     is $c->bid_price,       '122.07',          'has bid price';
-    is $c->sell_commission, 0.549642892182163, 'sell commission when contract is not expired';
+    is $c->sell_commission, 0.549644679966629, 'sell commission when contract is not expired';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
@@ -101,6 +106,81 @@ subtest 'number of contracts' => sub {
     ok $c->is_expired,   'expired';
     is $c->bid_price,       '0.00', 'does not have bid price';
     is $c->sell_commission, 0,      'no sell commission when contract is expired';
+};
+
+subtest 'take_profit' => sub {
+    $args->{date_pricing} = $now;
+
+    my $c = produce_contract($args);
+    is $c->take_profit, undef, 'take_profit is undef';
+
+    subtest 'mininum allowed amount' => sub {
+        $args->{limit_order} = {
+            take_profit => '0',
+        };
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'take profit too low', 'message - take profit too low';
+        is $c->primary_validation_error->message_to_client->[0], 'Please enter a take profit amount that\'s higher than [_1].',
+            'message - Please enter a take profit amount that\'s higher than [_1].';
+        is $c->primary_validation_error->message_to_client->[1], '0.00';
+    };
+
+    subtest 'maximum allowed amount' => sub {
+        $args->{limit_order} = {
+            take_profit => '1000000',
+        };
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'take profit too high', 'message - take profit too low';
+        is $c->primary_validation_error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].',
+            'message - Please enter a take profit amount that\'s higher than [_1].';
+        is $c->primary_validation_error->message_to_client->[1], '1000.00';
+    };
+
+    subtest 'validate amount as decimal' => sub {
+        $args->{limit_order} = {
+            take_profit => '10.451',
+        };
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message,                'too many decimal places';
+        is $c->primary_validation_error->message_to_client->[0], 'Only [_1] decimal places allowed.', 'Only [_1] decimal places allowed.';
+        is $c->primary_validation_error->message_to_client->[1], '2';
+    };
+
+    subtest 'pricing_new' => sub {
+        $args->{limit_order} = {
+            take_profit => '26.97',
+        };
+        $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy';
+        is $c->take_profit->{amount},      '26.97';
+        is $c->take_profit->{date}->epoch, $c->date_pricing->epoch;
+
+        $args->{limit_order} = {
+            take_profit => '50',
+        };
+        $c = produce_contract($args);
+        is $c->take_profit->{amount},      '50';
+        is $c->take_profit->{date}->epoch, $c->date_pricing->epoch;
+    };
+
+    subtest 'non-pricing new' => sub {
+        delete $args->{date_pricing};
+
+        $args->{limit_order} = {
+            take_profit => {
+                order_amount => 5.11,
+                order_date   => $now->epoch,
+            }};
+        $c = produce_contract($args);
+        ok !$c->pricing_new, 'non pricing_new';
+        is $c->take_profit->{amount},      '5.11';
+        is $c->take_profit->{date}->epoch, $now->epoch;
+
+        delete $args->{limit_order};
+    };
 };
 
 subtest 'expired and not breached barrier' => sub {
@@ -127,19 +207,19 @@ subtest 'expired and not breached barrier' => sub {
     $args->{date_pricing} = $now->plus_time_interval('2m');
     $c = produce_contract($args);
     ok $c->is_expired, 'expired';
-    is $c->bid_price, '365.12', 'payoff higher than bid price because in expiry time no commission';
+    is $c->bid_price, '365.13', 'payoff higher than bid price because in expiry time no commission';
 
     $args->{date_pricing} = $now->plus_time_interval('125s');
     $c = produce_contract($args);
     ok !$c->pricing_new, 'contract is new';
     ok $c->is_expired,   'expired';
-    is $c->bid_price, '365.12', 'win payoff';
+    is $c->bid_price, '365.13', 'win payoff';
 };
 
 subtest 'shortcode' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     my $c         = produce_contract($args);
-    my $shortcode = 'TURBOSLONG_R_100_100.00_' . $now->epoch . '_' . $now->plus_time_interval('2m')->epoch . '_1690000000_1.3624055686';
+    my $shortcode = 'TURBOSLONG_R_100_100.00_' . $now->epoch . '_' . $now->plus_time_interval('2m')->epoch . '_S-7300P_1.36241_1425945600';
 
     my $c_shortcode;
     lives_ok {
@@ -153,6 +233,27 @@ subtest 'shortcode' => sub {
     is $c->barrier->as_absolute, $c_shortcode->barrier->as_absolute, 'same strike price';
     is $c->date_start->epoch,    $c_shortcode->date_start->epoch,    'same date start';
     is $c->number_of_contracts,  $c_shortcode->number_of_contracts,  'same number of contracts';
+    is $c->entry_tick->epoch,    $c_shortcode->entry_tick->epoch,    'same entry tick epoch';
+};
+
+# entry_epoch was not included inside the shortcode at first. Because there are some contracts inside DB
+# with this old format, we should still be able to reproduce contracts with those parameters only.
+subtest 'shortcode (legacy)' => sub {
+    $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
+    my $c         = produce_contract($args);
+    my $shortcode = 'TURBOSLONG_R_100_100.00_' . $now->epoch . '_' . $now->plus_time_interval('2m')->epoch . '_S-7300P_1.36241';
+
+    my $c_shortcode;
+    lives_ok {
+        $c_shortcode = produce_contract($shortcode, 'USD');
+    }
+    'does not die trying to produce contract from short code';
+
+    is $c->code,                 $c_shortcode->code,                 'same code';
+    is $c->pricing_code,         $c_shortcode->pricing_code,         'same pricing code';
+    is $c->barrier->as_absolute, $c_shortcode->barrier->as_absolute, 'same strike price';
+    is $c->date_start->epoch,    $c_shortcode->date_start->epoch,    'same date start';
+    is $c->number_of_contracts,  $c_shortcode->number_of_contracts,  'same number of contracts';
 };
 
 subtest 'longcode' => sub {
@@ -160,18 +261,16 @@ subtest 'longcode' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Your payout will be [_5] for each point above [_4] at expiry time',
+            'Your payout will grow by [_5] for every point above the barrier at the expiry time if the barrier is not touched during the contract duration. You will start making a profit when the payout is higher than your stake.',
             ['Volatility 100 Index'],
             ['contract start time'],
             {
-                class => 'Time::Duration::Concise::Localize',
-                value => 120,
+                'value' => 120,
+                'class' => 'Time::Duration::Concise::Localize'
             },
-            '1690.00',
-            '1.3624055686'
-        ],
-        'longcode matches'
-    );
+            ['entry spot minus [_1]', '73.00'],
+            '1.36241'
+        ]);
 };
 
 subtest 'entry and exit tick' => sub {
@@ -183,24 +282,24 @@ subtest 'entry and exit tick' => sub {
         is $c->code, 'TURBOSLONG';
         ok $c->is_intraday,             'is intraday';
         ok !defined $c->pricing_engine, 'price engine is udefined';
-        cmp_ok $c->barrier->as_absolute,                 'eq', '1690.00', 'correct absolute barrier (it will be pipsized) ';
-        cmp_ok $c->entry_tick->quote,                    'eq', '1763',    'correct entry tick';
-        cmp_ok $c->current_spot,                         'eq', '1763.00', 'correct current spot (it will be pipsized)';
-        cmp_ok sprintf("%.2f", $c->number_of_contracts), 'eq', '1.36',    'number of contracts are correct';
+        cmp_ok $c->barrier->as_absolute, 'eq', '1690.00', 'correct absolute barrier (it will be pipsized) ';
+        cmp_ok $c->entry_tick->quote,    'eq', '1763',    'correct entry tick';
+        cmp_ok $c->current_spot,         'eq', '1763.00', 'correct current spot (it will be pipsized)';
+        cmp_ok $c->number_of_contracts,  'eq', '1.36241', 'number of contracts are correct';
 
         $args->{date_pricing} = $now->plus_time_interval('2m');
         $c = produce_contract($args);
         ok $c->bid_price, 'ok bid price';
-        cmp_ok sprintf("%.2f", $c->number_of_contracts),  'eq', '1.36',    'number of contracts are correct';
+        cmp_ok $c->number_of_contracts, 'eq', '1.36241', 'number of contracts are correct';
         cmp_ok sprintf("%.2f", $c->current_spot),         'eq', '1958.00', 'correct spot price';
         cmp_ok sprintf("%.2f", $c->barrier->as_absolute), 'eq', '1690.00', 'correct strike';
 
         ok $c->is_expired, 'expired';
-        cmp_ok sprintf("%.2f", $c->value), 'eq', '365.12', '(strike - spot) * number of contracts';
+        cmp_ok sprintf("%.2f", $c->value), 'eq', '365.13', '(strike - spot) * number of contracts';
         ok $c->exit_tick,                                   'has exit tick';
         ok $c->exit_tick->quote > $c->barrier->as_absolute, 'exit tick is bigger than strike price';
         ok $c->value > 0,                                   'contract value is bigger than 0, exit tick is bigger than strike price';
-        cmp_ok sprintf("%.2f", $c->value), 'eq', '365.12', 'correct payout';
+        cmp_ok sprintf("%.2f", $c->value), 'eq', '365.13', 'correct payout';
         cmp_ok $c->exit_tick->quote,       'eq', '1958',   'correct exit tick';
     }
     'winning the contract';

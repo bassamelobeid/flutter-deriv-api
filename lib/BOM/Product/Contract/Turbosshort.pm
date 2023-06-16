@@ -168,20 +168,6 @@ sub take_profit_barrier_value {
     return ($self->barrier->as_absolute - ($self->ask_price + $self->take_profit->{amount}) / $self->number_of_contracts) / (1 + $self->ask_spread);
 }
 
-=head2 display_barrier
-
-Barrier would need to be display with pipsize + 1 digit.
-
-=cut
-
-sub display_barrier {
-    my $self = shift;
-
-    my $display_pipsize = $self->underlying->pip_size / 10;
-
-    return roundup($self->barrier->as_absolute, $display_pipsize);
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
