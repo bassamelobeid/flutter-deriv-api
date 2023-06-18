@@ -389,4 +389,16 @@ subtest 'get_contract_by_account_id_contract_id' => sub {
     is $data->[0]{remark},            'Test Remark', 'Test Remark';
 };
 
+$financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
+    account_data => [{client_loginid => 'CR10000', currency_code => 'USD'}],
+    fmb_ids      => [1000],
+    bet          => $financial_market_bet,
+    db           => $connection_builder->db,
+});
+
+use Data::Printer;
+my $g = $financial_market_bet_helper->batch_buy_bet;
+
+$g = $financial_market_bet_helper->sell_by_shortcode('CALL_IXIC_20_8_MAR_05_22_MAR_05_2089_0');
+p $g;
 done_testing;
