@@ -155,7 +155,7 @@ sub user_activity {
     my $binary_user_id                = $args{binary_user_id};
     my $client_loginid                = $args{client_loginid};
     my $response                      = {};
-    my $user                          = BOM::User->new(id => $binary_user_id);
+    # my $user                          = BOM::User->new(id => $binary_user_id);
     $response->{tag}                                  = TAGS->{high_crypto_deposit};
     $response->{auto_reject}                          = 0;
     $response->{total_withdrawal_amount_today_in_usd} = $total_withdrawal_amount_today;
@@ -223,16 +223,16 @@ sub user_activity {
 
     # Reject payout if total amount used for trading is less than 25 percent of total deposit amount
     # Total trade amount and deposit amount is calcualted across all the sibling accounts.
-    my $total_user_deposit_amount = $user_payments->{non_crypto_deposit_amount} + $user_payments->{total_crypto_deposits};
-    my $total_trade_volume        = $user->total_trades($start_date_to_inspect);
-    if ($total_trade_volume < $total_user_deposit_amount / 4) {
-        $log->debugf('Insufficient trading activity since %s', $start_date_to_inspect->to_string);
-        $response->{tag}           = TAGS->{low_trade};
-        $response->{reject_reason} = 'low_trade';
-        $response->{auto_reject}   = 1;
-        $response->{reject_remark} = $self->generate_reject_remarks(reject_reason => $response->{reject_reason});
-        return $response;
-    }
+    # my $total_user_deposit_amount = $user_payments->{non_crypto_deposit_amount} + $user_payments->{total_crypto_deposits};
+    # my $total_trade_volume        = $user->total_trades($start_date_to_inspect);
+    # if ($total_trade_volume < $total_user_deposit_amount / 4) {
+    #     $log->debugf('Insufficient trading activity since %s', $start_date_to_inspect->to_string);
+    #     $response->{tag}           = TAGS->{low_trade};
+    #     $response->{reject_reason} = 'low_trade';
+    #     $response->{auto_reject}   = 1;
+    #     $response->{reject_remark} = $self->generate_reject_remarks(reject_reason => $response->{reject_reason});
+    #     return $response;
+    # }
 
     return $response;
 }
