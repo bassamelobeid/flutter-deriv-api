@@ -159,5 +159,5 @@ subtest 'get monthly exchange rate' => sub {
         month           => 1,
         year            => 2000
     });
-    is sprintf("%.2f",$monthly_exchange_rate->[0][0]), '1.00', 'USD to USD exchange rate should be 1';
+    is sprintf("%.2f", $monthly_exchange_rate->[0][0]), '1.00', 'USD to USD exchange rate should be 1';
 };

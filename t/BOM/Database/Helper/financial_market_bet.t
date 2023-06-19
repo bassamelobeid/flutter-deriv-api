@@ -18,14 +18,14 @@ my @clients;
 my @accounts;
 my @account_data;
 
-for my $i (1..3) {
+for my $i (1 .. 3) {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
     push @clients, $client;
 }
 
-for my $i (@clients){
+for my $i (@clients) {
     my $account = $i->set_default_account('USD');
     $i->payment_free_gift(
         currency => 'USD',
@@ -35,7 +35,7 @@ for my $i (@clients){
     push @accounts, $account;
 }
 
-for my $i (@accounts){
+for my $i (@accounts) {
     my %account_data = (
         account_data => {
             client_loginid => $i->client_loginid,
@@ -74,7 +74,7 @@ my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new
 
 my $result = $financial_market_bet_helper->batch_buy_bet;
 
-for my $i (0..1){
+for my $i (0 .. 1) {
     my $acc     = $accounts[$i];
     my $loginid = $acc->client_loginid;
     subtest 'testing buy result for ' . $loginid, sub {
@@ -106,7 +106,7 @@ $financial_market_bet_helper->bet_data->{sell_time}  = $now->plus_time_interval(
 
 $result = $financial_market_bet_helper->sell_by_shortcode($short_code);
 
-for my $i (0..1){
+for my $i (0 .. 1) {
     my $acc     = $accounts[$i];
     my $loginid = $acc->client_loginid;
     subtest 'testing sell result for ' . $loginid, sub {
@@ -151,8 +151,8 @@ $bet_data   = {
 
 $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
     account_data => $account_data[2]->{account_data},
-    bet_data => $bet_data,
-    db       => $clientdb->db,
+    bet_data     => $bet_data,
+    db           => $clientdb->db,
 });
 
 my @usd_bets;
@@ -161,7 +161,7 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
     '==', 0, 'check qty of open bets before buying any bets');
 
 # buy 2 bet
-for my $i (1..2){
+for my $i (1 .. 2) {
     my ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
     push @usd_bets, $fmb->{id};
 }
@@ -180,8 +180,8 @@ my @qvs = (
 $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
     bet_data             => \@bets_to_sell,
     quants_bet_variables => \@qvs,
-    account_data => $account_data[2]->{account_data},
-    db => $clientdb->db,
+    account_data         => $account_data[2]->{account_data},
+    db                   => $clientdb->db,
 });
 
 $financial_market_bet_helper->batch_sell_bet;
