@@ -9,8 +9,9 @@ use DBD::Pg;
 use IO::Select;
 use Syntax::Keyword::Try;
 use JSON::MaybeXS;
-use Log::Any             qw($log);
-use BOM::Platform::Email qw(send_email);
+use Log::Any                   qw($log);
+use BOM::Platform::Email       qw(send_email);
+use DataDog::DogStatsd::Helper qw(stats_event);
 use Brands;
 use BOM::Config::Redis;
 use DateTime;
@@ -71,12 +72,21 @@ sub _publish {
             $msg->{rank}->{is_market_default}
             ? 1
             : 0;
+        my $message_body = $json->encode(_parse_email_parameters($msg));
         send_email({
             from    => 'system@binary.com',
             to      => $email_list,
             subject => $subject . " Limit set: $msg->{limit_amount}. Current amount: $msg->{current_amount}",
-            message => [$json->encode(_parse_email_parameters($msg))],
+            message => [$message_body],
         });
+
+        stats_event(
+            $subject,
+            $message_body,
+            {
+                alert_type => 'warning',
+                tags       => ['trade_warning:hit_limit']});
+
         $notification_cache{$warning_key} = 1;
     }
 
