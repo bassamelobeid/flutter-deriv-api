@@ -61,7 +61,7 @@ subtest 'get trading activity' => sub {
 
     # before buying any contract
     my $trading_activities = $myaff_data_mapper->get_trading_activity({'date' => $date});
-    ok !scalar @$trading_activities, 'no trading activity';
+    ok !@$trading_activities, 'no trading activity';
 
     # buy contract
     my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
@@ -77,7 +77,7 @@ subtest 'get trading activity' => sub {
     });
 
     $trading_activities = $myaff_data_mapper->get_trading_activity({'date' => $date});
-    ok scalar @$trading_activities, 'have some trading activities';
+    ok @$trading_activities, 'have some trading activities';
 };
 
 subtest 'get multiplier commission' => sub {
@@ -85,7 +85,7 @@ subtest 'get multiplier commission' => sub {
 
     # before buying multiplier contract
     my $trading_activities = $myaff_data_mapper->get_multiplier_commission({'date' => $date});
-    ok !scalar @$trading_activities, 'no multiplier contracts trading activity';
+    ok !@$trading_activities, 'no multiplier contracts trading activity';
 
     # buy multiplier contract
     BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
@@ -99,7 +99,7 @@ subtest 'get multiplier commission' => sub {
     });
 
     $trading_activities = $myaff_data_mapper->get_multiplier_commission({'date' => $date});
-    ok scalar @$trading_activities, 'have some multiplier contracts trading activities';
+    ok @$trading_activities, 'have some multiplier contracts trading activities';
 };
 
 subtest 'get accumulator commission' => sub {
@@ -107,7 +107,7 @@ subtest 'get accumulator commission' => sub {
 
     # before buying accumulator contract
     my $trading_activities = $myaff_data_mapper->get_accumulator_commission({'date' => $date});
-    ok !scalar @$trading_activities, 'no accumulator contracts trading activity';
+    ok !@$trading_activities, 'no accumulator contracts trading activity';
 
     # buy accumulator contract
     my $short_code = 'ACCU_R_10_10_2_0.01_1_0.0001_' . Date::Utility->new($date)->epoch;
@@ -124,7 +124,7 @@ subtest 'get accumulator commission' => sub {
     });
 
     $trading_activities = $myaff_data_mapper->get_accumulator_commission({'date' => $date});
-    ok scalar @$trading_activities, 'have some accumulator contracts trading activities';
+    ok @$trading_activities, 'have some accumulator contracts trading activities';
 };
 
 subtest 'get lookback commission' => sub {
@@ -132,7 +132,7 @@ subtest 'get lookback commission' => sub {
 
     # before buying lookback contract
     my $trading_activities = $myaff_data_mapper->get_lookback_activity({'date' => '2020-09-16 08:00:00'});
-    ok !scalar @$trading_activities, 'no lookback contracts trading activity';
+    ok !@$trading_activities, 'no lookback contracts trading activity';
 
     # buy lookback contract
     my $start_date = Date::Utility->new($date)->plus_time_interval('1h')->datetime;
@@ -150,7 +150,7 @@ subtest 'get lookback commission' => sub {
     });
 
     $trading_activities = $myaff_data_mapper->get_lookback_activity({'date' => $date});
-    ok scalar @$trading_activities, 'have some lookback contracts trading activities';
+    ok @$trading_activities, 'have some lookback contracts trading activities';
 };
 
 subtest 'get monthly exchange rate' => sub {
@@ -159,5 +159,5 @@ subtest 'get monthly exchange rate' => sub {
         month           => 1,
         year            => 2000
     });
-    ok $monthly_exchange_rate->[0]->[0] == 1, 'USD to USD exchange rate should be 1';
+    is sprintf("%.2f",$monthly_exchange_rate->[0][0]), '1.00', 'USD to USD exchange rate should be 1';
 };
