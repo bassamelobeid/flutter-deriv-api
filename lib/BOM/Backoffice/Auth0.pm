@@ -15,10 +15,6 @@ use BOM::Backoffice::Utility;
 use BOM::Backoffice::Auth;
 use BOM::Backoffice::Request qw(request);
 
-use constant WRITE_GROUPS => qw(
-    AntiFraud CSWrite Compliance P2PWrite Payments QuantsWrite
-);
-
 sub exchange_code_for_token {
     my $code = shift;
 
@@ -201,7 +197,7 @@ sub has_write_access {
             return 1;
         }
         foreach my $group (@{$staff->{groups}}) {
-            if (any { $_ eq $group } WRITE_GROUPS) {
+            if (any { $_ eq $group } BOM::Backoffice::Utility::write_access_groups()) {
                 BOM::User::AuditLog::log("successful write access requested by $staffname");
                 return 1;
             }

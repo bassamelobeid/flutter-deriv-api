@@ -19,10 +19,6 @@ use BOM::Platform::Auth::JWT;
 use BOM::Backoffice::Utility;
 use BOM::Backoffice::Request qw(request);
 
-use constant WRITE_GROUPS => qw(
-    AntiFraud CSWrite Compliance P2PWrite Payments QuantsWrite
-);
-
 use constant BACKOFFICE_LOGIN_KEY_PREFIX => 'DERIVBOLOGIN::';
 
 =head2 login
@@ -147,6 +143,31 @@ Returns the staff details if it is logged in
 
 sub get_staff {
     return check_staff();
+}
+
+=head2 has_write_access
+
+Check if the staff has write access
+
+=cut
+
+sub has_write_access {
+    my $staff = get_staff();
+
+    my $staffname = $staff->{nickname};
+    if ($staff) {
+        if (not BOM::Config::on_production()) {
+            return 1;
+        }
+        foreach my $group (@{$staff->{groups}}) {
+            if (any { $_ eq $group } BOM::Backoffice::Utility::write_access_groups()) {
+                BOM::User::AuditLog::log("successful write access requested by $staffname");
+                return 1;
+            }
+        }
+    }
+    BOM::User::AuditLog::log("unauthorized write access requested by $staffname");
+    return 0;
 }
 
 =head2 get_authorization_token

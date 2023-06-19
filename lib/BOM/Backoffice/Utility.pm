@@ -190,6 +190,16 @@ sub transform_summary_status_to_html {
     return $result;
 }
 
+=head2 write_access_groups
+
+Return all the groups we have in backoffice with write access
+
+=cut
+
+sub write_access_groups {
+    return qw(AntiFraud CSWrite Compliance P2PWrite Payments QuantsWrite);
+}
+
 1;
 
 __END__
