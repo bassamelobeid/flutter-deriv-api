@@ -697,6 +697,13 @@ sub actions_config {
                 category => 'account',
             }
         ],
+        [
+            'affiliate_register_person',
+            {
+                stash_params => [qw/ server_name token /],
+                category     => 'account',
+            }
+        ],
     ];
 }
 
