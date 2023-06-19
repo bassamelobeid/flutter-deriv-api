@@ -17,7 +17,7 @@ use Date::Utility;
 use Email::Address::UseXS;
 use Email::Sender::Transport::SMTP;
 use Email::Stuffer;
-use JSON::MaybeXS;
+use JSON::MaybeXS qw(decode_json encode_json);
 use LandingCompany::Registry;
 use List::Util    qw(first any);
 use List::UtilsBy qw(max_by);
@@ -38,9 +38,6 @@ use constant RESTRICTED_CLIENT_STATUS => {
     closed                   => 1,
     unwelcome                => 1
 };
-
-use constant STABLE_PAYMENT_METHODS =>
-    decode_json(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('stable_payment_methods'));
 
 my $doughflow_methods;
 
@@ -258,7 +255,7 @@ Check if the payment method belongs to the stable methods.
 sub is_stable_payment_method {
     my ($self, $payment_method) = @_;
 
-    my $stable_methods = STABLE_PAYMENT_METHODS;
+    my $stable_methods = $self->get_stable_payment_methods();
 
     return 0 unless ($payment_method);
 
@@ -719,7 +716,10 @@ sub map_clean_method_name {
     my ($self, $method) = @_;
 
     my $lc_method = lc($method);
-    return STABLE_PAYMENT_METHODS->{$lc_method} ? STABLE_PAYMENT_METHODS->{$lc_method} : $lc_method;
+
+    my $stable_methods = $self->get_stable_payment_methods();
+
+    return $stable_methods->{$lc_method} // $lc_method;
 }
 
 =head2 get_client_balance
@@ -739,6 +739,20 @@ sub get_client_balance {
 
     my $client = BOM::User::Client->new({loginid => $client_loginid});
     return $client->default_account->balance;
+}
+
+=head2 get_stable_payment_methods
+
+Returns the stable payment methods.
+
+=cut
+
+sub get_stable_payment_methods {
+    my $self = shift;
+
+    return $self->{stable_payment_methods} //= do {
+        decode_json(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('stable_payment_methods') // '{}');
+    }
 }
 
 1;
