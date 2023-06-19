@@ -38,6 +38,7 @@ use BOM::RPC::v3::Services::CellxpertService;
 use BOM::RPC::v3::Services::MyAffiliates;
 use BOM::RPC::v3::VerifyEmail::Functions;
 use Data::Dumper;
+use BOM::RPC::v3::Services::MyAffiliates;
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
@@ -1480,5 +1481,51 @@ sub _do_affiliate {
     $verification_token->delete_token;
     return $response;
 }
+
+=head2 affiliate_register_person
+
+Collects affiliate data from our affiliate register form and 
+call the myAffiliate register partner Api.
+
+=over 4
+
+=item - Add a new account in Affiliate System
+
+=back
+
+=cut
+
+rpc "affiliate_register_person",
+    auth => [],
+    sub {
+
+    my $params = shift;
+    my $args   = $params->{args};
+
+    my $response = {};
+
+    $params->{third_party_function} = \&BOM::RPC::v3::Services::MyAffiliates::affiliate_add_person;
+
+    try {
+        my $myAff_response = $params->{third_party_function}->($args->{email}, $args);
+
+        if ($myAff_response->{code} eq 'MYAFFRuntimeError') {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 400,
+                message_to_client => 'Error in affiliate registration, please check your data'
+            });
+        }
+        $response = {success => 1};
+
+    } catch ($e) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 500,
+            message_to_client => $e
+        });
+    }
+
+    return $response;
+
+    };
 
 1;

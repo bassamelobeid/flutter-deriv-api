@@ -3,10 +3,10 @@ package BOM::RPC::v3::Services::MyAffiliates;
 =head1 NAME
 
 BOM::RPC::v3::Services::MyAffiliates - helpers for MyAffiliates
-
 =head1 DESCRIPTION
-
 This module contains the helpers for dealing with MyAfiliate API service.
+
+BOM::RPC::v3::Services::MyAffiliates - helpers for MyAffiliates
 
 =cut
 
@@ -56,20 +56,23 @@ sub affiliate_add_general {
 
     $extra_fields //= {};
     my $fields = {
-        PARAM_email         => $email,
-        PARAM_username      => $email,
-        PARAM_first_name    => $args->{first_name},
-        PARAM_last_name     => $args->{last_name},
-        PARAM_date_of_birth => $args->{date_of_birth},
-        PARAM_individual    => 1,
-        PARAM_whatsapp      => $args->{phone},
-        PARAM_phone_number  => $args->{phone},
-        PARAM_country       => $args->{country},
-        PARAM_city          => $args->{address_city},
-        PARAM_state         => $args->{address_state},
-        PARAM_postcode      => $args->{address_postcode},
-        PARAM_website       => $args->{website_url},
-        PARAM_agreement     => $args->{tnc_accepted},
+        PARAM_email          => $email,
+        PARAM_username       => $args->{user_name},
+        PARAM_first_name     => $args->{first_name},
+        PARAM_last_name      => $args->{last_name},
+        PARAM_date_of_birth  => $args->{date_of_birth},
+        PARAM_individual     => 1,
+        PARAM_whatsapp       => $args->{whatsapp_number},
+        PARAM_phone_number   => $args->{phone},
+        PARAM_country        => $args->{country},
+        PARAM_city           => $args->{address_city},
+        PARAM_state          => $args->{address_state},
+        PARAM_postcode       => $args->{address_postcode},
+        PARAM_website        => $args->{website_url},
+        PARAM_agreement      => $args->{tnc_accepted},
+        PARAM_ph_countrycode => $args->{phone_code},
+        PARAM_wa_countrycode => $args->{whatsapp_number_phoneCode},
+        PARAM_address        => $args->{address_street},
         %$extra_fields
     };
 

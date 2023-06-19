@@ -23,6 +23,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
 
 use IO::Pipe;
+use BOM::RPC::v3::Services::MyAffiliates;
 
 my $app = BOM::Database::Model::OAuth->new->create_app({
     name    => 'test',
@@ -499,6 +500,93 @@ subtest 'new affiliate account Myaffiliate die with MyAffRuntime error' => sub {
     };
 
     $rpc_ct->call_ok('affiliate_add_person', $params)->has_error->error_code_is('MYAFFRuntimeError', 'Error should return');
+};
+
+my $mock_myAffiliate_server = Test::MockModule->new('BOM::MyAffiliates::WebService');
+$mock_myAffiliate_server->mock(
+    'register_affiliate',
+    sub {
+        return Future->done(1);
+    });
+
+subtest 'new affiliate account MyAffiliate die with MYAFFRuntimeError error' => sub {
+    $mock_myAffiliate_server->unmock_all();
+    $mock_myAffiliate_server->redefine(
+        'register_affiliate',
+        sub {
+            return Future->fail('website does not exist');
+        });
+
+    my $email = 'new_aff' . rand(999) . '@deriv.com';
+
+    $params->{args} = {
+        affiliate_register_person => 1,
+        address_city              => "nouaceur",
+        address_postcode          => "123452",
+        address_state             => "Nouaceur",
+        address_street            => "someplace",
+        bta                       => 12345,
+        citizenship               => "ma",
+        country                   => "ma",
+        commission_plan           => 2,
+        company_name              => "XYZltd",
+        currency                  => "USD",
+        date_of_birth             => "1992-1-2",
+        email                     => $email,
+        first_name                => "affiliatefirstname",
+        last_name                 => "affiliatelastname",
+        non_pep_declaration       => 1,
+        phone_code                => 971,
+        phone                     => "+971541234",
+        tnc_accepted              => 1,
+        tnc_affiliate_accepted    => 1,
+        type_of_account           => 2,
+        whatsapp_number_phoneCode => 971,
+        whatsapp_number           => "+971541233",
+        website_url               => "xyz.com"
+    };
+
+    $rpc_ct->call_ok('affiliate_register_person', $params)->has_error->error_code_is(400);
+};
+
+subtest 'new affiliate account MyAffiliate successful' => sub {
+    $mock_myAffiliate_server->unmock_all();
+    $mock_myAffiliate_server->redefine(
+        'register_affiliate',
+        sub {
+            return Future->done(1);
+        });
+
+    my $email = 'new_aff' . rand(999) . '@deriv.com';
+
+    $params->{args} = {
+        affiliate_register_person => 1,
+        address_city              => "nouaceur",
+        address_postcode          => "123452",
+        address_state             => "Nouaceur",
+        address_street            => "someplace",
+        bta                       => 12345,
+        citizenship               => "ma",
+        country                   => "ma",
+        commission_plan           => 2,
+        company_name              => "XYZltd",
+        currency                  => "USD",
+        date_of_birth             => "1992-01-02",
+        email                     => $email,
+        first_name                => "affiliatefirstname",
+        last_name                 => "affiliatelastname",
+        non_pep_declaration       => 1,
+        phone_code                => 971,
+        phone                     => "+971541234",
+        tnc_accepted              => 1,
+        tnc_affiliate_accepted    => 1,
+        type_of_account           => 2,
+        whatsapp_number_phoneCode => 971,
+        whatsapp_number           => "+971541233",
+        website_url               => "www.xyz.com"
+    };
+
+    my $result = $rpc_ct->call_ok('affiliate_register_person', $params)->has_no_system_error->result;
 };
 
 done_testing();
