@@ -13,6 +13,7 @@ use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(request);
+use Log::Any               qw($log);
 
 =head1 NAME
 
@@ -206,6 +207,75 @@ Bind event name to its stream
 
 sub _stream_name {
     return $event_stream_mapping{+shift} // 'GENERIC_EVENTS_STREAM';
+}
+
+=head2 is_transfer_blocked
+
+Checks if transfers are temporarily blocked at the client level.
+
+=head3 Parameters
+
+=over 4
+
+=item * C<$login_id> - The login ID of the client.
+
+=back
+
+=head3 Returns
+
+C<1> if transfers are blocked, C<0> if the block does not exist or has expired.
+
+=cut
+
+sub is_transfer_blocked {
+    my $login_id = shift;
+
+    # Redis key for client-level transfer block
+    my $lock_key = "TRANSFER::BLOCKED::$login_id";
+
+    my $lock_exists = _read_connection->exists($lock_key);
+    return $lock_exists ? 1 : 0;
+}
+
+=head2 block_transfer_temporarily
+
+Blocks transfers temporarily at the client level.
+
+=head3 Parameters
+
+=over 4
+
+=item * C<$login_id> - The login ID of the client.
+
+=back
+
+=head3 Returns
+
+C<1> if the transfer blocking was successful, C<0> if the lock already exists, and C<-1> if an error occurred.
+
+=cut
+
+sub block_transfer_temporarily {
+    my $login_id = shift;
+
+    if (is_transfer_blocked($login_id)) {
+        $log->info("Transfer block already exists for client with login ID: $login_id");
+        return 0;
+    }
+
+    # Redis key for client-level transfer block
+    my $lock_key = "TRANSFER::BLOCKED::$login_id";
+
+    # Set the lock with an expiration time of 5 minutes (300 seconds)
+    my $lock_acquired = _write_connection->setex($lock_key, 300, 1);
+
+    if ($lock_acquired) {
+        $log->info("Transfer blocked temporarily for client with login ID: $login_id");
+        return 1;
+    } else {
+        $log->error("Failed to block transfer temporarily for client with login ID: $login_id");
+        return -1;
+    }
 }
 
 1;
