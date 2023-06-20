@@ -201,6 +201,7 @@ my $action_mapping = {
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,
+        mt5_deposit_retry       => \&BOM::Event::Actions::MT5::mt5_deposit_retry,
     },
 };
 

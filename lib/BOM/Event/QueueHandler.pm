@@ -362,20 +362,23 @@ async sub stream_process_loop {
     while (!$self->should_shutdown->is_ready() && $self->{request_counter} <= REQUESTS_PER_CYCLE) {
         my $items;
 
+        # If there are items to reprocess, retrieve them
         if ($self->retry_interval) {
             $items = await $self->items_to_reprocess;
         }
 
+        # If no items to reprocess, fetch new items from the stream
         $items = await $self->get_stream_items unless $items;
 
         my $processed_job;
 
+        # Process each item from the stream
         ITEM:
         for my $item (@$items) {
             my ($stream, $id, $event, $retry_count) = $item->@{qw/stream id event retry_count/};
 
             if ($processed_job) {
-                # if this returns false, the message has been claimed by another conusmer and should be skipped
+                # If this returns false, the message has been claimed by another consumer and should be skipped
                 next ITEM unless await $self->_reclaim_message($stream, $id);
             }
 
@@ -383,14 +386,20 @@ async sub stream_process_loop {
 
             my $decoded_data;
             try {
+                # Attempt to decode the event data
                 $decoded_data = decode_json_utf8($event);
                 stats_inc("$stream.read");
             } catch ($err) {
+                # Log and handle invalid data
                 stats_inc("$stream.invalid_data");
-                # Invalid data indicates serious problems, we halt
-                # entirely and record the details
                 $log->errorf('Bad data received from stream %s: %s', $stream, $err);
                 exception_logged();
+            }
+
+            # Setting retry_count
+            $log->debug('Retry count: %s', $retry_count);
+            if ($retry_count == NUMBER_OF_RETRIES) {
+                $decoded_data->{details}->{retry_last} = 1;
             }
 
             try {
@@ -403,25 +412,31 @@ async sub stream_process_loop {
                 if (blessed($response) && $response->isa('Future')) {
                     die $response->failure if $response->failure;
                 }
+
+                # Acknowledge the successful processing of the message
                 await $self->_ack_message($stream, $id);
+
+                $log->infof("Event '%s' from stream '%s' processed successfully", $decoded_data->{type}, $stream);
             } catch ($e) {
-                # If the retry mechanism switch is off (retry_interval is not assigned)
-                # or when we have reached the maximum number of retries, log the error
-                # message and mark the message as processed
                 if ($retry_count >= NUMBER_OF_RETRIES || !$self->retry_interval) {
+                    # Log the error, update stats, and acknowledge the message
                     $log->error($e);
-                    stats_inc($stream . ".processed.failure", {tags => ["event:$decoded_data->{type}"]});
+                    stats_inc("$stream.processed.failure", {tags => ["event:$decoded_data->{type}"]});
                     await $self->_ack_message($stream, $id);
                     exception_logged();
+                    $log->infof("Event '%s' from stream '%s' processed with failure", $decoded_data->{type}, $stream);
                     next ITEM;
                 }
-                $log->debugf("Event '%s' from '%s' has failed to process. The initial error was : %s. Will reprocess the event",
+
+                # Log the error and initiate reprocessing for the event
+                $log->debugf("Event '%s' from stream '%s' failed to process. The initial error was: %s. Reprocessing the event.",
                     $decoded_data->{type}, $stream, $e);
             } finally {
                 $processed_job = 1;
             }
         }
     }
+
 }
 
 =head2 items_to_reprocess

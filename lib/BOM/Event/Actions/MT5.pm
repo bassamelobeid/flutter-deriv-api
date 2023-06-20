@@ -1759,4 +1759,135 @@ sub _is_identical_group {
     return undef;
 }
 
+=head2 mt5_deposit_retry
+
+Retry attempt for mt5 deposit
+
+=cut
+
+async sub mt5_deposit_retry {
+    my ($parameters) = @_;
+
+    # Set up the parameters from redis stream
+    my ($from_login_id, $destination_mt5_account, $amount, $mt5_comment, $server, $transaction_id, $datetime_start, $retry_last) =
+        @{$parameters}{qw/from_login_id destination_mt5_account amount mt5_comment server transaction_id datetime_start retry_last/};
+
+    # Create a client
+    my $client = BOM::User::Client->new({loginid => $from_login_id});
+
+    # Get the end datetime
+    $datetime_start = Date::Utility->new($datetime_start)->minus_time_interval('5m')->epoch;
+    my $datetime_end = Date::Utility->new()->plus_time_interval('5m')->epoch;
+
+    # Set up the parameters for the MT5 API call
+    my $params = {
+        server => $server,
+        login  => $destination_mt5_account,
+        from   => $datetime_start,
+        to     => $datetime_end,
+    };
+
+    # Validate the parameters
+    die 'Need transaction_id to proceed with deposit retry' if !$transaction_id;
+    die 'Do not need to try demo deposit'                   if $server =~ /^demo/;
+    die "Cannot find transaction id: $transaction_id"       if !$client->account->find_transaction(query => [id => $transaction_id]);
+
+    # Log the parameters
+    $log->debugf("Deposit retry parameters: %s", $parameters);
+
+    # Get the deals
+    my $deals = await BOM::MT5::User::Async::deal_get_batch($params);
+
+    # Log the deals
+    $log->debugf("Deals: %s", $deals);
+
+    # Check if the transaction already exists
+    if (any { $_->{'comment'} =~ /#(\d+)$/ && $1 eq $transaction_id } @{$deals->{deal_get_batch}}) {
+        $log->infof("Transaction already exists in MT5. Skipping deposit retry.");
+
+        # Remove lock for mt5 deposit lock on account level
+        _remove_temporary_account_lock($destination_mt5_account);
+
+        return Future->done('Transaction already exist in mt5');
+    }
+
+    # Deposit the money
+    $log->infof("Transaction not found in MT5. Attempting deposit retry.");
+    return await BOM::MT5::User::Async::deposit({
+            login   => $destination_mt5_account,
+            amount  => $amount,
+            comment => $mt5_comment,
+            txn_id  => $transaction_id,
+        }
+    )->then(
+        sub {
+            my $result = shift;
+
+            # Remove lock for mt5 deposit lock on account level
+            _remove_temporary_account_lock($destination_mt5_account);
+
+            return $result;
+        }
+    )->catch(
+        sub {
+            my $error = shift;
+
+            if ($retry_last) {
+                # Send email notification for MT5 deposit errors
+                my $brand   = request()->brand;
+                my $message = "Error occurred when processing MT5 deposit after withdrawal from client account:";
+
+                send_email({
+                    from    => $brand->emails('system'),
+                    to      => $brand->emails('payments'),
+                    subject => "MT5 deposit error",
+                    message =>
+                        [$message, "Client login id: $from_login_id", "MT5 login: $destination_mt5_account", "Amount: $amount", "error: $error"],
+                    use_email_template    => 1,
+                    email_content_is_html => 1,
+                    template_loginid      => 'real ' . $destination_mt5_account,
+                });
+            }
+
+            $log->errorf("Failed to retry deposit: %s", $error);
+
+            return Future->fail($error);
+        });
+}
+
+=head2 _remove_temporary_account_lock
+
+Removes the temporary account lock.
+
+=over 4
+
+=item * C<$mt5_id> - The ID of the MT5 account
+
+=back
+
+Returns: undef
+
+=cut
+
+async sub _remove_temporary_account_lock {
+    my ($mt5_id)           = @_;
+    my $lock_key           = "TRANSFER::BLOCKED::$mt5_id";
+    my $redis_events_write = BOM::Config::Redis::redis_events_write();
+
+    try {
+        # Check if the account deposit lock exists
+        my $get_account_deposit_lock = $redis_events_write->get($lock_key);
+
+        if ($get_account_deposit_lock) {
+            # Delete the account deposit lock
+            $redis_events_write->del($lock_key);
+        }
+    } catch ($err) {
+        # Log the error if removing the lock fails
+        $log->errorf(sprintf("Failed to remove lock_key: %s, Error: %s", $lock_key, $err));
+    }
+
+    return undef;
+}
+
 1;

@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Event::Actions::MT5;
 use Test::MockModule;
 use BOM::User;
+use BOM::User::Client;
 use DataDog::DogStatsd::Helper;
 use BOM::Platform::Context qw(localize request);
 use BOM::Event::Process;
@@ -3290,6 +3291,81 @@ subtest 'sync_mt5_accounts_status' => sub {
     }
     $rule_engine_mock->unmock_all;
     $user_mock->unmock_all;
+};
+
+# Testing the mt5_deposit_retry function
+subtest 'mt5_deposit_retry function' => sub {
+    # Mock current time
+    set_fixed_time('2023-05-24T15:00:00Z');
+
+    # Mock necessary modules
+    my $mocked_actions = Test::MockModule->new('BOM::User::Client::Account');
+    my $mock_mt5       = Test::MockModule->new('BOM::MT5::User::Async');
+
+    # Mock 'find_transaction' method in BOM::User::Client::Account
+    $mocked_actions->mock(
+        'find_transaction',
+        sub {
+            my ($self, %args) = @_;
+            # Returns true for id '539', false otherwise
+            return ($args{query}[1] eq '539') ? 1 : 0;
+        });
+
+    # Create client object with pre-existing account
+    my $client = BOM::User::Client->new({loginid => 'CR10000'});
+
+    # Create account object for client
+    $client->account('USD');
+
+    # Define test parameters
+    my $parameters = {
+        from_login_id           => 'CR10000',
+        destination_mt5_account => 'MTR40008267',
+        amount                  => 12,
+        mt5_comment             => 'MTR40008267#123456',
+        server                  => 'real_p01_ts03',
+        transaction_id          => 539,
+        datetime_start          => '2023-05-24T14:00:00Z',
+    };
+
+    # Mock deal_get_batch response
+    my $async_deal_get_batch_response = {
+        'deal_get_batch' => [{
+                'rateMargin'   => '0.00000000',
+                'reason'       => 2,
+                'price'        => '0.00',
+                'symbol'       => '',
+                'order'        => 0,
+                'action'       => 2,
+                'priceTP'      => '0.00',
+                'positionID'   => 0,
+                'volume'       => 0,
+                'comment'      => 'MTR40008267#539',
+                'login'        => 40008267,
+                'contractSize' => '0.00',
+                'deal'         => 3000010207,
+                'time'         => 1668078126,
+                'profit'       => '12.00',
+                'swap'         => undef,
+                'priceSL'      => '0.00'
+            }]};
+    $mock_mt5->mock('deal_get_batch', sub { return Future->done($async_deal_get_batch_response); });
+
+    # Call mt5_deposit_retry function and test if transaction already exists
+    my $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $parameters})->get;
+    is($result->get, 'Transaction already exist in mt5', 'Transaction already exists test');
+
+    # Test for a non-existent transaction id
+    $parameters->{transaction_id} = 999999;
+    $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $parameters});
+    like($result->failure, qr/Cannot find transaction id: 999999/, 'Transaction not found test');
+
+    # Test for a demo deposit
+    $parameters->{server} = 'demo_p01_ts03';
+    $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $parameters});
+    like($result->failure, qr/Do not need to try demo deposit/, 'Demo deposit test');
+
+    $log->info("End testing mt5_deposit_retry function");
 };
 
 done_testing();
