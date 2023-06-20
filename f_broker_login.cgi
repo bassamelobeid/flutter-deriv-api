@@ -158,20 +158,6 @@ print qq~
     </div>
 </div>~;
 
-# DerivX Sync Service
-print qq~
-<div class="card">
-    <div class="card__label toggle">
-        DerivX Resync Service
-    </div>
-    <div class="card__content">
-        <h3>DerivX Resync Service</h3>
-        <form action="~ . request()->url_for('backoffice/f_resync_service.cgi') . qq~" method="get">
-            <input type="submit" class="btn btn--primary" value="Start">
-        </form>
-    </div>
-</div>~;
-
 # App management
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
     print qq~
@@ -422,6 +408,17 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
                 </form>
             </div>
 
+        </div>
+    </div>
+    <div class="card">
+        <div class="card__label toggle">
+            CFD Account Management 
+        </div>
+        <div class="card__content">
+            <h3>CFD Account Management</h3>
+            <form action="~ . request()->url_for('backoffice/quant/cfd_account_management.cgi') . qq~" method="get">
+                <input type="submit" class="btn btn--primary" value="Start">
+            </form>
         </div>
     </div>~;
 }
