@@ -1748,6 +1748,10 @@ async_rpc "mt5_deposit",
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
+    # Return error when user has deposit lock
+    my $transfer_blocked = BOM::Platform::Event::Emitter::is_transfer_blocked($to_mt5);
+    return create_error_future('MT5TransferSuspension') if $transfer_blocked;
+
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code, 'deposit')->then(
         sub {
             my ($response) = @_;
@@ -1867,14 +1871,6 @@ async_rpc "mt5_deposit",
                 return create_error_future($error_code, {message => $error->{-message_to_client}});
             }
 
-            _store_transaction_redis({
-                    loginid       => $fm_loginid,
-                    mt5_id        => $to_mt5,
-                    action        => 'deposit',
-                    amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
-                    group         => $response->{mt5_data}->{group},
-                }) if ($response->{mt5_data}->{group} =~ /real(?:\\p\d{2}_ts)?\d{2}\\(financial|synthetic)\\vanuatu_std(-hr)?_usd/);
-
             my $txn_id = $txn->transaction_id;
             # 31 character limit for MT5 comments
             my $mt5_comment = "${fm_loginid}#$txn_id";
@@ -1884,23 +1880,67 @@ async_rpc "mt5_deposit",
                 sub {
                     my ($status) = @_;
 
-                    if ($status->{error}) {
-                        log_exception('mt5_deposit');
-                        _send_email(
-                            loginid      => $fm_loginid,
-                            mt5_id       => $to_mt5,
-                            amount       => $amount,
-                            action       => 'deposit',
-                            error        => $status->{error},
-                            account_type => $account_type
-                        );
-                        return create_error_future($status->{code});
+                    # Store transaction details in Redis if the MT5 group matches the specified pattern
+                    if ($response->{mt5_data}->{group} =~ /real(?:\\p\d{2}_ts)?\d{2}\\(financial|synthetic)\\vanuatu_std(-hr)?_usd/) {
+                        _store_transaction_redis({
+                            loginid       => $fm_loginid,
+                            mt5_id        => $to_mt5,
+                            action        => 'deposit',
+                            amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
+                            group         => $response->{mt5_data}->{group},
+                        });
                     }
 
                     return Future->done({
-                            status                => 1,
-                            binary_transaction_id => $txn_id,
-                            $return_mt5_details ? (mt5_data => $response->{mt5_data}) : ()});
+                        status                => 1,
+                        binary_transaction_id => $txn_id,
+                        $return_mt5_details ? (mt5_data => $response->{mt5_data}) : (),
+                    });
+                }
+            )->catch(
+                sub {
+                    my ($error) = @_;
+
+                    # Push logs to Datadog
+                    log_exception('mt5_deposit');
+
+                    # Parameters for the event emitter
+                    my $server         = $response->{account_type} . "_" . $response->{mt5_data}->{server};
+                    my $amount         = $response->{mt5_amount};
+                    my $datetime_start = Date::Utility->new($txn->{transaction_time})->epoch;
+
+                    $log->errorf("Failed to process MT5 deposit via API: %s", $error);
+
+                    try {
+                        # Emit 'mt5_deposit_retry' event
+                        BOM::Platform::Event::Emitter::emit(
+                            'mt5_deposit_retry',
+                            {
+                                from_login_id           => $fm_loginid,
+                                destination_mt5_account => $to_mt5,
+                                amount                  => $amount,
+                                mt5_comment             => $mt5_comment,
+                                server                  => $server,
+                                transaction_id          => $txn_id,
+                                datetime_start          => $datetime_start,
+                            });
+
+                        # Set the lock for mt5 transfer
+                        BOM::Platform::Event::Emitter::block_transfer_temporarily($to_mt5);
+
+                        # Return error future indicating MT5 transfer suspension
+                        return create_error_future('MT5TransferSuspension');
+                    } catch ($error) {
+                        stats_event(
+                            'Set transfer lock issue',
+                            'Please inform Quants and Backend Teams to check the issue.',
+                            {
+                                alert_type => 'warning',
+                                tags       => ['action:deposit', "mt5_comment:$mt5_comment"]});
+
+                        $log->errorf("MT5 deposit retry failed: $error");
+                        return create_error_future('MT5DepositError');
+                    }
                 });
         });
     };

@@ -119,6 +119,7 @@ my %category_message_mapping = do {
         POAVerificationFailed => localize('Proof of Address verification failed. Withdrawal operation suspended.'),
         ProofRequirementError => localize('Proof of Identity or Address requirements not met. Operation rejected.'),
         AccountShouldBeReal   => localize('Only real accounts are allowed to open [_1] real accounts'),
+        MT5TransferSuspension => localize('We are still processing your deposit. Please try again later'),
 
         # Deriv EZ error codes
         DerivEZMissingParams      => localize('The following parameters are missing: [_1]'),
