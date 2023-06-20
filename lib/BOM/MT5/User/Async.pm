@@ -1122,4 +1122,55 @@ sub get_account_type {
     return _get_server_type_by_prefix($prefix);
 }
 
+=head2 deal_get_batch
+
+Get deal within a given range
+
+
+
+=over 4
+
+=item * C<server> (required) MT5 server, e.g. real_p01_ts01, demo_p01_ts01
+
+=item * C<login> (required) MT5 login, 111231, 123123
+
+=item * C<from> (required) from(epoch), e.g 1649750830, 1649750831
+
+=item * C<to> (required) to(epoch), e.g. 1649756230, 1649756231
+
+=back
+
+=cut
+
+sub deal_get_batch {
+    my ($args) = @_;
+
+    # Required params
+    my $server = $args->{server};
+    my $login  = $args->{login};
+    my $from   = $args->{from};
+    my $to     = $args->{to};
+
+    return _invoke_mt5(
+        'DealGetBatch',
+        {
+            server => $server,
+            login  => $login,
+            from   => $from,
+            to     => $to
+        }
+    )->then(
+        sub {
+            my ($response) = @_;
+
+            return Future->done($response);
+        }
+    )->catch(
+        sub {
+            my ($error) = @_;
+
+            return $error;
+        });
+}
+
 1;
