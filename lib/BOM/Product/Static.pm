@@ -114,7 +114,6 @@ my $config = {
         TradingHoursExpiry            => 'Contract must expire during trading hours.',
         TradingNotAvailable           => 'Trading is not available from [_1] to [_2].',
         TradingSuspendedSpecificHours => 'Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]',
-        TradingIsDisabled             => 'Trading [_1] options on [_2] is disabled.',
         NegativeTakeProfit            => 'Negative take profit value is not accepted',
         TradingMultiplierIsDisabled   => 'Trading multiplier options on [_1] is disabled. Please choose another market.',
         WaitForContractSettlement     => 'Please wait for contract settlement. The final settlement price may differ from the indicative price.',

@@ -24,24 +24,6 @@ use constant ADDED_CURRENCY_PRECISION => 3;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-=head2 BUILD
-
-Do necessary parameters check here
-
-=cut
-
-sub BUILD {
-    my $self = shift;
-
-    if ($self->risk_level eq 'no_business' and $self->pricing_new and not $self->for_sale) {
-        BOM::Product::Exception->throw(
-            error_code => 'TradingIsDisabled',
-            error_args => [$self->category_code, $self->underlying->display_name],
-            details    => {field => 'basis'},
-        );
-    }
-}
-
 =head2 quants_config
 
 QuantsConfig object attribute

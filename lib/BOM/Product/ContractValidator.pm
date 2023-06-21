@@ -291,10 +291,13 @@ sub _validate_offerings {
 
     # NOTE: this check only validates the contract-specific risk profile.
     # There may also be a client specific one which is validated in B:P::Transaction
-    if ($self->risk_profile->get_risk_profile eq 'no_business') {
+    # no_business should disable buying but not sell back existing positions
+    my $no_business_for_buy = (($self->risk_profile->get_risk_profile eq 'no_business') and (!$self->for_sale));
+
+    if ($no_business_for_buy) {
         return {
             message           => 'manually disabled by quants',
-            message_to_client => $self->for_sale ? [$ERROR_MAPPING->{ResaleNotOffered}] : [$ERROR_MAPPING->{TradeTemporarilyUnavailable}],
+            message_to_client => [$ERROR_MAPPING->{TradeTemporarilyUnavailable}],
         };
     }
 

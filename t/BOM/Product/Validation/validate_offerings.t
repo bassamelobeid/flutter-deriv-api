@@ -30,8 +30,15 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxAUDUSD',
-    epoch      => $now->epoch
+    epoch      => $now->epoch,
+    quote      => 1.00
 });
+
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+    [1.00, $now->epoch,     'frxAUDUSD'],
+    [1.01, $now->epoch + 1, 'frxAUDUSD'],
+    [1.03, $now->epoch + 2, 'frxAUDUSD']);
+
 my $bet_params = {
     underlying   => 'frxAUDUSD',
     bet_type     => 'CALL',
@@ -62,6 +69,19 @@ subtest 'custom suspend trading' => sub {
     $bet_params->{underlying} = 'R_100';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for random';
+
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"xxx": {"market": "forex", "contract_category":"callput", "expiry_type": "daily", "risk_profile": "no_business"}}');
+
+    $bet_params->{underlying}   = 'frxAUDUSD';
+    $bet_params->{duration}     = '3d';
+    $bet_params->{date_pricing} = $bet_params->{date_pricing}->plus_time_interval('2s');
+    $c                          = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'cannot buy because risk_profile is no_business';
+
+    $bet_params->{for_sale} = 1;
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_sell, 'valid to sellback even daily forex callput is in no_business';
 };
 
 subtest 'suspend early sellback' => sub {

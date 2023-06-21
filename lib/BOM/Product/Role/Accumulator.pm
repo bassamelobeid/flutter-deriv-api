@@ -67,19 +67,11 @@ sub BUILD {
     }
 
     if ($self->pricing_new and $self->_user_input_stake > $self->max_stake) {
-        if ($self->risk_level eq 'no_business') {
-            BOM::Product::Exception->throw(
-                error_code => 'TradingIsDisabled',
-                error_args => [$self->category_code, $self->underlying->display_name],
-                details    => {field => 'basis'},
-            );
-        } else {
-            BOM::Product::Exception->throw(
-                error_code => 'StakeLimitExceeded',
-                error_args => [financialrounding('price', $self->currency, $self->max_stake)],
-                details    => {field => 'stake'},
-            );
-        }
+        BOM::Product::Exception->throw(
+            error_code => 'StakeLimitExceeded',
+            error_args => [financialrounding('price', $self->currency, $self->max_stake)],
+            details    => {field => 'stake'},
+        );
     }
 
 }
