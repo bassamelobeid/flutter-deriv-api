@@ -248,6 +248,9 @@ sub _build_contract {
         $param->{landing_company} = $self->contract_parameters->{landing_company};
         $param->{limit_order}     = $self->contract_parameters->{limit_order} if $self->contract_parameters->{limit_order};
     }
+
+    my $action = $self->action_type // 'buy';
+    $param->{for_sale} = $action eq 'sell';
     return produce_contract($param);
 }
 
