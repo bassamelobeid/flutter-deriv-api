@@ -1,24 +1,4 @@
 ---
-no_business:
-  USD: 0
-  EUR: 0
-  AUD: 0
-  GBP: 0
-  BTC: 0
-  ETH: 0
-  LTC: 0
-  BUSD: 0
-  DAI: 0
-  EURS: 0
-  IDK: 0
-  PAX: 0
-  TUSD: 0
-  USB: 0
-  USDC: 0
-  USDK: 0
-  UST: 0
-  eUSDT: 0
-  tUSDT: 0
 extreme_risk:
   USD: 50
   EUR: 50
