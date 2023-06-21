@@ -20,7 +20,8 @@ BrokerPresentation('Vanilla Risk Management Tool');
 my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
 
 my $limit_defs = BOM::Config::quants()->{risk_profile};
-my @currencies = sort keys %{$limit_defs->{no_business}{multiplier}};
+delete $limit_defs->{no_business};    # no_business should be set in product management tool
+my @currencies = sort keys %{$limit_defs->{low_risk}{multiplier}};
 my @stake_rows;
 
 my $app_config = BOM::Config::Runtime->instance->app_config;

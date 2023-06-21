@@ -353,9 +353,9 @@ if ($r->param('save_vanilla_per_symbol_config')) {
         die "max daily volume cannot be negative"  if ($max_daily_volume < 0);
         die "max daily pnl cannot be negative"     if ($max_daily_pnl < 0);
 
-        unless ($risk_profile ~~ ['low_risk', 'medium_risk', 'moderate_risk', 'high_risk', 'extreme_risk', 'no_business']) {
-            die 'risk profile is incorrect';
-        }
+        my $limit_defs = BOM::Config::quants()->{risk_profile};
+        delete $limit_defs->{no_business};
+        die "invalid risk_profile" unless $risk_profile and $limit_defs->{$risk_profile};
 
         my $vanilla_config = decode_json_utf8($app_config->get("quants.vanilla.per_symbol_config.$symbol"));
         $vanilla_config = {

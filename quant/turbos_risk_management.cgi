@@ -30,7 +30,7 @@ sub _get_turbos_risk_profile_definition {
     );
 
     my $limit_defs = _get_default_risk_profile_turbos();
-    my @currencies = sort keys %{$limit_defs->{no_business}};
+    my @currencies = sort keys %{$limit_defs->{low_risk}};
     my @stake_rows;
 
     foreach my $risk_level (keys %$limit_defs) {

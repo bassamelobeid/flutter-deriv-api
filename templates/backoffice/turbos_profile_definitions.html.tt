@@ -28,7 +28,6 @@
                 <option value='low_risk'>Low Risk</option>
                 <option value='medium_risk'>Medium Risk</option>
                 <option value='moderate_risk'>Moderate Risk</option>
-                <option value='no_business'>No Business</option>
             </select>
         </td>
     </tr>

@@ -314,7 +314,8 @@ if ($r->param('save_accumulator_market_or_underlying_risk_profile')) {
 
     my $output;
     try {
-        my $limit_defs   = BOM::Config::quants()->{risk_profile};
+        my $limit_defs = BOM::Config::quants()->{risk_profile};
+        delete $limit_defs->{no_business};
         my $risk_profile = $r->param('risk_profile');
         die "invalid risk_profile" unless $risk_profile and $limit_defs->{$risk_profile};
 
