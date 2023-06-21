@@ -416,7 +416,7 @@ async sub stream_process_loop {
                 # Acknowledge the successful processing of the message
                 await $self->_ack_message($stream, $id);
 
-                $log->infof("Event '%s' from stream '%s' processed successfully", $decoded_data->{type}, $stream);
+                $log->debugf("Event '%s' from stream '%s' processed successfully", $decoded_data->{type}, $stream);
             } catch ($e) {
                 if ($retry_count >= NUMBER_OF_RETRIES || !$self->retry_interval) {
                     # Log the error, update stats, and acknowledge the message
