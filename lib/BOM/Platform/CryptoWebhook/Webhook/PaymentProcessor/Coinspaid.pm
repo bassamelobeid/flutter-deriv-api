@@ -256,8 +256,6 @@ sub process_withdrawal {
     for my $txn ($transactions->@*) {
         defined $txn->{$_} or (return {error => sprintf('%s not found in payload, coinspaid_id: %s', $_, $id)}) for qw(address currency txid amount);
 
-        $log->warnf("Error processing Coinspaid Withdrawal Fee. more detail: %s", $fees) if $status eq 'confirmed' && !defined $fee->{amount};
-
         my $normalize_txn = {
             trace_id        => $id,
             reference_id    => $foreign_id,
