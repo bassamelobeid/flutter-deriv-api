@@ -212,8 +212,6 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
                 </label>
             </div>
         </div>
-        <img src="~
-        . request()->url_for('images/bo_binary_brand.svg', undef, undef, {internal_static => 1}) . qq~" />
     </header>
     ~;
 
