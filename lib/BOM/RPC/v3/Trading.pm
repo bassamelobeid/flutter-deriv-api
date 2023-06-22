@@ -150,11 +150,20 @@ rpc trading_platform_asset_listing => auth => [],
     my $resp = {};
     try {
         my $platform = BOM::TradingPlatform->new(
-            platform => $params->{args}{platform},
+            platform => $args->{platform},
             client   => $client,
         );
 
-        $resp->{$params->{args}{platform}}->{assets} = $platform->get_assets($params->{args}{type} // '', $params->{args}{region} // 'row');
+        my $platform_assets = $platform->get_assets($args->{type} // '', $args->{region} // 'row',);
+
+        # Translating from BOM::TradingPlatform data model to RPC data model
+        my @output_fields = qw(symbol bid ask spread day_percentage_change display_order market shortcode);
+        my @output_assets = map {
+            my $obj = $_;
+            +{map { $_ => $obj->{$_} } @output_fields}
+        } $platform_assets->@*;
+
+        $resp->{$args->{platform}}->{assets} = \@output_assets;
 
         return $resp;
 
