@@ -330,18 +330,62 @@ subtest 'get_sold_bets_of_account' => sub {
 };
 
 subtest 'get_fmb_by_id' => sub {
-    my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-        type => 'fmb_higher_lower_buy',
-    });
+    my %hash = (
+        'HigherLowerBet' => 'fmb_higher_lower',
+        'RangeBet'       => 'fmb_range_bet',
+        'TouchBet'       => 'fmb_touch_bet_buy',
+        'LookbackOption' => 'fmb_lookback_option'
+    );
 
-    my $result = $fmb_dm->get_fmb_by_id([$fmb->id]);
-    isa_ok($result->[0], 'BOM::Database::Model::FinancialMarketBet::HigherLowerBet');
+    foreach my $key (keys %hash) {
+        my $value = $hash{$key};
+        my $fmb   = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+            type => $value,
+        });
 
+        my $result = $fmb_dm->get_fmb_by_id([$fmb->id]);
+        isa_ok($result->[0], 'BOM::Database::Model::FinancialMarketBet::' . $key);
+    }
 };
+
 subtest 'get_sold' => sub {
     my $data = $fmb_dm->get_sold();
     is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
     is $data->[0]{account_id},        $account->id,  'account_id';
     is $data->[0]{remark},            'Test Remark', 'Test Remark';
 };
+
+subtest 'get_sold_contracts' => sub {
+    my $data = $fmb_dm->get_sold_contracts();
+    is $data->[0]{bet_class},         'higher_lower_bet', 'bet_class';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',        'underlying_symbol';
+};
+
+my $sold_contracts = $fmb_dm->get_sold();
+my $contract_id    = $sold_contracts->[0]{id};
+my $transaction_id = $sold_contracts->[0]{txn_id};
+
+subtest 'get_contract_details_with_transaction_ids' => sub {
+    my $data = $fmb_dm->get_contract_details_with_transaction_ids($contract_id);
+    is $data->[0]{account_id},         $account->id,    'account_id';
+    is $data->[0]{id},                 $contract_id,    'contract_id';
+    is $data->[0]{buy_transaction_id}, $transaction_id, 'transaction id matched';
+};
+
+subtest 'get_contract_by_account_id_transaction_id' => sub {
+    my $data = $fmb_dm->get_contract_by_account_id_transaction_id($account->id, $transaction_id);
+    is $data->[0]{account_id},        $account->id,  'account_id';
+    is $data->[0]{id},                $contract_id,  'contract_id';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
+    is $data->[0]{remark},            'Test Remark', 'Test Remark';
+};
+
+subtest 'get_contract_by_account_id_contract_id' => sub {
+    my $data = $fmb_dm->get_contract_by_account_id_contract_id($account->id, $contract_id);
+    is $data->[0]{account_id},        $account->id,  'account_id';
+    is $data->[0]{id},                $contract_id,  'contract_id';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
+    is $data->[0]{remark},            'Test Remark', 'Test Remark';
+};
+
 done_testing;

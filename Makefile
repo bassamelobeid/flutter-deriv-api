@@ -1,10 +1,12 @@
 CORETESTS=unit_test_database_datamapper \
       unit_test_database_model \
+      unit_test_database_helper \
       unit_test_database_all \
 
 ALLTESTS=syntax \
       unit_test_database_datamapper \
       unit_test_database_model \
+      unit_test_database_helper \
       unit_test_database_all \
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
@@ -21,6 +23,9 @@ unit_test_database_datamapper:
 
 unit_test_database_model:
 	@$(PROVE) t/BOM/Database/Model/
+
+unit_test_database_helper:
+	@$(PROVE) t/BOM/Database/Helper/
 
 unit_test_database_all:
 	@$(PROVE) t/BOM/Database/*.t

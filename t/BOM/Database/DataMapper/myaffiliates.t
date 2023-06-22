@@ -2,13 +2,14 @@
 
 use strict;
 use warnings;
-use Test::More (tests => 14);
+use Test::More (tests => 19);
 use Test::Warnings;
 use Test::Exception;
 use BOM::Database::DataMapper::MyAffiliates;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
+use BOM::Database::DataMapper::FinancialMarketBet;
 
 my $myaff_data_mapper;
 
@@ -38,3 +39,125 @@ cmp_ok($activities->{'MX1001'}->{'pnl'},                '==', 0,            'Che
 cmp_ok($activities->{'MX1001'}->{'turnover_others'},    '==', 0,            'Check if activity turnover_others is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'turnover_intradays'}, '==', 0,            'Check if turnover_intradays factors is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'first_funded_date'},  'eq', '2011-03-09', 'Check if activity first_funded_date is correct for myaffiliate');
+
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code        => 'CR',
+    myaffiliates_token => 'dummy_affiliate_token',
+});
+my $account = $client->set_default_account('USD');
+
+$client->payment_legacy_payment(
+    currency         => 'USD',
+    amount           => 1000,
+    remark           => 'here is money',
+    payment_type     => 'credit_debit_card',
+    transaction_time => '2011-03-08 12:59:59',
+    payment_time     => '2011-03-08 12:59:59',
+    source           => 1,
+);
+
+subtest 'get trading activity' => sub {
+    my $date = '2011-03-08 12:59:59';
+
+    # before buying any contract
+    my $trading_activities = $myaff_data_mapper->get_trading_activity({'date' => $date});
+    ok !@$trading_activities, 'no trading activity';
+
+    # buy contract
+    my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type             => 'fmb_higher_lower',
+        account_id       => $account->id,
+        buy_price        => 456,
+        sell_price       => 40,
+        payment_time     => $date,
+        transaction_time => $date,
+        start_time       => $date,
+        expiry_time      => $date,
+        source           => 1,
+    });
+
+    $trading_activities = $myaff_data_mapper->get_trading_activity({'date' => $date});
+    ok @$trading_activities, 'have some trading activities';
+};
+
+subtest 'get multiplier commission' => sub {
+    my $date = '2020-09-14 08:00:00';
+
+    # before buying multiplier contract
+    my $trading_activities = $myaff_data_mapper->get_multiplier_commission({'date' => $date});
+    ok !@$trading_activities, 'no multiplier contracts trading activity';
+
+    # buy multiplier contract
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        account_id       => $account->id,
+        buy_price        => 10,
+        payment_time     => $date,
+        transaction_time => $date,
+        start_time       => $date,
+        source           => 1,
+        type             => 'fmb_multiplier_forex',
+    });
+
+    $trading_activities = $myaff_data_mapper->get_multiplier_commission({'date' => $date});
+    ok @$trading_activities, 'have some multiplier contracts trading activities';
+};
+
+subtest 'get accumulator commission' => sub {
+    my $date = '2020-09-14 08:00:00';
+
+    # before buying accumulator contract
+    my $trading_activities = $myaff_data_mapper->get_accumulator_commission({'date' => $date});
+    ok !@$trading_activities, 'no accumulator contracts trading activity';
+
+    # buy accumulator contract
+    my $short_code = 'ACCU_R_10_10_2_0.01_1_0.0001_' . Date::Utility->new($date)->epoch;
+
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        account_id       => $account->id,
+        buy_price        => 10,
+        type             => 'fmb_accumulator',
+        short_code       => $short_code,
+        payment_time     => $date,
+        transaction_time => $date,
+        start_time       => $date,
+        source           => 100,
+    });
+
+    $trading_activities = $myaff_data_mapper->get_accumulator_commission({'date' => $date});
+    ok @$trading_activities, 'have some accumulator contracts trading activities';
+};
+
+subtest 'get lookback commission' => sub {
+    my $date = '2020-09-14 08:00:00';
+
+    # before buying lookback contract
+    my $trading_activities = $myaff_data_mapper->get_lookback_activity({'date' => '2020-09-16 08:00:00'});
+    ok !@$trading_activities, 'no lookback contracts trading activity';
+
+    # buy lookback contract
+    my $start_date = Date::Utility->new($date)->plus_time_interval('1h')->datetime;
+    my $end_date   = Date::Utility->new($date)->plus_time_interval('6h')->datetime;
+
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type             => 'fmb_lookback_option',
+        account_id       => $account->id,
+        purchase_time    => $start_date,
+        transaction_time => $start_date,
+        start_time       => $start_date,
+        expiry_time      => $end_date,
+        settlement_time  => $end_date,
+        source           => 1,
+    });
+
+    $trading_activities = $myaff_data_mapper->get_lookback_activity({'date' => $date});
+    ok @$trading_activities, 'have some lookback contracts trading activities';
+};
+
+subtest 'get monthly exchange rate' => sub {
+    my $monthly_exchange_rate = $myaff_data_mapper->get_monthly_exchange_rate({
+        source_currency => 'USD',
+        month           => 1,
+        year            => 2000
+    });
+    is sprintf("%.2f", $monthly_exchange_rate->[0][0]), '1.00', 'USD to USD exchange rate should be 1';
+};
