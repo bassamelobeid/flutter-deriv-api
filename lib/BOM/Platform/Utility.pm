@@ -758,7 +758,7 @@ sub verify_reactivation {
         }
 
         $rule_engine->verify_action(
-            'new_account',
+            'activate_account',
             action_type     => 'reactivate',
             account_type    => $client->get_account_type->name,
             market_type     => $market_type,
