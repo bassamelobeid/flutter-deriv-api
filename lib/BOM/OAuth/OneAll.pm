@@ -142,7 +142,7 @@ sub callback {
             }
 
             # connect oneall provider data to user identity
-            $user_connect->insert_connect($user->{id}, $provider_data);
+            $user_connect->insert_connect($user->{id}, $user->{email}, $provider_data);
 
             # track social signup on Segment
             my $utm_tags = {};
