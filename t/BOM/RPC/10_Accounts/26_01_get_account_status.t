@@ -3572,6 +3572,7 @@ subtest 'Social identity provider' => sub {
     my $user_connect = BOM::Database::Model::UserConnect->new;
     $user_connect->insert_connect(
         $user->{id},
+        $email,
         {
             user => {
                 identity => {
