@@ -17,7 +17,7 @@ sub _build_dbic {
 my $json = JSON::MaybeXS->new;
 
 sub insert_connect {
-    my ($self, $user_id, $provider_data) = @_;
+    my ($self, $user_id, $email, $provider_data) = @_;
 
     ## check if it's connected by someone else
     my $provider              = $provider_data->{user}->{identity}->{provider};
@@ -32,16 +32,16 @@ sub insert_connect {
             if ($connected_user_id) {
                 $_->do("
             UPDATE users.binary_user_connects
-            SET provider_data = ?, date=NOW()
-            WHERE binary_user_id = ? AND provider = ?
-        ", undef, Encode::encode_utf8($json->encode($provider_data)), $user_id, $provider);
+               SET provider_data = ?, date=NOW(), email = ?
+             WHERE binary_user_id = ? AND provider = ?
+        ", undef, Encode::encode_utf8($json->encode($provider_data)), $email, $user_id, $provider);
             } else {
                 $_->do("
             INSERT INTO users.binary_user_connects
-                (binary_user_id, provider, provider_identity_uid, provider_data)
+                (binary_user_id, email, provider, provider_identity_uid, provider_data)
             VALUES
-                (?, ?, ?, ?)
-        ", undef, $user_id, $provider, $provider_identity_uid, Encode::encode_utf8($json->encode($provider_data)));
+                (?, ?, ?, ?, ?)
+        ", undef, $user_id, $email, $provider, $provider_identity_uid, Encode::encode_utf8($json->encode($provider_data)));
             }
         });
     return {success => 1};

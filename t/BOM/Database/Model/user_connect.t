@@ -6,22 +6,23 @@ use BOM::Database::Model::UserConnect;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-my $c             = BOM::Database::Model::UserConnect->new;
-my $test_user_id  = 999;
-my $provider_data = sample_oneall_data();
+my $c               = BOM::Database::Model::UserConnect->new;
+my $test_user_id    = 999;
+my $test_user_email = 'dummy@dummy.com';
+my $provider_data   = sample_oneall_data();
 $provider_data = $provider_data->{response}->{result}->{data};
 
 $c->dbic->dbh->do("DELETE FROM users.binary_user_connects");
-$c->dbic->dbh->do("INSERT INTO users.binary_user (id, email, password) VALUES ($test_user_id, 'dummy\@dummy.com', 'blabla')");    # for foreign key
+$c->dbic->dbh->do("INSERT INTO users.binary_user (id, email, password) VALUES ($test_user_id, '$test_user_email', 'blabla')");    # for foreign key
 
-my $res = $c->insert_connect($test_user_id, $provider_data);
+my $res = $c->insert_connect($test_user_id, $test_user_email, $provider_data);
 ok $res->{success}, 'insert connect ok';
 
 ## someone else try same provider data is not ok
-$res = $c->insert_connect(998, $provider_data);
+$res = $c->insert_connect(998, 'example@deriv.com', $provider_data);
 is $res->{error}, 'CONNECTED_BY_OTHER', 'CONNECTED_BY_OTHER';
 
-$res = $c->insert_connect($test_user_id, $provider_data);
+$res = $c->insert_connect($test_user_id, $test_user_email, $provider_data);
 ok $res->{success}, 'update connect ok';
 
 my $get_user_id = $c->get_user_id_by_connect($provider_data);
