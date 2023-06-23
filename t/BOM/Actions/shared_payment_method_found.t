@@ -44,19 +44,6 @@ $shared_user->add_client($shared_client);
 my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{shared_payment_method_found};
 
 subtest 'Shared PM event' => sub {
-    # Mocking send_email
-    my @emails;
-    my @ask_poi;
-
-    my $mocker_event = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mocker_event->mock(
-        'send_email',
-        sub {
-            my $args = shift;
-            push @emails,  $args->{to};
-            push @ask_poi, $args->{template_args}->{ask_poi};
-            return $mocker_event->original('send_email')->($args);
-        });
 
     my $mocker_client = Test::MockModule->new(ref($shared_client));
     $mocker_client->mock(
@@ -66,27 +53,18 @@ subtest 'Shared PM event' => sub {
             return 11780;
         });
 
-    mailbox_clear();
     $action_handler->({
             client_loginid => $test_client->loginid,
             shared_loginid => $shared_client->loginid,
         })->get;
 
-    my @emails_sent = BOM::Test::Email::email_list();
-
-    is scalar @emails_sent, 2,          'Two emails sent';
-    is $test_client->email, $emails[0], 'Sent to the client email address';
     ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
     ok $test_client->status->shared_payment_method, 'Client has shared_payment_method status';
     ok $test_client->status->allow_document_upload, 'Client has allow_document_upload status';
-    ok $ask_poi[0],                                 'E-mail has Upload Documents link';
 
-    is $shared_client->email, $emails[1], 'Sent to the shared email address';
     ok $shared_client->status->cashier_locked,        'shared client has cashier_locked status';
     ok $shared_client->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_client->status->allow_document_upload, 'shared has allow_document_upload status';
-    ok $ask_poi[1],                                   'E-mail has Upload Documents link';
-    $mocker_event->unmock_all;
     $mocker_client->unmock_all;
 
     subtest 'Shared PM stacking the loginid list' => sub {
@@ -185,20 +163,6 @@ subtest 'multiple loginids sent in params' => sub {
     );
     $shared_user_another->add_client($shared_client_another);
 
-    # Mocking send_email
-    my @emails;
-    my @ask_poi;
-
-    my $mocker_event = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mocker_event->mock(
-        'send_email',
-        sub {
-            my $args = shift;
-            push @emails,  $args->{to};
-            push @ask_poi, $args->{template_args}->{ask_poi};
-            return $mocker_event->original('send_email')->($args);
-        });
-
     my $mocker_client = Test::MockModule->new(ref($shared_client));
     $mocker_client->mock(
         'source',
@@ -215,8 +179,6 @@ subtest 'multiple loginids sent in params' => sub {
             return 11780;
         });
 
-    mailbox_clear();
-
     $test_client->status->clear_shared_payment_method;
 
     $action_handler->({
@@ -224,53 +186,31 @@ subtest 'multiple loginids sent in params' => sub {
             shared_loginid => $shared_client->loginid . ',' . $shared_client_another->loginid,
         })->get;
 
-    my @emails_sent = BOM::Test::Email::email_list();
-
-    is scalar @emails_sent, 3,          'Three emails sent';
-    is $test_client->email, $emails[0], 'Sent to the client email address';
     ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
     ok $test_client->status->shared_payment_method, 'Client has shared_payment_method status';
     ok $test_client->status->allow_document_upload, 'Client has allow_document_upload status';
-    ok $ask_poi[0],                                 'E-mail has Upload Documents link';
 
     is $test_client->status->shared_payment_method->{reason},
         'Shared with: ' . join(',', $shared_client->loginid, $shared_client_another->loginid, $test_client_MF->loginid),
         'the status reason contains both the shared clients loginids';
 
-    is $shared_client->email, $emails[1], 'Sent to the shared email address';
     ok $shared_client->status->cashier_locked,        'shared client has cashier_locked status';
     ok $shared_client->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_client->status->allow_document_upload, 'shared has allow_document_upload status';
-    ok $ask_poi[1],                                   'E-mail has Upload Documents link';
 
-    is $shared_client_another->email, $emails[2], 'Sent to the shared email address';
     ok $shared_client_another->status->cashier_locked,        'shared client has cashier_locked status';
     ok $shared_client_another->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_client_another->status->allow_document_upload, 'shared has allow_document_upload status';
-    ok $ask_poi[2],                                           'E-mail has Upload Documents link';
 
     is $shared_client_another->status->shared_payment_method->{reason}, 'Shared with: ' . $test_client->loginid,
         'Correct reason for shared payment method';
 
-    $mocker_event->unmock_all;
     $mocker_client->unmock_all;
     $mocker_client_another->unmock_all;
 };
 
 subtest 'Already age verified client' => sub {
-    # Mocking send_email
-    my @emails;
-    my @ask_poi;
 
-    my $mocker_event = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mocker_event->mock(
-        'send_email',
-        sub {
-            my $args = shift;
-            push @emails,  $args->{to};
-            push @ask_poi, $args->{template_args}->{ask_poi};
-            return $mocker_event->original('send_email')->($args);
-        });
     my $mocker_client = Test::MockModule->new(ref($shared_client));
     $mocker_client->mock(
         'source',
@@ -294,27 +234,19 @@ subtest 'Already age verified client' => sub {
     $shared_client->status->clear_cashier_locked;
     $shared_client->status->clear_shared_payment_method;
 
-    mailbox_clear();
     $action_handler->({
             client_loginid => $test_client->loginid,
             shared_loginid => $shared_client->loginid,
         })->get;
 
-    my @emails_sent = BOM::Test::Email::email_list();
-
-    is scalar @emails_sent, 2,          'Two emails sent';
-    is $test_client->email, $emails[0], 'Sent to the client email address';
     ok $test_client->status->cashier_locked,         'Client has cashier_locked status';
     ok $test_client->status->shared_payment_method,  'Client has shared_payment_method status';
     ok !$test_client->status->allow_document_upload, 'Client does not have allow_document_upload status';
-    ok !$ask_poi[0],                                 'E-mail does not have Upload Documents link';
 
-    is $shared_client->email, $emails[1], 'Sent to the shared email address';
     ok $shared_client->status->cashier_locked,         'shared client has cashier_locked status';
     ok $shared_client->status->shared_payment_method,  'shared client has shared_payment_method status';
     ok !$shared_client->status->allow_document_upload, 'shared does not have allow_document_upload status';
-    ok !$ask_poi[0],                                   'E-mail does not have Upload Documents link';
-    $mocker_event->unmock_all;
+
     $mocker_client->unmock_all;
 };
 

@@ -241,8 +241,8 @@ subtest 'process - tracking jobs' => sub {
                 verify_email_closed_account_reset_password verify_email_closed_account_account_opening verify_email_closed_account_other request_payment_withdraw
                 account_opening_existing self_tagging_affiliates authenticated_with_scans document_uploaded new_mt5_signup_stored
                 identity_verification_rejected p2p_advertiser_approved p2p_order_updated_handled
-                risk_disclaimer_resubmission unknown_login derivx_account_deactivated poa_verification_failed_reminder professional_status_requested dp_successful_login
-                pa_first_time_approved pa_transfer_confirm pa_withdraw_confirm derivez_inactive_notification derivez_inactive_account_closed/
+                risk_disclaimer_resubmission unknown_login derivx_account_deactivated poa_verification_failed_reminder professional_status_requested dp_successful_login pa_first_time_approved shared_payment_method_email_notification
+                pa_transfer_confirm pa_withdraw_confirm derivez_inactive_notification derivez_inactive_account_closed/
         ),
         'Correct number of actions that can be emitted'
     );
