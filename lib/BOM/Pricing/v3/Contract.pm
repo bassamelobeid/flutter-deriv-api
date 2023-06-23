@@ -735,6 +735,16 @@ sub _is_valid_to_sell {
     my ($validation_error, $validation_code);
 
     if (
+        !$contract->is_valid_to_sell({
+                landing_company         => $validation_params->{landing_company},
+                country_code            => $country_code,
+                skip_barrier_validation => $validation_params->{skip_barrier_validation}}))
+    {
+        $is_valid_to_sell = 0;
+        $validation_error = localize($contract->primary_validation_error->message_to_client);
+        $validation_code  = $contract->primary_validation_error->code;
+
+    } elsif (
         not $contract->is_expired
         and my $cve = _validate_offerings(
             $contract,
@@ -747,16 +757,8 @@ sub _is_valid_to_sell {
         $is_valid_to_sell = 0;
         $validation_error = localize($cve->{error}{message_to_client});
         $validation_code  = 'Offerings';                                  # this is not coming from MooseX::Role::Validatable::Error
-    } elsif (
-        !$contract->is_valid_to_sell({
-                landing_company         => $validation_params->{landing_company},
-                country_code            => $country_code,
-                skip_barrier_validation => $validation_params->{skip_barrier_validation}}))
-    {
-        $is_valid_to_sell = 0;
-        $validation_error = localize($contract->primary_validation_error->message_to_client);
-        $validation_code  = $contract->primary_validation_error->code;
     }
+
     return {
         is_valid_to_sell      => $is_valid_to_sell,
         validation_error      => $validation_error,
