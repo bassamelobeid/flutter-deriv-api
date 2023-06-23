@@ -3476,7 +3476,7 @@ subtest 'EDD email notification' => sub {
     });
 
     mailbox_clear();
-    BOM::Event::Actions::Client::_send_complaince_email_pow_uploaded($test_client)->get;
+    BOM::Event::Actions::Client::_send_complaince_email_pow_uploaded(client => $test_client)->get;
 
     my $msg = mailbox_search(subject => qr/New uploaded EDD document for/);
     ok $msg, 'email sent';

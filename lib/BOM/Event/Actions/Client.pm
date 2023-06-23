@@ -1969,11 +1969,12 @@ Send email to complaince when client uploads a document
 =cut
 
 async sub _send_complaince_email_pow_uploaded {
-    my ($client) = @_;
-    my $brand = request->brand;
+    my (%args) = @_;
+    my $client = $args{client};
+    my $brand  = request->brand;
 
     my $from_email = $brand->emails('no-reply');
-    my $to_email   = $brand->emails('compliance');
+    my $to_email   = $brand->emails('compliance_ops');
 
     Email::Stuffer->from($from_email)->to($to_email)->subject('New uploaded EDD document for: ' . $client->loginid)
         ->text_body('New proof of income document was uploaded for ' . $client->loginid)->send();
