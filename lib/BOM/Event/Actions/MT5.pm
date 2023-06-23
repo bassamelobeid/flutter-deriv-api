@@ -1705,7 +1705,7 @@ async sub mt5_archive_restore_sync {
     push @message, 'No inconsistency detected, nothing is done.' unless @message;
 
     BOM::Platform::Email::send_email({
-        to      => 'x-tradingops@regentmarkets.com',
+        to      => 'x-trading-ops@regentmarkets.com',
         from    => '<no-reply@binary.com>',
         subject => 'MT5 Archive Account Restore and Sync Report',
         message => \@message,
