@@ -42,7 +42,7 @@ This script is used to do two things:
 - download from S3 and import it to redis along with database.
 
 Redis keys that will be imported:
-'interest*', 'dividend*', 'economic*', 'volatility*', 'correlation*', 'partial_trading*', 'holidays*', 'app_settings*', 'cryptocashier_settings*'
+'interest*', 'dividend*', 'economic*', 'volatility*', 'correlation*', 'partial_trading*', 'holidays*', 'app_settings*', 'cryptocashier_settings*, quants_config*'
 
 These options are available:
   -c, --s3-config          The path to yaml config file with AWS keys (default: '/etc/rmg/redis_s3.yml').
@@ -53,8 +53,10 @@ These options are available:
   -fa, --fulsh-all         Flush all the data redis data before imported.
 EOF
 
-my @redis_keys =
-    ('interest', 'dividend', 'economic', 'volatility', 'correlation', 'partial_trading', 'holidays', 'app_settings', 'cryptocashier_settings');
+my @redis_keys = (
+    'interest', 'dividend',     'economic', 'volatility', 'correlation', 'partial_trading',
+    'holidays', 'app_settings', 'cryptocashier_settings', 'quants_config'
+);
 my $config = LoadFile($s3_config);
 
 my $loop = IO::Async::Loop->new;
@@ -88,8 +90,8 @@ sub download_redis {
     my $timestamp = Date::Utility->new;
 
     if ($flush_before_import) {
-        # Remove chronicle keys related to app_settings and cryptocashier_settings
-        my @keys = map { @{$writer->cache_writer->scan_all(MATCH => "$_*")} } ('app_settings', 'cryptocashier_settings');
+        # Remove chronicle keys related to app_settings, cryptocashier_settings and quants_config
+        my @keys = map { @{$writer->cache_writer->scan_all(MATCH => "$_*")} } ('app_settings', 'cryptocashier_settings', 'quants_config');
         map { $writer->cache_writer->del($_) } @keys;
     }
 
