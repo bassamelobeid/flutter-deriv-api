@@ -132,6 +132,17 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     });
     $user->add_client($vrtc_client);
 
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    $user_connect->insert_connect(
+        $user->{id},
+        $user->{email},
+        {
+            user => {
+                identity => {
+                    provider              => 'google',
+                    provider_identity_uid => "test_uid"
+                }}});
+
     # Mock BOM::Event::Actions::Anonymization module
     my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
     $mock_anonymization->mock('_send_anonymization_report', sub { return 1 });
@@ -180,6 +191,25 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     $df_partial = [];
     $result     = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid})->get;
     is($result, 1, 'Returns 1 after user anonymized.');
+
+    # Check user social login connects anonymized
+    my $connect = $user_connect->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("
+                    SELECT id, email, provider_data, provider_identity_uid
+                      FROM users.binary_user_connects
+                     WHERE binary_user_id = ?
+            ", undef, $user->{id});
+        });
+
+    is_deeply $connect,
+        {
+        id                    => $connect->{id},
+        email                 => undef,
+        provider_data         => '{}',
+        provider_identity_uid => 'deleted_' . $connect->{id}
+        },
+        "social login connect is NOT anonymized";
 
     # Retrieve anonymized user from database by id
     @anonymized_clients = $user->clients(include_disabled => 1);
