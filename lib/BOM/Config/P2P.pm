@@ -18,7 +18,6 @@ use BOM::Config::Runtime;
 use LandingCompany::Registry;
 use JSON::MaybeUTF8 qw(:v1);
 use List::Util      qw(any);
-use Log::Any        qw($log);
 
 =head2 available_countries
 
@@ -37,10 +36,6 @@ sub available_countries {
 
     my $result = {};
     for my $country (keys %$all_countries) {
-        unless ($all_countries->{$country}{financial_company} && $all_countries->{$country}{gaming_company}) {
-            $log->debugf("This country code: %s has no financial or gaming company", $country);
-            next;
-        }
         next unless any { $_ eq $all_countries->{$country}{financial_company} or $_ eq $all_countries->{$country}{gaming_company} } @enabled_lc;
         next if any     { $_ eq $country } @restricted_countries;
         next unless $available;
