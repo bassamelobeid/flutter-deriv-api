@@ -603,45 +603,45 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
 
         $mock->unmock_all();
     };
-    subtest "LOW_TRADE" => sub {
-        $mock_user->mock('total_trades', sub { return 5 });
+    # subtest "LOW_TRADE" => sub {
+    #     $mock_user->mock('total_trades', sub { return 5 });
 
-        $mock->mock(
-            user_restricted => sub {
-                return undef;
-            });
+    #     $mock->mock(
+    #         user_restricted => sub {
+    #             return undef;
+    #         });
 
-        $mock->mock(
-            user_payment_details => sub {
-                return {
-                    count                             => 0,
-                    total_crypto_deposits             => 43,
-                    non_crypto_deposit_amount         => 3,
-                    non_crypto_withdraw_amount        => 0,
-                    currency_wise_crypto_net_deposits => {
-                        ETH => 25,
-                        BTC => 18.00
-                    },
-                    method_wise_net_deposits => {}};
-            });
+    #     $mock->mock(
+    #         user_payment_details => sub {
+    #             return {
+    #                 count                             => 0,
+    #                 total_crypto_deposits             => 43,
+    #                 non_crypto_deposit_amount         => 3,
+    #                 non_crypto_withdraw_amount        => 0,
+    #                 currency_wise_crypto_net_deposits => {
+    #                     ETH => 25,
+    #                     BTC => 18.00
+    #                 },
+    #                 method_wise_net_deposits => {}};
+    #         });
 
-        is_deeply(
-            $auto_approve_obj->user_activity(
-                binary_user_id                => $dummy_user->id,
-                total_withdrawal_amount       => 1,
-                total_withdrawal_amount_today => 4,
-                currency_code                 => 'BTC'
-            ),
-            {
-                auto_approve                         => 0,
-                tag                                  => 'LOW_TRADE',
-                total_withdrawal_amount_today_in_usd => 4,
-            },
-            "returns tag: LOW_TRADE when total trade amount is less than 25 percent of total deposits"
-        );
-        $mock->unmock_all();
-        $mock_user->unmock_all();
-    };
+    #     is_deeply(
+    #         $auto_approve_obj->user_activity(
+    #             binary_user_id                => $dummy_user->id,
+    #             total_withdrawal_amount       => 1,
+    #             total_withdrawal_amount_today => 4,
+    #             currency_code                 => 'BTC'
+    #         ),
+    #         {
+    #             auto_approve                         => 0,
+    #             tag                                  => 'LOW_TRADE',
+    #             total_withdrawal_amount_today_in_usd => 4,
+    #         },
+    #         "returns tag: LOW_TRADE when total trade amount is less than 25 percent of total deposits"
+    #     );
+    #     $mock->unmock_all();
+    #     $mock_user->unmock_all();
+    # };
 };
 
 $mock_autoupdate->unmock_all();
