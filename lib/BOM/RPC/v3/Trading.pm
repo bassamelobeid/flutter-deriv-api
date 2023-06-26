@@ -877,11 +877,10 @@ sub get_dxtrade_server_list {
 
     my @market_types = grep {
         local $log->context->{account_type} = $_;
-        my $result = $countries->dx_company_for_country(
+        $countries->dx_company_for_country(
             country      => $client->residence,
             account_type => $_
-        );
-        defined($result) && $result ne 'none';
+        ) ne 'none'
     } qw/all/;
 
     return Future->done([]) unless @market_types;
