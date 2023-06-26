@@ -13,10 +13,10 @@ my $allowed_naked_packages = {
     'BOM::Event::Services'                              => 11,
     'BOM::Event::Actions::P2P'                          => 1,
     'BOM::Event::Actions::MyAffiliate'                  => 5,
-    'BOM::Event::Actions::Client'                       => 19,
+    'BOM::Event::Actions::Client'                       => 18,
     'BOM::Event::Actions::MT5'                          => 2,
     'BOM::Event::Actions::CustomerStatement'            => 2,
-    'BOM::Event::Services::Track'                       => 10,
+    'BOM::Event::Services::Track'                       => 9,
     'BOM::Event::Actions::Client::IdentityVerification' => 3,
     'BOM::Event::Actions::Anonymization'                => 1,
 };

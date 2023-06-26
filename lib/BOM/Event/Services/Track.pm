@@ -164,22 +164,14 @@ my %EVENT_PROPERTIES = (
     p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url)],
     poi_poa_resubmission        =>
         [qw(first_name poi_reason poi_title poi_subtitle footnote poi_layout poa_reason poa_title poa_subtitle poa_layout title is_eu)],
-    professional_status_requested            => [qw(first_name email request_professional_status)],
-    payops_event_email                       => [qw(contents subject loginid email_template properties)],
-    p2p_limit_changed                        => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
-    p2p_limit_upgrade_available              => [qw(loginid advertiser_id)],
-    dp_successful_login                      => [qw(timestamp)],
-    pa_first_time_approved                   => [qw(first_name contact_email tnc_url)],
-    shared_payment_method_email_notification => [qw(client_first_name client_last_name ask_poi authentication_url payment_methods_url email)],
-    professional_status_requested            => [qw(first_name email request_professional_status)],
-    payops_event_email                       => [qw(contents subject loginid email_template properties)],
-    p2p_limit_changed                        => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
-    p2p_limit_upgrade_available              => [qw(loginid advertiser_id)],
-    dp_successful_login                      => [qw(timestamp)],
-    pa_first_time_approved                   => [qw(first_name contact_email tnc_url)],
-    derivez_inactive_notification            => [qw(email name closure_date accounts)],
-    derivez_inactive_account_closed          => [qw(name title derivez_accounts live_chat_url)],
-
+    professional_status_requested   => [qw(first_name email request_professional_status)],
+    payops_event_email              => [qw(contents subject loginid email_template properties)],
+    p2p_limit_changed               => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve block_trade)],
+    p2p_limit_upgrade_available     => [qw(loginid advertiser_id)],
+    dp_successful_login             => [qw(timestamp)],
+    pa_first_time_approved          => [qw(first_name contact_email tnc_url)],
+    derivez_inactive_notification   => [qw(email name closure_date accounts)],
+    derivez_inactive_account_closed => [qw(name title derivez_accounts live_chat_url)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -235,7 +227,6 @@ my @COMMON_EVENT_METHODS = qw(
     p2p_limit_upgrade_available
     identity_verification_rejected
     pa_first_time_approved
-    shared_payment_method_email_notification
 );
 
 # list of events that will be forwarded directly to cio as tranasctional emails
