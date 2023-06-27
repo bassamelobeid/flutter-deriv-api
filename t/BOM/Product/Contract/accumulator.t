@@ -101,7 +101,11 @@ subtest 'shortcode and longcode' => sub {
     is $c->shortcode, 'ACCU_R_100_1.00_1_0.01_1_0.02_' . $now->epoch, 'shortcode populated correctly';
     is_deeply(
         $c->longcode,
-        ['Your stake will grow at [_1]% per tick continuously for every tick that the spot price remains within the Range.', [1]],
+        [
+            'After the entry spot tick, your stake will grow continuously by [_1]% for every tick that the spot price remains within the ± [_2] % from the previous spot price.',
+            [1],
+            [2]
+        ],
         'longcode matches'
     );
     is $c->growth_rate, 0.01, 'growth rate is 0.01';
