@@ -345,14 +345,16 @@ async sub stats {
 
 =head2 submit_unknown
 
-Submits contracts for unknown symbols for pricing every second
+We might get pricing requests for which we can't determine the symbol. Those
+are most likely invalid, but we still should submit them about once a second to
+price daemon.
 
 =cut
 
 async sub submit_unknown {
     my $self = shift;
     while (1) {
-        await $self->loop->delay_future(after => 1);
+        await $self->loop->delay_future(at => int($self->loop->time) + 1);
         await $self->process('_UNKNOWN_');
     }
 }
@@ -370,7 +372,7 @@ async sub submit_noticks {
         for my $sym (keys %{$self->{cache_by_symbol}}) {
             my $t = $self->loop->time;
             $self->{last_tick}{$sym} //= $t;
-            if ($self->{last_tick}{$sym} + 5 < $t) {
+            if ($self->{last_tick}{$sym} + 4 < int($t)) {
                 await $self->process($sym);
             }
         }
@@ -406,8 +408,16 @@ runs a routine that updates the list of contracts in memory
 async sub run_contract_updater {
     my $self = shift;
     while (1) {
-        await $self->loop->delay_future(after => 0.1);
+        my $t = $self->loop->time;
         await $self->update_list_of_contracts;
+        # on production it takes about 0.035sec to update the list of
+        # contracts, the procedure is also rather CPU intensive. Ideally we
+        # want the list of contracts to be updated continuously and we want to
+        # pick up new ones as fast as possible, but we also don't want updating
+        # list of contracts to affect other tasks. Hence we only update the
+        # list once in 0.1sec. That also makes it update the contracts with the
+        # same frequency in QA and in production.
+        await $self->loop->delay_future(at => $t + 0.1);
     }
 }
 
@@ -575,8 +585,8 @@ async sub dequeue {
     # once we upgrade redis to 6.2.0 use the following instead of the loop
     # my $deq = await $self->redis->rpop('pricer_jobs', $count);
     my $deq = [];
-    for (0 .. $count) {
-        push @$deq, $self->redis->rpop('pricer_jobs')->get;
+    for (my $i = 0; $i < $count; $i++) {
+        push @$deq, await $self->redis->rpop('pricer_jobs');
     }
     return unless 0 + @$deq;
     return unless $self->record_price_metrics;
