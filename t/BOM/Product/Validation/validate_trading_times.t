@@ -139,7 +139,7 @@ subtest 'trading hours' => sub {
     $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
-        ['This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.']);
+        ['This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.', '2016-03-29 01:30:00']);
     is_deeply $c->primary_validation_error->{details}, {field => 'symbol'}, 'error detials is not correct';
     is $c->primary_validation_error->code, 'MarketIsClosedTryVolatility', 'code is set correctly when market is closed';
 
@@ -150,7 +150,7 @@ subtest 'trading hours' => sub {
     ok $c->is_forward_starting, 'forward starting';
     ok !$c->is_valid_to_buy,    'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
-        ['The market must be open at the start time. Try out the Synthetic Indices which are always open.']);
+        ['The market must be open at the start time. Try out the Synthetic Indices which are always open.', '2016-03-29 01:30:00']);
     is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
     $args->{date_start} = $hsi_open->plus_time_interval('11m');
     $c = produce_contract($args);
