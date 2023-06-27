@@ -1004,6 +1004,13 @@ sub _build_bid_response {
         {
             $contract_close_tick = $contract->close_tick;
         }
+
+        if ((!$contract->is_path_dependent) and ($contract->can('close_tick'))) {
+            # using close_tick if the non path dependent contract has the method defined
+            # since tick_at is not reliable for sell at market contracts
+            $contract_close_tick = $contract->close_tick;
+        }
+
         # client sold early
         $contract_close_tick = $contract->underlying->tick_at($params->{sell_time}, {allow_inconsistent => 1})
             unless defined $contract_close_tick;

@@ -5,6 +5,7 @@ use BOM::Product::ContractFactory;
 use Test::MockModule;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase;
 set_absolute_time('2021-10-21T00:00:00Z');
 note "set time to: " . Date::Utility->new->date . " - " . Date::Utility->new->epoch;
 initialize_realtime_ticks_db();
@@ -111,5 +112,79 @@ ok !$result->{error}, 'build_bid_response for MULTUP';
 is $result->{'underlying'},    'R_100',  'underlying R_100';
 is $result->{'bid_price'},     '100.00', 'bid_price matches';
 is $result->{'contract_type'}, 'MULTUP', 'contract_type MULTUP';
+
+my $now       = Date::Utility->new(1634775000);
+my $sell_time = Date::Utility->new(1634775100);
+my $expiry    = Date::Utility->new(1634776000);
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_100',
+    epoch      => $now->epoch,
+    quote      => 65258.19,
+});
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_100',
+    epoch      => $sell_time->epoch - 1,
+    quote      => 65350.19,
+});
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_100',
+    epoch      => $sell_time->epoch,
+    quote      => 65221.23,
+});
+
+$params = {
+    'proposal'              => 1,
+    'date_start'            => $now,
+    'currency'              => 'USD',
+    'date_expiry'           => $expiry,
+    'bet_type'              => 'VANILLALONGCALL',
+    'amount'                => '100',
+    'barrier'               => '67750.20',
+    'app_markup_percentage' => 0,
+    'underlying'            => 'R_100',
+    'amount_type'           => 'stake',
+    'skip_validation'       => 1,
+    'sell_time'             => $sell_time->epoch,
+    'sell_price'            => 253
+};
+
+$contract = BOM::Product::ContractFactory::produce_contract($params);
+
+$params = {
+    contract           => $contract,
+    is_valid_to_sell   => 1,
+    is_valid_to_cancel => 1,
+    sell_time          => $sell_time->epoch,
+};
+$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+is $result->{exit_tick_time}, $sell_time->epoch - 1, 'correct sell at market tick';
+
+$params = {
+    'proposal'              => 1,
+    'date_start'            => $now,
+    'currency'              => 'USD',
+    'date_expiry'           => $expiry,
+    'bet_type'              => 'TURBOSLONG',
+    'amount'                => '100',
+    'barrier'               => '67750.20',
+    'app_markup_percentage' => 0,
+    'underlying'            => 'R_100',
+    'amount_type'           => 'stake',
+    'skip_validation'       => 1,
+    'sell_time'             => $sell_time->epoch,
+    'sell_price'            => 253
+};
+
+$contract = BOM::Product::ContractFactory::produce_contract($params);
+
+$params = {
+    contract           => $contract,
+    is_valid_to_sell   => 1,
+    is_valid_to_cancel => 1,
+    sell_time          => $sell_time->epoch,
+};
+$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+is $result->{exit_tick_time}, $sell_time->epoch - 1, 'correct sell at market tick';
 
 done_testing;
