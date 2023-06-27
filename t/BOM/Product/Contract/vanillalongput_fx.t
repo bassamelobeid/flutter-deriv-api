@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -193,6 +193,24 @@ subtest 'basic produce_contract' => sub {
     is sprintf("%.5f", $c->bid_probability->amount), '0.00650', 'correct bid probability';
     is sprintf("%.5f", $c->ask_probability->amount), '0.00650', 'correct ask probability';
 
+};
+
+subtest 'longcode' => sub {
+    my $c = produce_contract($args);
+    is_deeply(
+        $c->longcode,
+        [
+            "For a 'Put' contract, you receive a payout on [_3] if the final price of [_1] is below [_4]. The payout is equal to [_5] multiplied by the difference[_7]between the final price and [_4]. You may choose to sell the contract up until [_6] before [_3], and receive a contract value. ",
+            ['EUR/USD'],
+            [],
+            '12-Mar-15 14:00:00GMT',
+            '1.08394',
+            '0.01539',
+            '24 hours',
+            ', in pips, '
+        ],
+        'longcode matches'
+    );
 };
 
 subtest 'check spread spot and spread vol is applied (specific time)' => sub {

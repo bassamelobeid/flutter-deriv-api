@@ -196,15 +196,14 @@ subtest 'longcode' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Your payout will be [_5] for each point above [_4] at expiry time',
+            "For a 'Call' contract, you receive a payout on [_3] if the final price of [_1] is above [_4]. The payout is equal to [_5] multiplied by the difference[_7]between the final price and [_4]. You may choose to sell the contract up until [_6] before [_3], and receive a contract value. ",
             ['Volatility 100 Index'],
             ['contract start time'],
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => 36000
-            },
+            '10-Mar-15 10:00:00GMT',
             '69420.00',
-            '0.02080'
+            '0.02080',
+            '60 seconds',
+            ' '
         ],
         'longcode matches'
     );
