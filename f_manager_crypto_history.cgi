@@ -125,9 +125,6 @@ my $prepare_transaction = sub {
     my $search_param = "${txn_type}_address_search";
 
     my $search_address = $address;
-    if ($action eq $search_param && trim(request()->param($search_param))) {
-        $search_address = trim(request()->param($search_param));
-    }
 
     my $reprocess_info;
     if ($txn_type eq 'deposit' && $action eq 'reprocess_address') {

@@ -53,7 +53,7 @@
         <div class="grd-margin-bottom">
             <form method="POST">
                 <label>
-                    Address: <input type="text" name="[% txn_type %]_address_search" autocomplete="off" size="40" />
+                    Address: <input type="text" name="address" autocomplete="off" size="40" />
                 </label>
                 <button type="submit" class="btn btn--primary" name="action" value="[% txn_type %]_address_search">Search</button>
             </form>
@@ -117,7 +117,7 @@
                             </td>
                             <td valign="top">
                                 [% WRAPPER info title='Amount' %][% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount || 'not available' %])[% END %]
-                                [% UNLESS loginid %]
+                                [% IF !loginid && trx.loginid %]
                                     [% WRAPPER info title='Client' %]
                                         <ul style="margin-top: 0;">
                                             <li><a class="link link--primary" href="[% get_clientedit_url(trx.loginid) %]">[% trx.loginid %]</a></li>

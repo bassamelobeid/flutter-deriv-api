@@ -174,34 +174,35 @@ my $display_transactions = sub {
 
         $trx->{exchange_rate} = $trx->{exchange_rate} || $exchange_rate;
         $trx->{amount_usd}    = commas(formatnumber('amount', 'USD', ($trx->{amount} // 0) * $trx->{exchange_rate}));
+        if ($trx->{loginid}) {
+            $trx->{statement_link} = request()->url_for(
+                'backoffice/f_manager_history.cgi',
+                {
+                    broker  => $broker,
+                    loginID => $trx->{loginid},
+                });
 
-        $trx->{statement_link} = request()->url_for(
-            'backoffice/f_manager_history.cgi',
-            {
-                broker  => $broker,
-                loginID => $trx->{loginid},
-            });
+            $trx->{profit_link} = request()->url_for(
+                'backoffice/f_profit_check.cgi',
+                {
+                    broker    => $broker,
+                    loginID   => $trx->{loginid},
+                    startdate => Date::Utility->today()->_minus_months(1)->date,
+                    enddate   => Date::Utility->today()->date,
+                });
 
-        $trx->{profit_link} = request()->url_for(
-            'backoffice/f_profit_check.cgi',
-            {
-                broker    => $broker,
-                loginID   => $trx->{loginid},
-                startdate => Date::Utility->today()->_minus_months(1)->date,
-                enddate   => Date::Utility->today()->date,
-            });
+            # We should prevent verifying the withdrawal transaction by the payment team
+            # if the client withdrawal is locked
+            my $client = BOM::User::Client->new({loginid => $trx->{loginid}});
+            $trx->{is_withdrawal_locked} =
+                ($client->status->withdrawal_locked || $client->status->cashier_locked || $client->status->no_withdrawal_or_trading)
+                if $trx->{type} eq 'withdrawal';
 
-        # We should prevent verifying the withdrawal transaction by the payment team
-        # if the client withdrawal is locked
-        my $client = BOM::User::Client->new({loginid => $trx->{loginid}});
-        $trx->{is_withdrawal_locked} =
-            ($client->status->withdrawal_locked || $client->status->cashier_locked || $client->status->no_withdrawal_or_trading)
-            if $trx->{type} eq 'withdrawal';
-
-        $trx->{client_status} =
-              $client->fully_authenticated      ? 'Fully Authenticated'
-            : $client->status->age_verification ? 'Age Verified'
-            :                                     'Unauthenticated';
+            $trx->{client_status} =
+                  $client->fully_authenticated      ? 'Fully Authenticated'
+                : $client->status->age_verification ? 'Age Verified'
+                :                                     'Unauthenticated';
+        }
     }
 
     #sort rejection reasons & grep only required data for template

@@ -275,11 +275,17 @@
                         <tr>
                             <th>Client:</th>
                             <td>
-                                [% trx.loginid %]<br />
-                                <a class="link" href="[% trx.statement_link %]" target="_blank">Statement</a><br />
-                                <a class="link" href="[% trx.profit_link %]" target="_blank">Profit</a>
+                                [% IF trx.loginid %]
+                                    [% trx.loginid %]<br />
+                                    <a class="link" href="[% trx.statement_link %]" target="_blank">Statement</a><br />
+                                    <a class="link" href="[% trx.profit_link %]" target="_blank">Profit</a>
+                                [% END %]
                             </td>
-                            <td><button class="btn btn--primary" onClick="viewFiatStatement(this, '[% trx.loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT Statement</button></td>
+                            <td>
+                                [% IF trx.loginid %]
+                                    <button class="btn btn--primary" onClick="viewFiatStatement(this, '[% trx.loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT Statement</button>
+                                [% END %]
+                            </td>
                             <td></td>
                         </tr>
                         <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
