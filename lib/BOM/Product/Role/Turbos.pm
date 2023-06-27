@@ -13,6 +13,8 @@ use BOM::Product::Exception;
 use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Turbos;
 use BOM::Config::Quants qw(minimum_stake_limit);
+with 'BOM::Product::Role::AmericanExpiry' => {-excludes => '_build_hit_tick'};
+with 'BOM::Product::Role::SingleBarrier'  => {-excludes => '_validate_barrier'};
 
 =head2 ADDED_CURRENCY_PRECISION
 
@@ -461,6 +463,32 @@ override '_build_ask_price' => sub {
     my $self = shift;
     return $self->_user_input_stake;
 };
+
+=head2 sell_at_market_tick
+
+This should be close_tick but it's defined in AmericanExpiry Role
+Approximates the sold at market tick.
+Given sell price,
+we can calculate bid price at sell time and sell time - 1.
+The tick with smaller difference between bid price and sell price is the sold at market tick.
+
+=cut
+
+sub sell_at_market_tick {
+    my $self = shift;
+
+    my $sell_price = $self->sell_price;
+    return unless $sell_price;
+
+    my $tick_at_sell_time = $self->_tick_accessor->tick_at($self->sell_time,     {allow_inconsistent => 1});
+    my $tick_before_that  = $self->_tick_accessor->tick_at($self->sell_time - 1, {allow_inconsistent => 1});
+
+    my $bid_price_at_sell_time = $self->calculate_payout($tick_at_sell_time);
+    my $bid_price_before_that  = $self->calculate_payout($tick_before_that);
+
+    return abs($sell_price - $bid_price_at_sell_time) < abs($sell_price - $bid_price_before_that) ? $tick_at_sell_time : $tick_before_that;
+
+}
 
 has [qw(min_stake max_stake)] => (
     is         => 'ro',

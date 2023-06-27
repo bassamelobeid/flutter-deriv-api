@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -34,7 +34,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
     [69176.23, $now->epoch + 180, 'R_100'],
     [69418.19, $now->epoch + 599, 'R_100'],
     [69420.69, $now->epoch + 600, 'R_100'],
-    [69419.48, $now->epoch + 601, 'R_100']);
+    [69420.69, $now->epoch + 601, 'R_100']);
 
 my $args = {
     bet_type     => 'Vanillalongcall',
@@ -584,6 +584,29 @@ subtest 'affiliate commission' => sub {
 
     is $c->is_expired,      1, 'contract is expired';
     is $c->sell_commission, 0, 'correct commission';
+
+};
+
+subtest 'consistent sell tick' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([68258.19, $now->epoch, 'R_100'], [69420.69, $now->epoch + 17999, 'R_100']);
+
+    $args->{date_pricing} = $now->plus_time_interval('5h');
+    my $c                    = produce_contract($args);
+    my $sold_at_market_price = $c->bid_price;
+    is $c->current_tick->epoch, $now->epoch + 17999, 'correct tick';
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch + 18000,
+        quote      => 69696.69,
+    });
+
+    # oops, sold at market but time is t + 1
+    $args->{sell_price} = $sold_at_market_price;
+    $args->{sell_time}  = $now->epoch + 18000;
+    $c                  = produce_contract($args);
+    is $c->close_tick->quote, 69420.69,            'correct tick';
+    is $c->close_tick->epoch, $now->epoch + 17999, 'correct tick';
 
 };
 

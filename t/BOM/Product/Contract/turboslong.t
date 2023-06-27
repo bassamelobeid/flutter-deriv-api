@@ -359,4 +359,30 @@ subtest 'special test case' => sub {
     is $c->bid_price, '98.13', 'has bid price';
 };
 
+subtest 'consistent sell tick' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([10138.979, $now->epoch, $symbol], [10139.829, $now->epoch + 17999, $symbol]);
+
+    $args->{underlying}   = $symbol;
+    $args->{duration}     = '7h';
+    $args->{date_pricing} = $now->plus_time_interval('5h');
+    my $c                    = produce_contract($args);
+    my $sold_at_market_price = $c->bid_price;
+    is $c->current_tick->epoch, $now->epoch + 17999, 'correct tick';
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $symbol,
+        epoch      => $now->epoch + 18000,
+        quote      => 10141.69,
+    });
+
+    # oops, sold at market, but time is t + 1
+    $args->{sell_price} = $sold_at_market_price;
+    $args->{sell_time}  = $now->epoch + 18000;
+    $c                  = produce_contract($args);
+
+    is $c->close_tick->quote, 10139.829,           'correct tick';
+    is $c->close_tick->epoch, $now->epoch + 17999, 'correct tick';
+
+};
+
 done_testing();

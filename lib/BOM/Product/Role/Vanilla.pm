@@ -394,6 +394,49 @@ sub _build_theo_probability {
     return $bs_prob;
 }
 
+has close_tick => (
+    is         => 'ro',
+    lazy_build => 1
+);
+
+=head2 _build_close_tick
+
+Approximates the sold at market tick.
+Given sell price,
+we can calculate bid price at sell time and sell time - 1.
+The tick with smaller difference between bid price and sell price is the sold at market tick.
+
+=cut
+
+sub _build_close_tick {
+    my $self = shift;
+
+    my $sell_price = $self->sell_price;
+    return unless $sell_price;
+
+    my $tick_at_sell_time = $self->_tick_accessor->tick_at($self->sell_time,     {allow_inconsistent => 1});
+    my $tick_before_that  = $self->_tick_accessor->tick_at($self->sell_time - 1, {allow_inconsistent => 1});
+
+    my $bid_price_at_sell_time = do {
+        local $self->_pricing_args->{spot} = $tick_at_sell_time->quote;
+        $self->_build_bid_probability;
+    };
+
+    my $bid_price_before_that = do {
+        local $self->_pricing_args->{spot} = $tick_before_that->quote;
+        $self->_build_bid_probability;
+    };
+
+    my $number_of_contracts = $self->number_of_contracts;
+    $number_of_contracts = $number_of_contracts / $self->underlying->pip_size unless $self->is_synthetic;
+
+    $bid_price_at_sell_time = $bid_price_at_sell_time->amount * $number_of_contracts;
+    $bid_price_before_that  = $bid_price_before_that->amount * $number_of_contracts;
+
+    return abs($sell_price - $bid_price_at_sell_time) < abs($sell_price - $bid_price_before_that) ? $tick_at_sell_time : $tick_before_that;
+
+}
+
 =head2 theo_price
 
 Calculates the theoretical blackscholes option price (no markup)

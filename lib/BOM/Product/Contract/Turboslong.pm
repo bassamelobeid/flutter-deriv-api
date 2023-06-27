@@ -2,8 +2,6 @@ package BOM::Product::Contract::Turboslong;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::AmericanExpiry' => {-excludes => '_build_hit_tick'};
-with 'BOM::Product::Role::SingleBarrier'  => {-excludes => '_validate_barrier'};
 with 'BOM::Product::Role::Turbos';
 
 use BOM::Product::Exception;
