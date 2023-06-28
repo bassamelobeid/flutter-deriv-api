@@ -52,15 +52,21 @@ my $secret_key = BOM::User::TOTP->generate_key();
 my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
 $mocked_request->mock('domain_name', 'www.binaryqa.com');
 
-my $t = Test::Mojo->new('BOM::OAuth');
-
-$t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
+# Mock secure cookie session as false as http is used in tests.
+my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
+$mocked_cookie_session->mock(
+    'secure' => sub {
+        return 0;
+    });
 
 my $mock_history = Test::MockModule->new('BOM::User');
 $mock_history->mock(
     'get_last_successful_login_history' => sub {
         return {"environment" => "IP=1.1.1.1 IP_COUNTRY=1.1.1.1 User_AGENT=ABC LANG=AU"};
     });
+
+my $t = Test::Mojo->new('BOM::OAuth');
+$t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 
 my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';

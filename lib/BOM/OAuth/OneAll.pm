@@ -28,7 +28,8 @@ sub callback {
     # For optimization reason, the URI should be contructed afterwards
     # checking for presence of connection token in request parameters.
     my $connection_token = $c->param('connection_token') // $c->_get_provider_token() // '';
-    my $redirect_uri     = $c->req->url->path('/oauth2/authorize')->to_abs;
+    my $redirect_uri     = $c->req->url->path('/oauth2/authorize')->to_abs->scheme('https');
+
     # Redirect client to authorize subroutine if there is no connection token provided
     return $c->redirect_to($redirect_uri) unless $connection_token;
 

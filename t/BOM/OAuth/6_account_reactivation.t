@@ -62,6 +62,13 @@ $user->add_client($client_vr);
 my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
 $mocked_request->mock('domain_name', 'www.binaryqa.com');
 
+# Mock secure cookie session as false as http is used in tests.
+my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
+$mocked_cookie_session->mock(
+    'secure' => sub {
+        return 0;
+    });
+
 # mock is_official_app to app scope confirmation step
 my $mock_oath_model = Test::MockModule->new('BOM::Database::Model::OAuth');
 $mock_oath_model->mock(is_official_app => sub { return 1 });

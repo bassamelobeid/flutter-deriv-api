@@ -14,6 +14,7 @@ use Log::Any qw($log);
 sub startup {
     my $app = shift;
 
+    $app->sessions->secure(1);
     $app->plugin('Config' => {file => $ENV{OAUTH_CONFIG} || '/etc/rmg/oauth.conf'});
     # announce startup and context in logfile
     $log->warn("BOM-OAuth:            Starting.");

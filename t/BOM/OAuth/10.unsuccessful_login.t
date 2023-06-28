@@ -30,6 +30,13 @@ $mock->mock(
         $stats_inc->{$key} = 1;
     });
 
+# Mock secure cookie session as false as http is used in tests.
+my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
+$mocked_cookie_session->mock(
+    'secure' => sub {
+        return 0;
+    });
+
 subtest 'Disabled TOTP' => sub {
     my $client = create_client('block+ip@binary.com', 'Abcd1243', 'CR');
     my $app    = create_app('Testing for IP Blocks');

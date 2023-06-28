@@ -50,6 +50,13 @@ $redis->del("CLIENT_LOGIN_HISTORY::" . $user->id);
 my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
 $mocked_request->mock('domain_name', 'www.binaryqa.com');
 
+# Mock secure cookie session as false as http is used in tests.
+my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
+$mocked_cookie_session->mock(
+    'secure' => sub {
+        return 0;
+    });
+
 # mock send email
 my $events = {};
 

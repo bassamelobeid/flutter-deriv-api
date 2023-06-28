@@ -47,6 +47,13 @@ my $client_cr;
 my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
 $mocked_request->mock('domain_name', 'www.binaryqa.com');
 
+# Mock secure cookie session as false as http is used in tests.
+my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
+$mocked_cookie_session->mock(
+    'secure' => sub {
+        return 0;
+    });
+
 my $t = Test::Mojo->new('BOM::OAuth');
 
 $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);

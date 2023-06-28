@@ -115,6 +115,13 @@ my $user = BOM::User->create(
 );
 $user->add_client($client_cr);
 
+# Mock secure cookie session as false as http is used in tests.
+my $mock_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
+$mock_cookie_session->mock(
+    'secure' => sub {
+        return 0;
+    });
+
 my $omock   = Test::MockModule->new('BOM::OAuth::O');
 my $session = {};
 my $redirect_uri;
