@@ -746,8 +746,6 @@ async sub client_verification {
             check_id => $check_id,
         );
 
-        DataDog::DogStatsd::Helper::stats_inc('onfido.api.hit');
-
         my $applicant_id = $check->applicant_id;
         my $result       = $check->result;
 
@@ -777,6 +775,7 @@ async sub client_verification {
 
             $client = BOM::User::Client->new({loginid => $loginid})
                 or die 'Could not instantiate client for login ID ' . $loginid;
+            $args->{loginid} = $loginid;    # to get logged in case of timeout
             $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
             # check if the applicant already exist for this check. If not, store the applicant record in db
@@ -1462,7 +1461,6 @@ async sub sync_onfido_details {
         $client_details_onfido->{applicant_id} = $applicant_id;
 
         my $response = await _onfido()->applicant_update(%$client_details_onfido);
-        DataDog::DogStatsd::Helper::stats_inc('onfido.api.hit');
 
         return $response;
 
@@ -2730,7 +2728,6 @@ async sub check_or_store_onfido_applicant {
     # fetch and store the new applicantid for the user
     my $onfido    = _onfido();
     my $applicant = await $onfido->applicant_get(applicant_id => $applicant_id);
-    DataDog::DogStatsd::Helper::stats_inc('onfido.api.hit');
 
     BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
 

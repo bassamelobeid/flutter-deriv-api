@@ -214,6 +214,35 @@ subtest 'async_subs' => sub {
             details => {wait => 1}})->get;
     is $f, 'test did not time out', "Async job less than MAXIMUM_JOB_TIME should not time out.";
 
+    # override timeout with env vars
+    my $mock_qa = Test::MockModule->new('BOM::Config');
+    $mock_qa->mock('on_qa' => 1);
+
+    $handler = BOM::Event::QueueHandler->new(
+        queue            => 'GENERIC_EVENTS_QUEUE',
+        maximum_job_time => 5,
+    );
+    $loop->add($handler);
+    $ENV{ASYNC_SUB_1_MAXIMUM_JOB_TIME} = 1;
+    $log->clear;
+    $f = $handler->process_job(
+        'GENERIC_EVENTS_QUEUE',
+        {
+            type    => 'async_sub_1',
+            details => {wait => 3}})->get;
+    $log->contains_ok(qr/GENERIC_EVENTS_QUEUE took longer than 'MAXIMUM_JOB_TIME'/, "Timeout hit as the maximum job time was overriden by env var");
+
+    # while not on qa the override should be ignored
+    $mock_qa->mock('on_qa' => 0);
+
+    $f = $handler->process_job(
+        'GENERIC_EVENTS_QUEUE',
+        {
+            type    => 'async_sub_1',
+            details => {wait => 3}})->get;
+    is $f, 'test did not time out', "Should not timeout while not on QA even with env var override";
+
+    $mock_qa->unmock_all();
     $module->unmock_all();
 };
 

@@ -22,6 +22,7 @@ use WebService::Async::Onfido;
 use WebService::Async::SmartyStreets;
 use WebService::Async::Segment;
 use WebService::Async::CustomerIO;
+use DataDog::DogStatsd::Helper;
 
 use BOM::Config;
 use BOM::Config::Redis;
@@ -69,6 +70,12 @@ sub onfido {
     return $self->{onfido} //= do {
         $self->add_child(
             my $service = WebService::Async::Onfido->new(
+                on_api_hit => sub {
+                    DataDog::DogStatsd::Helper::stats_inc('onfido.api.hit');
+                },
+                on_rate_limit => sub {
+                    DataDog::DogStatsd::Helper::stats_inc('onfido.api.rate_limit');
+                },
                 token => BOM::Config::third_party()->{onfido}->{authorization_token} // 'test',
                 $ENV{ONFIDO_URL} ? (base_uri => $ENV{ONFIDO_URL}) : ()));
         $service;

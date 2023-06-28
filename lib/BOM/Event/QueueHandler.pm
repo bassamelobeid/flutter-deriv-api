@@ -31,6 +31,7 @@ use Algorithm::Backoff;
 use curry;
 use Future::Utils qw(fmap0);
 use List::Util    qw( any first );
+use BOM::Config;
 
 use constant REQUESTS_PER_CYCLE => 5000;
 
@@ -631,9 +632,14 @@ async sub process_job {
         # for Future->wrap to work. Note that the actual stack element which Perl complains about
         # is just the class name (the string 'Future') - this would likely need some quality time with gdb
         # to dissect fully.
-        my $res = $self->job_processor->process($event_data, $stream);
-        my $f   = Future->wrap($res);
-        return await Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time));
+        my $res      = $self->job_processor->process($event_data, $stream);
+        my $f        = Future->wrap($res);
+        my $job_time = $self->maximum_job_time;
+
+        # selective max job time per event, for QA use only e.g.: CLIENT_VERIFICATION_MAXIMUM_JOB_TIME="1"
+        $job_time = $ENV{uc($event_data->{type} . '_MAXIMUM_JOB_TIME')} // $self->maximum_job_time if BOM::Config::on_qa() && $event_data->{type};
+
+        return await Future->wait_any($f, $self->loop->timeout_future(after => $job_time));
     } catch ($e) {
         my $cleaned_data = $self->clean_data_for_logging($event_data);
 

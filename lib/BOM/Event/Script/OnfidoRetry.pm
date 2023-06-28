@@ -18,6 +18,7 @@ use BOM::Database::UserDB;
 use Future::AsyncAwait;
 use BOM::Event::Services;
 use IO::Async::Loop;
+use DataDog::DogStatsd::Helper;
 
 =head2 run
 
@@ -40,6 +41,8 @@ async sub run {
         );
 
         next if $onfido_check->status eq 'in_progress';
+
+        DataDog::DogStatsd::Helper::stats_inc('onfido.retry');
 
         BOM::Platform::Event::Emitter::emit(
             'client_verification',

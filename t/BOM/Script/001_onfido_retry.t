@@ -81,6 +81,15 @@ $mock_events->redefine(
             };
     });
 
+my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my @doggy_bag;
+
+$dog_mock->mock(
+    'stats_inc',
+    sub {
+        push @doggy_bag, shift;
+    });
+
 my $check = $onfido->applicant_check(
     applicant_id => $applicant->id,
     # We don't want Onfido to start emailing people
@@ -96,11 +105,14 @@ my $check = $onfido->applicant_check(
 )->get;
 
 subtest 'empty checks' => sub {
+
     @emissions = ();
+    @doggy_bag = ();
 
     BOM::Event::Script::OnfidoRetry::run()->get();
 
     cmp_deeply [@emissions], [], 'Empty emissions as expected';
+    cmp_deeply [@doggy_bag], [], 'Empty datadog as expected';
 
     $check->{status} = 'in_progress';
     lives_ok { BOM::User::Onfido::store_onfido_check($applicant->id, $check); } 'Storing onfido check should pass';
@@ -108,6 +120,7 @@ subtest 'empty checks' => sub {
     BOM::Event::Script::OnfidoRetry::run()->get();
 
     cmp_deeply [@emissions], [], 'Empty emissions as expected (too soon)';
+    cmp_deeply [@doggy_bag], [], 'Empty datadog as expected';
 
     $check->{status} = 'complete';
     lives_ok { BOM::User::Onfido::update_onfido_check($check); } 'Storing onfido check should pass';
@@ -115,6 +128,7 @@ subtest 'empty checks' => sub {
     BOM::Event::Script::OnfidoRetry::run()->get();
 
     cmp_deeply [@emissions], [], 'Empty emissions as expected (complete status)';
+    cmp_deeply [@doggy_bag], [], 'Empty datadog as expected';
 
     # manipulate created_at
     BOM::Database::UserDB::rose_db()->dbic->run(
@@ -128,12 +142,14 @@ subtest 'empty checks' => sub {
     BOM::Event::Script::OnfidoRetry::run()->get();
 
     cmp_deeply [@emissions], [], 'Empty emissions as expected (complete status even if is not too soon)';
+    cmp_deeply [@doggy_bag], [], 'Empty datadog as expected';
 };
 
 subtest 'in progress check are completed by Onfido' => sub {
     $check->{status} = 'in_progress';
     lives_ok { BOM::User::Onfido::update_onfido_check($check); } 'Storing onfido check should pass';
     @emissions = ();
+    @doggy_bag = ();
 
     # manipulate created_at
     BOM::Database::UserDB::rose_db()->dbic->run(
@@ -141,6 +157,8 @@ subtest 'in progress check are completed by Onfido' => sub {
             $_->do('UPDATE users.onfido_check SET created_at = NOW() - INTERVAL \'4 hours\'');
         });
     BOM::Event::Script::OnfidoRetry::run()->get();
+
+    cmp_deeply [@doggy_bag], ['onfido.api.hit', 'onfido.retry'], 'Expected retry to the dog';
 
     cmp_deeply [@emissions],
         [{
@@ -153,6 +171,7 @@ subtest 'in progress check are completed by Onfido' => sub {
 
 subtest 'in progress check are still in progress by Onfido' => sub {
     @emissions = ();
+    @doggy_bag = ();
 
     # manipulate check status
     my $check_mock = Test::MockModule->new('WebService::Async::Onfido::Check');
@@ -167,7 +186,8 @@ subtest 'in progress check are still in progress by Onfido' => sub {
 
     BOM::Event::Script::OnfidoRetry::run()->get();
 
-    cmp_deeply [@emissions], [], 'Empty emissions as expected (in_progress was returned by Onfido API)';
+    cmp_deeply [@emissions], [],                 'Empty emissions as expected (in_progress was returned by Onfido API)';
+    cmp_deeply [@doggy_bag], ['onfido.api.hit'], 'One API hit';
 
     $check_mock->unmock_all;
 };
