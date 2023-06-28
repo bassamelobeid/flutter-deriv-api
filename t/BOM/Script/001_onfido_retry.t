@@ -192,4 +192,38 @@ subtest 'in progress check are still in progress by Onfido' => sub {
     $check_mock->unmock_all;
 };
 
+subtest 'withdraw old onfido checks' => sub {
+    # manipulate created_at
+    BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            $_->do('UPDATE users.onfido_check SET status=\'in_progress\', created_at = NOW() - INTERVAL \'15 days 1 second\'');
+        });
+    @emissions = ();
+
+    # manipulate check status
+    my $check_mock = Test::MockModule->new('WebService::Async::Onfido::Check');
+    my $status;
+    $check_mock->mock(
+        'status',
+        sub {
+            return $status;
+        });
+
+    $status = 'complete';
+
+    BOM::Event::Script::OnfidoRetry::run()->get();
+
+    cmp_deeply [@emissions], [], 'Empty emissions as expected (checks are too old now!)';
+
+    my $checks = BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT id, status FROM users.onfido_check', {Slice => {}});
+        });
+
+    # all the checks should've been withdrawn
+    ok List::Util::all { $_->{status} eq 'withdrawn' } $checks->@*;
+
+    $check_mock->unmock_all;
+};
+
 done_testing();

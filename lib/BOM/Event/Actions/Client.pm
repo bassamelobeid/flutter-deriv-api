@@ -723,12 +723,15 @@ async sub client_verification {
     my $brand = request->brand;
     my $client;
     my $redis_events_write;
+    my $url = $args->{check_url};
+    my $check;
+    my $db_check;
+    my $check_completed;
 
     $log->debugf('Client verification with %s', $args);
     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dispatch');
 
     try {
-        my $url = $args->{check_url};
         $log->debugf('Had client verification result %s with check URL %s', $args->{status}, $args->{check_url});
 
         my ($check_id) = $url =~ m{/v3/checks/([^/]+)};
@@ -742,7 +745,7 @@ async sub client_verification {
 
         die 'no check ID found' unless $check_id;
 
-        my $check = await _onfido()->check_get(
+        $check = await _onfido()->check_get(
             check_id => $check_id,
         );
 
@@ -782,10 +785,13 @@ async sub client_verification {
             # this is to cater the case where CS/Compliance perform manual check in Onfido dashboard
             await check_or_store_onfido_applicant($loginid, $applicant_id);
 
-            my $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $applicant_id, $check_id);
+            $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $applicant_id, $check_id);
+
+            # little trickery: from our POV the check is still "in_progress" we must change this status at the end of the process
+            # when all is set and done
+            $check->{status} = 'in_progress';
 
             BOM::User::Onfido::store_onfido_check($applicant_id, $check) unless $db_check;
-            BOM::User::Onfido::update_onfido_check($check) if $db_check;
 
             my $country     = $client->place_of_birth // $client->residence;
             my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
@@ -796,6 +802,7 @@ async sub client_verification {
             my @all_report = await $check->reports->as_list;
 
             for my $each_report (@all_report) {
+                # safe to call on repeated reports (conflict do nothing)
                 BOM::User::Onfido::store_onfido_report($check, $each_report);
             }
 
@@ -948,6 +955,8 @@ async sub client_verification {
                     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.not_verified', {tags => [@common_datadog_tags]});
                 }
 
+                # at this point the check has been completed
+                $check_completed = 1;
                 DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.success');
             } catch ($e) {
                 DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
@@ -983,8 +992,14 @@ async sub client_verification {
         }
     } catch ($e) {
         DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
-        $log->errorf('Exception while handling client verification result: %s', $e);
+        $log->errorf('Exception while handling client verification (%s) result: %s', $url // 'no url', $e);
         exception_logged();
+    }
+
+    # transition the check to complete
+    if ($check && $check_completed) {
+        $check->{status} = 'complete';
+        BOM::User::Onfido::update_onfido_check($check);
     }
 
     # release the applicant check lock

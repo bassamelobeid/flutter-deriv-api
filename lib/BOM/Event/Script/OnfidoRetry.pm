@@ -50,6 +50,14 @@ async sub run {
                 check_url => '/v3.4/checks/' . $check->{id},
             });
     }
+
+    # db cleanup
+    # flag those older hopeless checks as withdrawn
+
+    BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            $_->do('select * from users.withdraw_old_onfido_checks()');
+        });
 }
 
 1;

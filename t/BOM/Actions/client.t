@@ -1096,6 +1096,12 @@ for my $client ($test_client, $test_client_mf) {
                     return $ryu_data->{document_list};
                 });
 
+            my $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+            reset_onfido_check({
+                id     => $db_check->{id},
+                status => 'in_progress',
+                result => undef,
+            });
             lives_ok {
                 $dd_bag  = {};
                 @metrics = ();
@@ -1128,6 +1134,9 @@ for my $client ($test_client, $test_client_mf) {
                     ],
                     'Expected dd metrics';
 
+                $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                is $db_check->{status}, 'complete', 'check has been completed';
+
                 my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
                 is scalar @$keys, 0, 'Lock released';
 
@@ -1139,20 +1148,63 @@ for my $client ($test_client, $test_client_mf) {
             }
             "client verification no exception";
 
+            reset_onfido_check({
+                id     => $db_check->{id},
+                status => 'in_progress',
+                result => undef,
+            });
+            lives_ok {
+                my $mocked_check = Test::MockModule->new('WebService::Async::Onfido::Check');
+                $mocked_check->mock(
+                    'reports',
+                    sub {
+                        die 'it is a failure';
+                    });
+
+                $dd_bag  = {};
+                @metrics = ();
+                $log->clear();
+                my $redis = BOM::Config::Redis::redis_events();
+                $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
+                BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+                ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
+
+                cmp_deeply + {@metrics},
+                    +{
+                    'onfido.api.hit'                            => undef,
+                    'event.onfido.client_verification.dispatch' => undef,
+                    'event.onfido.client_verification.failure'  => undef,
+                    },
+                    'Expected dd metrics';
+
+                $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                is $db_check->{status}, 'in_progress', 'check still not completed';
+
+                $log->contains_ok(qr/Exception while handling client verification \(\/v3\.4\/checks\/.*\)/, 'Expected log with the check url');
+
+                $mocked_check->unmock_all('reports');
+            }
+            "client verification with a handled exception";
+
             $report_mock->unmock_all;
             my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
                 fixup => sub {
                     $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $client->user_id, $applicant_id);
                 });
             ok($check_data, 'get check data ok from db');
-            is($check_data->{id},     $check->{id}, 'check data correct');
-            is($check_data->{status}, 'complete',   'check status is updated');
+            is($check_data->{id},     $check->{id},  'check data correct');
+            is($check_data->{status}, 'in_progress', 'check still not completed');
             my $report_data = BOM::Database::UserDB::rose_db()->dbic->run(
                 fixup => sub {
                     $_->selectrow_hashref('select * from users.get_onfido_reports(?::BIGINT, ?::TEXT)', undef, $client->user_id, $check->{id});
                 });
             is($report_data->{check_id}, $check->{id}, 'report is correct');
 
+            reset_onfido_check({
+                id     => $db_check->{id},
+                status => 'in_progress',
+                result => undef,
+            });
             lives_ok {
                 $redis_write->set($doc_key, $db_doc_id)->get;
                 $db_doc_id = undef;
@@ -1174,6 +1226,7 @@ for my $client ($test_client, $test_client_mf) {
                 # TODO: remove this line when ONFIDO sadness stops
                 $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
 
+                $log->clear();
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
@@ -1199,11 +1252,22 @@ for my $client ($test_client, $test_client_mf) {
                 my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
                 is $db_doc->status, 'rejected', 'upload doc status is rejected';
 
+                $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                is $db_check->{status}, 'complete', 'check has been completed';
+
+                # no suspicious logs after retrying the check without exceptions
+                ok !grep { $_->{level} eq 'error' || $_->{level} eq 'warning' } $log->msgs->@*;
+
                 $mocked_report->unmock_all;
             }
             "client verification no exception, rejected result";
 
             subtest 'clear report from Onfido' => sub {
+                reset_onfido_check({
+                    id     => $db_check->{id},
+                    status => 'in_progress',
+                    result => undef,
+                });
                 lives_ok {
                     $redis_write->set($doc_key, $db_doc_id)->get;
                     $db_doc_id = undef;
@@ -1267,6 +1331,9 @@ for my $client ($test_client, $test_client_mf) {
                         },
                         'Expected dd metrics';
 
+                    $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                    is $db_check->{status}, 'complete', 'check has been completed';
+
                     my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
                     is scalar @$keys, 0, 'Lock released';
 
@@ -1293,6 +1360,11 @@ for my $client ($test_client, $test_client_mf) {
                     $mocked_common->unmock_all;
                     $ryu_mock->unmock('filter');
 
+                    reset_onfido_check({
+                        id     => $db_check->{id},
+                        status => 'in_progress',
+                        result => undef,
+                    });
                     subtest 'selfie checking: clear result' => sub {
                         $redis_write->set($doc_key, $db_doc_id)->get;
                         $db_doc_id = undef;
@@ -1356,6 +1428,9 @@ for my $client ($test_client, $test_client_mf) {
                             },
                             'Expected dd metrics';
 
+                        $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                        is $db_check->{status}, 'complete', 'check has been completed';
+
                         my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
                         is scalar @$keys, 0, 'Lock released';
 
@@ -1386,6 +1461,11 @@ for my $client ($test_client, $test_client_mf) {
 
                     # for svg the test would be the same as the one above as there would not be a selfie report
                     if ($client->landing_company->short eq 'maltainvest') {
+                        reset_onfido_check({
+                            id     => $db_check->{id},
+                            status => 'in_progress',
+                            result => undef,
+                        });
                         subtest 'selfie checking: consider result' => sub {
                             $redis_write->set($doc_key, $db_doc_id)->get;
                             $db_doc_id = undef;
@@ -1440,6 +1520,9 @@ for my $client ($test_client, $test_client_mf) {
                             BOM::Event::Actions::Client::client_verification({
                                     check_url => $check_href,
                                 })->get;
+                            $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                            is $db_check->{status}, 'complete', 'check has been completed';
+
                             cmp_deeply + {@metrics},
                                 +{
                                 'onfido.api.hit'                                => undef,
@@ -1481,6 +1564,11 @@ for my $client ($test_client, $test_client_mf) {
             };
 
             subtest 'forged email' => sub {
+                reset_onfido_check({
+                    id     => $db_check->{id},
+                    status => 'in_progress',
+                    result => undef,
+                });
                 my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
                 $mocked_report->mock(
                     'documents',
@@ -1512,6 +1600,9 @@ for my $client ($test_client, $test_client_mf) {
                         'Expected dd metrics';
                 }
                 "client verification no exception";
+
+                $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                is $db_check->{status}, 'complete', 'check has been completed';
 
                 my $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
                 ok $msg,                                                               'Email sent';
@@ -1576,6 +1667,17 @@ subtest "Uninitialized date of birth" => sub {
     my $mocked_client = Test::MockModule->new('BOM::User::Client');
     $mocked_client->mock(date_of_birth => sub { return undef; });
 
+    my $db_check = BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            my $sth =
+                $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $test_client->user_id, $applicant_id);
+        });
+
+    reset_onfido_check({
+        id     => $db_check->{id},
+        status => 'in_progress',
+        result => undef,
+    });
     lives_ok {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
@@ -1593,6 +1695,8 @@ subtest "Uninitialized date of birth" => sub {
     }
     "client verification should not pass with undef dob";
 
+    $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+    is $db_check->{status}, 'complete', 'check has been completed';
     $mocked_client->unmock_all();
     $mocked_report->unmock_all();
     $dog_mock->unmock_all;
@@ -1624,6 +1728,17 @@ subtest "time from ready to verified" => sub {
     my $redis_r_write = $services->redis_replicated_write();
     my $redis_e_read  = $services->redis_events_read();
 
+    my $db_check = BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            my $sth =
+                $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $test_client->user_id, $applicant_id);
+        });
+
+    reset_onfido_check({
+        id     => $db_check->{id},
+        status => 'in_progress',
+        result => undef,
+    });
     lives_ok {
         @metrics = ();
         BOM::Event::Actions::Client::ready_for_authentication({
@@ -1641,6 +1756,9 @@ subtest "time from ready to verified" => sub {
             'Expected dd metrics';
     }
     "ready for authentication emitted without exception";
+
+    $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+    is $db_check->{status}, 'in_progress', 'check has not been completed';
 
     my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
     ok $applicant_context, 'request context of applicant is present in redis';
@@ -1670,6 +1788,11 @@ subtest "time from ready to verified" => sub {
     my $mocked_action = Test::MockModule->new('BOM::Event::Actions::Client');
     $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return Future->done; });
 
+    reset_onfido_check({
+        id     => $db_check->{id},
+        status => 'in_progress',
+        result => undef,
+    });
     lives_ok {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
@@ -1691,6 +1814,9 @@ subtest "time from ready to verified" => sub {
             'Expected dd metrics';
     }
     "client verification emitted without exception";
+
+    $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+    is $db_check->{status}, 'complete', 'check has been completed';
 
     is $context->{brand_name}, $request->brand_name, 'brand name is correct';
     is $context->{language},   $request->language,   'language is correct';
@@ -1763,6 +1889,18 @@ subtest "document upload request context" => sub {
     my $mocked_action = Test::MockModule->new('BOM::Event::Actions::Client');
     $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return Future->done; });
 
+    my $db_check = BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            my $sth =
+                $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $test_client->user_id, $applicant_id);
+        });
+
+    reset_onfido_check({
+        id     => $db_check->{id},
+        status => 'in_progress',
+        result => undef,
+    });
+
     lives_ok {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
@@ -1783,6 +1921,9 @@ subtest "document upload request context" => sub {
     }
     "client verification emitted without exception";
 
+    $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+    is $db_check->{status}, 'complete', 'check has been completed';
+
     is $context->{brand_name}, $request->brand_name, 'brand name is correct';
     is $context->{language},   $request->language,   'language is correct';
     is $context->{app_id},     $request->app_id,     'app id is correct';
@@ -1791,6 +1932,12 @@ subtest "document upload request context" => sub {
 
     $redis_r_write->del(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
     $redis_r_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
+
+    reset_onfido_check({
+        id     => $db_check->{id},
+        status => 'in_progress',
+        result => undef,
+    });
 
     lives_ok {
         @metrics = ();
@@ -1809,6 +1956,9 @@ subtest "document upload request context" => sub {
             'Expected dd metrics';
     }
     "client verification emitted without exception";
+
+    $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+    is $db_check->{status}, 'complete', 'check has been completed';
 
     is $another_context->{brand_name}, $request->brand_name, 'brand name is correct';
     is $another_context->{language},   $request->language,   'language is correct';
@@ -3128,6 +3278,18 @@ subtest 'onfido resubmission' => sub {
 
     subtest "client_verification on resubmission, verification failed" => sub {
         mailbox_clear();
+        my $db_check = BOM::Database::UserDB::rose_db()->dbic->run(
+            fixup => sub {
+                my $sth =
+                    $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $test_client->user_id,
+                    $applicant_id);
+            });
+
+        reset_onfido_check({
+            id     => $db_check->{id},
+            status => 'in_progress',
+            result => undef,
+        });
 
         lives_ok {
             @metrics = ();
@@ -3146,6 +3308,9 @@ subtest 'onfido resubmission' => sub {
                 'Expected dd metrics';
         }
         "client verification no exception";
+
+        $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+        is $db_check->{status}, 'complete', 'check has been completed';
 
         my $resubmission_context = $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
         is($resubmission_context, 0, 'Resubmission Context is deleted');
@@ -5238,7 +5403,51 @@ subtest 'store check coming from webhook even if there is no check record in db'
                 $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT)', undef, $test_client->user_id, $applicant_id);
             });
 
+        is $check_newdata->{status}, 'complete', 'the check was completed';
+
         is $check_newdata->{id}, 'newcheck', 'the check was stored';
+
+        subtest 'simulate an exception' => sub {
+            $onfido_mocker->mock(
+                'check_get',
+                sub {
+                    return Future->done(
+                        WebService::Async::Onfido::Check->new(
+                            'href'         => '/v3.4/checks/newcheck',
+                            'results_uri'  => 'https://onfido.com/dashboard/information_requests/<REQUEST_ID>',
+                            'result'       => 'consider',
+                            'created_at'   => '2025-01-12 14:29:37',
+                            'stamp'        => '2025-01-12 14:29:37.440662',
+                            'api_type'     => 'deprecated',
+                            'download_uri' => 'http://localhost:4039/v3.4/checks/newcheck/download',
+                            'tags'         => ['automated', 'CR', 'CR10000', 'IDN', 'brand:deriv'],
+                            'applicant_id' => $applicant_id,
+                            'id'           => 'newcheck2',
+                            'status'       => 'complete'
+
+                        ));
+                });
+
+            $events_mock->mock(
+                '_store_applicant_documents',
+                sub {
+                    return Future->fail('i am a failure');
+                });
+
+            $check_href = '/v2/applicants/some-id/checks/newcheck2';
+            BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+
+            my $check_newdata = BOM::Database::UserDB::rose_db()->dbic->run(
+                fixup => sub {
+                    $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT) WHERE id = ?',
+                        undef, $test_client->user_id, $applicant_id, 'newcheck2');
+                });
+
+            is $check_newdata->{status}, 'in_progress', 'the check is stuck at in_progress';
+
+            is $check_newdata->{id}, 'newcheck2', 'the check was stored';
+
+        };
 
         $mocked_check->unmock_all;
         $mocked_report->unmock_all;
@@ -5891,5 +6100,17 @@ subtest 'payops event email' => sub {
         },
         'Expected track event triggered';
 };
+
+sub reset_onfido_check {
+    my $check = shift;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    $dbic->run(
+        fixup => sub {
+            $_->do('select * from users.update_onfido_check_status(?::TEXT, ?::TEXT, ?::TEXT)',
+                undef, $check->{id}, $check->{status}, $check->{result});
+        });
+}
 
 done_testing();
