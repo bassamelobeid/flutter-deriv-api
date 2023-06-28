@@ -3450,7 +3450,7 @@ subtest 'withdrawal_limit_reached' => sub {
     $documents_mock->unmock_all;
 };
 
-subtest 'POA email notification' => sub {
+subtest 'New uploaded POA document notification' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
@@ -3468,6 +3468,41 @@ subtest 'POA email notification' => sub {
 
     $msg = mailbox_search(subject => qr/New uploaded POA document for/);
     ok $msg, 'Second email sent';
+};
+
+subtest 'POA email notification' => sub {
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock(fully_authenticated => sub { return 1 });
+
+    mailbox_clear();
+    BOM::Event::Actions::Client::_send_email_notification_for_poa($client_mf)->get;
+
+    my $msg = mailbox_search(subject => qr/New uploaded POA document for/);
+    ok !$msg, 'No email sent for fully authenticated client';
+
+    $mock_client->unmock_all();
+
+    mailbox_clear();
+    BOM::Event::Actions::Client::_send_email_notification_for_poa($client_cr)->get;
+
+    $msg = mailbox_search(subject => qr/New uploaded POA document for/);
+    ok !$msg, 'No email sent for non MF client';
+
+    mailbox_clear();
+    BOM::Event::Actions::Client::_send_email_notification_for_poa($client_mf)->get;
+
+    $msg = mailbox_search(subject => qr/New uploaded POA document for/);
+    ok $msg, 'Email sent for MF client';
+
+    mailbox_clear();
 };
 
 subtest 'EDD email notification' => sub {

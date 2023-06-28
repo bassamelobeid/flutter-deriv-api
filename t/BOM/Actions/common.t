@@ -230,7 +230,7 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title      => 'Send POA email when the POA is pending',
+            title      => 'Do not send POA email if the POA is pending for CR',
             email      => 'test4+zaig@binary.com',
             provider   => 'zaig',
             poi_method => 'idv',
@@ -239,7 +239,7 @@ subtest 'set_age_verification' => sub {
                 poi_name_mismatch => 0,
             },
             side_effects => {
-                poa_email                       => 1,
+                poa_email                       => 0,
                 age_verification                => 1,
                 p2p_advertiser_approval_changed => 1,
             }
@@ -577,6 +577,55 @@ subtest 'underage handling' => sub {
     $emitter_mock->unmock_all;
     $client_mock->unmock_all;
     $user_mock->unmock_all;
+};
+
+subtest '_send_CS_email_POA_pending' => sub {
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+
+    mailbox_clear();
+    BOM::Event::Actions::Common::_send_CS_email_POA_pending($client_mf);
+
+    my $msg = mailbox_search(subject => qr/Pending POA document for/);
+    ok !$msg, 'No email sent for not age verified client';
+
+    $client_mf->status->setnx('age_verification', 'test', 'test');
+
+    $mock_client->mock(fully_authenticated => sub { return 1 });
+
+    mailbox_clear();
+    BOM::Event::Actions::Common::_send_CS_email_POA_pending($client_mf);
+
+    $msg = mailbox_search(subject => qr/Pending POA document for/);
+    ok !$msg, 'No email sent for fully authenticated client';
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client_cr->status->setnx('age_verification', 'test', 'test');
+
+    mailbox_clear();
+    BOM::Event::Actions::Common::_send_CS_email_POA_pending($client_cr);
+
+    $msg = mailbox_search(subject => qr/Pending POA document for/);
+    ok !$msg, 'No email sent for non MF client';
+
+    $client_mf->status->setnx('age_verification', 'test', 'test');
+    $mock_client->mock(fully_authenticated => sub { return 0 });
+
+    mailbox_clear();
+    BOM::Event::Actions::Common::_send_CS_email_POA_pending($client_mf);
+
+    $msg = mailbox_search(subject => qr/Pending POA document for/);
+    ok $msg, 'Email sent for MF client';
+
+    $client_mf->status->clear_age_verification;
+    mailbox_clear();
+    $mock_client->unmock_all();
 };
 
 done_testing();

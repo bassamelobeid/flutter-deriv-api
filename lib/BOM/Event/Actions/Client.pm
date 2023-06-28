@@ -441,7 +441,7 @@ async sub _upload_poa_document {
                 %$document_entry
             }});
 
-    await _send_email_notification_for_poa(client => $client) unless $uploaded_by_staff;
+    await _send_email_notification_for_poa($client) unless $uploaded_by_staff;
 }
 
 =head2 _upload_poi_document
@@ -1846,10 +1846,6 @@ async sub _send_CS_email_POA_uploaded {
     my ($client) = @_;
     my $brand = request->brand;
 
-    # don't send POA notification if client is not age verified
-    # POA don't make any sense if client is not age verified
-    return undef unless $client->status->age_verification;
-
     my $from_email = $brand->emails('no-reply');
     my $to_email   = $brand->emails('authentications');
 
@@ -1865,40 +1861,21 @@ Send email to CS when client submits a proof of address
 document.
 
 - send only if client is not fully authenticated
-- send only if client has mt5 financial account
+- send only if client is MF client
 
 need to extend later for all landing companies
 
 =cut
 
 async sub _send_email_notification_for_poa {
-    my (%args) = @_;
+    my $client = shift;
 
-    my $client = $args{client};
-
-    # don't send email if client is already authenticated
     return undef if $client->fully_authenticated();
 
-    # send email for all landing company
-    if ($client->landing_company->short) {
-        await _send_CS_email_POA_uploaded($client);
-        return undef;
-    }
-
-    my @mt_loginid_keys = map { "MT5_USER_GROUP::$_" } $client->user->get_mt5_loginids;
-
-    return undef unless scalar(@mt_loginid_keys);
-
-    my $redis_mt5_user = _redis_mt5user_read();
-    await $redis_mt5_user->connect;
-    my $mt5_groups = await $redis_mt5_user->mget(@mt_loginid_keys);
-
-    # loop through all mt5 loginids check
-    # non demo mt5 group has financial_stp|financial then
-    # its considered as financial
-    if (any { defined && /^(?!demo).*(_financial|_financial_stp)/ } @$mt5_groups) {
+    if ($client->landing_company->short eq 'maltainvest') {
         await _send_CS_email_POA_uploaded($client);
     }
+
     return undef;
 }
 

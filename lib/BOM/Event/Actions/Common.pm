@@ -143,6 +143,7 @@ sub _send_CS_email_POA_pending {
     # skip the email when is not needed
     return undef unless $client->status->age_verification;
     return undef if $client->fully_authenticated();
+    return undef unless $client->landing_company->short eq 'maltainvest';
 
     my $brand      = request->brand;
     my $from_email = $brand->emails('no-reply');
