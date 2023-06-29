@@ -1,5 +1,5 @@
-name: Build workflow
-run-name: Build workflow
+name: Dependant workflow
+run-name: Dependant workflow
 on:
   workflow_dispatch:
   push:
