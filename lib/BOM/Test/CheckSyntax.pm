@@ -298,7 +298,8 @@ sub check_bom_dependency {
     if (@result) {
         diag(
             qq{New BOM module dependency detected!!!
-Please add the corresponding repository of the following modules into runtime_required_repos.yml and test_required_repos.yml. (you may need to create it)}
+Please add the corresponding repository of the following modules into runtime_required_repos.yml and test_required_repos.yml. (you may need to create it)
+For more details, please refer to https://wikijs.deriv.cloud/en/Backend/Quality/bom-module-dependency-list. (update this document if any new dependencies are added)}
         );
         diag(join("\n", @result));
     }
