@@ -1,5 +1,5 @@
 name: Dependant workflow
-run-name: Dependant workflow
+run-name: Dependent Tests ${{ inputs.repository }}
 on:
   workflow_dispatch:
   push:
@@ -14,6 +14,11 @@ on:
         description: 'repository name for running tests'
         required: true
         type: string 
+      randomizer:
+        description: 'string to randomize'
+        required: false
+        default: ''
+        type: string
     secrets:
       DOCKER_PASSWORD:
         required: true
@@ -22,7 +27,7 @@ on:
       WRITE_GITHUB_SSH_KEY:
         required: true 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.randomizer}}
   cancel-in-progress: true
 jobs:
   check-git-message:
