@@ -148,14 +148,16 @@ subtest $method => sub {
         'landing_company_fullname'      => 'Deriv (SVG) LLC',
         "preferred_language"            => 'EN',
         'upgradeable_landing_companies' => [$landing_company],
+        'linked_to'                     => [],
         'account_list'                  => [{
                 'currency'             => '',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
                 'loginid'              => $test_client->loginid,
-                'account_type'         => 'trading',
-                'trading'              => {},
+                'account_type'         => 'binary',
+                'account_category'     => 'trading',
+                'linked_to'            => [],
                 'created_at'           => '1623023999',
             },
             {
@@ -165,8 +167,9 @@ subtest $method => sub {
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
                 'loginid'              => $self_excluded_client->loginid,
-                'account_type'         => 'trading',
-                'trading'              => {},
+                'account_type'         => 'binary',
+                'account_category'     => 'trading',
+                'linked_to'            => [],
                 'created_at'           => '1623023999',
             },
             {
@@ -175,13 +178,13 @@ subtest $method => sub {
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
                 'loginid'              => $test_client_disabled->loginid,
-                'account_type'         => 'trading',
-                'trading'              => {},
+                'account_type'         => 'binary',
+                'account_category'     => 'trading',
+                'linked_to'            => [],
                 'created_at'           => '1623023999',
             },
             # Duplicated client must  not be returned
-        ],
-        'trading' => {},    # no wallet is linked
+        ]    # no wallet is linked
     };
 
     my $result = $c->call_ok($method, $params)->has_no_error->result;
@@ -373,14 +376,16 @@ subtest $method => sub {
             'landing_company_fullname'      => 'Deriv Limited',
             'upgradeable_landing_companies' => ['svg'],
             'preferred_language'            => 'EN',
+            'linked_to'                     => [{loginid => $vr_wallet->loginid, platform => 'dwallet'}],
             'account_list'                  => [{
                     'currency'             => 'USD',
                     'is_disabled'          => '0',
                     'is_virtual'           => '0',
                     'landing_company_name' => $landing_company,
                     'loginid'              => $test_client->loginid,
-                    'account_type'         => 'trading',
-                    'trading'              => {},
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [],
                     'created_at'           => '1623023999'
                 },
                 {
@@ -389,21 +394,10 @@ subtest $method => sub {
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
                     'loginid'              => $test_client_vr->loginid,
-                    'account_type'         => 'trading',
-                    'trading'              => {
-                        linked_to => [{
-                                account_id     => $vr_wallet->loginid,
-                                payment_method => $vr_wallet->account_type,
-                                balance        => '10000.00',
-                                currency       => $vr_wallet->currency
-                            }
-                        ],
-                        account_id => $test_client_vr->loginid,
-                        balance    => '10000.00',
-                        currency   => 'USD',
-                        platform   => 'deriv'
-                    },
-                    'created_at' => '1623023999'
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [{loginid => $vr_wallet->loginid, platform => 'dwallet'}],
+                    'created_at'           => '1623023999'
                 },
                 {
                     'currency'             => 'USD',
@@ -411,21 +405,10 @@ subtest $method => sub {
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
                     'loginid'              => $vr_wallet->loginid,
-                    'account_type'         => 'wallet',
-                    'wallet'               => {
-                        linked_to => [{
-                                account_id => $test_client_vr->loginid,
-                                balance    => '10000.00',
-                                currency   => 'USD',
-                                platform   => 'deriv'
-                            }
-                        ],
-                        account_id     => $vr_wallet->loginid,
-                        payment_method => $vr_wallet->account_type,
-                        balance        => '10000.00',
-                        currency       => 'USD'
-                    },
-                    'created_at' => '1623023999'
+                    'account_type'         => 'virtual',
+                    'account_category'     => 'wallet',
+                    'linked_to'            => [{loginid => $test_client_vr->loginid, platform => 'dtrade'}],
+                    'created_at'           => '1623023999'
                 },
                 {
                     'currency'             => '',
@@ -435,7 +418,9 @@ subtest $method => sub {
                     'landing_company_name' => $landing_company,
                     'loginid'              => $self_excluded_client->loginid,
                     'account_type'         => 'trading',
-                    'trading'              => {},
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [],
                     'created_at'           => '1623023999'
                 },
                 {
@@ -444,24 +429,12 @@ subtest $method => sub {
                     'is_virtual'           => '0',
                     'landing_company_name' => $landing_company,
                     'loginid'              => $test_client_disabled->loginid,
-                    'account_type'         => 'trading',
-                    'trading'              => {},
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [],
                     'created_at'           => '1623023999'
                 },
             ],
-            'trading' => {
-                linked_to => [{
-                        account_id     => $vr_wallet->loginid,
-                        payment_method => $vr_wallet->account_type,
-                        balance        => '10000.00',
-                        currency       => $vr_wallet->currency
-                    }
-                ],
-                account_id => $test_client_vr->loginid,
-                balance    => '10000.00',
-                currency   => 'USD',
-                platform   => 'deriv'
-            },
         };
         cmp_deeply($c->call_ok($method, $params)->has_no_error->result,
             $expected_result, 'result is correct - upgradeable even if authenticated by a virtual token');
@@ -500,14 +473,16 @@ subtest $method => sub {
             'landing_company_fullname'      => 'Deriv Limited',
             'upgradeable_landing_companies' => [],
             'preferred_language'            => 'EN',
+            'linked_to'                     => [{'loginid' => $test_client_vr->loginid, 'platform' => 'dtrade'}],
             'account_list'                  => [{
                     'currency'             => 'USD',
                     'is_disabled'          => '0',
                     'is_virtual'           => '0',
                     'landing_company_name' => $landing_company,
                     'loginid'              => $test_client->loginid,
-                    'account_type'         => 'trading',
-                    'trading'              => {},
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [],
                     'created_at'           => '1623023999'
                 },
                 {
@@ -516,21 +491,10 @@ subtest $method => sub {
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
                     'loginid'              => $test_client_vr->loginid,
-                    'account_type'         => 'trading',
-                    'trading'              => {
-                        linked_to => [{
-                                account_id     => $vr_wallet->loginid,
-                                payment_method => $vr_wallet->account_type,
-                                balance        => '10000.00',
-                                currency       => 'USD'
-                            }
-                        ],
-                        account_id => $test_client_vr->loginid,
-                        balance    => '10000.00',
-                        currency   => 'USD',
-                        platform   => 'deriv'
-                    },
-                    'created_at' => '1623023999'
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [{'loginid' => $vr_wallet->loginid, 'platform' => 'dwallet'}],
+                    'created_at'           => '1623023999'
                 },
                 {
                     'currency'             => 'USD',
@@ -538,21 +502,10 @@ subtest $method => sub {
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
                     'loginid'              => $vr_wallet->loginid,
-                    'account_type'         => 'wallet',
-                    'wallet'               => {
-                        linked_to => [{
-                                account_id => $test_client_vr->loginid,
-                                balance    => '10000.00',
-                                currency   => 'USD',
-                                platform   => 'deriv'
-                            }
-                        ],
-                        account_id     => $vr_wallet->loginid,
-                        payment_method => $vr_wallet->account_type,
-                        balance        => '10000.00',
-                        currency       => $vr_wallet->currency
-                    },
-                    'created_at' => '1623023999'
+                    'account_type'         => 'virtual',
+                    'account_category'     => 'wallet',
+                    'linked_to'            => [{'loginid' => $test_client_vr->loginid, 'platform' => 'dtrade'}],
+                    'created_at'           => '1623023999'
                 },
                 {
                     'currency'             => '',
@@ -561,8 +514,9 @@ subtest $method => sub {
                     'is_virtual'           => '0',
                     'landing_company_name' => $landing_company,
                     'loginid'              => $self_excluded_client->loginid,
-                    'account_type'         => 'trading',
-                    'trading'              => {},
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [],
                     'created_at'           => '1623023999'
                 },
                 {
@@ -571,24 +525,12 @@ subtest $method => sub {
                     'is_virtual'           => '0',
                     'landing_company_name' => $landing_company,
                     'loginid'              => $test_client_disabled->loginid,
-                    'account_type'         => 'trading',
-                    'trading'              => {},
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [],
                     'created_at'           => '1623023999'
                 },
             ],
-            'wallet' => {
-                linked_to => [{
-                        account_id => $test_client_vr->loginid,
-                        balance    => '10000.00',
-                        currency   => 'USD',
-                        platform   => 'deriv'
-                    }
-                ],
-                account_id     => $vr_wallet->loginid,
-                payment_method => $vr_wallet->account_type,
-                balance        => '10000.00',
-                currency       => $vr_wallet->currency
-            },
         };
 
         cmp_deeply($c->call_ok($method, $params)->has_no_error->result,

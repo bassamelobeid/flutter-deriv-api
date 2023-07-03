@@ -1,8 +1,8 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "additionalProperties" : false,
-   "title" : null,
-   "description" : null,
+   "title" : "",
+   "description" : "",
    "type" : "object",
    "required" : [
       "landing_company_fullname",
@@ -99,12 +99,36 @@
                   "type" : "string"
                },
                "account_type": {
-                   "description": "Account type.",
-                   "type": "string",
-                   "enum": [
-                       "trading",
-                       "wallet"
-                   ]
+                  "description": "Account type.",
+                  "type": "string"
+               },
+               "account_category": {
+                  "description": "Account category.",
+                  "type": "string",
+                  "enum" : [
+                     "trading",
+                     "wallet"
+                  ]
+               },
+              "linked_to": {
+                 "description": "list of linked accounts.",
+                 "type": "array",
+                 "items" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "required" : [
+                       "loginid",
+                       "platform"
+                    ],
+                    "properties" : {
+                       "loginid": {
+                          "type": "string"
+                       },
+                       "platform": {
+                          "type": "string"
+                       }
+                    }
+                 }
                },
                "trading": {
                   "description": "Details of the Trading account.",
@@ -165,11 +189,25 @@
          "type" : "string",
          "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
       },
-      "trading": {
-         "type": "object"
-      },
-      "wallet": {
-         "type": "object"
-      }
+      "linked_to": {
+         "description": "list of linked accounts.",
+         "type": "array",
+         "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [
+               "loginid",
+               "platform"
+            ],
+            "properties" : {
+               "loginid": {
+                  "type": "string"
+               },
+               "platform": {
+                  "type": "string"
+               }
+            }
+         }
+       }
    }
 }

@@ -172,7 +172,13 @@ rpc authorize => sub {
     # is a regulated (EU) disabled account (disabled or enabled)
     my @client_list = grep { $_->is_virtual || $_->account || !$_->status->disabled || $_->landing_company->is_eu } @$all_clients;
 
-    my @account_list = map { BOM::User::Client::get_account_details($_) } @client_list;
+    my $account_links = $user->get_accounts_links();
+    my @account_list;
+    for my $cli (@client_list) {
+        my $details = $cli->get_account_details;
+        $details->{linked_to} = $account_links->{$cli->loginid} // [];
+        push @account_list, $details;
+    }
 
     my $precisions = Format::Util::Numbers->get_precision_config;
     my %local_currencies =
@@ -195,6 +201,7 @@ rpc authorize => sub {
         country                       => $client->residence,
         landing_company_name          => $lc->short,
         landing_company_fullname      => $lc->name,
+        linked_to                     => $account_links->{$client->loginid} // [],
         preferred_language            => $user->preferred_language,
         scopes                        => $scopes,
         is_virtual                    => $client->is_virtual ? 1 : 0,
@@ -214,7 +221,6 @@ rpc authorize => sub {
             is_virtual           => ($client->is_virtual ? 1 : 0),
             broker               => $client->broker,
         },
-        $client->linked_accounts->%*,
     };
 };
 
