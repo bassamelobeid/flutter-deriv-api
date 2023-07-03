@@ -257,7 +257,7 @@ subtest 'accumulator - get_bid' => sub {
         },
         'display_name'              => 'Volatility 100 Index',
         'is_settleable'             => 0,
-        'is_intraday'               => 1,
+        'is_intraday'               => 0,
         'entry_tick_display_value'  => '100.00',
         'is_expired'                => 0,
         'is_forward_starting'       => 0,
