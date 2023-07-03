@@ -15,6 +15,7 @@ subtest 'Exit tick for tick trades' => sub {
     $mock->mock(tick_expiry           => 1);
     $mock->mock(ticks_to_expiry       => 1);
     $mock->mock(ticks_for_tick_expiry => []);
+    $mock->mock(category_code         => 'highlowticks');
 
     my $exit_tick = BOM::Product::Contract->_build_exit_tick();
     is $exit_tick, undef, 'No exit tick if there are not enogh ticks';

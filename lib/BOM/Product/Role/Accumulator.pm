@@ -609,6 +609,24 @@ sub risk_level {
     return $risk_level;
 }
 
+=head2 date_expiry
+
+date_expiry isn't applicable for accumulator
+but we need an expiry time for every contract in the database. Hence, hard-coding a 1-year expiry time here.
+
+=cut
+
+override '_build_date_expiry' => sub {
+    my $self = shift;
+
+    my $date_expiry = $self->date_start->truncate_to_day->plus_time_interval('365d');
+
+    my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
+
+    return $close if $close;
+    return $self->trading_calendar->trade_date_after($self->underlying->exchange, $date_expiry);
+};
+
 override 'shortcode' => sub {
     my $self = shift;
 

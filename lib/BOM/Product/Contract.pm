@@ -859,7 +859,8 @@ sub _build_exit_tick {
         $exit_tick = $ticks_since_start[-1];
 
         return undef if $exit_tick->epoch > $self->date_pricing->epoch;
-        $self->date_expiry(Date::Utility->new($exit_tick->epoch));
+        # date_expiry is fixed to one year for accumulator
+        $self->date_expiry(Date::Utility->new($exit_tick->epoch)) unless $self->category_code eq 'accumulator';
         $self->is_valid_exit_tick(1);
     } elsif ($self->is_after_expiry) {
         # For a daily contract or a contract expired at the close of trading, the valid exit tick should be the daily close else should be the tick at expiry date
