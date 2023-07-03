@@ -7,3 +7,4 @@
 - regentmarkets/bom-postgres-userdb
 - regentmarkets/bom-postgres-authdb
 - regentmarkets/bom-postgres-cryptodb
+- regentmarkets/bom-postgres-commissiondb

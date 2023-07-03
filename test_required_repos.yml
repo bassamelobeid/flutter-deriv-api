@@ -17,3 +17,4 @@
 - regentmarkets/bom-postgres-cryptodb
 - regentmarkets/bom-postgres-feeddb
 - regentmarkets/bom-postgres-userdb
+- regentmarkets/bom-postgres-commissiondb
