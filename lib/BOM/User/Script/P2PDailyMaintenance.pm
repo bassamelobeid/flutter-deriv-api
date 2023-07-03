@@ -82,8 +82,8 @@ sub run {
     my %archival_dates;
     my %brokers;
 
-    # P2P works on `tra` accounts at the moment.
-    # TODO: we should include `p2p` as well, when the appstore is going to launch.
+    # P2P works on legacy accounts at the moment.
+    # TODO: we should include `p2p` as well, when the appstore is going to launch on wallets.
     my $p2p_account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary');
 
     for my $lc (grep { $_->p2p_available } LandingCompany::Registry::get_all) {
