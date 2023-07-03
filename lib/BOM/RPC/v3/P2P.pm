@@ -273,7 +273,8 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
             );
 
             _check_client_access($client, $app_config);
-            BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, ($client->loginid . "::" . $client->residence));
+            BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, ($client->loginid . "::" . $client->residence))
+                if $client->_p2p_advertiser_cached;
 
             my $acc = $client->default_account;
 
