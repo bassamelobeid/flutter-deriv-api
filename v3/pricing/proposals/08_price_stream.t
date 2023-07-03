@@ -59,8 +59,8 @@ Time::HiRes::sleep(0.3);
 for (0 .. 2) {
     my $payload = {
         symbol => 'R_50',
-        epoch => int(time + $_),
-        quote => 700 + $_,
+        epoch  => int(time + $_),
+        quote  => 700 + $_,
     };
     BOM::Config::Redis::redis_feed_master_write()->publish("TICK_ENGINE::R_50", encode_json_utf8($payload));
     $t = $t->message_ok->json_message_is('/proposal/id', $uuid)->json_message_is('/subscription/id', $uuid)

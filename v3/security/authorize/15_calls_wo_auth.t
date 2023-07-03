@@ -79,7 +79,7 @@ is_deeply $res->{residence_list}->[104], {
                 has_visual_sample    => 0,
             },
             onfido => {
-                documents_supported  => {
+                documents_supported => {
                     driving_licence => {
                         display_name => 'Driving Licence',
                     },

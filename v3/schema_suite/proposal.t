@@ -33,7 +33,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             14  => 2.1367,
             181 => 2.9215
         },
-        symbol        => 'EUR-USD',
+        symbol => 'EUR-USD',
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -50,7 +50,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             28  => -0.3239,
             89  => -0.2370
         },
-        symbol        => 'JPY-USD',
+        symbol => 'JPY-USD',
     });
 
 # need to mock these for MULT contracts
