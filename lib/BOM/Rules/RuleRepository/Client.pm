@@ -68,7 +68,7 @@ rule 'client.signup_immitable_fields_not_changed' => {
         my $client = $context->get_real_sibling($args);
 
         my @check_fields = qw/citizen place_of_birth residence/;
-        my $duplicated   = $client->duplicate_sibling_from_vr;
+        my $duplicated   = $client->duplicate_sibling;
         my $financial_assessment;
 
         if ($duplicated) {

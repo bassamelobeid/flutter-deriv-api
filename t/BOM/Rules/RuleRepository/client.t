@@ -217,6 +217,59 @@ subtest 'rule client.signup_immitable_fields_not_changed' => sub {
         "Rule passes when account is not dup even if there is a change in the $field";
 
         $args{loginid} = $client_vr->loginid;
+        lives_ok { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') } "Virtual is ok.";
+
+        $client_mf->status->setnx('duplicate_account', 'test', 'Duplicate account - currency change');
+
+        is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') },
+            {
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]},
+            rule       => $rule_name
+            },
+            "Rule fails when non-empty immutable field $field is different for a vr with duplicated sibling";
+
+        $args{loginid} = $client->loginid;
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') },
+            {
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]},
+            rule       => $rule_name
+            },
+            "Rule fails when non-empty immutable field $field is different for a real with duplicated sibling";
+
+        $client_mf->status->upsert('duplicate_account', 'test', 'any reason');
+        $args{loginid} = $client_vr->loginid;
+        is exception { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') }, undef,
+            "Rule does not fail when non-empty immutable field $field is different for a vr without duplicated sibling";
+
+        $args{loginid} = $client->loginid;
+        is exception { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') }, undef,
+            "Rule does not fail when non-empty immutable field $field is different for a real without duplicated sibling";
+    }
+
+    for my $field (BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*) {
+        $args{loginid} = $client->loginid;
+        $client_mf->status->clear_duplicate_account;
+        $client_mf->status->_build_all;
+        $client_mf->db->dbic->run(
+            fixup => sub {
+                $_->do('DELETE FROM betonmarkets.financial_assessment WHERE client_loginid = ?', undef, $client_mf->loginid);
+            });
+        $client_mf->save;
+
+        lives_ok { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') }
+        "Rule passes when account is not duplicated";
+
+        my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+        $client_mf->financial_assessment({
+            data => encode_json_utf8($data),
+        });
+        $client_mf->save;
+        lives_ok { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') }
+        "Rule passes when account is not dup even if there is a change in the $field";
+
+        $args{loginid} = $client_vr->loginid;
 
         lives_ok { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') } "Virtual is ok.";
 
