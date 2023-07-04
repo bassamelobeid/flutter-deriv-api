@@ -13,6 +13,8 @@ use Test::MockModule;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
+use BOM::Test::Helper::FinancialAssessment;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use Date::Utility;
 use Array::Utils qw(array_minus);
@@ -628,13 +630,21 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         for my $field (@all_immutables) {
             push @excluded_fields, $field;
 
-            $changeable_fields->{svg}->{only_before_auth} = [@excluded_fields];
-            test_immutable_fields([array_minus(@all_immutables, @excluded_fields), $field],
-                $test_user, "list of immutable fields is not changed without only_before_auth");
+            $changeable_fields->{svg}->{only_before_auth}   = [];
+            $changeable_fields->{malta}->{only_before_auth} = [];
+            test_immutable_fields([@all_immutables], $test_user, "list of immutable fields is not changed without only_before_auth");
 
+            $changeable_fields->{svg}->{only_before_auth}   = [$field];
+            $changeable_fields->{malta}->{only_before_auth} = [];
+
+            my @excluded_field = ($field);
+            test_immutable_fields([array_minus(@all_immutables, @excluded_field)],
+                $test_user, "$field is removed from immutable fields of both clients by setting just for one landing company");
+
+            $changeable_fields->{svg}->{only_before_auth}   = [];
             $changeable_fields->{malta}->{only_before_auth} = [@excluded_fields];
             test_immutable_fields([array_minus(@all_immutables, @excluded_fields)],
-                $test_user, "$field is removed from immutable fields of both clients by setting just for one landing company");
+                $test_user, "many fields are removed from immutable fields of both clients by setting just for one landing company");
         }
 
         test_immutable_fields([], $test_user, "all fields are changeable now");
@@ -760,24 +770,46 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
     };
 
     subtest 'personal_details_locked status' => sub {
-        my $args = {first_name => 'newname'};
-        for ($client_cr, $client_mlt) {
-            test_immutable_fields([], $test_user, 'the field is not immutble before authentication');
-        }
+        test_immutable_fields([], $test_user, 'the field is not immutable before authentication');
 
-        $client->status->set('personal_details_locked', 'system', 'just testing');
-        for ($client_cr, $client_mlt) {
-            test_immutable_fields([], $test_user, 'the field is not immutable before it is included in landing company config');
-        }
-        $changeable_fields->{personal_details_not_locked} = ['first_name'];
-        for ($client_cr, $client_mlt) {
-            test_immutable_fields([], $test_user, 'the field is immutable after being added to landing company config');
-        }
+        $client_cr->status->set('personal_details_locked', 'system', 'just testing');
+        $client_cr->status->_clear_all;
 
-        $client->status->clear_personal_details_locked;
-        for ($client_cr, $client_mlt) {
-            test_immutable_fields([], $test_user, 'the immutable field is editable again by removing the status flag');
-        }
+        $changeable_fields->{svg}->{only_before_auth}   = [];
+        $changeable_fields->{malta}->{only_before_auth} = [
+            'account_opening_reason', 'citizen',         'date_of_birth',             'first_name',
+            'last_name',              'place_of_birth',  'residence',                 'salutation',
+            'secret_answer',          'secret_question', 'tax_identification_number', 'tax_residence'
+        ];
+
+        $changeable_fields->{svg}->{personal_details_not_locked}   = [];
+        $changeable_fields->{malta}->{personal_details_not_locked} = [];
+        test_immutable_fields([], $test_user, 'the field is not immutable before it is included in landing company config');
+
+        $changeable_fields->{svg}->{personal_details_not_locked} = ['first_name'];
+        test_immutable_fields([qw/first_name/], $test_user, 'the field is immutable after adding it to LC conf');
+
+        $changeable_fields->{svg}->{personal_details_not_locked} = ['first_name', 'last_name', 'date_of_birth', 'made_up'];
+        test_immutable_fields([qw/first_name last_name date_of_birth made_up/], $test_user, 'many fields are immutable after adding them to LC conf');
+
+        $changeable_fields->{malta}->{personal_details_not_locked} = ['first_name', 'last_name', 'date_of_birth', 'imaginary'];
+        test_immutable_fields([qw/first_name last_name date_of_birth made_up/], $test_user, 'many fields are immutable after adding them to LC');
+
+        $client_mlt->status->set('personal_details_locked', 'system', 'just testing mlt');
+        $client_mlt->status->_clear_all;
+
+        $changeable_fields->{malta}->{personal_details_not_locked} = ['first_name', 'last_name', 'date_of_birth', 'imaginary'];
+        test_immutable_fields([qw/first_name last_name date_of_birth made_up imaginary/],
+            $test_user, 'many fields are immutable after adding them to LC, and can be seen across LCs if the status is present');
+
+        # kicks in evern if authenticated
+        $client_cr->status->set('age_verification', 'system', 'just testing');
+        $client_cr->status->_clear_all;
+
+        $changeable_fields->{malta}->{personal_details_not_locked} = ['first_name', 'last_name', 'date_of_birth', 'imaginary'];
+        test_immutable_fields([qw/first_name last_name date_of_birth made_up imaginary/],
+            $test_user,
+            'many fields are immutable after adding them to LC, and can be seen across LCs if the status is present even if authenticated');
     };
 
     subtest 'address_locked status' => sub {
@@ -861,6 +893,334 @@ subtest 'returns correct required_fields for each landing company' => sub {
         cmp_bag \@required_fields, \@list, "List of required fields for iom is OK";
         test_validation_on_required_fields(\@list, $client_iom);
     };
+};
+
+subtest 'benched client' => sub {
+    my $email     = 'benched@test.com';
+    my $client_cr = create_client('CR');
+    $client_cr->email($email);
+    $client_cr->save;
+
+    my $client_cr2 = create_client('CR');
+    $client_cr2->email($email);
+    $client_cr2->save;
+
+    my $client_mf = create_client('MF');
+    $client_mf->email($email);
+    $client_mf->save;
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => "hey you",
+        email_verified => 1,
+    );
+
+    $user->add_client($client_mf);
+    $user->add_client($client_cr);
+
+    $client_cr->binary_user_id($user->id);
+    $client_cr->user($user);
+    $client_cr->save;
+
+    $client_mf->binary_user_id($user->id);
+    $client_mf->user($user);
+    $client_mf->save;
+
+    ok !$client_mf->benched, 'non duplicated account cannot be benched';
+    ok !$client_cr->benched, 'non duplicated account cannot be benched';
+
+    $client_cr->status->set('duplicate_account', 'test', 'test');
+
+    ok !$client_cr->benched, 'non duplicated not yet benched';
+
+    my $cli_mock = Test::MockModule->new(ref($client_cr));
+
+    my $date_joined_config = {};
+
+    $cli_mock->mock(
+        'date_joined',
+        sub {
+            my $cli = shift;
+
+            return $date_joined_config->{$cli->loginid};
+        });
+
+    $user->add_client($client_cr2);
+    $client_cr2->binary_user_id($user->id);
+    $client_cr2->user($user);
+    $client_cr2->save;
+    $client_cr = BOM::User::Client->new({loginid => $client_cr->loginid});    # reload client to avoid cache hits
+
+    ok !$client_cr->benched, 'CR not benched (cannot tell without date joined)';
+
+    $date_joined_config->{$client_cr2->loginid} = '2020-10-10 10:10:10';
+
+    ok !$client_cr->benched, 'CR not benched (cannot tell without date joined)';
+
+    $date_joined_config->{$client_cr->loginid} = '2020-10-10 10:10:10';
+
+    ok !$client_cr->benched, 'CR not benched (same stamp)';
+
+    $date_joined_config->{$client_cr->loginid} = '2020-10-10 10:10:09';
+
+    ok $client_cr->benched,  'CR got benched';
+    ok !$client_mf->benched, 'MF not benched (unaffected by CR)';
+
+    $date_joined_config->{$client_cr->loginid} = '2020-10-10 10:10:11';
+    $date_joined_config->{$client_mf->loginid} = '2020-10-10 10:10:09';
+
+    ok !$client_cr->benched, 'CR not benched (created after)';
+    ok !$client_mf->benched, 'MF not benched (unaffected by CR)';
+
+    my $broker_code_config = {};
+
+    $cli_mock->mock(
+        'broker_code',
+        sub {
+            my ($cli) = @_;
+
+            return $broker_code_config->{$cli->loginid} // $cli_mock->original('broker_code')->(@_);
+        });
+
+    $broker_code_config->{$client_cr->loginid} = 'MF';
+
+    ok !$client_mf->benched, 'MF not benched (not dup)';
+
+    $client_mf->status->set('duplicate_account', 'test', 'test');
+
+    $client_cr->status->clear_duplicate_account;
+    $client_cr->status->_clear_all;
+
+    ok $client_mf->benched, 'MF got benched (by CR)';
+
+    $client_cr->status->set('duplicate_account', 'test', 'test');
+    $client_cr->status->_clear_all;
+
+    ok $client_mf->benched, 'MF got benched (can be benched by a dup)';
+
+    $date_joined_config->{$client_cr->loginid} = '2020-10-10 10:10:09';
+
+    ok !$client_mf->benched, 'MF not benched';
+    ok !$client_cr->benched, 'CR not benched (equal to MF)';
+
+    $date_joined_config->{$client_cr->loginid} = '2020-10-10 10:10:08';
+
+    ok !$client_mf->benched, 'MF not benched';
+    ok $client_cr->benched,  'CR got benched (by MF)';
+
+    # playing with currency type
+    $client_cr->set_default_account('BTC');
+    is $client_cr->currency, 'BTC', 'changed currency to BTC';
+
+    ok !$client_mf->benched, 'MF not benched';
+    ok !$client_cr->benched, 'CR not benched (currency type changed)';
+
+    $client_mf->set_default_account('BTC');
+    is $client_mf->currency, 'BTC', 'changed currency to BTC';
+
+    ok !$client_mf->benched, 'MF not benched';
+    ok $client_cr->benched,  'CR got benched (same currency type)';
+
+    $date_joined_config->{$client_cr->loginid} = '2020-10-10 10:10:11';
+
+    ok $client_mf->benched,  'MF got benched';
+    ok !$client_cr->benched, 'CR not benched';
+
+    $cli_mock->unmock_all;
+};
+
+subtest 'immutable fields for a real account having duplicate accounts' => sub {
+    my $email  = 'immutable_real_x_real@test.com';
+    my $email2 = 'immutable_real_x_real2@test.com';
+
+    my $client_cr = create_client('CR');
+    $client_cr->email($email);
+    $client_cr->save;
+
+    my $client_cr2 = create_client('CR');
+    $client_cr2->email($email);
+    $client_cr2->save;
+
+    my $client_mf = create_client('MF');
+    $client_mf->email($email);
+    $client_mf->save;
+
+    my $client_mf2 = create_client('MF');
+    $client_mf->email($email2);
+    $client_mf->save;
+
+    my $client_mf3 = create_client('MF');
+    $client_mf->email($email);
+    $client_mf->save;
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => "hey you",
+        email_verified => 1,
+    );
+
+    my $user2 = BOM::User->create(
+        email          => $email2,
+        password       => "hey you",
+        email_verified => 1,
+    );
+
+    $client_mf->status->clear_age_verification;
+    $client_mf->status->_clear_all;
+    $client_mf2->status->clear_age_verification;
+    $client_mf2->status->_clear_all;
+    $client_mf3->status->clear_age_verification;
+    $client_mf3->status->_clear_all;
+
+    $_->delete for @{$client_cr2->client_authentication_method};
+    $_->delete for @{$client_cr->client_authentication_method};
+    $_->delete for @{$client_mf->client_authentication_method};
+    $_->delete for @{$client_mf2->client_authentication_method};
+    $_->delete for @{$client_mf3->client_authentication_method};
+
+    $client_cr  = BOM::User::Client->new({loginid => $client_cr->loginid});     # reload client to avoid cache issues
+    $client_cr2 = BOM::User::Client->new({loginid => $client_cr2->loginid});    # reload client to avoid cache issues
+    $client_mf  = BOM::User::Client->new({loginid => $client_mf->loginid});     # reload client to avoid cache issues
+    $client_mf2 = BOM::User::Client->new({loginid => $client_mf2->loginid});    # reload client to avoid cache issues
+    $client_mf3 = BOM::User::Client->new({loginid => $client_mf3->loginid});    # reload client to avoid cache issues
+
+    cmp_bag $client_cr->status->all,  [], 'client CR has no status';
+    cmp_bag $client_mf->status->all,  [], 'client MF has no status';
+    cmp_bag $client_mf2->status->all, [], 'client MF2 has no status';
+    ok !$client_cr->fully_authenticated,  'client CR not fully auth';
+    ok !$client_mf->fully_authenticated,  'client MF not fully auth';
+    ok !$client_mf2->fully_authenticated, 'client MF2 not fully auth';
+
+    $user->add_client($client_cr);
+    cmp_bag [$client_cr->immutable_fields], [qw/residence secret_answer secret_question/], 'Expected immutable fields CR alone';
+
+    $user2->add_client($client_mf2);
+    cmp_bag [$client_mf2->immutable_fields], [qw/residence secret_answer secret_question/], 'Expected immutable fields MF alone';
+
+    # now make MF + CR siblings
+    $user->add_client($client_mf);
+    cmp_bag [$client_cr->immutable_fields], [qw/residence secret_answer secret_question/], 'Expected immutable fields CR + MF';
+    cmp_bag [$client_mf->immutable_fields], [qw/residence secret_answer secret_question/], 'Expected immutable fields MF + CR';
+
+    # make MF duplicated
+    $client_mf->status->set('duplicate_account', 'test', 'Duplicate account - currency change');
+    $client_mf->status->_clear_all;
+    is $client_mf->status->reason('duplicate_account'), 'Duplicate account - currency change', 'duplicated MF with the right reason';
+
+    my @dup_fields =
+        qw/residence secret_answer secret_question citizen salutation first_name last_name date_of_birth address_city address_line_1 address_line_2 address_postcode address_state phone/;
+
+    cmp_bag [$client_cr->immutable_fields], [@dup_fields], 'Expected immutable fields CR + MF (dup account is very immutable)';
+    cmp_bag [$client_mf->immutable_fields], [@dup_fields], 'Expected immutable fields MF + CR (dup account is very immutable)';
+
+    # give FA
+    my @fa_fields = +BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*;
+    my $fa        = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $client_mf->financial_assessment({
+        data => encode_json_utf8($fa),
+    });
+    $client_mf->save();
+    $client_mf = BOM::User::Client->new({loginid => $client_mf->loginid});    # reload client to avoid cache issues
+
+    cmp_bag [$client_cr->immutable_fields], [@dup_fields, @fa_fields], 'Expected immutable fields CR + MF (FA fields on dup)';
+
+    cmp_bag [$client_mf->immutable_fields], [@dup_fields, @fa_fields], 'Expected immutable fields MF + CR (FA fields on dup)';
+
+    # remove dup
+    $client_mf->status->clear_duplicate_account;
+    $client_mf->status->_clear_all;
+    ok !$client_mf->status->duplicate_account, 'MF is no longer a dup';
+
+    cmp_bag [$client_cr->immutable_fields], [qw/residence secret_answer secret_question/], 'Expected immutable fields CR + MF (come back to normal)';
+
+    cmp_bag [$client_mf->immutable_fields], [qw/residence secret_answer secret_question/], 'Expected immutable fields MF + CR (come back to normal)';
+
+    # give dup to CR
+    $client_cr->status->set('duplicate_account', 'test', 'Duplicate account - currency change');
+    $client_cr->status->_clear_all;
+    is $client_cr->status->reason('duplicate_account'), 'Duplicate account - currency change', 'duplicated MF with the right reason';
+
+    cmp_bag [$client_cr->immutable_fields], [@dup_fields], 'Expected immutable fields CR + MF (dup CR)';
+
+    cmp_bag [$client_mf->immutable_fields], [@dup_fields], 'Expected immutable fields MF + CR (dup CR)';
+
+    # bench CR
+    my $cli_mock           = Test::MockModule->new(ref($client_cr));
+    my $date_joined_config = {};
+
+    $cli_mock->mock(
+        'date_joined',
+        sub {
+            my ($cli) = @_;
+
+            return $date_joined_config->{$cli->loginid} // $cli_mock->original('date_joined')->(@_);
+        });
+
+    $user->add_client($client_cr2);
+    $date_joined_config->{$client_cr2->loginid} = Date::Utility->new()->plus_time_interval('10y')->datetime_yyyymmdd_hhmmss;
+
+    cmp_bag [$client_cr->immutable_fields], [], 'Expected empty immutable fields for a benched client';
+
+    cmp_bag [$client_cr2->immutable_fields], [qw/residence secret_answer secret_question/], 'Expected normalish immutable fields';
+
+    cmp_bag [$client_mf->immutable_fields], [qw/residence secret_answer secret_question/], 'Expected normalish immutable fields';
+
+    # make MF duplicated again
+    $client_mf->status->set('duplicate_account', 'test', 'Duplicate account - currency change');
+    $client_mf->status->_clear_all;
+    is $client_mf->status->reason('duplicate_account'), 'Duplicate account - currency change', 'duplicated MF with the right reason';
+
+    cmp_bag [$client_cr->immutable_fields], [], 'Empty fields for a benched client';
+
+    cmp_bag [$client_cr2->immutable_fields], [@dup_fields, @fa_fields], 'Expected immutable fields CR + MF (FA fields on dup)';
+
+    cmp_bag [$client_mf->immutable_fields], [@dup_fields, @fa_fields], 'Expected immutable fields MF + CR (FA fields on dup)';
+
+    # bench the MF
+    $user->add_client($client_mf3);
+    $date_joined_config->{$client_mf3->loginid} = Date::Utility->new()->plus_time_interval('10y')->datetime_yyyymmdd_hhmmss;
+    ok $client_mf->benched, 'mf is benched now';
+
+    cmp_bag [$client_cr->immutable_fields], [], 'Empty fields for a benched client';
+
+    cmp_bag [$client_cr2->immutable_fields], [qw/residence secret_answer secret_question/], 'Back to normalish immutable fields';
+
+    cmp_bag [$client_mf->immutable_fields], [], 'Empty fields for a benched client';
+
+    cmp_bag [$client_mf3->immutable_fields], [qw/residence secret_answer secret_question/], 'Back to normalish immutable fields';
+
+    # make MF duplicated again
+    $client_mf3->status->set('duplicate_account', 'test', 'Duplicate account - currency change');
+    $client_mf3->status->_clear_all;
+    is $client_mf3->status->reason('duplicate_account'), 'Duplicate account - currency change', 'duplicated MF with the right reason';
+    ok $client_mf->benched, 'mf is benched now';
+
+    cmp_bag [$client_cr->immutable_fields], [], 'Empty fields for a benched client';
+
+    cmp_bag [$client_cr2->immutable_fields], [@dup_fields], 'Expected immutable fields CR + MF';
+
+    cmp_bag [$client_mf->immutable_fields], [], 'Empty fields for a benched client';
+
+    cmp_bag [$client_mf3->immutable_fields], [@dup_fields], 'Expected immutable fields MF + CR';
+
+    # give FA
+    # note in production this scenario might not happen as the new MF would have copied the FA from
+    # the benched client at the get go, good to cover all scenarios nonetheless
+    $client_mf3->financial_assessment({
+        data => encode_json_utf8($fa),
+    });
+    $client_mf3->save();
+    $client_mf3 = BOM::User::Client->new({loginid => $client_mf3->loginid});    # reload client to avoid cache issues
+
+    cmp_bag [$client_cr->immutable_fields], [], 'Empty fields for a benched client';
+
+    cmp_bag [$client_cr2->immutable_fields], [@dup_fields, @fa_fields], 'Expected immutable fields CR + MF (FA fields on dup)';
+
+    cmp_bag [$client_mf->immutable_fields], [], 'Empty fields for a benched client';
+
+    cmp_bag [$client_mf3->immutable_fields], [@dup_fields, @fa_fields], 'Expected immutable fields MF + CR (FA fields on dup)';
+
+    $cli_mock->unmock_all;
 };
 
 sub test_immutable_fields {

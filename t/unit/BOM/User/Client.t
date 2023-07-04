@@ -248,6 +248,17 @@ subtest validate_common_account_details => sub {
 };
 
 subtest 'duplicate_sibling_from_vr' => sub {
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $date_joined = {};
+
+    $client_mock->mock(
+        'date_joined',
+        sub {
+            my ($cli) = @_;
+
+            return $date_joined->{$cli->loginid} // '2020-10-10 10:10:10';
+        });
+
     my $user_mock = Test::MockModule->new('BOM::User');
     $user_mock->mock(
         'new',
@@ -272,7 +283,6 @@ subtest 'duplicate_sibling_from_vr' => sub {
             return @siblings;
         });
 
-    my $client_mock = Test::MockModule->new('BOM::User::Client');
     $client_mock->mock(
         'status',
         sub {
@@ -281,6 +291,7 @@ subtest 'duplicate_sibling_from_vr' => sub {
 
     my $client = BOM::User::Client->rnew;
     $client->user($user);
+    $client->loginid('CLI001');
 
     $client->broker('MX');
     $client->residence('gb');
@@ -292,9 +303,16 @@ subtest 'duplicate_sibling_from_vr' => sub {
     is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client wihtout siblings';
 
     my $sibling = BOM::User::Client->rnew;
+    $sibling->loginid('SIB001');
     push @siblings, $sibling;
     $sibling->broker('VRTC');
     $sibling->residence('gb');
+
+    $client->broker('CR');
+
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a real client';
+
+    $client->broker('VRTC');
 
     is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client wihtout real siblings';
 
@@ -316,6 +334,7 @@ subtest 'duplicate_sibling_from_vr' => sub {
     is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling), 'Got a duplicated sibling';
 
     my $sibling2 = BOM::User::Client->rnew;
+    $sibling2->loginid('SIB002');
     push @siblings, $sibling2;
     $sibling2->broker('MX');
     $sibling2->residence('gb');
@@ -323,9 +342,121 @@ subtest 'duplicate_sibling_from_vr' => sub {
     $sibling->broker('VRTC');
     is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling2), 'Got a duplicated sibling';
 
+    # make sibling date joined the most future
+    $sibling->broker('MX');
+    $date_joined->{SIB001} = '2030-10-10 10:10:10';
+    ok(Date::Utility->new($sibling->date_joined)->epoch > Date::Utility->new($sibling2->date_joined)->epoch, 'Expected date joined comparison');
+    is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling), 'Got a duplicated sibling';
+
+    # revert the dates
+    $sibling->broker('MX');
+    $date_joined->{SIB002} = '2040-10-10 10:10:10';
+    ok(Date::Utility->new($sibling->date_joined)->epoch < Date::Utility->new($sibling2->date_joined)->epoch, 'Expected date joined comparison');
+    is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling2), 'Got a duplicated sibling';
+
     # give sibling1 landing company = mf
     $sibling->broker('MF');
-    is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling), 'Got a duplicated sibling which is MF';
+    is refaddr($client->duplicate_sibling_from_vr), refaddr($sibling), 'Got a duplicated sibling which is MF (higher prio)';
+
+    $user_mock->unmock_all;
+    $status_mock->unmock_all;
+    $client_mock->unmock_all;
+};
+
+subtest 'duplicate_sibling' => sub {
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $date_joined = {};
+
+    $client_mock->mock(
+        'date_joined',
+        sub {
+            my ($cli) = @_;
+
+            return $date_joined->{$cli->loginid} // '2020-10-10 10:10:10';
+        });
+
+    my $user_mock = Test::MockModule->new('BOM::User');
+    $user_mock->mock(
+        'new',
+        sub {
+            return bless({}, 'BOM::User');
+        });
+
+    my $user        = BOM::User->new;
+    my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+    my $duplicate_account;
+    my @siblings;
+
+    $status_mock->mock(
+        'duplicate_account',
+        sub {
+            return $duplicate_account;
+        });
+
+    $user_mock->mock(
+        'clients',
+        sub {
+            return @siblings;
+        });
+
+    my $client = BOM::User::Client->rnew;
+    $client->user($user);
+    $client->loginid('CLI001');
+
+    $client->broker('MX');
+    $client->residence('gb');
+
+    is $client->duplicate_sibling, undef, 'No siblings from a vr client wihtout siblings';
+
+    my $sibling = BOM::User::Client->rnew;
+    $sibling->loginid('SIB001');
+    push @siblings, $sibling;
+    $sibling->broker('VRTC');
+    $sibling->residence('gb');
+
+    is $client->duplicate_sibling, undef, 'No siblings from a vr client wihtout real siblings';
+
+    $sibling->broker('MX');
+    is $client->duplicate_sibling, undef, 'No siblings from a vr client wihtout real duplicated siblings';
+
+    $duplicate_account = {
+        staff  => 'test',
+        reason => 'any reason'
+    };
+
+    is $client->duplicate_sibling, undef, 'No siblings for any reason';
+
+    $duplicate_account = {
+        staff  => 'test',
+        reason => 'Duplicate account - currency change'
+    };
+
+    is refaddr($client->duplicate_sibling), refaddr($sibling), 'Got a duplicated sibling';
+
+    my $sibling2 = BOM::User::Client->rnew;
+    $sibling2->loginid('SIB002');
+    push @siblings, $sibling2;
+    $sibling2->broker('MX');
+    $sibling2->residence('gb');
+
+    $sibling->broker('VRTC');
+    is refaddr($client->duplicate_sibling), refaddr($sibling2), 'Got a duplicated sibling';
+
+    # make sibling date joined the most future
+    $sibling->broker('MX');
+    $date_joined->{SIB001} = '2030-10-10 10:10:10';
+    ok(Date::Utility->new($sibling->date_joined)->epoch > Date::Utility->new($sibling2->date_joined)->epoch, 'Expected date joined comparison');
+    is refaddr($client->duplicate_sibling), refaddr($sibling), 'Got a duplicated sibling';
+
+    # revert the dates
+    $sibling->broker('MX');
+    $date_joined->{SIB002} = '2040-10-10 10:10:10';
+    ok(Date::Utility->new($sibling->date_joined)->epoch < Date::Utility->new($sibling2->date_joined)->epoch, 'Expected date joined comparison');
+    is refaddr($client->duplicate_sibling), refaddr($sibling2), 'Got a duplicated sibling';
+
+    # give sibling1 landing company = mf
+    $sibling->broker('MF');
+    is refaddr($client->duplicate_sibling), refaddr($sibling), 'Got a duplicated sibling which is MF (higher prio)';
 
     $user_mock->unmock_all;
     $status_mock->unmock_all;

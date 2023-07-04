@@ -92,7 +92,8 @@ use constant {
     PROFILE_FIELDS_IMMUTABLE_DUPLICATED =>
         [sort qw/first_name last_name date_of_birth address_city address_line_1 address_line_2 address_postcode address_state phone/],
     FA_FIELDS_IMMUTABLE_DUPLICATED => [
-        qw/employment_status risk_tolerance source_of_experience cfd_experience cfd_frequency trading_experience_financial_instruments trading_frequency_financial_instruments cfd_trading_definition leverage_impact_trading leverage_trading_high_risk_stop_loss required_initial_margin/
+        # this list is empty per compliance requirements, but the logic is still in place
+        # if you want to add FA fields please do
     ],
     ADDRESS_FIELDS      => [qw/address_city address_line_1 address_line_2 address_postcode address_state /],
     SR_UNWELCOME_REASON => 'Social responsibility thresholds breached - Pending financial assessment',
@@ -2174,6 +2175,39 @@ sub required_fields {
 
 =pod
 
+=head2 benched
+
+Returns a boolean checking if the duplicated account has been replaced or not.
+
+=cut
+
+sub benched {
+    my $self = shift;
+
+    if ($self->status->duplicate_account) {
+        # without date joined it might be impossible to tell...
+        my $date_joined = $self->date_joined ? Date::Utility->new($self->date_joined)->epoch : return 0;
+
+        # without currency it might be impossible to tell...
+        my $currency_type = $self->currency ? (BOM::Config::CurrencyConfig::is_valid_crypto_currency($self->currency) ? 'crypto' : 'fiat') : return 0;
+
+        return any { $currency_type eq $_->{currency_type} && $_->{broker_code} eq $self->broker_code && $_->{date_joined} > $date_joined } map {
+            # without either date joined or currency it might be impossible to tell...
+            $_->date_joined && $_->currency
+                ? +{
+                broker_code   => $_->broker_code,
+                currency_type => BOM::Config::CurrencyConfig::is_valid_crypto_currency($_->currency) ? 'crypto' : 'fiat',
+                date_joined   => Date::Utility->new($_->date_joined)->epoch
+                }
+                : ()
+        } $self->user->clients(include_duplicated => 1);
+    }
+
+    return 0;
+}
+
+=pod
+
 =head2 immutable_fields
 
 Returns a list of profile fields that cannot be changed regarding client's status and landing company settings (unless they are null).
@@ -2214,62 +2248,90 @@ sub immutable_fields {
 
     # make a duplicate account very immutable
     if ($self->status->duplicate_account) {
-        my $financial_assessment = $self->financial_assessment() // '';
+        my $dup_reason = $self->status->reason('duplicate_account') // '';
 
-        $financial_assessment = BOM::User::FinancialAssessment::decode_fa($financial_assessment) if $financial_assessment;
+        # check for specific currency change reason
+        # also if the client got replaced, there is no point in provoking side effects
 
-        push @immutable,
-            grep { $financial_assessment && $financial_assessment->{$_} && $self->landing_company->short eq 'maltainvest' }
-            FA_FIELDS_IMMUTABLE_DUPLICATED->@*;
+        if ($dup_reason =~ /Duplicate account - currency change/ && !$self->benched) {
+            my $financial_assessment = $self->financial_assessment() // '';
 
-        return uniq(@immutable, PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*);
+            $financial_assessment = BOM::User::FinancialAssessment::decode_fa($financial_assessment) if $financial_assessment;
+
+            push @immutable,
+                grep { $financial_assessment && $financial_assessment->{$_} && $self->landing_company->short eq 'maltainvest' }
+                FA_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+            return uniq(@immutable, PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*);
+        }
+
+        # dont care about any other reason buy currency change
+        # the account should be considered dead at this point, provoking no side effects at all
+
+        return ();
     }
 
-    my $return;
+    # we will push here the fields that should be immutable no matter what
+    my @locked_fields = ();
+    my $auth;
 
     # Add address fields to immutable array if address verified
     if ($self->status->address_verified) {
         unless ($self->get_poa_status eq 'expired') {
-            push @immutable, ADDRESS_FIELDS->@*;
-            $return = 1;
+            push @locked_fields, ADDRESS_FIELDS->@*;
+            $auth = 1;
         }
     }
 
     # Add address fields to immutable array if fully authenticated
     if ($self->fully_authenticated) {
         unless ($self->get_poa_status eq 'expired') {
-            push @immutable, ADDRESS_FIELDS->@*;
-            $return = 1;
+            push @locked_fields, ADDRESS_FIELDS->@*;
+            $auth = 1;
         }
     }
 
     # Add first name, last name and DOB to immutable if poi verified
     if ($self->status->age_verification) {
-        push @immutable, IMMUTABLE_FIELDS_AGE_VERIFICATION->@*;
-        $return = 1;
+        push @locked_fields, IMMUTABLE_FIELDS_AGE_VERIFICATION->@*;
+        $auth = 1;
     }
 
-    return uniq(@immutable) if $return;
+    my @siblings = $self->user ? $self->user->clients(include_duplicated => 1) : ($self);
 
-    # the remaining part is for un-authenticated clients only
-
-    my @siblings = $self->user ? $self->user->clients : ($self);
-
-    # initialzed to the list of all available fields, to be shrinked by forthcoming intersecitions
-    my @changeable = @immutable;
+    # we will push here all the fields that should be spared from immutability
+    my @changeable = ();
 
     for my $sibling (@siblings) {
         next if $sibling->is_virtual;
 
-        my $company_settings             = $sibling->landing_company->changeable_fields;
-        my $changeable_fields_in_company = $company_settings->{only_before_auth}            // [];
-        my $changeable_if_not_locked     = $company_settings->{personal_details_not_locked} // [];
+        # we will grab immutable fields from duplicated accounts as they are
+        if ($sibling->status->duplicate_account) {
+            # note this would be an infinite recursive call for a non `duplicate_account`
+            # make damn sure is the case :)
+            @locked_fields = uniq(@locked_fields, $sibling->immutable_fields);
 
-        $changeable_fields_in_company = [array_minus(@$changeable_fields_in_company, @$changeable_if_not_locked)]
-            if $sibling->status->personal_details_locked;
+            next;
+        }
 
-        @changeable = intersect(@changeable, @$changeable_fields_in_company);
+        my $company_settings = $sibling->landing_company->changeable_fields;
+
+        # if the the locked status is on, we might want to ensure the included fields are immutable
+        my $immutable_if_locked = $company_settings->{personal_details_not_locked} // [];
+        @locked_fields = uniq(@locked_fields, @$immutable_if_locked) if $sibling->status->personal_details_locked;
+
+        next if $auth;
+
+        my $changeable_fields_in_company = $company_settings->{only_before_auth} // [];
+        # we will simply stack the changeable fields that would be spared from immutability
+        @changeable = uniq(@changeable, @$changeable_fields_in_company);
     }
+
+    # remove locked fields from the changeable list
+    @changeable = array_minus(@changeable, @locked_fields);
+
+    # combine locked and immutable
+    @immutable = uniq(@immutable, @locked_fields);
 
     return array_minus(@immutable, @changeable);
 }
@@ -8862,24 +8924,37 @@ sub duplicate_sibling_from_vr {
     my ($self) = @_;
 
     if ($self->is_virtual) {
-        my @clients = $self->user->clients(include_duplicated => 1);
-
-        my @dup_candidates = grep {
-            $_->status->duplicate_account && !$_->is_virtual && $_->status->reason('duplicate_account') =~ /Duplicate account - currency change/
-        } @clients;
-
-        my $duplicated = first { $_->landing_company->short eq 'maltainvest' } @dup_candidates;
-
-        # mf will have higer prio
-
-        return $duplicated if $duplicated;
-
-        ($duplicated) = @dup_candidates;
-
-        return $duplicated;
+        return $self->duplicate_sibling;
     }
 
     return undef;
+}
+
+=head2 duplicate_sibling
+
+Gets the real duplicated sibling of the client, giving more priority to MF clients.
+
+=cut
+
+sub duplicate_sibling {
+    my ($self) = @_;
+
+    my @clients = $self->user->clients(include_duplicated => 1);
+
+    my @dup_candidates = sort {
+        ($a->date_joined ? Date::Utility->new($a->date_joined)->epoch : 0) < ($b->date_joined ? Date::Utility->new($b->date_joined)->epoch : 0);
+    } grep { $_->status->duplicate_account && !$_->is_virtual && $_->status->reason('duplicate_account') =~ /Duplicate account - currency change/ }
+        @clients;
+
+    my $duplicated = first { $_->landing_company->short eq 'maltainvest' } @dup_candidates;
+
+    # mf will have higer prio
+
+    return $duplicated if $duplicated;
+
+    ($duplicated) = @dup_candidates;
+
+    return $duplicated;
 }
 
 =head2 ignore_age_verification
