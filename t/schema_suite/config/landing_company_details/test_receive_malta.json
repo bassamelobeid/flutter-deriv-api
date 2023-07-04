@@ -31,7 +31,14 @@
          ]
       },
       "changeable_fields" : {
-         "properties" : {},
+         "patternProperties" : {
+            "^.+$" : {
+               "type" : "array",
+               "items" : {
+                  "type" : "string"
+               }
+            }
+         },
          "additionalProperties" : false,
          "type" : "object"
       },

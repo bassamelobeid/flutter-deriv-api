@@ -522,6 +522,15 @@ subtest $method => sub {
 
         # cannot change immutable fields (coming from the dup account)
         $params->{args}->{secret_answer} = 'asdf';
+
+        # could bring flakiness if not mocked
+        my $mock_client = Test::MockModule->new(ref($new_client));
+        $mock_client->mock(
+            'benched',
+            sub {
+                return 0;
+            });
+
         $new_client->set_default_account("USD");
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CannotChangeAccountDetails', 'correct error code.')
             ->error_message_is("You may not change these account details.", 'It should return expected error message')
@@ -668,6 +677,7 @@ subtest $method => sub {
         $rpc_ct->call_ok('get_settings', {token => $rpc_ct->result->{oauth_token}})->result;
         cmp_ok($rpc_ct->result->{place_of_birth}, 'eq', $client_details->{place_of_birth}, 'place_of_birth cannot be changed');
     };
+
 };
 
 $method = 'new_account_maltainvest';
@@ -2052,24 +2062,83 @@ subtest 'MF under Duplicated account - DIEL country' => sub {
 
     my $new_client = BOM::User::Client->new({loginid => $result->{client_id}});
     $new_client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+    $new_client->status->_clear_all;
 
     $settings = $rpc_ct->call_ok('get_settings', $params)->has_no_system_error->has_no_error('get za account status')->result;
 
     cmp_bag $settings->{immutable_fields},
         [
-        qw/residence account_opening_reason citizen date_of_birth first_name last_name salutation tax_identification_number tax_residence employment_status risk_tolerance source_of_experience cfd_experience cfd_frequency trading_experience_financial_instruments trading_frequency_financial_instruments cfd_trading_definition leverage_impact_trading leverage_trading_high_risk_stop_loss required_initial_margin address_city address_line_1 address_line_2 address_postcode address_state phone/
-        ], 'Expected immutable fields';
+        BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*,
+        qw/residence account_opening_reason citizen date_of_birth first_name last_name salutation tax_identification_number tax_residence address_city address_line_1 address_line_2 address_postcode address_state phone/
+        ],
+        'Expected immutable fields';
 
     my $fa = $rpc_ct->call_ok('get_financial_assessment', $params)->has_no_system_error->has_no_error('get za fa')->result;
 
     my $fa_values = [map { $_ } grep { $fa->{$_} } $settings->{immutable_fields}->@*];
-    cmp_bag $fa_values,
-        [
-        qw/cfd_trading_definition risk_tolerance cfd_frequency leverage_trading_high_risk_stop_loss required_initial_margin trading_frequency_financial_instruments leverage_impact_trading source_of_experience employment_status trading_experience_financial_instruments cfd_experience/
-        ], 'Expected FA values across the immutable fields';
+    cmp_bag $fa_values, [BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*], 'Expected FA values across the immutable fields';
+
+    subtest 'you cannot change these' => sub {
+        my $orig_params = +{$params->%*};
+
+        # cannot update fa fields
+        for my $fa_field ($fa_values->@*) {
+            $params->{args} = +{$orig_params->{args}->%*};
+            $params->{args}->{$fa_field} = 'test';
+            $rpc_ct->call_ok('new_account_maltainvest', $params)
+                ->has_no_system_error->has_error->error_code_is('CannotChangeAccountDetails', 'correct error code.')
+                ->error_message_is("You may not change these account details.", 'It should return expected error message')
+                ->error_details_is({changed => [$fa_field]});
+        }
+
+        cmp_bag $fa_values, [], 'Empty FA immutable fields on this scenario' unless scalar $fa_values->@*;
+
+        $params = +{$orig_params->%*};
+    };
 
     $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('za mf account created successfully')->result;
+
     ok $result->{client_id}, 'got a second id';
+
+    my $new_client2 = BOM::User::Client->new({loginid => $result->{client_id}});
+
+    subtest 'added from the CR account' => sub {
+        $result = $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('za cr account created successfully')->result;
+
+        my $client_cr = BOM::User::Client->new({loginid => $result->{client_id}});
+
+        $user->add_client($client_cr);
+        $client_cr->binary_user_id($user->id);
+        $client_cr->save;
+
+        $auth_token = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
+        $params->{token} = $auth_token;
+
+        $new_client2->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+        $new_client2->status->_clear_all;
+
+        subtest 'you cannot change these' => sub {
+            my $orig_params = +{$params->%*};
+
+            # cannot update fa fields
+            for my $fa_field ($fa_values->@*) {
+                $params->{args} = +{$orig_params->{args}->%*};
+                $params->{args}->{$fa_field} = 'test';
+                $rpc_ct->call_ok('new_account_maltainvest', $params)
+                    ->has_no_system_error->has_error->error_code_is('CannotChangeAccountDetails', 'correct error code.')
+                    ->error_message_is("You may not change these account details.", 'It should return expected error message')
+                    ->error_details_is({changed => [$fa_field]});
+            }
+
+            cmp_bag $fa_values, [], 'Empty FA immutable fields on this scenario' unless scalar $fa_values->@*;
+
+            $params = +{$orig_params->%*};
+        };
+
+        $result =
+            $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('za mf account created successfully')->result;
+        ok $result->{client_id}, 'got a client id';
+    };
 };
 
 subtest 'MF under Duplicated account - Spain' => sub {
@@ -2151,16 +2220,15 @@ subtest 'MF under Duplicated account - Spain' => sub {
 
     cmp_bag $settings->{immutable_fields},
         [
-        qw/residence account_opening_reason citizen date_of_birth first_name last_name salutation tax_identification_number tax_residence employment_status risk_tolerance source_of_experience cfd_experience cfd_frequency trading_experience_financial_instruments trading_frequency_financial_instruments cfd_trading_definition leverage_impact_trading leverage_trading_high_risk_stop_loss required_initial_margin address_city address_line_1 address_line_2 address_postcode address_state phone/
-        ], 'Expected immutable fields';
+        BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*,
+        qw/residence account_opening_reason citizen date_of_birth first_name last_name salutation tax_identification_number tax_residence address_city address_line_1 address_line_2 address_postcode address_state phone/
+        ],
+        'Expected immutable fields';
 
     my $fa = $rpc_ct->call_ok('get_financial_assessment', $params)->has_no_system_error->has_no_error('get es fa')->result;
 
     my $fa_values = [map { $_ } grep { $fa->{$_} } $settings->{immutable_fields}->@*];
-    cmp_bag $fa_values,
-        [
-        qw/cfd_trading_definition risk_tolerance cfd_frequency leverage_trading_high_risk_stop_loss required_initial_margin trading_frequency_financial_instruments leverage_impact_trading source_of_experience employment_status trading_experience_financial_instruments cfd_experience/
-        ], 'Expected FA values across the immutable fields';
+    cmp_bag $fa_values, [BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*], 'Expected FA values across the immutable fields';
 
     $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('es mf account created successfully')->result;
     ok $result->{client_id}, 'got a second id';

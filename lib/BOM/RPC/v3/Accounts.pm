@@ -1741,10 +1741,10 @@ rpc get_settings => sub {
     my $cooling_off_period =
         BOM::Config::Redis::redis_replicated_read()->ttl(APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD . $client->{binary_user_id});
 
-    # grab from dup account if virtual
+    # grab from dup account
     my $duplicated;
 
-    $duplicated = $client->duplicate_sibling_from_vr if $client->is_virtual;
+    $duplicated = $client->duplicate_sibling;
 
     my $fa_client = $duplicated // $client;
 
@@ -3149,7 +3149,11 @@ rpc get_financial_assessment => sub {
 
         return BOM::RPC::v3::Utility::permission_error() unless @siblings;
     }
+
     my $response;
+    my $duplicated = $client->duplicate_sibling;
+    push @siblings, $duplicated if $duplicated;
+
     foreach my $sibling (@siblings) {
         if ($sibling->financial_assessment()) {
             $response = decode_fa($sibling->financial_assessment());

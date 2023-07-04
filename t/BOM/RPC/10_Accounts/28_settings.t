@@ -486,7 +486,8 @@ subtest 'get settings' => sub {
     $personal_details_locked = 1;
     $result                  = $c->tcall($method, $params);
 
-    $expected->{immutable_fields} = ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'secret_answer', 'secret_question'];
+    $expected->{immutable_fields} =
+        ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'secret_answer', 'secret_question', 'place_of_birth'];
     is_deeply($result, $expected, 'first and last name forbidden once again due to personal details locked');
 
     $poi_status                   = 'none';
@@ -630,7 +631,7 @@ subtest 'set settings' => sub {
     delete $params->{args}{address_line_1};
 
     $params->{args}{date_of_birth} = '1987-1-1';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your date of birth cannot be changed.', 'date_of_birth not allow changed');
+    is($c->tcall($method, $params)->{error}{message_to_client}, undef, 'date_of_birth can be changed if not POI verified');
     delete $params->{args}{date_of_birth};
 
     $params->{args}{place_of_birth} = 'xx';
@@ -758,11 +759,8 @@ subtest 'set settings' => sub {
     {
         local $full_args{account_opening_reason} = 'Hedging';
         $params->{args} = {%full_args};
-        is(
-            $c->tcall($method, $params)->{error}{message_to_client},
-            'Your account opening reason cannot be changed.',
-            'cannot send account_opening_reason with a different value'
-        );
+
+        is($c->tcall($method, $params)->{error}{message_to_client}, undef, 'can send account_opening_reason with a different value');
     }
 
     delete $params->{args}->{account_opening_reason};
@@ -801,15 +799,18 @@ subtest 'set settings' => sub {
 
     $poi_status = 'verified';
     $test_client_X_mf->status->set('age_verification', 'test', 'test');
-    $params->{args}->{tax_identification_number} = $test_client_X_mf->tax_identification_number;
-    $params->{args}{tax_residence} = 'de';
+    $params->{args}->{tax_identification_number} = '111-222-333';
+    $params->{args}->{tax_residence}             = 'es';
+
+    delete $params->{args}->{account_opening_reason};
+
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Your tax residence cannot be changed.',
         'Can not change tax residence for MF once it has been authenticated.'
     );
-    $params->{args}{tax_identification_number} = '111-222-333';
-    $params->{args}{tax_residence}             = $test_client_X_mf->tax_residence;
+    $params->{args}{tax_identification_number} = '111-222-334';
+    $params->{args}{tax_residence}             = 'de';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Your tax identification number cannot be changed.',
@@ -820,8 +821,8 @@ subtest 'set settings' => sub {
     $test_client_X_mf->status->_clear_all;
 
     $mocked_client->redefine('fully_authenticated' => sub { return 1 });
-    $params->{args}{tax_identification_number} = '111-222-543';
-    $params->{args}{tax_residence}             = 'ru';
+    $params->{args}{tax_identification_number} = '111-222-333';
+    $params->{args}{tax_residence}             = 'de';
 
     cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
     my $res = $c->tcall('get_settings', {token => $token_X_mf});
@@ -918,12 +919,14 @@ subtest 'set settings' => sub {
         };
 
         subtest 'different value' => sub {
-            $params->{args} = {%full_args, citizen => 'bt'};
+            $mocked_client->redefine('fully_authenticated' => sub { return 1 });
+            $params->{args} = {citizen => 'bt'};
             $test_client_X_mf->citizen('at');
             $test_client_X_mf->save();
             is($c->tcall($method, $params)->{error}{message_to_client}, 'Your citizenship cannot be changed.', 'different value for citizenship');
         };
         subtest 'restricted countries' => sub {
+            $mocked_client->redefine('fully_authenticated' => sub { return 0 });
             for my $restricted_country (qw(us ir hk my)) {
                 $params->{args} = {%full_args, citizen => $restricted_country};
                 $test_client_X_mf->citizen('');
@@ -1508,6 +1511,98 @@ subtest 'get settings from virtual with a dup account' => sub {
     ok $vr_only_result->{employment_status}, 'employment status is present';
 
     cmp_bag $vr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields, @fa_duplicated_fields)],
+        'All immutable fields are included in the response (minus the secrets)';
+};
+
+subtest 'get settings from real with a dup account' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'client+dup+cr900000010@test.com',
+        broker_code   => 'CR',
+        first_name    => 'test2',
+        last_name     => 'dup2',
+        date_of_birth => '2000-01-01',
+    });
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'x',
+    );
+
+    $user->add_client($client);
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $client->save;
+
+    my $token  = $token_gen->create_token($client->loginid, 'test token');
+    my $params = {
+        language  => 'EN',
+        token     => $token,
+        client_ip => '127.0.0.1'
+    };
+
+    my $cr_only_result = $c->tcall('get_settings', $params);
+
+    cmp_bag $cr_only_result->{immutable_fields},
+        [map { exists $cr_only_result->{$_} || /^secret_/ ? $_ : () } $cr_only_result->{immutable_fields}->@*],
+        'All immutable fields are included in the response';
+
+    my $dup_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'client+dup+mf900000009@test.com',
+        broker_code   => 'MF',
+        first_name    => 'test2',
+        last_name     => 'dup2',
+        date_of_birth => '2000-01-01',
+    });
+
+    my $dup_token = $token_gen->create_token($dup_client->loginid, 'test token for a dup');
+    $user->add_client($dup_client);
+    $dup_client->user($user);
+    $dup_client->binary_user_id($user->id);
+    $dup_client->save;
+    # this will make immutable fields more interesting
+    $dup_client->status->setnx('age_verification', 'test', 'test');
+    $dup_client->status->_build_all;
+
+    my $dupless_result = $c->tcall('get_settings', {$params->%*, token => $dup_token});
+
+    cmp_bag $dupless_result->{immutable_fields},
+        [map { exists $dupless_result->{$_} || /^secret_/ ? $_ : () } $dupless_result->{immutable_fields}->@*],
+        'All immutable fields are included in the response (minus the secrets)';
+
+    $dup_client->status->setnx('duplicate_account', 'test', 'Duplicate account - currency change');
+    $dup_client->status->_build_all;
+
+    my $dup_result           = $c->tcall('get_settings', $params);
+    my @dup_immutable_fields = BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+    cmp_deeply $dup_result, +{$dupless_result->%*, immutable_fields => bag(uniq($dupless_result->{immutable_fields}->@*, @dup_immutable_fields))},
+        'Expected immutable fields';
+
+    cmp_bag $dup_result->{immutable_fields}, [map { exists $dup_result->{$_} || /^secret_/ ? $_ : () } $dup_result->{immutable_fields}->@*],
+        'All immutable fields are included in the response (minus the secrets)';
+
+    ok scalar $cr_only_result->{immutable_fields}->@* < scalar $dup_result->{immutable_fields}->@*, 'CR only response has less immutable fields';
+    ok scalar keys $cr_only_result->%* == scalar keys $dup_result->%*,                              'same number of fields';
+
+    $cr_only_result = $c->tcall('get_settings', $params);
+    ok !$cr_only_result->{employment_status}, 'it does not have an employment status';
+
+    cmp_bag $cr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields)],
+        'All immutable fields are included in the response (minus the secrets)';
+
+    # complete the FA
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $dup_client->financial_assessment({
+        data => encode_json_utf8($data),
+    });
+    $dup_client->save();
+
+    my @fa_duplicated_fields = BOM::User::Client::FA_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+    $cr_only_result = $c->tcall('get_settings', $params);
+
+    ok $cr_only_result->{employment_status}, 'employment status is present';
+
+    cmp_bag $cr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields, @fa_duplicated_fields)],
         'All immutable fields are included in the response (minus the secrets)';
 };
 

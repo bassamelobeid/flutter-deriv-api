@@ -393,6 +393,9 @@ subtest 'MF duplicated account' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
     my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
@@ -417,6 +420,15 @@ subtest 'MF duplicated account' => sub {
     my $result2 = $c->tcall('get_financial_assessment', {token => $token});
 
     cmp_deeply $result, $result2, 'Same result before and after the dup';
+
+    subtest 'FA from MF real' => sub {
+        $user->add_client($client2);
+        ok !$client2->financial_assessment, 'client2 does not have a FA';
+
+        my $result3 = $c->tcall('get_financial_assessment', {token => $token});
+
+        cmp_deeply $result, $result3, 'Same result before and after the dup';
+    };
 };
 
 done_testing();
