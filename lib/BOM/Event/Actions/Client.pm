@@ -2706,18 +2706,53 @@ Set or clear status on a client account
 =cut
 
 sub payops_event_update_account_status {
-    my $args    = shift;
+    my $args = shift;
+    # Special flags for the stuffs
     my $loginid = $args->{loginid} // die 'No loginid provided';
     my $status  = $args->{status}  // die 'No status provided';
-    my $clear   = $args->{clear};
-    my $reason  = $args->{reason} // "Requested by PayOps";
-    my $client  = BOM::User::Client->new({loginid => $loginid}) or die "$loginid does not exists";
+    # For these fields, it have a special behavior
+    # When it is set to any truthy values except the below, it will perform operation as specified
+    # when it is real, it means apply it to real sibilings
+    # When it is all, it means apply it to all sibilings include virtual
+    my $clear         = $args->{clear};
+    my $set           = $args->{set} // ($clear ? undef : 1);
+    my @special_flags = qw/real all/;
+    die "Cannot set and clear status in a same call!" if defined $clear and defined $set;
+    my $reason = $args->{reason} // "Requested by PayOps";
+    my $client = BOM::User::Client->new({loginid => $loginid}) or die "$loginid does not exists";
     if ($clear) {
-        my $method = "clear_$status";
-        $client->status->$method;
+        if (grep { $_ eq $clear } @special_flags) {
+            # We need to apply this to its sibilings so lets use this instead
+            $client->clear_status_and_sync_to_siblings($status, $clear eq 'all', 0);
+        } else {
+            my $method = "clear_$status";
+            $client->status->$method;
+        }
     } else {
         $client->status->setnx($status, "system", $reason);
+        if (grep { $_ eq $set } @special_flags) {
+            # Copy it to its sibilings
+            $client->copy_status_to_siblings($status, 'system', $set eq 'all');
+        }
     }
+}
+
+=head2 payops_event_request_poo
+
+Request proof of ownership (POO) from client
+
+=cut
+
+sub payops_event_request_poo {
+    my $args = shift;
+    for my $required_arg (qw/trace_id loginid payment_service_provider/) {
+        die "Required argument $required_arg is absent" unless defined $args->{$required_arg};
+    }
+    my $loginid = delete $args->{loginid};
+    # Note from payops it, it should never be able to temper the proof of ownership
+    # so the maximum extent it can does it to request a new poo from client
+    my $client = BOM::User::Client->new({loginid => $loginid}) or die "$loginid does not exists";
+    $client->proof_of_ownership->create($args);
 }
 
 =head2 check_or_store_onfido_applicant

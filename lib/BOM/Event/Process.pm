@@ -73,6 +73,7 @@ my $action_mapping = {
         send_email                                  => \&BOM::Event::Actions::Email::send_email_generic,
         affiliate_sync_initiated                    => \&BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated,
         payops_event_update_account_status          => \&BOM::Event::Actions::Client::payops_event_update_account_status,
+        payops_event_request_poo                    => \&BOM::Event::Actions::Client::payops_event_request_poo,
         withdrawal_limit_reached                    => \&BOM::Event::Actions::Client::withdrawal_limit_reached,
         p2p_advert_updated                          => \&BOM::Event::Actions::P2P::advert_updated,
         p2p_order_created                           => \&BOM::Event::Actions::P2P::order_created,
