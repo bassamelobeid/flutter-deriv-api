@@ -44,4 +44,3 @@ jobs:
         run: make unit
       - name: Code structure and syntax
         run: make syntax_diff
-
