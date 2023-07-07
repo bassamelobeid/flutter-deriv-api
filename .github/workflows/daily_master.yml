@@ -1,54 +1,10 @@
 name: Daily master test
 run-name: Daily test on master branch
 on:
-  # schedule:
-  #   - cron: '32 20 * * *'
-  pull_request:
+  schedule:
+    - cron: '32 20 * * *'
 jobs:
   syntax_unit:
-    runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          need_service: 'false'
-      - name: Code structure and syntax
-        run: make syntax
-      - name: unit tests
-        run: make unit
+    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@dev
   core:
-    runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-      - name: Core tests
-        run: make test
+    uses: regentmarkets/github-actions/.github/workflows/core.yml@dev
