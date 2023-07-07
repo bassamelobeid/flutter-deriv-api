@@ -27,7 +27,6 @@ alias:
           (( count++ )) && (( count >= 20 )) && break
           sleep 1
       done
-    name: Wait for services to start up
 - &5
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
@@ -99,20 +98,6 @@ jobs:
         no_output_timeout: 3h
         command: make unit
         name: unit tests
-    - store_test_results:
-        path: /var/tmp/test-output
-  unit:
-    <<: *6
-    steps:
-    - *1
-    - *2
-    - run:
-        <<: *5
-        no_output_timeout: 3h
-        command: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make unit
-        name: Unit tests
     - store_test_results:
         path: /var/tmp/test-output
   code_coverage:
