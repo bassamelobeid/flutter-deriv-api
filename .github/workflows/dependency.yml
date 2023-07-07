@@ -12,7 +12,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  get-git-message:
+    runs-on: ubuntu-latest
+    outputs:
+      head-commit-message: ${{ steps.get_head_commit_message.outputs.headCommitMsg }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get Commit Message
+        shell: bash -e {0}
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        id: get_head_commit_message
+        run: |
+          echo "$GITHUB_EVENT_NAME $GITHUB_REF_NAME $SHA"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" -a "$GITHUB_REF_NAME" != "master" ]; then
+            git fetch --depth 1 origin $SHA
+            echo "headCommitMsg=$(git log --format=oneline -n 1 $SHA)" >> "$GITHUB_OUTPUT"
+          else
+            exit 0
+          fi
   check-git-message:
+    needs: get-git-message
+    if: ${{ contains(needs.get-git-message.outputs.head-commit-message, '[gh]') }}
     runs-on: ubuntu-latest
     steps:
       - name: check git message
