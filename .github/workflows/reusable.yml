@@ -24,4 +24,7 @@ jobs:
             echo "$i" >> "$GITHUB_ENV"
             echo "$i"
           done
-          echo "here"
+          echo "$env1"
+          echo "$env2"
+          echo "$env3"
+          env
