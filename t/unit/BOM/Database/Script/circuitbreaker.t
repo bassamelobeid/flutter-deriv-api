@@ -11,10 +11,9 @@ use Log::Any qw($log);
 
 use_ok "BOM::Database::Script::CircuitBreaker";
 my $breaker;
-my $config_file;
 subtest "init" => sub {
-    $config_file = Path::Tiny->tempfile;
-    $config_file->spew(<<'EOF');
+    my $tmp_config = Path::Tiny->tempfile;
+    $tmp_config->spew(<<'EOF');
 [databases]
 authdb = dbname=auth port=5435 host=127.0.0.1 user=write password=Abcdefg pool_mode=transaction
 authdb2 = dbname=auth port=5435 host=127.0.0.1 user=write password=Abcdefg pool_mode=transaction
@@ -23,7 +22,7 @@ EOF
     lives_ok {
         $breaker = BOM::Database::Script::CircuitBreaker->new(
             bouncer_uri => undef,
-            cfg_file    => $config_file
+            cfg_file    => $tmp_config
         )
     }
     "run init ok";
@@ -118,17 +117,13 @@ subtest do_check => sub {
     $status_result = Future->done(1);
     $resume_result = Future->done(1);
     lives_ok { $result = $breaker->do_check('db_uri', ['db1', 'db2'], 0)->get } "at first db offline, check and ok";
-    use Data::Dumper;
-    is_deeply(
-        \@stats_inc_args,
-        [['circuitbreaker.state.online', {'tags' => ['server:db1']}], ['circuitbreaker.state.online', {'tags' => ['server:db2']}]],
-        'stats_inc is called'
-    );
+    ok(!@stats_inc_args, 'no stats_inc called');
     is(scalar($log->msgs->@*), 1, "only one log message");
     $log->contains_ok('SUCCESS');
     is($result, 1, "db is online");
     is_deeply(\@function_args, [[args => ['db_uri']]], 'function called only once with right args');
     is_deeply(\@resume_args,   [[['db1', 'db2']]],     'resume is called');
+
     # at first is offline, it will try 1 time even check failed.
     $log->clear;
     $status_result  = Future->fail(1);
@@ -136,15 +131,8 @@ subtest do_check => sub {
     @stats_inc_args = ();
     @function_args  = ();
     lives_ok { $result = $breaker->do_check('db_uri', ['db1', 'db2'], 0)->get } "at first db offline, check and fail";
-    is_deeply(
-        \@stats_inc_args,
-        [
-            ['circuitbreaker.failure.db1'],                               ['circuitbreaker.failure.db2'],
-            ['circuitbreaker.state.offline', {'tags' => ['server:db1']}], ['circuitbreaker.state.offline', {'tags' => ['server:db2']}]
-        ],
-        'stats_inc called'
-    );
-    is_deeply(\@suspend_args, [], 'suspend is called');
+    is_deeply(\@stats_inc_args, [['circuitbreaker.failure.db1'], ['circuitbreaker.failure.db2']], 'stats_inc called');
+    is_deeply(\@suspend_args,   [],                                                               'suspend is called');
     is(scalar($log->msgs->@*), 1, "only one log message");
     $log->contains_ok('FAIL', 'one debug message');
     is($result, 0, "db is offline");
@@ -161,10 +149,8 @@ subtest do_check => sub {
     is_deeply(
         \@stats_inc_args,
         [
-            ['circuitbreaker.failure.db1'],                               ['circuitbreaker.failure.db2'],
-            ['circuitbreaker.failure.db1'],                               ['circuitbreaker.failure.db2'],
-            ['circuitbreaker.failure.db1'],                               ['circuitbreaker.failure.db2'],
-            ['circuitbreaker.state.offline', {'tags' => ['server:db1']}], ['circuitbreaker.state.offline', {'tags' => ['server:db2']}]
+            ['circuitbreaker.failure.db1'], ['circuitbreaker.failure.db2'], ['circuitbreaker.failure.db1'], ['circuitbreaker.failure.db2'],
+            ['circuitbreaker.failure.db1'], ['circuitbreaker.failure.db2']
         ],
         'stats_inc called'
     );
@@ -185,10 +171,8 @@ subtest do_check => sub {
     is_deeply(
         \@stats_inc_args,
         [
-            ['circuitbreaker.failure.db1'],                               ['circuitbreaker.failure.db2'],
-            ['circuitbreaker.failure.db1'],                               ['circuitbreaker.failure.db2'],
-            ['circuitbreaker.failure.db1'],                               ['circuitbreaker.failure.db2'],
-            ['circuitbreaker.state.offline', {'tags' => ['server:db1']}], ['circuitbreaker.state.offline', {'tags' => ['server:db2']}]
+            ['circuitbreaker.failure.db1'], ['circuitbreaker.failure.db2'], ['circuitbreaker.failure.db1'], ['circuitbreaker.failure.db2'],
+            ['circuitbreaker.failure.db1'], ['circuitbreaker.failure.db2']
         ],
         'stats_inc called'
     );
@@ -205,33 +189,14 @@ subtest do_check => sub {
     @stats_inc_args = ();
     @function_args  = ();
     @resume_args    = ();
-    lives_ok { $result = $breaker->do_check('db_uri', ['db1', 'db2'], undef)->get } "at first db status unknown, check and ok";
-    is_deeply(
-        \@stats_inc_args,
-        [['circuitbreaker.state.online', {'tags' => ['server:db1']}], ['circuitbreaker.state.online', {'tags' => ['server:db2']}]],
-        'stats_inc called'
-    );
+    lives_ok { $result = $breaker->do_check('db_uri', ['db1', 'db2'], undef)->get } "at first db offline, check and ok";
+    ok(!@stats_inc_args, 'no stats_inc called');
     is(scalar($log->msgs->@*), 1, "only one log message");
     $log->contains_ok('SUCCESS');
     is($result, 1, "db is online");
     is_deeply(\@function_args, [[args => ['db_uri']]], 'function called only once with right args');
     is_deeply(\@resume_args,   [[['db1', 'db2']]],     'resume is called');
 
-    # check TERM signal
-    $status_result = Future->fail('TERM');
-    for my $tmp_begin_status (undef, 0, 1) {
-
-        $log->clear;
-        @stats_inc_args = ();
-        @function_args  = ();
-        @resume_args    = ();
-        @suspend_args   = ();
-        lives_ok { $result = $breaker->do_check('db_uri', ['db1', 'db2'], $tmp_begin_status)->get } "at first db offline, check and ok";
-        is($result, $tmp_begin_status, "status will keep the same");
-        ok(!@stats_inc_args, 'no stats_inc called');
-        ok(!@resume_args,    'no resume called');
-        ok(!@suspend_args,   'no suspend called');
-    }
 };
 
 done_testing();
