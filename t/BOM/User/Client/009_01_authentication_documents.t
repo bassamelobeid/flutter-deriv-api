@@ -555,11 +555,36 @@ subtest 'is_poa_address_fixed' => sub {
 
 };
 
-subtest 'is_poa_address_fix' => sub {
+sub upload_test_document {
+    my ($document_args, $client) = @_;
+
+    my $upload_info = $client->db->dbic->run(
+        ping => sub {
+            $_->selectrow_hashref(
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)', undef,
+                $client->loginid, $document_args->{document_type},
+                $document_args->{document_format}, $document_args->{expiration_date} || undef,
+                $document_args->{document_id} || '', $document_args->{expected_checksum},
+                '', $document_args->{page_type} || '', undef, 0, 'legacy'
+            );
+        });
+
+    $client->db->dbic->run(
+        ping => sub {
+            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+        });
+
+    return $upload_info;
+}
+
+subtest 'poa_address_fix' => sub {
+    $client_mock->unmock('client_authentication_document');
+    $documents_mock->unmock_all;
+
     my $redis = BOM::Config::Redis::redis_events();
     my $key   = 'POA_ADDRESS_MISMATCH::' . $client->binary_user_id;
     my @tests = ({
-            title                => 'Identical Match',
+            title                => 'Identical Match - Not age verified',
             expected_address     => 'Main St. 123',
             staff                => 'User123',
             reason               => 'Client POA address mismatch',
@@ -568,9 +593,10 @@ subtest 'is_poa_address_fix' => sub {
             expected             => 1,
             age_verification     => 0,
             poa_address_mismatch => 1,
+            checksum             => 'test123',
         },
         {
-            title                => 'Identical Match',
+            title                => 'Identical Match - Age verified',
             expected_address     => 'Main St. 123',
             staff                => 'User123',
             reason               => 'Client POA address mismatch',
@@ -579,10 +605,10 @@ subtest 'is_poa_address_fix' => sub {
             expected             => 1,
             age_verification     => 1,
             poa_address_mismatch => 1,
-
+            checksum             => 'test234',
         },
         {
-            title                => 'Identical Match',
+            title                => 'Identical Match - Not age verified or mismatch flag',
             expected_address     => 'Main St. 123',
             staff                => 'User123',
             reason               => 'Client POA address mismatch',
@@ -591,7 +617,7 @@ subtest 'is_poa_address_fix' => sub {
             expected             => 1,
             age_verification     => 0,
             poa_address_mismatch => 0,
-
+            checksum             => 'test345',
         },
 
     );
@@ -601,6 +627,15 @@ subtest 'is_poa_address_fix' => sub {
                 expected_address => $test->{expected_address},
                 staff            => $test->{staff},
                 reason           => $test->{reason},
+            };
+
+            my $args = {
+                document_type     => 'utility_bill',
+                document_format   => 'PDF',
+                document_id       => undef,
+                expiration_date   => undef,
+                expected_checksum => $test->{checksum},
+                page_type         => undef,
             };
 
             $client->status->clear_poa_address_mismatch();
@@ -622,21 +657,35 @@ subtest 'is_poa_address_fix' => sub {
                 $client->status->clear_age_verification;
             }
 
-            if ($test->{poa_address_mismatch}) {
-                is $client->documents->is_poa_address_fixed(), $test->{expected}, 'Address should match for this test';
-            } else {
-                is !$client->documents->is_poa_address_fixed(), $test->{expected}, 'No addrss to fix';
-            }
+            my $test_doc = upload_test_document($args, $client);
+            my ($doc) = $client->find_client_authentication_document(query => [id => $test_doc->{file_id}]);
+            $doc->address_mismatch(1);
+            $doc->save;
 
-            $client->documents->poa_address_fix;
+            if ($test->{poa_address_mismatch}) {
+                ok $client->find_client_authentication_document(query => [address_mismatch => 1]), 'Document is flagged as address mismatch';
+                is $client->documents->is_poa_address_fixed(), $test->{expected}, 'Address should match for this test';
+                $client->documents->poa_address_fix;
+            } else {
+                is !$client->documents->is_poa_address_fixed(), $test->{expected}, 'No address to fix';
+                $client->documents->poa_address_mismatch_clear;
+            }
 
             ok !$redis->get($key),                     'Redis key is gone';
             ok !$client->status->poa_address_mismatch, 'Poa address mismatch flag should be off';
+            $client = BOM::User::Client->new({loginid => $client->loginid});
+
             if ($test->{poa_address_mismatch}) {
                 ok $client->status->address_verified, 'Address status should be verified';
+
+                my ($doc) = $client->find_client_authentication_document(query => [address_mismatch => 1]);
+                ok !$doc,                               'No flag for mismatch document';
+                ok $client->documents->is_poa_verified, 'POA is verified';
             } else {
                 ok !$client->status->address_verified, 'Address status should not be verified';
-
+                my ($doc) = $client->find_client_authentication_document(query => [address_mismatch => 1]);
+                ok $doc,                                 'Document remains in address mismatch';
+                ok !$client->documents->is_poa_verified, 'POA is not verified';
             }
 
             if ($test->{age_verification}) {
@@ -644,8 +693,43 @@ subtest 'is_poa_address_fix' => sub {
             } else {
                 ok !$client->fully_authenticated();
             }
+
+            for my $d ($client->find_client_authentication_document()->@*) {
+                $d->status('uploaded');
+                $d->save;
+            }
         };
     }
+};
+
+subtest 'clear POA mismatch manually' => sub {
+    my $redis  = BOM::Config::Redis::redis_events();
+    my $key    = 'POA_ADDRESS_MISMATCH::' . $client->binary_user_id;
+    my $params = {
+        expected_address => 'supicious address',
+        staff            => 'User123',
+        reason           => 'Client POA address mismatch',
+    };
+
+    $client->status->clear_poa_address_mismatch();
+    $client->status->clear_address_verified();
+
+    $client->address_1('Main St. 123');
+    $client->address_2('123');
+    $client->documents->poa_address_mismatch($params);
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'}, $params->{staff});
+
+    $client->status->setnx('age_verification', 'test', 'test');
+
+    is $client->documents->is_poa_address_fixed(), 0, 'Address do not match';
+
+    $client->documents->poa_address_mismatch_clear;
+
+    ok !$redis->get($key),                     'Redis key is gone';
+    ok !$client->status->poa_address_mismatch, 'Poa address mismatch flag is off';
+    ok !$client->status->address_verified,     'Address status is not verified';
+    ok !$client->fully_authenticated(),        'Client is not fully authenticated';
 };
 
 subtest 'has verified POA' => sub {

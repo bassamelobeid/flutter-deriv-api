@@ -1017,6 +1017,12 @@ sub poa_address_fix {
     if ($self->client->status->poa_address_mismatch) {
         my $staff = $args->{staff};
 
+        for my $doc ($self->client->find_client_authentication_document(query => [address_mismatch => 1])->@*) {
+            $doc->address_mismatch(0);
+            $doc->status('verified');
+            $doc->save;
+        }
+
         $self->client->status->clear_poa_address_mismatch;
 
         my $redis = BOM::Config::Redis::redis_replicated_write();
@@ -1028,6 +1034,35 @@ sub poa_address_fix {
         if ($self->client->status->age_verification) {
             $self->client->set_authentication_and_status('ID_DOCUMENT', $staff // 'system');
         }
+    }
+
+    return undef;
+}
+
+=head2 poa_address_mismatch_clear
+
+This sub clears the poa address mismatch from BO in case of mistake.
+
+Only takes effect under the C<poa_address_mismatch> status.
+
+=over 4
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub poa_address_mismatch_clear {
+    my $self = shift;
+
+    if ($self->client->status->poa_address_mismatch) {
+
+        $self->client->status->clear_poa_address_mismatch;
+
+        my $redis = BOM::Config::Redis::redis_replicated_write();
+
+        $redis->del(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
     }
 
     return undef;
