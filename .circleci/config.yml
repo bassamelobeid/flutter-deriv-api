@@ -15,7 +15,6 @@ alias:
     no_output_timeout: 3h
     command: |
       start_services
-      touch /tmp/services.ready
     name: Start services
 - &5
   environment:
