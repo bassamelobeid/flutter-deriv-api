@@ -1,4 +1,6 @@
-[% IF dashboard.empty %]
+[% UNLESS valid_request %]
+    <p class="notify notify--warning">The requested filters are invalid.</p>
+[% ELSIF dashboard.empty %]
     <p class="notify notify--warning">No IDV records have been found.</p>
 [% ELSE %]
     [% FOREACH record IN dashboard %]

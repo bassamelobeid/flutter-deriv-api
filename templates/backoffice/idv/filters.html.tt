@@ -105,7 +105,17 @@
         const drf = new Date(dateRangeFrom.val());
         const drt = new Date(dateRangeTo.val());
 
-        if (drf.getDate() > drt.getDate()) {
+        if(isNaN(drf.getTime())) {
+            alert('Invalid Date Range From, please input a valid yyyy-mm-dd date');
+            return false;
+        }
+
+        if(isNaN(drt.getTime())) {
+            alert('Invalid Date Range To, please input a valid yyyy-mm-dd date');
+            return false;
+        }
+
+        if (drf.getTime() > drt.getTime()) {
             alert('Date Range From must be before or equal to Date Range To');
             return false;
         }

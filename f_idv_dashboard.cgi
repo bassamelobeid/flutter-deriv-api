@@ -13,6 +13,8 @@ use BOM::Backoffice::Sysinit      ();
 use BOM::Backoffice::IdentityVerification;
 use Date::Utility;
 use Text::CSV;
+use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 BOM::Backoffice::Sysinit::init();
 my $schema = [{
@@ -76,29 +78,46 @@ my $dashboard;
 # we will grab data before presentation just in case we need
 # to serve a CSV file instead of html.
 
+my $valid_request;
+
 if (request()->http_method eq 'POST') {
-    $dashboard = BOM::Backoffice::IdentityVerification::get_dashboard(%input);
+    try {
+        my $drf = Date::Utility->new($input{date_from});
+        my $drt = Date::Utility->new($input{date_to});
 
-    if ($input{csv}) {
-        PrintContentType_excel('idv_dashboard.csv');
-        my $csv = Text::CSV->new({
-                binary       => 1,
-                always_quote => 1,
-                quote_char   => '"',
-                eol          => "\n"
-            }) or die "Cannot use CSV: " . Text::CSV->error_diag();
-
-        my @header = map { $_->{skip_csv} ? () : $_->{th} } $schema->@*;
-        $csv->combine(@header);
-        print $csv->string;
-
-        for my $row ($dashboard->@*) {
-            my @row_array = map { $_->{skip_csv} ? () : $row->{$_->{field}} // 'N/A' } $schema->@*;
-            $csv->combine(@row_array);
-            print $csv->string;
+        if ($drf->is_after($drt)) {
+            die 'Invalid date range';
         }
 
-        code_exit_BO();
+        $valid_request = 1;
+    } catch ($e) {
+        $log->warn('Invalid date attempted');
+    }
+
+    if ($valid_request) {
+        $dashboard = BOM::Backoffice::IdentityVerification::get_dashboard(%input);
+
+        if ($input{csv}) {
+            PrintContentType_excel('idv_dashboard.csv');
+            my $csv = Text::CSV->new({
+                    binary       => 1,
+                    always_quote => 1,
+                    quote_char   => '"',
+                    eol          => "\n"
+                }) or die "Cannot use CSV: " . Text::CSV->error_diag();
+
+            my @header = map { $_->{skip_csv} ? () : $_->{th} } $schema->@*;
+            $csv->combine(@header);
+            print $csv->string;
+
+            for my $row ($dashboard->@*) {
+                my @row_array = map { $_->{skip_csv} ? () : $row->{$_->{field}} // 'N/A' } $schema->@*;
+                $csv->combine(@row_array);
+                print $csv->string;
+            }
+
+            code_exit_BO();
+        }
     }
 }
 
@@ -133,6 +152,7 @@ BOM::Backoffice::Request::template()->process(
 
 if (request()->http_method eq 'POST') {
     Bar("IDV REQUESTS");
+    $dashboard //= [];
 
     my $records = scalar @$dashboard;
     my $limit   = +BOM::Backoffice::IdentityVerification::PAGE_LIMIT;
@@ -142,11 +162,12 @@ if (request()->http_method eq 'POST') {
     BOM::Backoffice::Request::template()->process(
         'backoffice/idv/dashboard.html.tt',
         {
-            dashboard => $dashboard,
-            increment => $limit + 1 == $records ? $limit : 0,
-            offset    => $input{offset} // 0,
-            decrement => $limit,
-            schema    => $schema,
+            dashboard     => $dashboard,
+            increment     => $limit + 1 == $records ? $limit : 0,
+            offset        => $input{offset} // 0,
+            decrement     => $limit,
+            schema        => $schema,
+            valid_request => $valid_request,
         });
 }
 
