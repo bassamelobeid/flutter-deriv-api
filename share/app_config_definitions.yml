@@ -478,6 +478,11 @@ payments:
           isa: Int
           global: 1
           default: 0
+        delete_ads_days:
+          description: 'Number of days after which inactive ads with no orders are deleted. Process is disabled when value is 0.'
+          isa: Int
+          global: 1
+          default: 0          
         payment_methods_enabled:
           description: 'To be enabled when all FE apps have the ability to create and use advertiser payment methods.'
           isa: Bool
