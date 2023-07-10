@@ -10,6 +10,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
+use BOM::Database::ClientDB;
 use BOM::User::Script::P2PDailyMaintenance;
 use Test::Warn;
 use Date::Utility;
@@ -182,6 +183,55 @@ subtest 'prune old online entries' => sub {
     BOM::User::Script::P2PDailyMaintenance->new->run;
 
     ok !$redis->zscore('P2P::USERS_ONLINE', 'CR001::za'), 'key deleted after 6 months';
+};
+
+subtest 'delete old ads' => sub {
+    my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic->dbh;
+    $db->do('UPDATE p2p.p2p_advert SET is_deleted = TRUE');
+    restore_time();
+    $config->archive_ads_days(0);
+    $config->delete_ads_days(10);
+
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    my $id = $advert->{id};
+
+    $db->do("UPDATE p2p.p2p_advert SET created_time = NOW() - '1 year'::INTERVAL, is_active = FALSE WHERE id = $id");
+
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+    ok $advertiser->p2p_advert_info(id => $id), 'ad is not deleted with recent deactivation';
+
+    $db->do("UPDATE audit.p2p_advert SET stamp = NOW() - '1 year'::INTERVAL WHERE id = $id");
+    $db->do("UPDATE audit.p2p_advert SET stamp = NOW() - '20 day'::INTERVAL WHERE id = $id AND NOT is_active");
+
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+    is $advertiser->p2p_advert_info(id => $id), undef, 'ad is deleted after older deactivation';
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $id = $advert->{id};
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $id);
+
+    $db->do("UPDATE p2p.p2p_advert SET created_time = NOW() - '1 year'::INTERVAL, is_active = FALSE WHERE id = $id");
+    $db->do("UPDATE audit.p2p_advert SET stamp = NOW() - '1 year'::INTERVAL WHERE id = $id");
+    $db->do("UPDATE audit.p2p_advert SET stamp = NOW() - '20 day'::INTERVAL WHERE id = $id AND NOT is_active");
+
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+    ok $advertiser->p2p_advert_info(id => $id), 'ad is not deleted with recent order';
+
+    $db->do("UPDATE p2p.p2p_order SET created_time = NOW() - '20 day'::INTERVAL, status = 'completed' WHERE id = " . $order->{id});
+
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+    is $advertiser->p2p_advert_info(id => $id), undef, 'ad is deleted with older order completed order';
+
+    $config->delete_ads_days(0);
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $id = $advert->{id};
+    $db->do("UPDATE p2p.p2p_advert SET created_time = NOW() - '1 year'::INTERVAL, is_active = FALSE WHERE id = $id");
+    $db->do("UPDATE audit.p2p_advert SET stamp = NOW() - '1 year'::INTERVAL WHERE id = $id");
+    $db->do("UPDATE audit.p2p_advert SET stamp = NOW() - '20 day'::INTERVAL WHERE id = $id AND NOT is_active");
+
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+    ok $advertiser->p2p_advert_info(id => $id), 'ad is not deleted when setting is 0';
 };
 
 done_testing;

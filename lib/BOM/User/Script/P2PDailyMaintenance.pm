@@ -68,17 +68,18 @@ Script entry point.
 sub run {
     $log->debug("P2PDailyMaintenance running");
 
-    my $brand             = Brands->new(name => 'deriv');                   # todo: replace with BOM::Config->brand when it is changed to Deriv
+    my $brand             = Brands->new;
     my $redis             = BOM::Config::Redis->redis_p2p_write();
     my $app_config        = BOM::Config::Runtime->instance->app_config;
     my $archive_days      = $app_config->payments->p2p->archive_ads_days;
+    my $delete_days       = $app_config->payments->p2p->delete_ads_days;
     my $all_countries     = $brand->countries_instance->countries_list;
     my $ad_config         = decode_json_utf8($app_config->payments->p2p->country_advert_config);
     my $campaigns         = decode_json_utf8($app_config->payments->p2p->email_campaign_ids);
     my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
     my %bo_activation     = $redis->hgetall(AD_ACTIVATION_KEY)->@*;
     my $now               = Date::Utility->new;
-    my @advertiser_ids;                                                     # for advertisers who had updated ads
+    my @advertiser_ids;    # for advertisers who had updated ads
     my %archival_dates;
     my %brokers;
 
@@ -394,6 +395,18 @@ sub run {
             $log->errorf('Error checking P2P advertisers eligibility for limit increase %s: %s', $broker, $e);
         }
 
+        #8. Delete old ads
+        if ($delete_days > 0) {
+            try {
+                $db_write->run(
+                    fixup => sub {
+                        $_->do('SELECT p2p.delete_old_ads(?)', undef, $delete_days);
+                    });
+            } catch ($e) {
+                $log->errorf('Error deleting old ads for broker %s: %s', $broker, $e);
+            }
+        }
+
     }
 
     $redis->multi;
@@ -402,7 +415,7 @@ sub run {
     $redis->expire(AD_ARCHIVE_KEY, $archive_days * 24 * 60 * 60);
     $redis->exec;
 
-    # 8. delete very old user online activity records
+    # 9. delete very old user online activity records
     $redis->zremrangebyscore(P2P_USERS_ONLINE_KEY, '-Inf', time - P2P_ONLINE_USER_PRUNE);
 
     for my $advertiser_id (uniq @advertiser_ids) {
@@ -417,7 +430,7 @@ sub run {
     my $exchange         = Finance::Exchange->create_exchange('FOREX');
     my %all_currencies   = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
 
-    # 9. send internal email if any floating rate countries have exchange rates older than MAX_QUOTE_HOURS
+    # 10. send internal email if any floating rate countries have exchange rates older than MAX_QUOTE_SECS
     my @alerts;
 
     for my $currency (keys %all_currencies) {
@@ -492,9 +505,8 @@ sub run {
 
     }
 
-    # 10. send email to anti-fraud team for each successful P2P band upgrade that has flag (email_alert_required = 1)
+    # 11. send email to anti-fraud team for each successful P2P band upgrade that has flag (email_alert_required:1)
     if (my %completed_upgrades = $redis->hgetall(P2P_ADVERTISER_BAND_UPGRADE_COMPLETED)->@*) {
-
         my @lines = (
             '<p>The following P2P advertiser(s) have upgraded their P2P Band limit in the last 24 hours:<br></p>',
             '<p>Completed Orders, Completion Rate and Dispute Rate are statistics for the last one month.<br></p>',
