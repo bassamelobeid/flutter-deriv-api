@@ -22,9 +22,8 @@ jobs:
           for i in "${{ inputs.env_vars }}"
           do
             echo "$i" >> "$GITHUB_ENV"
-            echo "$i"
           done
-          echo "$env1"
-          echo "$env2"
-          echo "$env3"
           env
+      - name: Use the value
+        run: |
+          echo "${{ env.env1 }}"
