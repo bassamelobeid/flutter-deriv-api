@@ -19,6 +19,4 @@ jobs:
             echo $i >> $GITHUB_ENV
             echo $i
           done
-      - name: Print env
-        run: |
-          echo $GITHUB_ENV
+          env
