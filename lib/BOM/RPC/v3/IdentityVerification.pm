@@ -50,20 +50,30 @@ rpc identity_verification_document_add => sub {
     my $document_number = $args->{document_number}     // '';
     my $additional      = $args->{document_additional} // '';
 
+    my $idv_opt_out = $document_type eq 'none' && $document_number eq 'none';
+
     my $rule_engine = BOM::Rules::Engine->new(
         client          => $client,
         stop_on_failure => 1
     );
 
     try {
-        $rule_engine->verify_action(
-            'idv_add_document',
-            loginid             => $client->loginid,
-            issuing_country     => $issuing_country,
-            document_type       => $document_type,
-            document_number     => $document_number,
-            document_additional => $additional,
-        );
+        if ($idv_opt_out) {
+            $rule_engine->verify_action(
+                'idv_add_opt_out',
+                loginid         => $client->loginid,
+                issuing_country => $issuing_country,
+            );
+        } else {
+            $rule_engine->verify_action(
+                'idv_add_document',
+                loginid             => $client->loginid,
+                issuing_country     => $issuing_country,
+                document_type       => $document_type,
+                document_number     => $document_number,
+                document_additional => $additional,
+            );
+        }
     } catch ($err) {
 
         # for early underage detection we need to try to disable the account
@@ -95,6 +105,12 @@ rpc identity_verification_document_add => sub {
     };
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
+    if ($idv_opt_out) {
+        $idv_model->add_opt_out($issuing_country);
+        return 1;
+    }
+
     $idv_model->claim_expired_document_chance() if $idv_model->has_expired_document_chance() && $idv_model->submissions_left() == 0;
 
     my $countries         = Brands::Countries->new;

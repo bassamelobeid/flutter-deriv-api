@@ -617,4 +617,50 @@ subtest 'underage blocked' => sub {
     $mock_emitter->unmock_all;
 };
 
+subtest 'idv opt out' => sub {
+    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions    = {};
+
+    $mock_emitter->mock(
+        emit => sub {
+            my ($event, $args) = @_;
+
+            $emissions->{$event} = $args;
+
+            return undef;
+        });
+
+    my $user = BOM::User->create(
+        email    => 'idv_opt_out@binary.com',
+        password => 'test_passwd'
+    );
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id
+    });
+
+    $user->add_client($client_cr);
+
+    my $token_model = BOM::Platform::Token::API->new;
+    my $token_cr    = $token_model->create_token($client_cr->loginid, 'test token');
+
+    my $params = {
+        token    => $token_cr,
+        language => 'EN',
+    };
+
+    $params->{args} = {
+        issuing_country => 'ke',
+        document_type   => 'none',
+        document_number => 'none'
+    };
+
+    $emissions = {};
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply $emissions, {}, 'No emissions were made';
+
+    $mock_emitter->unmock_all;
+};
+
 done_testing();
