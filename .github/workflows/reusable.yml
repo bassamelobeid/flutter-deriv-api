@@ -16,5 +16,9 @@ jobs:
         run: |
           for i in "${{ inputs.env_vars }}"
           do
-            echo "$i" >> $GITHUB_ENV
+            echo $i >> $GITHUB_ENV
+            echo $i
           done
+      - name: Print env
+        run: |
+          echo $GITHUB_ENV
