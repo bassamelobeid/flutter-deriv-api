@@ -5,8 +5,8 @@
     $language    =~ s/_/-/;
 %>
     <div id="container">
-        <h1 class="title-text" style="font-size: 2.4rem"><%= l('Welcome back!') %></h1>
-        <p class="subtitle-text"><%= l('It\'s good to see you again. Log in to start trading.') %></p>
+        <h1 class="title-text" style="font-size: 2.4rem"><%= l('Welcome!') %></h1>
+        <p class="subtitle-text"><%= l('Log in to continue.') %></p>
         <form novalidate id="frmLogin" method="POST">
             <div class='input-group'>
                 <div class="input-wrapper <% if (stash('error')) { %>has_error<% } %>">
