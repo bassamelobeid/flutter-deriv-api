@@ -228,4 +228,29 @@ rule 'idv.check_document_acceptability' => {
     }
 };
 
+rule 'idv.check_opt_out_availability' => {
+    description => "Checks whether the country is an IDV supported country or not",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        die 'client is missing'          unless my $client          = $context->client($args);
+        die 'issuing_country is missing' unless my $issuing_country = $args->{issuing_country};
+
+        my $countries = Brands::Countries->new;
+        my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
+        my $qq_bypass = BOM::Config::on_qa() && $issuing_country eq 'qq';
+
+        my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
+
+        $self->fail('NoSubmissionLeft') if $idv_model->submissions_left($client) == 0 && !$expired_bypass;
+
+        unless ($qq_bypass) {
+            $self->fail('NotSupportedCountry') unless $countries->is_idv_supported($issuing_country);
+        }
+
+        return undef;
+    }
+};
+
 1;

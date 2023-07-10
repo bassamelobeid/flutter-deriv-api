@@ -13,3 +13,9 @@ idv_add_document:
     - idv.check_service_availibility
     - idv.valid_document_number
     - idv.check_document_acceptability
+
+idv_add_opt_out:
+  description: A set of rules to be passed before opting out of IDV service
+  ruleset:
+    - idv.check_verification_necessity
+    - idv.check_opt_out_availability
