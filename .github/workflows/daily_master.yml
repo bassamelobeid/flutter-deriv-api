@@ -6,5 +6,7 @@ on:
 jobs:
   syntax_unit:
     uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@dev
+    secrets: inherit
   core:
     uses: regentmarkets/github-actions/.github/workflows/core.yml@dev
+    secrets: inherit

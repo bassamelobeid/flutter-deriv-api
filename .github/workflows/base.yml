@@ -20,4 +20,4 @@ jobs:
   core_syntax_diff:
     needs: check-git-message
     uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@dev
-  
+    secrets: inherit
