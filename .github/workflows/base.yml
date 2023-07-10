@@ -7,7 +7,7 @@ on:
       - master
     tags:
       - '*'
-  # pull_request:
+  pull_request:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,3 +21,8 @@ jobs:
     needs: check-git-message
     uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@dev
     secrets: inherit
+    with:
+      env_vars: |
+        env1=hello
+        env2=is
+        env3=me
