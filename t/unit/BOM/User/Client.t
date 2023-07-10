@@ -398,6 +398,11 @@ subtest 'duplicate_sibling' => sub {
         sub {
             return @siblings;
         });
+    $client_mock->mock(
+        'status',
+        sub {
+            return bless +{}, 'BOM::User::Client::Status';
+        });
 
     my $client = BOM::User::Client->rnew;
     $client->user($user);
@@ -415,7 +420,6 @@ subtest 'duplicate_sibling' => sub {
     $sibling->residence('gb');
 
     is $client->duplicate_sibling, undef, 'No siblings from a vr client wihtout real siblings';
-
     $sibling->broker('MX');
     is $client->duplicate_sibling, undef, 'No siblings from a vr client wihtout real duplicated siblings';
 
