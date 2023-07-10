@@ -64,7 +64,7 @@ jobs:
         name: Code structure and syntax
     - store_test_results:
         path: /var/tmp/test-output
-  syntax_unit:
+  syntax:
     <<: *6
     steps:
     - *1
@@ -98,7 +98,7 @@ workflows:
         context: perl
   daily:
     jobs:
-    - syntax_unit:
+    - syntax:
         context: perl
     - core:
         context: perl
