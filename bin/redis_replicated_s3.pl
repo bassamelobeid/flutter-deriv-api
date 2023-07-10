@@ -71,7 +71,7 @@ sub upload_redis {
 
     my $r       = BOM::Config::Redis::redis_replicated_read();
     my @keys    = map { @{$r->scan_all(MATCH => "$_*")} } @redis_keys;
-    my %data    = map { $_ => $r->get($_) } @keys;
+    my %data    = map { $_ => $r->get($_) } grep { $r->type($_) eq 'string' } @keys;
     my $content = join "\n" => map { "$_ $data{$_}" } keys %data;
 
     try {
