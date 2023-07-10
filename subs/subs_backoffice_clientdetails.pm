@@ -449,7 +449,8 @@ SELECT id,
     age(date_trunc('day', now()), date_trunc('day', upload_date)) AS age,
     status,
     lifetime_valid,
-    client_loginid
+    client_loginid,
+    address_mismatch
 FROM betonmarkets.client_authentication_document
 WHERE client_loginid = ? AND status != 'uploading'
 SQL
@@ -469,6 +470,10 @@ SQL
             qq{<button name="verify_checked_documents" value = "1" onclick="javascript:return get_to_verify_files()" class="btn btn--primary">Verify Checked Files</button>};
         $show_uploaded_documents .=
             qq{<button name="reject_checked_documents" value = "1" onclick="javascript:return get_to_reject_files()" class="btn btn--secondary">Reject Checked Files</button>};
+        if ($client->landing_company->short ne 'maltainvest') {
+            $show_uploaded_documents .=
+                qq{<button name="address_mismatch_checked_documents" value = "1" onclick="javascript:return get_to_address_mismatch_files()" class="btn btn--secondary">Mark as Address Mismatch</button>};
+        }
     }
 
     # Get matching countries (country abbreviations) from client's phone
@@ -1173,10 +1178,10 @@ sub show_client_id_docs {
     foreach my $doc (@$docs) {
         my (
             $id,          $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id,
-            $upload_date, $age,       $category_idx,  $status,     $lifetime_valid,  $loginid
+            $upload_date, $age,       $category_idx,  $status,     $lifetime_valid,  $loginid,  $address_mismatch
             )
             = $doc->@{
-            qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status lifetime_valid client_loginid/
+            qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status lifetime_valid client_loginid address_mismatch/
             };
 
         if ($category_idx != $last_category_idx) {
@@ -1242,11 +1247,15 @@ sub show_client_id_docs {
         $input .=
             qq{<td><label>Comments:</label><br/><input type="text" maxlength="255" name="comments_$id" value="$comments" data-lpignore="true" $extra> </td>};
 
+        $status = 'address_mismatch' if $address_mismatch;
+
         my %status_string = (
-            verified => 'Verified',
-            rejected => 'Rejected',
-            uploaded => 'Needs Review'
+            verified         => 'Verified',
+            rejected         => 'Rejected',
+            uploaded         => 'Needs Review',
+            address_mismatch => 'Address Mismatch',
         );
+
         $input .= "<td>$status_string{$status}</td>" if $status_string{$status};
 
         my $s3_client =

@@ -125,22 +125,27 @@ my $poi_status_reason = $input{poi_reason} // $client->status->reason('allow_poi
 $poi_status_reason = join(' ', $poi_status_reason, $input{kyc_email_checkbox} ? 'kyc_email' : ()) unless $poi_status_reason =~ /\skyc_email$/;
 
 # POA address mismatch
-if ($input{address_mismatch}) {
-    my $expected_address = $input{expected_address};
 
-    # Remove non alphanumeric
-    $expected_address =~ s/[^a-zA-Z0-9 ]//g;
+if ($broker ne 'MF' and defined $input{address_mismatch}) {
+    if ($input{address_mismatch} && $input{expected_address}) {
+        my $expected_address = $input{expected_address};
 
-    unless ($expected_address) {
-        print "<p class=\"notify notify--warning\">You must specify the expected address.</p>";
-        code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+        # Remove non alphanumeric
+        $expected_address =~ s/[^a-zA-Z0-9 ]//g;
+
+        unless ($expected_address) {
+            print "<p class=\"notify notify--warning\">You must specify the expected address.</p>";
+            code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+        }
+
+        $client->documents->poa_address_mismatch({
+            expected_address => $expected_address,
+            staff            => $clerk,
+            reason           => 'Client POA address mismatch found in BO',
+        });
+    } else {
+        $client->documents->poa_address_mismatch_clear;
     }
-
-    $client->documents->poa_address_mismatch({
-        expected_address => $expected_address,
-        staff            => $clerk,
-        reason           => 'Client POA address mismatch found in BO',
-    });
 }
 
 # POI resubmission logic
@@ -310,9 +315,10 @@ if (defined $input{show_aml_screen_table}) {
 if ($input{document_list}) {
     my $new_doc_status;
     my $poa_updated;
-    $new_doc_status = 'rejected' if $input{reject_checked_documents};
-    $new_doc_status = 'verified' if $input{verify_checked_documents};
-    $new_doc_status = 'delete'   if $input{delete_checked_documents};
+    $new_doc_status = 'rejected'         if $input{reject_checked_documents};
+    $new_doc_status = 'verified'         if $input{verify_checked_documents};
+    $new_doc_status = 'delete'           if $input{delete_checked_documents};
+    $new_doc_status = 'address mismatch' if $input{address_mismatch_checked_documents};
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Document update status not specified<a/></p>]) unless $new_doc_status;
 
     my $documents = $input{document_list};
@@ -342,13 +348,24 @@ if ($input{document_list}) {
             next;
         }
 
-        $poa_updated ||= any { $_ eq $doc->document_type } $client->documents->poa_types->@*;
+        my $is_poa = any { $_ eq $doc->document_type } $client->documents->poa_types->@*;
+        $poa_updated ||= $is_poa;
 
         if ($new_doc_status eq 'delete') {
             if ($doc->delete) {
                 $full_msg .= "<div class=\"notify\"><b>SUCCESS</b> - $file_name is <b>deleted</b>!</div>";
             } else {
                 $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b> did not remove <b>$file_name</b> record from db</div>";
+            }
+        } elsif ($new_doc_status eq 'address mismatch' and $broker ne 'MF') {
+            if ($is_poa) {
+                $doc->address_mismatch(1);
+                $doc->save;
+
+                $full_msg .=
+                    "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been tagged as <b>$new_doc_status</b>. Once its resolved documents will be automatically verified!</div>";
+            } else {
+                $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:<b>$new_doc_status</b> only applies for poa documents</div>";
             }
         } else {
             $doc->status($new_doc_status);
@@ -1311,9 +1328,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     }
 
     # Check if expected address has been updated
-    if ($input{'address_1'} || $input{'address_2'}) {
+    if ($input{'address_1'} || $input{'address_2'} || $input{'expected_address'}) {
         if ($client->documents->is_poa_address_fixed()) {
             $client->documents->poa_address_fix({staff => $clerk});
+        } elsif ($client->fully_authenticated) {
+            $client->documents->poa_address_mismatch_clear;
         }
     }
 
