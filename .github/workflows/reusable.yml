@@ -19,11 +19,11 @@ jobs:
       - name: Set environment variables
         if: ${{ inputs.env_vars }}
         run: |
-          for i in "${{ inputs.env_vars }}"
-          do
-            echo "$i" >> "$GITHUB_ENV"
-          done
-          env
+          echo "${{ inputs.env_vars }}" >> "$GITHUB_ENV"
+          # for i in "${{ inputs.env_vars }}"
+          # do
+          #   echo "$i" >> "$GITHUB_ENV"
+          # done
       - name: Use the value
         run: |
           echo "${{ env.env1 }}"
