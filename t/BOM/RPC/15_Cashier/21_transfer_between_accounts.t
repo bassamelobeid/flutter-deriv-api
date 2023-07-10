@@ -1181,6 +1181,314 @@ subtest 'Transfer between virtual accounts' => sub {
     };
 };
 
+subtest 'Transfer between derivez accounts' => sub {
+    # Create the cr account with  currency
+    my $client     = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
+    # Set up the client account currency
+    $client_eth->account('ETH');
+    $client_eur->account('EUR');
+
+    # Top up the client account for each currency
+    $client->payment_free_gift(
+        currency => 'USD',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+    $client_eth->payment_free_gift(
+        currency => 'ETH',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+    $client_eur->payment_free_gift(
+        currency => 'EUR',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+
+    # Create binary user and add the client to the user
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+    $user->add_client($client_eth);
+    $user->add_client($client_eur);
+
+    # Add the derivez account to the user
+    my %derivez_account = (
+        real => {login => 'EZR80000000'},
+    );
+    $user->add_loginid($derivez_account{real}{login});
+
+    # Mocking BOM::MT5::User::Async to return the corrent derivez loginid
+    my $mock_async_call = Test::MockModule->new('BOM::MT5::User::Async');
+
+    # Preparing and mock get_user response data that we get from MT5
+    my $async_get_user_response = {
+        'leverage'      => 1000,
+        'country'       => 'Indonesia',
+        'phone'         => '',
+        'group'         => 'real\\p02_ts01\\all\\svg_ez_usd',
+        'email'         => 'test@deriv.com',
+        'address'       => '',
+        'zipCode'       => undef,
+        'name'          => '',
+        'rights'        => 481,
+        'state'         => '',
+        'balance'       => '0.00',
+        'phonePassword' => undef,
+        'login'         => 'EZR80000000',
+        'city'          => '',
+        'agent'         => 0,
+        'color'         => 4278190080,
+        'company'       => ''
+    };
+    $mock_async_call->mock('get_user', sub { return Future->done($async_get_user_response); });
+
+    # Preparing and mock get_group response data that we get from MT5
+    my $get_group_response = {
+        'currency' => 'USD',
+        'group'    => 'real\\p02_ts01\\all\\svg_ez_usd',
+        'leverage' => 1,
+        'company'  => 'Deriv Limited'
+    };
+    $mock_async_call->mock('get_group', sub { return Future->done($get_group_response); });
+
+    # Setting up exchange rates
+    my $redis          = BOM::Config::Redis::redis_exchangerates_write();
+    my @exchange_rates = ({
+            key    => 'exchange_rates::EUR_USD',
+            values => {
+                offer_to_clients => 1,
+                quote            => '1.09113',
+                epoch            => time
+            }
+        },
+        {
+            key    => 'exchange_rates::ETH_USD',
+            values => {
+                offer_to_clients => 1,
+                quote            => '1919.99500',
+                epoch            => time
+            }});
+    foreach my $entry (@exchange_rates) {
+        $redis->hmset($entry->{key}, %{$entry->{values}});
+    }
+
+    # Generate the client auth token
+    my $token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token usd');
+    my $token_eth = BOM::Platform::Token::API->new->create_token($client_eth->loginid, 'test token eth');
+    my $token_eur = BOM::Platform::Token::API->new->create_token($client_eur->loginid, 'test token eur');
+
+    # Mocking deposit to return true and evaluate the received amount
+    my $received_amount;
+    $mock_async_call->mock(
+        'deposit',
+        sub {
+            my ($variable) = @_;
+
+            $received_amount = $variable->{amount};
+
+            return Future->done({status => 1});
+        });
+
+    # Mocking withdrawal to return true
+    $mock_async_call->mock('withdrawal', sub { return Future->done({status => 1}); });
+
+    subtest 'can deposit from CR account to derivez (USD)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_from => $client->loginid,
+                account_to   => $derivez_account{real}{login},
+                amount       => 5,
+                currency     => 'USD',
+            },
+        };
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary deposit disabled')
+            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
+            'DerivEZ temporary deposit disabled error message');
+
+        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez deposit!!!
+        # # Perform deposit test
+        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (USD)");
+        # is $client->account->balance, '5.00', 'deposit it correct with the amount';
+        # is $received_amount, '5', 'deposit to derivez is correct and applying exchange rate';
+    };
+
+    subtest 'can deposit from CR account to derivez (ETH)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token_eth,
+            args     => {
+                account_from => $client_eth->loginid,
+                account_to   => $derivez_account{real}{login},
+                amount       => 5,
+                currency     => 'ETH',
+            },
+        };
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary deposit disabled')
+            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
+            'DerivEZ temporary deposit disabled error message');
+
+        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez deposit!!!
+        # # Perform deposit test
+        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (ETH)");
+        # is $client_eth->account->balance, '5.00000000', 'deposit it correct with the amount';
+        # is $received_amount, '9503.98', 'deposit to derivez is correct and applying exchange rate';
+    };
+
+    subtest 'can deposit from CR account to derivez (EUR)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token_eur,
+            args     => {
+                account_from => $client_eur->loginid,
+                account_to   => $derivez_account{real}{login},
+                amount       => 5,
+                currency     => 'EUR',
+            },
+        };
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary deposit disabled')
+            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
+            'DerivEZ temporary deposit disabled error message');
+
+        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez deposit!!!
+        # # Perform deposit test
+        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (EUR)");
+        # is $client_eur->account->balance, '5.00', 'deposit is correct';
+        # is $received_amount,              '5.40', 'deposit to derivez is correct and applying exchange rate';
+    };
+
+    subtest 'can withdraw from derivez account to CR (USD)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_from => $derivez_account{real}{login},
+                account_to   => $client->loginid,
+                amount       => 5,
+                currency     => 'USD',
+            },
+        };
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary withdraw disabled')
+            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
+            'DerivEZ temporary withdraw disabled error message');
+
+        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez withdrawal!!!
+        # # Perform withdraw test
+        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (USD)");
+        # is $client->account->balance, '10.00', 'withdrawal is correct and applying exchange rate';
+    };
+
+    subtest 'can withdraw from derivez account to CR (ETH)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token_eth,
+            args     => {
+                account_from => $derivez_account{real}{login},
+                account_to   => $client_eth->loginid,
+                amount       => 5,
+                currency     => 'USD',
+            },
+        };
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary withdraw disabled')
+            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
+            'DerivEZ temporary withdraw disabled error message');
+
+        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez withdrawal!!!
+        # # Perform withdraw test
+        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (ETH)");
+        # is $client_eth->account->balance, '5.00257813', 'withdrawal is correct and applying exchange rate';
+    };
+
+    subtest 'can withdraw from derivez account to CR (EUR)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token_eur,
+            args     => {
+                account_from => $derivez_account{real}{login},
+                account_to   => $client_eur->loginid,
+                amount       => 5,
+                currency     => 'USD',
+            },
+        };
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary withdraw disabled')
+            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
+            'DerivEZ temporary withdraw disabled error message');
+
+        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez withdrawal!!!
+        # # Perform withdraw test
+        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (EUR)");
+        # is $client_eur->account->balance, '9.54', 'withdrawal is correct and applying exchange rate';
+    };
+
+    subtest 'cannot deposit from CR account to derivez with mismatch currency' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_from => $client->loginid,
+                account_to   => $derivez_account{real}{login},
+                amount       => 5,
+                currency     => 'ETH',
+            },
+        };
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary deposit disabled')
+            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
+            'DerivEZ temporary deposit disabled error message');
+
+        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez deposit!!!
+        # # Perform deposit test
+        # $rpc_ct->call_ok('transfer_between_accounts', $params)
+        # ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'currency conflict')
+        # ->error_message_is('Currency provided is different from account currency.', 'cannot deposit from CR account to derivez with mismatch currency');
+    };
+
+    subtest 'cannot withdraw from derivez account to CR with mismatch currency' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_from => $client->loginid,
+                account_to   => $derivez_account{real}{login},
+                amount       => 5,
+                currency     => 'ETH',
+            },
+        };
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary withdraw disabled')
+            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
+            'DerivEZ temporary withdraw disabled error message');
+
+        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez withdraw!!!
+        # # Perform withdraw test
+        # $rpc_ct->call_ok('transfer_between_accounts', $params)
+        # ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'currency conflict')
+        # ->error_message_is('Currency provided is different from account currency.', 'cannot withdraw from derivez account to CR with mismatch currency');
+    };
+
+    $mock_async_call->unmock_all();
+};
+
 # reset
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
