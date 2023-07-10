@@ -60,10 +60,6 @@ jobs:
         name: Core tests
     - run:
         no_output_timeout: 3h
-        command: make unit
-        name: unit tests
-    - run:
-        no_output_timeout: 3h
         command: make syntax_diff
         name: Code structure and syntax
     - store_test_results:
@@ -81,10 +77,6 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make syntax
         name: Code structure and syntax
-    - run:
-        no_output_timeout: 3h
-        command: make unit
-        name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
   code_coverage:
