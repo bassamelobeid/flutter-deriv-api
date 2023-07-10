@@ -710,4 +710,39 @@ sub is_underage_blocked {
     return $binary_user_id;
 }
 
+=head2 add_opt_out
+
+Add row to idv.opt_out table.
+Note: Currently, opting out of IDV has no side-effects.
+
+It takes an argument:
+
+=over 4
+
+=item * C<country> - the IDV country client opted out of
+
+=back
+
+Returns void.
+
+=cut
+
+sub add_opt_out {
+    my ($self, $country) = @_;
+
+    die 'country is required' unless $country;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    try {
+        $dbic->run(
+            fixup => sub {
+                $_->do('SELECT * FROM idv.add_opt_out(?::BIGINT, ?::TEXT)', undef, $self->user_id, $country);
+            });
+    } catch ($e) {
+        die sprintf("Failed while adding opt out due to '%s'", $e);
+    }
+
+    return;
+}
+
 1;

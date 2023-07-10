@@ -988,4 +988,32 @@ subtest 'is underage blocked' => sub {
 
 };
 
+subtest 'idv opt out' => sub {
+    my $country;
+
+    throws_ok {
+        local $SIG{__WARN__} = sub { };
+        $idv_model_ccr->add_opt_out($country);
+    }
+    qr/country/, 'country is required for adding opt out';
+
+    $country = 'ke';
+    lives_ok {
+        $idv_model_ccr->add_opt_out($country);
+    }
+    'opt out added successfully';
+
+    lives_ok {
+        $idv_model_ccr->add_opt_out($country);
+    }
+    'opt out added successfully for same user, same country';
+
+    $country = 'ug';
+    lives_ok {
+        $idv_model_ccr->add_opt_out($country);
+    }
+    'opt out added successfully for same user, different country';
+
+};
+
 done_testing();
