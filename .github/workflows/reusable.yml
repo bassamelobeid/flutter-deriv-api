@@ -14,5 +14,8 @@ jobs:
       - name: Set environment variables
         if: ${{ inputs.env_vars }}
         run: |
-          echo ${{ inputs.env_vars }} >> $GITHUB_ENV
+          for i in "${{ inputs.env_vars }}"
+          do
+            printf "%s\n" $i >> $GITHUB_ENV
+          done
           env
