@@ -1,0 +1,122 @@
+---
+alias:
+- &1
+  add_ssh_keys:
+    fingerprints:
+    - 85:5e:13:f8:60:b2:55:a1:df:d1:8e:77:17:4c:3b:2d
+- &2
+  run:
+    no_output_timeout: 3h
+    command: /opt/circle/prepare-test.sh
+    name: Update git repositories
+- &3
+  run:
+    background: true
+    no_output_timeout: 3h
+    command: |
+      start_services
+    name: Start services
+- &5
+  environment:
+    PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+default: &6
+  docker:
+  - auth:
+      password: $DOCKERHUB_PASSWORD
+      username: circle4regentmarkets
+    image: regentmarkets/debian-ci:stable
+    user: nobody
+  shell: /bin/bash -leo pipefail
+  working_directory: /home/git/regentmarkets/bom-feed-plugin
+jobs:
+  core:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - run:
+        <<: *5
+        no_output_timeout: 3h
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test
+        name: Core tests
+    - store_test_results:
+        path: /var/tmp/test-output
+  core_syntax_diff:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - run:
+        <<: *5
+        no_output_timeout: 3h
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test
+        name: Core tests
+    - run:
+        no_output_timeout: 3h
+        command: make syntax_diff
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
+  syntax:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - run:
+        <<: *5
+        no_output_timeout: 3h
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
+  code_coverage:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - run:
+        <<: *5
+        no_output_timeout: 3h
+        command: make cover
+        name: code coverage tests
+version: 2
+workflows:
+  build-workflow:
+    jobs:
+    - core_syntax_diff:
+        context: perl
+  daily:
+    jobs:
+    - syntax:
+        context: perl
+    - core:
+        context: perl
+    triggers:
+    - schedule:
+        cron: 47 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  weekly-code-coverage:
+    jobs:
+    - code_coverage:
+        context: perl
+    triggers:
+    - schedule:
+        cron: 50 1 * * 6
+        filters:
+          branches:
+            only:
+            - master
+  version: 2

@@ -1,0 +1,5 @@
+- postgres-chronicle
+- postgres-feed
+- redis
+- redis-replicated
+- feed-idata
