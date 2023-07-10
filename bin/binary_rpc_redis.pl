@@ -12,6 +12,7 @@ use Log::Any::Adapter qw( DERIV),
     log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 use Log::Any   qw( $log );
 use Path::Tiny qw( path );
+use URI;
 
 use BOM::RPC::Transport::Redis;
 use BOM::Config::Redis;
@@ -63,7 +64,7 @@ my $redis_config = BOM::Config::Redis::redis_config('rpc', 'write');
 GetOptions(
     'category|c=s' => \(my $category   = 'general'),
     'host|m=s'     => \(my $host       = hostname),
-    'redis|r=s'    => \(my $redis_uri  = $redis_config->{uri}),
+    'redis|r=s'    => \(my $redis_uri  = _redis_uri($redis_config)),
     'workers|w=i'  => \(my $workers_no = 1),
     'help|h'       => \my $more_info,
 
@@ -132,4 +133,19 @@ while (1) {
     $consumer->run();
 
     $fm->finish;
+}
+
+sub _redis_uri {
+    my $config = shift;
+
+    return $config->{uri} unless $config->{host};
+
+    my $uri = URI->new();
+
+    $uri->scheme('redis');
+    $uri->host($config->{host});
+    $uri->port($config->{port});
+    $uri->userinfo($config->{password}) if $config->{password};
+
+    return $uri;
 }
