@@ -17,16 +17,6 @@ alias:
       start_services
       touch /tmp/services.ready
     name: Start services
-- &4
-  run:
-    no_output_timeout: 3h
-    command: |
-      count=0
-      while [ ! -f /tmp/services.ready ]; do
-          echo 'Still waiting for services...'
-          (( count++ )) && (( count >= 20 )) && break
-          sleep 1
-      done
 - &5
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
@@ -38,7 +28,7 @@ default: &6
     image: regentmarkets/debian-ci:stable
     user: nobody
   shell: /bin/bash -leo pipefail
-  working_directory: /home/git/regentmarkets/bom-feed
+  working_directory: /home/git/regentmarkets/bom-feed-plugin
 jobs:
   core:
     <<: *6
@@ -46,7 +36,6 @@ jobs:
     - *1
     - *2
     - *3
-    - *4
     - run:
         <<: *5
         no_output_timeout: 3h
@@ -62,7 +51,6 @@ jobs:
     - *1
     - *2
     - *3
-    - *4
     - run:
         <<: *5
         no_output_timeout: 3h
@@ -86,7 +74,6 @@ jobs:
     - *1
     - *2
     - *3
-    - *4
     - run:
         <<: *5
         no_output_timeout: 3h
@@ -106,7 +93,6 @@ jobs:
     - *1
     - *2
     - *3
-    - *4
     - run:
         <<: *5
         no_output_timeout: 3h
