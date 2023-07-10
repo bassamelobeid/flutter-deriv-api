@@ -10,15 +10,18 @@ on:
 jobs:
   my-job:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -le {0}
+    env:
+      LOG_LEVEL: debug
     steps:
       - name: Set environment variables
         if: ${{ inputs.env_vars }}
         run: |
           for i in "${{ inputs.env_vars }}"
           do
-            echo "$i" >> $GITHUB_ENV
+            echo "$i" >> "$GITHUB_ENV"
             echo "$i"
           done
-          echo "${{ inputs.env_vars }}"
           echo "here"
-          env
