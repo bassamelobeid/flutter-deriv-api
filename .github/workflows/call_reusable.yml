@@ -1,0 +1,13 @@
+name: Calling reusable workflow
+
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  my-job:
+    uses: ./.github/workflows/reusable.yml
+    with:
+      env_vars: |
+        env1=hello
+        env2=is
+        env3=me
