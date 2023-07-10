@@ -499,6 +499,7 @@ sub get_settings_by_group {
                 payments.p2p.disputed_timeout
                 payments.p2p.payment_method_countries
                 payments.p2p.archive_ads_days
+                payments.p2p.delete_ads_days
                 payments.payment_methods.high_risk
                 payments.p2p.payment_methods_enabled
                 payments.p2p.country_advert_config
