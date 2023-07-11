@@ -409,15 +409,17 @@ if ($r->param('save_vanilla_fx_per_symbol_config')) {
         my $risk_profile            = $r->param('risk_profile');
         my $maturities_days         = $r->param('maturities_days');
         my $maturities_weeks        = $r->param('maturities_weeks');
+        my $bs_markup               = $r->param('bs_markup');
 
         die "Symbol is not defined" if $symbol eq '';
         die "max strike price choice must be a number" unless looks_like_number($max_strike_price_choice);
         die "max open position must be a number"       unless looks_like_number($max_open_position);
         die "max daily volume must be a number"        unless looks_like_number($max_daily_volume);
         die "max daily pnl must be a number"           unless looks_like_number($max_daily_pnl);
+        die "bs markup must be a number"               unless looks_like_number($bs_markup);
 
-        die 'risk profile is incorrec'
-            unless ($risk_profile ~~ ['low_risk', 'medium_risk', 'moderate_risk', 'high_risk', 'extreme_risk', 'no_business']);
+        die 'risk profile is incorrect'
+            unless ($risk_profile ~~ ['low_risk', 'medium_risk', 'moderate_risk', 'high_risk', 'extreme_risk']);
 
         my $vanilla_config = decode_json_utf8($app_config->get("quants.vanilla.fx_per_symbol_config.$symbol"));
 
@@ -438,6 +440,7 @@ if ($r->param('save_vanilla_fx_per_symbol_config')) {
         }
 
         $vanilla_config = {
+            bs_markup                => $bs_markup,
             delta_config             => decode_json_utf8($delta_config),
             max_strike_price_choice  => $max_strike_price_choice,
             min_number_of_contracts  => decode_json_utf8($min_number_of_contracts),

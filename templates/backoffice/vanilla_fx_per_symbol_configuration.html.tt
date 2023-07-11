@@ -6,6 +6,7 @@
         <th>Symbol</th>
         <th>Risk Profile</th>
         <th>Delta Config</th>
+        <th>Black Scholes Markup</th>
         <th>Max Strike Price Choice</th>
         <th>Min Number Of Contracts</th>
         <th>Max Number Of Contracts</th>
@@ -22,6 +23,7 @@
         <td>[% data.symbol %]</td>
         <td><input type="text" name="risk_profile" value="[% data.risk_profile %]" data-lpignore="true"/></td>
         <td><input type="text" name="delta_config" value="[% data.delta_config %]" data-lpignore="true" /></td>
+        <td><input type="text" name="bs_markup" value="[% data.bs_markup %]" data-lpignore="true" size="5" /></td>
         <td><input type="text" name="max_strike_price_choice" value="[% data.max_strike_price_choice %]" data-lpignore="true" size="5" /></td>
         <td><input type="text" name="min_number_of_contracts" value="[% data.min_number_of_contracts %]" data-lpignore="true"/></td>
         <td><input type="text" name="max_number_of_contracts" value="[% data.max_number_of_contracts %]" data-lpignore="true"/></td>
@@ -53,6 +55,7 @@ function SaveVanillaFxConfig(symbol) {
             save_vanilla_fx_per_symbol_config: 1,
             symbol: symbol,
             delta_config: el.find('input[name="delta_config"]').val(),
+            bs_markup: el.find('input[name="bs_markup"]').val(),
             max_strike_price_choice: el.find('input[name="max_strike_price_choice"]').val(),
             min_number_of_contracts: el.find('input[name="min_number_of_contracts"]').val(),
             max_number_of_contracts: el.find('input[name="max_number_of_contracts"]').val(),
