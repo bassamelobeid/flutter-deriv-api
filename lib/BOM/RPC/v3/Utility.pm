@@ -52,9 +52,10 @@ use BOM::User;
 use BOM::Transaction::Validation;
 use BOM::Config;
 use BOM::Rules::Engine;
+use Time::Moment;
 
 use Exporter qw(import export_to_level);
-our @EXPORT_OK = qw(longcode log_exception get_verification_uri get_app_name request_email);
+our @EXPORT_OK = qw(longcode log_exception get_verification_uri get_app_name request_email aggregate_ticks_history_metrics);
 
 use feature "state";
 
@@ -1581,4 +1582,54 @@ sub handle_client_locked_min_withdrawal_amount {
         set_client_locked_min_withdrawal_amount($loginid, $minimum_withdrawal) if $minimum_withdrawal;
     }
     return undef;
+}
+
+=head2 aggregate_ticks_history_metrics
+
+It is responsible for aggregating ticks_history query metrics and determining the relation of
+a given query. It takes three metrics as inputs: "start", "end", and "count",
+representing the epoch timestamps of the query start and end times,
+as well as the number of results returned by the query.
+
+=over 4
+
+=item - $start: Representing the epoch timestamps of the query start
+
+=item - $end: Representing the epoch timestamps of the query end
+
+=item - $count: An upper limit on ticks to receive
+
+=back
+
+returns ($aggregate_metrics, $relation)
+
+=cut
+
+sub aggregate_ticks_history_metrics {
+    my ($start, $end, $count) = @_;
+
+    my $start_midnight = Time::Moment->from_epoch($start)->at_midnight;
+    my $end_midnight   = Time::Moment->from_epoch($end)->at_midnight;
+
+    my $duration_times_count = (($end_midnight->epoch - $start_midnight->epoch) / 3600) * ($count / 5000);
+
+    my $current_date = Time::Moment->now->at_midnight;
+    my $query_date   = Time::Moment->from_epoch($start)->at_midnight;
+
+    my $relation;
+    if ($query_date eq $current_date) {
+        $relation = "today";
+    } elsif ($current_date eq $query_date->plus_days(1)) {
+        $relation = "yesterday";
+    } elsif ($query_date->is_after($current_date->minus_days(7))) {
+        $relation = "last_week";
+    } elsif ($query_date->is_after($current_date->minus_months(1))) {
+        $relation = "last_month";
+    } elsif ($query_date->is_after($current_date->minus_months(3))) {
+        $relation = "last_3_months";
+    } else {
+        $relation = "more_than_3_months";
+    }
+
+    return ($duration_times_count, $relation);
 }

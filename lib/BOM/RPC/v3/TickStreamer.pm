@@ -14,6 +14,7 @@ use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize);
 use Quant::Framework;
 use BOM::Config::Chronicle;
+use DataDog::DogStatsd::Helper qw(stats_gauge);
 
 use constant MAX_TICK_COUNT => 5000;
 # limiter for trade days
@@ -71,6 +72,8 @@ rpc ticks_history => sub {
 
     my ($publish, $result, $type);
     if ($style eq 'ticks') {
+        my ($ticks_metric, $ticks_relation) = BOM::RPC::v3::Utility::aggregate_ticks_history_metrics($args->{start}, $args->{end}, $args->{count});
+        stats_gauge("bom_rpc.v_3.ticks_history.ticks.requests_" . $ticks_relation, $ticks_metric, {tags => ['type:ticks', "symbol:$symbol"]});
 
         my $ticks = $ul->feed_api->ticks_start_end_with_limit_for_charting({
             start_time => $args->{start},
@@ -93,6 +96,11 @@ rpc ticks_history => sub {
         $type    = "history";
         $publish = 'tick';
     } elsif ($style eq 'candles') {
+
+        my ($candles_metric, $candles_relation) =
+            BOM::RPC::v3::Utility::aggregate_ticks_history_metrics($args->{start}, $args->{end}, $args->{count});
+        stats_gauge("bom_rpc.v_3.ticks_history.candles.requests_" . $candles_relation, $candles_metric, {tags => ['type:candles', "symbol:$symbol"]});
+
         my @candles = @{_candles($args)};
         $result = {
             candles => \@candles,
