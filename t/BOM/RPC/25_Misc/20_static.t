@@ -186,6 +186,36 @@ subtest 'residence_list' => sub {
         'ug is correct'
     );
 
+    is_deeply(
+        $index->{id},
+        {
+            tin_format => ['^\\d{15}$'],
+            identity   => {
+                services => {
+                    onfido => {
+                        documents_supported => {
+                            passport               => {display_name => 'Passport'},
+                            residence_permit       => {display_name => 'Residence Permit'},
+                            driving_licence        => {display_name => 'Driving Licence'},
+                            national_identity_card => {display_name => 'National Identity Card'}
+                        },
+                        is_country_supported => 1
+                    },
+                    idv => {
+                        has_visual_sample    => 0,
+                        is_country_supported => 1,
+                        documents_supported  => {
+                            nik => {
+                                format       => '^\\d{16}$',
+                                display_name => 'Nomor Induk Kependudukan',
+                            }}}}
+            },
+            phone_idd => 62,
+            text      => 'Indonesia'
+        },
+        'Expected Indonesia config'
+    );
+
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
     $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
     $index  = +{map { (delete $_->{value} => $_) } $result->@*};
