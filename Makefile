@@ -25,4 +25,4 @@ pod_test:
 cover:
 	cover -delete
 	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc t/BOM
-	cover -report coveralls
+	# cover -report coveralls
