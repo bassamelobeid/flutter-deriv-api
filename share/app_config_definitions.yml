@@ -968,6 +968,7 @@ quants:
               global: 1
               default: '{"maturities_allowed_days" : [1,2,3,4,5],
                          "maturities_allowed_weeks" : [1,2,3,4,5,6,7,8,9],
+                         "bs_markup" : 0,
                          "delta_config" : [0.1,0.3,0.5,0.7,0.9],
                          "max_strike_price_choice" : 5,
                          "min_number_of_contracts": {"USDC":0.1,"USB":0.1,"DAI":0.1,"GBP":0.1,"TUSD":0.1,"PAX":0.1,"tUSDT":0.1,"BTC":0.00000015,"EUR":0.1,"UST":0.1,"EURS":0.1,"AUD":0.1,"BUSD":0.1,"eUSDT":0.1,"USDK":0.1,"LTC":0.00045,"USD":0.1,"ETH":0.000025,"IDK":1.39},
