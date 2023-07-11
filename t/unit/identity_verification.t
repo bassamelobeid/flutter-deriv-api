@@ -38,9 +38,10 @@ subtest 'Get Filters data' => sub {
                 pan
                 curp
                 dni
+                nik
                 /
         },
-        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx cl pe vn/},
+        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx cl pe vn id/},
         providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) } qw/zaig smile_identity derivative_wealth data_zoo metamap/},
         statuses  => +{map { ($_ => $idv_config->{statuses}->{$_}) } qw/pending failed refuted verified/},
         messages  => $idv_config->{messages},
