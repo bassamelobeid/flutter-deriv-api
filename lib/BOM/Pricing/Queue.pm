@@ -9,7 +9,7 @@ use utf8;
 use mro;
 no indirect;
 
-use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc stats_timing);
 use LWP::Simple 'get';
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
@@ -197,6 +197,10 @@ async sub run {
                             quote      => $tick->{quote},
                             received   => Time::HiRes::time(),
                         };
+                        stats_timing(
+                            'pricer_daemon.queue.tick_receive_latency',
+                            1000 * ($ptick->{received} - $ptick->{epoch}),
+                            {tags => ['tag:' . $self->internal_ip]});
                         $self->process($tick->{symbol}, $ptick)->retain;
                     });
                 return $payload_source->completed->on_fail(
@@ -388,7 +392,7 @@ Processes pricing jobs for a given symbol
 async sub process {
     my ($self, $symbol, $tick) = @_;
 
-    my $start     = Time::HiRes::time();
+    my $start     = $tick ? $tick->{received} : Time::HiRes::time();
     my $contracts = $self->{cache_by_symbol}{$symbol};
     if ($contracts) {
         await $self->submit_jobs($contracts, $tick);
@@ -397,6 +401,7 @@ async sub process {
     my $now = Time::HiRes::time();
     $self->{stats}{proc_time} += $now - $start;
     $self->{last_tick}{$symbol} = $now;
+    stats_timing('pricer_daemon.queue.process.time', 1000 * ($now - $start), {tags => ['tag:' . $self->internal_ip]});
 }
 
 =head2 run_contract_updater
@@ -582,12 +587,7 @@ proposals and generates some metrics.
 async sub dequeue {
     my ($self, $count) = @_;
 
-    # once we upgrade redis to 6.2.0 use the following instead of the loop
-    # my $deq = await $self->redis->rpop('pricer_jobs', $count);
-    my $deq = [];
-    for (my $i = 0; $i < $count; $i++) {
-        push @$deq, await $self->redis->rpop('pricer_jobs');
-    }
+    my $deq = await $self->redis->rpop('pricer_jobs', $count);
     return unless 0 + @$deq;
     return unless $self->record_price_metrics;
     my %queued;

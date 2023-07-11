@@ -165,9 +165,10 @@ sub run {
         my $payload = decode_json_utf8($next);
         my $params  = {@{$payload}};
         if ($tick) {
-            $params->{current_tick} = Postgres::FeedDB::Spot::Tick->new(decode_json_utf8($tick));
-            if (my $recv = $params->{received}) {
-                stats_timing('pricer_daemon.job_queue.time', 1000 * ($recv - Time::HiRes::time()), {tags => $self->tags});
+            my $dtick = decode_json_utf8($tick);
+            $params->{current_tick} = Postgres::FeedDB::Spot::Tick->new($dtick);
+            if (my $recv = $dtick->{received}) {
+                stats_timing('pricer_daemon.queue_latency.time', 1000 * (Time::HiRes::time() - $recv), {tags => $self->tags});
             }
         }
 
