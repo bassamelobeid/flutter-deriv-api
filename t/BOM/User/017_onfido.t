@@ -197,6 +197,11 @@ subtest 'submissions left per user' => sub {
     $test_client->residence('id');
     $test_client->save;
     $limit = BOM::User::Onfido::limit_per_user($test_client->residence);
+    is $limit, 1, '1 is the correct number of attempst for IDV supported countries';
+
+    $test_client->residence('py');
+    $test_client->save;
+    $limit = BOM::User::Onfido::limit_per_user($test_client->residence);
     is $limit, 2, '2 is the correct number of attempst for non IDV supported countries';
 
     is BOM::User::Onfido::submissions_left($test_client), $limit, 'The client has all the submissions left';
@@ -1056,7 +1061,7 @@ subtest 'applicant info' => sub {
             postcode        => 232323,
             building_number => re('Ronald-Street \(\)lanes B\/O12')
         },
-        location => {country_of_residence => 'IDN'},
+        location => {country_of_residence => 'PRY'},
         },
         'Expected applicant info';
 
@@ -1070,11 +1075,11 @@ subtest 'applicant info' => sub {
             street          => re('Ronald-Street \(\)lanes B\/O12'),
             state           => 'LA',
             town            => 'Beverly Hills',
-            country         => 'IDN',
+            country         => 'PRY',
             postcode        => 232323,
             building_number => re('Ronald-Street \(\)lanes B\/O12')
         },
-        location => {country_of_residence => 'IDN'},
+        location => {country_of_residence => 'PRY'},
         },
         'Expected applicant info';
 };
