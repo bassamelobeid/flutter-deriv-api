@@ -23,6 +23,10 @@ jobs:
     steps:
       - name: check git message
         uses: regentmarkets/github-actions/check-git-message@master
+      - name: print something for testing
+        run: |
+          echo "${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}"
+          echo "/home/git/${{inputs.repository || github.repository}}"
   core_syntax_diff:
     needs: check-git-message
     uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@dev
