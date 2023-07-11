@@ -627,6 +627,7 @@ async sub _trigger {
             line_2    => $client->address_line_2,
             postcode  => $client->address_postcode,
             residence => $client->residence,
+            city      => $client->address_city,
         }};
 
     my $response         = undef;

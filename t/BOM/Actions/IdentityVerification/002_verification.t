@@ -143,6 +143,7 @@ subtest 'verify identity by smile_identity through microservice is passed and da
 
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
+    $client->address_city('fake');
     $client->address_postcode('12345900');
     $client->residence('ar');
     $client->first_name('John');
@@ -200,7 +201,8 @@ subtest 'verify identity by smile_identity through microservice is passed and da
             line_1    => 'Fake St 123',
             line_2    => 'apartamento 22',
             postcode  => '12345900',
-            residence => 'ar'
+            residence => 'ar',
+            city      => 'fake'
         },
         },
         'request body is correct';
@@ -294,6 +296,7 @@ subtest 'microservice address verified' => sub {
             line_2    => 'apartamento 22',
             postcode  => '12345900',
             residence => 'br',
+            city      => 'Beverly Hills',
         },
         },
         'request body is correct';
