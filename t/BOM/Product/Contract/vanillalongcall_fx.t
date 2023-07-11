@@ -68,6 +68,7 @@ my $fx_per_symbol_config = {
     'min_number_of_contracts'  => {'USD' => 0},
     'max_number_of_contracts'  => {'USD' => 1000},
     'max_strike_price_choice'  => 10,
+    'bs_markup'                => 0,
     'delta_config'             => [0.1, 0.3, 0.5, 0.7, 0.9],
     'risk_profile'             => 'low_risk',
     'spread_spot'              => {

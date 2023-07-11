@@ -313,9 +313,7 @@ get black scholes price markup from app_config (set from backoffice)
 sub bs_markup {
     my $self = shift;
 
-    my $bs_markup_config = 0;
-
-    $bs_markup_config = $self->per_symbol_config()->{bs_markup} if $self->is_synthetic;
+    my $bs_markup_config = $self->per_symbol_config()->{bs_markup};
 
     my $bs_markup = Math::Util::CalculatedValue->new({
         name        => 'black_scholes_markup',
