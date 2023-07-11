@@ -4066,6 +4066,192 @@ subtest 'verify address' => sub {
     ok $redis_replicated_read->ttl('ADDRESS_VERIFICATION_RESULT' . $test_client->binary_user_id) > 0, 'TTL Set for Address Verification Result';
     ok $redis_replicated_read->ttl('ADDRESS_CHANGE_LOCK' . $test_client->binary_user_id) > 0,         'TTL Set for Address Change Lock';
 
+    subtest 'exception handling' => sub {
+        subtest 'empty response' => sub {
+            $test_client->status->clear_smarty_streets_validated;
+            my $http_response = HTTP::Response->new(500);
+            $redis_replicated_read->del('ADDRESS_VERIFICATION_RESULT' . $test_client->binary_user_id);
+            $redis_replicated_read->del('ADDRESS_CHANGE_LOCK' . $test_client->binary_user_id);
+
+            $residence                   = 'br';
+            $has_deposits                = 0;
+            $fully_authenticated         = 1;
+            $dd_bag                      = {};
+            $check_already_performed     = 0;
+            $address_verification_future = undef;
+            $verify_future               = Future->fail(Future::Exception->new('HTTP Failure', 'http', $http_response));
+            $address_status              = 'awesome';
+            $address_accuracy_at_least   = 1;
+            $redis_hset_data             = {};
+            $verify_details              = {};
+
+            is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+            $test_client->status->_build_all;
+            ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
+            cmp_deeply $dd_bag,
+                {
+                'event.address_verification.request'   => undef,
+                'event.address_verification.triggered' => {tags => ['verify_address:authenticated']},
+                'smartystreet.verification.trigger'    => undef,
+                'event.address_verification.exception' => {tags => ['verify_address:authenticated']},
+                'smartystreet.lookup.failure'          => undef,
+                },
+                'Expected data for the data pooch';
+
+            cmp_deeply $verify_details,
+                {
+                freeform => $freeform,
+                country  => uc(country_code2code($test_client->residence, 'alpha-2', 'alpha-3')),
+                license  => 'international-select-basic-cloud',
+                },
+                'Expected verify arguments';
+
+            cmp_deeply $redis_hset_data, {}, 'Expected data recorded to Redis (none)';
+        };
+
+        subtest 'subscription required' => sub {
+            $test_client->status->clear_smarty_streets_validated;
+            my $http_response = HTTP::Response->new(429);
+            $http_response->content(
+                encode_json_utf8({
+                        id      => 1234,
+                        message => 'Active subscription required'
+                    }));
+            $redis_replicated_read->del('ADDRESS_VERIFICATION_RESULT' . $test_client->binary_user_id);
+            $redis_replicated_read->del('ADDRESS_CHANGE_LOCK' . $test_client->binary_user_id);
+
+            $residence                   = 'br';
+            $has_deposits                = 0;
+            $fully_authenticated         = 1;
+            $dd_bag                      = {};
+            $check_already_performed     = 0;
+            $address_verification_future = undef;
+            $verify_future               = Future->fail(Future::Exception->new('HTTP Failure', 'http', $http_response));
+            $address_status              = 'awesome';
+            $address_accuracy_at_least   = 1;
+            $redis_hset_data             = {};
+            $verify_details              = {};
+
+            is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+            $test_client->status->_build_all;
+            ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
+            cmp_deeply $dd_bag,
+                {
+                'event.address_verification.request'        => undef,
+                'event.address_verification.triggered'      => {tags => ['verify_address:authenticated']},
+                'smartystreet.verification.trigger'         => undef,
+                'event.address_verification.exception'      => {tags => ['verify_address:authenticated']},
+                'smartystreet.lookup.failure'               => undef,
+                'smartystreet.lookup.subscription_required' => undef,
+                },
+                'Expected data for the data pooch';
+
+            cmp_deeply $verify_details,
+                {
+                freeform => $freeform,
+                country  => uc(country_code2code($test_client->residence, 'alpha-2', 'alpha-3')),
+                license  => 'international-select-basic-cloud',
+                },
+                'Expected verify arguments';
+
+            cmp_deeply $redis_hset_data, {}, 'Expected data recorded to Redis (none)';
+        };
+
+        subtest 'bad address' => sub {
+            $test_client->status->clear_smarty_streets_validated;
+            my $http_response = HTTP::Response->new(500);
+            $http_response->content(
+                encode_json_utf8({
+                        id      => 1234,
+                        message => 'Unable to process the input provided'
+                    }));
+            $redis_replicated_read->del('ADDRESS_VERIFICATION_RESULT' . $test_client->binary_user_id);
+            $redis_replicated_read->del('ADDRESS_CHANGE_LOCK' . $test_client->binary_user_id);
+
+            $residence                   = 'br';
+            $has_deposits                = 0;
+            $fully_authenticated         = 1;
+            $dd_bag                      = {};
+            $check_already_performed     = 0;
+            $address_verification_future = undef;
+            $verify_future               = Future->fail(Future::Exception->new('HTTP Failure', 'http', $http_response));
+            $address_status              = 'awesome';
+            $address_accuracy_at_least   = 1;
+            $redis_hset_data             = {};
+            $verify_details              = {};
+
+            is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+            $test_client->status->_build_all;
+            ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
+            cmp_deeply $dd_bag,
+                {
+                'event.address_verification.request'       => undef,
+                'event.address_verification.triggered'     => {tags => ['verify_address:authenticated']},
+                'smartystreet.verification.trigger'        => undef,
+                'event.address_verification.exception'     => {tags => ['verify_address:authenticated']},
+                'smartystreet.lookup.failure'              => undef,
+                'smartystreet.lookup.unacceptable_address' => undef,
+                },
+                'Expected data for the data pooch';
+
+            cmp_deeply $verify_details,
+                {
+                freeform => $freeform,
+                country  => uc(country_code2code($test_client->residence, 'alpha-2', 'alpha-3')),
+                license  => 'international-select-basic-cloud',
+                },
+                'Expected verify arguments';
+
+            cmp_deeply $redis_hset_data, {}, 'Expected data recorded to Redis (none)';
+        };
+
+        subtest 'non conforming json' => sub {
+            $test_client->status->clear_smarty_streets_validated;
+            my $http_response = HTTP::Response->new(500);
+            $http_response->content(
+                encode_json_utf8({
+                        id => 1234,
+                    }));
+            $redis_replicated_read->del('ADDRESS_VERIFICATION_RESULT' . $test_client->binary_user_id);
+            $redis_replicated_read->del('ADDRESS_CHANGE_LOCK' . $test_client->binary_user_id);
+
+            $residence                   = 'br';
+            $has_deposits                = 0;
+            $fully_authenticated         = 1;
+            $dd_bag                      = {};
+            $check_already_performed     = 0;
+            $address_verification_future = undef;
+            $verify_future               = Future->fail(Future::Exception->new('HTTP Failure', 'http', $http_response));
+            $address_status              = 'awesome';
+            $address_accuracy_at_least   = 1;
+            $redis_hset_data             = {};
+            $verify_details              = {};
+
+            is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+            $test_client->status->_build_all;
+            ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
+            cmp_deeply $dd_bag,
+                {
+                'event.address_verification.request'   => undef,
+                'event.address_verification.triggered' => {tags => ['verify_address:authenticated']},
+                'smartystreet.verification.trigger'    => undef,
+                'event.address_verification.exception' => {tags => ['verify_address:authenticated']},
+                'smartystreet.lookup.failure'          => undef,
+                },
+                'Expected data for the data pooch';
+
+            cmp_deeply $verify_details,
+                {
+                freeform => $freeform,
+                country  => uc(country_code2code($test_client->residence, 'alpha-2', 'alpha-3')),
+                license  => 'international-select-basic-cloud',
+                },
+                'Expected verify arguments';
+
+            cmp_deeply $redis_hset_data, {}, 'Expected data recorded to Redis (none)';
+        };
+    };
+
     $dd_mock->unmock_all;
     $client_mock->unmock_all;
     $events_mock->unmock_all;

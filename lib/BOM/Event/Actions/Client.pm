@@ -1582,11 +1582,24 @@ async sub _address_verification {
 
     $future_verify_ss->on_fail(
         sub {
+            my (undef, undef, $e) = @_;
+
+            # extract payload error message and try to map it into a metric
+            if (blessed($e) and $e->isa('HTTP::Response')) {
+                my $match;
+                DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.unacceptable_address')
+                    if $e->content =~ /Unable to process the input provided/ && ($match = 1);
+                DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.subscription_required')
+                    if $e->content =~ /Active subscription required/ && ($match = 1);
+
+                # log the unhandled message for debugging
+                $log->warnf(sprintf("SmartyStreets HTTP status %d error: %s", $e->code, $e->content)) unless $match;
+            }
+
             DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.failure');
 
             # clear current status on failure, if any
             $client->status->clear_smarty_streets_validated();
-            $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
             return;
         }
     )->on_done(
@@ -2565,13 +2578,7 @@ async sub payment_deposit {
     $account_identifier = sha256_hex($account_identifier) if $account_identifier;
 
     if ($is_first_deposit) {
-        try {
-            await _address_verification(client => $client);
-        } catch ($e) {
-            $log->errorf('Failed to verify applicants address for %s : %s', $loginid, $e);
-            exception_logged();
-        }
-
+        BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $client->loginid});
         BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication;
     }
 
