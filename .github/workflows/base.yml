@@ -32,5 +32,5 @@ jobs:
         env1=hello
         env2=is
         env3=me
-      repository: ${{ input.repository }}
+      repository: ${{ inputs.repository }}
 
