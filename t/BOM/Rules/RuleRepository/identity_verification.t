@@ -928,4 +928,105 @@ subtest 'rule idv.check_document_acceptability' => sub {
     }
 };
 
+subtest 'rule idv.check_opt_out_availability' => sub {
+    my $rule_name = 'idv.check_opt_out_availability';
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) }, qr/issuing_country is missing/,
+        'document issuing_country is required for this rule';
+
+    my $mock_country_config = Test::MockModule->new('Brands::Countries');
+    my $mock_idv_model      = Test::MockModule->new('BOM::User::IdentityVerification');
+    my $mock_qa             = Test::MockModule->new('BOM::Config');
+
+    my $test_cases = [{
+            input               => {issuing_country => 'ir'},
+            idv_submission_left => 1,
+            error               => undef,
+        },
+        {
+            input               => {issuing_country => 'wrong country'},
+            idv_submission_left => 1,
+            error               => 'NotSupportedCountry',
+        },
+        {
+            input               => {issuing_country => 'ir'},
+            idv_submission_left => 0,
+            error               => 'NoSubmissionLeft',
+        },
+        {
+            input               => {issuing_country => 'qq'},
+            idv_submission_left => 1,
+            error               => undef,
+            qa_provider         => 1,
+        },
+        {
+            input               => {issuing_country => 'qq'},
+            idv_submission_left => 1,
+            error               => 'NotSupportedCountry',
+            qa_provider         => 0,
+        },
+        {
+            input               => {issuing_country => 'wrong country'},
+            idv_submission_left => 1,
+            has_idv             => 0,
+            error               => 'NotSupportedCountry',
+            qa_provider         => 1,
+        },
+        {
+            input                       => {issuing_country => 'ir'},
+            idv_submission_left         => 0,
+            has_idv                     => 1,
+            error                       => undef,
+            idv_status                  => 'expired',
+            has_expired_document_chance => 1,
+        },
+        {
+            input                       => {issuing_country => 'ir'},
+            idv_submission_left         => 0,
+            has_idv                     => 1,
+            error                       => 'NoSubmissionLeft',
+            idv_status                  => 'expired',
+            has_expired_document_chance => 0,
+        },
+    ];
+
+    for my $case ($test_cases->@*) {
+        $mock_country_config->mock(
+            'is_idv_supported',
+            sub {
+                my (undef, $country) = @_;
+
+                return 1 if $country eq 'ir';
+
+                return 0;
+            });
+
+        $mock_idv_model->mock('submissions_left' => $case->{idv_submission_left});
+        $mock_idv_model->mock('status'           => $case->{idv_status} // 'none');
+        $mock_idv_model->mock('has_expired_document_chance', $case->{has_expired_document_chance});
+        $mock_qa->mock('on_qa' => $case->{qa_provider});
+
+        my %args = (
+            loginid         => $client_cr->loginid,
+            issuing_country => $case->{input}->{issuing_country});
+
+        if (my $error = $case->{error}) {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                +{
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Violated rule: $error";
+        } else {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
+        }
+
+        $mock_country_config->unmock_all();
+        $mock_idv_model->unmock_all();
+        $mock_qa->unmock_all();
+    }
+};
+
 done_testing();
