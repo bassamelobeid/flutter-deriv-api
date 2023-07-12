@@ -29,3 +29,6 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ inputs.repository }}
+      env_vars: |
+        LOG_LEVEL=hello
+
