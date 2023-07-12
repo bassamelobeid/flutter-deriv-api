@@ -203,11 +203,36 @@ subtest $rule_name => sub {
             },
             'Duplicate wallet is detected';
 
-        $args{account_type} = 'p2p';
-        lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Currency is available with a different payment method';
-
         $args{currency} = 'EUR';
-        lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'A different currency is accpeted';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+            error_code => 'CurrencyTypeNotAllowed',
+            rule       => $rule_name
+            },
+            'Same Fiat wallet is detected';
+
+        $args{account_type} = 'p2p';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+            error_code => 'CurrencyNotAllowed',
+            rule       => $rule_name
+            },
+            'Only usd allowed is allowed for p2p';
+
+        $args{currency} = 'USD';
+        lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'USD is allowed to P2P';
+
+        $wallet->account_type('p2p');
+        $wallet->set_default_account('USD');
+        $wallet->save;
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+            error_code => 'DuplicateWallet',
+            params     => 'USD',
+            rule       => $rule_name
+            },
+            'Duplicate wallet is detected';
     };
 };
 
@@ -274,8 +299,8 @@ subtest $rule_name => sub {
     my %args             = (loginid => $client_cr_usd1->loginid);
     my $expected_failure = {
         error_code => 'DuplicateCurrency',
-        rule       => $rule_name,
-        params     => 'USD'
+        params     => 'USD',
+        rule       => $rule_name
     };
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) }, $expected_failure,
@@ -330,7 +355,7 @@ subtest $rule_name => sub {
 
     $mock_user->redefine(mt5_logins => sub { () });
 
-    is exception { $rule_engine->apply_rules($rule_name, %args) }, undef, 'Rule applies if c    lient only has demo account';
+    is exception { $rule_engine->apply_rules($rule_name, %args) }, undef, 'Rule applies if client only has demo account';
 
     $mock_user->unmock_all;
 };

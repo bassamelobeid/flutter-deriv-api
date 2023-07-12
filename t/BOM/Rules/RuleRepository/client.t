@@ -140,8 +140,8 @@ subtest 'rule client.residence_is_not_empty' => sub {
     $mock_client->unmock_all;
 };
 
-subtest 'rule client.signup_immitable_fields_not_changed' => sub {
-    my $rule_name      = 'client.signup_immitable_fields_not_changed';
+subtest 'rule client.signup_immutable_fields_not_changed' => sub {
+    my $rule_name      = 'client.signup_immutable_fields_not_changed';
     my $rule_engine    = BOM::Rules::Engine->new(client => $client);
     my $rule_engine_vr = BOM::Rules::Engine->new(client => $client_vr);
 

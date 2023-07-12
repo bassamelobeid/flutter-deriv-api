@@ -458,6 +458,51 @@ subtest 'rule trading_account.client_should_be_real' => sub {
     ok $rule_engine->apply_rules($rule_name, loginid => $cr->loginid), 'Test passes with CR';
 };
 
+subtest 'rule trading_account.client_should_be_legacy_or_virtual_wallet' => sub {
+    my $rule_name = 'trading_account.client_should_be_legacy_or_virtual_wallet';
+
+    my $vrtc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $vrtc);
+
+    ok $rule_engine->apply_rules($rule_name, loginid => $vrtc->loginid), 'Test passes with VR';
+
+    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $rule_engine = BOM::Rules::Engine->new(client => $cr);
+    ok $rule_engine->apply_rules($rule_name, loginid => $cr->loginid), 'Test passes with CR';
+
+    my $crw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CRW',
+    });
+
+    $rule_engine = BOM::Rules::Engine->new(client => $crw);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $crw->loginid) },
+        {
+        error_code => 'AccountTypesMismatch',
+        rule       => $rule_name
+        },
+        'expected error when passing wallet account';
+
+    my $crt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code  => 'CR',
+        account_type => 'standard'
+    });
+
+    $rule_engine = BOM::Rules::Engine->new(client => $crt);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $crt->loginid) },
+        {
+        error_code => 'AccountTypesMismatch',
+        rule       => $rule_name
+        },
+        'expected error when passing wallet account';
+
+};
+
 subtest 'rule trading_account.allowed_currency' => sub {
     my $rule_name = 'trading_account.allowed_currency';
 

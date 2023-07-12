@@ -57,6 +57,7 @@ use BOM::Rules::RuleRepository::Cashier;
 use BOM::Rules::RuleRepository::Payment;
 use BOM::Rules::RuleRepository::P2P;
 use BOM::Rules::RuleRepository::MT5;
+use BOM::Rules::RuleRepository::Wallet;
 
 use BOM::Rules::Registry qw(get_action);
 use BOM::Rules::Context;

@@ -1,7 +1,8 @@
-new_account:
-  description: Contains rules to be applied on real account opening
+new_wallet:
+  description: Contains rules to be applied on real wallet opening or account reactivation
   ruleset:
     - user.email_is_verified
+    - wallet.client_type_is_not_binary
     - client.residence_is_not_empty
     - profile.residence_cannot_be_changed
     - residence.is_signup_allowed
@@ -31,6 +32,7 @@ new_account:
         maltainvest:
           - profile.no_pobox_in_address
           - financial_asssessment.appropriateness_test
+          - profile.tax_information_is_mandatory
         iom: *from_eu
     - type: conditional
       on: residence
@@ -39,8 +41,8 @@ new_account:
           - profile.address_postcode_mandatory
           - client.forbidden_postcodes
 
-activate_account:
-  description: Contains rules to be applied on real account opening or account reactivation
+activate_wallet:
+  description: Contains rules to be applied on real wallet opening or account reactivation
   ruleset:
     - type: conditional
       on: landing_company
@@ -51,6 +53,7 @@ activate_account:
           - landing_company.accounts_limit_not_reached
         default:
           - user.email_is_verified
+          - wallet.client_type_is_not_binary
           - client.residence_is_not_empty
           - profile.residence_cannot_be_changed
           - residence.is_signup_allowed
@@ -79,6 +82,7 @@ activate_account:
                 - profile.no_pobox_in_address
               maltainvest: 
                 - profile.no_pobox_in_address
+                - profile.tax_information_is_mandatory
               iom: *from_eu
           - type: conditional
             on: residence
@@ -86,16 +90,3 @@ activate_account:
               gb:
                 - profile.address_postcode_mandatory
                 - client.forbidden_postcodes
-
-
-paymentagent_create:
-  description: A set of rules to be applied on paymentagent create
-  ruleset:
-    - client.is_not_virtual
-    - paymentagent.pa_allowed_in_landing_company
-    - client.has_currency_set
-    - client.age_verified
-    - client.fully_authenticated
-    - paymentagent.paymentagent_status_can_apply_for_pa
-    - paymentagent.client_status_can_apply_for_pa
-    - paymentagent.client_has_mininum_deposit

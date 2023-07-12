@@ -214,6 +214,27 @@ sub landing_company {
     return $short_code || $self->client($args)->landing_company->short;
 }
 
+=head2 user
+
+Retrieves user object. It accepts one argument:
+
+=over 4
+
+=item C<args> event args as a hashref; expected to contain a B<user> or B<loginid> key.
+
+=back
+
+=cut
+
+sub user {
+    my ($self, $args) = @_;
+    my $user = $args->{user};
+
+    die 'Either landing_company or loginid is required' unless ($user || $args->{loginid});
+
+    return $user || $self->client($args)->user;
+}
+
 =head2 get_country
 
 Retrieves a country object from cache by country code. It accepts one argument:

@@ -16,6 +16,7 @@ use warnings;
 use List::Util qw(any);
 
 use BOM::Rules::Registry qw(rule);
+use BOM::Config::AccountType;
 
 rule 'residence.account_type_is_available' => {
     description => "The market_type in args should be allowed in the context residence",
@@ -73,19 +74,18 @@ rule 'residence.account_type_is_available_for_real_account_opening' => {
     description => "Checks if the requested account type is enabled in the country of residence configuration.",
     code        => sub {
         my ($self, $context, $args) = @_;
-        my $residence = $context->residence($args);
+        my $residence       = $context->residence($args);
+        my $landing_company = $context->landing_company($args);
 
         die 'Account type is required' unless $args->{account_type};
         return 1 if $args->{account_type} eq 'binary';
         return 1 if $args->{account_type} eq 'affiliate';
-
         return 1 if $args->{account_type} eq 'standard';
 
-        my $countries_instance = $context->brand($args)->countries_instance;
-
-        my $wallet_lc_name = $countries_instance->wallet_company_for_country($residence, 'real') // 'none';
-
-        $self->fail('InvalidResidence') if $wallet_lc_name eq 'none';
+        my $countries_instance           = $context->brand($args)->countries_instance;
+        my $wallet_companies_for_country = $countries_instance->wallet_companies_for_country($residence, 'real') // [];
+        $self->fail('InvalidResidence')
+            unless grep { $_ eq $landing_company } $wallet_companies_for_country->@*;
         return 1;
     },
 };
