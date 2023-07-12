@@ -6,6 +6,7 @@
     <li><a href="#rd-pivot">Pivot</a></li>
     <li><a href="#rd-exposure">Company's Exposure</a></li>
     <li><a href="#rd-multiplier">Multipliers Open Profit & Loss</a></li>
+    <li><a href="#rd-vanilla">Vanilla Risk Reporting</a></li>
   </ul>
   <div id="rd-summary">
         <p> Latest report generated at [% generated_time %] </p>
@@ -87,3 +88,8 @@
 <div id="rd-multiplier"> 
 [% INCLUDE 'backoffice/risk_dashboard_multiplier.html.tt' data = multiplier_open_pnl %]
 </div>
+
+<div id="rd-vanilla"> 
+[% INCLUDE 'backoffice/risk_dashboard_vanilla.html.tt' data = vanilla_risk_report  at_date = vanilla_risk_report_at_date error_message = vanilla_error_message %]
+</div>
+

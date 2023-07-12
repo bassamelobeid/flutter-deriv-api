@@ -293,9 +293,10 @@ sub _open_bets_report {
 }
 
 sub _open_bets_at_end {
-    my $self = shift;
+    my ($self, $at_date) = @_;
+    $at_date //= $self->end;
 
-    my $open_bets = $self->_report_mapper->get_open_bet_overviews($self->end);
+    my $open_bets = $self->_report_mapper->get_open_bet_overviews($at_date);
 
     foreach my $bet (@{$open_bets}) {
         $self->_do_name_plus($bet);
