@@ -297,6 +297,7 @@ rpc "new_account_virtual",
     $args->{token_details} = delete $params->{token_details};
 
     my $category = delete $args->{type} // 'trading';
+
     #TODO: At some point in time instead of binary here should be standard...
     # We need to define conditions when we stop creating legacy accounts
     # Maybe check if virtual wallet already created?
@@ -389,6 +390,8 @@ rpc new_account_wallet => sub {
 
     $args->{residence} //= $client->residence;
 
+    my $company_name = $args->{landing_company_short} // 'svg';
+
     if (exists $args->{financial_assessment}) {
         $args = {%{$args}, %{$args->{financial_assessment}}};
         delete $args->{financial_assessment};
@@ -396,7 +399,6 @@ rpc new_account_wallet => sub {
 
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;
-    my $company_name       = $countries_instance->wallet_company_for_country($client->residence, 'real') // '';
 
     my $is_maltainvest = $company_name eq 'maltainvest';
 
@@ -406,16 +408,15 @@ rpc new_account_wallet => sub {
             message_to_client => localize('Invalid request parameters.'),
             details           => {field => 'currency'}}) unless $currency_type;
 
-    # Note: we don't get account type form websocket at the moment; so we default it by currency type;
-    # TODO: We should rename payment_method to account_type in future. in current card we're trying to keep API as is.
-    my $account_type = $args->{payment_method} && BOM::Config::AccountType::Registry->account_type_by_name($args->{payment_method});
+    my $account_type = $args->{account_type} && BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type});
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidRequestParams',
             message_to_client => localize('Invalid request parameters.'),
-            details           => {field => 'payment_method'}}) unless $account_type && $account_type->category->name eq 'wallet';
+            details           => {field => 'account_type'}}) unless $account_type && $account_type->category->name eq 'wallet';
 
     my $wallet_lc = LandingCompany::Registry->by_name($company_name // '');
+
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
         unless $wallet_lc && $account_type->is_supported(request()->brand, $client->residence, $company_name);
 
@@ -526,15 +527,13 @@ sub create_virtual_account {
                 new_password => $args->{client_password}});
         die $error if $error;
     }
-
     if ($args->{category} eq 'wallet') {
         my $countries_instance = request()->brand->countries_instance;
-        my $company_name       = $countries_instance->wallet_company_for_country($args->{residence}, 'virtual');
+        my $allowed_companies  = $countries_instance->wallet_companies_for_country($args->{residence}, 'virtual') // [];
 
         die BOM::RPC::v3::Utility::create_error_by_code('invalid residence')
-            if ($company_name // 'none') eq 'none';
+            unless any { $_ eq "virtual" } $allowed_companies->@*;
     }
-
     # Create account
     my $account_args = {
         ip      => $args->{id},
@@ -741,11 +740,12 @@ sub create_new_real_account {
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
     return $val if $val;
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    my $action      = $args->{category} eq 'wallet' ? 'new_wallet' : 'new_account';
     try {
         # Rules are applied on actual request arguments ($args),
         # not the initialized values ($details_ref->{details}) used for creating the client object.
         $rule_engine->verify_action(
-            'new_account',
+            $action,
             %$args,
             action_type     => 'create',
             loginid         => $client->loginid,

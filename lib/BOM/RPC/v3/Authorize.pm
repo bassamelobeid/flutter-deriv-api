@@ -51,8 +51,8 @@ sub get_client_landing_companies {
             [qw/landing_company.accounts_limit_not_reached/],
             loginid         => $client->loginid,
             landing_company => $lc,
-            stop_on_failure => 0,
-            account_type    => 'binary',
+            account_type    => $client->get_account_type->name,
+            stop_on_failure => 0
         )->has_failure;
 
         my @available_currencies;

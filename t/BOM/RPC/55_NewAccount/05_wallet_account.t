@@ -82,12 +82,12 @@ subtest 'virtual account' => sub {
 
         my $mock_countries = Test::MockModule->new('Brands::Countries');
         $mock_countries->redefine(
-            wallet_company_for_country => sub {
+            wallet_companies_for_country => sub {
                 my ($self, $country, $type) = @_;
                 $type //= '';
-                return "wallet-$type" if ($type =~ qr/svg|virtual/);
+                return [$type] if ($type =~ qr/svg|virtual/);
 
-                return 'none';
+                return [];
             });
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully after the country settings was changed');
@@ -121,12 +121,12 @@ subtest 'virtual account' => sub {
 
         my $mock_countries = Test::MockModule->new('Brands::Countries');
         $mock_countries->redefine(
-            wallet_company_for_country => sub {
+            wallet_companies_for_country => sub {
                 my ($self, $country, $type) = @_;
                 $type //= '';
-                return "wallet-$type" if ($type =~ qr/svg|virtual/);
+                return [$type] if ($type =~ qr/svg|virtual/);
 
-                return 'none';
+                return [];
             });
 
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
@@ -186,12 +186,12 @@ subtest 'virtual account' => sub {
 
         my $mock_countries = Test::MockModule->new('Brands::Countries');
         $mock_countries->redefine(
-            wallet_company_for_country => sub {
+            wallet_companies_for_country => sub {
                 my ($self, $country, $type) = @_;
                 $type //= '';
-                return "wallet-$type" if ($type =~ qr/svg|virtual/);
+                return [$type] if ($type =~ qr/svg|virtual/);
 
-                return 'none';
+                return [];
             });
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $email,

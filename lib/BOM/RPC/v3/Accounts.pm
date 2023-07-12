@@ -2955,7 +2955,6 @@ rpc set_account_currency => sub {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
-    my @clients      = ($client);
     my $account_type = $client->get_account_type;
     my $rule_engine  = BOM::Rules::Engine->new(client => $client);
     try {

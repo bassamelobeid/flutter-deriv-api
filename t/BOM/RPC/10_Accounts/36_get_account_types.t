@@ -69,7 +69,7 @@ subtest 'account categories' => sub {
         });
 
     foreach my $company (sort keys %account_types) {
-        $mock_countries->redefine(wallet_company_for_country => $company);
+        $mock_countries->redefine(wallet_companies_for_country => [$company]);
 
         my $params = {
             token => $token,
@@ -118,7 +118,7 @@ subtest 'wallet currencies' => sub {
         });
 
     foreach my $company (sort keys %wallets_currencies) {
-        $mock_countries->redefine(wallet_company_for_country => $company);
+        $mock_countries->redefine(wallet_companies_for_country => [$company]);
         my $params = {
             token => $token,
             args  => {
@@ -205,7 +205,7 @@ subtest 'trading account attributes' => sub {
             }});
 
     foreach my $company (keys %trading_accounts) {
-        $mock_countries->redefine(wallet_company_for_country => $company);
+        $mock_countries->redefine(wallet_companies_for_country => [$company]);
         my $params = {
             token => $token,
             args  => {

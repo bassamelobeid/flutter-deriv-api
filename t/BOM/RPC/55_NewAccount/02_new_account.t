@@ -370,6 +370,24 @@ subtest $method => sub {
             }
         }
     };
+
+    subtest 'account_category' => sub {
+        my $email_c = 'account_category' . rand(999) . '@binary.com';
+        $params->{args}                      = {};
+        $params->{args}->{residence}         = 'lb';
+        $params->{args}->{client_password}   = '123Abas!';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email_c,
+            created_for => 'account_opening'
+        )->token;
+
+        $params->{args}->{account_category} = 'trading';
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+    };
 };
 
 $method = 'new_account_real';
@@ -1245,7 +1263,7 @@ $params = {
 };
 
 subtest $method => sub {
-    my ($user, $client, $auth_token);
+    my ($user, $client, $vr_client, $auth_token);
 
     subtest 'Initialization' => sub {
         lives_ok {
@@ -1314,20 +1332,34 @@ subtest $method => sub {
             {
             code              => 'InvalidRequestParams',
             message_to_client => 'Invalid request parameters.',
-            details           => {field => 'payment_method'}
+            details           => {field => 'account_type'}
             },
             'Correct error for invalid currency.';
 
-        $params->{args}->{payment_method} = 'doughflow';
+        $params->{args}->{account_type} = 'doughflow';
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidAccountRegion',
             'It should return error code if wallet is unavailable in country of residence.')
             ->error_message_is('Sorry, account opening is unavailable in your region.', 'Error message about service unavailability.');
 
-        $mock_countries->redefine(wallet_company_for_country => 'svg');
+        $mock_countries->redefine(wallet_companies_for_country => ['svg']);
         $params->{args}->{currency} = 'USD';
 
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('PermissionDenied',
+            'It should return error code if no wallets were found in the account.')
+            ->error_message_is('Permission denied.', 'Error message about service unavailability.');
+
+        my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRW',
+            email       => $email,
+            citizen     => 'id',
+            residence   => 'id'
+        });
+        $auth_token = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
+        $user->add_client($vr_client);
+        $params->{token} = $auth_token;
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_no_error('If passed argumets are ok a new real wallet will be created successfully');
         $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return wallet landing company');
@@ -1363,11 +1395,13 @@ $params = {
         address_city     => 'Samara',
         address_state    => 'Papua',
         address_postcode => '112233',
+        residence        => 'de',
+        salutation       => 'Mr.'
     },
 };
 
 subtest $method => sub {
-    my ($user, $client, $auth_token);
+    my ($user, $client, $vr_client, $auth_token);
 
     subtest 'Initialization' => sub {
         lives_ok {
@@ -1433,16 +1467,17 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidRequestParams', 'It should return error code if missing any details')
             ->error_message_is('Invalid request parameters.', 'It should return error message if missing any details')
-            ->error_details_is({field => "payment_method"});
+            ->error_details_is({field => "account_type"});
 
-        $params->{args}->{payment_method} = 'doughflow';
+        $params->{args}->{account_type} = 'doughflow';
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidAccountRegion',
             'It should return error code if wallet is unavailable in country of residence.')
             ->error_message_is('Sorry, account opening is unavailable in your region.', 'Error message about service unavailability.');
 
-        $mock_countries->redefine(wallet_company_for_country => 'maltainvest');
+        $mock_countries->redefine(wallet_companies_for_country => ['maltainvest']);
+        $params->{args}->{landing_company_short} = 'maltainvest';
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidState',
@@ -1451,6 +1486,20 @@ subtest $method => sub {
 
         $params->{args}->{address_state} = 'HH';
 
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('PermissionDenied',
+            'It should return error code if no wallets were found in the account.')
+            ->error_message_is('Permission denied.', 'Error message about service unavailability.');
+
+        my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRW',
+            email       => $email,
+            citizen     => 'de',
+            residence   => 'de'
+        });
+        $auth_token = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
+        $user->add_client($vr_client);
+        $params->{token} = $auth_token;
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
             ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
