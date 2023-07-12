@@ -1,5 +1,6 @@
 {
     "new_account_wallet": 1,
+    "account_type": "doughflow",
     "address_city": "Melbourne",
     "address_line_1": "20 Broadway Av",
     "address_line_2": "East Melbourne VIC",
@@ -10,6 +11,5 @@
     "first_name": "Peter",
     "last_name": "Pan",
     "non_pep_declaration": 1,
-    "payment_method": "doughflow",
     "phone": "+6123456789"
 }

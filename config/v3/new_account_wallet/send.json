@@ -11,8 +11,8 @@
     "additionalProperties": false,
     "required": [
         "new_account_wallet",
-        "currency",
-        "payment_method"
+        "account_type",
+        "currency"
     ],
     "properties": {
         "new_account_wallet": {
@@ -20,6 +20,31 @@
             "type": "integer",
             "enum": [
                 1
+            ]
+        },
+        "accept_risk": {
+            "description": "Show whether client has accepted risk disclaimer.",
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ]
+        },
+        "account_opening_reason": {
+            "description": "[Optional] Purpose and reason for requesting the account opening.",
+            "type": "string",
+            "enum": [
+                "Speculative",
+                "Income Earning",
+                "Hedging"
+            ]
+        },
+        "account_type": {
+            "description": "To set the wallets type - only doughflow and crptyo wallets are allowed for initial phase, other types will be added later",
+            "type": "string",
+            "enum": [
+                "doughflow",
+                "crypto"
             ]
         },
         "address_city": {
@@ -47,11 +72,18 @@
             "type": "string",
             "pattern": "^[\\p{L}\\p{Nd}\\s'.,-]{0,100}$"
         },
-        "company": {
-            "description": "[Optional] Set to 'maltainvest' to use maltainvest company for a non-EU resident.",
+        "citizen": {
+            "description": "[Optional] Country of legal citizenship, 2-letter country code. Possible value receive from `residence_list` call.",
             "type": "string",
+            "pattern": "^[a-z]{2}$"
+        },
+        "client_type": {
+            "description": "[Optional] Indicates whether this is for a client requesting an account with professional status.",
+            "type": "string",
+            "default": "retail",
             "enum": [
-                "maltainvest"
+                "professional",
+                "retail"
             ]
         },
         "currency": {
@@ -69,25 +101,8 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "accept_risk": {
-                    "description": "Show whether client has accepted risk disclaimer.",
-                    "type": "integer",
-                    "enum": [
-                        0,
-                        1
-                    ]
-                },
-                "account_opening_reason": {
-                    "description": "[Optional] Purpose and reason for requesting the account opening.",
-                    "type": "string",
-                    "enum": [
-                        "Speculative",
-                        "Income Earning",
-                        "Hedging"
-                    ]
-                },
                 "account_turnover": {
-                    "description": "[Optional] The anticipated account turnover.",
+                    "description": "The anticipated account turnover.",
                     "type": "string",
                     "enum": [
                         "Less than $25,000",
@@ -128,22 +143,8 @@
                         "Make a long-term investment."
                     ]
                 },
-                "citizen": {
-                    "description": "[Optional] Country of legal citizenship, 2-letter country code. Possible value receive from `residence_list` call.",
-                    "type": "string",
-                    "pattern": "^[a-z]{2}$"
-                },
-                "client_type": {
-                    "description": "[Optional] Indicates whether this is for a client requesting an account with professional status.",
-                    "type": "string",
-                    "default": "retail",
-                    "enum": [
-                        "professional",
-                        "retail"
-                    ]
-                },
                 "education_level": {
-                    "description": "Level of Education",
+                    "description": "Level of Education.",
                     "type": "string",
                     "enum": [
                         "Primary",
@@ -245,21 +246,26 @@
                         "Professionals",
                         "Clerks",
                         "Personal Care, Sales and Service Workers",
-                        ", Forestry and Fishery Workers",
+                        "Agricultural, Forestry and Fishery Workers",
                         "Craft, Metal, Electrical and Electronics Workers",
                         "Plant and Machine Operators and Assemblers",
                         "Cleaners and Helpers",
-                        "MiniAgriculturalng, Construction, Manufacturing and Transport Workers",
+                        "Mining, Construction, Manufacturing and Transport Workers",
                         "Armed Forces",
                         "Government Officers",
                         "Students",
                         "Unemployed"
                     ]
                 },
-                "residence": {
-                    "description": "2-letter country code, possible value receive from `residence_list` call.",
+                "required_initial_margin": {
+                    "description": "When would you be required to pay an initial margin?",
                     "type": "string",
-                    "pattern": "^[a-z]{2}$"
+                    "enum": [
+                        "When opening a Leveraged CFD trade.",
+                        "When trading Multipliers.",
+                        "When buying shares of a company.",
+                        "All of the above."
+                    ]
                 },
                 "risk_tolerance": {
                     "description": "Do you understand that you could potentially lose 100% of the money you use to trade?",
@@ -267,38 +273,6 @@
                     "enum": [
                         "Yes",
                         "No"
-                    ]
-                },
-                "salutation": {
-                    "description": "Accept any value in enum list.",
-                    "type": "string",
-                    "enum": [
-                        "Mr",
-                        "Ms",
-                        "Miss",
-                        "Mrs"
-                    ]
-                },
-                "secret_answer": {
-                    "description": "[Optional] Answer to secret question, within 4-50 characters.",
-                    "type": "string",
-                    "pattern": "^[\\w\\-\\,\\.\\' ]+",
-                    "maxLength": 50,
-                    "minLength": 4,
-                    "sensitive": 1
-                },
-                "secret_question": {
-                    "description": "[Optional] Accept any value in enum list.",
-                    "type": "string",
-                    "enum": [
-                        "Mother's maiden name",
-                        "Name of your pet",
-                        "Name of first love",
-                        "Memorable town/city",
-                        "Memorable date",
-                        "Favourite dish",
-                        "Brand of first car",
-                        "Favourite artist"
                     ]
                 },
                 "source_of_experience": {
@@ -324,16 +298,6 @@
                         "Investment Income",
                         "Sale of Property"
                     ]
-                },
-                "tax_identification_number": {
-                    "description": "Tax identification number. Only applicable for real money account. Required for `maltainvest` landing company.",
-                    "type": "string",
-                    "pattern": "^(?!^$|\\s+)[A-Za-z0-9.\\/\\s-]{0,25}$"
-                },
-                "tax_residence": {
-                    "description": "Residence for tax purpose. Comma separated iso country code if multiple jurisdictions. Only applicable for real money account. Required for `maltainvest` landing company.",
-                    "type": "string",
-                    "pattern": "^[a-z]{0,2}(?:,[a-z]{2})*$"
                 },
                 "trading_experience_financial_instruments": {
                     "description": "How much experience do you have with other financial instruments?",
@@ -364,6 +328,14 @@
             "pattern": "^[\\p{L}\\s'.-]{2,50}$",
             "sensitive": 1
         },
+        "landing_company_short": {
+            "description": "[Optional] Set the landing company of the wallet. Default value is 'svg' if company not provided",
+            "type": "string",
+            "enum": [
+                "maltainvest",
+                "svg"
+            ]
+        },
         "last_name": {
             "description": "[Optional] Within 2-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
             "type": "string",
@@ -376,23 +348,31 @@
             "maximum": 1,
             "minimum": 0
         },
-        "payment_method": {
-            "description": "To set method which is used to transfer to/from wallet.",
-            "type": "string",
-            "enum": [
-                "doughflow",
-                "crypto",
-                "p2p",
-                "paymentagent",
-                "paymentagent_client",
-                "affiliate"
-            ]
-        },
         "phone": {
             "description": "[Optional] Starting with `+` followed by 8-35 digits, allowing hyphens or space.",
             "type": "string",
             "pattern": "^\\+((-|\\s)*[0-9]){8,35}$",
             "sensitive": 1
+        },
+        "salutation": {
+            "description": "Accept any value in enum list.",
+            "type": "string",
+            "enum": [
+                "Mr",
+                "Ms",
+                "Miss",
+                "Mrs"
+            ]
+        },
+        "tax_identification_number": {
+            "description": "Tax identification number. Only applicable for real money account. Required for `maltainvest` landing company.",
+            "type": "string",
+            "pattern": "^(?!^$|\\s+)[A-Za-z0-9.\\/\\s-]{0,25}$"
+        },
+        "tax_residence": {
+            "description": "Residence for tax purpose. Comma separated iso country code if multiple jurisdictions. Only applicable for real money account. Required for `maltainvest` landing company.",
+            "type": "string",
+            "pattern": "^[a-z]{0,2}(?:,[a-z]{2})*$"
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
