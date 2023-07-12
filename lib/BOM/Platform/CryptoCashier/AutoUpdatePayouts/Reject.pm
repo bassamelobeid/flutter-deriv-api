@@ -44,6 +44,10 @@ use constant {
             reason => "Total trade amount less than 25 percent of total deposit amount",
             remark => "Low trade, ask client for justification and to request a new payout"
         },
+        withdraw_via_ewallet => {
+            reason => "highest deposit method is not crypto. Request payout via highest deposited method %s",
+            remark => "request a payout via e-wallet",
+        },
     },
     TAGS => {
         no_non_crypto_deposits                  => 'NO_NON_CRYPTO_DEPOSITS_RECENTLY',
@@ -52,6 +56,7 @@ use constant {
         auto_reject_disable_for_client          => 'AUTO_REJECT_IS_DISABLED_FOR_CLIENT',
         crypto_non_crypto_net_deposits_negative => 'CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE',
         insufficient_balance                    => 'INSUFFICIENT_BALANCE',
+        withdraw_via_ewallet                    => 'WITHDRAW_VIA_EWALLET',
         low_trade                               => 'LOW_TRADE',
     }};
 
@@ -191,6 +196,7 @@ sub user_activity {
         my $all_crypto_net_deposits   = $user_payments->{currency_wise_crypto_net_deposits} // {};
         my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$currency_code}          // 0;
         my $highest_deposited_amount  = $self->find_highest_deposit($user_payments);
+        my $mastercard_deposit_amount = $user_payments->{mastercard_deposit_amount} // 0;
 
         # Skip rejecting payout if the net deposit of crypto and highest non-crypto stable methods are negative
         if (($highest_deposited_amount->{net_amount_in_usd} // 0) < 0 and $net_crypto_deposit_amount < 0) {
@@ -198,6 +204,21 @@ sub user_activity {
                 $start_date_to_inspect->to_string);
             $response->{tag}         = TAGS->{crypto_non_crypto_net_deposits_negative};
             $response->{auto_reject} = 0;
+            return $response;
+        }
+
+        # Reject highest deposited amount is Master Card
+        if (($highest_deposited_amount->{net_amount_in_usd} // 0) < $mastercard_deposit_amount
+            and $net_crypto_deposit_amount < $mastercard_deposit_amount)
+        {
+            $log->debugf('User has more mastercard deposits than crypto deposits since %s', $start_date_to_inspect->to_string);
+            $response->{tag}           = TAGS->{withdraw_via_ewallet};
+            $response->{auto_reject}   = 1;
+            $response->{reject_reason} = 'withdraw_via_ewallet';
+            $response->{reject_remark} = $self->generate_reject_remarks(
+                reject_reason => $response->{reject_reason},
+                extra_info    => "e-wallet"
+            );
             return $response;
         }
 

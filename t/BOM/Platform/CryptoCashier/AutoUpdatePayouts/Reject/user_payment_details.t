@@ -204,6 +204,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
                 last_reversible_deposit           => undef,
                 payments                          => [],
                 method_wise_net_deposits          => {},
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 0
             });
@@ -240,6 +241,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
                     $pmdeposit03->{p_method}  => $pmdeposit03->{net_deposit},
                     payment_agent_transfer    => $payment_agent_deposit02->{net_deposit}
                 },
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {
                     $crypto_net_deposit01->{currency_code} => $crypto_net_deposit01->{net_deposit},
                     $cryptodeposit03->{currency_code}      => $cryptodeposit03->{net_deposit}
@@ -273,6 +275,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
                     $atmwithdraw02->{p_method} => $atmwithdraw02->{net_deposit},
                     $pmdeposit03->{p_method}   => $pmdeposit03->{net_deposit}
                 },
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {$crypto_net_deposit01->{currency_code} => $crypto_net_deposit01->{net_deposit}},
                 has_stable_method_deposits        => 1
             });
@@ -306,6 +309,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
                         $payment_agent_withdrawal01->{net_deposit},
                     p2p => $p2p_deposit->{net_deposit} + $p2p_withdrawal->{net_deposit}
                 },
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 1
             });
@@ -346,6 +350,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
                         $payment_agent_withdrawal01->{net_deposit},
                     p2p => $p2p_deposit->{net_deposit} + $p2p_withdrawal->{net_deposit}
                 },
+                mastercard_deposit_amount         => 20000,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 1
             });
@@ -372,6 +377,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
                 last_reversible_deposit           => undef,
                 payments                          => [$atmwithdraw02],
                 method_wise_net_deposits          => {$atmwithdraw02->{p_method} => $atmwithdraw02->{net_deposit}},
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 0
             });
@@ -398,6 +404,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
                 last_reversible_deposit           => undef,
                 payments                          => [],
                 method_wise_net_deposits          => {},
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {$crypto_net_deposit02->{currency_code} => $crypto_net_deposit02->{net_deposit}},
                 has_stable_method_deposits        => 0
             });
@@ -424,6 +431,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_payment_d
                 last_reversible_deposit           => $wcdeposit01,
                 payments                          => [$wcdeposit01],
                 method_wise_net_deposits          => {},
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 0
             });

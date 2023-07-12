@@ -600,6 +600,124 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject->user_activity'
         );
         $mock->unmock_all();
     };
+
+    subtest 'CRYPTO_WITHDRAW_VIA_EWALLET' => sub {
+        $mock->mock(
+            user_payment_details => sub {
+                return {
+                    count                             => 4,
+                    currency_wise_crypto_net_deposits => {
+                        BTC => 2,
+                        ETH => 5,
+                    },
+                    payments => [{
+                            total_deposit_in_usd    => 30.00,
+                            total_withdrawal_in_usd => 0.00,
+                            net_deposit             => 30.00,
+                            currency_code           => "USD",
+                            is_reversible           => 0,
+                            p_method                => 'MasterCard',
+                            payment_time            => "2020-10-20 21:36:31",
+                            is_stable_method        => 0
+
+                        },
+                        {
+                            total_deposit_in_usd    => 20.00,
+                            total_withdrawal_in_usd => 0.00,
+                            net_deposit             => 20.00,
+                            currency_code           => "USD",
+                            is_reversible           => 1,
+                            p_method                => 'payment_agent_transfer',
+                            payment_time            => "2020-10-20 21:36:31",
+                            is_stable_method        => 1
+                        },
+                    ],
+                    has_stable_method_deposits => 1,
+                    mastercard_deposit_amount  => 30,
+                    method_wise_net_deposits   => {
+                        MasterCard             => 30,
+                        payment_agent_transfer => 20
+                    }};
+            });
+
+        is_deeply(
+            $auto_reject_obj->user_activity(
+                binary_user_id                => 1,
+                client_loginid                => 'CR90000000',
+                total_withdrawal_amount       => 1,
+                total_withdrawal_amount_today => 4,
+                currency_code                 => 'LTC'
+            ),
+            {
+                auto_reject                          => 1,
+                tag                                  => 'WITHDRAW_VIA_EWALLET',
+                total_withdrawal_amount_today_in_usd => 4,
+                reject_reason                        => 'withdraw_via_ewallet',
+                reject_remark => 'AutoRejected - highest deposit method is not crypto. Request payout via highest deposited method e-wallet',
+            },
+            "returns tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO if there are no crypto deposits for the withdrawal currency"
+        );
+
+        $mock->unmock_all();
+
+        $mock->mock(
+            user_payment_details => sub {
+                return {
+                    count                             => 4,
+                    currency_wise_crypto_net_deposits => {
+                        BTC => 2,
+                        ETH => 5,
+                    },
+                    payments => [{
+                            total_deposit_in_usd    => 1.00,
+                            total_withdrawal_in_usd => 0.00,
+                            net_deposit             => 1.00,
+                            currency_code           => "USD",
+                            is_reversible           => 0,
+                            p_method                => 'MasterCard',
+                            payment_time            => "2020-10-20 21:36:31",
+                            is_stable_method        => 0
+
+                        },
+                        {
+                            total_deposit_in_usd    => 20.00,
+                            total_withdrawal_in_usd => 0.00,
+                            net_deposit             => 20.00,
+                            currency_code           => "USD",
+                            is_reversible           => 1,
+                            p_method                => 'payment_agent_transfer',
+                            payment_time            => "2020-10-20 21:36:31",
+                            is_stable_method        => 1
+                        },
+                    ],
+                    has_stable_method_deposits => 1,
+                    mastercard_deposit_amount  => 1,
+                    method_wise_net_deposits   => {
+                        MasterCard             => 1,
+                        payment_agent_transfer => 20
+                    }};
+            });
+
+        is_deeply(
+            $auto_reject_obj->user_activity(
+                binary_user_id                => 1,
+                client_loginid                => 'CR90000000',
+                total_withdrawal_amount       => 1,
+                total_withdrawal_amount_today => 4,
+                currency_code                 => 'LTC'
+            ),
+            {
+                auto_reject                          => 1,
+                tag                                  => 'HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO',
+                total_withdrawal_amount_today_in_usd => 4,
+                reject_reason                        => 'highest_deposit_method_is_not_crypto',
+                reject_remark => 'AutoRejected - highest deposit method is not crypto. Request payout via highest deposited method Payment Agent',
+                suggested_withdraw_method => 'Payment Agent',
+            },
+            "returns tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO if there are no crypto deposits for the withdrawal currency"
+        );
+        $mock->unmock_all();
+    };
 };
 
 $mock_autoupdate->unmock_all();

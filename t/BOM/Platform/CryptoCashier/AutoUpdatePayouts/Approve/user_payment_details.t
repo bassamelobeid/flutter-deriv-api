@@ -155,6 +155,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_payment_
                 last_reversible_deposit           => undef,
                 payments                          => [],
                 method_wise_net_deposits          => {},
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 0
             });
@@ -197,6 +198,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_payment_
                     payment_agent_transfer => 10,
                     PayLivre               => 100
                 },
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 1
             });
@@ -224,6 +226,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_payment_
                 last_reversible_deposit           => $ccdeposit01,
                 payments                          => [$ccdeposit01, $ccdeposit02],
                 method_wise_net_deposits          => {},
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {$crypto_net_deposit->{currency_code} => $crypto_net_deposit->{net_deposit}},
                 has_stable_method_deposits        => 0
             });
@@ -251,6 +254,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_payment_
                 last_reversible_deposit           => $ccdeposit01,
                 payments                          => [$ccdeposit01, $ccdeposit02, $ccwithdraw01],
                 method_wise_net_deposits          => {},
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 0
             });
@@ -278,6 +282,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_payment_
                 last_reversible_deposit           => $ccdeposit01,
                 payments                          => [$ccdeposit01, $ccdeposit02, $nonccwithdraw01],
                 method_wise_net_deposits          => {$nonccwithdraw01->{p_method} => $nonccwithdraw01->{total_withdrawal_in_usd}},
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 0
             });
@@ -307,6 +312,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_payment_
                     payment_agent_transfer => $pa_net_deposit->{net_deposit},
                     p2p                    => $p2p_net_deposit->{net_deposit}
                 },
+                mastercard_deposit_amount         => 0,
                 currency_wise_crypto_net_deposits => {},
                 has_stable_method_deposits        => 1
             });
