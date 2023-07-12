@@ -326,7 +326,7 @@ subtest 'Method is_supported for p2p' => sub {
     my $brand = Brands->new();
 
     my $mock_countries = Test::MockModule->new('Brands::Countries');
-    $mock_countries->mock(wallet_company_for_country => 'svg');
+    $mock_countries->mock(wallet_companies_for_country => ['svg']);
 
     my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 

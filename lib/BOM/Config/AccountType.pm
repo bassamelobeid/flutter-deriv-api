@@ -390,8 +390,10 @@ method is_supported ($brand, $country, $landing_company) {
             return 0 if any { $_ eq $country } $p2p_config->restricted_countries->@*;
         }
 
-        return 1 if $countries->wallet_company_for_country($country, 'real') eq $landing_company;
-        return 1 if $countries->wallet_company_for_country($country, 'virtual') eq $landing_company;
+        for my $type (qw/real virtual/) {
+            my $wallet_companies_for_country = $countries->wallet_companies_for_country($country, $type) // [];
+            return 1 if any { $_ eq $landing_company } $wallet_companies_for_country->@*;
+        }
 
         return 0;
     }
