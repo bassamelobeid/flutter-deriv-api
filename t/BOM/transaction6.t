@@ -225,22 +225,23 @@ SQL
         unless 2 * @txn_col + @fmb_col + @chld_col + 2 * @qv_col == @$res;
 
     my %txn;
-    @txn{@txn_col} = splice @$res, 0, 0 + @txn_col;
+    my @res = @$res;
+    @txn{@txn_col} = splice @res, 0, 0 + @txn_col;
 
     my %fmb;
-    @fmb{@fmb_col} = splice @$res, 0, 0 + @fmb_col;
+    @fmb{@fmb_col} = splice @res, 0, 0 + @fmb_col;
 
     my %chld;
-    @chld{@chld_col} = splice @$res, 0, 0 + @chld_col;
+    @chld{@chld_col} = splice @res, 0, 0 + @chld_col;
 
     my %qv1;
-    @qv1{@qv_col} = splice @$res, 0, 0 + @qv_col;
+    @qv1{@qv_col} = splice @res, 0, 0 + @qv_col;
 
     my %qv2;
-    @qv2{@qv_col} = splice @$res, 0, 0 + @qv_col;
+    @qv2{@qv_col} = splice @res, 0, 0 + @qv_col;
 
     my %t2;
-    @t2{@txn_col} = splice @$res, 0, 0 + @txn_col;
+    @t2{@txn_col} = splice @res, 0, 0 + @txn_col;
 
     return \%txn, \%fmb, \%chld, \%qv1, \%qv2, \%t2;
 }
