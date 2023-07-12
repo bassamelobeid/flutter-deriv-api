@@ -146,29 +146,30 @@ SQL
         unless 2 * @txn_col + @fmb_col + @chld_col + 2 * @qv_col == @$res;
 
     my $contract_info;
-
+    # in perl version 5.36.0, splice cannot change a dereferenced array ref. So create another array to store the values
+    my @res = @$res;
     my %txn;
-    @txn{@txn_col}        = splice @$res, 0, 0 + @txn_col;
+    @txn{@txn_col}        = splice @res, 0, 0 + @txn_col;
     $contract_info->{txn} = \%txn;
 
     my %fmb;
-    @fmb{@fmb_col}        = splice @$res, 0, 0 + @fmb_col;
+    @fmb{@fmb_col}        = splice @res, 0, 0 + @fmb_col;
     $contract_info->{fmb} = \%fmb;
 
     my %chld;
-    @chld{@chld_col}       = splice @$res, 0, 0 + @chld_col;
+    @chld{@chld_col}       = splice @res, 0, 0 + @chld_col;
     $contract_info->{chld} = \%chld;
 
     my %qv1;
-    @qv1{@qv_col}         = splice @$res, 0, 0 + @qv_col;
+    @qv1{@qv_col}         = splice @res, 0, 0 + @qv_col;
     $contract_info->{qv1} = \%qv1;
 
     my %qv2;
-    @qv2{@qv_col}         = splice @$res, 0, 0 + @qv_col;
+    @qv2{@qv_col}         = splice @res, 0, 0 + @qv_col;
     $contract_info->{qv2} = \%qv2;
 
     my %t2;
-    @t2{@txn_col}        = splice @$res, 0, 0 + @txn_col;
+    @t2{@txn_col}        = splice @res, 0, 0 + @txn_col;
     $contract_info->{t2} = \%t2;
 
     return $contract_info;
