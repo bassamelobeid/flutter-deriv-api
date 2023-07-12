@@ -128,7 +128,7 @@ rpc new_account_real => sub {
 
     my $company;
 
-    if ($client->get_account_type->name eq 'binary') {
+    if ($client->is_legacy) {
         # Legacy flow
         $company = $countries_instance->gaming_company_for_country($client->residence)
             || $countries_instance->financial_company_for_country($client->residence);
@@ -140,7 +140,7 @@ rpc new_account_real => sub {
         return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') if $company eq 'maltainvest';
 
         $args->{account_type} = 'binary';
-    } elsif ($client->get_account_type->category->name eq 'wallet' and $client->get_account_type->name ne 'virtual') {
+    } elsif ($client->is_wallet && !$client->is_virtual) {
         #Trading account flow
         $company = $client->landing_company->short;
         $args->{account_type} = 'standard';
@@ -225,7 +225,7 @@ rpc new_account_maltainvest => sub {
 
     # this API call will be depricated and only available for legacy accounts.
     # After upgrading to wallets all trading accounts creation must be done through new_account_real
-    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') unless $client->get_account_type->name eq 'binary';
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') unless $client->is_legacy;
 
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;

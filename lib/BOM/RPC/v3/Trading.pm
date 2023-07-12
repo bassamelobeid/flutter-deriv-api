@@ -92,6 +92,7 @@ my %ERROR_MAP = do {
         PlatformPasswordChangeSuspended => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
         DifferentLandingCompanies       => localize(
             "Transfers between EU and non-EU accounts aren't allowed. You can only transfer funds between accounts under the same regulator."),
+        TradingPlatformInvalidAccount => localize("This [_1] account is not available for your account."),
     );
 };
 

@@ -279,8 +279,16 @@ sub mt5_accounts_lookup {
         "Timed out while waiting for socket to become ready for reading" => 1
     );
 
+    my @mt5_login_list;
+    if ($client->is_wallet) {
+        my @all_linked_accounts = ($client->user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid} // [])->@*;
+        @mt5_login_list = map { $_->{platform} eq "mt5" ? $_->{loginid} : () } @all_linked_accounts;
+    } elsif ($client->is_legacy) {
+        @mt5_login_list = $client->user->get_mt5_loginids(type_of_account => $account_type);
+    }
+
     my @futures;
-    for my $login ($client->user->get_mt5_loginids(type_of_account => $account_type)) {
+    for my $login (@mt5_login_list) {
         my $f = mt5_get_settings({
                 client => $client,
                 args   => {login => $login}}
@@ -665,16 +673,6 @@ async_rpc "mt5_new_account",
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^all|demo|gaming|financial$/);
 
-    try {
-        $rule_engine->verify_action(
-            'new_mt5_dez_account',
-            loginid      => $client->loginid,
-            account_type => $account_type
-        );
-    } catch ($error) {
-        return create_error_future($error->{error_code}, {params => 'MT5'});
-    }
-
     # input validation
     return create_error_future('SetExistingAccountCurrency') unless $client->default_account;
 
@@ -754,29 +752,56 @@ async_rpc "mt5_new_account",
 
     my $binary_company_name = _get_landing_company($client, $landing_company_short);
 
+    try {
+        $rule_engine->verify_action(
+            'new_mt5_dez_account',
+            loginid      => $client->loginid,
+            account_type => $account_type,
+            regulation   => $binary_company_name,
+            platform     => 'mt5',
+        );
+    } catch ($error) {
+        return create_error_future($error->{error_code}, {params => 'MT5'});
+    }
+
     return create_error_future('InvalidCompanyInput') if $binary_company_name eq 'none';
 
     my $source_client = $client;
 
     my $company_matching_required = $account_type ne 'demo' || $countries_list->{$residence}->{config}->{match_demo_mt5_to_existing_accounts};
 
-    # Binary.com front-end will pass whichever client is currently selected
-    # in the top-right corner, so check if this user has a qualifying account and switch if they do.
-    if ($company_matching_required and $client->landing_company->short ne $binary_company_name) {
-        my @clients = $user->clients_for_landing_company($binary_company_name);
-        # remove disabled/duplicate accounts to make sure that atleast one Real account is active
-        @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
-        $client  = (@clients > 0) ? $clients[0] : undef;
-    }
-    # No matching binary account was found; let's see what was the reason.
-    unless ($client) {
-        # First we check if a real mt5 accounts was being created with no real binary account existing
-        return create_error_future('RealAccountMissing')
-            if ($account_type ne 'demo' and scalar($user->clients) == 1 and $source_client->is_virtual());
+    my $link_to_wallet;
+    if ($client->is_wallet) {
+        # Wallet flow
 
-        # Then there might be a binary account with matching company type missing
-        return create_error_future('FinancialAccountMissing') if $company_type eq 'financial';
-        return create_error_future('GamingAccountMissing');
+        # Unfortunatly unlike to rest of the system trading platforms using real landing companies for demo accounts
+        my $wallet_landing_company = $account_type eq 'demo' ? 'virtual' : $binary_company_name;
+
+        return create_error_future('TradingPlatformInvalidAccount') unless $client->landing_company->short eq $wallet_landing_company;
+
+        $link_to_wallet = $client->loginid;
+    } else {
+        # Legacy flow
+        return create_error_future('TradingPlatformInvalidAccount') unless $client->is_legacy;
+
+        # Binary.com front-end will pass whichever client is currently selected
+        # in the top-right corner, so check if this user has a qualifying account and switch if they do.
+        if ($company_matching_required and $client->landing_company->short ne $binary_company_name) {
+            my @clients = $user->clients_for_landing_company($binary_company_name);
+            # remove disabled/duplicate accounts to make sure that atleast one Real account is active
+            @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
+            $client  = (@clients > 0) ? $clients[0] : undef;
+        }
+        # No matching binary account was found; let's see what was the reason.
+        unless ($client) {
+            # First we check if a real mt5 accounts was being created with no real binary account existing
+            return create_error_future('RealAccountMissing')
+                if ($account_type ne 'demo' and scalar($user->clients) == 1 and $source_client->is_virtual());
+
+            # Then there might be a binary account with matching company type missing
+            return create_error_future('FinancialAccountMissing') if $company_type eq 'financial';
+            return create_error_future('GamingAccountMissing');
+        }
     }
 
     return create_error_future('AccountTypesMismatch') if ($client->is_virtual() and $account_type ne 'demo');
@@ -1054,7 +1079,7 @@ async_rpc "mt5_new_account",
                         leverage        => $mt5_leverage
                     };
 
-                    $user->add_loginid($mt5_login, 'mt5', $acc_type, $mt5_currency, $mt5_attributes);
+                    $user->add_loginid($mt5_login, 'mt5', $acc_type, $mt5_currency, $mt5_attributes, $link_to_wallet);
                     $user->update_loginid_status($mt5_login, $mt5_create_with_status) if $mt5_create_with_status;
 
                     BOM::Platform::Event::Emitter::emit(

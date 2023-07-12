@@ -610,13 +610,14 @@ subtest 'VRTC to MLT and MF account switching' => sub {
         language => 'EN',
         token    => $vr_switch_token,
         args     => {
-            account_type   => 'gaming',
-            country        => 'es',
-            email          => $details{email},
-            name           => $details{name},
-            investPassword => 'Abcd1234',
-            mainPassword   => $details{password}{main},
-            company        => 'maltainvest'
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            country          => 'es',
+            email            => $details{email},
+            name             => $details{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $details{password}{main},
+            company          => 'maltainvest'
         },
     };
 

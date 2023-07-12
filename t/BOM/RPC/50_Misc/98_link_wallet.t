@@ -180,10 +180,10 @@ subtest 'link_wallet' => sub {
         is($c->tcall($method, $params)->{error}{code}, 'InvalidTradingAccount', 'correct error code for invalid client loginid');
 
         $params->{args}->{client_id} = 'MTD90000';
-        is($c->tcall($method, $params)->{error}{code}, 'InvalidMT5Account', 'correct error code for invalid mt5 loginid');
+        is($c->tcall($method, $params)->{error}{code}, 'InvalidTradingAccount', 'correct error code for invalid mt5 loginid');
 
         $params->{args}->{client_id} = 'DXR10001';
-        is($c->tcall($method, $params)->{error}{code}, 'DXInvalidAccount', 'correct error code for invalid dxtrader loginid');
+        is($c->tcall($method, $params)->{error}{code}, 'InvalidTradingAccount', 'correct error code for invalid dxtrader loginid');
     }
 };
 

@@ -25,7 +25,8 @@ sub get_client_landing_companies {
     my ($client) = @_;
     my %upgradeable_landing_companies = ();
     # this field only for legacy accounts in future we'll use separate API call for returning this information
-    return %upgradeable_landing_companies unless $client->get_account_type->name eq 'binary';
+
+    return %upgradeable_landing_companies unless $client->is_legacy;
 
     my $countries_instance = request()->brand->countries_instance;
 
