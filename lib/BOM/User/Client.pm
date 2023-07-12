@@ -31,7 +31,6 @@ use JSON::MaybeUTF8            qw(encode_json_utf8 encode_json_text);
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
-use BOM::Config::AccountType::Registry;
 use LandingCompany::Registry;
 
 use BOM::Platform::S3Client;
