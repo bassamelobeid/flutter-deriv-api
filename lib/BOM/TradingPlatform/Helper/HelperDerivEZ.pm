@@ -517,8 +517,16 @@ sub derivez_accounts_lookup {
     # Determine whether to get real or demo accounts, or both
     $account_type = $account_type ? $account_type : 'all';
 
-    # Getting filtered account to only status as undef and based on the specified account type
-    my @clients = $client->user->get_derivez_loginids(type_of_account => $account_type);
+    my @clients;
+
+    if ($client->is_wallet) {
+        my @all_linked_accounts = ($client->user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid} || [])->@*;
+
+        @clients = map { $_->{platform} eq "derivez" ? $_->{loginid} : () } @all_linked_accounts;
+    } elsif ($client->is_legacy) {
+        # Getting filtered account to only status as undef and based on the specified account type
+        @clients = $client->user->get_derivez_loginids(type_of_account => $account_type);
+    }
 
     # Loop through all the accounts and create a future for each one to retrieve its settings
     for my $login (@clients) {

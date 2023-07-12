@@ -8,6 +8,8 @@ use Test::Fatal;
 use Test::MockModule;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
+use BOM::Test::Helper::Client;
 use BOM::Rules::Engine;
 
 # Setting up app config for demo and real server
@@ -388,6 +390,192 @@ subtest "able to show derivez account using get_accounts (real)" => sub {
     };
 
     $mock_mt5->unmock_all();
+};
+
+subtest 'tradding accounts for wallet accounts' => sub {
+    # Mocking BOM::MT5::User::Async for testing purposes
+    my $error_mock = Test::MockModule->new('BOM::TradingPlatform::DerivEZ');
+    $error_mock->mock(
+        create_error => sub { return +{error => {code => $_[0], message_to_client => 'Dummy'}} },
+    );
+
+    my $mock_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
+
+    my $mock_user_data = +{};
+    # Mocking get_user to return undef to make sure user dont have any derivez account yet
+    $mock_mt5->mock('get_user', sub { return Future->done($mock_user_data->{$_[0]}); });
+
+    # Mocking create_user to create a new derivez user
+    my $EZR_counter = 1000;
+    $mock_mt5->mock(
+        'create_user',
+        sub {
+            my $prefix = $_[0]{account_type} eq 'demo' ? 'EZD' : 'EZR';
+            my $login  = $prefix . $EZR_counter++;
+            $mock_user_data->{$login} = +{
+                $_[0]->%*,
+                login           => $login,
+                balance         => 0,
+                display_balance => '0.00'
+            };
+            return Future->done({login => $login});
+        });
+
+    # Mocking deposit to deposit demo account
+    $mock_mt5->mock('deposit', sub { return Future->done({status => 1}); });
+
+    # Mocking get_group to return group in from mt5
+    $mock_mt5->mock(
+        'get_group',
+        sub {
+            return Future->done(
+                +{
+                    'currency' => 'USD',
+                    'group'    => $_[0],
+                    'leverage' => 1,
+                    'company'  => 'Deriv Limited'
+                });
+        });
+
+    my ($user, $wallet_generator) = BOM::Test::Helper::Client::create_wallet_factory('za', 'Gauteng');
+
+    my ($wallet) = $wallet_generator->(qw(CRW doughflow USD));
+
+    my $derivez = BOM::TradingPlatform->new(
+        platform => 'derivez',
+        client   => $wallet,
+    );
+
+    my $account = $derivez->new_account(
+        account_type => 'real',
+        market_type  => 'all',
+        platform     => 'derivez',
+        currency     => 'USD',
+        company      => 'svg'
+    );
+
+    ok($account->{login}, "Account was successfully created");
+    is($user->get_accounts_links->{$account->{login}}[0]{loginid}, $wallet->loginid, 'Account is linked to the doughflow wallet');
+    is scalar($derivez->get_accounts()->@*), 1,                 "Expected number of account in the list";
+    is $derivez->get_accounts()->[0]{login}, $account->{login}, "Linked account returned in the list";
+
+    my $res = exception {
+        $derivez->new_account(
+            account_type => 'real',
+            market_type  => 'all',
+            platform     => 'derivez',
+            currency     => 'USD',
+            company      => 'svg'
+        )
+    };
+
+    is($res->{code}, 'DerivEZDuplicate', 'Has correct error code for duplicate account');
+
+    $res = exception {
+        $derivez->new_account(
+            account_type => 'demo',
+            market_type  => 'all',
+            platform     => 'derivez',
+            currency     => 'USD',
+            company      => 'svg'
+        )
+    };
+
+    is($res->{error_code}, 'TradingPlatformInvalidAccount', 'Fail to create demo account from real money wallet');
+
+    is scalar($derivez->get_accounts()->@*), 1, "Linked account is returned in account list";
+
+    my ($p2p_wallet) = $wallet_generator->(qw(CRW p2p USD));
+
+    my $derivez_p2p = BOM::TradingPlatform->new(
+        platform => 'derivez',
+        client   => $p2p_wallet,
+    );
+
+    my $account_p2p = $derivez_p2p->new_account(
+        account_type => 'real',
+        market_type  => 'all',
+        platform     => 'derivez',
+        currency     => 'USD',
+        company      => 'svg'
+    );
+
+    ok($account_p2p->{login}, "Account was successfully created");
+    is($user->get_accounts_links->{$account_p2p->{login}}[0]{loginid}, $p2p_wallet->loginid, 'Account is linked to the doughflow wallet');
+    is scalar($derivez_p2p->get_accounts()->@*), 1,                     "Expected number of account in the list";
+    is $derivez_p2p->get_accounts()->[0]{login}, $account_p2p->{login}, "Linked account returned in the list";
+
+    my ($virtual_wallet) = $wallet_generator->(qw(VRW virtual USD));
+
+    my $derivez_virtual = BOM::TradingPlatform->new(
+        platform => 'derivez',
+        client   => $virtual_wallet,
+    );
+
+    $res = exception {
+        $derivez_virtual->new_account(
+            account_type => 'real',
+            market_type  => 'all',
+            platform     => 'derivez',
+            currency     => 'USD',
+            company      => 'svg'
+        )
+    };
+
+    is($res->{error_code}, 'AccountShouldBeReal', 'Fail to create real account from virtual money wallet');
+
+    my $account_demo = $derivez_virtual->new_account(
+        account_type => 'demo',
+        market_type  => 'all',
+        platform     => 'derivez',
+        currency     => 'USD',
+        company      => 'svg'
+    );
+
+    ok $account_demo->{login}, "Account was successfully created";
+    is $user->get_accounts_links->{$account_demo->{login}}[0]{loginid}, $virtual_wallet->loginid, 'Account is linked to the virtual wallet';
+    is scalar($derivez_virtual->get_accounts()->@*),                    1,                        "Expected number of account in the list";
+    is $derivez_virtual->get_accounts()->[0]{login},                    $account_demo->{login},   "Linked account returned in the list";
+
+    my ($crypto_wallet) = $wallet_generator->(qw(CRW crypto BTC));
+
+    my $derivez_crypto = BOM::TradingPlatform->new(
+        platform => 'derivez',
+        client   => $crypto_wallet,
+    );
+
+    $res = exception {
+        $derivez_crypto->new_account(
+            account_type => 'demo',
+            market_type  => 'all',
+            platform     => 'derivez',
+            currency     => 'USD',
+            company      => 'svg'
+        )
+    };
+
+    is($res->{error_code}, 'TradingPlatformInvalidAccount', 'Got expected error code');
+    is scalar($derivez_crypto->get_accounts()->@*), 0, "Linked account is returned in account list -> none ";
+
+    my ($mfw_wallet) = $wallet_generator->(qw(MFW doughflow USD));
+
+    my $derivez_mfw = BOM::TradingPlatform->new(
+        platform => 'derivez',
+        client   => $mfw_wallet,
+    );
+
+    $res = exception {
+        $derivez_mfw->new_account(
+            account_type => 'demo',
+            market_type  => 'all',
+            platform     => 'derivez',
+            currency     => 'USD',
+            company      => 'svg'
+        )
+    };
+
+    is($res->{error_code}, 'TradingPlatformInvalidAccount', 'Got expected error code');
+    is scalar($derivez_mfw->get_accounts()->@*), 0, "Linked account is returned in account list -> none ";
 };
 
 $app_config->system->mt5->http_proxy->demo->p01_ts04(0);

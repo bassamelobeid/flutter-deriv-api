@@ -1580,26 +1580,56 @@ Returns 1 on success, throws exception on error
 sub link_wallet_to_trading_account {
     my ($self, $args) = @_;
 
+    # TODO: the purpose of this will be reconsidered in latter cards. the idea to avoid having orphan account
+    # in light of this fact, we probably will need this sub only for migration logic.
+
     my $loginid        = delete $args->{client_id};
     my $wallet_loginid = delete $args->{wallet_id};
 
-    my $wallet  = $self->get_wallet_by_loginid($wallet_loginid);
-    my $account = $self->get_account_by_loginid($loginid);
+    my $wallet = $self->get_wallet_by_loginid($wallet_loginid);
+    die "InvalidWalletAccount\n" unless $wallet;
 
-    die "CannotLinkVirtualAndReal\n"
-        unless (($loginid =~ '^(VR|MTD|DXD)' && $wallet->is_virtual)
-        || ($loginid !~ '^(VR|MTD|DXD)' && !$wallet->is_virtual));
+    my $account_details = $self->loginid_details->{$loginid};
+    die "InvalidTradingAccount\n" unless $account_details;
 
-    die "CurrencyMismatch\n" unless ($account->{currency} eq $wallet->currency);
+    my ($is_virtual, $currency);
+    if ($loginid =~ ALL_TRADING_PLATFORMS_LOGINS) {
+        # Handling trading platforms acounts
+        if ($account_details->{account_type} && $account_details->{currency}) {
+            $is_virtual = $account_details->{account_type} eq 'demo' ? 1 : 0;
+            $currency   = $account_details->{currency};
+        } elsif ($loginid =~ MT5_REGEX) {
+            # Fallsback for legacy mt5 accounts
+            my $mt5_details = BOM::TradingPlatform->new(
+                platform => 'mt5',
+                client   => $self->get_default_client,
+            )->get_account_info($loginid)->get;
+
+            $is_virtual = $mt5_details->{account_type} eq 'demo' ? 1 : 0;
+            $currency   = $mt5_details->{currency} // '';
+        } else {
+            die "Possibly corrupted data. Information is missed for account $loginid";
+        }
+    } else {
+        # Handling internal accounts
+        my $client = BOM::User::Client->get_client_instance($loginid);
+        $is_virtual = $client->is_virtual;
+        my $acc = $client->default_account;
+        $currency = $acc ? $acc->currency_code : '';
+    }
+
+    die "CannotLinkVirtualAndReal\n" unless $is_virtual == $wallet->is_virtual;
+
+    die "CurrencyMismatch\n" unless $currency eq $wallet->currency;
 
     my ($result);
     try {
         $result = $self->dbic->run(
             fixup => sub {
-                $_->selectrow_array('select users.add_linked_wallet(?,?,?)', undef, $self->{id}, $account->{account_id}, $wallet->loginid);
+                $_->selectrow_array('select users.add_linked_wallet(?,?,?)', undef, $self->{id}, $loginid, $wallet_loginid);
             });
     } catch ($e) {
-        $log->errorf('Fail to bind trading account %s to wallet account %s: %s', $account->{account_id}, $wallet->loginid, $e);
+        $log->errorf('Fail to bind trading account %s to wallet account %s: %s', $loginid, $wallet_loginid, $e);
         die 'UnableToLinkWallet\n';
     }
 

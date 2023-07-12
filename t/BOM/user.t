@@ -862,12 +862,14 @@ subtest 'get_account_by_loginid' => sub {
     );
 
     my $dxtrade_loginid = $dxtrade_account->{account_id};
+    $user->add_loginid($dxtrade_loginid, 'dxtrade', 'demo', 'USD', {});
     is $user->get_account_by_loginid($dxtrade_loginid)->{account_id}, $dxtrade_loginid, 'can find dxtrade demo account';
 };
 
 subtest 'link_wallet' => sub {
     $client_cr_new->status->clear_disabled;
     $client_vr->status->clear_disabled;
+    delete $user->{loginid_details};
 
     my $args = {
         wallet_id => $wallet->loginid,
@@ -913,6 +915,8 @@ subtest 'link_wallet' => sub {
         market_type  => 'all',
         currency     => 'USD',
     );
+    $wallet->user->add_loginid($dxtrade_real_account->{account_id}, 'dxtrade', 'real', 'USD', {});
+    delete $user->{loginid_details};
     $args->{wallet_id} = $wallet->loginid;
     $args->{client_id} = $dxtrade_real_account->{account_id};
     throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real dxtrade account';

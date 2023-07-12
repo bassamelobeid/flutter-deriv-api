@@ -8257,6 +8257,16 @@ sub is_wallet {
     return 0;
 }
 
+=head2 is_legacy
+
+Methods check if current client account is a legacy account type.
+
+=cut
+
+sub is_legacy {
+    return shift->get_account_type->name eq BOM::Config::AccountType::LEGACY_TYPE;
+}
+
 =head2 is_affiliate
 
 Returns whether this client instance is an affiliate.
