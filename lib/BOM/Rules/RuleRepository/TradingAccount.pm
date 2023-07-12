@@ -16,7 +16,8 @@ use warnings;
 use LandingCompany::Registry;
 use BOM::Rules::Registry   qw(rule);
 use BOM::Platform::Context qw(request);
-use List::Util             qw(none);
+use List::Util             qw(any none);
+use BOM::Config::AccountType::Registry;
 
 rule 'trading_account.should_match_landing_company' => {
     description => 'Checks whether there is a valid landing company account for the given trading account creation params',
@@ -120,13 +121,49 @@ rule 'trading_account.client_should_be_real' => {
     },
 };
 
+rule 'trading_account.client_account_type_should_be_supported' => {
+    description => '',
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        my $account_type = $context->client($args)->get_account_type->name;
+
+        # Legacy flow
+        return 1 if $account_type eq 'binary';
+
+        # Wallet flow
+        my $platform_account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{platform});
+        return 1 if any { $_ eq $account_type } $platform_account_type->linkable_wallet_types->@*;
+
+        return die_with_params($self, 'TradingPlatformInvalidAccount', $args);
+    },
+};
+
+rule 'trading_account.trading_platform_supported_by_residence_and_regulation' => {
+    description => '',
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        my $regulation           = $args->{account_type} eq 'demo' ? 'virtual' : $args->{regulation};
+        my $derivez_account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{platform});
+
+        my $is_supported = $derivez_account_type->is_supported(request()->brand, $client->residence, $regulation);
+
+        return 1 if $is_supported;
+
+        return die_with_params($self, 'TradingPlatformInvalidAccount', $args);
+    },
+};
+
 rule 'trading_account.client_should_be_legacy_or_virtual_wallet' => {
-    description => 'Checks whether the context client is real',
+    description => 'Checks whether the context client is legacy or virtual wallet',
     code        => sub {
         my ($self, $context, $args) = @_;
         my $account_type = $context->client($args)->get_account_type;
 
-        $self->fail('AccountTypesMismatch')
+        $self->fail('TradingPlatformInvalidAccount')
             if $account_type->name ne 'binary'      # Legacy Flow
             && $account_type->name ne 'virtual';    # Wallet flow
 
@@ -152,6 +189,30 @@ rule 'trading_account.allowed_currency' => {
     },
 };
 
+rule 'trading_account.client_support_account_creation' => {
+    description => 'Checks that trading platform creation is available for current client account',
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client           = $context->client($args);
+        my $trading_platform = $args->{platform} // '';
+
+        if (!$client->is_wallet) {
+            return 1 if $client->is_legacy;
+            return $self->fail('PermissionDenied');
+        }
+
+        my $trading_platform_type = BOM::Config::AccountType::Registry->account_type_by_name($trading_platform);
+        my @supported_types       = $trading_platform_type->linkable_wallet_types->@*;
+
+        my $account_type = $client->get_account_type;
+        for my $type (@supported_types) {
+            return 1 if $type eq $account_type->name;
+        }
+
+        return $self->fail('PermissionDenied');
+    }
+};
+
 =head2 die_with_params
 
 Some error codes need the `message_params` hash to be filled.
@@ -174,10 +235,12 @@ sub die_with_params {
     my ($self, $code, $args) = @_;
     my @message_params;
     my $platform = $args->{platform} // '';
-    my $name;
 
-    # TODO: someday when more platforms are added move this to a hash.
-    $name = 'Deriv X' if $platform eq 'dxtrade';
+    my $name = +{
+        dxtrade => 'Deriv X',
+        derivez => 'DerivEZ',
+        mt5     => 'MT5',
+    }->{$platform};
 
     push @message_params, $name if $name;
 

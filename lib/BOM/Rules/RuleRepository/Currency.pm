@@ -262,18 +262,14 @@ rule 'currency.is_available_for_change' => {
 
         if ($account_type->name eq 'binary') {
             return _currency_is_available($self, $context, $args, {include_self => 0});
-        } elsif ($account_type->category->name eq 'trading') {
+        } elsif (!$client->is_wallet) {
             # We don't allow to change currency for trading accounts, because currency is inherited from wallet account.
-            $self->fail('CurrencyChangeIsNotPossible');
-        } elsif ($account_type->category->name eq 'wallet') {
-
+            return $self->fail('CurrencyChangeIsNotPossible');
+        } else {
             my $landing_company = $args->{landing_company} // $context->client($args)->landing_company->short;
             $self->fail('CurrencyNotAllowed') unless grep { $_ eq $currency } $account_type->get_currencies($landing_company)->@*;
 
             return _currency_is_available($self, $context, $args, {include_self => 0});
-        } else {
-            # How do we get here?
-            confess "Unexpected account type $args->{account_type}";
         }
     },
 };

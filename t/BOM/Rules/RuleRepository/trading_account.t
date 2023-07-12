@@ -483,7 +483,7 @@ subtest 'rule trading_account.client_should_be_legacy_or_virtual_wallet' => sub 
     $rule_engine = BOM::Rules::Engine->new(client => $crw);
     is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $crw->loginid) },
         {
-        error_code => 'AccountTypesMismatch',
+        error_code => 'TradingPlatformInvalidAccount',
         rule       => $rule_name
         },
         'expected error when passing wallet account';
@@ -496,7 +496,7 @@ subtest 'rule trading_account.client_should_be_legacy_or_virtual_wallet' => sub 
     $rule_engine = BOM::Rules::Engine->new(client => $crt);
     is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $crt->loginid) },
         {
-        error_code => 'AccountTypesMismatch',
+        error_code => 'TradingPlatformInvalidAccount',
         rule       => $rule_name
         },
         'expected error when passing wallet account';
@@ -558,6 +558,59 @@ subtest 'rule trading_account.allowed_currency' => sub {
     ok $rule_engine->apply_rules($rule_name, %$args), 'Test passes with USD';
 
     $lc_mock->unmock_all;
+};
+
+subtest 'rule trading_account.client_should_be_real' => sub {
+    my $rule_name = 'trading_account.client_support_account_creation';
+
+    my $legacy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code  => 'CR',
+        account_type => 'binary'
+    });
+    my $rule_engine = BOM::Rules::Engine->new(client => $legacy);
+    ok $rule_engine->apply_rules(
+        $rule_name,
+        loginid  => $legacy->loginid,
+        platform => 'dxtrade'
+        ),
+        'Test passes with CR';
+
+    my $trading = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code  => 'CR',
+        account_type => 'standard'
+    });
+    $rule_engine = BOM::Rules::Engine->new(client => $trading);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $trading->loginid, platform => 'dxtrade') },
+        {
+        error_code => 'PermissionDenied',
+        rule       => $rule_name
+        },
+        'expected error when passing virtual account';
+
+    my $df = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code  => 'CRW',
+        account_type => 'doughflow'
+    });
+    $rule_engine = BOM::Rules::Engine->new(client => $df);
+    ok $rule_engine->apply_rules(
+        $rule_name,
+        loginid  => $df->loginid,
+        platform => 'dxtrade'
+        ),
+        'Test passes with CR';
+
+    my $crypto = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code  => 'CRW',
+        account_type => 'crypto'
+    });
+
+    $rule_engine = BOM::Rules::Engine->new(client => $crypto);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $crypto->loginid, platform => 'dxtrade') },
+        {
+        error_code => 'PermissionDenied',
+        rule       => $rule_name
+        },
+        'expected error when passing virtual account';
 };
 
 done_testing();

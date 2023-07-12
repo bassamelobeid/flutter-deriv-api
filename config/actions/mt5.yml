@@ -7,6 +7,8 @@ mt5_jurisdiction_validation:
 new_mt5_dez_account:
   description: Rules applied on MT5 and DerivEZ account creation
   ruleset:
+    - trading_account.client_account_type_should_be_supported
+    - trading_account.trading_platform_supported_by_residence_and_regulation
     - type: conditional
       on: account_type
       rules_per_value:
