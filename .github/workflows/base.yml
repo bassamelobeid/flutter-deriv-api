@@ -25,7 +25,7 @@ jobs:
         uses: regentmarkets/github-actions/check-git-message@master
   core_syntax_diff:
     needs: check-git-message
-    uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@dev
+    uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@master
     secrets: inherit
     with:
       repository: ${{ inputs.repository }}
