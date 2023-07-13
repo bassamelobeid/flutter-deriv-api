@@ -8,8 +8,14 @@ on:
     tags:
       - '*'
   pull_request:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Repository name for running tests'
+        required: true
+        type: string 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
   cancel-in-progress: true
 jobs:
   check-git-message:
@@ -19,7 +25,6 @@ jobs:
         uses: regentmarkets/github-actions/check-git-message@master
   structure:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -30,7 +35,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -47,7 +52,6 @@ jobs:
         run: make unit
   accounts:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -58,7 +62,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -73,7 +77,6 @@ jobs:
         run: make accounts
   security:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -84,7 +87,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -99,7 +102,6 @@ jobs:
         run: make security
   pricing:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -110,7 +112,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -125,7 +127,6 @@ jobs:
         run: make pricing
   misc:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -136,7 +137,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -151,7 +152,6 @@ jobs:
         run: make misc
   p2p:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -162,7 +162,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -177,7 +177,6 @@ jobs:
         run: make p2p
   schema:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -188,7 +187,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -203,7 +202,6 @@ jobs:
         run: make schema
   subscriptions:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -214,7 +212,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -229,7 +227,6 @@ jobs:
         run: make subscriptions
   backends:
     needs: check-git-message
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -240,7 +237,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -256,7 +253,6 @@ jobs:
   update_docs:
     needs: check-git-message
     if: github.ref == 'refs/heads/master'
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -267,7 +263,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git//${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
