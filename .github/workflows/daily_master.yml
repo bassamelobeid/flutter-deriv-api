@@ -1,8 +1,9 @@
 name: Daily master test
 run-name: Daily test on master branch
 on:
-  schedule:
-    - cron: '33 20 * * *'
+  # schedule:
+  #   - cron: '33 20 * * *'
+  pull_request:
 jobs:
   syntax_unit:
     uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
