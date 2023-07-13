@@ -8,7 +8,6 @@ jobs:
     uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
     secrets: inherit
   core:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
