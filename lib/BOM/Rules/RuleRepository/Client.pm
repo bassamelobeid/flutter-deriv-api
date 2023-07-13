@@ -60,7 +60,7 @@ rule 'client.residence_is_not_empty' => {
 };
 
 # TODO: it's copied from bom-platform unchanged; but it should be removed in favor of client.immutable_fields
-rule 'client.signup_immitable_fields_not_changed' => {
+rule 'client.signup_immutable_fields_not_changed' => {
     description => "fails if any of the values of signup immutable fields are changed in the args.",
     code        => sub {
         my ($self, $context, $args) = @_;
