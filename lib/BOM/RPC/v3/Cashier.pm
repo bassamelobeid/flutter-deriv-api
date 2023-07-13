@@ -1592,11 +1592,6 @@ rpc transfer_between_accounts => sub {
     if ($is_derivez_loginid_from or $is_derivez_loginid_to) {
         my ($method, $binary_login, $derivez_login);
 
-        # Temporary disable transfer for all derivez account
-        # Adding no critic here to disabled "Unreachable code" warning
-        ## no critic (ProhibitUnreachableCode)
-        return _transfer_between_accounts_error(localize("Sorry, this facility is temporarily disabled due to system maintenance."));
-
         my $resp = {};
         if ($is_derivez_loginid_to) {
             return _transfer_between_accounts_error(localize("You can only transfer from the current authorized client's account."))

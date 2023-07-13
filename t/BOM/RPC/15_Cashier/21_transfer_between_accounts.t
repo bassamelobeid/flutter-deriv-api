@@ -1309,16 +1309,10 @@ subtest 'Transfer between derivez accounts' => sub {
             },
         };
 
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary deposit disabled')
-            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
-            'DerivEZ temporary deposit disabled error message');
-
-        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez deposit!!!
-        # # Perform deposit test
-        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (USD)");
-        # is $client->account->balance, '5.00', 'deposit it correct with the amount';
-        # is $received_amount, '5', 'deposit to derivez is correct and applying exchange rate';
+        # Perform deposit test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (USD)");
+        is $client->account->balance, '5.00', 'deposit it correct with the amount';
+        is $received_amount,          '5',    'deposit to derivez is correct and applying exchange rate';
     };
 
     subtest 'can deposit from CR account to derivez (ETH)' => sub {
@@ -1333,16 +1327,10 @@ subtest 'Transfer between derivez accounts' => sub {
             },
         };
 
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary deposit disabled')
-            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
-            'DerivEZ temporary deposit disabled error message');
-
-        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez deposit!!!
-        # # Perform deposit test
-        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (ETH)");
-        # is $client_eth->account->balance, '5.00000000', 'deposit it correct with the amount';
-        # is $received_amount, '9503.98', 'deposit to derivez is correct and applying exchange rate';
+        # Perform deposit test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (ETH)");
+        is $client_eth->account->balance, '5.00000000', 'deposit it correct with the amount';
+        is $received_amount,              '9503.98',    'deposit to derivez is correct and applying exchange rate';
     };
 
     subtest 'can deposit from CR account to derivez (EUR)' => sub {
@@ -1357,16 +1345,10 @@ subtest 'Transfer between derivez accounts' => sub {
             },
         };
 
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary deposit disabled')
-            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
-            'DerivEZ temporary deposit disabled error message');
-
-        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez deposit!!!
-        # # Perform deposit test
-        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (EUR)");
-        # is $client_eur->account->balance, '5.00', 'deposit is correct';
-        # is $received_amount,              '5.40', 'deposit to derivez is correct and applying exchange rate';
+        # Perform deposit test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to derivez (EUR)");
+        is $client_eur->account->balance, '5.00', 'deposit is correct';
+        is $received_amount,              '5.40', 'deposit to derivez is correct and applying exchange rate';
     };
 
     subtest 'can withdraw from derivez account to CR (USD)' => sub {
@@ -1381,15 +1363,9 @@ subtest 'Transfer between derivez accounts' => sub {
             },
         };
 
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary withdraw disabled')
-            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
-            'DerivEZ temporary withdraw disabled error message');
-
-        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez withdrawal!!!
-        # # Perform withdraw test
-        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (USD)");
-        # is $client->account->balance, '10.00', 'withdrawal is correct and applying exchange rate';
+        # Perform withdraw test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (USD)");
+        is $client->account->balance, '10.00', 'withdrawal is correct and applying exchange rate';
     };
 
     subtest 'can withdraw from derivez account to CR (ETH)' => sub {
@@ -1404,15 +1380,9 @@ subtest 'Transfer between derivez accounts' => sub {
             },
         };
 
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary withdraw disabled')
-            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
-            'DerivEZ temporary withdraw disabled error message');
-
-        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez withdrawal!!!
-        # # Perform withdraw test
-        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (ETH)");
-        # is $client_eth->account->balance, '5.00257813', 'withdrawal is correct and applying exchange rate';
+        # Perform withdraw test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (ETH)");
+        is $client_eth->account->balance, '5.00257813', 'withdrawal is correct and applying exchange rate';
     };
 
     subtest 'can withdraw from derivez account to CR (EUR)' => sub {
@@ -1427,15 +1397,9 @@ subtest 'Transfer between derivez accounts' => sub {
             },
         };
 
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary withdraw disabled')
-            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
-            'DerivEZ temporary withdraw disabled error message');
-
-        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez withdrawal!!!
-        # # Perform withdraw test
-        # $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (EUR)");
-        # is $client_eur->account->balance, '9.54', 'withdrawal is correct and applying exchange rate';
+        # Perform withdraw test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from derivez account to CR (EUR)");
+        is $client_eur->account->balance, '9.54', 'withdrawal is correct and applying exchange rate';
     };
 
     subtest 'cannot deposit from CR account to derivez with mismatch currency' => sub {
@@ -1450,16 +1414,11 @@ subtest 'Transfer between derivez accounts' => sub {
             },
         };
 
+        # Perform deposit test
         $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary deposit disabled')
-            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
-            'DerivEZ temporary deposit disabled error message');
-
-        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez deposit!!!
-        # # Perform deposit test
-        # $rpc_ct->call_ok('transfer_between_accounts', $params)
-        # ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'currency conflict')
-        # ->error_message_is('Currency provided is different from account currency.', 'cannot deposit from CR account to derivez with mismatch currency');
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'currency conflict')
+            ->error_message_is('Currency provided is different from account currency.',
+            'cannot deposit from CR account to derivez with mismatch currency');
     };
 
     subtest 'cannot withdraw from derivez account to CR with mismatch currency' => sub {
@@ -1474,16 +1433,11 @@ subtest 'Transfer between derivez accounts' => sub {
             },
         };
 
+        # Perform withdraw test
         $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'DerivEZ temporary withdraw disabled')
-            ->error_message_is('Sorry, this facility is temporarily disabled due to system maintenance.',
-            'DerivEZ temporary withdraw disabled error message');
-
-        # Temporarily disabled derivez transfer, TODO: Uncomment after we enabled derivez withdraw!!!
-        # # Perform withdraw test
-        # $rpc_ct->call_ok('transfer_between_accounts', $params)
-        # ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'currency conflict')
-        # ->error_message_is('Currency provided is different from account currency.', 'cannot withdraw from derivez account to CR with mismatch currency');
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'currency conflict')
+            ->error_message_is('Currency provided is different from account currency.',
+            'cannot withdraw from derivez account to CR with mismatch currency');
     };
 
     $mock_async_call->unmock_all();
