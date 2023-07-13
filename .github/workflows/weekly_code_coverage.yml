@@ -5,5 +5,5 @@ on:
     - cron: '30 1 * * 6'
 jobs:
   code_coverage:
-    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@dev
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
     secrets: inherit
