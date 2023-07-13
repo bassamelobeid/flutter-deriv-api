@@ -757,8 +757,11 @@ sub verify_reactivation {
             $market_type = $company ? 'financial' : 'synthetic';
         }
 
+        my $account_type = $client->get_account_type;
+        my $action       = $account_type->category->name eq 'wallet' ? 'activate_wallet' : 'activate_account';
+
         $rule_engine->verify_action(
-            'activate_account',
+            $action,
             action_type     => 'reactivate',
             account_type    => $client->get_account_type->name,
             market_type     => $market_type,

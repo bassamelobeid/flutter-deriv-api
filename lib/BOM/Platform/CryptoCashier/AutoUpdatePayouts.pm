@@ -193,6 +193,7 @@ sub user_payment_details {
     my $total_reversible_deposit_amount_in_usd  = 0;
     my $total_withdraw_amount_in_usd            = 0;
     my $total_reversible_withdraw_amount_in_usd = 0;
+    my $total_mastercard_deposit_amount         = 0;
     my $last_reversible_deposit;
     my $method_wise_net_deposits          = {};
     my $currency_wise_crypto_net_deposits = {};
@@ -221,6 +222,8 @@ sub user_payment_details {
         $total_deposit_amount_in_usd  += $payment->{total_deposit_in_usd};
         $total_withdraw_amount_in_usd += $payment->{total_withdrawal_in_usd};
 
+        $total_mastercard_deposit_amount += $payment->{net_deposit} if lc($payment->{p_method}) eq 'mastercard';
+
         # Net deposits needs to be calculated only for the stable payment methods.
         if ($self->is_stable_payment_method($payment->{p_method})) {
             $has_stable_method_deposits = 1 if ($payment->{total_deposit_in_usd} > 0);
@@ -240,6 +243,7 @@ sub user_payment_details {
         non_crypto_withdraw_amount        => $total_withdraw_amount_in_usd,
         total_crypto_deposits             => $total_crypto_deposits,
         method_wise_net_deposits          => $method_wise_net_deposits,
+        mastercard_deposit_amount         => $total_mastercard_deposit_amount,
         currency_wise_crypto_net_deposits => $currency_wise_crypto_net_deposits,
         has_stable_method_deposits        => $has_stable_method_deposits
     };
