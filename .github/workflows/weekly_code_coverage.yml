@@ -1,0 +1,9 @@
+name: Weekly code coverage workflow
+run-name: Weekly code coverage workflow
+on:
+  schedule:
+    - cron: '50 3 * * 6'
+jobs:
+  code_coverage:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
