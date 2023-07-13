@@ -5,8 +5,8 @@ on:
     - cron: '32 20 * * *'
 jobs:
   syntax_unit:
-    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@dev
+    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
     secrets: inherit
   core:
-    uses: regentmarkets/github-actions/.github/workflows/core.yml@dev
+    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
     secrets: inherit
