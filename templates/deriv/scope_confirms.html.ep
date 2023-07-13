@@ -1,7 +1,11 @@
 <div id="container" class="scope-confirms">
     <div>
         <h2 class="scope-title"><%= l('Authorise application') %></h2>
+        <% if ($scopes_changed) { %>
+        <p class="scope-subtitle"><%= l('[_1] permissions have changed please re-confirm:', $app->{name}) %></p>
+        <% } else { %>        
         <p class="scope-subtitle"><%= l('[_1] would like permission to:', $app->{name}) %></p>
+        <% } %>
         <div class="scopes">
             <ul class="bullet">
                 <% if (grep { $_ eq 'read' } @$scopes) { %>
@@ -25,7 +29,7 @@
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
             <div>
                 <button id="btnCancel" class="tertiary" name="cancel_scopes" value="<%= l('Deny this app') %>" type="submit"><%= l('Deny this app') %></button>
-                <button id="btnGrant" class="secondary" name="confirm_scopes" value="<%= l('Authorise this app') %>" type="submit"><%= l('Authorise this app') %></button>
+                <button id="btnGrant" class="secondary" name="confirm_scopes" value="<%= join(',', @$scopes) %>" type="submit"> <%= l('Authorise this app') %></button>
             </div>
         </form>
     </div>

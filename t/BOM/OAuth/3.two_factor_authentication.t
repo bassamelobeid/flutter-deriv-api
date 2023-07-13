@@ -99,7 +99,7 @@ ok $csrf_token, 'csrf_token is there';
 
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
-        confirm_scopes => 1,
+        confirm_scopes => 'read,trade,admin',
         csrf_token     => $csrf_token
     });
 

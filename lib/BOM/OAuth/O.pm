@@ -5,6 +5,7 @@ use warnings;
 
 no indirect;
 
+use Array::Utils               qw(array_diff);
 use DataDog::DogStatsd::Helper qw( stats_inc );
 use Date::Utility;
 use Digest::MD5 qw( md5_hex );
@@ -208,7 +209,6 @@ sub authorize {
         }
 
         my $redirect_uri = $app->{redirect_uri};
-
         # confirm scopes
         my $is_all_approved = 0;
         if (    $c->req->method eq 'POST'
@@ -216,9 +216,25 @@ sub authorize {
             and (defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes'))))
         {
             if (defang($c->param('confirm_scopes'))) {
-                # approval on all loginids
-                foreach my $c1 (@$clients) {
-                    $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
+                # first, check if the scopes shown to the user haven't changed
+                if (_scopes_changed(defang($c->param('confirm_scopes')), $app->{scopes})) {
+                    # if the scopes changed, show the scopes again to the user with the updated list
+                    return $c->render(
+                        template       => $c->_get_template_name('scope_confirms'),
+                        layout         => $brand_name,
+                        website_domain => $c->_website_domain($app->{id}),
+                        app            => $app,
+                        client         => $client,
+                        scopes         => \@{$app->{scopes}},
+                        r              => $c->stash('request'),
+                        csrf_token     => $c->csrf_token,
+                        scopes_changed => 1
+                    );
+                } else {
+                    # approval on all loginids
+                    foreach my $c1 (@$clients) {
+                        $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
+                    }
                 }
             } elsif ($c->param('cancel_scopes')) {
                 my $uri = Mojo::URL->new($redirect_uri);
@@ -246,6 +262,7 @@ sub authorize {
             scopes         => \@{$app->{scopes}},
             r              => $c->stash('request'),
             csrf_token     => $c->csrf_token,
+            scopes_changed => 0
         ) unless $is_all_approved;
 
         # setting up client ip
@@ -283,6 +300,34 @@ sub authorize {
         $template_params{error} = localize(get_message_mapping()->{invalid});
         return $c->render(%template_params);
     }
+}
+
+=head2 _scopes_changed
+
+Checks if the current app scopes matches the scopes showen to the user.
+
+Arguments:
+
+=over 1
+
+=item C<$user_scopes>
+
+A comma-separated string contains the scopes the user agreed to.
+
+=item C<$app_scopes>
+
+An array ref contains the scopes of the requested application.
+
+=back
+
+=cut
+
+sub _scopes_changed {
+    my ($user_scopes, $app_scopes) = @_;
+
+    my @user_scopes_arr = split(',', $user_scopes);
+
+    return array_diff(@user_scopes_arr, @$app_scopes);
 }
 
 =head2 _handle_self_closed
