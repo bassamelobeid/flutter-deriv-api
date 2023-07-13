@@ -469,7 +469,17 @@ sub mt5_accounts_lookup {
 
     my @futures;
     $account_type = $account_type ? $account_type : 'all';
-    my @clients = $client->user->get_mt5_loginids({type_of_account => $account_type});
+
+    my @clients;
+
+    if ($client->is_wallet) {
+        my @all_linked_accounts = $client->user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid}->@*;
+
+        @clients = map { $_->{platform} eq "mt5" ? $_->{loginid} : () } @all_linked_accounts;
+    } elsif ($client->is_legacy) {
+        @clients = $client->user->get_mt5_loginids(type_of_account => $account_type);
+    }
+
     for my $login (@clients) {
         my $f = get_settings($client, $login)->then(
             sub {

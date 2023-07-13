@@ -9,7 +9,9 @@ use BOM::MT5::User::Async;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw(formatnumber);
 use Log::Any              qw($log);
+use List::Util            qw(any);
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Context qw (request);
 use BOM::User::Client;
 use LandingCompany::Registry;
 use BOM::TradingPlatform::Helper::HelperDerivEZ qw(
@@ -111,19 +113,19 @@ sub new_account {
     my $client = $self->client;
     my $user   = $client->user;
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    # MT5 account creation should be only available for wallets and legacy account type
+    die +{code => 'permission'} unless $client->is_wallet || $client->is_legacy;
 
-    try {
-        $rule_engine->verify_action(
-            'new_mt5_dez_account',
-            loginid      => $client->loginid,
-            account_type => $account_type
-        );
-    } catch ($error) {
-        die +{
-            code => $error->{error_code},
-            {params => 'DerivEZ'}};
-    }
+    my $rule_engine         = BOM::Rules::Engine->new(client => $client);
+    my $binary_company_name = get_landing_company($client);
+
+    $rule_engine->verify_action(
+        'new_mt5_dez_account',
+        loginid      => $client->loginid,
+        account_type => $account_type,
+        regulation   => $binary_company_name,
+        platform     => 'derivez',
+    );
 
     # Build client params if missing
     unless ($landing_company_short) {
@@ -133,8 +135,8 @@ sub new_account {
             if (not defined $landing_company_short) {
                 $landing_company_short = get_derivez_landing_company($client);
                 die +{
-                    code => $landing_company_short->{error},
-                    {params => $client->residence}} if $landing_company_short->{error};
+                    code   => $landing_company_short->{error},
+                    params => [$client->residence]} if $landing_company_short->{error};
             }
         }
     }
@@ -157,29 +159,46 @@ sub new_account {
     die +{code => 'DerivEZInvalidAccountCurrency'} if $account_currency ne $selected_currency;
 
     # Innitialize params
-    my $client_info         = $client->get_mt5_details();
-    my $main_password       = generate_password($client->user->{password});
-    my $investor_password   = generate_password($client->user->{password});
-    my $rights              = new_account_trading_rights();
-    my $binary_company_name = get_landing_company($client);
-    my $group               = derivez_group({
+    my $client_info       = $client->get_mt5_details();
+    my $main_password     = generate_password($client->user->{password});
+    my $investor_password = generate_password($client->user->{password});
+    my $rights            = new_account_trading_rights();
+    my $group             = derivez_group({
         residence             => $client->residence,
         landing_company_short => $landing_company_short,
         account_type          => $account_type,
         currency              => $account_currency,
     });
 
-    # Add a switch to a qualified accounts
-    if ($account_type ne 'demo' and $client->landing_company->short ne $binary_company_name) {
-        my @clients = $user->clients_for_landing_company($binary_company_name);
-        # remove disabled/duplicate accounts to make sure that atleast one Real account is active
-        @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
-        $client  = (@clients > 0) ? $clients[0] : undef;
-    }
+    my $link_to_wallet;
+    if ($client->is_wallet) {
+        # Wallet flow
+        my $wallet_landing_company = $account_type eq 'demo' ? 'virtual' : $binary_company_name;
 
-    # Check if a real mt5 accounts was being created with no real binary account existing
-    die +{code => 'DerivEZRealAccountMissing'}
-        if ($account_type ne 'demo' and scalar($user->clients) == 1 and $client->is_virtual());
+        return die +{
+            error_code     => 'TradingPlatformInvalidAccount',
+            message_params => ['DerivEZ']}
+            unless $client->landing_company->short eq $wallet_landing_company;
+
+        $link_to_wallet = $client->loginid;
+    } else {
+        # Legacy flow
+        return die +{
+            error_code     => 'TradingPlatformInvalidAccount',
+            message_params => ['DerivEZ']} unless $client->is_legacy;
+
+        # Add a switch to a qualified accounts
+        if ($account_type ne 'demo' and $client->landing_company->short ne $binary_company_name) {
+            my @clients = $user->clients_for_landing_company($binary_company_name);
+            # remove disabled/duplicate accounts to make sure that atleast one Real account is active
+            @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
+            $client  = (@clients > 0) ? $clients[0] : undef;
+        }
+
+        # Check if a real mt5 accounts was being created with no real binary account existing
+        die +{code => 'DerivEZRealAccountMissing'}
+            if ($account_type ne 'demo' and scalar($user->clients) == 1 and $client->is_virtual());
+    }
 
     # Disable trading for affiliate accounts
     $rights = affiliate_trading_rights() if $client->landing_company->is_for_affiliates;
@@ -313,11 +332,11 @@ sub new_account {
             };
 
             # Add DerivEZ account to user's login IDs
-            $user->add_loginid($derivez_login, 'derivez', $account_type, $derivez_currency, $derivez_attributes);
+            $user->add_loginid($derivez_login, 'derivez', $account_type, $derivez_currency, $derivez_attributes, $link_to_wallet);
 
             # Link new client to affiliate (if applicable)
             my $group_config = get_derivez_account_type_config($group);
-            die +{'permission'} unless $group_config;
+            die +{code => 'permission'} unless $group_config;
 
             if ($client->myaffiliates_token and $account_type ne 'demo') {
                 BOM::Platform::Event::Emitter::emit(

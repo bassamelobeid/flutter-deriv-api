@@ -4,7 +4,7 @@ use Test::More;
 use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
-use Test::Most 0.22 (tests => 28);
+use Test::Most 0.22 (tests => 31);
 use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -245,36 +245,6 @@ $dxconfig->suspend->real(0);
 cmp_deeply($dxtrader->get_accounts(type => 'demo'), [$account1], 'only demo account returned for type=demo');
 cmp_deeply($dxtrader->get_accounts(type => 'real'), [$account2], 'only real account returned for type=real');
 
-my $account3 = $dxtrader->new_account(
-    account_type => 'real',
-    password     => 'test',
-    market_type  => 'all',
-    currency     => 'USD',
-);
-
-cmp_deeply(
-    $account3,
-    {
-        account_id            => 'DXR1002',
-        account_type          => 'real',
-        enabled               => 1,
-        balance               => num(0),
-        currency              => 'USD',
-        display_balance       => '0.00',
-        login                 => $account1->{login},
-        platform              => 'dxtrade',
-        market_type           => 'all',
-        landing_company_short => 'svg',
-    },
-    'created third account'
-);
-
-cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader')], bag(qw/DXD1000 DXR1001 DXR1002/), 'Correct loginids reported');
-
-cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'demo')], bag(qw/DXD1000/), 'Correct loginids reported');
-
-cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'real')], bag(qw/DXR1001 DXR1002/), 'Correct loginids reported');
-
 subtest 'suspend user exception list' => sub {
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -438,6 +408,126 @@ subtest 'Inter landing company transfer' => sub {
     };
 
     is $e->{error_code}, 'DifferentLandingCompanies', 'MF to SVG withdraw';
+};
+
+subtest 'tradding accounts for wallet accounts' => sub {
+    $dxconfig->suspend->all(0);
+    $dxconfig->suspend->demo(0);
+    $dxconfig->suspend->real(0);
+
+    my ($user, $wallet_generator) = BOM::Test::Helper::Client::create_wallet_factory('za', 'Gauteng');
+
+    my ($wallet) = $wallet_generator->(qw(CRW doughflow USD));
+
+    my $dxtrader_cr = BOM::TradingPlatform->new(
+        platform    => 'dxtrade',
+        client      => $wallet,
+        rule_engine => BOM::Rules::Engine->new(client => $wallet),
+    );
+
+    my $account = $dxtrader_cr->new_account(
+        account_type => 'real',
+        password     => 'test',
+        market_type  => 'all',
+        currency     => 'USD',
+    );
+
+    ok($account->{account_id}, "Account was successfully created");
+    is($user->get_accounts_links->{$account->{account_id}}[0]{loginid}, $wallet->loginid, 'Account is linked to the doughflow wallet');
+
+    my $err = exception {
+        $dxtrader_cr->new_account(
+            account_type => 'real',
+            password     => 'test',
+            market_type  => 'all',
+            currency     => 'USD'
+        );
+    };
+
+    is($err->{error_code}, 'DXExistingAccount', 'Fail to create duplicate account under the same wallet');
+
+    $err = exception {
+        $dxtrader_cr->new_account(
+            account_type => 'demo',
+            password     => 'test',
+            market_type  => 'all',
+            currency     => 'USD'
+        );
+    };
+
+    is($err->{error_code}, 'TradingPlatformInvalidAccount', 'Fail to create demo account from real money wallet');
+
+    is scalar($dxtrader_cr->get_accounts()->@*), 1, "Linked account is returned in account list";
+
+    my ($p2p_wallet) = $wallet_generator->(qw(CRW p2p USD));
+
+    my $dxtrader_p2p = BOM::TradingPlatform->new(
+        platform    => 'dxtrade',
+        client      => $p2p_wallet,
+        rule_engine => BOM::Rules::Engine->new(client => $p2p_wallet),
+    );
+
+    my $account1 = $dxtrader_p2p->new_account(
+        account_type => 'real',
+        password     => 'test',
+        market_type  => 'all',
+        currency     => 'USD',
+    );
+
+    ok($account1->{account_id}, "Account is successfully created from P2P wallet");
+    is($user->get_accounts_links->{$account1->{account_id}}[0]{loginid}, $p2p_wallet->loginid, 'Account is linked to the wallet');
+    is scalar($dxtrader_p2p->get_accounts()->@*), 1, "Linked account is returned in account list";
+
+    my ($virtual_wallet) = $wallet_generator->(qw(VRW virtual USD));
+
+    my $dxtrader_virtual = BOM::TradingPlatform->new(
+        platform    => 'dxtrade',
+        client      => $virtual_wallet,
+        rule_engine => BOM::Rules::Engine->new(client => $virtual_wallet),
+    );
+
+    $err = exception {
+        $dxtrader_virtual->new_account(
+            account_type => 'real',
+            password     => 'test',
+            market_type  => 'all',
+            currency     => 'USD'
+        );
+    };
+
+    is($err->{error_code}, 'AccountShouldBeReal', 'Fail to create real money account from virtual wallet');
+
+    my $account2 = $dxtrader_virtual->new_account(
+        account_type => 'demo',
+        password     => 'test',
+        market_type  => 'all',
+        currency     => 'USD',
+    );
+
+    ok($account2->{account_id}, "Demo account was successfully create from virtual wallet");
+    is($user->get_accounts_links->{$account2->{account_id}}[0]{loginid}, $virtual_wallet->loginid, 'Account was linked to the wallet');
+    is scalar($dxtrader_virtual->get_accounts()->@*), 1, "Linked account is returned in account list";
+
+    my ($crypto_wallet) = $wallet_generator->(qw(CRW crypto USD));
+
+    my $dxtrader_cypto = BOM::TradingPlatform->new(
+        platform    => 'dxtrade',
+        client      => $crypto_wallet,
+        rule_engine => BOM::Rules::Engine->new(client => $crypto_wallet),
+    );
+
+    $err = exception {
+        $dxtrader_cypto->new_account(
+            account_type => 'real',
+            password     => 'test',
+            market_type  => 'all',
+            currency     => 'USD'
+        );
+    };
+
+    ok($err, "Fail to create dxtrader account from wallet which is not supported by dxtrade account type");
+    is($err->{error_code}, 'TradingPlatformInvalidAccount', 'Got expected error code');
+    is scalar($dxtrader_cypto->get_accounts()->@*), 0, "Linked account is returned in account list -> none ";
 };
 
 done_testing();

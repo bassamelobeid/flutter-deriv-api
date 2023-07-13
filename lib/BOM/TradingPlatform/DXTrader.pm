@@ -58,6 +58,38 @@ use constant {
         all       => 'CFD'
     }};
 
+=head2 DEFAULT_CATEGORIES
+
+Provides a list of standard permissions assigned on DerivX account by default
+
+=cut
+
+use constant DEFAULT_CATEGORIES => ({
+        category => 'AutoExecution',
+        value    => 'Bbook',
+    },
+    {
+        category => 'Commissions',
+        value    => 'Zero Commissions',
+    },
+    {
+        category => 'Financing',
+        value    => 'Standard Swaps',
+    },
+    {
+        category => 'Limits',
+        value    => 'Standard Limits',
+    },
+    {
+        category => 'Margining',
+        value    => 'Standard Margining',
+    },
+    {
+        category => 'Spreads',
+        value    => 'Standard Spreads',
+    },
+);
+
 =head2 new
 
 Creates and returns a new L<BOM::TradingPlatform::DXTrader> instance.
@@ -139,10 +171,26 @@ Returns dxtrade account info from our db.
 =cut
 
 sub local_accounts {
-    my ($self)        = @_;
-    my $login_details = $self->client->user->loginid_details;
-    my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID && !$_->{status} } values %$login_details;
-    return @accounts;
+    my ($self) = @_;
+    my $client = $self->client;
+
+    if ($client->is_wallet) {
+        my $user          = $client->user;
+        my $login_details = $user->loginid_details;
+
+        my @all_linked_accounts = ($user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid} // [])->@*;
+
+        my @login_list = sort map { $_->{platform} eq "dxtrade" ? $_->{loginid} : () } @all_linked_accounts;
+
+        return map { $login_details->{$_} } @login_list;
+    } elsif ($client->is_legacy) {
+        my $login_details = $client->user->loginid_details;
+        my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID && !$_->{status} } values %$login_details;
+        return @accounts;
+    }
+
+    # return nothing for other accounts types
+    return ();
 }
 
 =head1 RPC methods
@@ -189,59 +237,36 @@ sub new_account {
     my $currency = $args{currency};
     my $password = $args{password} or die 'password required';
 
-    my $dxclient = $self->dxclient_get($server);
+    my $dxclient = $self->dxclient_get($server) || $self->dxclient_create($server, $password);
 
-    my %attributes;
-    if ($dxclient) {
-        my $existing = first {
-                    $_->{currency} eq $currency
-                and $_->{account_type} eq $account_type
-                and $_->{type} eq 'CLIENT'
-                and $_->{status} eq 'FULL_TRADING'
-                and any { $_->{category} eq 'Trading' and $self->check_trading_category($args{market_type}, $_->{value}) }
-                ($_->{categories} // [])->@*
-        } ($dxclient->{accounts} // [])->@*;
+    my $user = $self->client->user;
 
-        my ($user_loginids) = $self->get_client_accounts();
+    my ($account, $err) = $self->find_account({
+        dxclient     => $dxclient,
+        user         => $user,
+        currency     => $currency,
+        account_type => $account_type,
+        market_type  => $args{market_type},
+    });
 
-        if ($existing) {
-            my $existing_dx_account = grep { $_->{loginid} eq $existing->{account_code} } @$user_loginids;
-
-            unless ($existing_dx_account) {
-                %attributes = (
-                    login         => $dxclient->{login},
-                    market_type   => $args{market_type},
-                    client_domain => $dxclient->{domain},
-                    account_code  => $existing->{account_code},
-                    clearing_code => DX_CLEARING_CODE,
-                );
-
-                $self->client->user->add_loginid($existing->{account_code}, PLATFORM_ID, $args{account_type}, $existing->{currency}, \%attributes);
-                die +{
-                    error_code     => 'DXExistingAccount',
-                    message_params => [$existing->{account_code}, " Please refresh the page"]};
-            }
-        }
-
+    if ($account && $err && $err eq 'ORPHAN_ACCOUNT') {
+        return $self->save_account({
+            user         => $user,
+            dxclient     => $dxclient,
+            account      => $account,
+            market_type  => $args{market_type},
+            account_type => $account_type,
+            account_id   => $account->{account_code},
+        });
+    } elsif ($account) {
         die +{
             error_code     => 'DXExistingAccount',
-            message_params => [$existing->{account_code}]} if $existing;
-    } else {
-        # no existing client, try to create one
-        my $login       = $self->dxtrade_login;
-        my $client_resp = $self->call_api(
-            server   => $server,
-            method   => 'client_create',
-            domain   => DX_DOMAIN,
-            login    => $login,
-            password => $password,
-        );
-
-        $dxclient = $client_resp->{content};
-        die 'Created client does not have requested login' unless $dxclient->{login} eq $login;
+            message_params => [$account->{account_code}]};
+    } elsif ($err && $err ne 'NOT_FOUND') {
+        die "Unxpected output of find_account funtion <$err> for client " . $self->client->loginid;
     }
 
-    my ($seq_num) = $self->client->user->dbic->run(
+    my ($seq_num) = $user->dbic->run(
         ping => sub {
             $_->selectrow_array("SELECT nextval('users.devexperts_account_id')");
         });
@@ -267,30 +292,7 @@ sub new_account {
                 category => 'Trading',
                 value    => $trading_category,
             },
-            {
-                category => 'AutoExecution',
-                value    => 'Bbook',
-            },
-            {
-                category => 'Commissions',
-                value    => 'Zero Commissions',
-            },
-            {
-                category => 'Financing',
-                value    => 'Standard Swaps',
-            },
-            {
-                category => 'Limits',
-                value    => 'Standard Limits',
-            },
-            {
-                category => 'Margining',
-                value    => 'Standard Margining',
-            },
-            {
-                category => 'Spreads',
-                value    => 'Standard Spreads',
-            },
+            DEFAULT_CATEGORIES,
         ],
     );
 
@@ -306,20 +308,44 @@ sub new_account {
         die +{error_code => 'DXNewAccountFailed'};
     }
 
-    my $account = $account_resp->{content};
+    $account = $account_resp->{content};
 
-    %attributes = (
+    return $self->save_account({
+        user         => $user,
+        dxclient     => $dxclient,
+        account      => $account,
+        market_type  => $args{market_type},
+        account_type => $args{account_type},
+        account_id   => $account_id,
+    });
+}
+
+=head2 save_account
+
+Saves provided account into UserDB
+If account has affiliate token it'll emit event to link this account latter
+
+=cut
+
+sub save_account {
+    my ($self, $args) = @_;
+    my ($dxclient, $account, $market_type, $account_type, $account_id, $user) =
+        $args->@{qw(dxclient account market_type account_type account_id user)};
+
+    my %attributes = (
         login         => $dxclient->{login},
-        market_type   => $args{market_type},
+        market_type   => $market_type,
         client_domain => $dxclient->{domain},
         account_code  => $account->{account_code},
         clearing_code => $account->{clearing_code},
     );
 
-    $self->client->user->add_loginid($account_id, PLATFORM_ID, $args{account_type}, $account->{currency}, \%attributes);
+    my $wallet = $self->client->is_wallet ? $self->client->loginid : undef;
+
+    $user->add_loginid($account_id, PLATFORM_ID, $account_type, $account->{currency}, \%attributes, $wallet);
 
     # If client has affiliate token, link the client to the affiliate.
-    if (my $token = $self->client->myaffiliates_token and $args{account_type} ne 'demo') {
+    if (my $token = $self->client->myaffiliates_token and $account_type ne 'demo') {
         BOM::Platform::Event::Emitter::emit(
             'cms_add_affiliate_client',
             {
@@ -334,6 +360,58 @@ sub new_account {
     $account->{login}      = $dxclient->{login};
 
     return $self->account_details($account);
+}
+
+=head2 find_account
+
+Search in dxclient object for account with specified conditions:
+currency, account_type, market_type.
+if wallet argument is provided, it'll look only for accounts connected to the same wallet. 
+
+=cut
+
+sub find_account {
+    my ($self, $args) = @_;
+
+    my ($user, $dxclient, $currency, $account_type, $market_type) = $args->@{qw(user dxclient currency account_type market_type)};
+
+    my $accounts_links;
+    my $loginid_details = $user->loginid_details;
+
+    my $wallet = $self->client->is_wallet ? $self->client->loginid : undef;
+
+    for my $account (($dxclient->{accounts} // [])->@*) {
+        next unless $account->{currency} eq $currency;
+        next unless $account->{account_type} eq $account_type;
+        next unless $account->{type} eq 'CLIENT';
+        next unless $account->{status} eq 'FULL_TRADING';        # skip if client not active
+
+        # skip if account has different market type
+        next
+            unless any { $self->check_trading_category($market_type, $_->{value}) }
+            grep { $_->{category} eq 'Trading' } ($account->{categories} // [])->@*;
+
+        my $account_id = $account->{account_code};
+
+        # Found account which is created but not linked yet.
+        # Could happen because we lost connection and didn't get response from dxtrader
+        # or if we fail to insert to user db
+        return $account, 'ORPHAN_ACCOUNT' unless $loginid_details->{$account_id};
+
+        # New wallet flow
+        if ($wallet) {
+            $accounts_links //= $user->get_accounts_links;
+
+            die "Inconsistent data: Orphant trading account" unless $accounts_links->{$account_id};
+
+            # we only intrested in account connected to the same wallet
+            next unless $accounts_links->{$account_id}[0]{loginid} eq $wallet;
+        }
+
+        return $account, undef;
+    }
+
+    return undef, 'NOT_FOUND';
 }
 
 =head2 get_client_accounts
@@ -1002,6 +1080,30 @@ sub dxclient_get {
     return undef if ($resp->{status} eq '404' and ref $resp->{content} eq 'HASH' and ($resp->{content}{error_code} // '') eq '30002');
 
     $self->handle_api_error($resp, undef, %args);
+}
+
+=head2 dxclient_create
+
+Create new dxclient via DxTrade api
+
+=cut
+
+sub dxclient_create {
+    my ($self, $server, $password) = @_;
+
+    my $login       = $self->dxtrade_login;
+    my $client_resp = $self->call_api(
+        server   => $server,
+        method   => 'client_create',
+        domain   => DX_DOMAIN,
+        login    => $login,
+        password => $password,
+    );
+
+    my $dxclient = $client_resp->{content};
+    die 'Created client does not have requested login' unless $dxclient->{login} eq $login;
+
+    return $dxclient;
 }
 
 =head2 dxtrade_login

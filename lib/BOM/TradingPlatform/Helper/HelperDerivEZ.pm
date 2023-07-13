@@ -61,11 +61,11 @@ use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 # if we'll need to add more companies, then better to move to landing company configuration
 use constant DERIVEZ_AVAILABLE_FOR => 'svg';
 
-=head1 NAME 
+=head1 NAME
 
 BOM::TradingPlatform::Helper::HelperDerivEZ
 
-=head1 SYNOPSIS 
+=head1 SYNOPSIS
 
 Helper module for derivez implementation
 
@@ -133,7 +133,7 @@ sub validate_new_account_params {
 
 =head2 validate_user
 
-Validate the user for DerivEZ new account creation 
+Validate the user for DerivEZ new account creation
 Return future fail for any failed validation
 
 =cut
@@ -517,8 +517,16 @@ sub derivez_accounts_lookup {
     # Determine whether to get real or demo accounts, or both
     $account_type = $account_type ? $account_type : 'all';
 
-    # Getting filtered account to only status as undef and based on the specified account type
-    my @clients = $client->user->get_derivez_loginids(type_of_account => $account_type);
+    my @clients;
+
+    if ($client->is_wallet) {
+        my @all_linked_accounts = ($client->user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid} || [])->@*;
+
+        @clients = map { $_->{platform} eq "derivez" ? $_->{loginid} : () } @all_linked_accounts;
+    } elsif ($client->is_legacy) {
+        # Getting filtered account to only status as undef and based on the specified account type
+        @clients = $client->user->get_derivez_loginids(type_of_account => $account_type);
+    }
 
     # Loop through all the accounts and create a future for each one to retrieve its settings
     for my $login (@clients) {
@@ -906,10 +914,8 @@ sub derivez_validate_and_get_amount {
             my $user_derivez_currency_type       = LandingCompany::Registry::get_currency_type($user_derivez_currency);
             my $client_currency_type             = LandingCompany::Registry::get_currency_type($client_currency);
             my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
-            my $validate_amount_response         = _validate_amount($amount, $client_currency);
             my $derivez_transfer_limits          = BOM::Config::CurrencyConfig::derivez_transfer_limits($brand_name);
-            my $min_transfer_limit               = $derivez_transfer_limits->{$client_currency}->{min};
-            my $max_transfer_limit               = $derivez_transfer_limits->{$client_currency}->{max};
+            my $source_currency                  = $action eq 'deposit' ? $client_currency : $user_derivez_currency;
 
             # Parameters
             my $derivez_transfer_amount = undef;
@@ -917,12 +923,6 @@ sub derivez_validate_and_get_amount {
             my $fees_percent            = 0;
             my $fees_in_client_currency = 0;       #when a withdrawal is done record the fee in the local amount
             my ($min_fee, $fee_calculated_by_percent);
-
-            # Check if the amount is valid
-            die +{
-                code    => $error_code,
-                message => $validate_amount_response
-            } if $validate_amount_response;
 
             # Check if financial assessment is required for withdrawals
             if (
@@ -944,16 +944,18 @@ sub derivez_validate_and_get_amount {
             die +{code => 'InvalidVirtualAccount'} if $client->is_virtual and not $client->is_wallet;
 
             # Check if the amount does not meet the min requirements
+            my $min_transfer_limit = $derivez_transfer_limits->{$source_currency}->{min};
             die +{
                 code   => 'InvalidMinAmount',
-                params => [formatnumber('amount', $client_currency, $min_transfer_limit), $client_currency]}
-                if $amount < financialrounding('amount', $client_currency, $min_transfer_limit);
+                params => [formatnumber('amount', $source_currency, $min_transfer_limit), $source_currency]}
+                if $amount < financialrounding('amount', $source_currency, $min_transfer_limit);
 
             # Check if the amount exceed the max_transfer_limit requirements
+            my $max_transfer_limit = $derivez_transfer_limits->{$source_currency}->{max};
             die +{
                 code   => 'InvalidMaxAmount',
-                params => [formatnumber('amount', $client_currency, $max_transfer_limit), $client_currency]}
-                if $amount > financialrounding('amount', $client_currency, $max_transfer_limit);
+                params => [formatnumber('amount', $source_currency, $max_transfer_limit), $source_currency]}
+                if $amount > financialrounding('amount', $source_currency, $max_transfer_limit);
 
             # Validate the binary client
             _validate_client($client, $user_derivez_landing_company);
@@ -1039,7 +1041,7 @@ sub derivez_validate_and_get_amount {
                         # To update them, transfer_between_accounts_fees is called again with force_refresh on.
                         die +{
                             code   => 'AmountNotAllowed',
-                            params => [$derivez_transfer_limits->{$client_currency}->{min}, $client_currency]}
+                            params => [$min_transfer_limit, $source_currency]}
                             if ($e =~ /The amount .* is below the minimum allowed amount/);
 
                         # Default error:
@@ -1048,8 +1050,6 @@ sub derivez_validate_and_get_amount {
 
                 } elsif ($action eq 'withdrawal') {
                     try {
-                        $client_currency = $user_derivez_currency;
-
                         ($derivez_transfer_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees(
                             amount        => $amount,
@@ -1077,7 +1077,7 @@ sub derivez_validate_and_get_amount {
                         # To update them, transfer_between_accounts_fees is called again with force_refresh on.
                         die +{
                             code   => 'AmountNotAllowed',
-                            params => [$derivez_transfer_limits->{$client_currency}->{min}, $client_currency]}
+                            params => [$min_transfer_limit, $source_currency]}
                             if ($e =~ /The amount .* is below the minimum allowed amount/);
 
                         # Default error:
@@ -1085,6 +1085,13 @@ sub derivez_validate_and_get_amount {
                     }
                 }
             }
+
+            # Check if the amount is valid
+            my $validate_amount_response = _validate_amount($amount, $source_currency);
+            die +{
+                code    => $error_code,
+                message => $validate_amount_response
+            } if $validate_amount_response;
 
             unless ($client->is_virtual and _is_account_demo($user_derivez_group)) {
                 my $rule_engine = BOM::Rules::Engine->new(client => $client);
@@ -1104,7 +1111,7 @@ sub derivez_validate_and_get_amount {
             return {
                 derivez_amount          => $derivez_transfer_amount,
                 fees                    => $fees,
-                fees_currency           => $client_currency,
+                fees_currency           => $source_currency,
                 fees_percent            => $fees_percent,
                 fees_in_client_currency => $fees_in_client_currency,
                 derivez_currency_code   => $user_derivez_currency,

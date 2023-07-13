@@ -31,7 +31,6 @@ use JSON::MaybeUTF8            qw(encode_json_utf8 encode_json_text);
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
-use BOM::Config::AccountType::Registry;
 use LandingCompany::Registry;
 
 use BOM::Platform::S3Client;
@@ -8256,6 +8255,16 @@ Returns whether this client instance is a wallet.
 
 sub is_wallet {
     return 0;
+}
+
+=head2 is_legacy
+
+Methods check if current client account is a legacy account type.
+
+=cut
+
+sub is_legacy {
+    return shift->get_account_type->name eq BOM::Config::AccountType::LEGACY_TYPE;
 }
 
 =head2 is_affiliate
