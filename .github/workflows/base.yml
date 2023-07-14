@@ -1,0 +1,217 @@
+name: Build workflow
+run-name: Build workflow
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Repository name for running tests'
+        required: true
+        type: string 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
+  cancel-in-progress: true
+jobs:
+  check-git-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check git message
+        uses: regentmarkets/github-actions/check-git-message@master
+  syntax:
+    needs: check-git-message
+    uses: regentmarkets/github-actions/.github/workflows/syntax.yml@master
+    secrets: inherit
+    with:
+      repository: ${{ inputs.repository }}
+  merlin:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Merlin
+        run: make merlin_benchmark
+  SDFX_benchmark_major:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: SDFX benchmark major
+        run: make SDFX_benchmark_major
+  SDFX_benchmark_minor:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: SDFX benchmark minor
+        run: make SDFX_benchmark_minor
+  SDEQ_benchmark_OTC_DJI:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: SDEQ benchmark OTC_DJI
+        run: make SDEQ_benchmark_OTC_DJI
+  SDEQ_benchmark_OTC_FCHI:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: SDEQ benchmark OTC_FCHI
+        run: make SDEQ_benchmark_OTC_FCHI
+  SDEQ_benchmark_SSECOMP:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: SDEQ benchmark SSECOMP
+        run: make SDEQ_benchmark_SSECOMP
+  SDEQ_benchmark_OTC_FTSE:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: SDEQ benchmark OTC_FTSE
+        run: make SDEQ_benchmark_OTC_FTSE
+  OVRA_benchmark:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: OVRA benchmark
+        run: |
+          for i in $(seq 1 12); do echo -n "."; sleep 300; done &
+          make OVRA_benchmark
