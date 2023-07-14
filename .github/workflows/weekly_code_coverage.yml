@@ -1,9 +1,8 @@
 name: Weekly code coverage workflow
 run-name: Weekly code coverage workflow
 on:
-  # schedule:
-  #   - cron: '30 7 * * 6'
-  pull_request:
+  schedule:
+    - cron: '30 7 * * 6'
 jobs:
   code_coverage:
     runs-on: ubuntu-latest

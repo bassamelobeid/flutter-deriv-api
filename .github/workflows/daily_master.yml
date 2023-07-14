@@ -1,9 +1,8 @@
 name: Daily master test
 run-name: Daily test on master branch
 on:
-  # schedule:
-  #   - cron: '36 20 * * *'
-  pull_request:
+  schedule:
+    - cron: '36 20 * * *'
 jobs:
   structure:
     runs-on: ubuntu-latest
