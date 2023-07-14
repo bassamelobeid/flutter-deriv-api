@@ -1,8 +1,9 @@
 name: Weekly code coverage workflow
 run-name: Weekly code coverage workflow
 on:
-  schedule:
-    - cron: '30 7 * * 6'
+  # schedule:
+  #   - cron: '30 7 * * 6'
+  pull_request:
 jobs:
   code_coverage:
     runs-on: ubuntu-latest
@@ -20,6 +21,7 @@ jobs:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
