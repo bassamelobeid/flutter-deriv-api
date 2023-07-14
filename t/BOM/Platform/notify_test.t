@@ -15,6 +15,7 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use YAML::XS;
+use JSON::MaybeUTF8 qw(:v1);
 
 use IO::Select;
 
@@ -74,7 +75,7 @@ if ($ENV{BOM_TEST_ON_QA}) {
         });
 }
 
-$listener->do("LISTEN transaction_watchers");
+$listener->do("LISTEN transaction_watchers_json");
 
 sub db {
     return BOM::Database::ClientDB->new({
@@ -93,9 +94,8 @@ sub test_notify {
     while (my $notify = $listener->pg_notifies) {
         my $n = {};
         @{$n}{
-            qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/
-            } =
-            split ',', $notify->[-1];
+            qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark client_loginid binary_user_id/
+        } = decode_json_utf8($notify->[-1])->@*;
         $notifications{$n->{id}} = $n;
     }
 
@@ -103,9 +103,13 @@ sub test_notify {
         my $loginid = $test->{acc}->client_loginid;
         subtest 'testing result for ' . $loginid . ' transaction ' . $test->{txn}->{id}, sub {
             my $note = $notifications{$test->{txn}->{id}};
+            $note->{sell_time} = undef unless $note->{sell_time};
+            ok $note->{amount} == $test->{txn}->{amount},               "note{amount} == txn{amount}";
+            ok $note->{balance_after} == $test->{txn}->{balance_after}, "note{balance_after} == txn{balance_after}";
             isnt $note,                undef, 'found notification';
             is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
-            for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
+            $note->{transaction_time} =~ s/T/ /;
+            for my $name (qw/account_id action_type financial_market_bet_id transaction_time/) {
                 is $note->{$name}, $test->{txn}->{$name}, "note{$name} eq txn{$name}";
             }
             for my $name (qw/buy_price purchase_time sell_time short_code/) {
@@ -126,9 +130,8 @@ sub test_payment_notify {
     while (my $notify = $listener->pg_notifies) {
         my $n = {};
         @{$n}{
-            qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/
-            } =
-            split ',', $notify->[-1];
+            qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark client_loginid binary_user_id/
+        } = decode_json_utf8($notify->[-1])->@*;
         $notifications{$n->{id}} = $n;
     }
 
@@ -138,7 +141,10 @@ sub test_payment_notify {
             isnt $note, undef, 'found notification';
             #is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
             # transaction_time is different !!!
-            for my $name (qw/account_id action_type amount balance_after payment_id/) {
+            ok $note->{amount} == $test->{txn}->{amount},               "note{amount} == txn{amount}";
+            ok $note->{balance_after} == $test->{txn}->{balance_after}, "note{balance_after} == txn{balance_after}";
+
+            for my $name (qw/account_id action_type payment_id/) {
                 is $note->{$name}, $test->{txn}->{$name}, "note{$name} eq txn{$name}";
             }
             is $note->{payment_remark}, $test->{remark}, 'payment_remark';

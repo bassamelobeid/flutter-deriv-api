@@ -7,6 +7,7 @@ use Test::More tests => 23;
 use Test::Warnings;
 use Test::Exception;
 use Test::Fatal;
+use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;
 
@@ -1369,7 +1370,7 @@ subtest 'batch_buy', sub {
     }
     'setup clients';
 
-    $listener->do("LISTEN transaction_watchers");
+    $listener->do("LISTEN transaction_watchers_json");
     my $buy_trx_ids = {};
 
     lives_ok {
@@ -1378,12 +1379,10 @@ subtest 'batch_buy', sub {
 
         my %notifications;
         while (my $notify = $listener->pg_notifies) {
-            # note "got notification: $notify->[-1]";
             my $n = {};
             @{$n}{
-                qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/
-                } =
-                split ',', $notify->[-1];
+                qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark client_loginid binary_user_id/
+            } = decode_json_utf8($notify->[-1])->@*;
             $notifications{$n->{id}} = $n;
         }
         # note explain \%notifications;
@@ -1414,10 +1413,17 @@ subtest 'batch_buy', sub {
             my $note = $notifications{$txn->{id}};
             isnt $note,                undef, 'found notification';
             is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
-            for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
+
+            is $note->{binary_user_id}, $cl1->binary_user_id, "note->{client_loginid} eq r->{loginid}";
+            is $note->{client_loginid}, $r->{loginid},        "note->{client_loginid} eq r->{loginid}";
+            ok $note->{amount} == $txn->{amount},               "note{amount} == txn{amount}";
+            ok $note->{balance_after} == $txn->{balance_after}, "note{balance_after} == txn{balance_after}";
+            ok !$note->{sell_time},                             "note{sell_time} is undef";
+            $note->{transaction_time} =~ s/T/ /;
+            for my $name (qw/account_id action_type financial_market_bet_id transaction_time/) {
                 is $note->{$name}, $txn->{$name}, "note{$name} eq txn{$name}";
             }
-            for my $name (qw/buy_price purchase_time sell_time short_code/) {
+            for my $name (qw/buy_price purchase_time short_code/) {
                 is $note->{$name}, $fmb->{$name}, "note{$name} eq fmb{$name}";
             }
         };
@@ -1460,10 +1466,17 @@ subtest 'batch_buy', sub {
             my $note = $notifications{$txn->{id}};
             isnt $note,                undef, 'found notification';
             is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
-            for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
+
+            is $note->{binary_user_id}, $cl3->binary_user_id, "note->{client_loginid} eq r->{loginid}";
+            is $note->{client_loginid}, $r->{loginid},        "note->{client_loginid} eq r->{loginid}";
+            ok $note->{amount} == $txn->{amount},               "note{amount} == txn{amount}";
+            ok $note->{balance_after} == $txn->{balance_after}, "note{balance_after} == txn{balance_after}";
+            ok !$note->{sell_time},                             "note{sell_time} is undef";
+            $note->{transaction_time} =~ s/T/ /;
+            for my $name (qw/account_id action_type financial_market_bet_id transaction_time/) {
                 is $note->{$name}, $txn->{$name}, "note{$name} eq txn{$name}";
             }
-            for my $name (qw/buy_price purchase_time sell_time short_code/) {
+            for my $name (qw/buy_price purchase_time short_code/) {
                 is $note->{$name}, $fmb->{$name}, "note{$name} eq fmb{$name}";
             }
         };
