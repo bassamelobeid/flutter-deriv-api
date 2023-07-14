@@ -33,6 +33,7 @@ use constant VANUATU_EXPIRATION_DAYS    => 5;      # Need to consider the accoun
 use constant VANUATU_WARNING_DAYS       => 3;
 use constant COLOR_RED                  => 255;    # BGR (0,0,255)
 use constant RETRY_LIMIT                => 5;
+use constant ACCOUNTS_BATCH_SIZE        => 1000;
 
 =head1 BOM::MT5::Script::StatusUpdate
 
@@ -717,17 +718,34 @@ Returns an Array, filled with Arrayrefs for every account gathered from db
         return $self->return_error("gather_users", "The newest_created_at and statuses fields are required for this operation")
             unless ($newest_created_at and $statuses);
 
-        my $users = $userdb->dbic->run(
-            fixup => sub {
-                $_->selectall_arrayref(
-                    'select * from users.get_loginids_poa_timeframe(?, ?, ?::users.loginid_status[])',
-                    undef,
-                    ($oldest_created_at ? $oldest_created_at->truncate_to_day->db_timestamp : undef),
-                    $newest_created_at->plus_time_interval('1d')->truncate_to_day->db_timestamp,
-                    $statuses
-                );
+        my $retries     = 0;
+        my $users_batch = [];
+        my $users       = [];
 
-            });
+        do {
+            try {
+                $users_batch = $userdb->dbic->run(
+                    fixup => sub {
+                        $_->selectall_arrayref(
+                            'select * from users.get_loginids_poa_timeframe(?, ?, ?::users.loginid_status[], ?)',
+                            undef,
+                            ($oldest_created_at ? $oldest_created_at->truncate_to_day->db_timestamp : undef),
+                            (@$users            ? $users->[-1]->[2] : $newest_created_at->plus_time_interval('1d')->truncate_to_day->db_timestamp),
+                            $statuses,
+                            ACCOUNTS_BATCH_SIZE
+                        );
+                    }) || [];
+
+                push @$users, @$users_batch;
+                $retries = 0;
+
+            } catch ($e) {
+                $self->return_error('gather_users', 'Failed to gather users: ' . pp $e);
+                $retries++;
+                $self->dd_log_info('gather_users', 'Retrying to gather users');
+            }
+
+        } while (@$users_batch >= ACCOUNTS_BATCH_SIZE or ($retries > 0 and $retries < RETRY_LIMIT));
 
         return @$users;
 
