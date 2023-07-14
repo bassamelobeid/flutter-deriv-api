@@ -578,6 +578,62 @@ subtest 'tradding accounts for wallet accounts' => sub {
     is scalar($derivez_mfw->get_accounts()->@*), 0, "Linked account is returned in account list -> none ";
 };
 
+subtest "cannot create user when user do not have CR account" => sub {
+    # Create client only VRTC
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
+
+    # Preparing the parameters for derivez get account
+    my %params = (
+        account_type => 'real',
+        market_type  => 'all',
+        platform     => 'derivez',
+        currency     => 'USD',
+        company      => 'svg'
+    );
+
+    # Check for derivez TradingPlatform
+    my $derivez = BOM::TradingPlatform->new(
+        platform    => 'derivez',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client),
+    );
+    isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
+
+    # Mocking BOM::MT5::User::Async to return the corrent derivez loginid
+    my $mock_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
+
+    # Mocking get_user to return undef to make sure user dont have any derivez account yet
+    $mock_mt5->mock('get_user', sub { return 'undef'; });
+
+    # Mocking create_user to create a new derivez user
+    $mock_mt5->mock('create_user', sub { return Future->done({login => "EZR80000000"}); });
+
+    # Mocking deposit to deposit demo account
+    $mock_mt5->mock('deposit', sub { return Future->done({status => 1}); });
+
+    # Preparing and mock get_group response data
+    my $get_group_response = {
+        'currency' => 'USD',
+        'group'    => 'real\\p02_ts01\\all\\svg_ez_usd',
+        'leverage' => 1,
+        'company'  => 'Deriv Limited'
+    };
+    $mock_mt5->mock('get_group', sub { return Future->done($get_group_response); });
+
+    # Perform test
+    cmp_deeply(
+        exception { $derivez->new_account(%params) },
+        {
+            error_code     => 'AccountShouldBeReal',
+            rule           => 'trading_account.client_should_be_real',
+            message_params => ['DerivEZ']
+        },
+        'cannot create user when user do not have CR account'
+    );
+
+    $mock_mt5->unmock_all();
+};
+
 $app_config->system->mt5->http_proxy->demo->p01_ts04(0);
 $app_config->system->mt5->http_proxy->real->p02_ts01(0);
 

@@ -119,6 +119,7 @@ sub new_account {
     my $rule_engine         = BOM::Rules::Engine->new(client => $client);
     my $binary_company_name = get_landing_company($client);
 
+    # Checking the new derivez account creation rule
     $rule_engine->verify_action(
         'new_mt5_dez_account',
         loginid      => $client->loginid,
