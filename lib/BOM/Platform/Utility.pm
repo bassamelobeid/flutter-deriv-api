@@ -653,12 +653,13 @@ sub status_op_processor {
                         };
                 }
             }
-        } catch {
+        } catch ($e) {
             push $summary_stack->@*,
                 {
                 status => $status,
                 passed => 0,
-                ids    => $loginid
+                ids    => $loginid,
+                error  => $e,
                 };
         }
     }
@@ -771,9 +772,13 @@ sub verify_reactivation {
 
         );
     } catch ($e) {
-        my $error = ref($e) ? $e->{error_code} // '' : $e;
+        my $error        = ref($e) ? $e->{error_code} // '' : $e;
+        my $failing_rule = $e->{rule};
         $error =~ s/([A-Z])/ $1/g;
-        die "$error\n";
+        die {
+            error_msg    => $error,
+            failing_rule => $failing_rule
+        };
     };
 
     return 1;
