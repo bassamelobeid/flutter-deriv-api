@@ -184,6 +184,10 @@ sub transform_summary_status_to_html {
             $fail_op = 'remove from accounts, only DISABLED ACCOUNTS can be removed from all accounts' if $status_op eq 'remove_accounts';
             $result .=
                 "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b> for $ids. Please try again.</div>";
+            $result .= $summary->{error}
+                ? "<div class='notify notify--danger'><b>Failed Because</b> : $summary->{error}->{error_msg}.</div>
+            <div class='notify notify--danger'><b>Failed Rule</b> : $summary->{error}->{failing_rule}.</div>"
+                : '';
         }
 
     }

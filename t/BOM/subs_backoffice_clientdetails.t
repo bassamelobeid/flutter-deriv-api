@@ -133,9 +133,13 @@ subtest 'Reactivate client' => sub {
                 my $client = $clients{$broker}->{$account};
                 my $error  = $test_cases{$broker}->{$account};
                 my $status = $account eq 'enabled_usd' ? '' : 'duplicate_account';
-                if ($error) {
-                    like exception { verify_reactivation($client, $status) }, qr/$error/,
-                        "Correct error when trying to reactivate the $broker $account account";
+                eval { verify_reactivation($client, $status); };
+
+                if ($@ && ref($@) eq 'HASH') {
+                    my $exception_hash = $@;
+
+                    my $error_message = $exception_hash->{error_msg};
+                    like $error_message, qr/$error/, "Correct error when trying to reactivate the $broker $account account";
                 } else {
                     lives_ok { verify_reactivation($client, $status) } "Verification allows reactivation of the $broker $account account";
                 }
