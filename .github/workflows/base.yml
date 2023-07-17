@@ -1,0 +1,48 @@
+name: Build workflow
+run-name: Build workflow
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Repository name for running tests'
+        required: true
+        type: string 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
+  cancel-in-progress: true
+jobs:
+  check-git-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check git message
+        uses: regentmarkets/github-actions/check-git-message@master
+  build:
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+      - name: Standard tests
+        run: make test
