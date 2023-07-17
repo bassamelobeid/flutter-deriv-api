@@ -3,7 +3,6 @@ run-name: Daily test on master branch
 on:
   schedule:
     - cron: '18 20 * * *'
-  pull_request:
 jobs:
   build:
     runs-on: ubuntu-latest
