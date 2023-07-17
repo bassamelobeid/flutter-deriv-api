@@ -3411,8 +3411,6 @@ sub _send_shared_payment_method_email {
     my $client            = shift;
     my $client_first_name = $client->first_name;
     my $client_last_name  = $client->last_name;
-    my $lang              = lc(request()->language // 'en');
-    my $email             = $client->email;
 
     # Each client may come from a different brand
     # this switches the template accordingly
@@ -3423,23 +3421,18 @@ sub _send_shared_payment_method_email {
         language => request->language,
     };
 
-    send_email({
-            from          => $brand->emails('authentications'),
-            to            => $email,
-            subject       => localize('Shared Payment Method account [_1]', $client->loginid),
-            template_name => 'shared_payment_method',
-            template_args => {
+    BOM::Platform::Event::Emitter::emit(
+        'shared_payment_method_email_notification',
+        {
+            loginid    => $client->loginid,
+            properties => {
                 client_first_name   => $client_first_name,
                 client_last_name    => $client_last_name,
-                lang                => $lang,
+                email               => $client->email,
                 ask_poi             => !$client->status->age_verification,
                 authentication_url  => $brand->authentication_url($params),
-                name                => $client_first_name,
-                title               => localize('Shared payment method'),
                 payment_methods_url => $brand->payment_methods_url($params),
-            },
-            use_email_template => 1,
-        });
+            }});
 
     return;
 }
@@ -3698,6 +3691,10 @@ Event to handle withdrawal payment type.
 
 It is triggered for each B<professional_status_requested> event emitted.
 
+=head2 shared_payment_method_email_notification
+
+It is triggered for each B<shared_payment_method_email_notification> event emitted.
+
 =over
 
 =item * C<loginid> - required. Login Id of the user.
@@ -3723,6 +3720,7 @@ for my $func_name (
     payment_withdrawal_reversal
     payment_withdrawal
     professional_status_requested
+    shared_payment_method_email_notification
     ))
 {
     no strict 'refs';    # allow symbol table manipulation
