@@ -25,5 +25,6 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          need_service: 'false'
       - name: Standard tests
         run: make test
