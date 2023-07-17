@@ -5,7 +5,6 @@ on:
     - cron: '36 20 * * *'
 jobs:
   structure:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -32,7 +31,6 @@ jobs:
       - name: unit tests
         run: make unit
   accounts:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -57,7 +55,6 @@ jobs:
       - name: Accounts-related functionality
         run: make accounts
   security:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -82,7 +79,6 @@ jobs:
       - name: Security handling
         run: make security
   pricing:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -107,7 +103,6 @@ jobs:
       - name: Pricing
         run: make pricing
   misc:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -132,7 +127,6 @@ jobs:
       - name: Uncategorised tests
         run: make misc
   p2p:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -157,7 +151,6 @@ jobs:
       - name: Run P2P tests
         run: make p2p
   schema:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -182,7 +175,6 @@ jobs:
       - name: Schema tests
         run: make schema
   subscriptions:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -207,7 +199,6 @@ jobs:
       - name: Run subscription tests
         run: make subscriptions
   backends:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -232,8 +223,6 @@ jobs:
       - name: Run backends tests
         run: make backends
   update_docs:
-    if: github.ref == 'refs/heads/master'
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable

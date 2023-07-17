@@ -5,7 +5,6 @@ on:
     - cron: '30 7 * * 6'
 jobs:
   code_coverage:
-    timeout-minutes: 60
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -21,6 +20,7 @@ jobs:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
