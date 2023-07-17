@@ -27,7 +27,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -54,7 +54,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -79,7 +79,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -104,7 +104,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -129,7 +129,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -154,7 +154,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -179,7 +179,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -204,7 +204,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -229,7 +229,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -255,7 +255,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: regentmarkets/debian-ci:nihal
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
