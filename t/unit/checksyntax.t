@@ -13,10 +13,8 @@ subtest 'run_command' => sub {
     my @result = BOM::Test::CheckSyntax::_run_command("ls xxxx");
     ok !@result, 'empty result for wrong command';
 
-    @result = BOM::Test::CheckSyntax::_run_command(qw/ls -U lib/);
+    @result = BOM::Test::CheckSyntax::_run_command(qw/ls -U lib | sort -r/);
     is_deeply \@result, [qw/BOM await.pm/], 'get ls result';
-    use Data::Printer;
-    p @result;
 };
 
 subtest 'get_self_name_space' => sub {
