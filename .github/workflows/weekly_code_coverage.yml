@@ -3,6 +3,7 @@ run-name: Weekly code coverage workflow
 on:
   schedule:
     - cron: '50 4 * * 6'
+  pull_request:
 jobs:
   code_coverage:
     uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
