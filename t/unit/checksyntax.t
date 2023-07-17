@@ -15,6 +15,8 @@ subtest 'run_command' => sub {
 
     @result = BOM::Test::CheckSyntax::_run_command(qw/ls -U lib/);
     is_deeply \@result, [qw/BOM await.pm/], 'get ls result';
+    use Data::Printer;
+    p @result;
 };
 
 subtest 'get_self_name_space' => sub {
