@@ -1,0 +1,10 @@
+reset_password_request: #original event social_login is equal to 1 OR social_login doesn't exist
+  - reset_password_request: #transactional event
+      social_login: 0 #conditions
+  - reset_password_request: #transactional event
+      social_login:
+        exists: 0
+reset_password_confirmation:
+  - reset_password_confirmation:
+      email:
+        exists: 1

@@ -23,6 +23,7 @@ use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Locale  qw(get_state_by_id);
 use BOM::Database::Model::UserConnect;
 use DataDog::DogStatsd::Helper;
+use BOM::Event::Transactional::Mapper;
 # Constant user_id for anonymous events.
 use constant BINARY_CUSTOMER => 1;
 
@@ -242,10 +243,19 @@ my @COMMON_EVENT_METHODS = qw(
 my @TRANSACTIONAL_EVENTS = qw(
     pa_withdraw_confirm
     request_change_email
+    request_payment_withdraw
+    unknown_login
+    account_opening_new
+    reset_password_request
+    pa_transfer_confirm
+    reset_password_confirmation
 );
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
+
+my $transactional_mapper = BOM::Event::Transactional::Mapper->new;
+$transactional_mapper->load;
 
 =head2 _api
 
@@ -1127,13 +1137,22 @@ sub _send_track_request {
     # filter invalid or unknown properties out
     my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'loginid', 'lang', 'brand'];
     my $valid_properties       = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } @$valid_event_properties};
-
-    return _send_transactional_request(
-        customer   => $customer,
-        event      => $event,
+    return
+        $customer->track
+        ( #send another event to rudderstack with 'track_prefix' due to https://wikijs.deriv.cloud/en/Backend/CustomerIO/Transactional-Emails#constant-data-analysis
+        event      => "track_$event",
         properties => $valid_properties,
         context    => $context,
-        )
+    )->then(
+        sub {
+            #chain it after track to avoid sending multiple emails in case of track event fail.
+            return _send_transactional_request(
+                customer   => $customer,
+                event      => $event,
+                properties => $valid_properties,
+                context    => $context,
+            );
+        })
         if _is_transactional($event)
         && BOM::Config::Runtime->instance->app_config->customerio->transactional_emails;
 
@@ -1165,10 +1184,12 @@ It is called with the following parameters:
 =cut
 
 sub _send_transactional_request {
-    my %args = @_;
-    my $cio  = $services->customerio // die 'Could not load cio';
+    my %args  = @_;
+    my $cio   = $services->customerio // die 'Could not load cio';
+    my $event = $transactional_mapper->get_event({%args});
+    return Future->done(1) unless $event;
     my $data = {
-        transactional_message_id => $args{event},
+        transactional_message_id => $event,
         message_data             => $args{properties},
         to                       => $args{properties}->{email},
         identifiers              => {id => $args{customer}->user_id}};
@@ -1184,6 +1205,7 @@ sub _send_transactional_request {
             DataDog::DogStatsd::Helper::stats_inc('bom-events.transactional_email.sent.failure', {tags => $tags});
             return Future->fail(@_);
         });
+
 }
 
 =head2 _create_context

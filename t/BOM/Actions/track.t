@@ -665,7 +665,7 @@ subtest 'General event validation - filtering by brand' => sub {
             event => 'request_change_email',
             $args->%*
         )->get;
-        ok !@track_args,        'Segment track is not invoked';
+        ok @track_args,         'Segment track is invoked';
         ok @transactional_args, 'CIO transactional is invoked';
         my (undef, $to_cmp) = @transactional_args;
         is_deeply(
