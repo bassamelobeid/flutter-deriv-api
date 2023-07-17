@@ -16,7 +16,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{github.repository}}
     env:
       LOG_LEVEL: debug
     steps:
