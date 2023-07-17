@@ -8,8 +8,14 @@ on:
     tags:
       - '*'
   pull_request:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Repository name for running tests'
+        required: true
+        type: string 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
   cancel-in-progress: true
 jobs:
   check-git-message:
@@ -18,35 +24,10 @@ jobs:
       - name: check git message
         uses: regentmarkets/github-actions/check-git-message@master
   syntax_diff_unit:
-    needs: check-git-message
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          need_service: 'false'
-      - name: Code structure and syntax
-        run: make syntax_diff
-      - name: unit tests
-        run: make unit
+    uses: regentmarkets/github-actions/.github/workflows/syntax_diff_unit.yml@master
+    secrets: inherit
   produt_contract:
     needs: syntax_diff_unit
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -57,7 +38,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
     steps:
@@ -70,7 +51,6 @@ jobs:
         run: make unit_test_product_contract
   validation:
     needs: syntax_diff_unit
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -81,7 +61,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
     steps:
@@ -94,7 +74,6 @@ jobs:
         run: make unit_test_validation
   memory_test:
     needs: syntax_diff_unit
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -105,7 +84,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
     steps:
@@ -118,7 +97,6 @@ jobs:
         run: make memory_test
   pricing:
     needs: syntax_diff_unit
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -129,7 +107,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
     steps:
@@ -142,7 +120,6 @@ jobs:
         run: make unit_test_pricing
   product_others:
     needs: syntax_diff_unit
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -153,7 +130,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
     steps:
@@ -178,7 +155,6 @@ jobs:
         if: always()
   benchmark_merlin_ovra:
     needs: syntax_diff_unit
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -189,7 +165,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
     steps:
@@ -209,7 +185,6 @@ jobs:
         if: always()
   benchmark_SD:
     needs: syntax_diff_unit
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -252,7 +227,6 @@ jobs:
         if: always()
   Pricing-Engine-Tests:
     needs: syntax_diff_unit
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -263,7 +237,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
     steps:
