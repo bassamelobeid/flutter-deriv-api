@@ -198,6 +198,7 @@ my $action_mapping = {
         pa_first_time_approved                           => \&BOM::Event::Services::Track::pa_first_time_approved,
         pa_transfer_confirm                              => \&BOM::Event::Actions::Client::pa_transfer_confirm,
         pa_withdraw_confirm                              => \&BOM::Event::Actions::Client::pa_withdraw_confirm,
+        shared_payment_method_email_notification         => \&BOM::Event::Actions::Client::shared_payment_method_email_notification,
         derivez_inactive_account_closed                  => \&BOM::Event::Actions::DerivEZ::derivez_inactive_account_closed,
         derivez_inactive_notification                    => \&BOM::Event::Actions::DerivEZ::derivez_inactive_notification,
     },
