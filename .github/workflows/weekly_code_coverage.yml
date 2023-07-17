@@ -5,25 +5,5 @@ on:
     - cron: '50 3 * * 6'
 jobs:
   code_coverage:
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-      - name: code coverage tests
-        run: make cover
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit

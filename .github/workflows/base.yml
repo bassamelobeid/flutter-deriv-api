@@ -8,8 +8,14 @@ on:
     tags:
       - '*'
   pull_request:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Repository name for running tests'
+        required: true
+        type: string 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
   cancel-in-progress: true
 jobs:
   check-git-message:
@@ -17,32 +23,9 @@ jobs:
     steps:
       - name: check git message
         uses: regentmarkets/github-actions/check-git-message@master
-  core_syntax_diff:
+  core_unit_syntax_diff:
     needs: check-git-message
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-      - name: Core tests
-        run: make test
-      - name: unit tests
-        run: make unit
-      - name: Code structure and syntax
-        run: make syntax_diff
-
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    secrets: inherit
+    with:
+      repository: ${{ inputs.repository }}
