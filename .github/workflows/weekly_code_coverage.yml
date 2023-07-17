@@ -5,7 +5,6 @@ on:
     - cron: '30 2 * * 6'
 jobs:
   code_coverage:
-    timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -19,6 +18,7 @@ jobs:
         working-directory: /home/git/${{github.repository}}
     env:
       LOG_LEVEL: debug
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
