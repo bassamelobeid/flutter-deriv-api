@@ -116,8 +116,9 @@ is_deeply $names, $expected_names, "got correct name for multiple apps";
 
 ## test get_used_apps_by_loginid and revoke
 my $used_apps = $m->get_used_apps_by_loginid($test_loginid);
-is scalar(@{$used_apps}), 1;
-is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
+is scalar(@{$used_apps}),       1;
+is $used_apps->[0]->{app_id},   $test_appid, 'app_id 1';
+is $used_apps->[0]->{official}, 0,           'app_id is un-official';
 is_deeply([sort @{$used_apps->[0]->{scopes}}], ['payments', 'read', 'trade'], 'scopes are right');
 ok $used_apps->[0]->{last_used}, 'last_used ok';
 

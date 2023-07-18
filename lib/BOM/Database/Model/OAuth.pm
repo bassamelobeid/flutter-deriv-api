@@ -421,17 +421,10 @@ sub get_app_ids_by_user_id {
 
 sub get_used_apps_by_loginid {
     my ($self, $loginid) = @_;
-
     return $self->dbic->run(
         fixup => sub {
             my $dbh  = $_;
-            my $apps = $dbh->selectall_arrayref("
-        SELECT
-            u.app_id, a.name, a.scopes, a.app_markup_percentage,
-            u.last_login as last_used
-        FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
-        WHERE u.loginid = ? AND a.active ORDER BY a.name
-    ", {Slice => {}}, $loginid);
+            my $apps = $dbh->selectall_arrayref("SELECT * FROM oauth.get_apps_info_by_loginid(?)", {Slice => {}}, $loginid);
             return [] unless $apps;
             $_->{scopes} = __parse_array($_->{scopes}) for @$apps;
             return $apps;
