@@ -4,12 +4,14 @@ use strict;
 use warnings;
 no indirect;
 
+use BOM::Platform::Context qw (localize request);
 use BOM::Rules::Engine;
 use BOM::MT5::User::Async;
 use Syntax::Keyword::Try;
-use Format::Util::Numbers qw(formatnumber);
-use Log::Any              qw($log);
-use List::Util            qw(any);
+use Format::Util::Numbers      qw(formatnumber);
+use Log::Any                   qw($log);
+use List::Util                 qw(any);
+use DataDog::DogStatsd::Helper qw/stats_inc/;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw (request);
 use BOM::User::Client;

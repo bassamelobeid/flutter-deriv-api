@@ -846,8 +846,6 @@ sub derivez_validate_and_get_amount {
 
     # Parameters check from FE
     die +{code => 'DerivEZMissingID'} unless $derivez_loginid;
-    die +{code => 'WrongAmount'} if ($amount <= 0);
-    die +{code => 'MissingAmount'} unless $amount;
 
     # MT5 login or binary loginid not belongs to user
     my @loginids_list = ($derivez_loginid);
@@ -889,6 +887,9 @@ sub derivez_validate_and_get_amount {
 
                 return {top_up_virtual => 1};
             }
+
+            die +{code => 'WrongAmount'} if ($amount <= 0);
+            die +{code => 'MissingAmount'} unless $amount;
 
             # Check if the loginid is missing
             die +{code => 'MissingID'} unless $loginid;
@@ -1128,6 +1129,7 @@ sub derivez_validate_and_get_amount {
             if (ref $e eq 'HASH' and defined $e->{code}) {
                 die +{
                     code    => $e->{code},
+                    params  => $e->{params},
                     message => $e->{message}};
             } else {
                 $log->errorf("derivez_validate_and_get_amount: %s", $e);

@@ -11,6 +11,8 @@ use BOM::Test::Helper::Client;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 use BOM::Config::Redis;
+use Data::Dumper;
+use File::Slurp;
 
 subtest "withdrawal from DerivEZ to CR account" => sub {
     my %derivez_account = (
@@ -241,6 +243,7 @@ subtest "cannot withdraw between cfd account" => sub {
         exception { $derivez->withdraw(%params) },
         {
             code    => 'PermissionDenied',
+            params  => undef,
             message => 'Transfer between cfd account is not permitted.'
         },
         'cannot withdraw between cfd account'
@@ -397,6 +400,7 @@ subtest "amount does not meet the min requirements" => sub {
         exception { $derivez->withdraw(%params) },
         {
             code    => 'InvalidMinAmount',
+            params  => ['0.01', 'USD'],
             message => undef
         },
         'amount does not meet the min requirements'
@@ -464,6 +468,7 @@ subtest "amount exceed the max_transfer_limit requirements" => sub {
         exception { $derivez->withdraw(%params) },
         {
             code    => 'InvalidMaxAmount',
+            params  => ['15000.00', 'USD'],
             message => undef
         },
         'amount exceed the max_transfer_limit requirements'
@@ -531,6 +536,7 @@ subtest "amount is valid" => sub {
         exception { $derivez->withdraw(%params) },
         {
             code    => 'DerivEZWithdrawalError',
+            params  => undef,
             message => 'Invalid amount. Amount provided can not have more than 2 decimal places.'
         },
         'amount is valid'

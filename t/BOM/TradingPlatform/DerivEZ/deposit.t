@@ -322,6 +322,7 @@ subtest "cannot deposit between cfd account" => sub {
         exception { $derivez->deposit(%params) },
         {
             code    => 'PermissionDenied',
+            params  => undef,
             message => 'Transfer between cfd account is not permitted.'
         },
         'cannot deposit between cfd account'
@@ -502,6 +503,7 @@ subtest "amount does not meet the min requirements" => sub {
         exception { $derivez->deposit(%params) },
         {
             code    => 'InvalidMinAmount',
+            params  => ['0.01', 'USD'],
             message => undef
         },
         'amount does not meet the min requirements'
@@ -516,6 +518,7 @@ subtest "amount does not meet the min requirements" => sub {
         exception { $derivez_eth->deposit(%params) },
         {
             code    => 'InvalidMinAmount',
+            params  => ['0.00000521', 'ETH'],
             message => undef
         },
         'amount does not meet the min requirements (ETH)'
@@ -592,6 +595,7 @@ subtest "amount exceed the max_transfer_limit requirements" => sub {
         exception { $derivez->deposit(%params) },
         {
             code    => 'InvalidMaxAmount',
+            params  => ['15000.00', 'USD'],
             message => undef
         },
         'amount exceed the max_transfer_limit requirements'
@@ -606,6 +610,7 @@ subtest "amount exceed the max_transfer_limit requirements" => sub {
         exception { $derivez_eth->deposit(%params) },
         {
             code    => 'InvalidMaxAmount',
+            params  => ['7.81252035', 'ETH'],
             message => undef
         },
         'amount exceed the max_transfer_limit requirements (ETH)'
@@ -673,6 +678,7 @@ subtest "amount is valid" => sub {
         exception { $derivez->deposit(%params) },
         {
             code    => 'DerivEZDepositError',
+            params  => undef,
             message => 'Invalid amount. Amount provided can not have more than 2 decimal places.'
         },
         'amount is valid'
