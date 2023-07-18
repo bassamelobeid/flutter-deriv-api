@@ -1913,6 +1913,42 @@ sub get_edd_status {
     }
 }
 
+=head2 update_reputation_status
+
+Update users' reputation status
+
+Returns a hashref of the users' updated reputation status
+
+=cut
+
+sub update_reputation_status {
+    my ($self, %args) = @_;
+
+    return $self->dbic->run(
+        fixup => sub {
+            $_->do('SELECT users.update_affiliate_reputation(?, ?, ?, ?, ?, ?)',
+                undef, $self->{id}, @args{qw/reputation_status check_reason start_date last_review_date comment/});
+        });
+}
+
+=head2 get_reputation_status
+
+Returns a hashref of the most recent users' reputation status if exists, otherwise returns 0
+
+=cut
+
+sub get_reputation_status {
+    my $self = shift;
+    try {
+        return $self->dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM users.affiliate_reputation WHERE binary_user_id = ?', undef, $self->{id});
+            }) // {};
+    } catch {
+        return 0;
+    }
+}
+
 =head2 lexis_nexis
 
 Gets the LexisNexis information of the current user.
