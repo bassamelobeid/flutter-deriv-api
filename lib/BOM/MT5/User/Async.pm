@@ -910,8 +910,7 @@ sub update_user {
     my $args   = shift;
     my @fields = _get_update_user_fields();
 
-    my $param = {};
-    $param->{$_} = $args->{$_} for (@fields);
+    my $param = {map { $_ => $args->{$_} } grep { defined $args->{$_} } @fields};
 
     # Due to the implementation of this module and the php-mt5-webapi repo
     #   you could only update the following properties. Failing to provide
