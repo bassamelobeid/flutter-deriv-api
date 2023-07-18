@@ -1,0 +1,77 @@
+[% IF is_compliance %]
+    <form method="post">
+        <table border="0" width="100%" id="client_edit" onload="init_text_validations()">
+        <tr>
+                <td class="label" style="vertical-align:middle">CHECK REASON</td>
+                <td>:
+                    <select id='affiliate_reason_for_reputation' name='affiliate_reason_for_reputation' required="required">
+                        <option value=""></option>
+                        <option value="Conference" [% IF user_affiliate_check_reason == "Conference" %] selected [% END %]> Conference </option>
+                        <option value="Seminar" [% IF user_affiliate_check_reason == "Seminar" %] selected [% END %]> Seminar </option>
+                        <option value="Reputation check" [% IF user_affiliate_check_reason == "Reputation check" %] selected [% END %]>  Reputation check </option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td class="label" style="vertical-align:middle">REPUTATION STATUS</td>
+                <td>: <select id='status_for_reputation' name='status_for_reputation' required="required" >
+                    <option value=""></option>
+                    <option value="Not Performed" [% IF user_affiliate_reputation_status == "Not Performed" %] selected [% END %]> Not Performed </option>
+                    <option value="Pending" [% IF user_affiliate_reputation_status == "Pending" %] selected [% END %]> Pending </option>
+                    <option value="Failed" [% IF user_affiliate_reputation_status == "Failed" %] selected [% END %]> Failed </option>
+                    <option value="Completed" [% IF user_affiliate_reputation_status == "Completed" %] selected [% END %]> Completed </option>
+                </select></td>
+            </tr>
+            <tr>
+                <td class="label" style="vertical-align:middle">START DATE</td>
+                <td>: <input required="required" name="start_date" data-lpignore="true" type="text" size="10" value="[% user_affiliate_start_date %]"pattern="\d{4}-\d{2}-\d{2}" class="datepick"></td>
+            </tr>
+            <tr>
+                <td class="label" style="vertical-align:middle">LAST REVIEW DATE</td>
+                <td>: <input required="required" name="last_review_date" data-lpignore="true" type="text" size="10" value="[% user_affiliate_last_review_date %]" pattern="\d{4}-\d{2}-\d{2}" class="datepick"></td>
+            </tr>
+            <tr>
+                <td class="label" style="vertical-align:middle" data-lpignore="true">NOTES</td>
+                <td>
+                    <textarea id="affiliate_notes" placeholder="Enter New comment here..." name="affiliate_notes" rows="8" cols="80" maxlength="1000" minlength="1">[% user_affiliate_comment %]</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td class="label"></td>
+                <td>
+                    <button type="submit" name="rep_submit" value="1" class="btn btn--primary">Update client</button>
+                </td>
+            </tr>
+        </tr>
+        </table>
+    </form>
+[% ELSE %]
+    <table border="0" width="100%" id="client_edit" onload="init_text_validations()">
+        <tr>
+            <td class="label" style="vertical-align:middle">CHECK REASON</td>
+            <td>:
+                [% user_affiliate_check_reason %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">REPUTATION STATUS</td>
+            <td>: [% user_affiliate_reputation_status %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">START DATE</td>
+            <td>: [% user_affiliate_start_date %] </td>
+        </tr>
+            <tr>
+                <td class="label" style="vertical-align:middle">LAST REVIEW DATE</td>
+                <td>: [% user_affiliate_last_review_date %] </td>
+            </tr>
+            <tr>
+                <td class="label" style="vertical-align:middle" data-lpignore="true">NOTES:</td>
+                <td>
+                    [% user_affiliate_comment %]
+                </td>
+            </tr>
+        </tr>
+    </table>
+[% END %]

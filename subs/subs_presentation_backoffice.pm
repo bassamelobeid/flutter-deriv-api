@@ -253,6 +253,10 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
         {
             link => 'f_idv_dashboard',
             text => 'IDV Dashboard',
+        },
+        {
+            link => 'affiliate_reputation_details',
+            text => 'Affiliate Reputation'
         }];
 
     my $misc_tools_list = [{

@@ -69,6 +69,7 @@ for ($category) {
         my $user_db_queries                  = user_db_queries($loginid, $broker);
         my $edd_status_queries               = edd_status_queries($loginid, $broker);
         my $affiliate_queries                = affiliate_queries($loginid, $broker);
+        my $affiliate_reputation_queries     = affiliate_reputation_queries($loginid, $broker);
         my $social_responsibility_queries    = social_responsibility_queries($loginid, $broker);
 
         @tables = ({
@@ -120,6 +121,7 @@ for ($category) {
             $user_db_queries->@*,
             $edd_status_queries->@*,
             $affiliate_queries->@*,
+            $affiliate_reputation_queries->@*,
             $social_responsibility_queries->@*,
         );
     } elsif (/^payment_agent$/) {
@@ -518,6 +520,48 @@ sub affiliate_queries {
         table  => 'audittable',
         query  => $query,
         params => ['affiliate', $binary_user_id],
+        broker => 'users',
+        };
+
+    return $queries;
+}
+
+=head2 affiliate_reputation_queries
+
+Gets the needed queries to hit the affiliate reputation table in users db for the audit trail.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$loginid> - The loginid of the current client.
+
+=back
+
+Returns an arrayref of database queries.
+
+=cut
+
+sub affiliate_reputation_queries {
+    my $loginid            = shift;
+    my $client             = BOM::User::Client->new({loginid => $loginid}) || die "Cannot find client: $loginid";
+    my $binary_user_id     = $client->binary_user_id;
+    my $queries            = [];
+    my @interesting_fields = qw/coc_approval/;
+    my $query              = "tbl = ? AND binary_user_id = ?";
+
+    return [] if $client->is_virtual;
+
+    # Tell the db which fields to grab
+    my $pg_userid = "COALESCE(metadata->>'staff', 'system') AS pg_userid";
+    my $select    = join ',', 'stamp', 'tbl', 'operation', $pg_userid, map { "new_row->>'$_' AS affiliate_$_" } @interesting_fields;
+
+    push $queries->@*,
+        {
+        select => $select,
+        table  => 'audittable',
+        query  => $query,
+        params => ['affiliate_reputation', $binary_user_id],
         broker => 'users',
         };
 

@@ -159,7 +159,14 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             <button type="submit" name="force_coc_acknowledgement" value="1" class="btn btn--primary">Force COC acknowledgement</button>
         </td>
     </tr>
+    
     [% END %]
+    <tr>
+        <td class="label"></td>
+        <td>
+            <a class="btn btn--primary" href="[% request.url_for('backoffice/affiliate_reputation_details.cgi', {loginID => client.loginid , broker = client.broker }) %]">Affiliate reputation details</a>
+        </td>
+    </tr>
     <tr>
         <td class="bg-lightgrey" colspan="2">#AML SCREENING</td>
     </tr>
