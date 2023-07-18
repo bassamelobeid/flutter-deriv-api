@@ -126,19 +126,6 @@ Handler for the withdrawal transaction with SENT status.
 
 sub withdrawal_handler {
     my ($txn_info, $txn_metadata) = @_;
-    if ($txn_info->{status_code} eq 'SENT') {
-        try {
-            BOM::Platform::Event::Emitter::emit(
-                'payment_withdrawal',
-                {
-                    loginid  => $txn_metadata->{loginid},
-                    amount   => $txn_info->{amount},
-                    currency => $txn_metadata->{currency_code},
-                });
-        } catch ($e) {
-            $log->warnf("Failed to emit payment_withdrawal event for %s: %s", $txn_metadata->{loginid}, $e);
-        }
-    }
 
     try {
         BOM::Platform::Event::Emitter::emit(

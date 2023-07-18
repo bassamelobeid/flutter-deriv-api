@@ -102,13 +102,6 @@ subtest 'withdrawal_handler' => sub {
     };
 
     my $expected_events = [{
-            payment_withdrawal => {
-                loginid  => $txn_metadata->{loginid},
-                amount   => $txn_info->{amount},
-                currency => $txn_metadata->{currency_code},
-            }
-        },
-        {
             crypto_withdrawal_email => {
                 amount             => $txn_info->{amount},
                 loginid            => $txn_metadata->{loginid},
