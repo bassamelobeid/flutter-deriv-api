@@ -200,7 +200,7 @@ async sub run {
                         stats_timing(
                             'pricer_daemon.queue.tick_receive_latency',
                             1000 * ($ptick->{received} - $ptick->{epoch}),
-                            {tags => ['tag:' . $self->internal_ip]});
+                            {tags => ['tag:' . $self->internal_ip, 'symbol:' . $tick->{symbol}]});
                         $self->process($tick->{symbol}, $ptick)->retain;
                     });
                 return $payload_source->completed->on_fail(
@@ -270,17 +270,25 @@ Returns a L<Future> which will resolve once the batches are submitted.
 async sub submit_jobs {
     my ($self, $contracts, $tick) = @_;
 
+    my @accus;
     my @asks;
     my @bids;
     my $tick_json = $tick ? "::" . encode_json_utf8($tick) : "";
     for my $contract (@$contracts) {
-        if (index($contract, q("price_daemon_cmd","bid")) > 0) {
+        if (index($contract, q("contract_type","ACCU")) > 0) {
+            push @accus, $contract . $tick_json;
+        } elsif (index($contract, q("price_daemon_cmd","bid")) > 0) {
             push @bids, $contract . $tick_json;
         } else {
             push @asks, $contract . $tick_json;
         }
     }
 
+    # accumulator contracts must be priced with minimum latency, so we push them into a priority queue
+    if (@accus) {
+        await $self->redis->lpush('pricer_jobs_p0', @accus);
+        $self->{stats}{queued_p0} += @accus;
+    }
     # Prioritise bids if we had any, assumes pricer dæmon uses `rpop`
     await $self->redis->lpush('pricer_jobs', @bids) if @bids;
     await $self->redis->lpush('pricer_jobs', @asks) if @asks;
@@ -316,24 +324,32 @@ async sub stats {
     $self->{stats} = {
         start_time => $now,
         queued     => 0,
+        queued_p0  => 0,
         proc_time  => 0,
     };
     return unless $stats;
     $stats->{queued}    //= 0;
+    $stats->{queued_p0} //= 0;
     $stats->{proc_time} //= 0;
 
     # Take note of the job queue length
     my $qlen     = await $self->redis->llen('pricer_jobs');
-    my $overflow = $qlen - $stats->{queued};
+    my $overflow = $qlen + $stats->{queued_p0} - $stats->{queued};
     $overflow = 0 if $overflow < 0;
     if ($overflow) {
-        await $self->dequeue($overflow);
-        $log->debugf('got pricer_jobs overflow: %d', $overflow);
+        await $self->dequeue($overflow, "pricer_jobs");
+    }
+    my $qlen_p0     = await $self->redis->llen('pricer_jobs_p0');
+    my $overflow_p0 = $qlen_p0 - $stats->{queued_p0};
+    $overflow_p0 = 0 if $overflow_p0 < 0;
+    if ($overflow_p0) {
+        await $self->dequeue($overflow_p0, "pricer_jobs_p0");
     }
 
     # this one should be about 1/sec, if it's much less then it runs too long
     stats_inc('pricer_daemon.queue.stats_collector', {tags => ['tag:' . $self->internal_ip]});
-    stats_gauge('pricer_daemon.queue.overflow', $overflow, {tags => ['tag:' . $self->internal_ip]});
+    stats_gauge('pricer_daemon.queue.overflow',    $overflow + $overflow_p0, {tags => ['tag:' . $self->internal_ip]});
+    stats_gauge('pricer_daemon.queue.overflow_p0', $overflow_p0,             {tags => ['tag:' . $self->internal_ip]});
     # the name is misleading, it's the number of proposals queued for pricing in the last second
     stats_gauge('pricer_daemon.queue.size', $stats->{queued}, {tags => ['tag:' . $self->internal_ip]});
     # this one is of somewhat questionable value because multiple process subs can execute concurrently
@@ -585,10 +601,10 @@ proposals and generates some metrics.
 =cut
 
 async sub dequeue {
-    my ($self, $count) = @_;
+    my ($self, $count, $queue) = @_;
 
-    my $deq = await $self->redis->rpop('pricer_jobs', $count);
-    return unless 0 + @$deq;
+    my $deq = await $self->redis->rpop($queue, $count);
+    return unless $deq and 0 + @$deq;
     return unless $self->record_price_metrics;
     my %queued;
     await fmap0(

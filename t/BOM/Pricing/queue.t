@@ -52,6 +52,7 @@ my @keys = (
     q{PRICER_ARGS::["amount",1000,"basis","payout","contract_type","PUT","country_code","ph","currency","EUR","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxEURUSD"]},
     q{PRICER_ARGS::["amount",1000,"basis","payout","contract_type","CALL","country_code","ph","currency","EUR","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxEURUSD"]},
     q{PRICER_ARGS::["contract_id",124,"landing_company","svg","price_daemon_cmd","bid"]},
+    q{PRICER_ARGS::["amount","21","basis","stake","contract_type","ACCU","currency","USD","duration_unit","s","growth_rate","0.03","landing_company","virtual","price_daemon_cmd","price","product_type","basic","proposal","1","skips_price_validation","1","subscribe","1","symbol","1HZ75V"]},
 );
 
 my @contract_params = ([
@@ -79,9 +80,14 @@ subtest 'normal flow' => sub {
     $queue->process('frxAUDJPY')->get;
     is($redis->llen('pricer_jobs'), 6, 'now frxAUDJPY keys were also added');
 
+    is($redis->llen('pricer_jobs_p0'), 0, 'no priority pricer jobs so far');
+    $queue->process('1HZ75V')->get;
+    is($redis->llen('pricer_jobs_p0'), 1, 'priority pricer job for ACCU contract');
+
     $queue->stats->get;
-    is($stats{'pricer_daemon.queue.overflow'}, 0, 'zero overflow reported in statd');
-    is($stats{'pricer_daemon.queue.size'},     6, '6 keys were queued');
+    is($stats{'pricer_daemon.queue.overflow'},    0, 'zero overflow reported in statd');
+    is($stats{'pricer_daemon.queue.overflow_p0'}, 0, 'zero overflow reported in statd');
+    is($stats{'pricer_daemon.queue.size'},        7, '7 keys were queued');
 };
 
 subtest 'overloaded daemon' => sub {

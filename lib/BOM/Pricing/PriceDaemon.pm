@@ -123,10 +123,13 @@ sub run {
 
     # Allow ->stop and restart
     local $self->{is_running} = 1;
+    # contracts placed into priority queues will be priced first
+    my @queues = map { $_ . "_p0" } @{$args{queues}};
+    push @queues, @{$args{queues}};
     LOOP: while ($self->is_running) {
         my $key;
         try {
-            $key = $redis_pricer->brpop(@{$args{queues}}, 0)
+            $key = $redis_pricer->brpop(@queues, 0)
         } catch ($e) {
             if (blessed($e) && $e->isa('RedisDB::Error::EAGAIN')) {
                 stats_inc("pricer_daemon.resource_unavailable_error");
@@ -164,12 +167,10 @@ sub run {
         my $rkey    = $prefix . "::" . $next;
         my $payload = decode_json_utf8($next);
         my $params  = {@{$payload}};
+        my $dtick;
         if ($tick) {
-            my $dtick = decode_json_utf8($tick);
+            $dtick = decode_json_utf8($tick);
             $params->{current_tick} = Postgres::FeedDB::Spot::Tick->new($dtick);
-            if (my $recv = $dtick->{received}) {
-                stats_timing('pricer_daemon.queue_latency.time', 1000 * (Time::HiRes::time() - $recv), {tags => $self->tags});
-            }
         }
 
         # for proposal open_contract, we will fetch contract data with contract id and landing company.
@@ -180,6 +181,20 @@ sub run {
         }
 
         my $contract_type = $params->{contract_type};
+        my $contract_type_string =
+            ref($contract_type)
+            ? join '_', @$contract_type
+            : $contract_type // 'unknown';
+
+        if ($dtick) {
+            if (my $recv = $dtick->{received}) {
+                stats_timing(
+                    'pricer_daemon.queue_latency.time',
+                    1000 * (Time::HiRes::time() - $recv),
+                    {tags => $self->tags('symbol:' . $dtick->{underlying}, 'contract_type:' . $contract_type_string)},
+                );
+            }
+        }
 
         # If incomplete or invalid keys somehow got into pricer,
         # delete them here.
@@ -212,10 +227,6 @@ sub run {
         }
 
         if (($response->{rpc_time} // 0) > 1000) {
-            my $contract_type_string =
-                ref($contract_type)
-                ? join '_', @$contract_type
-                : $contract_type // 'unknown';
             stats_timing('pricer_daemon.rpc_time', $response->{rpc_time},
                 {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
         }
