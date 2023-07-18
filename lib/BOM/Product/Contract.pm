@@ -1241,7 +1241,7 @@ sub _get_tick_details {
             : $self->ticks_to_expiry + 1;          # +1 to include an extra tick in the end
 
         my @tmp_ticks = @{
-            $self->underlying->ticks_in_between_start_limit({
+            $self->_tick_accessor->ticks_in_between_start_limit({
                     start_time => $epoch + 1,
                     limit      => $limit,
                 }
@@ -1249,7 +1249,7 @@ sub _get_tick_details {
         push @ticks_all, @tmp_ticks;
     } else {
         my @tmp_ticks = @{
-            $self->underlying->ticks_in_between_start_limit({
+            $self->_tick_accessor->ticks_in_between_start_limit({
                     start_time => $epoch + 1,
                     limit      => 3,
                 }
