@@ -17,6 +17,7 @@
                 <th scope="col">Address</th>
                 <th scope="col">Amount</th>
                 <th scope="col">Amount USD</th>
+                <th scope="col">Client Amount</th>
                 <th scope="col">Fee</th>
                 <th scope="col">Protocol Cost</th>
                 <th scope="col">Status</th>
@@ -35,6 +36,7 @@
                 <td><a class="link" href="[% trx.explorer_url.address %]" target="_blank">[% trx.address %]</a></td>
                 <td class="right">[% trx.amount %]</td>
                 <td class="right">[% '$' _ trx.amount_usd %]</td>
+                <td class="right">[% trx.client_amount %]</td>
                 <td class="right">[% trx.fee %]</td>
                 <td class="right">[% trx.protocol_cost %]</td>
                 <td>[% trx.status %]</td>

@@ -174,6 +174,10 @@ my $display_transactions = sub {
 
         $trx->{exchange_rate} = $trx->{exchange_rate} || $exchange_rate;
         $trx->{amount_usd}    = commas(formatnumber('amount', 'USD', ($trx->{amount} // 0) * $trx->{exchange_rate}));
+
+        $trx->{usd_client_amount} =
+            $trx->{type} eq 'deposit' ? commas(formatnumber('amount', 'USD', ($trx->{client_amount} // 0) * $trx->{exchange_rate})) : 0;
+
         if ($trx->{loginid}) {
             $trx->{statement_link} = request()->url_for(
                 'backoffice/f_manager_history.cgi',

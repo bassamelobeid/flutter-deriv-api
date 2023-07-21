@@ -117,6 +117,9 @@
                             </td>
                             <td valign="top">
                                 [% WRAPPER info title='Amount' %][% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount || 'not available' %])[% END %]
+                                [% IF trx.type == 'deposit' %]
+                                   [% WRAPPER info title='Amount Credited' %][% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])[% END %]
+                                [% END %]
                                 [% IF !loginid && trx.loginid %]
                                     [% WRAPPER info title='Client' %]
                                         <ul style="margin-top: 0;">

@@ -179,6 +179,11 @@ my $prepare_transaction = sub {
             if (my $exchange_rate = $get_exchange_rate->($transaction_info->{currency_code})) {
                 $transaction_info->{usd_amount} =
                     formatnumber('amount', 'USD', ($transaction_info->{amount} // 0) * ($transaction_info->{exchange_rate} || $exchange_rate));
+                $transaction_info->{usd_client_amount} =
+                    $txn_type eq 'deposit'
+                    ? (
+                    formatnumber('amount', 'USD', ($transaction_info->{client_amount} // 0) * ($transaction_info->{exchange_rate} || $exchange_rate)))
+                    : 0;
             }
         }
 

@@ -272,6 +272,9 @@
                 <td valign="top">
                     <table class="small"><tbody>
                         <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.amount_usd %])</td></tr>
+                        [% IF trx.type == 'deposit' %]
+                            [% WRAPPER info title='Amount Credited' %][% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])[% END %]
+                        [% END %]
                         <tr>
                             <th>Client:</th>
                             <td>
