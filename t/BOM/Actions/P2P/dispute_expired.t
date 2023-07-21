@@ -90,7 +90,7 @@ subtest 'Event processing return value' => sub {
             ),
             'The order has been processed';
 
-        my $msg = mailbox_search(subject => qr/P2P dispute expired/);
+        my $msg = mailbox_search(subject => qr/P2P dispute expired for Order ID: $order_id/);
         ok $msg, "We've got an email";
 
         my $brand          = request()->brand;
@@ -100,7 +100,7 @@ subtest 'Event processing return value' => sub {
         cmp_deeply $email_args,
             {
             from                  => $brand->emails('no-reply'),
-            subject               => 'P2P dispute expired',
+            subject               => "P2P dispute expired for Order ID: $order_id",
             email_content_is_html => 1,
             message               => [
                 '<p>A P2P order has been disputed for a while without resolution. Here are the details:<p>',

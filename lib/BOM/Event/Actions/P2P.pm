@@ -304,7 +304,7 @@ sub dispute_expired {
         send_email({
                 from                  => $brand->emails('no-reply'),
                 to                    => $app_config->payments->p2p->email_to,
-                subject               => 'P2P dispute expired',
+                subject               => "P2P dispute expired for Order ID: $order_id",
                 email_content_is_html => 1,
                 message               => [
                     '<p>A P2P order has been disputed for a while without resolution. Here are the details:<p>',
