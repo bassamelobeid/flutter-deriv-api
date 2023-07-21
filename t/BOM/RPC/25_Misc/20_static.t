@@ -66,7 +66,7 @@ subtest 'residence_list' => sub {
                         has_visual_sample    => 1,
                         documents_supported  => {
                             nin_slip => {
-                                display_name => 'NIN Slip',
+                                display_name => 'National ID Number Slip',
                                 format       => '^[0-9]{11}$',
                             },
                             drivers_license => {
@@ -161,10 +161,10 @@ subtest 'residence_list' => sub {
                         has_visual_sample    => 1,
                         documents_supported  => {
                             national_id_no_photo => {
-                                display_name => 'National ID no photo',
+                                display_name => 'National ID Number',
                                 format       => '^[a-zA-Z0-9]{14}$',
                                 additional   => {
-                                    display_name => 'Secondary ID number',
+                                    display_name => 'Card Number',
                                     format       => '^[a-zA-Z0-9]+$',
                                 },
                             },
