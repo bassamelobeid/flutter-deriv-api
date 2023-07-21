@@ -5,7 +5,7 @@ use warnings;
 
 use Time::HiRes;
 use Date::Utility;
-use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period);
+use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period NY1700_rollover_date_on);
 use DataDog::DogStatsd::Helper          qw/stats_timing/;
 use Time::HiRes                         ();
 use List::Util                          qw(any first uniq);
@@ -728,11 +728,12 @@ sub _validate_start_and_expiry_date {
     #Note: Please don't change the message for expiry blackout (specifically, the 'expire' word) unless you have
     #updated the check in this method which updates end_epoch
     my @blackout_checks = (
-        [[$start_epoch],             $self->date_start_blackouts,         'TradingNotAvailable'],
-        [[$end_epoch],               $self->date_expiry_blackouts,        $self->for_sale ? 'ResaleNotOffered' : 'ContractExpiryNotAllowed'],
-        [[$start_epoch, $end_epoch], $self->market_risk_blackouts,        'TradingNotAvailable'],
-        [[$start_epoch, $end_epoch], $self->forward_blackouts,            'TradingNotAvailable'],
-        [[$start_epoch, $end_epoch], $self->date_start_forward_blackouts, 'TradingNotAvailable'],
+        [[$start_epoch],             $self->date_start_blackouts,             'TradingNotAvailable'],
+        [[$end_epoch],               $self->date_expiry_blackouts,            $self->for_sale ? 'ResaleNotOffered' : 'ContractExpiryNotAllowed'],
+        [[$start_epoch, $end_epoch], $self->market_risk_blackouts,            'TradingNotAvailable'],
+        [[$start_epoch, $end_epoch], $self->forward_blackouts,                'TradingNotAvailable'],
+        [[$start_epoch, $end_epoch], $self->date_start_forward_blackouts,     'TradingNotAvailable'],
+        [[$start_epoch, $end_epoch], $self->forex_and_forex_basket_blackouts, 'TradingNotAvailable'],
     );
 
     # disable contracts with duration < 5 hours at 21:00 to 24:00GMT due to quiet period.
@@ -1004,6 +1005,36 @@ sub _build_date_start_blackouts {
     }
 
     return \@periods;
+}
+
+=head2 forex_and_forex_basket_blackouts
+
+forex and forex basket related contracts can not be traded at the certain period i.e From 20:50 to 22:00
+
+=cut
+
+has forex_and_forex_basket_blackouts => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_forex_and_forex_basket_blackouts {
+    my $self                       = shift;
+    my $underlying                 = $self->underlying;
+    my $today                      = $self->effective_start->truncate_to_day;
+    my @target_contract_categories = qw(callput callputequal touchnotouch staysinout endsinout);
+
+    if ($underlying->market->name eq 'forex' || $underlying->submarket->name eq 'forex_basket') {
+        if (grep { $_ eq $self->category->code } @target_contract_categories) {
+            my $rollover_date_time = NY1700_rollover_date_on($today);
+            my $blackout_starts    = $rollover_date_time->minus_time_interval('10m');
+            my $blackout_ends      = $rollover_date_time->plus_time_interval('1h');
+
+            return [[$blackout_starts->epoch, $blackout_ends->epoch]];
+        }
+    }
+
+    return [];
 }
 
 1;

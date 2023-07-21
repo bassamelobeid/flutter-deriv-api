@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Warnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -19,9 +19,11 @@ use Test::MockModule;
 use BOM::Config::Chronicle;
 use Quant::Framework;
 
-my $weekend             = Date::Utility->new('2016-03-26');
-my $weekday             = Date::Utility->new('2016-03-29');
-my $usdjpy_weekend_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+my $weekend                        = Date::Utility->new('2016-03-26');
+my $weekday                        = Date::Utility->new('2016-03-29');
+my $forex_blackout_non_dst_weekday = Date::Utility->new('2024-01-03');
+my $forex_blackout_dst_weekday     = Date::Utility->new('2023-06-13');
+my $usdjpy_weekend_tick            = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxAUDUSD',
     epoch      => $weekend->epoch
 });
@@ -335,4 +337,105 @@ subtest 'sell multiday on weekend' => sub {
     is $c->primary_validation_error->{message_to_client}->[0],
         'This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.',
         'market is presently closed';
+};
+
+subtest 'forex trading blackout' => sub {
+    my $trading_dst_date     = $forex_blackout_dst_weekday->plus_time_interval('20h55m');
+    my $trading_non_dst_date = $forex_blackout_non_dst_weekday->plus_time_interval('21h55m');
+
+    # Tests during DST
+
+    my $usdjpy_tick_dst = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $trading_dst_date->epoch,
+    });
+
+    my $bet_params = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        barrier      => 'S0P',
+        payout       => 100,
+        date_start   => $trading_dst_date,
+        date_pricing => $trading_dst_date,
+        duration     => '2h',
+        currency     => 'USD',
+        current_tick => $usdjpy_tick_dst,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    my $bet_params2 = {
+        bet_type     => 'MULTUP',
+        underlying   => 'frxUSDJPY',
+        date_start   => $trading_dst_date,
+        date_pricing => $trading_dst_date,
+        amount_type  => 'stake',
+        amount       => 1000,
+        multiplier   => 100,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $trading_dst_date->epoch,
+                basis_spot   => '100.00',
+            }
+        },
+    };
+
+    $c = produce_contract($bet_params2);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    # Tests during Non-DST
+
+    my $usdjpy_tick_non_dst = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $trading_non_dst_date->epoch,
+    });
+
+    my $bet_params_non_dst = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        barrier      => 'S0P',
+        payout       => 100,
+        date_start   => $trading_non_dst_date,
+        date_pricing => $trading_non_dst_date,
+        duration     => '2h',
+        currency     => 'USD',
+        current_tick => $usdjpy_tick_non_dst,
+    };
+
+    my $c_non_dst = produce_contract($bet_params_non_dst);
+    ok !$c_non_dst->is_valid_to_buy, 'invalid to buy';
+
+    $bet_params_non_dst->{underlying} = 'R_100';
+    $c_non_dst = produce_contract($bet_params_non_dst);
+    ok $c_non_dst->is_valid_to_buy, 'valid to buy';
+
+    my $bet_params2_non_dst = {
+        bet_type     => 'MULTUP',
+        underlying   => 'frxUSDJPY',
+        date_start   => $trading_non_dst_date,
+        date_pricing => $trading_non_dst_date,
+        amount_type  => 'stake',
+        amount       => 1000,
+        multiplier   => 100,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $trading_non_dst_date->epoch,
+                basis_spot   => '100.00',
+            }
+        },
+    };
+
+    $c_non_dst = produce_contract($bet_params2_non_dst);
+    ok $c_non_dst->is_valid_to_buy, 'valid to buy';
+
 };

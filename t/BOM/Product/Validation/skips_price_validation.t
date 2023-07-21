@@ -32,8 +32,8 @@ $mocked->mock(
         [map { {quote => 100, symbol => 'frxUSDJPY', epoch => $_, decimate_epoch => $_} } (0 .. 10)];
     });
 
-note('sets time to 21:59:59, which has a payout cap at 200 for forex.');
-my $now = Date::Utility->new('2016-09-19 21:59:59');
+note('sets time to 22:00:01, which has a payout cap at 200 for forex.');
+my $now = Date::Utility->new('2016-09-19 22:00:01');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -70,7 +70,7 @@ my $bet_params = {
 subtest 'skips price validation' => sub {
     $bet_params->{disable_trading_at_quiet_period} = 0;
     my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
+    ok !$c->is_valid_to_buy, 'Invalid to buy';
     is $c->payout, 1000, 'payout is 1000';
     ok !$c->skips_price_validation, 'validate price';
     like($c->primary_validation_error->message, qr/payout amount outside acceptable range/, 'throws error');

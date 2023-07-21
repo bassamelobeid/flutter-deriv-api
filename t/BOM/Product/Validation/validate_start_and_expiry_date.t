@@ -330,12 +330,12 @@ subtest 'date start blackouts' => sub {
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
 
-    my $GMT_21 = $bet_params->{date_pricing}->truncate_to_day->plus_time_interval('21h');
-    $bet_params->{date_pricing} = $bet_params->{date_start} = $GMT_21;
+    my $GMT_22 = $bet_params->{date_pricing}->truncate_to_day->plus_time_interval('22h');
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $GMT_22;
     $bet_params->{duration}     = '5h';
     $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxAUDUSD',
-        epoch      => $GMT_21->epoch
+        epoch      => $GMT_22->epoch
     });
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
@@ -347,6 +347,7 @@ subtest 'date start blackouts' => sub {
         ['Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]', '21:00:00', '23:59:59'],
         'throws error'
     );
+
     is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
 
     my $GMT_23 = $bet_params->{date_pricing}->truncate_to_day->plus_time_interval('23h');
@@ -616,7 +617,7 @@ subtest 'end of day two minute blackout' => sub {
 };
 
 subtest 'rollover blackout' => sub {
-    my $start      = Date::Utility->new('2020-07-15 20:45:00');
+    my $start      = Date::Utility->new('2020-07-15 20:35:00');
     my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => $start->epoch,
@@ -642,10 +643,10 @@ subtest 'rollover blackout' => sub {
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_sell, 'valid to sell';
 
-    $bet_params->{date_pricing} = $start->plus_time_interval('15m');
+    $bet_params->{date_pricing} = $start->plus_time_interval('1h25m');
     $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
-        epoch      => $start->plus_time_interval('15m')->epoch,
+        epoch      => $start->plus_time_interval('1h25m')->epoch,
         quote      => 7195,
     });
     $c = produce_contract($bet_params);

@@ -106,8 +106,9 @@ subtest 'inefficient period' => sub {
 };
 
 subtest 'non dst' => sub {
-    note('price at 2017-01-04 20:59:59');
-    my $non_dst = Date::Utility->new('2017-01-04 20:59:59');
+    note('Previous price was set at 2017-01-04 20:59:59');
+    note('Now, Forex has blackout period from 21:50 to 23:00. So, we choose new time at 2017-01-04 22:59:59');
+    my $non_dst = Date::Utility->new('2017-01-04 22:59:59');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -122,7 +123,7 @@ subtest 'non dst' => sub {
     $bet_params->{duration}   = '2m';
     my $c = produce_contract($bet_params);
     ok !$c->date_pricing->is_dst_in_zone('America/New_York'), 'date pricing is at non dst';
-    ok $c->is_valid_to_buy,                                   'valid to buy';
+    ok !$c->is_valid_to_buy,                                  'Invalid to buy - Forex Blackout';
     $bet_params->{date_start}                      = $bet_params->{date_pricing} = $non_dst->plus_time_interval('1s');
     $bet_params->{disable_trading_at_quiet_period} = 0;
     $c                                             = produce_contract($bet_params);
