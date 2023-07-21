@@ -640,7 +640,7 @@ subtest 'Contracts with no payout', sub {
 
     ($error, $contract_info) = buy_contract(
         client    => $cr,
-        buy_price => 2,
+        buy_price => 3,
         contract  => $contract,
     );
 

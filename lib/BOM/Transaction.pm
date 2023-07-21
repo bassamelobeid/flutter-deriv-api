@@ -1376,6 +1376,9 @@ sub prepare_bet_data_for_sell {
     my $self     = shift;
     my $contract = shift || $self->contract;
 
+    # price can be "0" when client wants to sell at market and skip_validation enabled
+    # adjust it to recomputed price if it's 0
+    $self->price($self->recomputed_amount) unless $self->price;
     $self->price(financialrounding('price', $contract->currency, $self->price));
 
     my $bet_params = {

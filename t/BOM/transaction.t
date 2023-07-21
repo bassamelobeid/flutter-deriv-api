@@ -1272,7 +1272,7 @@ subtest 'max_30day_turnover validation', sub {
 };
 
 subtest 'max_losses validation', sub {
-    plan tests => 13;
+    plan tests => 14;
     lives_ok {
         my $cl = create_client;
 
@@ -1346,6 +1346,8 @@ subtest 'max_losses validation', sub {
                 price         => 0,
             });
             is $t->sell(skip_validation => 1), undef, 'CALL bet sold';
+            my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $t->transaction_id;
+            is $fmb->{sell_price}, $contract_up->bid_price, 'contract was sold at market price with price => 0 and skip_validation => 1';
 
             $t = BOM::Transaction->new({
                 client        => $cl,
