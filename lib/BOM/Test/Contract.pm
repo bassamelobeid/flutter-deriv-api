@@ -324,19 +324,28 @@ sub sell_contract {
     my $contract = $params{contract};
     my $new_c    = make_similar_contract($contract, {date_pricing => ($params{sell_time} ? $params{sell_time} : $contract->date_start->epoch + 1)});
 
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+    unless ($params{sell_outcome}) {
+        $mock_contract->mock('bid_price', sub { 0 });
+        $mock_contract->mock('payout',    sub { 0 });
+    }
+
+    my $fixed_payout_bet = $new_c->payout;
+    my $amount           = $fixed_payout_bet ? $new_c->payout : $new_c->bid_price;
+
     my $txn = BOM::Transaction->new({
         purchase_date => $new_c->date_start,
         client        => $params{client},
         contract      => $new_c,
         contract_id   => $params{contract_id},
-        amount_type   => 'payout',
+        amount_type   => $fixed_payout_bet ? 'payout' : 'price',
         # sell_outcome is a value from from 0 to 1;
         # 0 for loss, 1 for win, and anything in between is
         # a premature sell
         # TODO: currently this class is under the assumption that every contract
         #       has a payout. This is not always the case and for such contracts the
         #       sell is always a fail regardless of what sell_outcome is set
-        price  => $new_c->payout * $params{sell_outcome},
+        price  => $amount * $params{sell_outcome},
         source => 23,
     });
 
