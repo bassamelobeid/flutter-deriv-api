@@ -20,6 +20,7 @@ use List::Util  qw( first );
 use parent qw(BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor::Base);
 
 use Log::Any qw($log);
+use Math::BigFloat;
 
 use constant {
     #mapping coinspaid's transaction status to our system based status
@@ -166,17 +167,20 @@ Otherwise contains error key containing error message
 
 sub process_deposit {
     my ($self, $payload) = @_;
-    my ($id, $transactions, $fees, $error, $status) = @{$payload}{qw/ id transactions fees error status/};
+    my ($id, $transactions, $fees, $error, $status, $currency_received) = @{$payload}{qw/id transactions fees error status currency_received/};
 
     #todo proper error code and error message implementation
-    return {error => 'id not found in payload'}           unless $id;
-    return {error => 'transactions not found in payload'} unless $transactions && @{$transactions};
-    return {error => 'fees not found in payload'}         unless $fees;
-    return {error => 'status not found in payload'}       unless $status;
+    my @required_params = qw/id transactions fees status currency_received/;
+    my $missing_param   = first { !defined($payload->{$_}) || (ref $payload->{$_} eq 'ARRAY' && !@{$payload->{$_}}) } @required_params;
+    return {error => "$missing_param not found in payload"} if $missing_param;
 
-    #iterate fees and check if deposit fees is sent otherwise adds a log
-    #fees will be empty for pending(not_confirmed) and canceleed transactions
-    my $fee = first { FEE_TYPES_DEPOSIT->{($_->{type} // '')} } $fees->@*;
+    my ($currency, $amount, $amount_minus_fee) = @{$currency_received}{qw/ currency amount amount_minus_fee/};
+
+    my $fee = Math::BigFloat->new($amount)->bsub($amount_minus_fee);
+
+    # this is temporary logging to collect dd metrics, this is being done so that we know actual fee structure
+    # coinspaid sends and after analysing this with enough data, we will update our fee handling
+    $log->warnf("Error processing Coinspaid Deposit Fee. more detail: %s", $fees) if $status eq 'confirmed' && !$fee->is_positive();
 
     my @normalized_txns;
     #since coinspaid returns transactions as an array list, we handle each of it
@@ -184,19 +188,19 @@ sub process_deposit {
     for my $txn ($transactions->@*) {
         defined $txn->{$_} or (return {error => sprintf('%s not found in payload, coinspaid_id: %s', $_, $id)}) for qw(address currency txid amount);
 
-        # this is temporary logging to collect dd metrics, this is being done so that we know actual fee structure
-        # coinspaid sends and after analysing this with enough data, we will update our fee handling
-        $log->warnf("Error processing Coinspaid Deposit Fee. more detail: %s", $fees) if $status eq 'confirmed' && !defined $fee->{amount};
+        return {error => sprintf('transaction amount not matching with currency_received amount, coinspaid_id: %s', $id)}
+            if Math::BigFloat->new($txn->{amount})->bne($amount);
 
         my $normalize_txn = {
-            trace_id        => $id,
-            status          => $self->transform_status($status),
-            error           => $error // '',
-            address         => $txn->{address},
-            amount          => $txn->{amount},
-            currency        => $self->transform_currency($txn->{currency}),
-            hash            => $txn->{txid},
-            transaction_fee => $fee->{amount} // 0,                           #for pending transactions, fee is not returned from coinspaid
+            trace_id         => $id,
+            status           => $self->transform_status($status),
+            error            => $error // '',
+            address          => $txn->{address},
+            amount           => $txn->{amount},
+            amount_minus_fee => $amount_minus_fee,
+            currency         => $self->transform_currency($txn->{currency}),
+            hash             => $txn->{txid},
+            transaction_fee  => $fee->bstr() // 0,                             #for pending transactions, fee is not returned from coinspaid
         };
 
         push @normalized_txns, $normalize_txn;

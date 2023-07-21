@@ -138,6 +138,8 @@ Receives the following named parameters in transaction hashref passed from every
 
 =item * C<amount>            - transaction amount
 
+=item * C<amount_minus_fee>  - transaction amount minus fee
+
 =item * C<currency>          - currency code of transaction from processor's side transformed as per our currency code
 
 =item * C<hash>              - transaction hash
@@ -155,20 +157,21 @@ sub emit_deposit_event {
     my $processor_name = lc($self->processor_name // '');
 
     #to enforce derived class must sent these fields else it dies
-    defined $transaction->{$_} or die "missing parameter $_" for qw(trace_id status address amount currency hash transaction_fee);
+    defined $transaction->{$_} or die "missing parameter $_" for qw(trace_id status address amount currency hash transaction_fee amount_minus_fee);
 
     try {
         my $is_emitted = BOM::Platform::Event::Emitter::emit(
             'crypto_notify_external_deposit',
             {
-                trace_id        => $transaction->{trace_id},
-                status          => $transaction->{status},
-                error           => $transaction->{error} // '',
-                address         => $transaction->{address},
-                amount          => $transaction->{amount},
-                currency        => $transaction->{currency},
-                hash            => $transaction->{hash},
-                transaction_fee => $transaction->{transaction_fee},
+                trace_id         => $transaction->{trace_id},
+                status           => $transaction->{status},
+                error            => $transaction->{error} // '',
+                address          => $transaction->{address},
+                amount           => $transaction->{amount},
+                currency         => $transaction->{currency},
+                hash             => $transaction->{hash},
+                transaction_fee  => $transaction->{transaction_fee},
+                amount_minus_fee => $transaction->{amount_minus_fee},
             });
         die "event could not be emitter" unless $is_emitted;
         stats_inc(DD_METRIC_PREFIX . 'deposit', {tags => ['currency:' . $transaction->{currency}, 'status:success', 'processor:' . $processor_name]});

@@ -154,6 +154,18 @@ subtest 'emit_deposit_event' => sub {
                 hash     => 'txn_hash',
             },
             error => 'missing parameter transaction_fee'
+        },
+        {
+            payload => {
+                trace_id         => 123,
+                status           => 'pending',
+                address          => 'address1',
+                amount           => 0,
+                currency         => 'tUSDT',
+                hash             => 'txn_hash',
+                amount_minus_fee => 0,
+            },
+            error => 'missing parameter transaction_fee'
         }];
 
     for my $case ($cases->@*) {
@@ -189,13 +201,14 @@ subtest 'emit_deposit_event' => sub {
     );
 
     my $payload = {
-        trace_id        => 123,
-        status          => 'pending',
-        address         => 'address1',
-        amount          => 0,
-        currency        => 'tUSDT',
-        hash            => 'txn_hash',
-        transaction_fee => 0.01,
+        trace_id         => 123,
+        status           => 'pending',
+        address          => 'address1',
+        amount           => 0,
+        currency         => 'tUSDT',
+        hash             => 'txn_hash',
+        transaction_fee  => 0.01,
+        amount_minus_fee => 0,
     };
 
     is $base_instance->emit_deposit_event($payload), 0, 'Correct result when deposit event emission failed.';

@@ -118,6 +118,15 @@ subtest 'process_deposit' => sub {
                 fees         => [{amount  => .01}]
             },
             error => {error => 'status not found in payload'},
+        },
+        {
+            payload => {
+                id           => 123,
+                transactions => [{address => 'address1'}],
+                fees         => [{amount  => .01}],
+                status       => 'confirmed',
+            },
+            error => {error => 'currency_received not found in payload'},
         }];
 
     for my $case ($cases->@*) {
@@ -128,19 +137,21 @@ subtest 'process_deposit' => sub {
     #cases when fields missing in transactions array of payload
     $cases = [{
             payload => {
-                id           => 123,
-                transactions => [{txid   => 'txid1'}],
-                fees         => [{amount => .01}],
-                status       => 'pending',
+                id                => 123,
+                transactions      => [{txid   => 'txid1'}],
+                fees              => [{amount => .01}],
+                status            => 'pending',
+                currency_received => {amount => .01},
             },
             error => {error => 'address not found in payload, coinspaid_id: 123'},
         },
         {
             payload => {
-                id           => 123,
-                transactions => [{address => 'address1'}],
-                fees         => [{amount  => .01}],
-                status       => 'pending',
+                id                => 123,
+                transactions      => [{address => 'address1'}],
+                fees              => [{amount  => .01}],
+                status            => 'pending',
+                currency_received => {amount => .01},
             },
             error => {error => 'currency not found in payload, coinspaid_id: 123'},
         },
@@ -152,8 +163,9 @@ subtest 'process_deposit' => sub {
                         currency => 'USDTT',
                     }
                 ],
-                fees   => [{amount => .01}],
-                status => 'pending',
+                fees              => [{amount => .01}],
+                status            => 'pending',
+                currency_received => {amount => .01},
             },
             error => {error => 'txid not found in payload, coinspaid_id: 123'},
         },
@@ -166,10 +178,27 @@ subtest 'process_deposit' => sub {
                         txid     => 'tx_hash1',
                     }
                 ],
-                fees   => [{amount => .01}],
-                status => 'pending',
+                fees              => [{amount => .01}],
+                status            => 'pending',
+                currency_received => {amount => .01},
             },
             error => {error => 'amount not found in payload, coinspaid_id: 123'},
+        },
+        {
+            payload => {
+                id           => 123,
+                transactions => [{
+                        address  => 'address1',
+                        currency => 'USDTT',
+                        txid     => 'tx_hash1',
+                        amount   => 10
+                    }
+                ],
+                fees              => [{amount => .01}],
+                status            => 'pending',
+                currency_received => {amount => .01},
+            },
+            error => {error => 'transaction amount not matching with currency_received amount, coinspaid_id: 123'},
         },
     ];
 
@@ -193,7 +222,7 @@ subtest 'process_deposit' => sub {
                 amount => 0.02
             },
             {
-                type   => 'fee_crypto_deposit',    #as per the check, this should be assigned to fees
+                type   => 'fee_crypto_deposit',
                 amount => 0.01
             },
             {
@@ -201,17 +230,23 @@ subtest 'process_deposit' => sub {
                 amount => 0.03
             }
         ],
-        status => 'confirmed',
+        status            => 'confirmed',
+        currency_received => {
+            amount           => 10,
+            amount_minus_fee => 9.97,
+            currency         => 'USDTT'
+        },
     };
     my $normalize_txn = {
-        trace_id        => 123,
-        status          => 'confirmed',
-        error           => '',
-        address         => 'address1',
-        amount          => 10,
-        currency        => 'tUSDT',
-        hash            => 'tx_hash1',
-        transaction_fee => 0.01,
+        trace_id         => 123,
+        status           => 'confirmed',
+        error            => '',
+        address          => 'address1',
+        amount           => 10,
+        amount_minus_fee => 9.97,
+        currency         => 'tUSDT',
+        hash             => 'tx_hash1',
+        transaction_fee  => Math::BigFloat->new(10)->bsub(9.97)->bstr,
     };
 
     my $expected_result_1 = {
@@ -219,47 +254,8 @@ subtest 'process_deposit' => sub {
         transactions => [$normalize_txn],
     };
 
-    #case when internal deposit normalized successfully
-    my $payload_internal = {
-        id           => 1234,
-        transactions => [{
-                address  => 'address2',
-                currency => 'USDTT',
-                txid     => 'tx_hash2',
-                amount   => 10
-            }
-        ],
-        fees => [{
-                type   => 'mining',
-                amount => 0.02
-            },
-            {
-                type   => 'fee_crypto_deposit_internal',    #as per the check, this should be assigned to fees
-                amount => 0.03
-            },
-        ],
-        status => 'confirmed',
-    };
-    my $normalize_internal_txn = {
-        trace_id        => 1234,
-        status          => 'confirmed',
-        error           => '',
-        address         => 'address2',
-        amount          => 10,
-        currency        => 'tUSDT',
-        hash            => 'tx_hash2',
-        transaction_fee => 0.03,
-    };
-
-    my $expected_result_2 = {
-        is_success   => 1,
-        transactions => [$normalize_internal_txn],
-    };
-
     my $coinspaid = BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor->new(processor_name => 'Coinspaid');
-    is_deeply $coinspaid->process_deposit($payload),          $expected_result_1, 'Correct response for valid payload for deposit txn';
-    is_deeply $coinspaid->process_deposit($payload_internal), $expected_result_2, 'Correct response for valid payload for internal deposit txn';
-
+    is_deeply $coinspaid->process_deposit($payload), $expected_result_1, 'Correct response for valid payload for deposit txn';
 };
 
 subtest 'process_withdrawal' => sub {
