@@ -453,7 +453,7 @@ subtest 'sell_expired_contracts', sub {
 subtest 'buy a bet after friday close', sub {
     plan tests => 4;
 
-    my $date = Date::Utility->new('2021-11-12 22:00:00');
+    my $date = Date::Utility->new('2021-11-12 21:00:00');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {

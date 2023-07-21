@@ -1073,7 +1073,7 @@ subtest 'batch buy forex after friday close' => sub {
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
         is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
 
-        my $date = Date::Utility->new('2021-11-12 22:00:00');
+        my $date = Date::Utility->new('2021-11-12 21:00:00');
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
