@@ -553,7 +553,8 @@ SQL
     $onfido_allow_resubmission_flag =~ s/\skyc_email$//;    # Match the dropdown reasons to avoid user confusion
     my $onfido_resubmission_counter = $redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+    my $idv_model      = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+    my $countries_list = request()->brand->countries_instance->countries_list;
 
     my $idv_records = $idv_model->get_document_list;
     my $messages;
@@ -563,6 +564,8 @@ SQL
             $messages                      = [];
             $messages                      = eval { decode_json_utf8 $idv_record->{status_messages} } if $idv_record->{status_messages};
             $idv_record->{status_messages} = [map { $rejected_reasons->{$_} ? localize($rejected_reasons->{$_}) : $_ } grep { $_ } $messages->@*];
+            $idv_record->{document_type} =
+                $countries_list->{$idv_record->{issuing_country}}->{config}->{idv}->{document_types}->{$idv_record->{document_type}}->{display_name};
             $idv_record->{issuing_country} = $countries_instance->country_from_code($idv_record->{issuing_country});
             $idv_record->{document_expiration_date} ||= "Lifetime Valid";
             $idv_record->{document_expiration_date} = "-" if uc($idv_record->{status}) eq "FAILED";
