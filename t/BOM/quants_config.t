@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::FailWarnings;
+use YAML::XS qw(LoadFile);
 
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
@@ -230,5 +231,12 @@ subtest 'delete custom deal cancellation config' => sub {
 sub clear_config {
     $qc->chronicle_writer->set('quants_config', 'commission', +{}, Date::Utility->new);
 }
+
+subtest 'quats config values validation' => sub {
+    #making sure that quants config values don't get changed accidentally
+    my $config   = LoadFile('/home/git/regentmarkets/bom-config/share/quants_config.yml');
+    my $expected = LoadFile('/home/git/regentmarkets/bom-config/t/share/expected_quants_config.yml');
+    is_deeply($config, $expected);
+};
 
 done_testing();
