@@ -27,7 +27,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -42,7 +42,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -55,7 +55,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -70,7 +70,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -81,7 +81,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -96,7 +96,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -107,7 +107,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:master
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -122,7 +122,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -133,7 +133,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -148,7 +148,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -159,7 +159,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -174,7 +174,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -185,7 +185,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -200,7 +200,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -211,7 +211,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -226,7 +226,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -237,7 +237,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -252,7 +252,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
@@ -264,7 +264,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:nihal
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -279,7 +279,7 @@ jobs:
       WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@dev
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
