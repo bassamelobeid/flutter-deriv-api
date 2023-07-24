@@ -10,7 +10,6 @@ use BOM::FeedPlugin::Plugin::DataDecimate;
 use BOM::FeedPlugin::Plugin::FakeEmitter;
 use BOM::FeedPlugin::Plugin::AccumulatorStatChart;
 use BOM::FeedPlugin::Plugin::AccumulatorExpiry;
-use Getopt::Long               qw(GetOptions :config no_auto_abbrev no_ignore_case);
 use Time::HiRes                ();
 use List::Util                 qw(min);
 use DataDog::DogStatsd::Helper qw(stats_timing);
@@ -18,47 +17,18 @@ use Log::Any                   qw($log);
 use IO::Async::Loop;
 
 sub run {
+    my $args = shift;
+
+    my $source                 = $args->{source};
+    my $redis_config           = $args->{redis_config};
+    my $update_expiry_queue    = $args->{update_expiry_queue};
+    my $update_raw_forex       = $args->{update_raw_forex};
+    my $update_raw_volidx      = $args->{update_raw_volidx};
+    my $fake_feed_emitter      = $args->{fake_feed_emitter};
+    my $accumulator_stat_chart = $args->{accumulator_stat_chart};
+    my $accumulator_expiry     = $args->{accumulator_expiry};
+
     STDOUT->autoflush(1);
-
-    GetOptions(
-        'r|source=s'                 => \(my $source                 = "master-read"),
-        'c|redis-config=s'           => \(my $redis_config           = "/etc/rmg/redis-feed.yml"),
-        'x|update-expiry-queue=i'    => \(my $update_expiry_queue    = 0),
-        'f|update-raw-forex=i'       => \(my $update_raw_forex       = 0),
-        'v|update-raw-volidx=i'      => \(my $update_raw_volidx      = 0),
-        'e|fake-feed-emitter=i'      => \(my $fake_feed_emitter      = 0),
-        'm|accumulator-stat-chart=i' => \(my $accumulator_stat_chart = 0),
-        'a|accumulator-expiry=i'     => \(my $accumulator_expiry     = 0),
-        'l|log=s'                    => \(my $log_level              = "info"),
-        'h|help'                     => \my $help,
-    );
-
-    my $show_help = $help;
-    die <<"EOF" if ($show_help);
-usage: $0 OPTIONS
-
-These options are available:
-  -d, --distributor-redis             Choose the distributor source that the client will be subscribing to. (default: feed)
-  -r, --redis-access-type             Choose distributor redis access type that will be used. (default: master-read)
-  -c, --redis-config                  Choose redis configuration file (default: /etc/rmg/redis-feed.yml)
-  -x, --update-expiry-queue=i         Should the expiry queue be updated or not (default: 0)
-  -f, --update-raw-forex=i            Should datadecimate feed-raw forex updated or not (default: 0)
-  -v, --update-raw-volidx=i           Should datadecimate feed-raw volidx updated or not (default: 0)
-  -e, --fake-feed-emitter=i           Should Fake feed emitter be enabled or not (default:0)
-  -s, --step-index-feed-generator=i   Should Step Index feed generator be enabled or not (default:0)
-  -m, --accumulator-stat-chart=i      Should accumulator_stat_chart be enabled or not (default:0)
-  -a, --accumulator-expiry=i          Should accumulator_expiry be enabled or not (default:0)
-  -l, --log LEVEL                     Set the Log::Any logging level
-  -h, --help                          Show this message.
-EOF
-
-    # We use Log::Any::Adapter here because this module is the entrance of the whole program.
-    require Log::Any::Adapter;
-    Log::Any::Adapter->import(
-        qw(DERIV),
-        stderr    => 'json',
-        log_level => $log_level
-    );
 
     try {
         $log->infof("Feed-Client starting, now = %s", time);

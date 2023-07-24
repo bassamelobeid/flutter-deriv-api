@@ -11,7 +11,6 @@ alias:
     name: Update git repositories
 - &3
   run:
-    background: true
     no_output_timeout: 3h
     command: |
       start_services
