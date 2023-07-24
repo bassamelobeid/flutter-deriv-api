@@ -3309,42 +3309,16 @@ async sub shared_payment_method_found {
     my $siblings_loginids = [map { $siblings->{$_}->{loginid} } keys %$siblings];
     my @shared_clients    = ();
     my @filtered_loginids = ();
-    my %seen              = ();
     push @shared_loginid_array, @$siblings_loginids;
     my %send_email_count = ($client->user->id => 1);
 
     foreach my $shared_loginid (@shared_loginid_array) {
-
-        # Check if client already exists
-        next if $seen{$shared_loginid}++;
         my $shared_client = BOM::User::Client->new({loginid => $shared_loginid});
 
         next unless $shared_client;
 
         push @filtered_loginids, $shared_loginid;
         push @shared_clients,    $shared_client;
-
-        my $user = $shared_client->user;
-
-        # Get sibling accounts
-
-        my @clients = grep {
-            not(   $_->status->closed
-                or $_->status->disabled
-                or $_->is_virtual
-                or $_->is_wallet
-                or $_->loginid eq $shared_client->loginid
-                or $_->loginid eq $client_loginid)
-        } $user->clients(
-            include_disabled   => 0,
-            include_duplicated => 0
-        );
-        foreach my $shared_sibling_client (@clients) {
-            # Check if client already exists move to next
-            next if $seen{$shared_sibling_client->loginid}++;
-            push @filtered_loginids, $shared_sibling_client->loginid;
-            push @shared_clients,    $shared_sibling_client;
-        }
     }
     splice @filtered_loginids, 10;    # The number of loginids in the reason is limited to 10
 

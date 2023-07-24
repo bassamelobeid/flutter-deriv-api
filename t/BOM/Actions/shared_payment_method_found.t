@@ -40,7 +40,6 @@ my $shared_user = BOM::User->create(
     email_verified => 1,
 );
 $shared_user->add_client($shared_client);
-my @track_args;
 
 my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{shared_payment_method_found};
 
@@ -208,108 +207,6 @@ subtest 'multiple loginids sent in params' => sub {
 
     $mocker_client->unmock_all;
     $mocker_client_another->unmock_all;
-};
-
-subtest 'check status is copied to both account in case of diel account' => sub {
-    my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test_from@bin.com',
-    });
-
-    my $email     = $client_from->email;
-    my $user_from = BOM::User->create(
-        email          => $client_from->email,
-        password       => "hello",
-        email_verified => 1,
-    );
-    $user_from->add_client($client_from);
-    my $shared_diel_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test_diel@bin.com',
-        residence   => 'za'
-    });
-    my $shared_diel_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        email       => 'test_diel@bin.com',
-        residence   => 'za'
-    });
-    my $shared_diel_user = BOM::User->create(
-        email          => $shared_diel_client_cr->email,
-        password       => "hello",
-        email_verified => 1,
-        residence      => 'za'
-    );
-    $shared_diel_user->add_client($shared_diel_client_cr);
-    $shared_diel_user->add_client($shared_diel_client_mf);
-
-    my $client_side_effect_another = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'side_effect@bin.com',
-    });
-
-    my $user_side_effect_another = BOM::User->create(
-        email          => $client_side_effect_another->email,
-        password       => "hello",
-        email_verified => 1,
-    );
-
-    # Mocking send_email
-    my @emails;
-    my @ask_poi;
-
-    $client_from->status->clear_shared_payment_method;
-
-    my @emissions;
-    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-    $mock_events->redefine(
-        'emit' => sub {
-            my ($event, $args) = @_;
-            push @emissions,
-                {
-                type    => $event,
-                details => $args
-                };
-        });
-    $action_handler->({
-            client_loginid => $client_from->loginid,
-            shared_loginid => $shared_diel_client_mf->loginid
-        })->get;
-
-    is scalar @emissions, 2, "Two events are send";
-
-    foreach my $event (@emissions) {
-        is $event->{type}, 'shared_payment_method_email_notification',
-            "track event shared_payment_method_email_notification fired successfully for client $event->{details}->{loginid}";
-    }
-
-    ok $client_from->status->cashier_locked,        'Client has cashier_locked status';
-    ok $client_from->status->shared_payment_method, 'Client has shared_payment_method status';
-    ok $client_from->status->allow_document_upload, 'Client has allow_document_upload status';
-
-    is $client_from->status->shared_payment_method->{reason},
-        'Shared with: ' . join(',', $shared_diel_client_mf->loginid, $shared_diel_client_cr->loginid),
-        'the status reason contains both the shared clients loginids';
-
-    ok $shared_diel_client_cr->status->cashier_locked,        'shared client has cashier_locked status';
-    ok $shared_diel_client_cr->status->shared_payment_method, 'shared client has shared_payment_method status';
-    ok $shared_diel_client_cr->status->allow_document_upload, 'shared has allow_document_upload status';
-
-    is $shared_diel_client_cr->status->shared_payment_method->{reason}, 'Shared with: ' . $client_from->loginid,
-        'Correct reason for shared payment method';
-
-    ok $shared_diel_client_mf->status->cashier_locked,        'shared client has cashier_locked status';
-    ok $shared_diel_client_mf->status->shared_payment_method, 'shared client has shared_payment_method status';
-    ok $shared_diel_client_mf->status->allow_document_upload, 'shared has allow_document_upload status';
-
-    is $shared_diel_client_mf->status->shared_payment_method->{reason}, 'Shared with: ' . $client_from->loginid,
-        'Correct reason for shared payment method';
-
-    ok !$client_side_effect_another->status->cashier_locked,        'Side effect client has no cashier_locked status';
-    ok !$client_side_effect_another->status->shared_payment_method, 'Side effect client has no shared_payment_method status';
-    ok !$client_side_effect_another->status->allow_document_upload, 'Side effect client has no allow_document_upload status';
-
-    $mock_events->unmock_all;
-
 };
 
 subtest 'Already age verified client' => sub {
