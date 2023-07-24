@@ -11,6 +11,7 @@
     "first_name": "affiliatefirstname",
     "last_name": "affiliatelastname",
     "non_pep_declaration": 1,
+    "over_18_declaration": 1,
     "phone": "+971541234",
     "phone_code": 971,
     "tnc_accepted": 1,

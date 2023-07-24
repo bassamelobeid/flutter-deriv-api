@@ -20,6 +20,7 @@
         "first_name",
         "last_name",
         "non_pep_declaration",
+        "over_18_declaration",
         "phone",
         "phone_code",
         "tnc_accepted",
@@ -113,6 +114,14 @@
             "description": "Indicates client's self-declaration of not being a PEP/RCA (Politically Exposed Person/Relatives and Close Associates).",
             "type": "integer",
             "enum": [
+                1
+            ]
+        },
+        "over_18_declaration": {
+            "description": "Indicates client's self-declaration of being over 18 in age",
+            "type": "integer",
+            "enum": [
+                0,
                 1
             ]
         },
