@@ -20,6 +20,8 @@ use Log::Any qw( $log );
 use IO::Async::Loop;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::Transport::HTTP;
+use JSON::XS;
+use XML::LibXML;
 
 my $loop;
 my $myaffiliate;
@@ -73,6 +75,7 @@ sub affiliate_add_general {
         PARAM_ph_countrycode => $args->{phone_code},
         PARAM_wa_countrycode => $args->{whatsapp_number_phoneCode},
         PARAM_address        => $args->{address_street},
+        PARAM_age            => $args->{over_18_declaration} eq 1 ? "over_eighteen" : "not_eighteen",
         %$extra_fields
     };
 
@@ -82,10 +85,44 @@ sub affiliate_add_general {
             code => "SuccessRegister",
         };
     } catch ($e) {
-        return {
-            code              => "MYAFFRuntimeError",
-            message_to_client => $e
-        };
+
+        use Data::Dump 'pp';
+        use feature 'say';
+        say pp($e);
+
+        # Check if the exception variable $e is an object or not
+
+        if (ref($e)) {
+
+            # Create an XML::LibXML object
+            my $parser = XML::LibXML->new();
+
+            # Parse the XML string
+            my $xml_doc = $parser->parse_string($e->{error_message});
+
+            # Access the root element
+            my $root = $xml_doc->documentElement();
+
+            # Now you can work with the XML document as needed
+            # For example, to access elements and attributes:
+
+            # Access the ERROR element
+            my $error_element = $root->findnodes('/ACCOUNT/INIT/ERROR')->[0];
+
+            # Access the text content of the MSG element
+            my $msg_content = $error_element->findvalue('./MSG');
+
+            return {
+                code              => "MYAFFRuntimeError",
+                message_to_client => $msg_content
+            };
+        } else {
+            return {
+                code              => "MYAFFRuntimeError",
+                message_to_client => "Error in response structure"
+            };
+        }
+
     }
 }
 
