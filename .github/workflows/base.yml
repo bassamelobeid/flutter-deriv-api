@@ -107,7 +107,7 @@ jobs:
     needs: check-git-message
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:master
+      image: regentmarkets/debian-ci:stable
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
