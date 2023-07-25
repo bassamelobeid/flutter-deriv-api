@@ -64,7 +64,7 @@ $client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 my $old_balance = $client_vr->default_account->balance;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
-my $clientdb = BOM::Database::ClientDB->new({client_loginid => $client_vr->loginid});
+my $clientdb = BOM::Database::ClientDB->new({client_loginid => $client_vr->loginid})->db->dbic->dbh;
 
 $clientdb->begin_work;
 $clientdb->do('lock transaction.transaction');
