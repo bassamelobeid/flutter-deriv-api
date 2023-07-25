@@ -184,6 +184,7 @@ sub error_map {
         HighRiskNotAuthenticated          => localize('Please authenticate your account.'),
         PotentialFraud                    => localize('Please authenticate your account.'),
         AppropriatenessTestFailed         => localize('Failed to reach an acceptable trading experience score.'),
+        CashierNotAllowed                 => localize('Cashier deposits and withdrawals are not allowed on this account.'),
 
         # Payment validation
         CurrencyMismatch           => localize("Payment currency [_1] not client currency [_2]."),    # test it!

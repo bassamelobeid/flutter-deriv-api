@@ -65,6 +65,7 @@ sub handshake {
         loginid     => $loginid,
         action      => $action,
         is_internal => 0,
+        is_cashier  => 1,
         rule_engine => $rule_engine
     );
     return $c->_render_error($validation->{error}{message_to_client}) if $validation->{error};
@@ -135,6 +136,7 @@ sub _act {
         loginid     => $loginid,
         action      => $action,
         is_internal => 0,
+        is_cashier  => 1,
         rule_engine => $rule_engine
     );
     # this validation is also done in RPC but better to be done here as well to be double sure

@@ -102,6 +102,8 @@ regulation and compliance requirements.
 
 =item * C<is_internal> - true when this is an internal transfer.
 
+=item * C<is_cashier> - true when this involves an external cashier (doughflow, crypto).
+
 =item * C<rule_engine> - a rule engine object (please note that we are not allowed to create rule engine objects in this repo)
 
 =back
@@ -112,7 +114,7 @@ Returns undef for successful validation or a hashref containing error details.
 
 sub validate {
     my %args = @_;
-    my ($loginid, $action, $is_internal, $underlying_action) = @args{qw(loginid action is_internal underlying_action)};
+    my ($loginid, $action, $is_internal, $is_cashier, $underlying_action) = @args{qw(loginid action is_internal is_cashier underlying_action)};
 
     my $errors = {};
     my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
@@ -143,6 +145,7 @@ sub validate {
         action      => $action,
         currency    => $currency,
         is_internal => $is_internal ? 1 : 0,
+        is_cashier  => $is_cashier,
         # Keep the rule engine from stopping on failure
         rule_engine_context => {stop_on_failure => 0},
     );
