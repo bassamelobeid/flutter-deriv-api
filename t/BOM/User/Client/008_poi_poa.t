@@ -1780,8 +1780,10 @@ subtest 'Onfido status' => sub {
         sub {
             return {
                 staff_name         => 'system',
-                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
-            } if $age_verification;
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss,
+                reason             => $age_verification->{reason} // 'another one'
+                }
+                if $age_verification;
 
             return undef;
         });
@@ -1868,7 +1870,9 @@ subtest 'Onfido status' => sub {
                 is_expired => 0,
             },
             status           => 'verified',
-            age_verification => 1,
+            age_verification => {
+                reason => 'onfido - age verified',
+            },
         },
         {
             is_supported_country   => 1,
@@ -1878,7 +1882,9 @@ subtest 'Onfido status' => sub {
                 is_expired => 0,
             },
             status           => 'rejected',
-            age_verification => 0,
+            age_verification => {
+                reason => 'idv - age verified',
+            },
         },
         {
             is_supported_country   => 1,
@@ -1962,7 +1968,9 @@ subtest 'Onfido status' => sub {
                 is_expired => 0,
             },
             status           => 'verified',
-            age_verification => 1,
+            age_verification => {
+                reason => 'onfido - age verified',
+            },
         },
         {
             is_supported_country   => 0,
@@ -3108,6 +3116,62 @@ subtest 'fully auth at BO scenario' => sub {
     $mocked_documents->unmock_all;
     $mocked_client->unmock_all;
     $mocked_status->unmock_all;
+};
+
+subtest 'Onfido status, under fully auth while having mismatch status' => sub {
+    my $age_verification;
+    my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
+    $mocked_status->mock('age_verification', sub { return $age_verification; });
+
+    my $fully_authenticated;
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    $mocked_client->mock('fully_authenticated', sub { return $fully_authenticated });
+
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+    my ($onfido_document_status, $onfido_sub_result, $user_check_result);
+    $mocked_onfido->mock(
+        'get_latest_check',
+        sub {
+            return {
+                user_check => {
+                    result => $user_check_result,
+                },
+                report_document_status     => $onfido_document_status,
+                report_document_sub_result => $onfido_sub_result,
+            };
+        });
+
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'br',
+        citizen     => 'br',
+        email       => 'onfido_fa-BO2-status@email.com',
+        loginid     => 'CR13179999'
+    );
+    my $user = BOM::User->create(
+        email          => 'onfido_fa-BO2-status@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
+    $test_client->binary_user_id($user->id);
+
+    $onfido_document_status = 'clear';
+    $onfido_sub_result      = 'clear';
+    $user_check_result      = 'clear';
+
+    is $test_client->get_onfido_status, 'rejected', 'Even though all is clear without age verification, this is kept as rejected';
+
+    $age_verification    = {reason => 'fully authenticated at bo'};
+    $fully_authenticated = 1;
+
+    is $test_client->get_onfido_status, 'rejected', 'verification at bo does not change onfido status';
+
+    $age_verification    = {reason => 'onfido authenticated'};
+    $fully_authenticated = 1;
+
+    is $test_client->get_onfido_status, 'verified', 'had the verification been done by Onfido, the status would be verified';
+
 };
 
 done_testing();

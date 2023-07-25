@@ -7850,7 +7850,9 @@ sub get_onfido_status {
 
         return 'expired' if $is_poi_expired;
 
-        return 'verified' if $self->status->age_verification;
+        # it must've been validated by Onfido, otherwise it was rejected by some reason (maybe mismatch)
+        my $reason = $self->status->reason('age_verification');
+        return 'verified' if $reason && $reason =~ /onfido/i;
 
         return 'rejected';
     }

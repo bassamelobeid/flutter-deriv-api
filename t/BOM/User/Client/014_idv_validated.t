@@ -178,6 +178,7 @@ subtest 'onfido after idv validated' => sub {
     @latest_poi_by         = ('onfido');
     @latest_verified_by    = ('onfido');
 
+    $client->status->upsert('age_verification', 'system', 'onfido');
     ok !$client->is_idv_validated(), 'is not IDV validated';
     is $client->get_onfido_status(),     'verified', 'Should be onfido verified';
     is $client->get_manual_poi_status(), 'none',     'Should be manually none';
