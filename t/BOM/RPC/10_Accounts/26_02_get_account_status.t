@@ -938,7 +938,8 @@ subtest 'backtest for Onfido disabled country' => sub {
             },
             age_verification => {
                 staff_name         => 'system',
-                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss,
+                reason             => 'onfido age verified'
             },
             name => 'verified status, supported country',
         },
