@@ -11,6 +11,7 @@ cashier_validation:
     - cashier.is_not_locked
     - client.not_disabled
     - landing_company.currency_is_allowed
+    - cashier.is_account_type_allowed
     - paymentagent.action_is_allowed
     - client.potential_fraud_age_verified
     - type: conditional

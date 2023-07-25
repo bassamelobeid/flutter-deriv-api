@@ -73,4 +73,126 @@ subtest $rule_name => sub {
     $mock_client->unmock_all;
 };
 
+$rule_name = 'cashier.is_account_type_allowed';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+
+    my @tests = ({
+            broker_code  => 'VRTC',
+            account_type => 'binary',
+            currency     => 'USD',
+            allowed      => 0,
+        },
+        {
+            broker_code  => 'VRW',
+            account_type => 'virtual',
+            currency     => 'USD',
+            allowed      => 0,
+        },
+        {
+            broker_code  => 'VRTC',
+            account_type => 'standard',
+            currency     => 'USD',
+            allowed      => 0,
+        },
+        {
+            broker_code  => 'CR',
+            account_type => 'binary',
+            currency     => 'USD',
+            allowed      => 1,
+        },
+        {
+            broker_code  => 'CRW',
+            account_type => 'doughflow',
+            currency     => 'USD',
+            allowed      => 1,
+        },
+        {
+            broker_code  => 'CR',
+            account_type => 'standard',
+            currency     => 'USD',
+            allowed      => 0,
+        },
+        {
+            broker_code  => 'CRW',
+            account_type => 'crypto',
+            currency     => 'BTC',
+            allowed      => 1,
+        },
+        {
+            broker_code  => 'CRW',
+            account_type => 'p2p',
+            currency     => 'USD',
+            allowed      => 0,
+        },
+        {
+            broker_code  => 'CRW',
+            account_type => 'paymentagent',
+            currency     => 'USD',
+            allowed      => 0,
+        },
+        {
+            broker_code  => 'CRW',
+            account_type => 'paymentagent_client',
+            currency     => 'USD',
+            allowed      => 0,
+        });
+
+    for my $test (@tests) {
+        my $client      = BOM::Test::Data::Utility::UnitTestDatabase::create_client({$test->%{qw(broker_code account_type)}});
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+        my %args = (loginid => $client->loginid);
+        lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Pass with empty args on $test->{account_type}";
+
+        %args = (
+            loginid      => $client->loginid,
+            payment_type => 'doughflow'
+        );
+        if ($test->{allowed}) {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Pass with payment_type = doughflow on $test->{account_type}";
+        } else {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                {
+                error_code => 'CashierNotAllowed',
+                rule       => $rule_name
+                },
+                "Expected error with payment_type = doughflow on $test->{account_type}";
+        }
+
+        %args = (
+            loginid      => $client->loginid,
+            payment_type => 'crypto_cashier'
+        );
+        if ($test->{allowed}) {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Pass with payment_type = crypto_cashier on $test->{account_type}";
+        } else {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                {
+                error_code => 'CashierNotAllowed',
+                rule       => $rule_name
+                },
+                "Expected error with payment_type = crypto_cashier on $test->{account_type}";
+        }
+
+        %args = (
+            loginid    => $client->loginid,
+            is_cashier => 1
+        );
+        if ($test->{allowed}) {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Pass with is_cashier = 1 on $test->{account_type}";
+        } else {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                {
+                error_code => 'CashierNotAllowed',
+                rule       => $rule_name
+                },
+                "Expected error with is_cashier = 1 on $test->{account_type}";
+        }
+    }
+
+};
+
 done_testing();

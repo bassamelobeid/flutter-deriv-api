@@ -47,4 +47,20 @@ rule 'cashier.profile_requirements' => {
     },
 };
 
+rule 'cashier.is_account_type_allowed' => {
+    description => "Checks if cashier transactions are allowed by the account type.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        # DF and crypto cashier send these payment_types for validate_payment.
+        # Callers of BOM::Platform::Client::CashierValidation::validate set is_cashier=1 for external cashiers.
+        return 1 unless ($args->{payment_type} // '') =~ /^(doughflow|crypto_cashier)$/ or $args->{is_cashier};
+        return 1 if $client->is_legacy && !$client->is_virtual;
+        return 1 if $client->get_account_type->is_cashier;
+
+        $self->fail('CashierNotAllowed');
+    },
+};
+
 1;
