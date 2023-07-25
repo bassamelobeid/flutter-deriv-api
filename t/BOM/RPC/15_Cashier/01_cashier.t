@@ -568,4 +568,46 @@ subtest 'Crypto withdrawal API initial validations' => sub {
 
 };
 
+subtest 'wallets' => sub {
+
+    $mocked_call->mock('post', sub { return {_content => 'OK'} });
+
+    my $test_client_crw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code  => 'CRW',
+        account_type => 'doughflow',
+        email        => 'wallet@test.com',
+    });
+
+    my $test_client_std = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code  => 'CR',
+        account_type => 'standard',
+        email        => $test_client_crw->email,
+    });
+
+    my $wallet_user = BOM::User->create(
+        email    => $test_client_crw->email,
+        password => 'x',
+    );
+
+    $wallet_user->add_client($test_client_crw);
+    $wallet_user->add_client($test_client_std);
+    $test_client_crw->account('USD');
+    $test_client_std->account('USD');
+    $wallet_user->link_wallet_to_trading_account({wallet_id => $test_client_crw->loginid, client_id => $test_client_std->loginid});
+
+    my $params = {
+        language => 'EN',
+        source   => 1,
+        args     => {cashier => 'deposit'},
+        token    => BOM::Platform::Token::API->new->create_token($test_client_crw->loginid, 'test token')};
+
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error('CRW can access cashier');
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_std->loginid, 'test token');
+
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error('CR standard cannot access cashier')
+        ->error_code_is('CashierForwardError', 'correct error code')
+        ->error_message_is('Cashier deposits and withdrawals are not allowed on this account.', 'correct error message');
+};
+
 done_testing();

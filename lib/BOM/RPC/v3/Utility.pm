@@ -1318,10 +1318,13 @@ sub cashier_validation {
 
     my $rule_engine     = BOM::Rules::Engine->new(client => $client);
     my $validation_type = $type =~ /^(payment_withdraw|paymentagent_withdraw)$/ ? 'withdraw' : $type;
-    my $validation      = BOM::Platform::Client::CashierValidation::validate(
+    my $is_cashier      = $type =~ /^paymentagent/                              ? 0          : 1;
+
+    my $validation = BOM::Platform::Client::CashierValidation::validate(
         loginid           => $client->loginid,
         action            => $validation_type,
         is_internal       => 1,
+        is_cashier        => $is_cashier,
         rule_engine       => $rule_engine,
         underlying_action => $type,
     );

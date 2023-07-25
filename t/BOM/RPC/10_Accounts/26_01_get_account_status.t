@@ -144,6 +144,29 @@ $user_mlt_mf->add_client($test_client_vr_2);
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
+my $test_client_crw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code  => 'CRW',
+    account_type => 'doughflow',
+    email        => 'wallet@test.com',
+});
+
+my $test_client_std = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code  => 'CR',
+    account_type => 'standard',
+    email        => $test_client_crw->email,
+});
+
+my $wallet_user = BOM::User->create(
+    email    => $test_client_crw->email,
+    password => 'x',
+);
+
+$wallet_user->add_client($test_client_crw);
+$wallet_user->add_client($test_client_std);
+$test_client_crw->account('USD');
+$test_client_std->account('USD');
+$wallet_user->link_wallet_to_trading_account({wallet_id => $test_client_crw->loginid, client_id => $test_client_std->loginid});
+
 my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_client->loginid,          'test token');
 my $token_vr       = $m->create_token($test_client_cr_vr->loginid,    'test token');
@@ -152,6 +175,8 @@ my $token_p2p      = $m->create_token($test_client_p2p->loginid,      'test toke
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid,       'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test token');
+my $token_crw      = $m->create_token($test_client_crw->loginid,      'test token');
+my $token_std      = $m->create_token($test_client_std->loginid,      'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
@@ -293,6 +318,24 @@ subtest 'get account status' => sub {
             );
 
             $mocked_cashier_validation->unmock_all();
+
+            cmp_deeply(
+                $c->tcall('get_account_status', {token => $token_vr})->{cashier_validation},
+                supersetof('CashierNotAllowed'),
+                'VRTC gets CashierNotAllowed in cashier_validation'
+            );
+
+            cmp_deeply(
+                $c->tcall('get_account_status', {token => $token_crw})->{cashier_validation},
+                none('CashierNotAllowed'),
+                'CRW does not get CashierNotAllowed in cashier_validation'
+            );
+
+            cmp_deeply(
+                $c->tcall('get_account_status', {token => $token_std})->{cashier_validation},
+                supersetof('CashierNotAllowed'),
+                'CR standard gets CashierNotAllowed in cashier_validation'
+            );
         };
 
         subtest 'p2p status' => sub {

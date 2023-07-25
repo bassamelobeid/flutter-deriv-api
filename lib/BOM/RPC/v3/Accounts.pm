@@ -975,7 +975,7 @@ rpc get_account_status => sub {
         loginid     => $client->loginid,
         action      => '',
         is_internal => 0,
-        bbb         => 'aaa',
+        is_cashier  => 1,
         rule_engine => $rule_engine
     );
     my $base_validation     = BOM::Platform::Client::CashierValidation::validate(%args);

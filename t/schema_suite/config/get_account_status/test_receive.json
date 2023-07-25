@@ -51,7 +51,6 @@
             "temp_ban",
             "perm_ban"
         ]
-
       },
       "stash" : {
          "type" : "object"
@@ -72,6 +71,9 @@
       },
       "status" : {
          "type" : "array"
+      },
+      "cashier_validation" : {
+        "type": "array"
       },
       "authentication" : {
          "type" : "object",
@@ -134,7 +136,7 @@
                          "type" : "integer"
                      }
                  }
-             }
+            }
          }
       }
    }
