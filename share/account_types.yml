@@ -147,6 +147,7 @@ categories:
             - CRW
           maltainvest:
             - MFW
+        is_cashier: 1
       crypto:
         account_opening:
           - real
@@ -155,7 +156,8 @@ categories:
         groups:
           - crypto_cashier
         regulations:
-          - svg 
+          - svg
+        is_cashier: 1
       p2p:
         currencies:
           - USD
