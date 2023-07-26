@@ -1041,11 +1041,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
             } else {
                 $redis->set($key_name, $sr_risk_val);
             }
+
+            _update_mt5_status($client);
+        } elsif ($client->landing_company->social_responsibility_check eq 'manual') {
+            BOM::User::SocialResponsibility->update_sr_risk_status($user->id, $sr_risk_val);
+            _update_mt5_status($client);
         }
 
-        if ($client->landing_company->social_responsibility_check eq 'manual') {
-            BOM::User::SocialResponsibility->update_sr_risk_status($user->id, $sr_risk_val);
-        }
     }
 
     # client promo_code related fields
@@ -1307,6 +1309,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
             } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth0::has_authorisation(['Compliance'])) {
                 $cli->aml_risk_classification($input{$key});
+                _update_mt5_status($client);
             } elsif ($key eq 'mifir_id'
                 and $cli->mifir_id eq ''
                 and $broker eq 'MF')

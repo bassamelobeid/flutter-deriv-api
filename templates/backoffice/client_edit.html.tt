@@ -607,7 +607,8 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 {'value' => 'ID_DOCUMENT', 'short_name' => 'scans', 'details' => 'Authenticated with scans' }
                 {'value' => 'ID_NOTARIZED', 'short_name' => 'notarized','details' => 'Authenticated with Notarized docs' }
                 {'value' => 'ID_ONLINE', 'short_name' => 'online', 'details' => 'Authenticated with online verification' }
-                {'value' => 'IDV', 'short_name' => 'idv', 'details' => 'Authenticated with IDV' },
+                {'value' => 'IDV', 'short_name' => 'idv', 'details' => 'Authenticated with IDV + POA' },
+                {'value' => 'IDV_PHOTO', 'short_name' => 'idv_photo', 'details' => 'Authenticated with IDV + Photo' },
                 {'value' => 'NEEDS_ACTION',  'short_name' => 'needs_action', 'details' => 'Needs Action' },
            ];
            authentication_status = client.authentication_status;
