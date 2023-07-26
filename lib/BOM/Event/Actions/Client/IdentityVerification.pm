@@ -297,6 +297,8 @@ async sub idv_verified {
     if (any { $_ eq 'ADDRESS_VERIFIED' } @$messages) {
         $client->set_authentication('IDV', {status => 'pass'});
         $client->status->clear_unwelcome;
+    } elsif ($pictures && scalar @$pictures) {
+        $client->set_authentication('IDV_PHOTO', {status => 'pass'});
     }
     my $redis_events_write = _redis_events_write();
     await $redis_events_write->connect;

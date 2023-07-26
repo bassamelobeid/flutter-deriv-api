@@ -1802,9 +1802,16 @@ subtest 'pictures collected from IDV' => sub {
         is $doc1->{origin},          'idv',      'IDV is the origin of the doc';
         is $doc1->{issuing_country}, 'br',       'issuing country is correctly popualted';
 
-        is $doc2->{status},          'verified', 'status in BO reflects idv status - verified';
-        is $doc2->{origin},          'idv',      'IDV is the origin of the doc';
-        is $doc2->{issuing_country}, 'br',       'issuing country is correctly popualted';
+        is $client->authentication_status, 'idv_photo', 'Auth status is idv photo';
+        ok $client->fully_authenticated, 'Fully auth';
+
+        $client->aml_risk_classification('high');
+        $client->save;
+        ok !$client->fully_authenticated, 'Not Fully auth';
+        is $client->get_authentication('IDV_PHOTO')->{status}, 'pass',     'IDV + Photo';
+        is $doc2->{status},                                    'verified', 'status in BO reflects idv status - verified';
+        is $doc2->{origin},                                    'idv',      'IDV is the origin of the doc';
+        is $doc2->{issuing_country},                           'br',       'issuing country is correctly popualted';
     };
 };
 
