@@ -66,6 +66,13 @@ $mock_segment->redefine(
         @track_args = @_;
         return Future->done(1);
     });
+my @transactional_args;
+my $mock_cio = new Test::MockModule('WebService::Async::CustomerIO');
+$mock_cio->redefine(
+    'send_transactional' => sub {
+        @transactional_args = @_;
+        return Future->done(1);
+    });
 
 my @emit_args;
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -503,6 +510,7 @@ subtest 'upload document' => sub {
             request($req);
             undef @identify_args;
             undef @track_args;
+            undef @transactional_args;
 
             my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'CR',
@@ -522,10 +530,13 @@ subtest 'upload document' => sub {
                     live_chat_url         => 'https://live.chat.url'
                 }};
 
+            BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
             my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_request};
             my $result  = $handler->($args)->get;
             ok $result, 'Success result';
             is scalar @track_args, 7, 'Track event is triggered';
+            ok @transactional_args, 'CIO transactional is invoked';
+            BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
         };
 
         subtest 'reset_password_confirmation' => sub {
