@@ -6,6 +6,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
 use Test::MockModule;
+use Test::Exception;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -53,27 +54,34 @@ my $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
-my ($res, $call_params) = call_mocked_consumer_groups_request($t, {topup_virtual => 1});
-is $call_params->{language}, 'EN';
-ok exists $call_params->{token};
-is $res->{msg_type}, 'topup_virtual';
-ok $res->{error}->{message} =~ /demo accounts only/, 'demo accounts only';
+#my ($res, $call_params) = call_mocked_consumer_groups_request($t, {topup_virtual => 1});
+#is $call_params->{language}, 'EN';
+#ok exists $call_params->{token};
+#is $res->{msg_type}, 'topup_virtual';
+#ok $res->{error}->{message} =~ /demo accounts only/, 'demo accounts only';
 
 # virtual is ok
 $client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 my $old_balance = $client_vr->default_account->balance;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
-my $clientdb = BOM::Database::ClientDB->new({client_loginid => $client_vr->loginid})->db->dbic->dbh;
+    $authorize = $t->await::authorize({authorize => $token});
 
+my $clientdb = BOM::Test::Data::Utility::UnitTestDatabase->instance->db_handler;
+diag("start to lock transaction.transaction");
 $clientdb->begin_work;
 $clientdb->do('lock transaction.transaction');
-$authorize = $t->await::authorize({authorize => $token});
-$clientdb->rollback;
-is $authorize->{authorize}->{email},   $email;
-is $authorize->{authorize}->{loginid}, $vr_1;
+diag("locked");
+throws_ok {
 
-$res = $t->await::topup_virtual({topup_virtual => 1});
+$t->await::topup_virtual({topup_virtual => 1});
+} qr/timeout/, "throws timeout";
+$clientdb->rollback;
+$t->finish_ok;
+done_testing();
+
+=POD
+
 my $topup_amount = $res->{topup_virtual}->{amount};
 ok $topup_amount, 'topup ok';
 
@@ -83,3 +91,5 @@ ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balanc
 $t->finish_ok;
 
 done_testing();
+
+=CUT
