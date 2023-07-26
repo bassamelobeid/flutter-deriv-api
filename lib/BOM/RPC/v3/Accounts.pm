@@ -965,7 +965,9 @@ rpc get_account_status => sub {
 
     push(@$status, 'p2p_blocked_for_pa') if $client->payment_agent && !$client->get_payment_agent->service_is_allowed('p2p');
 
-    my $age_verif_client = $duplicated // $client;
+    push(@$status, 'authenticated_with_idv_photoid') if $client->poa_authenticated_with_idv;
+
+    push(@$status, 'idv_revoked') if BOM::User::IdentityVerification::is_idv_revoked($idv_client);
 
     my $rule_engine = BOM::Rules::Engine->new(
         client          => $client,

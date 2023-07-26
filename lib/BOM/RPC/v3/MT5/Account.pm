@@ -892,14 +892,18 @@ async_rpc "mt5_new_account",
     my %mt5_compliance_requirements = map { ($_ => 1) } $compliance_requirements->{mt5}->@*;
 
     if ($account_type ne 'demo' && $mt5_compliance_requirements{fully_authenticated}) {
-        # always check for expired docs if the LC requires so
+        # the LC may allow fully authenticated with idv + photo
+        # otherwise a poa based auth is required
+        my $mt5_lc       = LandingCompany::Registry->by_name($landing_company_short);
+        my $requires_poa = not $mt5_lc->fully_authenticated_with_idv_photoid;
 
+        # always check for expired docs if the LC requires so
         if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
             $client->status->upsert('allow_document_upload', 'system', $mt5_acc_reason);
             return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
         }
 
-        if (!$client->fully_authenticated) {
+        if (!$client->fully_authenticated({ignore_idv => $requires_poa})) {
             if (any { $landing_company_short eq $_ } qw/bvi vanuatu labuan maltainvest/) {
                 try {
                     $rule_engine->verify_action(

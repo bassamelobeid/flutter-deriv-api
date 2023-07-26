@@ -3,6 +3,7 @@ use warnings;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
+use Test::Deep;
 use JSON::MaybeUTF8;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -387,6 +388,199 @@ subtest 'new account dry_run on a client with no account currency' => sub {
     $c->call_ok($method, $params)->has_error('no currency set for the account')
         ->error_code_is('SetExistingAccountCurrency', 'provided client has no default currency on dry run')
         ->error_message_like(qr/Please set your account currency./, 'error message for client with no default currency on dry run');
+};
+
+subtest 'MT5 account opening under idv photoid allowed landing company' => sub {
+    my $cli_mock = Test::MockModule->new('BOM::User::Client');
+    $cli_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'none';
+        });
+    $cli_mock->mock(
+        'get_poi_status',
+        sub {
+            return 'none';
+        });
+
+    my $ID_DOCUMENT = $test_client->get_authentication('ID_DOCUMENT')->status;
+
+    subtest 'BVI' => sub {
+        $test_client->set_authentication_and_status('IDV_PHOTO', 'Sadwichito');
+        $test_client->tax_residence('mt');
+        $test_client->tax_identification_number('111222333');
+        $test_client->save;
+
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+        ok $test_client->fully_authenticated,                     'Fully authenticated';
+        ok !$test_client->fully_authenticated({ignore_idv => 1}), 'Not poa fully authenticated';
+
+        my $method = 'mt5_new_account';
+        my $params = {
+            token => $token,
+            args  => {
+                account_type     => 'financial',
+                country          => 'mt',
+                email            => $details{email},
+                name             => $details{name},
+                mainPassword     => $details{password}{main},
+                leverage         => 100,
+                mt5_account_type => 'financial',
+                company          => 'bvi'
+            },
+        };
+
+        my $result = $c->call_ok($method, $params)->result;
+
+        cmp_deeply $result,
+            +{
+            mt5_account_type     => 'financial',
+            account_type         => 'financial',
+            currency             => 'USD',
+            balance              => 0,
+            display_balance      => '0.00',
+            agent                => undef,
+            login                => re('MTR\d+'),
+            mt5_account_category => 'conventional',
+            stash                => {
+                app_markup_percentage      => 0,
+                source_type                => 'official',
+                valid_source               => 1,
+                source_bypass_verification => 0,
+            }
+            },
+            'BVI account';
+
+        # for this landing company, the account gets created taking
+        # fully auth from idv photo
+
+        my $mt5_loginid = $result->{login};
+        my $loginids    = $test_client->user->loginid_details();
+        my $mt5_account = $loginids->{$mt5_loginid};
+
+        is $mt5_account->{status}, undef, 'Account created without any status';
+    };
+
+    subtest 'BVI + high risk' => sub {
+        # avoid flaky test by ignoring existing mt5 accounts
+        my $mock_mt5 = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+        $mock_mt5->mock(
+            'mt5_accounts_lookup',
+            sub {
+                return Future->done();
+            });
+
+        $test_client->set_authentication_and_status('IDV_PHOTO', 'Sadwichito');
+        $test_client->tax_residence('mt');
+        $test_client->residence('br');
+        $test_client->place_of_birth('br');
+        $test_client->tax_identification_number('111222333');
+        $test_client->aml_risk_classification('high');
+        $test_client->save;
+
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+        ok !$test_client->fully_authenticated,                    'Not fully authenticated';
+        ok !$test_client->fully_authenticated({ignore_idv => 1}), 'Not poa fully authenticated';
+
+        my $token  = $m->create_token($test_client->loginid, 'test token');
+        my $method = 'mt5_new_account';
+        my $params = {
+            token => $token,
+            args  => {
+                account_type     => 'financial',
+                country          => 'mt',
+                email            => $details{email},
+                name             => $details{name},
+                mainPassword     => $details{password}{main},
+                leverage         => 100,
+                mt5_account_type => 'financial',
+                company          => 'bvi',
+            },
+        };
+
+        my $result = $c->call_ok($method, $params)->result;
+
+        cmp_deeply $result,
+            +{
+            mt5_account_type     => 'financial',
+            account_type         => 'financial',
+            currency             => 'USD',
+            balance              => 0,
+            display_balance      => '0.00',
+            agent                => undef,
+            login                => re('MTR\d+'),
+            mt5_account_category => 'conventional',
+            stash                => {
+                app_markup_percentage      => 0,
+                source_type                => 'official',
+                valid_source               => 1,
+                source_bypass_verification => 0,
+            }
+            },
+            'BVI account + high risk';
+
+        # for this landing company, the account gets created taking
+        # fully auth from idv photo, but the high risk takes that away
+
+        my $mt5_loginid = $result->{login};
+        my $loginids    = $test_client->user->loginid_details();
+        my $mt5_account = $loginids->{$mt5_loginid};
+
+        is $mt5_account->{status}, 'proof_failed', 'Account has proof_failed status after becoming high risk';
+        $mock_mt5->unmock_all;
+    };
+
+    subtest 'Labuan' => sub {
+        $test_client->aml_risk_classification('low');
+        $test_client->save;
+
+        my $method = 'mt5_new_account';
+        my $params = {
+            token => $token,
+            args  => {
+                account_type     => 'financial',
+                country          => 'mt',
+                email            => $details{email},
+                name             => $details{name},
+                mainPassword     => $details{password}{main},
+                leverage         => 100,
+                mt5_account_type => 'financial_stp',
+                company          => 'labuan'
+            },
+        };
+
+        my $result = $c->call_ok($method, $params)->result;
+
+        cmp_deeply $result,
+            +{
+            mt5_account_type => 'financial_stp',
+            account_type     => 'financial',
+            currency         => 'USD',
+            balance          => 0,
+            display_balance  => '0.00',
+            agent            => undef,
+            login            => re('MTR\d+'),
+            stash            => {
+                app_markup_percentage      => 0,
+                source_type                => 'official',
+                valid_source               => 1,
+                source_bypass_verification => 0,
+            }
+            },
+            'Labuan response';
+
+        # for this landing company, the account gets created with
+        # verification_pending flag as idv photoid does not suffice
+
+        my $mt5_loginid = $result->{login};
+        my $loginids    = $test_client->user->loginid_details();
+        my $mt5_account = $loginids->{$mt5_loginid};
+
+        is $mt5_account->{status}, 'proof_failed', 'Account created with proof_failed status';
+    };
+
+    $test_client->set_authentication('ID_DOCUMENT', {status => $ID_DOCUMENT});
+    $test_client->save;
 };
 
 subtest 'new account with switching' => sub {

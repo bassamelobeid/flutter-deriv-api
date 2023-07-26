@@ -188,6 +188,153 @@ subtest 'check legacy cfd_score' => sub {
     );
 };
 
+subtest 'IDV + Photo ID' => sub {
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+
+    my $is_idv_validated = 1;
+    my $idv_status       = 'verified';
+
+    $client_mock->mock(
+        'is_idv_validated',
+        sub {
+            return $is_idv_validated;
+        });
+
+    $client_mock->mock(
+        'get_idv_status',
+        sub {
+            return $idv_status;
+        });
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+idvphotoid@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $client->set_authentication_and_status('IDV_PHOTO', 'Sadwichito');
+    ok $client->fully_authenticated, 'Fully authenticated';
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result, +{
+        status => [
+            'allow_document_upload',          'authenticated',
+            'authenticated_with_idv_photoid', 'cashier_locked',
+            'dxtrade_password_not_set',       'financial_information_not_complete',
+            'mt5_password_not_set',           'trading_experience_not_complete'
+        ],
+        p2p_status     => 'none',
+        authentication => {
+            identity => {
+                status   => 'verified',
+                services => {
+                    onfido => {
+                        is_country_supported => 1,
+                        reported_properties  => {},
+                        last_rejected        => [],
+                        status               => 'none',
+                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                        country_code         => 'IDN',
+                        submissions_left     => 1
+                    },
+                    idv => {
+                        status              => 'none',    # this none may be suspicious but intenally, for the client object is verified
+                        last_rejected       => [],
+                        reported_properties => {},
+                        submissions_left    => 3
+                    },
+                    manual => {status => 'none'}}
+            },
+            ownership => {
+                requests => [],
+                status   => 'none'
+            },
+            attempts => {
+                'history' => [],
+                'count'   => 0,
+                'latest'  => undef
+            },
+            needs_verification => [],
+            income             => {'status' => 'none'},
+            document           => {'status' => 'verified'}
+        },
+        currency_config => {
+            USD => {
+                'is_deposit_suspended'    => 0,
+                'is_withdrawal_suspended' => 0
+            }
+        },
+        cashier_validation            => ['ASK_CURRENCY'],
+        prompt_client_to_authenticate => 0,
+        risk_classification           => 'low'
+        },
+        'expected response for IDV photoid authenticated';
+
+    ## client becomes high risk
+    $client->aml_risk_classification('high');
+    $client->save;
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result,
+        +{
+        status => [
+            'allow_document_upload',              'cashier_locked',
+            'dxtrade_password_not_set',           'financial_assessment_not_complete',
+            'financial_information_not_complete', 'idv_disallowed',
+            'idv_revoked',                        'mt5_password_not_set',
+            'trading_experience_not_complete'
+        ],
+        p2p_status     => 'none',
+        authentication => {
+            identity => {
+                status   => 'none',
+                services => {
+                    onfido => {
+                        is_country_supported => 1,
+                        reported_properties  => {},
+                        last_rejected        => [],
+                        status               => 'none',
+                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                        country_code         => 'IDN',
+                        submissions_left     => 1
+                    },
+                    idv => {
+                        status              => 'none',
+                        last_rejected       => [],
+                        reported_properties => {},
+                        submissions_left    => 3
+                    },
+                    manual => {status => 'none'}}
+            },
+            ownership => {
+                requests => [],
+                status   => 'none'
+            },
+            attempts => {
+                'history' => [],
+                'count'   => 0,
+                'latest'  => undef
+            },
+            needs_verification => [qw/document identity/],
+            income             => {'status' => 'none'},
+            document           => {'status' => 'none'}
+        },
+        currency_config => {
+            USD => {
+                'is_deposit_suspended'    => 0,
+                'is_withdrawal_suspended' => 0
+            }
+        },
+        cashier_validation            => ['ASK_AUTHENTICATE', 'ASK_CURRENCY', 'FinancialAssessmentRequired'],
+        prompt_client_to_authenticate => 1,
+        risk_classification           => 'high'
+        },
+        'expected response for IDV photoid authenticated under high risk scenario';
+};
+
 subtest 'expired docs account' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
