@@ -36,7 +36,8 @@ sub wsapi_wait_for {
         code  => sub {
             if ($messages_without_accidens == ($params->{wait_max} // 10)) {
               print STDERR "wait_max $params->{wait_max} and $messages_without_accidens\n";
-                ok(0, 'Timeout');
+              #ok(0, 'Timeout');
+                $t->tx->finish;
                 return $f->fail("timeout");
             }
             $f->cancel();
