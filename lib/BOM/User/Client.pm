@@ -7754,7 +7754,6 @@ Returns,
 
 sub get_poi_status_jurisdiction {
     my ($self, $args) = @_;
-    my $jurisdiction = $args->{landing_company};
 
     my $manual = $self->get_manual_poi_status();
     my $idv    = $self->get_idv_status();
@@ -7764,12 +7763,10 @@ sub get_poi_status_jurisdiction {
         idv    => $idv,
         onfido => $onfido
     );
-    my %allowed_verification = (
-        bvi         => ['idv',    'onfido', 'manual'],
-        labuan      => ['idv',    'onfido', 'manual'],
-        vanuatu     => ['onfido', 'manual'],
-        maltainvest => ['onfido', 'manual']);
-    my %status = map { $poi{$_} => 1 } @{$allowed_verification{$jurisdiction}};
+
+    my $lc = LandingCompany::Registry->by_name($args->{landing_company} // '') || return 'none';
+
+    my %status = map { $poi{$_} => 1 } $lc->allowed_poi_providers->@*;
 
     return 'verified' if $status{verified};
 
