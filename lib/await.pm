@@ -25,7 +25,7 @@ our $req_id = 999999;    # desparately trying to avoid conflicts
 sub wsapi_wait_for {
     my ($t, $wait_for, $action_sub, $params, $messages_without_accidens) = @_;
     $params                    //= {};
-    $messages_without_accidens //= 0;
+    $messages_without_accidens //= 1;
 
     my $ioloop = IO::Async::Loop->new;
 
@@ -34,7 +34,8 @@ sub wsapi_wait_for {
     my $id = $ioloop->watch_time(
         after => ($params->{timeout} || 2),
         code  => sub {
-            if ($messages_without_accidens == ($params->{wait_max} || 10)) {
+            if ($messages_without_accidens == ($params->{wait_max} // 10)) {
+              print STDERR "wait_max $params->{wait_max} and $messages_without_accidens\n";
                 ok(0, 'Timeout');
                 return $f->fail("timeout");
             }
@@ -54,8 +55,9 @@ sub wsapi_wait_for {
         diag "Got >>" . ($data->{msg_type} // 'nothing') . "<< instead >>$wait_for<<";
         $f->cancel();
     }
-
+  print STDERR "ioloop await\n";
     $f = $ioloop->await($f);
+    print STDERR "f is cancelled ? " . $f->is_cancelled . "\n";
     return wsapi_wait_for($t, $wait_for, sub { note "Cancelled. Trying again" }, $params, ++$messages_without_accidens)
         if $f->is_cancelled;
 
