@@ -816,15 +816,55 @@ MX - Prove ID / (POI + POA)
 MLT - POI + POA
 MF - POI + POA + Selfie in Onfido
 
+It takes a hashref of params:
+
+=over 4
+
+=item * C<ignore_idv> - strict check for ID_DOCUMENT ID_NOTARIZED ID_ONLINE, ignore POA verification made by IDV.
+
+=back
+
+Returns C<0> or C<1>.
+
 =cut
 
 sub fully_authenticated {
-    my $self = shift;
+    my ($self, $args) = @_;
 
-    for my $method (qw/ID_DOCUMENT ID_NOTARIZED ID_ONLINE IDV/) {
+    $args //= {};
+
+    for my $method (qw/ID_DOCUMENT ID_NOTARIZED ID_ONLINE/) {
         my $auth = $self->get_authentication($method);
         return 1 if $auth and $auth->status eq 'pass';
     }
+
+    # Some checks may require strict POA verification
+
+    return 0 if $args->{ignore_idv};
+
+    return $self->poa_authenticated_with_idv;
+}
+
+=head2 poa_authenticated_with_idv
+
+Determines if the client POA was authenticated by IDV.
+
+Returns C<0> or C<1>.
+
+=cut 
+
+sub poa_authenticated_with_idv {
+    my ($self) = @_;
+
+    # idv cannot fully auth high risk clients
+
+    return 0 if ($self->risk_level_sr // '') eq 'high';
+
+    return 0 if ($self->risk_level_aml // '') eq 'high';
+
+    my $idv = $self->get_authentication('IDV');
+
+    return 1 if $idv and $idv->status eq 'pass';
 
     return 0;
 }
@@ -7667,7 +7707,9 @@ sub get_poa_status {
 
     return 'pending' if $is_poa_pending;
 
-    if ($self->fully_authenticated) {
+    my $risk = $self->aml_risk_classification // '';
+
+    if ($self->fully_authenticated({ignore_idv => $risk eq 'high'})) {
         return 'expired' if $is_outdated;
 
         return 'verified';
@@ -7900,7 +7942,7 @@ sub get_manual_poi_status {
             return 'verified' if $staff ne 'system';
 
             # return verified if fully authenticated
-            return 'verified' if $self->fully_authenticated;
+            return 'verified' if $self->fully_authenticated({ignore_idv => 1});
         }
     }
 

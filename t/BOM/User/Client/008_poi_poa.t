@@ -151,6 +151,74 @@ subtest 'get_poa_status' => sub {
             is $test_client_cr->get_poa_status, 'expired', 'Client POA status is outdated';
             $mocked_client->unmock_all;
         };
+
+        subtest 'fully auth by IDV + high risk' => sub {
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            $test_client_cr->set_authentication('IDV', {status => 'pass'});
+            $test_client_cr->aml_risk_classification('high');
+            $test_client_cr->save;
+
+            is $test_client_cr->get_poa_status, 'none', 'Client POA status is none';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'fully auth by IDV + high risk - rejected' => sub {
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 1,
+                    documents   => {},
+                }};
+
+            $test_client_cr->set_authentication('IDV', {status => 'pass'});
+            $test_client_cr->aml_risk_classification('high');
+            $test_client_cr->save;
+
+            is $test_client_cr->get_poa_status, 'rejected', 'Client POA status is rejected';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'fully auth by IDV + high risk - expired' => sub {
+            $uploaded = {
+                proof_of_address => {
+                    is_outdated => 1,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            $test_client_cr->set_authentication('IDV', {status => 'pass'});
+            $test_client_cr->aml_risk_classification('high');
+            $test_client_cr->save;
+
+            is $test_client_cr->get_poa_status, 'expired', 'Client POA status is expired';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'fully auth (not by IDV) + high risk' => sub {
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            $test_client_cr->set_authentication('ID_ONLINE', {status => 'pass'});
+            $test_client_cr->aml_risk_classification('high');
+            $test_client_cr->save;
+
+            is $test_client_cr->get_poa_status, 'verified', 'Client POA status is verified';
+            $mocked_client->unmock_all;
+        };
     };
 
     subtest 'Regulated account' => sub {
