@@ -165,7 +165,7 @@ subtest $rule_name => sub {
             );
         }
 
-        for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
+        for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/, undef) {
             $args = {
                 loginid              => $client_cr->loginid,
                 new_mt5_jurisdiction => 'vanuatu',
@@ -180,6 +180,8 @@ subtest $rule_name => sub {
 
             $poa_status = $status;
 
+            my $loginid_status_str = $loginid_status // 'undef';
+
             if ($poa_status eq 'expired') {
                 cmp_deeply(
                     exception { $rule_engine->apply_rules($rule_name, $args->%*) },
@@ -188,10 +190,10 @@ subtest $rule_name => sub {
                         rule       => $rule_name,
                         params     => {mt5_status => 'poa_outdated'}
                     },
-                    "POA Failed status = $status, loginid status = $loginid_status"
+                    "POA Failed status = $status, loginid status = $loginid_status_str"
                 );
             } else {
-                ok $rule_engine->apply_rules($rule_name, $args->%*), "Rule does not fail status = $status, loginid status = $loginid_status";
+                ok $rule_engine->apply_rules($rule_name, $args->%*), "Rule does not fail status = $status, loginid status = $loginid_status_str";
             }
         }
     }
@@ -797,8 +799,15 @@ subtest 'Vanuatu + IDV' => sub {
 
         $idv_status = 'verified';
 
-        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
-            undef, "Vanuatu existing account, POA is pending, IDV verified");
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            {
+                error_code => 'POAVerificationFailed',
+                rule       => 'mt5_account.account_poa_status_allowed',
+                params     => {mt5_status => 'poa_pending'}
+            },
+            "Vanuatu existing account, POA is pending, IDV verified"
+        );
 
         cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
             undef, "Vanuatu existing account, POA is pending, IDV verified");
