@@ -450,6 +450,7 @@ SELECT id,
     status,
     lifetime_valid,
     client_loginid,
+    issuing_country
     address_mismatch
 FROM betonmarkets.client_authentication_document
 WHERE client_loginid = ? AND status != 'uploading'
@@ -1180,11 +1181,12 @@ sub show_client_id_docs {
     my $last_category_idx = -1;
     foreach my $doc (@$docs) {
         my (
-            $id,          $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id,
-            $upload_date, $age,       $category_idx,  $status,     $lifetime_valid,  $loginid,  $address_mismatch
+            $id,       $file_name,      $document_type, $issue_date,      $expiration_date,
+            $comments, $document_id,    $upload_date,   $age,             $category_idx,
+            $status,   $lifetime_valid, $loginid,       $issuing_country, $address_mismatch
             )
             = $doc->@{
-            qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status lifetime_valid client_loginid address_mismatch/
+            qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status lifetime_valid client_loginid issuing_country address_mismatch/
             };
 
         if ($category_idx != $last_category_idx) {
@@ -1270,8 +1272,12 @@ sub show_client_id_docs {
             ? qq{ class="error" title="expired" }
             : "";
 
+        my $country = 'Not Available';
+
+        $country = request()->brand->countries_instance->countries_list->{$issuing_country}->{name} // 'Unknown Country' if $issuing_country;
+
         $links .=
-            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td style="width:400px;overflow:hidden;"><a class="link" href="$url" data-document-id="$id" target="_blank">$file_name</a></td>$age_display$input};
+            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td style="width:400px;overflow:hidden;"><a class="link" href="$url" data-document-id="$id" target="_blank">$file_name</a><br/><span><b>Issuing country:</b> $country</span></td>$age_display$input};
 
         my $is_poa = $poa_doc ? 1 : 0;
         $links .=

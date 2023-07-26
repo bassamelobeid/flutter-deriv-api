@@ -689,13 +689,13 @@ if ($input{whattodo} eq 'uploadID') {
             $upload_info = $client->db->dbic->run(
                 ping => sub {
                     $_->selectrow_hashref(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', undef,
-                        $loginid,                                                                            $doctype,
-                        $docformat,                                                                          $expiration_date || undef,
-                        $document_id,                                                                        $file_checksum,
-                        $comments,                                                                           $page_type || '',
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', undef,
+                        $loginid,                                                                               $doctype,
+                        $docformat,                                                                             $expiration_date || undef,
+                        $document_id,                                                                           $file_checksum,
+                        $comments,                                                                              $page_type || '',
                         $issue_date || undef, $lifetime_valid,
-                        'bo',
+                        'bo', $docnationality
                     );
                 });
             die 'Document already exists.' unless $upload_info;
