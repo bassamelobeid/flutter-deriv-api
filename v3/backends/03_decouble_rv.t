@@ -72,11 +72,17 @@ diag("start to lock transaction.transaction");
 $clientdb->begin_work;
 $clientdb->do('lock transaction.transaction');
 diag("locked");
-throws_ok {
 
-$t->await::topup_virtual({topup_virtual => 1});
+my $t0 = time();
+throws_ok {
+    $t->await::topup_virtual({topup_virtual => 1},{wait_max => 1});
 } qr/timeout/, "throws timeout";
+diag("end time" . (time - $t0));
+BOM::Test::Helper::reconnect($t);
+$t->await::ping({ping => 1});
+
 $clientdb->rollback;
+diag(explain($t->await::active_symbols({active_symbols => "brief"})));
 $t->finish_ok;
 done_testing();
 
