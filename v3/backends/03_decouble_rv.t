@@ -82,7 +82,7 @@ BOM::Test::Helper::reconnect($t);
 $t->await::ping({ping => 1});
 
 $clientdb->rollback;
-diag(explain($t->await::active_symbols({active_symbols => "brief"})));
+$t->await::trading_times({trading_times => "2023-07-26"});
 $t->finish_ok;
 done_testing();
 
