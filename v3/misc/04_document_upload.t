@@ -52,6 +52,7 @@ my %generic_req = (
     document_id     => '12456',
     document_format => 'JPEG',
     document_type   => 'passport',
+    document_issuing_country => 'br',
     expiration_date => Date::Utility->today()->plus_time_interval('1d')->date,
 );
 
