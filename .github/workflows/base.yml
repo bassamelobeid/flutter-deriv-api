@@ -29,4 +29,9 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ inputs.repository || github.repository }}
+  dependent:
+    needs: core_unit_syntax_diff
+    if:  ${{ (github.event_name != 'workflow_call') && (github.event_name != 'push') }}
+    uses: ./.github/workflows/dependent.yml
+    secrets: inherit
 
