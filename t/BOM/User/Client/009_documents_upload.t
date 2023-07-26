@@ -27,6 +27,7 @@ subtest 'Start Document Upload' => sub {
                 checksum        => 'checkthis',
                 page_type       => 'front',
                 origin          => 'client',
+                issuing_country => 'ar'
             })
     }
     'No exception seen';
@@ -65,6 +66,8 @@ subtest 'Finish Document Upload -> verified status' => sub {
 
     my ($doc) = $test_client->find_client_authentication_document(query => [id => $id]);
 
-    is $doc->status, 'verified', 'Expected status';
+    is $doc->status,          'verified', 'Expected status';
+    is $doc->issuing_country, 'ar',       'Expected issuing country';
 };
+
 done_testing();

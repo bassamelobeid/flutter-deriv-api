@@ -8394,6 +8394,8 @@ It takes a hashref containing the following parameters:
 
 =item * C<origin> enum for the origin of the document: bo, client, onfido or legacy.
 
+=item * C<issuing_country> 2 letter country code.
+
 =back
 
 Returns a hashref containing:
@@ -8410,13 +8412,17 @@ Returns a hashref containing:
 
 sub start_document_upload {
     my ($self, $params) = @_;
-    my ($document_type, $document_format, $expiration_date, $document_id, $checksum, $comments, $page_type, $issue_date, $lifetime_valid, $origin) =
-        @$params{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid origin/};
+    my (
+        $document_type, $document_format, $expiration_date, $document_id, $checksum, $comments,
+        $page_type,     $issue_date,      $lifetime_valid,  $origin,      $issuing_country
+        )
+        = @$params{
+        qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid origin issuing_country/};
 
     return $self->db->dbic->run(
         ping => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 $self->loginid,
                 $document_type,
@@ -8429,6 +8435,7 @@ sub start_document_upload {
                 $issue_date,
                 $lifetime_valid ? 1 : 0,
                 $origin // 'legacy',
+                $issuing_country,
             );
         });
 }
