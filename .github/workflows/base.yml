@@ -8,11 +8,39 @@ on:
     tags:
       - '*'
   pull_request:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Repository name for running tests'
+        required: true
+        type: string  
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
   cancel-in-progress: true
 jobs:
+  get-git-message:
+    runs-on: ubuntu-latest
+    outputs:
+      head-commit-message: ${{ steps.get_head_commit_message.outputs.headCommitMsg }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get Commit Message
+        shell: bash -e {0}
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        id: get_head_commit_message
+        run: |
+          echo "$GITHUB_EVENT_NAME $GITHUB_REF_NAME $SHA"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" -a "$GITHUB_REF_NAME" != "master" ]; then
+            git fetch --depth 1 origin $SHA
+            echo "headCommitMsg=$(git log --format=oneline -n 1 $SHA)" >> "$GITHUB_OUTPUT"
+          else
+            exit 0
+          fi
   check-git-message:
+    needs: get-git-message
+    if: ${{ contains(needs.get-git-message.outputs.head-commit-message, '[gh]') }}
     runs-on: ubuntu-latest
     steps:
       - name: check git message
@@ -39,6 +67,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: json_schemas tests
         run: |
           make json_schemas
@@ -54,7 +83,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
@@ -65,6 +94,7 @@ jobs:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
           need_service: false
+          repository: ${{inputs.repository || github.repository}}
       - name: Code Structure and syntax 
         run: |
           make syntax_diff
@@ -82,7 +112,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
@@ -92,6 +122,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Run tests 
         run: |
           sudo touch /var/log/fixedodds/audit.log
@@ -109,7 +140,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
@@ -119,8 +150,15 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Run tests 
         run: |
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           make test2
+  dependent:
+    needs: [schema,core1,core2]
+    if:  ${{ (github.event_name != 'workflow_call') && (github.event_name != 'push') }}
+    uses: ./.github/workflows/dependent.yml
+    secrets: inherit
+
