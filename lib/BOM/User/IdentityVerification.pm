@@ -672,6 +672,31 @@ sub get_pending_lock {
     return $redis->get(IDV_LOCK_PENDING . $self->user_id);
 }
 
+=head2 is_idv_revoked
+
+Boolean that determines if the client has been authenticated by IDV, but then it got it taken away due to
+some restrictions like being high risk.
+
+It takes the following parameter:
+
+=over 4
+
+=item * C<$client> - a L<BOM::User::Client> instance
+
+=back
+
+Returns boolean.
+
+=cut
+
+sub is_idv_revoked {
+    my ($client) = @_;
+
+    return 1 if $client->is_idv_validated && $client->get_idv_status eq 'verified' && $client->get_poi_status ne 'verified';
+
+    return 0;
+}
+
 =head2 is_underage_blocked
 
 Calls the DB function that determines if a given document has been underage blocked the last year.

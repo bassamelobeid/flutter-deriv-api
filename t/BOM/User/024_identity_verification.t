@@ -302,6 +302,124 @@ subtest 'update document check' => sub {
 
         $idv_model_ccr->status, 'pending', 'status is mapped to pending';
     };
+
+    subtest 'photo id' => sub {
+        lives_ok {
+            $idv_model_ccr->update_document_check({
+                document_id => $document->{id},
+                status      => 'verified',
+                messages    => [],
+                provider    => 'smile_identity',
+                photo       => [121, 131],         # can be arrayref
+            });
+        }
+        'document updated sucessfully';
+
+        lives_ok {
+            my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+            my $check = $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+                });
+
+            cmp_deeply $check, [{photo_id => [121, 131]}], 'Photo ID returned';
+        }
+        'last updated document fetched';
+
+        lives_ok {
+            $idv_model_ccr->update_document_check({
+                document_id => $document->{id},
+                status      => 'verified',
+                messages    => [],
+                provider    => 'smile_identity',
+                photo       => [],                 # can be empty arrayref
+            });
+        }
+        'document updated sucessfully';
+
+        lives_ok {
+            my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+            my $check = $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+                });
+
+            cmp_deeply $check, [{photo_id => []}], 'Photo ID returned';
+        }
+        'last updated document fetched';
+
+        lives_ok {
+            $idv_model_ccr->update_document_check({
+                document_id => $document->{id},
+                status      => 'verified',
+                messages    => [],
+                provider    => 'smile_identity',
+                photo       => 1515,               # can be number
+            });
+        }
+        'document updated sucessfully';
+
+        lives_ok {
+            my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+            my $check = $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+                });
+
+            cmp_deeply $check, [{photo_id => [1515]}], 'Photo ID returned';
+        }
+        'last updated document fetched';
+
+        lives_ok {
+            $idv_model_ccr->update_document_check({
+                document_id => $document->{id},
+                status      => 'verified',
+                messages    => [],
+                provider    => 'smile_identity',
+                photo       => undef,              # can be undef
+            });
+        }
+        'document updated sucessfully';
+
+        lives_ok {
+            my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+            my $check = $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+                });
+
+            cmp_deeply $check, [{photo_id => []}], 'Photo ID returned';
+        }
+        'last updated document fetched';
+
+        lives_ok {
+            $idv_model_ccr->update_document_check({
+                document_id => $document->{id},
+                status      => 'verified',
+                messages    => [],
+                provider    => 'smile_identity',
+                # could be missing
+            });
+        }
+        'document updated sucessfully';
+
+        lives_ok {
+            my $dbic = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
+
+            my $check = $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT photo_id FROM idv.document_check where document_id = ?", {Slice => {}}, $document->{id});
+                });
+
+            cmp_deeply $check, [{photo_id => []}], 'Photo ID returned';
+        }
+        'last updated document fetched';
+
+    };
 };
 
 subtest 'get_last_updated_document' => sub {
@@ -835,6 +953,66 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     ok !BOM::User::IdentityVerification::is_idv_disallowed($client), 'IDV allowed for age verified status when idv status is expired';
 
     $client_mock->unmock_all;
+};
+
+subtest 'is idv revoked' => sub {
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $is_idv_validated;
+    my $idv_status;
+    my $poi_status;
+
+    $client_mock->mock(
+        'is_idv_validated',
+        sub {
+            return $is_idv_validated;
+        });
+
+    $client_mock->mock(
+        'get_idv_status',
+        sub {
+            return $idv_status;
+        });
+
+    $client_mock->mock(
+        'get_poi_status',
+        sub {
+            return $poi_status;
+        });
+
+    my $tests = [{
+            result           => 1,
+            is_idv_validated => 1,
+            idv_status       => 'verified',
+            poi_status       => 'none'
+        },
+        {
+            result           => 0,
+            is_idv_validated => 0,
+            idv_status       => 'verified',
+            poi_status       => 'none'
+        },
+        {
+            result           => 0,
+            is_idv_validated => 1,
+            idv_status       => 'none',
+            poi_status       => 'none'
+        },
+        {
+            result           => 0,
+            is_idv_validated => 1,
+            idv_status       => 'verified',
+            poi_status       => 'verified'
+        }];
+
+    for my $test ($tests->@*) {
+        ($is_idv_validated, $idv_status, $poi_status) = @{$test}{qw/is_idv_validated idv_status poi_status/};
+
+        if ($test->{result}) {
+            ok BOM::User::IdentityVerification::is_idv_revoked($client_cr), 'expected truthy';
+        } else {
+            ok !BOM::User::IdentityVerification::is_idv_revoked($client_cr), 'expected falsey';
+        }
+    }
 };
 
 subtest 'is underage blocked' => sub {
