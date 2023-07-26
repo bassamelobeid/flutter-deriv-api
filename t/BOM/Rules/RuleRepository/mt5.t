@@ -708,4 +708,203 @@ subtest $rule_name => sub {
     }
 };
 
+subtest 'Vanuatu + IDV' => sub {
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'mt5+vanuatu_idv@test.com',
+    });
+
+    BOM::User->create(
+        email    => $client_cr->email,
+        password => 'x',
+    )->add_client($client_cr);
+
+    $client_cr->account('USD');
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $idv_status  = 'none';
+    my $poa_status  = 'none';
+
+    $client_mock->mock(
+        'get_idv_status',
+        sub {
+            return $idv_status;
+        });
+
+    $client_mock->mock(
+        'get_poa_status',
+        sub {
+            return $poa_status;
+        });
+
+    subtest 'new vanuatu account' => sub {
+        my $args = {
+            loginid              => $client_cr->loginid,
+            new_mt5_jurisdiction => 'vanuatu',
+            loginid_details      => {
+
+            },
+        };
+
+        $idv_status = 'verified';
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            {
+                error_code => 'POAVerificationFailed',
+                rule       => 'mt5_account.account_poa_status_allowed',
+                params     => {mt5_status => 'poa_pending'}
+            },
+            "Vanuatu new account, POA is pending, IDV verified"
+        );
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
+            undef, "Vanuatu new account, POA is pending, IDV verified");
+
+        $idv_status = 'none';
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            undef, "Vanuatu new account, IDV = none");
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => 'mt5_account.account_proof_status_allowed',
+                params     => {mt5_status => 'proof_failed'}
+            },
+            "Vanuatu new account, IDV = none"
+        );
+
+    };
+
+    subtest 'existing account check, status = undef' => sub {
+        my $args = {
+            loginid         => $client_cr->loginid,
+            mt5_id          => 'MTR1000',
+            loginid_details => {
+                MTR1000 => {
+                    attributes   => {group => 'vanuatu'},
+                    status       => undef,
+                    platform     => 'mt5',
+                    account_type => 'real',
+                    group        => 'vanuatu'
+                },
+            },
+        };
+
+        $idv_status = 'verified';
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, POA is pending, IDV verified");
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, POA is pending, IDV verified");
+
+        $idv_status = 'none';
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, IDV = none");
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => 'mt5_account.account_proof_status_allowed',
+                params     => {mt5_status => 'proof_failed'}
+            },
+            "Vanuatu existing account, IDV = none"
+        );
+    };
+
+    subtest 'existing account check, status = not undef' => sub {
+        my $args = {
+            loginid         => $client_cr->loginid,
+            mt5_id          => 'MTR1000',
+            loginid_details => {
+                MTR1000 => {
+                    attributes   => {group => 'vanuatu'},
+                    status       => 'verification_pending',
+                    platform     => 'mt5',
+                    account_type => 'real',
+                    group        => 'vanuatu'
+                },
+            },
+        };
+
+        $idv_status = 'verified';
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            {
+                error_code => 'POAVerificationFailed',
+                rule       => 'mt5_account.account_poa_status_allowed',
+                params     => {mt5_status => 'poa_pending'}
+            },
+            "Vanuatu existing account, POA is pending, IDV verified"
+        );
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, POA is pending, IDV verified");
+
+        $idv_status = 'none';
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, IDV = none");
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => 'mt5_account.account_proof_status_allowed',
+                params     => {mt5_status => 'proof_failed'}
+            },
+            "Vanuatu existing account, IDV = none"
+        );
+    };
+
+    subtest 'existing account check, status = not undef, POA = verified' => sub {
+        my $args = {
+            loginid         => $client_cr->loginid,
+            mt5_id          => 'MTR1000',
+            loginid_details => {
+                MTR1000 => {
+                    attributes   => {group => 'vanuatu'},
+                    status       => 'verification_pending',
+                    platform     => 'mt5',
+                    account_type => 'real',
+                    group        => 'vanuatu'
+                },
+            },
+        };
+
+        $idv_status = 'verified';
+        $poa_status = 'verified';
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, POA is verified, IDV verified");
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, POA is verified, IDV verified");
+
+        $idv_status = 'none';
+
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, IDV = none");
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => 'mt5_account.account_proof_status_allowed',
+                params     => {mt5_status => 'proof_failed'}
+            },
+            ,
+            "Vanuatu existing account, IDV = none"
+        );
+    };
+};
+
 done_testing();
