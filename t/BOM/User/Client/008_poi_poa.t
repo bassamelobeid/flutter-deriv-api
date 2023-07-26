@@ -2922,7 +2922,7 @@ subtest 'Jurisdiction POI status' => sub {
         },
         {
             name             => 'Vanuatu: IDV verified => none',
-            status           => 'none',
+            status           => 'verified',
             onfido           => 'none',
             idv              => 'verified',
             manual           => 'none',

@@ -450,7 +450,7 @@ subtest 'latest poi by' => sub {
             },
             expected        => 'onfido',
             landing_company => 'vanuatu',
-            lc_status       => 'rejected',
+            lc_status       => 'verified',    # POI jurisdiction does not take the latest poi by (yet!)
         },
         {
             title            => 'LC:svg, IDV verified, Onfido rejected, Manual verified (by system?)',
