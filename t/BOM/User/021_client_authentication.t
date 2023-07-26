@@ -188,6 +188,92 @@ subtest 'set_authentication_and_status' => sub {
     ok $client_cr1->fully_authenticated(), 'Client is fully authenticated';
     is $client_cr1->authentication_status(), 'idv', 'expected auth status';
 
+    $client_cr1->set_authentication_and_status('IDV_PHOTO', 'Testing');
+    is $client_cr1->get_authentication('IDV_PHOTO')->{status}, 'pass', 'Expected status';
+    ok !$client_mf2->get_authentication('IDV_PHOTO'), "Client has not IDV_PHOTO";
+    ok $client_cr1->fully_authenticated(),            'Client is not fully authenticated';
+    is $client_cr1->authentication_status(), 'idv_photo', 'expected auth status';
+
+    subtest 'IDV + Photo' => sub {
+        my $tests = [{
+                idv_photoid_lc      => 1,
+                authentication      => 'IDV_PHOTO',
+                status              => 'pass',
+                high_risk           => 0,
+                fully_authenticated => 1,
+            },
+            {
+                idv_photoid_lc      => 1,
+                authentication      => 'IDV_PHOTO',
+                status              => 'pass',
+                high_risk           => 0,
+                ignore_idv          => 1,
+                fully_authenticated => 0,
+            },
+            {
+                idv_photoid_lc      => 0,
+                authentication      => 'IDV_PHOTO',
+                status              => 'pass',
+                high_risk           => 0,
+                fully_authenticated => 0,
+            },
+            {
+                idv_photoid_lc      => 1,
+                authentication      => 'DUBIOUS_METHOD',
+                status              => 'pass',
+                high_risk           => 0,
+                fully_authenticated => 0,
+            },
+            {
+                idv_photoid_lc      => 1,
+                authentication      => 'IDV_PHOTO',
+                status              => 'pending',
+                high_risk           => 0,
+                fully_authenticated => 0,
+            },
+            {
+                idv_photoid_lc      => 1,
+                authentication      => 'IDV_PHOTO',
+                status              => 'pass',
+                high_risk           => 1,
+                fully_authenticated => 0,
+            },
+        ];
+        for my $test ($tests->@*) {
+            my ($idv_photoid_lc, $authentication, $status, $high_risk, $ignore_idv, $fully_authenticated) =
+                @{$test}{qw/idv_photoid_lc authentication status high_risk ignore_idv fully_authenticated/};
+
+            $_->delete for @{$client_cr1->client_authentication_method};
+            $client_cr1->set_authentication($authentication, {status => $status}, 'testing script');
+
+            my $client_mock = Test::MockModule->new('BOM::User::Client');
+            $client_mock->mock(
+                'is_high_risk',
+                sub {
+                    return $high_risk;
+                });
+
+            my $lc_mock = Test::MockModule->new('LandingCompany');
+            $lc_mock->mock(
+                'fully_authenticated_with_idv_photoid',
+                sub {
+                    return $idv_photoid_lc;
+                });
+
+            $client_cr1 = BOM::User::Client->new({loginid => $client_cr1->loginid});
+            # we need xand (xnor amirite?) so we will use these auxiliar vars to store the booleans
+            my $x = $client_cr1->fully_authenticated({ignore_idv => $ignore_idv}) ? 1 : 0;
+            my $y = $fully_authenticated                                          ? 1 : 0;
+
+            is $x,                                   $y,     'Expected fully auth result';
+            is $client_cr1->get_manual_poi_status(), 'none', 'manual POI status should remain none regardless';
+
+            $client_mock->unmock_all;
+            $lc_mock->unmock_all;
+
+        }
+    };
+
     subtest 'IDV' => sub {
         my $tests = [{
                 authentication      => 'IDV',

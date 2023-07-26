@@ -520,6 +520,10 @@ sub set_authentication_and_status {
         $address_verified = 1;
     }
 
+    if ($client_authentication eq 'IDV_PHOTO') {
+        $self->set_authentication('IDV_PHOTO', {status => 'pass'}, $staff);
+    }
+
     if ($client_authentication eq 'ID_NOTARIZED') {
         $self->set_authentication('ID_NOTARIZED', {status => 'pass'}, $staff);
         $address_verified = 1;
@@ -820,7 +824,7 @@ It takes a hashref of params:
 
 =over 4
 
-=item * C<ignore_idv> - strict check for ID_DOCUMENT ID_NOTARIZED ID_ONLINE, ignore POA verification made by IDV.
+=item * C<ignore_idv> - strict check for ID_DOCUMENT ID_NOTARIZED ID_ONLINE, poa-less scenarios are skipped.
 
 =back
 
@@ -847,7 +851,7 @@ sub fully_authenticated {
 
 =head2 poa_authenticated_with_idv
 
-Determines if the client POA was authenticated by IDV.
+Determines if the client was authenticated by IDV+PhotoID and the risk conditions are also met.
 
 Returns C<0> or C<1>.
 
@@ -858,9 +862,18 @@ sub poa_authenticated_with_idv {
 
     # idv cannot fully auth high risk clients
 
-    return 0 if ($self->risk_level_sr // '') eq 'high';
+    return 0 if $self->is_high_risk;
 
-    return 0 if ($self->risk_level_aml // '') eq 'high';
+    # Some LC can get fully auth if IDV_PHOTO
+
+    my $idv_photo = $self->get_authentication('IDV_PHOTO');
+
+    return 1
+        if $self->landing_company->fully_authenticated_with_idv_photoid
+        and $idv_photo
+        and $idv_photo->status eq 'pass';
+
+    # some providers might verify the address of a client
 
     my $idv = $self->get_authentication('IDV');
 
@@ -869,8 +882,29 @@ sub poa_authenticated_with_idv {
     return 0;
 }
 
+=head2 is_high_risk
+
+Determines if the client is high risk.
+
+We take into consideration both AML and SR, if any of them is `high` we consider the
+client as high risk.
+
+=cut
+
+sub is_high_risk {
+    my ($self) = @_;
+
+    return 1 if ($self->risk_level_sr  // '') eq 'high';
+    return 1 if ($self->risk_level_aml // '') eq 'high';
+    return 0;
+}
+
 sub authentication_status {
     my ($self) = @_;
+
+    my $idv_photo = $self->get_authentication('IDV_PHOTO');
+
+    return 'idv_photo' if $idv_photo and $idv_photo->status eq 'pass';
 
     my $idv = $self->get_authentication('IDV');
 
@@ -7797,6 +7831,10 @@ Returns,
 sub get_poi_status_jurisdiction {
     my ($self, $args) = @_;
 
+    # invalidate any status if the ignore conditions are met
+    # for this LC
+    return 'none' if $self->ignore_age_verification($args);
+
     my $manual = $self->get_manual_poi_status();
     my $idv    = $self->get_idv_status();
     my $onfido = $self->get_onfido_status();
@@ -9043,13 +9081,12 @@ It returns 1 when we invalidate the age verification, 0 otherwise.
 sub ignore_age_verification {
     my ($self, $args) = @_;
 
-    # High risk profiles
-    my $risk = $self->aml_risk_classification // '';
-
     my $lc = $args->{landing_company} ? LandingCompany::Registry->by_name($args->{landing_company}) : $self->landing_company;
 
+    return 0 unless $lc;
+
     # Check if it was validated by IDV, we ignore IDV verification for some LC and high risk clients
-    if ($risk eq 'high' || none { $_ eq 'idv' } $lc->allowed_poi_providers->@*) {
+    if ($self->is_high_risk || none { $_ eq 'idv' } $lc->allowed_poi_providers->@*) {
         # Disregard idv authentication under high risk
         return 1 if $self->is_idv_validated;
     }
