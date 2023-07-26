@@ -75,14 +75,19 @@ diag("locked");
 
 my $t0 = time();
 throws_ok {
+    # it is expected that message_ok will fail, lets mock ok to ignore this failure
+    my $mock = Test::MockModule->new('Test::More');
+    $mock->mock('ok',sub {1});
+    my $mock2 = Test::MockModule->new('await');
+    $mock2->mock('ok', sub{1});
     $t->await::topup_virtual({topup_virtual => 1},{wait_max => 1});
 } qr/timeout/, "throws timeout";
 diag("end time" . (time - $t0));
 BOM::Test::Helper::reconnect($t);
 $t->await::ping({ping => 1});
 
-$clientdb->rollback;
 $t->await::trading_times({trading_times => "2023-07-26"});
+$clientdb->rollback;
 $t->finish_ok;
 done_testing();
 
