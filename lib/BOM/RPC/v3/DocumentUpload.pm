@@ -74,15 +74,15 @@ sub start_document_upload {
         $expiration_date = undef if $lifetime_valid;
 
         $upload_info = $client->start_document_upload({
-            document_type   => $document_type,
-            document_format => $args->{document_format},
-            document_id     => $args->{document_id} || '',
-            expiration_date => $expiration_date,
-            checksum        => $args->{expected_checksum} || '',
-            page_type       => $args->{page_type}         || '',
-            lifetime_valid  => $lifetime_valid,
-            origin          => 'client',
-        });
+                document_type   => $document_type,
+                document_format => $args->{document_format},
+                document_id     => $args->{document_id} || '',
+                expiration_date => $expiration_date,
+                checksum        => $args->{expected_checksum} || '',
+                page_type       => $args->{page_type}         || '',
+                lifetime_valid  => $lifetime_valid,
+                origin          => 'client',
+                issuing_country => $args->{document_issuing_country}});
 
         return create_upload_error('duplicate_document') unless ($upload_info);
 
@@ -201,9 +201,43 @@ sub validate_input {
     return 'virtual'                      if $client->is_virtual;
 
     my $error = validate_expiration_date($args->{expiration_date}) // validate_id_and_exp_date({$args->%*, client => $client})
-        // validate_proof_of_ownership({%$args{qw/proof_of_ownership document_type/}, %$params{qw/client/}});
+        // validate_proof_of_ownership({%$args{qw/proof_of_ownership document_type/}, %$params{qw/client/}})
+        // validate_issuing_country({$args->%*, client => $client});
 
     return $error;
+}
+
+=head2 validate_issuing_country
+
+Only applies to POI documents.
+
+It will check for a mandatory issuing country.
+
+It takes the following params as hashref:
+
+=over 4
+
+=item * - C<client> - the L<BOM::User::Client> instance
+
+=item * - C<document_issuing_country> - 2 letter country code
+
+=item * - C<document_type> - a I<string> representing the document type being uploaded
+
+=back
+
+Returns a C<string> representing an error or I<undef> if there was no error found.
+
+=cut
+
+sub validate_issuing_country {
+    my ($args) = @_;
+    my ($client, $document_issuing_country, $document_type) = @{$args}{qw/client document_issuing_country document_type/};
+
+    return undef unless $document_type && any { $_ eq $args->{document_type} } $client->documents->poi_types->@*;
+
+    return 'missing_issuing_country' unless $document_issuing_country;
+
+    return undef;
 }
 
 =head2 validate_proof_of_ownership
@@ -316,7 +350,7 @@ sub create_upload_error {
         missing_proof_of_ownership_id      => {message => localize('You must specify the proof of ownership id')},
         invalid_proof_of_ownership_id      => {message => localize('The proof of ownership id provided is not valid')},
         missing_proof_of_ownership_details => {message => localize('You must specify the proof of ownership details')},
-    };
+        missing_issuing_country            => {message => localize('Issuing country is mandatory for proof of identity')}};
 
     my ($error_code, $message);
     ($error_code, $message) = ($errors->{$reason}->{error_code}, $errors->{$reason}->{message}) if $reason;

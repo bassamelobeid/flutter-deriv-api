@@ -52,12 +52,13 @@ my %default_params = (
     args     => {});
 
 my %default_args = (
-    document_id       => 'ABCD1234',
-    document_type     => 'passport',
-    document_format   => 'jpg',
-    expected_checksum => 'FileChecksum',
-    expiration_date   => '2117-08-11',
-    file_size         => 1,
+    document_id              => 'ABCD1234',
+    document_type            => 'passport',
+    document_format          => 'jpg',
+    expected_checksum        => 'FileChecksum',
+    expiration_date          => '2117-08-11',
+    file_size                => 1,
+    document_issuing_country => 'br'
 );
 
 use constant {
@@ -157,6 +158,24 @@ subtest 'Basic upload test sequence' => sub {
     subtest 'Call finish again to ensure CS team is only sent 1 email' => sub {
         finish_successful_upload($real_client, $file_id, $checksum, 0);
     };
+};
+
+#########################################################
+## Tests for mandatory issuing country
+#########################################################
+
+subtest 'Attempt to upload POI document without an issuing country' => sub {
+    call_and_check_error({
+            args => {
+                %default_args,
+                expected_checksum        => 'new doc',
+                document_id              => 'qwerty101',
+                document_issuing_country => undef
+            }
+        },
+        'Issuing country is mandatory for proof of identity',
+        'mandatory issuing country'
+    );
 };
 
 #########################################################
@@ -261,7 +280,7 @@ subtest 'Siblings accounts sync' => sub {
                     expiration_date   => '',
                     document_type     => 'proofaddress',
                     document_format   => 'png',
-                    expected_checksum => '12341412412412'
+                    expected_checksum => '12341412412412',
                 }})->has_no_error->result;
 
         my $file_id = $result->{file_id};
@@ -404,11 +423,12 @@ subtest 'Siblings accounts sync' => sub {
             {
                 token => $mx_token,
                 args  => {
-                    document_id       => '1618',
-                    document_type     => 'passport',
-                    document_format   => 'png',
-                    expected_checksum => '124124124124',
-                    expiration_date   => '2117-08-11',
+                    document_id              => '1618',
+                    document_type            => 'passport',
+                    document_format          => 'png',
+                    expected_checksum        => '124124124124',
+                    document_issuing_country => 'co',
+                    expiration_date          => '2117-08-11',
                 }})->has_no_error->result;
 
         my $file_id = $result->{file_id};
@@ -501,12 +521,13 @@ subtest 'Lifetime valid' => sub {
         {
             token => $mx_token,
             args  => {
-                document_id       => '1618',
-                document_type     => 'passport',
-                document_format   => 'png',
-                expected_checksum => '124124124124',
-                expiration_date   => '2099-01-01',
-                lifetime_valid    => 1,
+                document_id              => '1618',
+                document_type            => 'passport',
+                document_issuing_country => 'co',
+                document_format          => 'png',
+                expected_checksum        => '124124124124',
+                expiration_date          => '2099-01-01',
+                lifetime_valid           => 1,
             }})->has_no_error->result;
 
     my $file_id = $result->{file_id};
