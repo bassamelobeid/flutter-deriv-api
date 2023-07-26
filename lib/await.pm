@@ -36,10 +36,11 @@ sub wsapi_wait_for {
         code  => sub {
             if ($messages_without_accidens == ($params->{wait_max} // 10)) {
               print STDERR "wait_max $params->{wait_max} and $messages_without_accidens\n";
-              #ok(0, 'Timeout');
-                $t->tx->finish;
+              ok(0, 'Timeout');
+              #  $t->tx->finish;
                 return $f->fail("timeout");
             }
+            print STDERR "timeout, will cancel\n";
             $f->cancel();
         },
     );
@@ -58,7 +59,7 @@ sub wsapi_wait_for {
     }
   print STDERR "ioloop await\n";
     $f = $ioloop->await($f);
-    print STDERR "f is cancelled ? " . $f->is_cancelled . "\n";
+    print STDERR "f is cancelled ? " . ($f->is_cancelled // 0) . "\n";
     return wsapi_wait_for($t, $wait_for, sub { note "Cancelled. Trying again" }, $params, ++$messages_without_accidens)
         if $f->is_cancelled;
 
