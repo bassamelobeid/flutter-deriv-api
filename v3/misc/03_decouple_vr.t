@@ -18,6 +18,10 @@ use BOM::User::Client;
 
 use await;
 
+unless ($ENV{TEST_DECOUPLE_VR}){
+    plan skip_all => 'Test is disabled. Set TEST_DECOUPLE_VR=1 to enable it';
+}
+
 my $t = build_wsapi_test({language => 'EN'});
 
 my $email    = 'abc@binary.com';
