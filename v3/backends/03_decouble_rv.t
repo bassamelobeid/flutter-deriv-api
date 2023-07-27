@@ -45,27 +45,45 @@ $client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
 $t->await::authorize({authorize => $token});
 
-my $clientdb = BOM::Test::Data::Utility::UnitTestDatabase->instance->db_handler;
+my $client_dbh = BOM::Test::Data::Utility::UnitTestDatabase->instance->db_handler;
 diag("start to lock transaction.transaction");
-$clientdb->begin_work;
-$clientdb->do('lock transaction.transaction');
+$client_dbh->begin_work;
+$client_dbh->do('lock transaction.transaction');
 diag("locked");
 
 my $t0 = time();
 throws_ok {
     # it is expected that message_ok will fail, lets mock ok to ignore this failure
-    my $mock = Test::MockModule->new('Test::More');
-    $mock->mock('ok',sub {1});
-    my $mock2 = Test::MockModule->new('await');
-    $mock2->mock('ok', sub{1});
+    my $mock_more = Test::MockModule->new('Test::More');
+    $mock_more->mock('ok',sub {1});
+    my $mock_await = Test::MockModule->new('await');
+    $mock_await->mock('ok', sub{1});
     $t->await::topup_virtual({topup_virtual => 1},{wait_max => 1});
 } qr/timeout/, "throws timeout";
 diag("end time" . (time - $t0));
+# Now rpc worker is blocked
+# reset connection
 BOM::Test::Helper::reconnect($t);
-$t->await::ping({ping => 1});
+lives_ok {$t->await::ping({ping => 1}); } "ping ok because it will not use rpc woker";
 
-$t->await::trading_times({trading_times => "2023-07-26"});
-$clientdb->rollback;
+# Here it will fail because rpc worker is blocked
+lives_ok {
+    $t->await::trading_times({trading_times => "2023-07-26"},{wait_max => 1});
+} "trade_time should be ok if rpc worker is available";
+
+# unlock table
+$client_dbh->rollback;
+diag("lock again");
+# lock again
+$client_dbh->begin_work;
+$client_dbh->do('lock transaction.transaction');
+BOM::Test::Helper::reconnect($t);
+lives_ok {
+    $t->await::trading_times({trading_times => "2023-07-26"},{wait_max => 1});
+} "trade_time should be ok after db unlocked and then rpc worker is free";
+# unlock table
+$client_dbh->rollback;
+
 $t->finish_ok;
 done_testing();
 
