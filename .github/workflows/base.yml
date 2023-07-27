@@ -28,4 +28,4 @@ jobs:
     uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
     secrets: inherit
     with:
-      repository: ${{ inputs.repository }}
+      repository: ${{ inputs.repository || github.repository }}
