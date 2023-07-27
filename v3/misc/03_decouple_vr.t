@@ -58,7 +58,7 @@ throws_ok {
     $mock_more->mock('ok',sub {1});
     my $mock_await = Test::MockModule->new('await');
     $mock_await->mock('ok', sub{1});
-    #$t->await::topup_virtual({topup_virtual => 1},{wait_max => 1});
+    $t->await::topup_virtual({topup_virtual => 1},{wait_max => 1});
 } qr/timeout/, "topup_virtual should be timeout because table is locked and then rpc worker is blocked";
 diag("Now rpc worker is blocked");
 diag("reset binary-websocket-api connection");
