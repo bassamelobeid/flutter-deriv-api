@@ -51,7 +51,7 @@ $client_dbh->begin_work;
 $client_dbh->do('lock transaction.transaction');
 diag("locked");
 
-my $t0 = time();
+diag("will call topup_virtual, that will block rpc worker");
 throws_ok {
     # it is expected that message_ok will fail, lets mock ok to ignore this failure
     my $mock_more = Test::MockModule->new('Test::More');
@@ -59,10 +59,9 @@ throws_ok {
     my $mock_await = Test::MockModule->new('await');
     $mock_await->mock('ok', sub{1});
     $t->await::topup_virtual({topup_virtual => 1},{wait_max => 1});
-} qr/timeout/, "throws timeout";
-diag("end time" . (time - $t0));
-# Now rpc worker is blocked
-# reset connection
+} qr/timeout/, "topup_virtual should be timeout because table is locked and then rpc worker is blocked";
+diag("Now rpc worker is blocked");
+diag("reset binary-websocket-api connection");
 BOM::Test::Helper::reconnect($t);
 lives_ok {$t->await::ping({ping => 1}); } "ping ok because it will not use rpc woker";
 
@@ -71,17 +70,19 @@ lives_ok {
     $t->await::trading_times({trading_times => "2023-07-26"},{wait_max => 1});
 } "trade_time should be ok if rpc worker is available";
 
-# unlock table
+diag("unlock table");
 $client_dbh->rollback;
 diag("lock again");
 # lock again
 $client_dbh->begin_work;
 $client_dbh->do('lock transaction.transaction');
+diag("locked");
+diag("reset binary-websocket-api connection");
 BOM::Test::Helper::reconnect($t);
 lives_ok {
     $t->await::trading_times({trading_times => "2023-07-26"},{wait_max => 1});
-} "trade_time should be ok after db unlocked and then rpc worker is free";
-# unlock table
+} "trade_time should still be ok even db locked again because rpc worker is free and it needn't that table";
+diag("unlock table");
 $client_dbh->rollback;
 
 $t->finish_ok;
