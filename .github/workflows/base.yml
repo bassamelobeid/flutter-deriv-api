@@ -28,4 +28,10 @@ jobs:
     uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@master
     secrets: inherit
     with:
-      repository: ${{ inputs.repository }}
+      repository: ${{ inputs.repository || github.repository }}
+  dependent:
+    needs: core_syntax_diff
+    if:  ${{ (github.event_name != 'workflow_call') && (github.event_name != 'push') }}
+    uses: ./.github/workflows/dependent.yml
+    secrets: inherit
+
