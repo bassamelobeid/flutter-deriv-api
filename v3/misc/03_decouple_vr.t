@@ -72,6 +72,8 @@ lives_ok {
 
 diag("unlock table");
 $client_dbh->rollback;
+# sleep one second to wait rpc worker to be back
+sleep 1;
 diag("lock again");
 # lock again
 $client_dbh->begin_work;
