@@ -8609,7 +8609,11 @@ sub latest_poi_by {
     my $onfido_check = BOM::User::Onfido::get_latest_check($self, $args)->{user_check} // {};
 
     if (my $onfido_created_at = $onfido_check->{created_at}) {
-        push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
+        # most probably this check is Onfido-only, reason is even though the check is clear
+        # name/dob mismatch is computed after
+        if (!$args->{only_verified} || $self->get_onfido_status() eq 'verified') {
+            push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
+        }
     }
 
     if (my $idv_document = $idv->get_last_updated_document($args)) {

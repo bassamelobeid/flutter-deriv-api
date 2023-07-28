@@ -403,6 +403,79 @@ subtest 'latest poi by' => sub {
             expected => 'onfido',
         },
         {
+            title  => 'Manual + Onfido + IDV, onfido is more recent (only verified)',
+            manual => {
+                upload_date => '2020-10-10 00:00:00',
+                origin      => 'bo',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected      => 'idv',
+            only_verified => 1,
+        },
+        {
+            title  => 'Manual + Onfido + IDV, onfido is more recent (only verified, result=clear, no age verif)',
+            manual => {
+                upload_date => '2020-10-10 00:00:00',
+                origin      => 'bo',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+                result     => 'clear'
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected      => 'idv',
+            only_verified => 1,
+        },
+        {
+            title  => 'Manual + Onfido + IDV, onfido is more recent (only verified, result=clear, age verif by onfido)',
+            manual => {
+                upload_date => '2020-10-10 00:00:00',
+                origin      => 'bo',
+            },
+            age_verification => {
+                created_at => '2020-10-10 00:00:02',
+                staff_name => 'system',
+                reason     => 'by onfido'
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+                result     => 'clear'
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected      => 'onfido',
+            only_verified => 1,
+        },
+        {
+            title  => 'Manual + Onfido + IDV, onfido is more recent (only verified, result=clear, age verif by idv)',
+            manual => {
+                upload_date => '2020-10-10 00:00:00',
+                origin      => 'bo',
+            },
+            age_verification => {
+                created_at => '2020-10-10 00:00:02',
+                staff_name => 'system',
+                reason     => 'by idv'
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+                result     => 'clear'
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected      => 'idv',
+            only_verified => 1,
+        },
+        {
             title  => 'Manual + Onfido + IDV, IDV is more recent',
             manual => {
                 upload_date => '2020-10-10 00:00:00',
@@ -425,7 +498,7 @@ subtest 'latest poi by' => sub {
             },
             onfido => {
                 created_at => '2020-10-10 00:00:01',
-                result     => 'clear',
+                result     => 'consider',
             },
             idv => {
                 requested_at => '2020-10-10 00:00:00',
@@ -499,7 +572,7 @@ subtest 'latest poi by' => sub {
             $args //= {};
 
             if ($args->{only_verified}) {
-                if ($onfido_latest->{user_check}->{result} ne 'clear') {
+                if (($onfido_latest->{user_check}->{result} // '') ne 'clear') {
                     return {
                         user_check => undef,
                     };
@@ -552,8 +625,8 @@ subtest 'latest poi by' => sub {
         });
 
     for my $test ($tests->@*) {
-        my ($onfido, $idv, $title, $expected, $manual, $idv_pending, $age_verification, $lc, $lc_status) =
-            @{$test}{qw/onfido idv title expected manual idv_pending_check age_verification landing_company lc_status/};
+        my ($onfido, $idv, $title, $expected, $manual, $idv_pending, $age_verification, $lc, $lc_status, $only_verified) =
+            @{$test}{qw/onfido idv title expected manual idv_pending_check age_verification landing_company lc_status only_verified/};
 
         subtest $title => sub {
             $age_verification_status = $age_verification;
@@ -566,7 +639,7 @@ subtest 'latest poi by' => sub {
 
             $manual_latest = $manual;
 
-            my ($name, $check) = $client->latest_poi_by;
+            my ($name, $check) = $client->latest_poi_by({only_verified => $only_verified});
 
             is $name, $expected, 'Expected POI subsystem reported';
 
