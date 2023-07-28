@@ -1091,7 +1091,7 @@ async sub _store_applicant_documents {
                 applicant_id   => $applicant_id,
                 file_type      => $doc->file_type,
                 document_info  => {
-                    issuing_country => lc(country_code2code($doc->issuing_country, 'alpha-3', 'alpha-2')),
+                    issuing_country => $doc->issuing_country ? lc(country_code2code($doc->issuing_country, 'alpha-3', 'alpha-2')) : $issuing_country,
                     type            => $type,
                     side            => $side,
                     expiration_date => $expiration_date,
