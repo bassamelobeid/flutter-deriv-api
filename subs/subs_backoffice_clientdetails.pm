@@ -450,7 +450,7 @@ SELECT id,
     status,
     lifetime_valid,
     client_loginid,
-    issuing_country
+    issuing_country,
     address_mismatch
 FROM betonmarkets.client_authentication_document
 WHERE client_loginid = ? AND status != 'uploading'
