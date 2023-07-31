@@ -496,29 +496,6 @@ my $mock_date = Test::MockModule->new('Date::Utility');
 
 $mock_date->mock('hour' => sub { return 20 });
 
-subtest 'buy accumulator on crash/boom with VRTC' => sub {
-    my $vr = create_client('VRTC');
-    top_up $vr, 'USD', 5000;
-
-    $args->{underlying} = "CRASH500";
-    my $contract = produce_contract($args);
-
-    my $txn = BOM::Transaction->new({
-        client        => $vr,
-        contract      => $contract,
-        price         => 100,
-        amount        => 100,
-        amount_type   => 'stake',
-        source        => 19,
-        purchase_date => $contract->date_start,
-    });
-
-    my $error = $txn->buy();
-    ok !$error, 'crash symbol buy successful';
-
-    $args->{underlying} = $underlying->symbol;
-};
-
 subtest 'sell failure due to update' => sub {
     my $mocked_limits = Test::MockModule->new('BOM::Transaction');
     $mocked_limits->mock(
@@ -717,6 +694,28 @@ subtest 'slippage' => sub {
 
         $mocked_validation->unmock_all();
     }
+
+};
+
+subtest 'buy accumulator on crash/boom with VRTC' => sub {
+    my $vr = create_client('VRTC');
+    top_up $vr, 'USD', 5000;
+
+    $args->{underlying} = "CRASH500";
+    my $contract = produce_contract($args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy();
+    is $error->{-message_to_client}, 'Trading is not offered for this asset.', 'crash/boom symbols are not offered';
 
 };
 
