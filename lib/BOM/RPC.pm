@@ -34,6 +34,7 @@ use BOM::RPC::v3::Pricing;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Trading;
+use BOM::RPC::v3::Wallets;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::IdentityVerification;
 use BOM::RPC::v3::Utility qw(log_exception);
