@@ -1,0 +1,25 @@
+name: Build workflow
+run-name: Build workflow
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check-git-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check git message
+        uses: regentmarkets/github-actions/check-git-message@master
+  core_unit_syntax_diff:
+    needs: check-git-message
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    secrets: inherit
+    with:
+      repository: ${{ github.repository }}
