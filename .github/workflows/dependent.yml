@@ -4,12 +4,12 @@ on:
   workflow_call:
 jobs:
   bom-rpc:
-    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@master
+    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@develop_ghactions
     secrets: inherit
     with: 
       repository: regentmarkets/bom-rpc
   binary-websocket-api:
-    uses: regentmarkets/binary-websocket-api/.github/workflows/base.yml@master
+    uses: regentmarkets/binary-websocket-api/.github/workflows/base.yml@develop_ghactions
     secrets: inherit
     with: 
       repository: regentmarkets/binary-websocket-api
@@ -19,7 +19,7 @@ jobs:
   #   with: 
   #     repository: regentmarkets/bom-backoffice
   bom-user:
-    uses: regentmarkets/bom-user/.github/workflows/base.yml@master
+    uses: regentmarkets/bom-user/.github/workflows/base.yml@develop_ghactions
     secrets: inherit
     with: 
       repository: regentmarkets/bom-user
