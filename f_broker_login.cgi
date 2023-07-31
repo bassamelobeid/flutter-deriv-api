@@ -19,7 +19,7 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 # Check if a staff is logged in
-BOM::Backoffice::Auth0::get_staff();
+my $staff = BOM::Backoffice::Auth0::get_staff();
 PrintContentType();
 
 my $broker = request()->broker_code;
@@ -32,6 +32,21 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{
             <h3>YOU ARE ON THE MASTER LIVE SERVER</h3>
             <span>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).</span>
         </div>~;
+}
+
+unless ($staff) {
+    my $rand       = '?' . rand(9999);                                            # to avoid caching on these fast navigation links
+    my $login_page = request()->url_for("backoffice/login.cgi", {_r => $rand});
+
+    print qq~
+    <div class="card">
+        <div class="card__content">
+            <h3>The current session is invalid.</h3>
+            <a href='$login_page'>Please login.</a>
+        </div>
+    </div>~;
+
+    code_exit_BO();
 }
 
 my $brokerselection = 'Broker code : '
@@ -136,27 +151,29 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
         </div>~;
 }
 
-# INVESTIGATIVE TOOLS
-print qq~
-<div class="card">
-    <div class="card__label toggle">
-        Investigative tools
-    </div>
-    <div class="card__content">
-        <h3>Investigative tools</h3>
-        <form action="~ . request()->url_for('backoffice/f_investigative.cgi') . qq~" method="get">
-            <label>CIL :</label>
-            <select name="mycil">
-                <option>CS</option>
-                <option>IT</option>
-                <option>IA</option>
-                <option>QUANTS</option>
-            </select>
-            <label>$brokerselection</label>
-            <input type="submit" class="btn btn--primary" value="Investigative tools">
-        </form>
-    </div>
-</div>~;
+if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
+    # INVESTIGATIVE TOOLS
+    print qq~
+    <div class="card">
+        <div class="card__label toggle">
+            Investigative tools
+        </div>
+        <div class="card__content">
+            <h3>Investigative tools</h3>
+            <form action="~ . request()->url_for('backoffice/f_investigative.cgi') . qq~" method="get">
+                <label>CIL :</label>
+                <select name="mycil">
+                    <option>CS</option>
+                    <option>IT</option>
+                    <option>IA</option>
+                    <option>QUANTS</option>
+                </select>
+                <label>$brokerselection</label>
+                <input type="submit" class="btn btn--primary" value="Investigative tools">
+            </form>
+        </div>
+    </div>~;
+}
 
 # App management
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
@@ -211,14 +228,14 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'Compliance'])) {
                 <form action="~ . request()->url_for('backoffice/payment_agent_tier_manage.cgi') . qq~" method="get">
                     <label>$pa_brokerselection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
-                </form>                
+                </form>
             </div>
             <div class="card__content">
                 <h3>Search Payment Agents</h3>
                 <form action="~ . request()->url_for('backoffice/f_payment_agent_list.cgi') . qq~" method="get">
                     <label>$pa_brokerselection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
-                </form>                
+                </form>
             </div>
             <div class="card__content">
                 <!-- empty -->
