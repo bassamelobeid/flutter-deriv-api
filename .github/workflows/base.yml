@@ -22,9 +22,3 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ inputs.repository }}
-  dependent:
-    needs: core_syntax_diff
-    if:  ${{ github.event_name != 'push' }}
-    uses: ./.github/workflows/dependent.yml
-    secrets: inherit
-
