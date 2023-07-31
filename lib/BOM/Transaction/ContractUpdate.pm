@@ -17,6 +17,8 @@ use Syntax::Keyword::Try;
 use ExpiryQueue;
 use Log::Any   qw($log);
 use List::Util qw(min);
+# For debugging purpose, will be removed once error is fixed.
+use Data::Dump 'pp';
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -388,6 +390,10 @@ sub build_contract_update_response {
 
             }};
     }
+
+    $log->errorf("error in processing update contract for category %s with parameters %s",
+        $category, pp($contract->can('_order') ? $contract->_order : +{}));
+
 }
 
 has [qw(take_profit stop_loss)] => (
