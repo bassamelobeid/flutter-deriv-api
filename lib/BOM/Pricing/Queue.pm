@@ -142,7 +142,7 @@ connects to master read feed redis and returns the redis object
 
 sub connect_to_feed {
     my ($self) = @_;
-    my $cfg    = BOM::Config::redis_feed_config()->{"replica-read"};
+    my $cfg    = BOM::Config::redis_feed_config()->{"master-read"};
     my $redis  = Net::Async::Redis->new(
         host => $cfg->{host},
         port => $cfg->{port},
