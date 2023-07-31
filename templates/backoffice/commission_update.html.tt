@@ -31,6 +31,10 @@
             <td><input type="text" name="commission_rate"></input></td>
         </tr>
         <tr>
+            <td>Contract size: </td>
+            <td><input type="text" name="contract_size"></input></td>
+        </tr>
+        <tr>
             <td><input type="button" class="btn btn--primary" onClick="SaveCFDsCommission()" value="Update Commission"></td>
             <td class="save_cfds_affiliate_commission"></td>
         </tr>
@@ -51,6 +55,7 @@ function SaveCFDsCommission(){
     var account_type = el.find('select[name="account_type"]').val();
     var commission_type = el.find('select[name="commission_type"]').val();
     var commission_rate = el.find('input[name="commission_rate"]').val();
+    var contract_size = el.find('input[name="contract_size"]').val();
 
     result.text('processing ...').css('color', 'black');
 
@@ -62,6 +67,7 @@ function SaveCFDsCommission(){
             account_type: account_type,
             commission_type: commission_type,
             commission_rate: commission_rate,
+            contract_size: contract_size,
             provider: provider
         },
         success: function(data) {

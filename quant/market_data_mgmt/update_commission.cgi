@@ -32,6 +32,7 @@ if ($r->param('save_cfds_commission')) {
         account_type    => $r->param('account_type'),
         commission_type => $r->param('commission_type'),
         commission_rate => $r->param('commission_rate'),
+        contract_size   => $r->param('contract_size'),
     });
     print encode_json_utf8($output);
 }
