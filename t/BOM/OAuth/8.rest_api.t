@@ -333,6 +333,9 @@ subtest 'login' => sub {
     note "Non json request body";
     $t->post_ok($login_url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
 
+    note "Non json HASHREF request body";
+    $t->post_ok($login_url => ['no', 'bueno'])->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
+
     note "Wrong token";
     $post->(
         $login_url,

@@ -98,7 +98,7 @@ It renders a JSON with the following structure:
 sub verify {
     my $c = shift;
 
-    return $c->_make_error('NEED_JSON_BODY', 400) unless $c->req->json;
+    return $c->_make_error('NEED_JSON_BODY', 400) unless ref($c->req->json) eq 'HASH';
 
     my $app_id = defang($c->req->json->{app_id});
 
