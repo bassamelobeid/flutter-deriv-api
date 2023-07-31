@@ -1,14 +1,15 @@
 name: Build workflow
 run-name: Build workflow
 on:
-  workflow_call:
-    inputs:
-      repository:
-        description: 'Repository name for running tests'
-        required: true
-        type: string 
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   check-git-message:
@@ -21,6 +22,10 @@ jobs:
     uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
     secrets: inherit
     with:
-      repository: ${{ inputs.repository }}
-
+      repository: ${{ github.repository }}
+  dependent:
+    needs: core_unit_syntax_diff
+    if:  ${{ github.event_name != 'push' }}
+    uses: ./.github/workflows/dependent.yml
+    secrets: inherit
 
