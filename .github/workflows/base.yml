@@ -1,5 +1,5 @@
-name: Build workflow
-run-name: Build workflow
+name: Repository Tests
+run-name: Repository Tests
 on:
   workflow_dispatch:
   push:
@@ -7,7 +7,6 @@ on:
       - master
     tags:
       - '*'
-  pull_request:
   workflow_call:
     inputs:
       repository:
