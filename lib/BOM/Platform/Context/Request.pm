@@ -167,7 +167,10 @@ sub _build_params {
 
     my $params = {};
     if (my $request = $self->mojo_request) {
-        my $json = $request->json || {};
+        my $json = $request->json;
+
+        $json = {} unless ref($json) eq 'HASH';    # discard the payload if not a hashref
+
         $params = {$json->%*, $request->params->to_hash->%*};
     }
 
