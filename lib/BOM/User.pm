@@ -1030,6 +1030,11 @@ sub get_derivez_loginids {
     $type = 'all'  if $args{type_of_account} eq 'all';
 
     my @loginids = sort $self->get_trading_platform_loginids('derivez', $type // 'all');
+
+    if ($args{loginid}) {
+        @loginids = grep { $_ eq $args{loginid} } @loginids;
+    }
+
     @loginids = @{$self->filter_active_ids(\@loginids)} unless $args{include_all_status};
 
     return @loginids;
@@ -1587,6 +1592,7 @@ sub link_wallet_to_trading_account {
     my $wallet_loginid = delete $args->{wallet_id};
 
     my $wallet = $self->get_wallet_by_loginid($wallet_loginid);
+
     die "InvalidWalletAccount\n" unless $wallet;
 
     my $account_details = $self->loginid_details->{$loginid};
@@ -1655,9 +1661,11 @@ Returns a L<BOM::User::Wallet> instance on success, throws exception on error
 =cut
 
 sub get_wallet_by_loginid {
-    my ($self, $loginid) = @_;
+    my ($self, $loginid, $args) = @_;
 
-    return (first { $_->is_wallet && $_->loginid eq $loginid } $self->clients or die "InvalidWalletAccount\n");
+    die "InvalidWalletAccount\n" unless $self->loginid_details->{$loginid};
+
+    return BOM::User::Client->get_client_instance($loginid, $args->{db_operation} // 'write');
 }
 
 =head2 get_account_by_loginid
@@ -1678,7 +1686,6 @@ sub get_account_by_loginid {
     my ($self, $loginid) = @_;
 
     # Using `require` to import at runtime and avoid circular dependency
-    # TODO: remove this subroutine once the callers are removed by https://github.com/regentmarkets/bom-user/pull/2125
     require BOM::TradingPlatform;
 
     return BOM::TradingPlatform->new(
@@ -1692,6 +1699,12 @@ sub get_account_by_loginid {
         client   => $self->get_default_client
     )->get_account_info($loginid)
         if $loginid =~ DXTRADE_REGEX;
+
+    return BOM::TradingPlatform->new(
+        platform => 'derivez',
+        client   => $self->get_default_client
+    )->get_account_info($loginid)
+        if $loginid =~ EZR_REGEX;
 
     #TODO: add logic for cTrader here when it's ready
 

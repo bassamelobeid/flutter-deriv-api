@@ -27,6 +27,18 @@ sub new {
     return $self;
 }
 
+=head2 is_virtual
+
+Returns whether this client instance is a virtual account.
+
+=cut
+
+sub is_virtual {
+    my $self = shift;
+
+    return $self->get_account_type->name eq 'virtual';
+}
+
 =head2 is_wallet
 
 Returns whether this client instance is a wallet.
