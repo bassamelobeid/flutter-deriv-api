@@ -576,7 +576,7 @@ SQL
             next unless $idv_document_check;
 
             my $idv_report = $idv_document_check->{report};
-            $idv_report = eval { decode_json_utf8 $idv_report } if $idv_report;
+            $idv_report = eval { decode_json_text $idv_report } if $idv_report;
 
             if (BOM::Config::identity_verification()->{providers}{$idv_document_check->{provider}}{selfish}) {
                 $idv_record->{tooltip}   = $idv_document_check->{provider} . " provider does not return personal data";
