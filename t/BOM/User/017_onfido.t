@@ -966,7 +966,17 @@ subtest 'get consider reasons' => sub {
 
         $applicant_id = 'R01-x01';
         $redis->del($pending_key);
+        $emission = {};
 
+        is BOM::User::Onfido::submissions_left($test_client), 0, 'submissions left at zero';
+        ok !BOM::User::Onfido::pending_request($test_client->binary_user_id), 'Does not have a pending request';
+        ok !BOM::User::Onfido::ready_for_authentication($test_client),        'Cannot underflow the submissions left counter';
+        cmp_deeply $emission, {}, 'No emission';
+
+        $redis->del($pending_key);
+        $redis->del($key);
+        $emission = {};
+        is BOM::User::Onfido::submissions_left($test_client), 1, 'submissions left are back';
         ok !BOM::User::Onfido::pending_request($test_client->binary_user_id), 'Does not have a pending request';
         ok BOM::User::Onfido::ready_for_authentication($test_client),         'Ready for auth';
 
@@ -981,10 +991,14 @@ subtest 'get consider reasons' => sub {
 
         ok $redis->get($pending_key), 'Expected pending flag';
         ok $redis->ttl($pending_key), 'TTL set';
-        is $redis->get($key), 2, 'Counter increased';
+        is $redis->get($key), 1, 'Counter increased';
         ok $redis->ttl($key), 'TTL set';
 
         $redis->del($pending_key);
+        $redis->del($key);
+        $test_client->residence('py');    # no idv supported
+        $test_client->save;
+
         ok BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S3', 'X', 'Y']}), 'ready for auth';
 
         cmp_deeply $emission,
@@ -999,16 +1013,46 @@ subtest 'get consider reasons' => sub {
 
         ok $redis->get($pending_key), 'Expected pending flag';
         ok $redis->ttl($pending_key), 'TTL set';
-        is $redis->get($key), 3, 'Counter increased';
+        is $redis->get($key), 1, 'Counter increased';
+        ok $redis->ttl($key), 'TTL set';
+
+        $emission = {};
+        $redis->del($pending_key);
+
+        ok BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S3', 'X', 'Y']}), 'ready for auth';
+
+        cmp_deeply $emission,
+            {
+            ready_for_authentication => {
+                loginid      => $test_client->loginid,
+                applicant_id => $applicant_id,
+                documents    => ['S3', 'X', 'Y'],
+            },
+            },
+            'Expected event emitted';
+
+        ok $redis->get($pending_key), 'Expected pending flag';
+        ok $redis->ttl($pending_key), 'TTL set';
+        is $redis->get($key), 2, 'Counter increased';
         ok $redis->ttl($key), 'TTL set';
 
         subtest 'pending flag still alive' => sub {
             $log->clear();
             $emission = {};
+            ok !BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S2', 'A', 'B']}), 'not ready for auth';
+            cmp_deeply $emission, {}, 'No event emitted';
+            is $redis->get($key), 2, 'Counter not increased';
+            $log->does_not_contain_ok(qr/Unexpected Onfido request when pending flag is still alive/, 'warning log ok')
+                ;    # log is skipped because the submission left counter check hits first
+
+            $redis->set($key, 0);
+            $log->clear();
+            $emission = {};
+            is $redis->get($key), 0, 'Counter back to 0';
             ok !BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S2', 'A', 'B']}), 'Could not acquired pending lock';
             cmp_deeply $emission, {}, 'No event emitted';
-            is $redis->get($key), 3, 'Counter not increased';
-            $log->contains_ok(qr/Unexpected Onfido request when pending flag is still alive/, 'warning log ok');
+            is $redis->get($key), 0, 'Counter not increased';
+            $log->contains_ok(qr/Unexpected Onfido request when pending flag is still alive/, 'warning log ok');    # this time the log is there
         };
 
         $emission = {};
