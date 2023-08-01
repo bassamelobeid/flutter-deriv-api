@@ -240,11 +240,11 @@ subtest 'buy turbos options', sub {
         };
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id}, $fmb->{id},     'financial_market_bet_id';
-            is $chld->{barrier},                 '78.00',        'strike price/barrier is correct';
-            is $chld->{entry_spot},              100,            'entry spot is correct';
-            is $chld->{entry_epoch},             $now->datetime, 'entry epoch is correct';
-
+            is $chld->{financial_market_bet_id},    $fmb->{id},        'financial_market_bet_id';
+            is $chld->{'take_profit_order_amount'}, undef,             'take_profit_order_amount is undef';
+            is $chld->{'take_profit_order_date'},   undef,             'take_profit_order_date is undef';
+            is $chld->{'ask_spread'},               0.102916418596081, 'ask_spread is charged for buy';
+            is $chld->{'bid_spread'},               undef,             'bid_spread is undef';
         };
 
     }
@@ -307,18 +307,185 @@ subtest 'sell a bet', sub {
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
 
+        subtest 'chld row', sub {
+            is $chld->{financial_market_bet_id},    $fmb->{id},        'financial_market_bet_id';
+            is $chld->{'take_profit_order_amount'}, undef,             'take_profit_order_amount is undef';
+            is $chld->{'take_profit_order_date'},   undef,             'take_profit_order_date is undef';
+            is $chld->{'ask_spread'},               0.102916418596081, 'ask_spread is charged for buy';
+            is $chld->{'bid_spread'},               0.102916418596081, 'bid_spread is charged for manual sell';
+        };
+
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
         is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
         is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
     }
     'survived';
 
-    subtest 'chld row', sub {
-        is $chld->{financial_market_bet_id}, $fmb->{id},     'financial_market_bet_id';
-        is $chld->{'entry_epoch'},           $now->datetime, 'correct entry epoch';
-        is $chld->{'entry_spot'},            '100',          'correct entry spot price';
-        is $chld->{'barrier'},               '78.00',        'correct strike price (normalized)';
-    };
+};
+
+subtest 'buy turbos with take profit', sub {
+    lives_ok {
+        $args->{date_pricing} = $now;
+        $args->{limit_order}  = {
+            take_profit => '5',
+        };
+        my $contract = produce_contract($args);
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy();
+        ok !$error, 'buy without error';
+
+        subtest 'transaction report', sub {
+            note $txn->report;
+            my $report = $txn->report;
+
+            like $report, qr/\ATransaction Report:$/m,                                                    'header';
+            like $report, qr/^\s*Client: \Q${\$cl}\E$/m,                                                  'client';
+            like $report, qr/^\s*Contract: \Q${\$contract->code}\E$/m,                                    'contract';
+            like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
+            like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
+            like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
+            like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
+            like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
+            like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
+            like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
+        };
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+
+        subtest 'transaction row', sub {
+            plan tests => 12;
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},  $acc_usd->id, 'account_id';
+            is $trx->{action_type}, 'buy',        'action_type';
+            is $trx->{amount} + 0,  -100,         'amount';
+            # this change is due to previous buy/sell transactions.
+            is $trx->{balance_after} + 0,       4899.79,                'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
+            is $trx->{payment_id},              undef,                  'payment_id';
+            is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
+            is $trx->{remark},                  undef,                  'remark';
+            is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
+            is $trx->{source},                  19,                     'source';
+            cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+        };
+
+        subtest 'fmb row', sub {
+            plan tests => 18;
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,                              'account_id';
+            is $fmb->{bet_class},     'turbos',                                  'bet_class';
+            is $fmb->{bet_type},      'TURBOSLONG',                              'bet_type';
+            is $fmb->{buy_price} + 0, 100,                                       'buy_price';
+            is $fmb->{expiry_daily},  $contract->expiry_daily,                   'expiry_daily';
+            is $fmb->{expiry_time},   $now->plus_time_interval('10h')->datetime, 'expiry_time';
+            is $fmb->{fixed_expiry},  undef,                                     'fixed_expiry';
+            is $fmb->{is_expired},    0,                                         'is_expired';
+            is $fmb->{is_sold},       0,                                         'is_sold';
+            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+            is $fmb->{sell_price},      undef,                                     'sell_price';
+            is $fmb->{sell_time},       undef,                                     'sell_time';
+            is $fmb->{settlement_time}, $now->plus_time_interval('10h')->datetime, 'settlement_time';
+            like $fmb->{short_code}, qr/TURBOSLONG/, 'short_code';
+            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+            is $fmb->{tick_count},        undef,   'tick_count';
+            is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
+        };
+
+        subtest 'chld row', sub {
+            is $chld->{financial_market_bet_id},    $fmb->{id},         'financial_market_bet_id';
+            is $chld->{'take_profit_order_amount'}, 5,                  'take_profit_order_amount is correct';
+            is $chld->{'take_profit_order_date'},   $fmb->{start_time}, 'take_profit_order_date is correct';
+            is $chld->{'ask_spread'},               0.102916418596081,  'ask_spread is charged for buy';
+            is $chld->{'bid_spread'},               undef,              'bid_spread is undef';
+        };
+
+    }
+    'survived';
+};
+
+subtest 'sell a bet with take profit', sub {
+    lives_ok {
+        $args->{date_pricing} = $args->{date_start}->epoch + 2;
+        $args->{limit_order}  = {
+            take_profit => {
+                order_amount => 5,
+                order_date   => $now,
+            }};
+        my $contract = produce_contract($args);
+
+        my $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start->epoch + 1,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+            source        => 23,
+        });
+        my $error = $txn->sell();
+        is $error, undef, 'no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
+
+        subtest 'transaction row', sub {
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,             'account_id';
+            is $trx->{action_type},             'sell',                   'action_type';
+            is $trx->{amount} + 0,              $contract->bid_price + 0, 'amount';
+            is $trx->{balance_after} + 0,       4999.58,                  'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},               'financial_market_bet_id';
+            is $trx->{payment_id},              undef,                    'payment_id';
+            is $trx->{quantity},                1,                        'quantity';
+            is $trx->{referrer_type},           'financial_market_bet',   'referrer_type';
+            is $trx->{remark},                  undef,                    'remark';
+            is $trx->{staff_loginid},           $cl->loginid,             'staff_loginid';
+            is $trx->{source},                  23,                       'source';
+            cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+        };
+
+        subtest 'fmb row', sub {
+            plan tests => 18;
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,                              'account_id';
+            is $fmb->{bet_class},     'turbos',                                  'bet_class';
+            is $fmb->{bet_type},      'TURBOSLONG',                              'bet_type';
+            is $fmb->{buy_price} + 0, 100,                                       'buy_price';
+            is $fmb->{expiry_daily},  $contract->expiry_daily,                   'expiry_daily';
+            is $fmb->{expiry_time},   $now->plus_time_interval('10h')->datetime, 'expiry_time';
+            is $fmb->{fixed_expiry},  undef,                                     'fixed_expiry';
+            is $fmb->{is_expired},    0,                                         'is_expired';
+            ok $fmb->{is_sold}, 'is_sold';
+            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
+            is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
+            cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
+            is $fmb->{settlement_time}, $now->plus_time_interval('10h')->datetime, 'settlement_time';
+            like $fmb->{short_code}, qr/TURBOSLONG/, 'short_code';
+            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+            is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
+        };
+
+        subtest 'chld row', sub {
+            is $chld->{financial_market_bet_id},    $fmb->{id},         'financial_market_bet_id';
+            is $chld->{'take_profit_order_amount'}, 5,                  'take_profit_order_amount is correct';
+            is $chld->{'take_profit_order_date'},   $fmb->{start_time}, 'take_profit_order_date is correct';
+            is $chld->{'ask_spread'},               0.102916418596081,  'ask_spread is charged for buy';
+            is $chld->{'bid_spread'},               0.102916418596081,  'bid_spread is charged for manual sell';
+        };
+
+        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
+        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
+        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
+    }
+    'survived';
 
 };
 

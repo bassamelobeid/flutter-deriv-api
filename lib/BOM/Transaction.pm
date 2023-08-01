@@ -878,13 +878,11 @@ sub prepare_bet_data_for_buy {
         $bet_params->{entry_epoch} = Date::Utility->new($contract->entry_tick->epoch)->db_timestamp;
         $bet_params->{ask_spread}  = $contract->buy_commission;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TURBOS) {
-        $bet_params->{barrier}     = $contract->barrier->as_absolute;
-        $bet_params->{entry_spot}  = $contract->entry_spot;
-        $bet_params->{entry_epoch} = Date::Utility->new($contract->entry_tick->epoch)->db_timestamp;
+        $bet_params->{ask_spread} = $contract->buy_commission;
 
         if ($contract->can('take_profit') and defined $contract->take_profit) {
-            $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
             $bet_params->{take_profit_order_date}   = $contract->take_profit->{date}->db_timestamp;
+            $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
         }
     } else {
         return Error::Base->cuss(
@@ -1391,14 +1389,11 @@ sub prepare_bet_data_for_sell {
         : (),
     };
 
-    $bet_params->{sell_commission} = $contract->sell_commission
-        if (($contract->can('sell_commission'))
-        and ($contract->category->code ne 'turbos'));
-    # Added to avoid unit test failures because of missing database changes. This should be removed in redmine #86504;
-
     if ($contract->can('cancellation')) {
         $bet_params->{is_cancelled} = $self->action_type eq 'cancel' ? 1 : 0;
     }
+
+    $bet_params->{bid_spread} = $contract->sell_commission if $contract->can('sell_commission');
 
     # we need to verify child table for multiplier and accumulator to avoid cases where a contract
     # is sold while it is being updated via a difference process.
@@ -2371,6 +2366,8 @@ sub sell_expired_contracts {
 
                 if ($contract->category_code =~ /^(accumulator|turbos)$/) {
                     $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
+                    $bet->{bid_spread}   = $contract->sell_commission
+                        if ($contract->can('sell_commission') and $contract->category_code eq 'accumulator');
                 }
 
                 $bet->{quantity} = 1;

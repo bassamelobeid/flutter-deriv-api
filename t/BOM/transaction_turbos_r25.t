@@ -260,11 +260,11 @@ subtest 'buy turbos options', sub {
         };
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id}, $fmb->{id},     'financial_market_bet_id';
-            is $chld->{barrier},                 '10123.519',    'strike price/barrier is correct';
-            is $chld->{entry_spot},              '10138.979',    'entry spot is correct';
-            is $chld->{entry_epoch},             $now->datetime, 'entry epoch is correct';
-
+            is $chld->{financial_market_bet_id},    $fmb->{id},       'financial_market_bet_id';
+            is $chld->{'take_profit_order_amount'}, undef,            'take_profit_order_amount is undef';
+            is $chld->{'take_profit_order_date'},   undef,            'take_profit_order_date is undef';
+            is $chld->{'ask_spread'},               3.58288479980734, 'ask_spread is charged for buy';
+            is $chld->{'bid_spread'},               undef,            'bid_spread is undef';
         };
 
     }
@@ -337,10 +337,11 @@ subtest 'sell a bet', sub {
     'survived';
 
     subtest 'chld row', sub {
-        is $chld->{financial_market_bet_id}, $fmb->{id},     'financial_market_bet_id';
-        is $chld->{'entry_epoch'},           $now->datetime, 'correct entry epoch';
-        is $chld->{barrier},                 '10123.519',    'strike price/barrier is correct';
-        is $chld->{entry_spot},              '10138.979',    'entry spot is correct';
+        is $chld->{financial_market_bet_id},    $fmb->{id},       'financial_market_bet_id';
+        is $chld->{'take_profit_order_amount'}, undef,            'take_profit_order_amount is undef';
+        is $chld->{'take_profit_order_date'},   undef,            'take_profit_order_date is undef';
+        is $chld->{'ask_spread'},               3.58288479980734, 'ask_spread is charged for buy';
+        is $chld->{'bid_spread'},               3.58318517049356, 'bid_spread is charged for sell';
     };
 
 };

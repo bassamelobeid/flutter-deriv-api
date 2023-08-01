@@ -255,6 +255,8 @@ subtest 'buy ACCU', sub {
             is $chld->{financial_market_bet_id},    $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'take_profit_order_amount'}, undef,      'take_profit_order_amount is undef';
             is $chld->{'take_profit_order_date'},   undef,      'take_profit_order_date is undef';
+            is $chld->{'ask_spread'},               undef,      'ask_spread is undef';
+            is $chld->{'bid_spread'},               undef,      'bid_spread is undef';
         };
 
     }
@@ -317,6 +319,14 @@ subtest 'sell a bet', sub {
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
+        };
+
+        subtest 'chld row', sub {
+            is $chld->{financial_market_bet_id},    $fmb->{id},         'financial_market_bet_id';
+            is $chld->{'take_profit_order_amount'}, undef,              'take_profit_order_amount is undef';
+            is $chld->{'take_profit_order_date'},   undef,              'take_profit_order_date is undef';
+            is $chld->{'ask_spread'},               undef,              'ask_spread is undef';
+            is $chld->{'bid_spread'},               0.0099999999999989, 'bid_spread is charged for sell';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
@@ -409,6 +419,8 @@ subtest 'buy ACCU with take profit', sub {
             is $chld->{financial_market_bet_id},  $fmb->{id}, 'financial_market_bet_id';
             is $chld->{take_profit_order_amount}, 5,          'take_profit_order_amount is 5';
             cmp_ok $chld->{take_profit_order_date}, "eq", $fmb->{start_time}, 'take_profit_order_date is correctly set';
+            is $chld->{'ask_spread'}, undef, 'ask_spread is undef';
+            is $chld->{'bid_spread'}, undef, 'bid_spread is undef';
         };
     }
     'survived';
