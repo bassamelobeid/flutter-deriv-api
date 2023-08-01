@@ -13,6 +13,7 @@ jobs:
     secrets: inherit
     with: 
       repository: regentmarkets/binary-websocket-api
+  # Temporarily disabled as this workflow does not exist
   # bom-backoffice:
   #   uses: regentmarkets/bom-backoffice/.github/workflows/base.yml@master
   #   secrets: inherit
