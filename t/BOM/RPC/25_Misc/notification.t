@@ -95,6 +95,8 @@ subtest 'Notification - authenntication events' => sub {
     ok $redis->get($pending_key), 'Pending acquired';
 
     $redis->del($pending_key);
+    $redis->del($key);
+
     $params->{args}->{args}->{documents} = [10, 11];
     undef @emit_args;
     is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
@@ -107,14 +109,14 @@ subtest 'Notification - authenntication events' => sub {
         documents    => [10, 11],
         },
         'Enitted event args are correct';
-    is $redis->get($key), 2, 'Counter increased';
+    is $redis->get($key), 1, 'Counter increased';
     ok $redis->get($pending_key), 'Pending acquired';
 
     subtest 'pending flag' => sub {
         undef @emit_args;
         $params->{args}->{args}->{documents} = [100, 101];
         is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
-        is $redis->get($key), 2, 'Counter not increased';
+        is $redis->get($key), 1, 'Counter not increased';
         is scalar @emit_args, 0, 'No event emitted';
     };
 
