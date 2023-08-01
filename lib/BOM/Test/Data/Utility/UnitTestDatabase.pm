@@ -22,6 +22,8 @@ use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBet::Multiplier;
 use BOM::Database::Model::FinancialMarketBet::Accumulator;
+use BOM::Database::Model::FinancialMarketBet::Turbos;
+use BOM::Database::Model::FinancialMarketBet::Vanilla;
 
 use Dir::Self;
 use Cwd qw/abs_path/;

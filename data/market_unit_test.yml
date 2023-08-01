@@ -378,18 +378,71 @@ fmb_multiplier_synthetic_with_dc:
     payout_price: 26.49
     cancellation_price: 2
 
-fmb_accumulator:
-  class_name: 'BOM::Database::Model::FinancialMarketBet::Accumulator'
+fmb_turbos_buy_only:
+  class_name: 'BOM::Database::Model::FinancialMarketBet::Turbos'
   data:
     __MUST_SELL__: 0
     __SELL_TIME__:
     __CREDIT_AMOUNT__: 5000
     account_id: __DUMMY__
+    remark: 'turbos'
+    bet_class: turbos
+    bet_type: TURBOSLONG
+
+fmb_turbos_buy_sell:
+  class_name: 'BOM::Database::Model::FinancialMarketBet::Turbos'
+  data:
+    __MUST_SELL__: 1
+    __SELL_TIME__: '2020-09-14 08:00:00'
+    __CREDIT_AMOUNT__: 5000
+    account_id: __DUMMY__
+    remark: 'turbos'
+    bet_class: turbos
+    bet_type: TURBOSLONG
+
+fmb_vanillas_buy_only:
+  class_name: 'BOM::Database::Model::FinancialMarketBet::Vanilla'
+  data:
+    __MUST_SELL__: 0
+    __SELL_TIME__:
+    __CREDIT_AMOUNT__: 5000
+    account_id: __DUMMY__
+    remark: 'vanillas'
+    bet_class: vanilla
+    bet_type: VANILLALONGPUT
+
+fmb_vanillas_buy_sell:
+  class_name: 'BOM::Database::Model::FinancialMarketBet::Vanilla'
+  data:
+    __MUST_SELL__: 1
+    __SELL_TIME__: '2020-09-14 08:00:00'
+    __CREDIT_AMOUNT__: 5000
+    account_id: __DUMMY__
+    remark: 'vanillas'
+    bet_class: vanilla
+    bet_type: VANILLALONGPUT
+
+fmb_accumulator_buy_only:
+  class_name: 'BOM::Database::Model::FinancialMarketBet::Accumulator'
+  data:
+    __MUST_SELL__: 0
+    __SELL_TIME__: 
+    __CREDIT_AMOUNT__: 5000
+    account_id: __DUMMY__
     underlying_symbol: R_10
     remark: 'accumulator'
-    purchase_time: '2020-09-14 08:00:00'
-    transaction_time: '2020-09-14 08:00:00'
-    start_time: '2020-09-14 08:00:00'
+    bet_class: accumulator
+    bet_type: ACCU
+
+fmb_accumulator_buy_sell:
+  class_name: 'BOM::Database::Model::FinancialMarketBet::Accumulator'
+  data:
+    __MUST_SELL__: 1
+    __SELL_TIME__: '2020-09-14 08:00:00'
+    __CREDIT_AMOUNT__: 5000
+    account_id: __DUMMY__
+    underlying_symbol: R_10
+    remark: 'accumulator'
     bet_class: accumulator
     bet_type: ACCU
 
