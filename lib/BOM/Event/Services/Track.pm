@@ -1187,7 +1187,7 @@ sub _send_transactional_request {
     my %args  = @_;
     my $cio   = $services->customerio // die 'Could not load cio';
     my $event = $transactional_mapper->get_event({%args});
-    return Future->done(1) unless $event;
+    return Future->fail("No match found for tranasactional Event $args{event} in mapper config.") unless $event;
     my $data = {
         transactional_message_id => $event,
         message_data             => $args{properties},

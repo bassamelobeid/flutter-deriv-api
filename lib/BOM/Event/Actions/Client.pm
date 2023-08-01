@@ -1042,6 +1042,7 @@ async sub _store_applicant_documents {
     # Build hash index for onfido document id to report.
     my %report_for_doc_id;
     my $reported_documents = 0;
+
     for my $report (@{$check_reports}) {
         if ($report->name eq 'facial_similarity_photo') {
             $facial_similarity_report = $report;
@@ -1090,6 +1091,7 @@ async sub _store_applicant_documents {
                 applicant_id   => $applicant_id,
                 file_type      => $doc->file_type,
                 document_info  => {
+                    issuing_country => $doc->issuing_country ? lc(country_code2code($doc->issuing_country, 'alpha-3', 'alpha-2')) : $issuing_country,
                     type            => $type,
                     side            => $side,
                     expiration_date => $expiration_date,
@@ -1308,11 +1310,12 @@ async sub onfido_doc_ready_for_upload {
     my ($type, $doc_id, $client_loginid, $applicant_id, $file_type, $document_info, $final_status) =
         @{$data}{qw/type document_id client_loginid applicant_id file_type document_info final_status/};
 
-    my $client    = BOM::User::Client->new({loginid => $client_loginid});
-    my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
-    my $onfido    = _onfido();
-    my $doc_type  = $document_info->{type};
-    my $page_type = $document_info->{side} // '';
+    my $client          = BOM::User::Client->new({loginid => $client_loginid});
+    my $s3_client       = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
+    my $onfido          = _onfido();
+    my $issuing_country = $document_info->{issuing_country};
+    my $doc_type        = $document_info->{type};
+    my $page_type       = $document_info->{side} // '';
     $final_status //= 'uploaded';
 
     my $image_blob;
@@ -1367,9 +1370,8 @@ async sub onfido_doc_ready_for_upload {
     my $lock_key     = join q{-} => ('ONFIDO_UPLOAD_BAG', $client_loginid, $file_checksum, $doc_type);
     my $acquire_lock = BOM::Platform::Redis::acquire_lock($lock_key, ONFIDO_UPLOAD_TIMEOUT_SECONDS);
 
-    # A test is expecting this log warning though.
-    $log->warn("Document already exists") unless $acquire_lock;
-    return                                unless $acquire_lock;
+    # send dog metric if there's an existent document
+    return DataDog::DogStatsd::Helper::stats_inc('onfido.document.cannot_acquire_lock') unless $acquire_lock;
 
     try {
         my $lifetime_valid = $expiration_date ? 0 : 1;
@@ -1378,14 +1380,32 @@ async sub onfido_doc_ready_for_upload {
         # lifetime only applies to favored POI types
         $lifetime_valid = 0 if none { $_ eq $doc_type } @maybe_lifetime;
 
-        $upload_info = $client->db->dbic->run(
+        # a bit of sadness
+        # at QAbox the ON CONFLICT DO UPDATE returns undef,
+        # whereas at circle ci is returning a hashref with the next.id of the sequence (previous id totally stomped).
+        # so we are forced to ensure the document is there to make the tests green everywhere.
+        my $is_doc_really_there = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_hashref(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)', undef,
-                    $client_loginid, $doc_type, $file_type,      $expiration_date || undef, $document_info->{number} || '', $file_checksum, '',
-                    $page_type,      undef,     $lifetime_valid, 'onfido'
+                    'SELECT id FROM betonmarkets.client_authentication_document WHERE checksum = ? AND document_type = ? AND client_loginid = ? ',
+                    {Slice => {}},
+                    $file_checksum, $doc_type, $client_loginid,
                 );
             });
+
+        if ($is_doc_really_there) {
+            DataDog::DogStatsd::Helper::stats_inc('onfido.document.skip_repeated');
+        } else {
+            $upload_info = $client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_hashref(
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin, ?)',
+                        undef,
+                        $client_loginid, $doc_type, $file_type,      $expiration_date || undef, $document_info->{number} || '', $file_checksum, '',
+                        $page_type,      undef,     $lifetime_valid, 'onfido', $issuing_country
+                    );
+                });
+        }
 
         if ($upload_info) {
             ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
@@ -1395,9 +1415,6 @@ async sub onfido_doc_ready_for_upload {
 
             $log->debugf("Starting to upload file_id: $file_id to S3 ");
             $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);
-
-        } else {
-            $log->warn("Document already exists");
         }
 
         if ($s3_uploaded) {

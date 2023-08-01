@@ -27,7 +27,7 @@ use Email::Stuffer;
 use YAML::XS;
 use Date::Utility;
 use Text::CSV;
-use List::Util qw(any all);
+use List::Util qw(any all none);
 use Path::Tiny;
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use JSON::MaybeXS   qw(decode_json);
@@ -1516,9 +1516,12 @@ async sub sync_mt5_accounts_status {
         }
 
         next if not defined $mt5_jurisdiction;
-        next if not defined $loginid_data->{status};
+
+        # it's important to process undef status to lookback for possible authentication
+        # removals from whatever reason, it should be responsibility of the invoker if the
+        # client should have been checked imho anyway
         next
-            unless any { $loginid_data->{status} eq $_ }
+            if defined $loginid_data->{status} && none { $loginid_data->{status} eq $_ }
             ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated');
 
         push $jurisdiction_mt5_accounts{$mt5_jurisdiction}->@*, $loginid;
