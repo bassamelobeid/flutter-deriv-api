@@ -13,8 +13,9 @@ jobs:
     secrets: inherit
     with: 
       repository: regentmarkets/bom-rpc
-  bom-postgres:
-    uses: regentmarkets/bom-postgres/.github/workflows/base.yml@master
-    secrets: inherit
-    with: 
-      repository: regentmarkets/bom-postgres
+  # Tempararily disabled as the workflow file doesnt exist
+  # bom-postgres:
+  #   uses: regentmarkets/bom-postgres/.github/workflows/base.yml@master
+  #   secrets: inherit
+  #   with: 
+  #     repository: regentmarkets/bom-postgres
