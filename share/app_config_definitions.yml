@@ -1154,12 +1154,12 @@ quants:
             financial:
               description: "Financial vanilla options affiliate commission"
               isa: Num
-              default: 0.04
+              default: 0.4
               global: 1
             non_financial:
               description: "Non-financial vanilla options affiliate commission"
               isa: Num
-              default: 0.04
+              default: 0.4
               global: 1
     accumulator:
       description: "Accumulator variables"
