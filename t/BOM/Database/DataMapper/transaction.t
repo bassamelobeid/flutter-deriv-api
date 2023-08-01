@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::Most (tests => 36);
+use Test::Most (tests => 37);
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::Exception;
 use Test::Warnings;
@@ -396,4 +396,23 @@ subtest 'get_payments' => sub {
         is $transactions->[0]->{transaction_time}, '2011-03-09 07:23:00', 'Last payment first';
         is $transactions->[1]->{transaction_time}, '2011-03-09 07:22:00', 'Does not include 2011-03-09 06:22:00';
     };
+};
+
+subtest 'unprocessed bets' => sub {
+    my $txn_dm = BOM::Database::DataMapper::Transaction->new({
+        client_loginid => $account->client_loginid,
+        currency_code  => $account->currency_code,
+    });
+
+    my $tbets = $txn_dm->unprocessed_bets(1, []);
+    is_deeply(
+        $tbets,
+        [
+            ['300120', 1, 'frxUSDJPY', '10', '1.00000000000000000000',  'win'],
+            ['300140', 1, 'frxGBPJPY', '10', '-1.00000000000000000000', 'loss'],
+            ['300160', 1, 'frxUSDJPY', '10', '-1.00000000000000000000', 'loss']
+        ],
+        "get unprocessed bets"
+    );
+
 };
