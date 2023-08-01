@@ -20,7 +20,7 @@ use BOM::RPC::v3::MT5::Account;
 use BOM::User;
 use BOM::User::Password;
 use BOM::Product::Listing;
-use List::Util qw(first none);
+use List::Util qw(first none any);
 
 requires_auth('trading', 'wallet');
 
@@ -49,6 +49,16 @@ my %ERROR_MAP = do {
             localize('We cannot complete your request. You can only top up your Deriv X demo account when the balance falls below [_1] [_2].'),
         DXDemoTopFailed                        => localize('Your Deriv X demo account could not be topped up at this time. Please try later.'),
         DXNewAccountFailed                     => localize('There was an error while creating your account. Please try again later.'),
+        CTraderNotAllowed                      => localize('cTrader account or landing company is not available in your country yet.'),
+        CTraderInvalidMarketType               => localize('An invalid cTrader market type was provided for account creation.'),
+        CTraderInvalidAccountType              => localize('An invalid cTrader account type was provided for account creation.'),
+        CTIDGetFailed                          => localize('Failed to retrieve new or existing CTID.'),
+        CTraderExistingAccountGroupMissing     => localize('Existing cTrader accounts missing group data.'),
+        CTraderExistingActiveAccount           => localize('Existing active cTrader account found.'),
+        CTraderAccountCreateFailed             => localize('There was an error creating cTrader account. Please try again later.'),
+        CTraderAccountLinkFailed               => localize('There was an error linking created cTrader account. Please try again later.'),
+        CTraderUnsupportedCountry              => localize('cTrader unsupported country code.'),
+        CTraderInvalidGroup                    => localize('cTrader invalid group provided.'),
         PlatformTransferTemporarilyUnavailable => localize('Transfers between these accounts are temporarily unavailable. Please try later.'),
         PlatformTransferError                  => localize('The transfer could not be completed: [_1]'),
         PlatformTransferSuspended              => localize('Transfers are suspended for system maintenance. Please try later.'),
@@ -92,6 +102,17 @@ my %ERROR_MAP = do {
         PlatformPasswordChangeSuspended => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
         DifferentLandingCompanies       => localize(
             "Transfers between EU and non-EU accounts aren't allowed. You can only transfer funds between accounts under the same regulator."),
+        CTraderInvalidAccount   => localize('An invalid cTrader account ID was provided.'),
+        CTraderDemoTopupBalance =>
+            localize('We cannot complete your request. You can only top up your cTrader demo account when the balance falls below [_1] [_2].'),
+        CTraderDemoTopFailed       => localize('Your cTrader demo account could not be topped up at this time. Please try later.'),
+        CTraderDepositFailed       => localize('The required funds could not be deposited to your cTrader account. Please try a different account.'),
+        CTraderDepositIncomplete   => localize('The deposit to your cTrader account did not complete. Please contact our Customer Support team.'),
+        CTraderInsufficientBalance => localize('Your cTrader account balance is insufficient for this withdrawal.'),
+        CTraderWithdrawalFailed    =>
+            localize('The required funds could not be withdrawn from your cTrader account. Please try later or use a different account.'),
+        CTraderWithdrawalIncomplete   => localize('The credit to your Deriv account did not complete. Please contact our Customer Support team.'),
+        CTraderTransferCompleteError  => localize('The transfer completed successfully, but an error occured when getting account details.'),
         TradingPlatformInvalidAccount => localize("This [_1] account is not available for your account."),
     );
 };
@@ -251,7 +272,7 @@ rpc trading_platform_accounts => sub {
             client   => $params->{client});
 
         # force param will raise an error if any accounts are inaccessible
-        $accounts = $platform->get_accounts             if $params->{args}{platform} eq 'mt5' or $params->{args}{platform} eq 'derivez';
+        $accounts = $platform->get_accounts             if any { $params->{args}{platform} eq $_ } qw/mt5 derivez ctrader/;
         $accounts = $platform->get_accounts(force => 1) if $params->{args}{platform} eq 'dxtrade';
 
         return $accounts;
@@ -515,7 +536,7 @@ sub deposit {
     # as they don't pass the `currency` param, we use the account currency instead which should be valid.
 
     my ($from_account, $to_account, $amount, $currency) = $params->{args}->@{qw/from_account to_account amount currency/};
-    my $is_demo = $to_account =~ /^(DX|EZ)(?=D)/;
+    my $is_demo = $to_account =~ /^(DX|EZ|CT)(?=D)/;
 
     try {
         die +{error_code => 'PlatformTransferRealParams'} unless $is_demo or ($from_account and $amount);

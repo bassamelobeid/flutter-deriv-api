@@ -17,6 +17,7 @@ use BOM::RPC::v3::MT5::Account;
 use Test::BOM::RPC::Accounts;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
+use BOM::TradingPlatform;
 
 my $redis = BOM::Config::Redis::redis_exchangerates_write();
 
@@ -1446,5 +1447,284 @@ subtest 'Transfer between derivez accounts' => sub {
 # reset
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
+
+subtest 'Transfer between ctrader accounts' => sub {
+    my $mocked_ctrader = Test::MockModule->new('BOM::TradingPlatform::CTrader');
+    my $mock_apidata   = {
+        ctid_create                 => {userId => 1001},
+        ctid_getuserid              => {userId => 1001},
+        ctradermanager_getgrouplist => [{name => 'ctrader_all_svg_std_usd', groupId => 1}],
+        trader_create               => {
+            login                 => 100001,
+            groupName             => 'ctrader_all_svg_std_usd',
+            registrationTimestamp => 123456,
+            depositCurrency       => 'USD',
+            balance               => 0,
+            moneyDigits           => 2
+        },
+        trader_get => {
+            login                 => 100001,
+            groupName             => 'ctrader_all_svg_std_usd',
+            registrationTimestamp => 123456,
+            depositCurrency       => 'USD',
+            balance               => 0,
+            moneyDigits           => 2
+        },
+        tradermanager_gettraderlightlist => [{traderId => 1001, login => 100001}],
+        ctid_linktrader                  => {ctidTraderAccountId => 1001},
+        tradermanager_deposit            => {balanceHistoryId    => 1},
+        tradermanager_withdraw           => {balanceHistoryId    => 1}};
+
+    my $received_amount;
+
+    my %ctrader_mock = (
+        call_api => sub {
+            $mocked_ctrader->mock(
+                'call_api',
+                shift // sub {
+                    my ($self, %payload) = @_;
+                    my $method         = $payload{method};
+                    my $trader_balance = $mock_apidata->{trader_get}->{balance};
+                    $mock_apidata->{trader_get}->{balance} = $trader_balance + $payload{payload}->{amount} if $method eq 'tradermanager_deposit';
+
+                    if ($method eq 'tradermanager_withdraw') {
+                        if ($trader_balance - $payload{payload}->{amount} >= 0) {
+                            $mock_apidata->{trader_get}->{balance} = $trader_balance - $payload{payload}->{amount};
+                        } else {
+                            return {errorCode => 'NOT_ENOUGH_MONEY'};
+                        }
+                    }
+
+                    if ($method eq 'tradermanager_deposit') {
+                        $received_amount = $payload{payload}->{amount};
+                    }
+
+                    return $mock_apidata->{$method};
+                });
+        },
+    );
+
+    $ctrader_mock{call_api}->();
+    # Create the cr account with  currency
+    my $client     = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
+    # Set up the client account currency
+    $client_eth->account('ETH');
+    $client_eur->account('EUR');
+
+    # Top up the client account for each currency
+    $client->payment_free_gift(
+        currency => 'USD',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+    $client_eth->payment_free_gift(
+        currency => 'ETH',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+    $client_eur->payment_free_gift(
+        currency => 'EUR',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+
+    # Create binary user and add the client to the user
+    $client->email('ctradertransferbetweenaccount@test.com');
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+    $user->add_client($client_eth);
+    $user->add_client($client_eur);
+    $client->binary_user_id($user->id);
+
+    my $ctrader = BOM::TradingPlatform->new(
+        platform    => 'ctrader',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client));
+
+    my $account = $ctrader->new_account(
+        account_type => "real",
+        market_type  => "all",
+        platform     => "ctrader"
+    );
+
+    # Add the ctrader account to the user
+    my %ctrader_account = (
+        real => {login => 'CTR100001'},
+    );
+
+    # Setting up exchange rates
+    my $redis          = BOM::Config::Redis::redis_exchangerates_write();
+    my @exchange_rates = ({
+            key    => 'exchange_rates::EUR_USD',
+            values => {
+                offer_to_clients => 1,
+                quote            => '1.09113',
+                epoch            => time
+            }
+        },
+        {
+            key    => 'exchange_rates::ETH_USD',
+            values => {
+                offer_to_clients => 1,
+                quote            => '1919.99500',
+                epoch            => time
+            }});
+    foreach my $entry (@exchange_rates) {
+        $redis->hmset($entry->{key}, %{$entry->{values}});
+    }
+
+    # Generate the client auth token
+    my $token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token usd');
+    my $token_eth = BOM::Platform::Token::API->new->create_token($client_eth->loginid, 'test token eth');
+    my $token_eur = BOM::Platform::Token::API->new->create_token($client_eur->loginid, 'test token eur');
+
+    subtest 'can deposit from CR account to ctrader (USD)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_from => $client->loginid,
+                account_to   => $ctrader_account{real}{login},
+                amount       => 5,
+                currency     => 'USD',
+            },
+        };
+
+        # Perform deposit test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to ctrader (USD)");
+        is $client->account->balance, '5.00', 'deposit it correct with the amount';
+        is $received_amount,          '5.00', 'deposit to ctrader is correct and applying exchange rate';
+    };
+
+    subtest 'can deposit from CR account to ctrader (ETH)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token_eth,
+            args     => {
+                account_from => $client_eth->loginid,
+                account_to   => $ctrader_account{real}{login},
+                amount       => 5,
+                currency     => 'ETH',
+            },
+        };
+
+        # Perform deposit test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to ctrader (ETH)");
+        is $client_eth->account->balance, '5.00000000', 'deposit it correct with the amount';
+        is $received_amount,              '9503.98',    'deposit to ctrader is correct and applying exchange rate';
+    };
+
+    subtest 'can deposit from CR account to ctrader (EUR)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token_eur,
+            args     => {
+                account_from => $client_eur->loginid,
+                account_to   => $ctrader_account{real}{login},
+                amount       => 5,
+                currency     => 'EUR',
+            },
+        };
+
+        # Perform deposit test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can deposit from CR account to ctrader (EUR)");
+        is $client_eur->account->balance, '5.00', 'deposit is correct';
+        is $received_amount,              '5.40', 'deposit to ctrader is correct and applying exchange rate';
+    };
+
+    subtest 'can withdraw from ctrader account to CR (USD)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_from => $ctrader_account{real}{login},
+                account_to   => $client->loginid,
+                amount       => 5,
+                currency     => 'USD',
+            },
+        };
+
+        # Perform withdraw test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from ctrader account to CR (USD)");
+        is $client->account->balance, '10.00', 'withdrawal is correct and applying exchange rate';
+    };
+
+    subtest 'can withdraw from ctrader account to CR (ETH)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token_eth,
+            args     => {
+                account_from => $ctrader_account{real}{login},
+                account_to   => $client_eth->loginid,
+                amount       => 5,
+                currency     => 'USD',
+            },
+        };
+
+        # Perform withdraw test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from ctrader account to CR (ETH)");
+        is $client_eth->account->balance, '5.00257813', 'withdrawal is correct and applying exchange rate';
+    };
+
+    subtest 'can withdraw from ctrader account to CR (EUR)' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token_eur,
+            args     => {
+                account_from => $ctrader_account{real}{login},
+                account_to   => $client_eur->loginid,
+                amount       => 5,
+                currency     => 'USD',
+            },
+        };
+
+        # Perform withdraw test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("can withdraw from ctrader account to CR (EUR)");
+        is $client_eur->account->balance, '9.54', 'withdrawal is correct and applying exchange rate';
+    };
+
+    subtest 'cannot deposit from CR account to ctrader with mismatch currency' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_from => $client->loginid,
+                account_to   => $ctrader_account{real}{login},
+                amount       => 5,
+                currency     => 'ETH',
+            },
+        };
+
+        # Perform deposit test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('CurrencyShouldMatch', 'currency conflict')
+            ->error_message_is('Currency provided is different from account currency.',
+            'cannot deposit from CR account to ctrader with mismatch currency');
+    };
+
+    subtest 'cannot withdraw from ctrader account to CR with mismatch currency' => sub {
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_from => $client->loginid,
+                account_to   => $ctrader_account{real}{login},
+                amount       => 5,
+                currency     => 'ETH',
+            },
+        };
+
+        # Perform withdraw test
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('CurrencyShouldMatch', 'currency conflict')
+            ->error_message_is('Currency provided is different from account currency.',
+            'cannot withdraw from ctrader account to CR with mismatch currency');
+    };
+};
 
 done_testing();

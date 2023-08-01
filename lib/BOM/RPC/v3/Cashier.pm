@@ -1344,6 +1344,23 @@ rpc transfer_between_accounts => sub {
                 };
         }
 
+        my $ctrader = BOM::TradingPlatform->new(
+            platform => CTRADER,
+            client   => $client,
+        );
+        my @ctrader_accounts = $ctrader->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
+        for my $ctrader_account (@ctrader_accounts) {
+            next unless $ctrader_account->{landing_company_short} eq $lc_short;
+            push @available_siblings_for_transfer,
+                {
+                loginid      => $ctrader_account->{account_id},
+                balance      => $ctrader_account->{display_balance},
+                account_type => CTRADER,
+                currency     => $ctrader_account->{currency},
+                demo_account => ($ctrader_account->{account_type} eq 'demo') ? 1 : 0,
+                };
+        }
+
         return {
             status   => 0,
             accounts => \@available_siblings_for_transfer
@@ -1363,6 +1380,10 @@ rpc transfer_between_accounts => sub {
     my @derivez_logins          = $client->user->get_derivez_loginids();
     my $is_derivez_loginid_from = any { $loginid_from eq $_ } @derivez_logins;
     my $is_derivez_loginid_to   = any { $loginid_to eq $_ } @derivez_logins;
+
+    my @ctrader_logins          = $client->user->get_ctrader_loginids();
+    my $is_ctrader_loginid_from = any { $loginid_from eq $_ } @ctrader_logins;
+    my $is_ctrader_loginid_to   = any { $loginid_to eq $_ } @ctrader_logins;
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same user
@@ -1389,6 +1410,8 @@ rpc transfer_between_accounts => sub {
         $account_type_from = DXTRADE;
     } elsif ($is_derivez_loginid_from) {
         $account_type_from = DERIVEZ;
+    } elsif ($is_ctrader_loginid_from) {
+        $account_type_from = CTRADER;
     } elsif ($client_from) {
         $account_type_from = $client_from->is_wallet ? 'wallet' : 'trading';
     } else {
@@ -1404,6 +1427,8 @@ rpc transfer_between_accounts => sub {
         $account_type_to = DXTRADE;
     } elsif ($is_derivez_loginid_to) {
         $account_type_to = DERIVEZ;
+    } elsif ($is_ctrader_loginid_to) {
+        $account_type_to = CTRADER;
     } elsif ($client_to) {
         $account_type_to = $client_to->is_wallet ? 'wallet' : 'trading';
     } else {
@@ -1418,7 +1443,9 @@ rpc transfer_between_accounts => sub {
         || $is_dxtrade_loginid_to
         || $is_dxtrade_loginid_from
         || $is_derivez_loginid_to
-        || $is_derivez_loginid_from);
+        || $is_derivez_loginid_from
+        || $is_ctrader_loginid_to
+        || $is_ctrader_loginid_from);
     my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
     try {
         $rule_engine->verify_action(
@@ -1661,6 +1688,68 @@ rpc transfer_between_accounts => sub {
                 return Future->done($resp);
             })->get;
     }
+
+    # cTrader related - Start
+
+    if ($is_ctrader_loginid_to or $is_ctrader_loginid_from) {
+        $params->{args}->@{qw/from_account to_account/} = delete $params->{args}->@{qw/account_from account_to/};
+        $params->{args}{platform} = CTRADER;
+    }
+
+    if ($is_ctrader_loginid_to) {
+        my $deposit = BOM::RPC::v3::Trading::deposit($params);
+        return $deposit if $deposit->{error};
+
+        # This endpoint schema expects synthetic or financial (not gaming)
+        my $market_type = $deposit->{market_type};
+        $market_type = 'synthetic' if $market_type eq 'gaming';
+
+        return {
+            status   => 1,
+            accounts => [{
+                    loginid      => $loginid_from,
+                    balance      => $client_from->account->balance,
+                    currency     => $client_from->account->currency_code,
+                    account_type => $client_from->get_account_type->category->name,
+                },
+                {
+                    loginid      => $loginid_to,
+                    balance      => $deposit->{balance},
+                    currency     => $deposit->{currency},
+                    account_type => CTRADER,
+                    market_type  => $market_type,
+                },
+            ]};
+    }
+
+    if ($is_ctrader_loginid_from) {
+        my $withdrawal = BOM::RPC::v3::Trading::withdrawal($params);
+        return $withdrawal if $withdrawal->{error};
+
+        my $to_client = BOM::User::Client->get_client_instance($loginid_to);
+        # This endpoint schema expects synthetic or financial (not gaming)
+        my $market_type = $withdrawal->{market_type};
+        $market_type = 'synthetic' if $market_type eq 'gaming';
+
+        return {
+            status   => 1,
+            accounts => [{
+                    loginid      => $loginid_to,
+                    balance      => $to_client->account->balance,
+                    currency     => $to_client->account->currency_code,
+                    account_type => $to_client->get_account_type->category->name,
+                },
+                {
+                    loginid      => $loginid_from,
+                    balance      => $withdrawal->{balance},
+                    currency     => $withdrawal->{currency},
+                    account_type => CTRADER,
+                    market_type  => $market_type,
+                },
+            ]};
+    }
+
+    # cTrader related - End
 
     my $err = validate_amount($amount, $currency);
     return _transfer_between_accounts_error($err) if $err;
