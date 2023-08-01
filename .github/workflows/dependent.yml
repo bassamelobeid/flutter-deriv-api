@@ -9,7 +9,7 @@ jobs:
     with:
       repository: regentmarkets/bom-platform
   bom-rpc:
-    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@master
+    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@develop_ghactions
     secrets: inherit
     with: 
       repository: regentmarkets/bom-rpc
