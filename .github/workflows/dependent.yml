@@ -1,0 +1,20 @@
+name: Dependent Tests
+
+on:
+  workflow_call:
+jobs:
+  bom-platform:
+    uses: regentmarkets/bom-platform/.github/workflows/base.yml@develop_ghactions
+    secrets: inherit
+    with: 
+      repository: regentmarkets/bom-platform
+  bom-rpc:
+    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@develop_ghactions
+    secrets: inherit
+    with: 
+      repository: regentmarkets/bom-rpc
+  bom-postgres:
+    uses: regentmarkets/bom-postgres/.github/workflows/base.yml@develop_ghactions
+    secrets: inherit
+    with: 
+      repository: regentmarkets/bom-postgres
