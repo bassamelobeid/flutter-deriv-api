@@ -23,6 +23,10 @@ $user_mock->mock(
     ctrade_loginids => sub { return @mocked_ctrader_logins },
     loginid_details => {CTR1 => {attributes => {ctid => 1}}},
 );
+my $mocked_ctrader = Test::MockModule->new('BOM::TradingPlatform::CTrader');
+$mocked_ctrader->mock(
+    get_ctid_userid => 1,
+);
 
 subtest 'generate_login_token' => sub {
     my $ctrader = BOM::TradingPlatform::CTrader->new(client => $client);
@@ -53,9 +57,9 @@ subtest 'decode_login_token' => sub {
 
     my $param = $ctrader->decode_login_token($token);
 
-    is $param->{ctid},       1,                 'Token has valid ctid';
-    is $param->{user_agent}, 'Mozzila 5.0',     'Token has valid User Agent';
-    is $param->{user_id},    $client->user->id, 'Token has valid user id';
+    is $param->{ctid},           1,                 'Token has valid ctid';
+    is $param->{ua_fingerprint}, 'Mozzila 5.0',     'Token has valid User Agent';
+    is $param->{user_id},        $client->user->id, 'Token has valid user id';
 
     like exception { $ctrader->decode_login_token($token) }, qr/^INVALID_TOKEN/, 'Token is valid only one time ';
 };

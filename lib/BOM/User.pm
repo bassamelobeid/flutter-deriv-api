@@ -1040,6 +1040,27 @@ sub get_derivez_loginids {
     return @loginids;
 }
 
+=head2 get_ctrader_loginids
+
+Getting ctrader accounts based on their type_of_account
+
+=cut
+
+sub get_ctrader_loginids {
+    my ($self, %args) = @_;
+    $args{type_of_account}    //= 'all';
+    $args{include_all_status} //= 0;
+
+    my $type = 'real';
+    $type = 'demo' if $args{type_of_account} eq 'demo';
+    $type = 'all'  if $args{type_of_account} eq 'all';
+
+    my @loginids = sort $self->get_trading_platform_loginids('ctrader', $type // 'all');
+    @loginids = @{$self->filter_active_ids(\@loginids)} unless $args{include_all_status};
+
+    return @loginids;
+}
+
 =head2 get_loginid_for_mt5_id
 
 Method returns mt5 login with prefix for mt5 numeric user id.
