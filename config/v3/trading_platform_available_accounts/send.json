@@ -26,7 +26,8 @@
             "description": "Name of trading platform.",
             "type": "string",
             "enum": [
-                "mt5"
+                "mt5",
+                "ctrader"
             ]
         },
         "passthrough": {

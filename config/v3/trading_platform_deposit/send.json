@@ -38,7 +38,8 @@
             "type": "string",
             "enum": [
                 "dxtrade",
-                "derivez"
+                "derivez",
+                "ctrader"
             ]
         },
         "to_account": {

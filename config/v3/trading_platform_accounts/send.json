@@ -27,7 +27,8 @@
             "enum": [
                 "dxtrade",
                 "mt5",
-                "derivez"
+                "derivez",
+                "ctrader"
             ]
         },
         "passthrough": {

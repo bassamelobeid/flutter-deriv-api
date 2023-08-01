@@ -81,7 +81,8 @@
                     "type": "string",
                     "enum": [
                         "dxtrade",
-                        "derivez"
+                        "derivez",
+                        "ctrader"
                     ]
                 },
                 "sub_account_type": {
