@@ -8,8 +8,9 @@ jobs:
     secrets: inherit
     with: 
       repository: regentmarkets/bom-events
-  bom-backoffice:
-    uses: regentmarkets/bom-backoffice/.github/workflows/base.yml@master
-    secrets: inherit
-    with: 
-      repository: regentmarkets/bom-backoffice
+  # bom-backoffice:
+  #   uses: regentmarkets/bom-backoffice/.github/workflows/base.yml@master
+  #   secrets: inherit
+  #   with: 
+  #     repository: regentmarkets/bom-backoffice
+  # Temporarily disabled as the workflow does not exist
