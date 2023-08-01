@@ -195,6 +195,193 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
     };
 };
 
+subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
+    my $rule_name = 'trading_account.should_match_landing_company';
+
+    subtest 'CR' => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            residence   => 'au',
+        });
+        my $user = BOM::User->create(
+            email    => 'test+cr+ct@test.deriv',
+            password => 'TRADING PASS',
+        );
+        $user->add_client($client);
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+        my $params = {
+            trading_platform_new_account => 1,
+            loginid                      => $client->loginid,
+            account_type                 => 'demo',
+            market_type                  => 'all',
+            password                     => 'C0rrect_p4ssword',
+            platform                     => 'ctrader',
+        };
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['cTrader'],
+            rule           => $rule_name
+            },
+            'Australia not allowed';
+
+        $client->residence('id');
+        $client->save;
+        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
+
+        # try to open a real trading account
+        $params->{account_type} = 'real';
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+            {
+            error_code     => 'RealAccountMissing',
+            message_params => ['cTrader'],
+            rule           => $rule_name
+            },
+            'Real account missing';
+
+        # give real account
+        my $real = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+
+        $user->add_client($real);
+        $rule_engine = BOM::Rules::Engine->new(client => $real);
+        $params->{loginid} = $real->loginid;
+        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
+
+        $real->residence('jp');
+        $real->save;
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['cTrader'],
+            rule           => $rule_name
+            },
+            'Japan cannot open financial demo';
+
+        # Make the real client disabled and try to open a real account
+        $params->{account_type} = 'real';
+
+        # Make the real client duplicate_account and try to open a real account
+        $params->{market_type} = 'all';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['cTrader'],
+            rule           => $rule_name
+            },
+            'Japan cannot open financial real';
+
+    };
+
+    subtest 'MX/MF' => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MX',
+            residence   => 'gb',
+        });
+        my $user = BOM::User->create(
+            email    => 'test+gb+ct@test.deriv',
+            password => 'TRADING PASS',
+        );
+        $user->add_client($client);
+
+        $client->residence('gb');
+        $client->save;
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+        my $params = {
+            trading_platform_new_account => 1,
+            loginid                      => $client->loginid,
+            account_type                 => 'demo',
+            market_type                  => 'all',
+            password                     => 'C0rrect_p4ssword',
+            platform                     => 'ctrader',
+        };
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['cTrader'],
+            rule           => $rule_name
+            },
+            'not available for MX';
+
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
+        });
+
+        $client->residence('at');
+        $client->save;
+
+        $user->add_client($client);
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['cTrader'],
+            rule           => $rule_name
+            },
+            'not available for MF';
+    };
+
+    subtest 'MLT/MF' => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MLT',
+            residence   => 'at',
+        });
+        my $user = BOM::User->create(
+            email    => 'test+mlt+ct@test.deriv',
+            password => 'TRADING PASS',
+        );
+        $user->add_client($client);
+
+        $client->residence('at');
+        $client->save;
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+        my $params = {
+            trading_platform_new_account => 1,
+            loginid                      => $client->loginid,
+            account_type                 => 'demo',
+            market_type                  => 'all',
+            password                     => 'C0rrect_p4ssword',
+            platform                     => 'ctrader',
+        };
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['cTrader'],
+            rule           => $rule_name
+            },
+            'not available for MLT';
+
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
+        });
+
+        $client->residence('at');
+        $client->save;
+
+        $user->add_client($client);
+
+        $rule_engine = BOM::Rules::Engine->new(client => $client);
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params, loginid => $client->loginid) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['cTrader'],
+            rule           => $rule_name
+            },
+            'not available for MF';
+    };
+};
+
 subtest 'rule trading_account.should_be_age_verified' => sub {
     # Redidence do not require trading_age_verification
     my $residence      = 'br';

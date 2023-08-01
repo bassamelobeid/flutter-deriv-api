@@ -25,24 +25,32 @@ rule 'trading_account.should_match_landing_company' => {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
 
-        my $market_type        = $args->{market_type} // '';
-        my $user               = $client->user;
-        my $residence          = $client->residence;
-        my $countries_instance = $context->brand($args)->countries_instance;
-        my $countries_list     = $countries_instance->countries_list;
-        my $lc_type            = $market_type eq 'synthetic' ? 'gaming' : $market_type;
-
-        my $dx_company = $countries_instance->dx_company_for_country(
-            country      => $residence,
-            account_type => $lc_type
+        my $market_type         = $args->{market_type} // '';
+        my $user                = $client->user;
+        my $residence           = $client->residence;
+        my $countries_instance  = $context->brand($args)->countries_instance;
+        my $countries_list      = $countries_instance->countries_list;
+        my $lc_type             = $market_type eq 'synthetic' ? 'gaming' : $market_type;
+        my %get_trading_company = (
+            dxtrade => sub {
+                $countries_instance->dx_company_for_country(
+                    country      => $residence,
+                    account_type => $lc_type
+                );
+            },
+            ctrader => sub {
+                $countries_instance->ctrader_company_for_country($residence);
+            },
         );
 
-        die_with_params($self, 'TradingAccountNotAllowed', $args) if $dx_company eq 'none';
+        my $trading_company = $get_trading_company{$args->{platform}}->();
+
+        die_with_params($self, 'TradingAccountNotAllowed', $args) if $trading_company eq 'none';
 
         my $account_type = $args->{account_type} // '';
         return 1 if $account_type eq 'demo' && $context->client($args)->is_virtual();
 
-        if ($client->landing_company->short ne $dx_company) {
+        if ($client->landing_company->short ne $trading_company) {
             die_with_params($self, 'RealAccountMissing', $args)
                 if (scalar($user->clients) == 1 and $context->client($args)->is_virtual());
             die_with_params($self, 'AccountShouldBeReal',     $args) if $client->is_virtual();
@@ -240,6 +248,7 @@ sub die_with_params {
         dxtrade => 'Deriv X',
         derivez => 'DerivEZ',
         mt5     => 'MT5',
+        ctrader => 'cTrader',
     }->{$platform};
 
     push @message_params, $name if $name;
