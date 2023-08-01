@@ -338,7 +338,7 @@ sub sell_bet {
         # FMB child table
         $bet->{absolute_barrier}       ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}}))
         : defined $bet->{is_cancelled} ? Encode::encode_utf8($json->encode(+{is_cancelled     => $bet->{is_cancelled}}))
-        : $bet->{sell_commission}      ? Encode::encode_utf8($json->encode(+{bid_spread       => $bet->{sell_commission}}))
+        : $bet->{bid_spread}           ? Encode::encode_utf8($json->encode(+{bid_spread       => $bet->{bid_spread}}))
         : undef,
 
         $bet->{is_expired} // 1,
@@ -593,7 +593,9 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
             @{$bet}{qw/id sell_price sell_time/},
 
             # FMB child table
-            $bet->{absolute_barrier} ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}})) : undef,
+              $bet->{absolute_barrier} ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}}))
+            : $bet->{bid_spread}       ? Encode::encode_utf8($json->encode(+{bid_spread       => $bet->{bid_spread}}))
+            : undef,
 
             $bet->{is_expired} // 1,
 

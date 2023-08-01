@@ -78,24 +78,24 @@ sub get_multiplier_commission {
         });
 }
 
-=item get_accumulator_commission
+=item get_contracts_with_spread_commission
 
-get clients' accumulator contracts trading activity for particular date for myaffiliates reports.
+get clients' trading activity for contracts with spread on a particular date used in myaffiliates reports.
 
 =cut
 
-sub get_accumulator_commission {
+sub get_contracts_with_spread_commission {
     my ($self, $args) = @_;
     my $dbic = $self->db->dbic;
 
     my $sql = q{
-        SELECT * FROM get_myaffiliate_clients_accumulator_trading_activity($1, $2, $3)
+        SELECT * FROM get_myaffiliate_clients_with_spread_trading_activity($1, $2, $3, $4)
     };
 
     return $dbic->run(
         sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($args->{date}, $args->{include_apps}, $args->{exclude_apps});
+            $sth->execute($args->{bet_class}, $args->{date}, $args->{include_apps}, $args->{exclude_apps});
 
             return $sth->fetchall_arrayref;
         });

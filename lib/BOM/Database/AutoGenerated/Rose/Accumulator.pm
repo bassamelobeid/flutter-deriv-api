@@ -16,6 +16,8 @@ __PACKAGE__->meta->setup(
         take_profit_order_date   => {type => 'timestamp'},
         take_profit_order_amount => {type => 'numeric'},
         growth_rate              => {type => 'numeric'},
+        ask_spread               => {type => 'numeric'},
+        bid_spread               => {type => 'numeric'},
     ],
 
     primary_key_columns => ['financial_market_bet_id'],

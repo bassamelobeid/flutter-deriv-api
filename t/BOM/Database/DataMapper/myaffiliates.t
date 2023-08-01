@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More (tests => 19);
+use Test::More (tests => 21);
 use Test::Warnings;
 use Test::Exception;
 use BOM::Database::DataMapper::MyAffiliates;
@@ -106,25 +106,74 @@ subtest 'get accumulator commission' => sub {
     my $date = '2020-09-14 08:00:00';
 
     # before buying accumulator contract
-    my $trading_activities = $myaff_data_mapper->get_accumulator_commission({'date' => $date});
+    my $trading_activities = $myaff_data_mapper->get_contracts_with_spread_commission({'date' => $date, 'bet_class' => 'accumulator'});
     ok !@$trading_activities, 'no accumulator contracts trading activity';
 
-    # buy accumulator contract
-    my $short_code = 'ACCU_R_10_10_2_0.01_1_0.0001_' . Date::Utility->new($date)->epoch;
+    my $args = {
+        account_id        => $account->id,
+        buy_price         => 10,
+        underlying_symbol => 'R_10',
+        type              => 'fmb_accumulator_buy_only',
+        payment_time      => $date,
+        transaction_time  => $date,
+        start_time        => $date,
+        purchase_time     => $date,
+        source            => 100,
+    };
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb($args);
 
-    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-        account_id       => $account->id,
-        buy_price        => 10,
-        type             => 'fmb_accumulator',
-        short_code       => $short_code,
-        payment_time     => $date,
-        transaction_time => $date,
-        start_time       => $date,
-        source           => 100,
-    });
-
-    $trading_activities = $myaff_data_mapper->get_accumulator_commission({'date' => $date});
+    $trading_activities = $myaff_data_mapper->get_contracts_with_spread_commission({'date' => $date, 'bet_class' => 'accumulator'});
     ok @$trading_activities, 'have some accumulator contracts trading activities';
+};
+
+subtest 'get turbos commission' => sub {
+    my $date = '2020-09-14 08:00:00';
+
+    # before buying accumulator contract
+    my $trading_activities = $myaff_data_mapper->get_contracts_with_spread_commission({'date' => $date, 'bet_class' => 'turbos'});
+    ok !@$trading_activities, 'no turbos contracts trading activity';
+
+    my $args = {
+        account_id        => $account->id,
+        buy_price         => 10,
+        underlying_symbol => 'R_10',
+        type              => 'fmb_turbos_buy_only',
+        payment_time      => $date,
+        transaction_time  => $date,
+        start_time        => $date,
+        purchase_time     => $date,
+        ask_spread        => 5,
+        source            => 100,
+    };
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb($args);
+
+    $trading_activities = $myaff_data_mapper->get_contracts_with_spread_commission({'date' => $date, 'bet_class' => 'turbos'});
+    ok @$trading_activities, 'have some turbos contracts trading activities';
+};
+
+subtest 'get vanilla commission' => sub {
+    my $date = '2020-09-14 08:00:00';
+
+    # before buying vanilla contract
+    my $trading_activities = $myaff_data_mapper->get_contracts_with_spread_commission({'date' => $date, 'bet_class' => 'vanilla'});
+    ok !@$trading_activities, 'no vanilla contracts trading activity';
+
+    my $args = {
+        account_id        => $account->id,
+        buy_price         => 10,
+        underlying_symbol => 'R_10',
+        type              => 'fmb_vanillas_buy_only',
+        payment_time      => $date,
+        transaction_time  => $date,
+        start_time        => $date,
+        purchase_time     => $date,
+        ask_spread        => 5,
+        source            => 100,
+    };
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb($args);
+
+    $trading_activities = $myaff_data_mapper->get_contracts_with_spread_commission({'date' => $date, 'bet_class' => 'vanilla'});
+    ok @$trading_activities, 'have some vanilla contracts trading activities';
 };
 
 subtest 'get lookback commission' => sub {
