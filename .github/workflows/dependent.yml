@@ -4,17 +4,17 @@ on:
   workflow_call:
 jobs:
   bom-rpc:
-    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@develop_ghactions
+    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@master
     secrets: inherit
     with: 
       repository: regentmarkets/bom-rpc
   bom-platform:
-    uses: regentmarkets/bom-platform/.github/workflows/base.yml@develop_ghactions
+    uses: regentmarkets/bom-platform/.github/workflows/base.yml@master
     secrets: inherit
     with:
       repository: regentmarkets/bom-platform
   bom-events:
-    uses: regentmarkets/bom-events/.github/workflows/base.yml@develop_ghactions
+    uses: regentmarkets/bom-events/.github/workflows/base.yml@master
     secrets: inherit
     with:
       repository: regentmarkets/bom-events
