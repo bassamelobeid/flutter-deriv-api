@@ -453,6 +453,23 @@ subtest 'tick_stream' => sub {
     $args->{date_start} = $now->epoch;
 };
 
+subtest 'sell_commission' => sub {
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $now->epoch,     $symbol],
+        [101, $now->epoch + 1, $symbol],
+        [101, $now->epoch + 2, $symbol],
+        [101, $now->epoch + 3, $symbol]);
+
+    $args->{date_pricing} = $now->epoch + 3;
+    my $c = produce_contract($args);
+
+    is $c->tick_count_after_entry, 2,                  'tick_count_after_entry is correct';
+    is $c->sell_commission,        0.0199989999999928, 'sell_commission is correct';
+
+    $args->{date_pricing} = $now;
+};
+
 subtest 'tick size barrier values' => sub {
     #making sure that tick_size_barrier values don't get changed accidentally
     my $config   = LoadFile('/home/git/regentmarkets/bom-config/share/default_tick_size_barrier_accumulator.yml');
