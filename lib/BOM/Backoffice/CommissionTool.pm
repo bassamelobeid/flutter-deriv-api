@@ -81,6 +81,7 @@ sub save_commission {
     return {error => 'provider is required'}            unless $args->{provider};
     return {error => 'account_type is required'}        unless $args->{account_type};
     return {error => 'commission_type is required'}     unless $args->{commission_type};
+    return {error => 'contract_size must be numeric'}   unless defined $args->{contract_size}   and looks_like_number($args->{contract_size});
     return {error => 'commission_rate must be numeric'} unless defined $args->{commission_rate} and looks_like_number($args->{commission_rate});
     return {error => 'commission_rate must be less than 1'} if $args->{commission_rate} >= 1;
 
@@ -98,9 +99,11 @@ sub save_commission {
             $db->dbic->run(
                 ping => sub {
                     $_->do(
-                        q{select * from affiliate.add_new_commission_rate(?,?,?,?,?)},
-                        undef,   $args->{provider}, $args->{account_type}, $args->{commission_type},
-                        $symbol, $args->{commission_rate});
+                        q{SELECT * FROM affiliate.add_new_commission_rate(?,?,?,?,?,?)},
+                        undef, $args->{provider}, $args->{account_type}, $args->{commission_type},
+                        $symbol,
+                        $args->{commission_rate},
+                        $args->{contract_size});
                 });
             push @success, $symbol;
         } catch ($e) {
