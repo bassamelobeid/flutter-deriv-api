@@ -798,6 +798,8 @@ sub ready_for_authentication {
     my ($client, $args) = @_;
     my $redis = BOM::Config::Redis::redis_events();
 
+    return 0 unless BOM::User::Onfido::submissions_left($client) > 0;
+
     unless ($redis->set(ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1, 'NX', 'EX', ONFIDO_REQUEST_PENDING_TTL)) {
         # this should not happen as we'd expect the frontend to block further Onfido requests
         $log->warnf('Unexpected Onfido request when pending flag is still alive, user: %d', $client->binary_user_id);
