@@ -21,6 +21,9 @@
         [% FOREACH entry IN derivez_loginids %]
             <li>[% entry.loginid %] </li>        
         [% END %]
+        [% FOREACH entry IN ctrader_loginids %]
+            <li>[% entry.loginid %]</li>
+        [% END %]
     </ul>
 
     [% IF list == 1 %]

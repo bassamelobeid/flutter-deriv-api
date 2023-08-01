@@ -1800,13 +1800,14 @@ sub get_client_details {
 
     # If the loginid correspond to a trading platform
     # show a loginid picker page.
-    if ($loginid =~ /^(MT|DX|EZ)[DR]?/) {
+    if ($loginid =~ /^(MT|DX|EZ|CT)[DR]?/) {
         if (my $user = BOM::User->new(loginid => $loginid)) {
             my $logins             = loginids($user);
             my $mt_logins_ids      = $logins->{mt5};
             my $bom_logins         = $logins->{bom};
             my $dx_logins_ids      = $logins->{dx};
             my $derivez_logins_ids = $logins->{derivez};
+            my $ctrader_logins_ids = $logins->{ctrader};
 
             Bar("$encoded_loginid LOGINIDS");
 
@@ -1817,6 +1818,7 @@ sub get_client_details {
                     mt5_loginids     => $mt_logins_ids,
                     dx_loginids      => $dx_logins_ids,
                     derivez_loginids => $derivez_logins_ids,
+                    ctrader_loginids => $ctrader_logins_ids,
                 },
             ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
@@ -1876,6 +1878,7 @@ sub get_client_details {
     );
     my @dx_logins       = sort $user->get_trading_platform_loginids('dxtrader');
     my @derivez_logins  = sort $user->get_trading_platform_loginids('derivez');
+    my @ctrader_logins  = sort $user->get_trading_platform_loginids('ctrader');
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
     my $encoded_broker  = encode_entities($broker);
@@ -1903,6 +1906,7 @@ sub get_client_details {
         self_href              => $self_href,
         dx_logins              => \@dx_logins,
         derivez_logins         => \@derivez_logins,
+        ctrader_logins         => \@ctrader_logins,
         loginid_details        => $loginid_details,
     );
 }
@@ -1935,6 +1939,7 @@ sub loginids {
     my @bom_logins;
     my @dx_logins;
     my @derivez_logins;
+    my @ctrader_logins;
 
     foreach my $lid (sort $user->bom_loginids()) {
         unless (LandingCompany::Registry->check_broker_from_loginid($lid)) {
@@ -1964,7 +1969,7 @@ sub loginids {
             };
     }
 
-    my @platforms = ('dxtrader', 'derivez');
+    my @platforms = ('dxtrader', 'derivez', 'ctrader');
 
     foreach my $platform (@platforms) {
         foreach my $lid ($user->get_trading_platform_loginids($platform)) {
@@ -1999,6 +2004,10 @@ sub loginids {
             if ($platform eq 'derivez') {
                 push @derivez_logins, +{%common_params,};
             }
+
+            if ($platform eq 'ctrader') {
+                push @ctrader_logins, +{%common_params,};
+            }
         }
     }
 
@@ -2007,6 +2016,7 @@ sub loginids {
         dx      => \@dx_logins,
         bom     => \@bom_logins,
         derivez => \@derivez_logins,
+        ctrader => \@ctrader_logins,
     };
 }
 

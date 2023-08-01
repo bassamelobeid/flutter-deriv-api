@@ -15,5 +15,8 @@
         [% FOREACH derivez_loginid IN derivez_loginids %]
             <li>[% derivez_loginid.loginid %]</li>
         [% END %]
+        [% FOREACH ctrader_loginid IN ctrader_loginids %]
+            <li>[% ctrader_loginid.loginid %]</li>
+        [% END %]
     </ul>
 </div>

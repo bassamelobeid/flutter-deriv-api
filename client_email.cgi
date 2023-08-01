@@ -77,6 +77,7 @@ my $mt_logins_ids      = $logins->{mt5};
 my $bom_logins         = $logins->{bom};
 my $dx_logins_ids      = $logins->{dx};
 my $derivez_logins_ids = $logins->{derivez};
+my $ctrader_logins_ids = $logins->{ctrader};
 
 if (not $input{email_edit}) {
     # list loginids with email
@@ -89,6 +90,7 @@ if (not $input{email_edit}) {
             mt5_loginids     => $mt_logins_ids,
             dx_loginids      => $dx_logins_ids,
             derivez_loginids => $derivez_logins_ids,
+            ctrader_loginids => $ctrader_logins_ids,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
@@ -166,6 +168,7 @@ if ($email ne $new_email) {
             mt5_loginids     => $mt_logins_ids,
             dx_loginids      => $dx_logins_ids,
             derivez_loginids => $derivez_logins_ids,
+            ctrader_loginids => $ctrader_logins_ids,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 } else {

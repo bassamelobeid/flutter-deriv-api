@@ -328,6 +328,12 @@ sub get_settings_by_group {
                 system.services.fraud_prevention
                 system.services.identity_verification
                 system.suspend.ctrader_oauth_api
+                system.ctrader.suspend.all
+                system.ctrader.suspend.demo
+                system.ctrader.suspend.real
+                system.ctrader.suspend.deposits
+                system.ctrader.suspend.withdrawals
+                system.ctrader.suspend.user_exceptions
                 system.backoffice.disable_auth0_login
             )
         ],

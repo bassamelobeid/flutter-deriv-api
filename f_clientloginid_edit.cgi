@@ -100,6 +100,7 @@ my $loginid         = $client->loginid;
 my $aff_mt_accounts = $details{affiliate_mt5_accounts};
 my $dx_logins       = $details{dx_logins};
 my $derivez_logins  = $details{derivez_logins};
+my $ctrader_logins  = $details{ctrader_logins};
 my $loginid_details = $details{loginid_details};
 
 if (my $error_message = write_operation_error()) {
@@ -1741,6 +1742,22 @@ foreach my $derivez_login ($derivez_logins->@*) {
         print " (" . encode_entities($group) . "), jur. risk= $jurisdiction_risk" . " ( $status )";
     } else {
         print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
+    }
+
+    print "</li>";
+}
+
+# Show cTrader accounts.
+foreach my $ct_ac ($ctrader_logins->@*) {
+    print "<li>";
+    print encode_entities($ct_ac);
+
+    if (my $details = $loginid_details->{$ct_ac}) {
+        my $extra = join ' \\ ', $details->{currency}, grep { $_ } $details->{account_type}, $details->{attributes}->{market_type},
+            "ctlogin=" . $details->{attributes}->{login}, "groups=" . $details->{attributes}->{group};
+        my $account_status = $details->{status};
+        print " (" . $account_status . ")"         if $account_status;
+        print " (" . encode_entities($extra) . ")" if $extra;
     }
 
     print "</li>";
