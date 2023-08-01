@@ -28,4 +28,3 @@ jobs:
     if:  ${{ github.event_name != 'push' }}
     uses: ./.github/workflows/dependent.yml
     secrets: inherit
-
