@@ -14,11 +14,12 @@ $client_mock->mock(
     sub {
         return $is_financial_assessment_complete;
     });
-my $poi_status;
-$client_mock->mock(
-    'get_poi_status',
+my $docs_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+my $expired;
+$docs_mock->mock(
+    'expired',
     sub {
-        return $poi_status // 'none';
+        return $expired;
     });
 
 $client_mock->mock(
@@ -52,7 +53,7 @@ subtest 'withdrawal locked' => sub {
     cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'No withdrawal locked needed';
 
     $withdrawal_locked                = undef;
-    $poi_status                       = 'none';
+    $expired                          = 0;
     $is_financial_assessment_complete = 0;
     cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)},
         +{
@@ -73,11 +74,11 @@ subtest 'withdrawal locked' => sub {
 
 subtest 'cashier locked' => sub {
     $cashier_locked = undef;
-    $poi_status     = 'none';
+    $expired        = 0;
     cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'No cashier locked needed';
 
     $cashier_locked = undef;
-    $poi_status     = 'expired';
+    $expired        = 1;
     cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)},
         +{
         'Cashier Locked' => {
@@ -91,7 +92,7 @@ subtest 'cashier locked' => sub {
         'Virtual cashier locked due to expired POI';
 
     $cashier_locked                   = 1;
-    $poi_status                       = 'expired';
+    $expired                          = 1;
     $is_financial_assessment_complete = 0;
     cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'Virtual cashier locked not needed as the real status is there';
 };

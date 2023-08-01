@@ -67,7 +67,7 @@ sub _cashier_locked {
     return undef if $client->status->cashier_locked;
 
     my %reasons = (
-        'POI has expired' => $client->get_poi_status() eq 'expired',
+        'POI has expired' => $client->documents->expired,
     );
 
     return _build_fake_status('cashier_locked', %reasons);
