@@ -1154,12 +1154,12 @@ quants:
             financial:
               description: "Financial vanilla options affiliate commission"
               isa: Num
-              default: 0.04
+              default: 0.4
               global: 1
             non_financial:
               description: "Non-financial vanilla options affiliate commission"
               isa: Num
-              default: 0.04
+              default: 0.4
               global: 1
     accumulator:
       description: "Accumulator variables"
@@ -2114,7 +2114,44 @@ system:
               isa: ArrayRef
               global: 1
               default: []
-
+    ctrader:
+        description: "Configuration for cTrader"
+        isa: section
+        contains:
+          suspend:
+            description: "Suspend cTrader features"
+            isa: section
+            contains:
+              all:
+                description: "Suspend all cTrader API calls. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              demo:
+                description: "Suspend cTrader demo accounts. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              real:
+                description: "Suspend cTrader real accounts. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              deposits:
+                description: "Suspend cTrader deposits on all servers. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              withdrawals:
+                description: "Suspend cTrader withdrawals on all servers. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              user_exceptions:
+                description: 'List of emails of users who can always access suspended servers, e.g. user1@deriv.com,user2@deriv.com'
+                isa: ArrayRef
+                global: 1
+                default: []
     backoffice:
       description: "Configuration for backoffice system"
       isa: section
@@ -2124,7 +2161,6 @@ system:
           isa: Bool
           default: 0
           global: 1
-
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section

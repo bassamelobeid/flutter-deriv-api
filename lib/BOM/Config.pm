@@ -871,4 +871,26 @@ sub broker_databases {
     return $config;
 }
 
+=head2 ctrader_countryid
+
+Config for cTrader's country to interger id mapping
+
+=cut
+
+sub ctrader_countryid {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/ctrader_countryid.yml');
+    return $config;
+}
+
+=head2 ctrader_proxy_api_config
+
+Config for ctrader proxy container url
+
+=cut
+
+sub ctrader_proxy_api_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/ctrader_proxy_api.yml');
+    return $config;
+}
+
 1;

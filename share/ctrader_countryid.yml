@@ -1,0 +1,747 @@
+ad:
+  country_id: 20
+  name: Andorra
+ae:
+  country_id: 784
+  name: United Arab Emirates
+af:
+  country_id: 4
+  name: Afghanistan
+ag:
+  country_id: 28
+  name: Antigua and Barbuda
+ai:
+  country_id: 660
+  name: Anguilla
+al:
+  country_id: 8
+  name: Albania
+am:
+  country_id: 51
+  name: Armenia
+ao:
+  country_id: 24
+  name: Angola
+aq:
+  country_id: 10
+  name: Antarctica
+ar:
+  country_id: 32
+  name: Argentina
+as:
+  country_id: 16
+  name: American Samoa
+at:
+  country_id: 40
+  name: Austria
+au:
+  country_id: 36
+  name: Australia
+aw:
+  country_id: 533
+  name: Aruba
+ax:
+  country_id: 248
+  name: Aland Islands
+az:
+  country_id: 31
+  name: Azerbaijan
+ba:
+  country_id: 70
+  name: Bosnia and Herzegovina
+bb:
+  country_id: 52
+  name: Barbados
+bd:
+  country_id: 50
+  name: Bangladesh
+be:
+  country_id: 56
+  name: Belgium
+bf:
+  country_id: 854
+  name: Burkina Faso
+bg:
+  country_id: 100
+  name: Bulgaria
+bh:
+  country_id: 48
+  name: Bahrain
+bi:
+  country_id: 108
+  name: Burundi
+bj:
+  country_id: 204
+  name: Benin
+bl:
+  country_id: 652
+  name: "Saint-Barth\xE9lemy"
+bm:
+  country_id: 60
+  name: Bermuda
+bn:
+  country_id: 96
+  name: Brunei Darussalam
+bo:
+  country_id: 68
+  name: Bolivia (Plurinational State of)
+bq:
+  country_id: 535
+  name: Bonaire, Sint Eustatius and Saba
+br:
+  country_id: 76
+  name: Brazil
+bs:
+  country_id: 44
+  name: Bahamas
+bt:
+  country_id: 64
+  name: Bhutan
+bv:
+  country_id: 74
+  name: Bouvet Island
+bw:
+  country_id: 72
+  name: Botswana
+by:
+  country_id: 112
+  name: Belarus
+bz:
+  country_id: 84
+  name: Belize
+ca:
+  country_id: 124
+  name: Canada
+cc:
+  country_id: 166
+  name: Cocos (Keeling) Islands
+cd:
+  country_id: 180
+  name: Congo (Democratic Republic of the)
+cf:
+  country_id: 140
+  name: Central African Republic
+cg:
+  country_id: 178
+  name: Congo
+ch:
+  country_id: 756
+  name: Switzerland
+ci:
+  country_id: 384
+  name: Cote D'Ivoire
+ck:
+  country_id: 184
+  name: Cook Islands
+cl:
+  country_id: 152
+  name: Chile
+cm:
+  country_id: 120
+  name: Cameroon
+cn:
+  country_id: 156
+  name: China
+co:
+  country_id: 170
+  name: Colombia
+cr:
+  country_id: 188
+  name: Costa Rica
+cu:
+  country_id: 192
+  name: Cuba
+cv:
+  country_id: 132
+  name: Cabo Verde
+cw:
+  country_id: 531
+  name: Curacao
+cx:
+  country_id: 162
+  name: Christmas Island
+cy:
+  country_id: 196
+  name: Cyprus
+cz:
+  country_id: 203
+  name: Czechia
+de:
+  country_id: 276
+  name: Germany
+dj:
+  country_id: 262
+  name: Djibouti
+dk:
+  country_id: 208
+  name: Denmark
+dm:
+  country_id: 212
+  name: Dominica
+do:
+  country_id: 214
+  name: Dominican Republic
+dz:
+  country_id: 12
+  name: Algeria
+ec:
+  country_id: 218
+  name: Ecuador
+ee:
+  country_id: 233
+  name: Estonia
+eg:
+  country_id: 818
+  name: Egypt
+eh:
+  country_id: 732
+  name: Western Sahara
+er:
+  country_id: 232
+  name: Eritrea
+es:
+  country_id: 724
+  name: Spain
+et:
+  country_id: 231
+  name: Ethiopia
+fi:
+  country_id: 246
+  name: Finland
+fj:
+  country_id: 242
+  name: Fiji
+fk:
+  country_id: 238
+  name: Falkland Islands (Malvinas)
+fm:
+  country_id: 583
+  name: Micronesia (Federated States of)
+fo:
+  country_id: 234
+  name: Faroe Islands
+fr:
+  country_id: 250
+  name: France
+ga:
+  country_id: 266
+  name: Gabon
+gb:
+  country_id: 826
+  name: United Kingdom of Great Britain and Northern Ireland
+gd:
+  country_id: 308
+  name: Grenada
+ge:
+  country_id: 268
+  name: Georgia
+gf:
+  country_id: 254
+  name: French Guiana
+gg:
+  country_id: 831
+  name: Guernsey
+gh:
+  country_id: 288
+  name: Ghana
+gi:
+  country_id: 292
+  name: Gibraltar
+gl:
+  country_id: 304
+  name: Greenland
+gm:
+  country_id: 270
+  name: Gambia
+gn:
+  country_id: 324
+  name: Guinea
+gp:
+  country_id: 312
+  name: Guadeloupe
+gq:
+  country_id: 226
+  name: Equatorial Guinea
+gr:
+  country_id: 300
+  name: Greece
+gs:
+  country_id: 239
+  name: South Georgia and the South Sandwich Islands
+gt:
+  country_id: 320
+  name: Guatemala
+gu:
+  country_id: 316
+  name: Guam
+gw:
+  country_id: 624
+  name: Guinea-Bissau
+gy:
+  country_id: 328
+  name: Guyana
+hk:
+  country_id: 344
+  name: Hong Kong
+hm:
+  country_id: 334
+  name: Heard Island and McDonald Islands
+hn:
+  country_id: 340
+  name: Honduras
+hr:
+  country_id: 191
+  name: Croatia
+ht:
+  country_id: 332
+  name: Haiti
+hu:
+  country_id: 348
+  name: Hungary
+id:
+  country_id: 360
+  name: Indonesia
+ie:
+  country_id: 372
+  name: Ireland
+il:
+  country_id: 376
+  name: Israel
+im:
+  country_id: 833
+  name: Isle of Man
+in:
+  country_id: 356
+  name: India
+io:
+  country_id: 86
+  name: British Indian Ocean Territory
+iq:
+  country_id: 368
+  name: Iraq
+ir:
+  country_id: 364
+  name: Iran (Islamic Republic of)
+is:
+  country_id: 352
+  name: Iceland
+it:
+  country_id: 380
+  name: Italy
+je:
+  country_id: 832
+  name: Jersey
+jm:
+  country_id: 388
+  name: Jamaica
+jo:
+  country_id: 400
+  name: Jordan
+jp:
+  country_id: 392
+  name: Japan
+ke:
+  country_id: 404
+  name: Kenya
+kg:
+  country_id: 417
+  name: Kyrgyzstan
+kh:
+  country_id: 116
+  name: Cambodia
+ki:
+  country_id: 296
+  name: Kiribati
+km:
+  country_id: 174
+  name: Comoros
+kn:
+  country_id: 659
+  name: Saint Kitts and Nevis
+kp:
+  country_id: 408
+  name: Korea (Democratic People's Republic of)
+kr:
+  country_id: 410
+  name: Korea (Republic of)
+kw:
+  country_id: 414
+  name: Kuwait
+ky:
+  country_id: 136
+  name: Cayman Islands
+kz:
+  country_id: 398
+  name: Kazakhstan
+la:
+  country_id: 418
+  name: Lao People's Democratic Republic
+lb:
+  country_id: 422
+  name: Lebanon
+lc:
+  country_id: 662
+  name: Saint Lucia
+li:
+  country_id: 438
+  name: Liechtenstein
+lk:
+  country_id: 144
+  name: Sri Lanka
+lr:
+  country_id: 430
+  name: Liberia
+ls:
+  country_id: 426
+  name: Lesotho
+lt:
+  country_id: 440
+  name: Lithuania
+lu:
+  country_id: 442
+  name: Luxembourg
+lv:
+  country_id: 428
+  name: Latvia
+ly:
+  country_id: 434
+  name: Libya
+ma:
+  country_id: 504
+  name: Morocco
+mc:
+  country_id: 492
+  name: Monaco
+md:
+  country_id: 498
+  name: Moldova (Republic of)
+me:
+  country_id: 499
+  name: Montenegro
+mf:
+  country_id: 663
+  name: Saint Martin (French part)
+mg:
+  country_id: 450
+  name: Madagascar
+mh:
+  country_id: 584
+  name: Marshall Islands
+mk:
+  country_id: 807
+  name: Macedonia (the former Yugoslav Republic of)
+ml:
+  country_id: 466
+  name: Mali
+mm:
+  country_id: 104
+  name: Myanmar
+mn:
+  country_id: 496
+  name: Mongolia
+mo:
+  country_id: 446
+  name: Macao
+mp:
+  country_id: 580
+  name: Northern Mariana Islands
+mq:
+  country_id: 474
+  name: Martinique
+mr:
+  country_id: 478
+  name: Mauritania
+ms:
+  country_id: 500
+  name: Montserrat
+mt:
+  country_id: 470
+  name: Malta
+mu:
+  country_id: 480
+  name: Mauritius
+mv:
+  country_id: 462
+  name: Maldives
+mw:
+  country_id: 454
+  name: Malawi
+mx:
+  country_id: 484
+  name: Mexico
+my:
+  country_id: 458
+  name: Malaysia
+mz:
+  country_id: 508
+  name: Mozambique
+na:
+  country_id: 516
+  name: Namibia
+nc:
+  country_id: 540
+  name: New Caledonia
+ne:
+  country_id: 562
+  name: Niger
+nf:
+  country_id: 574
+  name: Norfolk Island
+ng:
+  country_id: 566
+  name: Nigeria
+ni:
+  country_id: 558
+  name: Nicaragua
+nl:
+  country_id: 528
+  name: Netherlands
+'no':
+  country_id: 578
+  name: Norway
+np:
+  country_id: 524
+  name: Nepal
+nr:
+  country_id: 520
+  name: Nauru
+nu:
+  country_id: 570
+  name: Niue
+nz:
+  country_id: 554
+  name: New Zealand
+om:
+  country_id: 512
+  name: Oman
+pa:
+  country_id: 591
+  name: Panama
+pe:
+  country_id: 604
+  name: Peru
+pf:
+  country_id: 258
+  name: French Polynesia
+pg:
+  country_id: 598
+  name: Papua New Guinea
+ph:
+  country_id: 608
+  name: Philippines
+pk:
+  country_id: 586
+  name: Pakistan
+pl:
+  country_id: 616
+  name: Poland
+pm:
+  country_id: 666
+  name: Saint Pierre and Miquelon
+pn:
+  country_id: 612
+  name: Pitcairn
+pr:
+  country_id: 630
+  name: Puerto Rico
+ps:
+  country_id: 275
+  name: Palestine, State of
+pt:
+  country_id: 620
+  name: Portugal
+pw:
+  country_id: 585
+  name: Palau
+py:
+  country_id: 600
+  name: Paraguay
+qa:
+  country_id: 634
+  name: Qatar
+re:
+  country_id: 638
+  name: Reunion
+ro:
+  country_id: 642
+  name: Romania
+rs:
+  country_id: 688
+  name: Serbia
+ru:
+  country_id: 643
+  name: Russian Federation
+rw:
+  country_id: 646
+  name: Rwanda
+sa:
+  country_id: 682
+  name: Saudi Arabia
+sb:
+  country_id: 90
+  name: Solomon Islands
+sc:
+  country_id: 690
+  name: Seychelles
+sd:
+  country_id: 729
+  name: Sudan
+se:
+  country_id: 752
+  name: Sweden
+sg:
+  country_id: 702
+  name: Singapore
+sh:
+  country_id: 654
+  name: Saint Helena, Ascension and Tristan da Cunha
+si:
+  country_id: 705
+  name: Slovenia
+sj:
+  country_id: 744
+  name: Svalbard and Jan Mayen
+sk:
+  country_id: 703
+  name: Slovakia
+sl:
+  country_id: 694
+  name: Sierra Leone
+sm:
+  country_id: 674
+  name: San Marino
+sn:
+  country_id: 686
+  name: Senegal
+so:
+  country_id: 706
+  name: Somalia
+sr:
+  country_id: 740
+  name: Suriname
+ss:
+  country_id: 728
+  name: South Sudan
+st:
+  country_id: 678
+  name: Sao Tome and Principe
+sv:
+  country_id: 222
+  name: El Salvador
+sx:
+  country_id: 534
+  name: Sint Maarten (Dutch part)
+sy:
+  country_id: 760
+  name: Syrian Arab Republic
+sz:
+  country_id: 748
+  name: Swaziland
+tc:
+  country_id: 796
+  name: Turks and Caicos Islands
+td:
+  country_id: 148
+  name: Chad
+tf:
+  country_id: 260
+  name: French Southern Territories
+tg:
+  country_id: 768
+  name: Togo
+th:
+  country_id: 764
+  name: Thailand
+tj:
+  country_id: 762
+  name: Tajikistan
+tk:
+  country_id: 772
+  name: Tokelau
+tl:
+  country_id: 626
+  name: Timor-Leste
+tm:
+  country_id: 795
+  name: Turkmenistan
+tn:
+  country_id: 788
+  name: Tunisia
+to:
+  country_id: 776
+  name: Tonga
+tr:
+  country_id: 792
+  name: Turkey
+tt:
+  country_id: 780
+  name: Trinidad and Tobago
+tv:
+  country_id: 798
+  name: Tuvalu
+tw:
+  country_id: 158
+  name: Taiwan, Province of China
+tz:
+  country_id: 834
+  name: Tanzania, United Republic of
+ua:
+  country_id: 804
+  name: Ukraine
+ug:
+  country_id: 800
+  name: Uganda
+um:
+  country_id: 581
+  name: United States Minor Outlying Islands
+us:
+  country_id: 840
+  name: United States of America
+uy:
+  country_id: 858
+  name: Uruguay
+uz:
+  country_id: 860
+  name: Uzbekistan
+va:
+  country_id: 336
+  name: Holy See
+vc:
+  country_id: 670
+  name: Saint Vincent and the Grenadines
+ve:
+  country_id: 862
+  name: Venezuela (Bolivarian Republic of)
+vg:
+  country_id: 92
+  name: Virgin Islands (British)
+vi:
+  country_id: 850
+  name: Virgin Islands (U.S.)
+vn:
+  country_id: 704
+  name: Viet Nam
+vu:
+  country_id: 548
+  name: Vanuatu
+wf:
+  country_id: 876
+  name: Wallis and Futuna
+ws:
+  country_id: 882
+  name: Samoa
+ye:
+  country_id: 887
+  name: Yemen
+yt:
+  country_id: 175
+  name: Mayotte
+za:
+  country_id: 710
+  name: South Africa
+zm:
+  country_id: 894
+  name: Zambia
+zw:
+  country_id: 716
+  name: Zimbabwe
