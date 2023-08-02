@@ -634,6 +634,90 @@ subtest "cannot create user when user do not have CR account" => sub {
     $mock_mt5->unmock_all();
 };
 
+subtest get_account_info => sub {
+    my $mock_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
+
+    my $mock_user_data = +{};
+    # Mocking get_user to return undef to make sure user dont have any derivez account yet
+    $mock_mt5->mock('get_user', sub { return Future->done($mock_user_data->{$_[0]}); });
+
+    # Mocking create_user to create a new derivez user
+    my $ezlogin_id = 'EZD123';
+    $mock_mt5->mock(
+        'create_user',
+        sub {
+            $mock_user_data->{$ezlogin_id} = +{
+                $_[0]->%*,
+                login           => $ezlogin_id,
+                balance         => 0,
+                display_balance => '0.00',
+                currency        => 'USD',
+                country         => Locale::Country::Extra->new->country_from_code($_[0]->{country} // 'za'),
+            };
+            return Future->done({login => $ezlogin_id});
+        });
+
+    # Mocking deposit to deposit demo account
+    $mock_mt5->mock('deposit', sub { return Future->done({status => 1}); });
+
+    # Mocking get_group to return group in from mt5
+    $mock_mt5->mock(
+        'get_group',
+        sub {
+            return Future->done(
+                +{
+                    'currency' => 'USD',
+                    'group'    => $_[0],
+                    'leverage' => 1,
+                    'company'  => 'Deriv Limited'
+                });
+        });
+
+    my $user = BOM::User->create(
+        email    => 'testuser-get-account-info@example.com',
+        password => '123',
+    );
+
+    my $client_virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+
+    $client_virtual->set_default_account('USD');
+
+    $user->add_client($client_virtual);
+
+    my $derivez_login = BOM::MT5::User::Async::create_user({
+            group => 'real\\p02_ts01\\all\\svg_ez_usd',
+        })->get()->{login};
+
+    $user->add_loginid($derivez_login, 'derivez', 'real', 'USD', +{}, undef);
+
+    my $derivez = BOM::TradingPlatform->new(
+        platform    => 'derivez',
+        client      => $client_virtual,
+        rule_engine => BOM::Rules::Engine->new(client => $client_virtual),
+    );
+
+    my $acc = $derivez->get_account_info($derivez_login);
+
+    cmp_deeply(
+        $acc,
+        {
+            'balance'               => '0.00',
+            'platform'              => 'derivez',
+            'account_id'            => 'EZD123',
+            'market_type'           => 'all',
+            'currency'              => 'USD',
+            'account_type'          => 'real',
+            'display_balance'       => '0.00',
+            'sub_account_type'      => 'ez',
+            'landing_company_short' => 'svg'
+        },
+        'Correct structure is returned for Deriv EZ account info'
+    );
+
+};
+
 $app_config->system->mt5->http_proxy->demo->p01_ts04(0);
 $app_config->system->mt5->http_proxy->real->p02_ts01(0);
 

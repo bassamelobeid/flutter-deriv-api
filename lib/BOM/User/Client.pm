@@ -520,6 +520,10 @@ sub set_authentication_and_status {
         $address_verified = 1;
     }
 
+    if ($client_authentication eq 'IDV_PHOTO') {
+        $self->set_authentication('IDV_PHOTO', {status => 'pass'}, $staff);
+    }
+
     if ($client_authentication eq 'ID_NOTARIZED') {
         $self->set_authentication('ID_NOTARIZED', {status => 'pass'}, $staff);
         $address_verified = 1;
@@ -816,21 +820,91 @@ MX - Prove ID / (POI + POA)
 MLT - POI + POA
 MF - POI + POA + Selfie in Onfido
 
+It takes a hashref of params:
+
+=over 4
+
+=item * C<ignore_idv> - strict check for ID_DOCUMENT ID_NOTARIZED ID_ONLINE, poa-less scenarios are skipped.
+
+=back
+
+Returns C<0> or C<1>.
+
 =cut
 
 sub fully_authenticated {
-    my $self = shift;
+    my ($self, $args) = @_;
 
-    for my $method (qw/ID_DOCUMENT ID_NOTARIZED ID_ONLINE IDV/) {
+    $args //= {};
+
+    for my $method (qw/ID_DOCUMENT ID_NOTARIZED ID_ONLINE/) {
         my $auth = $self->get_authentication($method);
         return 1 if $auth and $auth->status eq 'pass';
     }
 
+    # Some checks may require strict POA verification
+
+    return 0 if $args->{ignore_idv};
+
+    return $self->poa_authenticated_with_idv;
+}
+
+=head2 poa_authenticated_with_idv
+
+Determines if the client was authenticated by IDV+PhotoID and the risk conditions are also met.
+
+Returns C<0> or C<1>.
+
+=cut 
+
+sub poa_authenticated_with_idv {
+    my ($self) = @_;
+
+    # idv cannot fully auth high risk clients
+
+    return 0 if $self->is_high_risk;
+
+    # Some LC can get fully auth if IDV_PHOTO
+
+    my $idv_photo = $self->get_authentication('IDV_PHOTO');
+
+    return 1
+        if $self->landing_company->fully_authenticated_with_idv_photoid
+        and $idv_photo
+        and $idv_photo->status eq 'pass';
+
+    # some providers might verify the address of a client
+
+    my $idv = $self->get_authentication('IDV');
+
+    return 1 if $idv and $idv->status eq 'pass';
+
+    return 0;
+}
+
+=head2 is_high_risk
+
+Determines if the client is high risk.
+
+We take into consideration both AML and SR, if any of them is `high` we consider the
+client as high risk.
+
+=cut
+
+sub is_high_risk {
+    my ($self) = @_;
+
+    return 1 if ($self->risk_level_sr  // '') eq 'high';
+    return 1 if ($self->risk_level_aml // '') eq 'high';
     return 0;
 }
 
 sub authentication_status {
     my ($self) = @_;
+
+    my $idv_photo = $self->get_authentication('IDV_PHOTO');
+
+    return 'idv_photo' if $idv_photo and $idv_photo->status eq 'pass';
 
     my $idv = $self->get_authentication('IDV');
 
@@ -7417,7 +7491,7 @@ sub get_all_comments {
     my $comments = [];
 
     for my $loginid ($self->user->loginids) {
-        next if $loginid =~ /^(DX|MT|EZ)/;
+        next if $loginid =~ /^(DX|MT|EZ|CT)/;
 
         my $client = BOM::User::Client->new({loginid => $loginid});
 
@@ -7667,7 +7741,9 @@ sub get_poa_status {
 
     return 'pending' if $is_poa_pending;
 
-    if ($self->fully_authenticated) {
+    my $risk = $self->aml_risk_classification // '';
+
+    if ($self->fully_authenticated({ignore_idv => $risk eq 'high'})) {
         return 'expired' if $is_outdated;
 
         return 'verified';
@@ -7754,7 +7830,10 @@ Returns,
 
 sub get_poi_status_jurisdiction {
     my ($self, $args) = @_;
-    my $jurisdiction = $args->{landing_company};
+
+    # invalidate any status if the ignore conditions are met
+    # for this LC
+    return 'none' if $self->ignore_age_verification($args);
 
     my $manual = $self->get_manual_poi_status();
     my $idv    = $self->get_idv_status();
@@ -7764,12 +7843,10 @@ sub get_poi_status_jurisdiction {
         idv    => $idv,
         onfido => $onfido
     );
-    my %allowed_verification = (
-        bvi         => ['idv',    'onfido', 'manual'],
-        labuan      => ['idv',    'onfido', 'manual'],
-        vanuatu     => ['onfido', 'manual'],
-        maltainvest => ['onfido', 'manual']);
-    my %status = map { $poi{$_} => 1 } @{$allowed_verification{$jurisdiction}};
+
+    my $lc = LandingCompany::Registry->by_name($args->{landing_company} // '') || return 'none';
+
+    my %status = map { $poi{$_} => 1 } $lc->allowed_poi_providers->@*;
 
     return 'verified' if $status{verified};
 
@@ -7903,7 +7980,7 @@ sub get_manual_poi_status {
             return 'verified' if $staff ne 'system';
 
             # return verified if fully authenticated
-            return 'verified' if $self->fully_authenticated;
+            return 'verified' if $self->fully_authenticated({ignore_idv => 1});
         }
     }
 
@@ -8394,6 +8471,8 @@ It takes a hashref containing the following parameters:
 
 =item * C<origin> enum for the origin of the document: bo, client, onfido or legacy.
 
+=item * C<issuing_country> 2 letter country code.
+
 =back
 
 Returns a hashref containing:
@@ -8410,13 +8489,17 @@ Returns a hashref containing:
 
 sub start_document_upload {
     my ($self, $params) = @_;
-    my ($document_type, $document_format, $expiration_date, $document_id, $checksum, $comments, $page_type, $issue_date, $lifetime_valid, $origin) =
-        @$params{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid origin/};
+    my (
+        $document_type, $document_format, $expiration_date, $document_id, $checksum, $comments,
+        $page_type,     $issue_date,      $lifetime_valid,  $origin,      $issuing_country
+        )
+        = @$params{
+        qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid origin issuing_country/};
 
     return $self->db->dbic->run(
         ping => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 $self->loginid,
                 $document_type,
@@ -8429,6 +8512,7 @@ sub start_document_upload {
                 $issue_date,
                 $lifetime_valid ? 1 : 0,
                 $origin // 'legacy',
+                $issuing_country,
             );
         });
 }
@@ -8525,7 +8609,11 @@ sub latest_poi_by {
     my $onfido_check = BOM::User::Onfido::get_latest_check($self, $args)->{user_check} // {};
 
     if (my $onfido_created_at = $onfido_check->{created_at}) {
-        push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
+        # most probably this check is Onfido-only, reason is even though the check is clear
+        # name/dob mismatch is computed after
+        if (!$args->{only_verified} || $self->get_onfido_status() eq 'verified') {
+            push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
+        }
     }
 
     if (my $idv_document = $idv->get_last_updated_document($args)) {
@@ -8997,13 +9085,12 @@ It returns 1 when we invalidate the age verification, 0 otherwise.
 sub ignore_age_verification {
     my ($self, $args) = @_;
 
-    # High risk profiles
-    my $risk = $self->aml_risk_classification // '';
-
     my $lc = $args->{landing_company} ? LandingCompany::Registry->by_name($args->{landing_company}) : $self->landing_company;
 
+    return 0 unless $lc;
+
     # Check if it was validated by IDV, we ignore IDV verification for some LC and high risk clients
-    if ($risk eq 'high' || none { $_ eq 'idv' } $lc->allowed_poi_providers->@*) {
+    if ($self->is_high_risk || none { $_ eq 'idv' } $lc->allowed_poi_providers->@*) {
         # Disregard idv authentication under high risk
         return 1 if $self->is_idv_validated;
     }

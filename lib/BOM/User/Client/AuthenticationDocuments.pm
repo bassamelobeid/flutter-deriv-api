@@ -776,7 +776,8 @@ sub get_authentication_definition {
         'ID_NOTARIZED' => 'Authenticated with Notarized docs',
         'ID_ONLINE'    => 'Authenticated with online verification',
         'NEEDS_ACTION' => 'Needs Action',
-        'IDV'          => 'Authenticated with IDV',
+        'IDV'          => 'Authenticated with IDV + POA',
+        'IDV_PHOTO'    => 'Authenticated with IDV + Photo',
     );
     return $AUTHENTICATION_DEFINITION{$status};
 }

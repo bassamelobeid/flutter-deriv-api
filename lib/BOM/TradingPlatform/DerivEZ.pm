@@ -8,9 +8,9 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Rules::Engine;
 use BOM::MT5::User::Async;
 use Syntax::Keyword::Try;
-use Format::Util::Numbers      qw(formatnumber);
+use Format::Util::Numbers      qw/financialrounding formatnumber/;
 use Log::Any                   qw($log);
-use List::Util                 qw(any);
+use List::Util                 qw(any first);
 use DataDog::DogStatsd::Helper qw/stats_inc/;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw (request);
@@ -768,6 +768,50 @@ sub withdraw {
             code    => $error_code,
             message => $e
         };
+    }
+}
+
+=head2 get_account_info
+
+The DerivEZ implementation of getting an account info by loginid.
+
+=over 4
+
+=item * C<$loginid> - an DerivEZ loginid
+
+=back
+
+Returns a object holding an DerivEZ account info on success, throws exception on error
+
+=cut
+
+sub get_account_info {
+    my ($self, $loginid) = @_;
+
+    my ($derivez_login) = $self->client->user->get_derivez_loginids(loginid => $loginid);
+
+    die "InvalidDerivEZAccount\n" unless $derivez_login;
+
+    try {
+        my $derivez_user  = BOM::MT5::User::Async::get_user($derivez_login)->get;
+        my $derivez_group = BOM::User::Utility::parse_mt5_group($derivez_user->{group});
+        my $currency      = uc($derivez_user->{currency});
+
+        return +{
+            account_id            => $derivez_user->{login},
+            account_type          => $derivez_group->{account_type},
+            balance               => financialrounding('amount', $currency, $derivez_user->{balance}),
+            currency              => $currency,
+            display_balance       => formatnumber('amount', $currency, $derivez_user->{balance}) // '0.00',
+            platform              => 'derivez',
+            market_type           => $derivez_group->{market_type},
+            landing_company_short => $derivez_group->{landing_company_short},
+            sub_account_type      => $derivez_group->{sub_account_type},
+        };
+    } catch ($e) {
+        die "InvalidDerivEZAccount\n" if (ref $e eq 'HASH') && (($e->{code} // '') eq 'NotFound');
+
+        die $e;
     }
 }
 

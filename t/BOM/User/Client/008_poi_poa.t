@@ -7,6 +7,8 @@ use BOM::User::Client;
 use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Date::Utility;
+use List::Util;
+use LandingCompany::Registry;
 
 my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 my $uploaded;
@@ -149,6 +151,74 @@ subtest 'get_poa_status' => sub {
                 }};
 
             is $test_client_cr->get_poa_status, 'expired', 'Client POA status is outdated';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'fully auth by IDV + high risk' => sub {
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            $test_client_cr->set_authentication('IDV', {status => 'pass'});
+            $test_client_cr->aml_risk_classification('high');
+            $test_client_cr->save;
+
+            is $test_client_cr->get_poa_status, 'none', 'Client POA status is none';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'fully auth by IDV + high risk - rejected' => sub {
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 1,
+                    documents   => {},
+                }};
+
+            $test_client_cr->set_authentication('IDV', {status => 'pass'});
+            $test_client_cr->aml_risk_classification('high');
+            $test_client_cr->save;
+
+            is $test_client_cr->get_poa_status, 'rejected', 'Client POA status is rejected';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'fully auth by IDV + high risk - expired' => sub {
+            $uploaded = {
+                proof_of_address => {
+                    is_outdated => 1,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            $test_client_cr->set_authentication('IDV', {status => 'pass'});
+            $test_client_cr->aml_risk_classification('high');
+            $test_client_cr->save;
+
+            is $test_client_cr->get_poa_status, 'expired', 'Client POA status is expired';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'fully auth (not by IDV) + high risk' => sub {
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            $test_client_cr->set_authentication('ID_ONLINE', {status => 'pass'});
+            $test_client_cr->aml_risk_classification('high');
+            $test_client_cr->save;
+
+            is $test_client_cr->get_poa_status, 'verified', 'Client POA status is verified';
             $mocked_client->unmock_all;
         };
     };
@@ -1135,6 +1205,10 @@ subtest 'needs_poi_verification' => sub {
                 'binary_user_id' => sub {
                     return 'mocked';
                 });
+            $mocked_client->mock(
+                'is_high_risk' => sub {
+                    return 0;
+                });
 
             ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
 
@@ -1163,6 +1237,10 @@ subtest 'needs_poi_verification' => sub {
             $mocked_client->mock(
                 'binary_user_id' => sub {
                     return 'mocked';
+                });
+            $mocked_client->mock(
+                'is_high_risk' => sub {
+                    return 0;
                 });
 
             ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
@@ -2922,7 +3000,7 @@ subtest 'Jurisdiction POI status' => sub {
         },
         {
             name             => 'Vanuatu: IDV verified => none',
-            status           => 'none',
+            status           => 'verified',
             onfido           => 'none',
             idv              => 'verified',
             manual           => 'none',
@@ -3116,6 +3194,222 @@ subtest 'fully auth at BO scenario' => sub {
     $mocked_documents->unmock_all;
     $mocked_client->unmock_all;
     $mocked_status->unmock_all;
+};
+
+subtest 'poi status by jurisdiction' => sub {
+    my $client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'br',
+        citizen     => 'br',
+        email       => 'poi+jurisdction@email.com',
+        loginid     => 'CR1317184'
+    );
+    my $user = BOM::User->create(
+        email          => 'poi+jurisdction@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+
+    my $tests = [{
+            ignore => 1,
+            status => 'none',
+            lc     => 'bvi',
+            test   => 'lc=bvi ignore age verification'
+        },
+        {
+            ignore => 1,
+            status => 'none',
+            lc     => 'labuan',
+            test   => 'lc=labuan ignore age verification'
+        },
+        {
+            ignore => 1,
+            status => 'none',
+            lc     => 'vanuatu',
+            test   => 'lc=vanuatu ignore age verification'
+        },
+        {
+            ignore => 1,
+            status => 'none',
+            lc     => 'maltainvest',
+            test   => 'lc=maltainvest ignore age verification'
+        },
+    ];
+
+    for my $status (qw/verified pending suspected rejected expired none/) {
+        for my $lc (qw/labuan maltainvest vanuatu bvi/) {
+            my $idv_ignore;
+            $idv_ignore = 1 if $lc eq 'maltainvest';
+
+            for my $provider (qw/onfido idv manual/) {
+                my $expected = $status;
+                $expected = 'none' if $idv_ignore && $provider eq 'idv';
+
+                push $tests->@*,
+                    {
+                    ignore    => 0,
+                    $provider => $status,
+                    status    => $expected,
+                    lc        => $lc,
+                    test      => "lc=$lc $provider=$status expected=$expected"
+                    };
+
+                push $tests->@*,
+                    {
+                    ignore        => 0,
+                    $provider     => $status,
+                    status        => 'rejected',
+                    name_mismatch => 1,
+                    lc            => $lc,
+                    test          => "lc=$lc $provider=$status expected=rejected (name mismatch)"
+                    }
+                    if $expected eq 'none' || $expected eq 'expired';
+
+                push $tests->@*,
+                    {
+                    ignore       => 0,
+                    $provider    => $status,
+                    status       => 'rejected',
+                    dob_mismatch => 1,
+                    lc           => $lc,
+                    test         => "lc=$lc $provider=$status expected=rejected (dob mismatch)"
+                    }
+                    if $expected eq 'none' || $expected eq 'expired';
+            }
+        }
+    }
+
+    my $status_mock = Test::MockModule->new(ref($client->status));
+    my $name_mismatch;
+    $status_mock->mock(
+        'poi_name_mismatch',
+        sub {
+            $name_mismatch;
+        });
+    my $dob_mismatch;
+    $status_mock->mock(
+        'poi_dob_mismatch',
+        sub {
+            $dob_mismatch;
+        });
+
+    my $cli_mock = Test::MockModule->new(ref($client));
+    my $ignore;
+    my $manual;
+    my $idv;
+    my $onfido;
+
+    $cli_mock->mock(
+        'ignore_age_verification',
+        sub {
+            return $ignore;
+        });
+
+    $cli_mock->mock(
+        'get_manual_poi_status',
+        sub {
+            return $manual;
+        });
+
+    $cli_mock->mock(
+        'get_idv_status',
+        sub {
+            return $idv;
+        });
+
+    $cli_mock->mock(
+        'get_onfido_status',
+        sub {
+            return $onfido;
+        });
+
+    my $test;
+    my $status;
+    my $lc;
+
+    for my $test ($tests->@*) {
+        ($test, $lc, $ignore, $manual, $idv, $onfido, $dob_mismatch, $name_mismatch, $status) =
+            @{$test}{qw/test lc ignore manual idv onfido dob_mismatch name_mismatch status/};
+
+        $onfido //= 'none';
+        $idv    //= 'none';
+        $manual //= 'none';
+
+        is $client->get_poi_status_jurisdiction({landing_company => $lc}), $status, $test;
+    }
+
+    $cli_mock->unmock_all;
+    $status_mock->unmock_all;
+};
+
+subtest 'ignore age verification' => sub {
+    my $client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'br',
+        citizen     => 'br',
+        email       => 'ignore+poi+status@email.com',
+        loginid     => 'CR1317184'
+    );
+    my $user = BOM::User->create(
+        email          => 'ignore+poi+status@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+
+    my $cli_mock = Test::MockModule->new(ref($client));
+    my $high_risk;
+    my $idv_validated;
+
+    $cli_mock->mock(
+        'is_high_risk',
+        sub {
+            return $high_risk;
+        });
+    $cli_mock->mock(
+        'is_idv_validated',
+        sub {
+            return $idv_validated;
+        });
+
+    $high_risk     = 0;
+    $idv_validated = 0;
+
+    for my $lc (qw/vanuatu maltainvest bvi labuan/, undef) {
+        ok !$client->ignore_age_verification({landing_company => $lc}), 'Not high risk nor IDV validated';
+    }
+
+    $high_risk     = 1;
+    $idv_validated = 0;
+
+    for my $lc (qw/vanuatu maltainvest bvi labuan/, undef) {
+        ok !$client->ignore_age_verification({landing_company => $lc}), 'Not IDV validated';
+    }
+
+    $high_risk     = 1;
+    $idv_validated = 1;
+
+    for my $lc (qw/vanuatu maltainvest bvi labuan/, undef) {
+        my $str_lc = $lc // 'undef';
+        ok $client->ignore_age_verification({landing_company => $lc}), "age verification is ignored on high risk lc=$str_lc";
+    }
+
+    $high_risk     = 0;
+    $idv_validated = 1;
+
+    for my $lc (qw/vanuatu maltainvest bvi labuan/, undef) {
+        my $landing_company = LandingCompany::Registry->by_name($lc // $client->landing_company->short);
+        my $str_lc          = $lc // 'undef';
+
+        if (List::Util::none { $_ eq 'idv' } $landing_company->allowed_poi_providers->@*) {
+            ok $client->ignore_age_verification({landing_company => $lc}), "age verification is ignored on low risk lc=$str_lc";
+        } else {
+            ok !$client->ignore_age_verification({landing_company => $lc}), "age verification is not ignored on low risk lc=$str_lc";
+        }
+    }
 };
 
 subtest 'Onfido status, under fully auth while having mismatch status' => sub {

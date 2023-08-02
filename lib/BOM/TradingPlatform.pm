@@ -29,6 +29,7 @@ use Syntax::Keyword::Try;
 use BOM::TradingPlatform::DXTrader;
 use BOM::TradingPlatform::MT5;
 use BOM::TradingPlatform::DerivEZ;
+use BOM::TradingPlatform::CTrader;
 use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use Format::Util::Numbers            qw(financialrounding);
@@ -39,6 +40,7 @@ use constant CLASS_DICT => {
     mt5     => 'BOM::TradingPlatform::MT5',
     dxtrade => 'BOM::TradingPlatform::DXTrader',
     derivez => 'BOM::TradingPlatform::DerivEZ',
+    ctrader => 'BOM::TradingPlatform::CTrader',
 };
 use constant INTERFACE => qw(
     new_account
@@ -326,7 +328,7 @@ sub client_payment {
             remark               => $args{remark},
             transfer_fees        => $args{fees},
         },
-        undef,
+        $args{payment_child} ? $args{payment_child} : undef,
         $args{txn_details},
     );
 }
