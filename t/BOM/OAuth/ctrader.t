@@ -29,7 +29,11 @@ my @mocked_ctrader_logins = qw(CTR1);
 my $user_mock             = Test::MockModule->new('BOM::User');
 $user_mock->mock(
     ctrade_loginids => sub { return @mocked_ctrader_logins },
-    loginid_details => {CTR1 => {attributes => {ctid => 1}}},
+);
+
+my $ctrader_mock = Test::MockModule->new('BOM::TradingPlatform::CTrader');
+$ctrader_mock->mock(
+    get_ctid_userid => 1,
 );
 
 subtest 'crmApiToken' => sub {
