@@ -1,91 +1,41 @@
-name: Daily master test
-run-name: Daily test on master branch
+name: Build workflow
+run-name: Build workflow
 on:
-  schedule:
-    - cron: '33 20 * * *'
+  workflow_dispatch:
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  syntax_unit:
+  get-git-message:
     runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
-      LOG_LEVEL: debug
+    outputs:
+      head-commit-message: ${{ steps.get_head_commit_message.outputs.headCommitMsg }}
     steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          need_service: false
-          repository: ${{github.repository}} 
-      - name: Code structure and syntax
-        run: make syntax
-      - name: unit tests
-        run: make unit
-  core1:
-    runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{github.repository}}
-      - name: Run tests 
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get Commit Message
+        shell: bash -e {0}
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        id: get_head_commit_message
         run: |
-          sudo touch /var/log/fixedodds/audit.log
-          sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          make test1
-  core2:
+          echo "$GITHUB_EVENT_NAME $GITHUB_REF_NAME $SHA"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" -a "$GITHUB_REF_NAME" != "master" ]; then
+            git fetch --depth 1 origin $SHA
+            echo "headCommitMsg=$(git log --format=oneline -n 1 $SHA)" >> "$GITHUB_OUTPUT"
+          else
+            exit 0
+          fi
+  check-git-message:
+    needs: get-git-message
+    if: ${{ contains(needs.get-git-message.outputs.head-commit-message, '[gh]') }}
     runs-on: ubuntu-latest
-    container:
-      image: regentmarkets/debian-ci:stable
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
-    env:
-      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
-      LOG_LEVEL: debug
     steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{github.repository}}
-      - name: Run tests 
-        run: |
-          sudo touch /var/log/fixedodds/audit.log
-          sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          make test2
+      - name: check git message
+        uses: regentmarkets/github-actions/check-git-message@master
   schema:
+    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -110,3 +60,93 @@ jobs:
       - name: json_schemas tests
         run: |
           make json_schemas
+  syntax_diff_unit: 
+    needs: check-git-message
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{ github.repository }}
+    env:
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          need_service: false
+          repository: ${{github.repository}}
+      - name: Code Structure and syntax 
+        run: |
+          make syntax_diff
+      - name : Unit tests 
+        run: make unit
+  core1:
+    needs: syntax_diff_unit
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{ github.repository }}
+    env:
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{github.repository}}
+      - name: Run tests 
+        run: |
+          sudo touch /var/log/fixedodds/audit.log
+          sudo chown nobody:nogroup /var/log/fixedodds/audit.log
+          make test1
+  core2:
+    needs: syntax_diff_unit
+    runs-on: ubuntu-latest
+    container:
+      image: regentmarkets/debian-ci:stable
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{ github.repository }}
+    env:
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{ github.repository }}
+      - name: Run tests 
+        run: |
+          sudo touch /var/log/fixedodds/audit.log
+          sudo chown nobody:nogroup /var/log/fixedodds/audit.log
+          make test2
+  dependent:
+    needs: [schema,core1,core2]
+    if:  ${{ github.event_name != 'push' }}
+    uses: ./.github/workflows/dependent.yml
+    secrets: inherit
