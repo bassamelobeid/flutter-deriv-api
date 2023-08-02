@@ -1106,4 +1106,18 @@ sub _closest_key_to_value {
     return max grep { $_ <= $value } keys %{$hash};
 }
 
+=head2 sell_commission
+
+Returns the commission charged when a contract is sold either manually or by being expired
+
+=cut
+
+sub sell_commission {
+    my $self = shift;
+
+    my $number_of_ticks_stayed_in = $self->tick_count_after_entry;
+
+    return $self->_user_input_stake * (1 - ((1 + $self->growth_rate) * (1 - $self->growth_rate))**$number_of_ticks_stayed_in);
+}
+
 1;
