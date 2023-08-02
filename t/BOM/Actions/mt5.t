@@ -3002,7 +3002,6 @@ subtest 'sync_mt5_accounts_status' => sub {
 
     # mt5 real would get skipped if no group
     # mt55 real would get skipped if the group is not bvi|vanuatu|labuan|maltainvest
-    # mt5 real would get skipped if no status
     # mt5 real would get skipped if status not in 'poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated'
 
     $extra_loginids = {
@@ -3044,11 +3043,15 @@ subtest 'sync_mt5_accounts_status' => sub {
 
     cmp_deeply $result,
         {
-        processed_mt5  => {},
-        updated_status => {},
-        updated_color  => {}
+        processed_mt5 => {
+            maltainvest => [qw/MTR000003/],
         },
-        'nothing to process';
+        updated_status => {
+            maltainvest => 'proof_failed',
+        },
+        updated_color => {}
+        },
+        'processing undef status';
 
     ## mock the update status fn
     my $status_updates = {};
@@ -3095,7 +3098,7 @@ subtest 'sync_mt5_accounts_status' => sub {
     $mt5_status = undef;
 
     for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
-        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated') {
+        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', undef) {
             $emissions      = [];
             $status_updates = {};
             $log->clear;
@@ -3113,6 +3116,8 @@ subtest 'sync_mt5_accounts_status' => sub {
 
             $result = $action_handler->($args)->get->get;
 
+            my $str_status = $status // 'undef';
+
             cmp_deeply $result,
                 {
                 processed_mt5 => {
@@ -3121,7 +3126,7 @@ subtest 'sync_mt5_accounts_status' => sub {
                 updated_status => {},
                 updated_color  => {}
                 },
-                "expected results $jurisdiction $status (undef mt5_status thrown)";
+                "expected results $jurisdiction $str_status (undef mt5_status thrown)";
 
             cmp_deeply $status_updates, {}, 'no status changed';
             cmp_deeply $emissions, [], 'Empty emissions';
@@ -3145,7 +3150,7 @@ subtest 'sync_mt5_accounts_status' => sub {
     $mt5_status = 'proof_failed';
 
     for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
-        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated') {
+        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', undef) {
             $emissions      = [];
             $status_updates = {};
             $log->clear;
@@ -3161,6 +3166,8 @@ subtest 'sync_mt5_accounts_status' => sub {
                 },
             };
 
+            my $str_status = $status // 'undef';
+
             $result = $action_handler->($args)->get->get;
 
             cmp_deeply $result,
@@ -3173,7 +3180,7 @@ subtest 'sync_mt5_accounts_status' => sub {
                 },
                 updated_color => {}
                 },
-                "expected results $jurisdiction $status => proof_failed";
+                "expected results $jurisdiction $str_status => proof_failed";
 
             cmp_deeply $emissions,                                     [], 'Empty emissions';
             cmp_deeply $status_updates, {MTR000005 => 'proof_failed'}, 'status changed';
@@ -3189,7 +3196,7 @@ subtest 'sync_mt5_accounts_status' => sub {
     $mt5_status = 'poa_failed';
 
     for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
-        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated') {
+        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', undef) {
             $emissions      = [];
             $status_updates = {};
             $log->clear;
@@ -3205,6 +3212,8 @@ subtest 'sync_mt5_accounts_status' => sub {
                 },
             };
 
+            my $str_status = $status // 'undef';
+
             $result = $action_handler->($args)->get->get;
 
             cmp_deeply $result,
@@ -3219,7 +3228,7 @@ subtest 'sync_mt5_accounts_status' => sub {
                     $jurisdiction => +BOM::Event::Actions::MT5::COLOR_RED,
                 }
                 },
-                "expected results $jurisdiction $status => poa_failed";
+                "expected results $jurisdiction $str_status => poa_failed";
 
             cmp_deeply $emissions,
                 [{
@@ -3243,7 +3252,7 @@ subtest 'sync_mt5_accounts_status' => sub {
     $mt5_status = undef;
 
     for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
-        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated') {
+        for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', undef) {
             $emissions      = [];
             $status_updates = {};
             $log->clear;
@@ -3259,6 +3268,8 @@ subtest 'sync_mt5_accounts_status' => sub {
                 },
             };
 
+            my $str_status = $status // 'undef';
+
             $result = $action_handler->($args)->get->get;
 
             cmp_deeply $result,
@@ -3269,13 +3280,13 @@ subtest 'sync_mt5_accounts_status' => sub {
                 updated_status => {
                     $jurisdiction => undef,
                 },
-                updated_color => {$status eq 'poa_failed' ? ($jurisdiction => +BOM::Event::Actions::MT5::COLOR_NONE) : (),}
+                updated_color => {$str_status eq 'poa_failed' ? ($jurisdiction => +BOM::Event::Actions::MT5::COLOR_NONE) : (),}
                 },
-                "expected results $jurisdiction $status => undef";
+                "expected results $jurisdiction $str_status => undef";
 
             cmp_deeply $emissions,
                 [
-                $status eq 'poa_failed'
+                $str_status eq 'poa_failed'
                 ? {
                     mt5_change_color => {
                         loginid => 'MTR000005',

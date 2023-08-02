@@ -701,6 +701,32 @@ subtest 'General event validation - filtering by brand' => sub {
         }, qr{API ERROR};
         is $metrics[0], 'bom-events.transactional_email.sent.failure', 'failure dd reported';
     };
+
+    subtest 'transactional emails mapper' => sub {
+        undef @track_args;
+        undef @identify_args;
+        undef @transactional_args;
+        my $mock_mapper = Test::MockModule->new('BOM::Event::Transactional::Mapper');
+        $mock_mapper->mock(
+            'get_event' => sub {
+                return '';
+            });
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);
+        my $args = {
+            loginid    => $test_client->loginid,
+            properties => {
+                first_name => 'Aname',
+                email      => 'any_email@anywhere.com',
+                language   => 'EN',
+            }};
+        #test for failure mapper failure.
+        like exception {
+            BOM::Event::Services::Track::track_event(
+                event => 'request_change_email',
+                $args->%*
+            )->get
+        }, qr{No match found for tranasactional Event};
+    };
 };
 
 sub test_segment_customer {

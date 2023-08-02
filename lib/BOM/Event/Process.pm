@@ -12,6 +12,7 @@ use Log::Any qw($log);
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
+use BOM::Event::Actions::CTrader;
 use BOM::Event::Actions::DerivEZ;
 use BOM::Event::Actions::Client::DisputeNotification;
 use BOM::Event::Actions::Client::IdentityVerification;
@@ -22,6 +23,7 @@ use BOM::Event::Actions::Email;
 use BOM::Event::Actions::P2P;
 use BOM::Event::Actions::MyAffiliate;
 use BOM::Event::Actions::User;
+use BOM::Event::Actions::Wallets;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::Event::Actions::App;
@@ -118,7 +120,9 @@ my $action_mapping = {
         mt5_archive_restore_sync                    => \&BOM::Event::Actions::MT5::mt5_archive_restore_sync,
         mt5_archive_accounts                        => \&BOM::Event::Actions::MT5::mt5_archive_accounts,
         poa_updated                                 => \&BOM::Event::Actions::Client::poa_updated,
+        ctrader_account_created                     => \&BOM::Event::Actions::CTrader::ctrader_account_created,
         underage_client_detected                    => \&BOM::Event::Actions::Client::underage_client_detected,
+        wallet_migration_started                    => \&BOM::Event::Actions::Wallets::wallet_migration_started,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,

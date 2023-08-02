@@ -244,15 +244,17 @@ async sub verify_process {
     my $document_file_id;
 
     $selfie_file_id = await _upload_photo({
-            photo  => $selfie,
-            client => $client,
-            status => $response_status,
+            photo    => $selfie,
+            client   => $client,
+            status   => $response_status,
+            document => $document,
         }) if $selfie;
 
     $document_file_id = await _upload_photo({
-            photo  => $document_pic,
-            client => $client,
-            status => $response_status,
+            photo    => $document_pic,
+            client   => $client,
+            status   => $response_status,
+            document => $document,
         }) if $document_pic;
 
     my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message // ());
@@ -295,6 +297,8 @@ async sub idv_verified {
     if (any { $_ eq 'ADDRESS_VERIFIED' } @$messages) {
         $client->set_authentication('IDV', {status => 'pass'});
         $client->status->clear_unwelcome;
+    } elsif ($pictures && scalar @$pictures) {
+        $client->set_authentication('IDV_PHOTO', {status => 'pass'});
     }
     my $redis_events_write = _redis_events_write();
     await $redis_events_write->connect;
@@ -835,6 +839,8 @@ Gets the client's photo from IDV and uploads to S3
 
 =item * C<status> - the status returned by the idv check
 
+=item * C<document> - a hashref representing the IDV document
+
 =back
 
 Returns the file id of the photo uploaded to s3
@@ -843,8 +849,8 @@ Returns the file id of the photo uploaded to s3
 
 async sub _upload_photo {
     my $data = shift;
-    my ($photo, $client, $status) =
-        @{$data}{qw/photo client status/};
+    my ($photo, $client, $status, $document) =
+        @{$data}{qw/photo client status document/};
 
     my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
 
@@ -883,8 +889,9 @@ async sub _upload_photo {
         $upload_info = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_hashref(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)',
-                    undef, $client->loginid, 'photo', $file_type, undef, '', $file_checksum, '', '', undef, $lifetime_valid, 'idv');
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin, ?)',
+                    undef, $client->loginid, 'photo', $file_type, undef, '', $file_checksum, '', '', undef, $lifetime_valid, 'idv',
+                    $document->{issuing_country});
             });
 
         if ($upload_info && $upload_info->{file_id}) {

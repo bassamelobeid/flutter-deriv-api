@@ -42,6 +42,9 @@ use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
 use BOM::Test::Helper::P2P;
 use BOM::Platform::Utility;
 
+my $mocked_s3client = Test::MockModule->new('BOM::Platform::S3Client');
+$mocked_s3client->mock(upload => sub { return Future->done(1) });
+
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -63,6 +66,13 @@ $mock_segment->redefine(
         @track_args = @_;
         return Future->done(1);
     });
+my @transactional_args;
+my $mock_cio = new Test::MockModule('WebService::Async::CustomerIO');
+$mock_cio->redefine(
+    'send_transactional' => sub {
+        @transactional_args = @_;
+        return Future->done(1);
+    });
 
 my @emit_args;
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -82,7 +92,11 @@ $mock_brands->mock(
 
 my $onfido_doc = Test::MockModule->new('WebService::Async::Onfido::Document');
 $onfido_doc->mock('side', sub { return undef });
-
+$onfido_doc->mock(
+    'issuing_country',
+    sub {
+        return 'BRA';
+    });
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
@@ -496,6 +510,7 @@ subtest 'upload document' => sub {
             request($req);
             undef @identify_args;
             undef @track_args;
+            undef @transactional_args;
 
             my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'CR',
@@ -515,10 +530,13 @@ subtest 'upload document' => sub {
                     live_chat_url         => 'https://live.chat.url'
                 }};
 
+            BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
             my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_request};
             my $result  = $handler->($args)->get;
             ok $result, 'Success result';
             is scalar @track_args, 7, 'Track event is triggered';
+            ok @transactional_args, 'CIO transactional is invoked';
+            BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
         };
 
         subtest 'reset_password_confirmation' => sub {
@@ -730,6 +748,12 @@ my $applicants = {
     $test_client_mf->loginid => $applicant_mf->{id},
 };
 my $check_hash;
+
+$test_client_mf->db->dbic->run(
+    ping => sub {
+        $_->do('DELETE FROM betonmarkets.client_authentication_document',);
+    });
+
 for my $client ($test_client, $test_client_mf) {
     my $country_code = $client->landing_company->short eq 'svg' ? 'COL' : 'ESP';
     my $applicant_id = $applicants->{$client->loginid};
@@ -1038,6 +1062,13 @@ for my $client ($test_client, $test_client_mf) {
             my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
             my $dd_bag   = {};
 
+            my $cli_onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+            $cli_onfido_mock->mock(
+                'get_onfido_document',
+                sub {
+                    return {};    # ensure docs will get processed
+                });
+
             $dog_mock->mock(
                 'stats_histogram',
                 sub {
@@ -1067,6 +1098,7 @@ for my $client ($test_client, $test_client_mf) {
             my $redis_mock = Test::MockModule->new(ref($redis_r_write));
             my $db_doc_id;
             my $doc_key;
+            my $docs_pot = {};
             $redis_mock->mock(
                 'del',
                 sub {
@@ -1075,6 +1107,8 @@ for my $client ($test_client, $test_client_mf) {
                     if ($key =~ qr/^ONFIDO::DOCUMENT::ID::/) {
                         $doc_key   = $key;
                         $db_doc_id = $self->get($key)->get;
+
+                        $docs_pot->{$db_doc_id} = 1;
                     }
 
                     return $redis_mock->original('del')->(@_);
@@ -1103,8 +1137,15 @@ for my $client ($test_client, $test_client_mf) {
                 result => undef,
             });
             lives_ok {
-                $dd_bag  = {};
-                @metrics = ();
+                $docs_pot = {};
+                $dd_bag   = {};
+                @metrics  = ();
+
+                $test_client->db->dbic->run(
+                    ping => sub {
+                        $_->do('DELETE FROM betonmarkets.client_authentication_document WHERE client_loginid = ?', undef, $test_client->loginid,);
+                    });
+
                 my $redis = BOM::Config::Redis::redis_events();
                 $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
                 BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
@@ -1124,6 +1165,7 @@ for my $client ($test_client, $test_client_mf) {
                     'onfido.api.hit'                            => undef,
                     'onfido.api.hit'                            => undef,
                     'onfido.api.hit'                            => undef,
+                    'onfido.document.skip_repeated'             => undef,
                     'onfido.api.hit'                            => undef,
                     'onfido.api.hit'                            => undef,
                     'event.onfido.client_verification.result'   =>
@@ -1143,8 +1185,12 @@ for my $client ($test_client, $test_client_mf) {
                 $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
                 is scalar @$keys, 0, 'Pending lock released';
 
-                my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
-                is $db_doc->status, 'rejected', 'upload doc status is rejected';
+                my $db_docs = $client->find_client_authentication_document(query => [id => [keys $docs_pot->%*]]);
+
+                for my $db_doc ($db_docs->@*) {
+                    is $db_doc->issuing_country, 'br',       'expected issuing country';
+                    is $db_doc->status,          'rejected', 'upload doc status is rejected';
+                }
             }
             "client verification no exception";
 
@@ -1225,6 +1271,12 @@ for my $client ($test_client, $test_client_mf) {
                 # we support v2 and v3 check hrefs
                 # TODO: remove this line when ONFIDO sadness stops
                 $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
+                $docs_pot   = {};
+                @metrics    = ();
+                $test_client->db->dbic->run(
+                    ping => sub {
+                        $_->do('DELETE FROM betonmarkets.client_authentication_document WHERE client_loginid = ?', undef, $test_client->loginid,);
+                    });
 
                 $log->clear();
                 @metrics = ();
@@ -1234,6 +1286,7 @@ for my $client ($test_client, $test_client_mf) {
                 cmp_deeply + {@metrics},
                     +{
                     'onfido.api.hit'                                => undef,
+                    'onfido.document.skip_repeated'                 => undef,
                     'event.onfido.client_verification.dispatch'     => undef,
                     'event.onfido.client_verification.not_verified' =>
                         {tags => ['check:clear', 'country:' . $country_code, 'report:consider', 'result:dob_not_reported']},
@@ -1248,10 +1301,14 @@ for my $client ($test_client, $test_client_mf) {
 
                 $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
                 is scalar @$keys, 0, 'Pending lock released';
+                my $db_docs = $test_client->find_client_authentication_document(query => [id => [keys $docs_pot->%*]]);
 
-                my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
-                is $db_doc->status, 'rejected', 'upload doc status is rejected';
+                for my $db_doc ($db_docs->@*) {
+                    is $db_doc->issuing_country, 'br',       'expected issuing country';
+                    is $db_doc->status,          'rejected', 'upload doc status is rejected';
+                }
 
+                $cli_onfido_mock->unmock_all;
                 $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
                 is $db_check->{status}, 'complete', 'check has been completed';
 
@@ -2078,20 +2135,25 @@ subtest 'client_verification after upload document himself' => sub {
         s3 => sub {
             return {document_auth => {map { $_ => 1 } qw(aws_access_key_id aws_secret_access_key aws_bucket)}};
         });
-    my $mocked_s3client = Test::MockModule->new('BOM::Platform::S3Client');
-    $mocked_s3client->mock(upload => sub { return Future->done(1) });
     $log->clear();
+    @metrics = ();
 
     lives_ok {
         BOM::Event::Actions::Client::onfido_doc_ready_for_upload({
-                type           => 'photo',
+                type          => 'photo',
+                document_info => {
+                    issuing_country => 'py',
+                },
                 document_id    => $doc->id,
                 client_loginid => $test_client2->loginid,
                 applicant_id   => $applicant_id2,
                 file_type      => $doc->file_type,
             })->get;
     }
-    "ready_for_authentication no exception";
+    "onfido_doc_ready_for_upload no exception";
+
+    cmp_deeply [@metrics], ['onfido.api.hit', undef], 'Expected dd metrics';
+    ok !grep { $_->{level} eq 'error' || $_->{level} eq 'warning' } $log->msgs->@*;
 
     my $clientdb      = BOM::Database::ClientDB->new({broker_code => 'CR'});
     my $document_file = $clientdb->db->dbic->run(
@@ -2102,7 +2164,8 @@ subtest 'client_verification after upload document himself' => sub {
         });
 
     like($document_file->{file_name}, qr{\.png$}, 'uploaded document has expected png extension');
-    is $document_file->{origin}, 'onfido', 'Onfido is the origin';
+    is $document_file->{origin},          'onfido', 'Onfido is the origin';
+    is $document_file->{issuing_country}, 'py',     'Expected country code';
 
     my $mocked_user_onfido = Test::MockModule->new('BOM::User::Onfido');
     # simulate the case that 2 processes uploading same documents almost at same time.
@@ -2111,6 +2174,8 @@ subtest 'client_verification after upload document himself' => sub {
     # at this time process 2 should report a warn.
     $mocked_user_onfido->mock(get_onfido_live_photo   => sub { diag "in mocked get_";  return undef });
     $mocked_user_onfido->mock(store_onfido_live_photo => sub { diag "in mocked store"; return undef });
+    $log->clear();
+    @metrics = ();
 
     lives_ok {
         BOM::Event::Actions::Client::onfido_doc_ready_for_upload({
@@ -2121,9 +2186,10 @@ subtest 'client_verification after upload document himself' => sub {
                 file_type      => $doc->file_type,
             })->get;
     }
-    "ready_for_authentication no exception";
+    "onfido_doc_ready_for_upload no exception";
 
-    $log->contains_ok(qr/Document already exists/, 'warning string is ok');
+    cmp_deeply [@metrics], ['onfido.api.hit', undef, 'onfido.document.skip_repeated', undef], 'Expected dd metrics';
+    ok !grep { $_->{level} eq 'error' || $_->{level} eq 'warning' } $log->msgs->@*;
 };
 
 subtest 'sync_onfido_details' => sub {
