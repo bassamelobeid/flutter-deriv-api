@@ -175,12 +175,65 @@ subtest 'client_ip' => sub {
         '1.1.1.1', 'ip can be fetched from mojo request');
 };
 
+subtest 'json payloads' => sub {
+    my $request;
+
+    subtest 'hashref' => sub {
+        $request = BOM::Platform::Context::Request::from_mojo({
+                mojo_request => mock_request_for(
+                    "https://www.dummy.com",
+                    {app_id => [1234, 4321]},
+                    'GET',
+                    {
+                        a => 1,
+                        b => 2,
+                    })});
+
+        is_deeply $request->_build_params,
+            +{
+            a      => 1,
+            b      => 2,
+            app_id => [1234, 4321]
+            },
+            'expected params';
+    };
+
+    subtest 'arrayref' => sub {
+        $request = BOM::Platform::Context::Request::from_mojo({
+                mojo_request => mock_request_for(
+                    "https://www.dummy.com",
+                    {app_id => [1234, 4321]},
+                    'GET',
+                    [
+                        a => 1,
+                        b => 2,
+                    ])});
+
+        is_deeply $request->_build_params, +{app_id => [1234, 4321]}, 'expected params';
+    };
+
+    subtest 'scalar' => sub {
+        $request = BOM::Platform::Context::Request::from_mojo(
+            {mojo_request => mock_request_for("https://www.dummy.com", {app_id => [1234, 4321]}, 'GET', 'test')});
+
+        is_deeply $request->_build_params, +{app_id => [1234, 4321]}, 'expected params';
+    };
+
+    subtest 'undef' => sub {
+        $request = BOM::Platform::Context::Request::from_mojo(
+            {mojo_request => mock_request_for("https://www.dummy.com", {app_id => [1234, 4321]}, 'GET', undef)});
+
+        is_deeply $request->_build_params, +{app_id => [1234, 4321]}, 'expected params';
+    };
+};
+
 done_testing;
 
 sub mock_request_for {
     my $for_url = shift;
     my $param   = shift || {};
     my $method  = shift || 'GET';
+    my $json    = shift;
 
     my $url_mock = Mojo::URL->new($for_url);
     $url_mock->query(%$param) if keys %$param;
@@ -199,7 +252,7 @@ sub mock_request_for {
     $request_mock->set_always('method',  $method);
     $request_mock->mock('param', sub { shift; return $params_mock->param(@_); });
     $request_mock->mock('env',   sub { {REMOTE_ADDR => '1.1.1.1'} });
-    $request_mock->mock('json',  sub { });
+    $request_mock->mock('json',  sub { return $json });
 
     return $request_mock;
 }
