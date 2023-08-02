@@ -58,7 +58,9 @@ rule 'mt5_account.account_poa_status_allowed' => {
         if (defined $mt5_id) {
             my $selected_mt5_status = $loginid_details{$mt5_id}->{status} // 'active';
             $self->fail($error_message) if $selected_mt5_status eq 'poa_failed';
-            return 1 unless any { $selected_mt5_status eq $_ } qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/;
+
+            # active accounts might have to look back into the authentication status
+            return 1 unless any { $selected_mt5_status eq $_ } qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending active/;
         }
 
         my @mt5_accounts =
@@ -69,6 +71,7 @@ rule 'mt5_account.account_poa_status_allowed' => {
             } keys %loginid_details;
 
         my $current_datetime = Date::Utility->new(Date::Utility->new->datetime);
+
         # this if seems dubious (repeated from some lines above)
         if (defined $mt5_id and exists $loginid_details{$mt5_id}) {
             return 1 unless defined $loginid_details{$mt5_id}->{attributes}->{group};
@@ -77,7 +80,7 @@ rule 'mt5_account.account_poa_status_allowed' => {
 
         foreach my $mt5_account_id (@mt5_accounts) {
             my $mt5_account = $loginid_details{$mt5_account_id};
-            return 1 if not defined $mt5_account->{status};
+            # look back for authentication updates (might have been outdated, etc)
             my $mt5_creation_datetime = Date::Utility->new($mt5_account->{creation_stamp});
             my $days_elapsed          = $current_datetime->days_between($mt5_creation_datetime);
             my $poa_failed_by_expiry  = $days_elapsed <= JURISDICTION_DAYS_LIMIT()->{$mt5_jurisdiction} ? 0 : 1;
