@@ -8,8 +8,8 @@ use BOM::MyAffiliates::ActivityReporter;
 use BOM::MyAffiliates::TurnoverReporter;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::MyAffiliates::MultiplierReporter;
-use BOM::MyAffiliates::AccumulatorReporter;
 use BOM::MyAffiliates::LookbackReporter;
+use BOM::MyAffiliates::ContractsWithSpreadReporter;
 use BOM::Config::Runtime;
 
 =head2 activity_report
@@ -62,6 +62,26 @@ sub lookback_report {
     return shift->__send_file('lookback_report');
 }
 
+=head2 accumulator_report
+
+Returns myaffiliates accumulator commission report.
+
+=cut
+
+sub accumulator_report {
+    return shift->__send_file('accumulator_report');
+}
+
+=head2 vanilla_report
+
+Returns myaffiliates vanilla commission report.
+
+=cut
+
+sub vanilla_report {
+    return shift->__send_file('vanilla_report');
+}
+
 sub __send_file {
     my ($c, $type) = @_;
 
@@ -96,16 +116,26 @@ sub __send_file {
             processing_date => Date::Utility->new($date));
         $file_name = $reporter->output_file_name();
         $file_path = $reporter->output_file_path();
-    } elsif ($type eq 'accumulator_report') {
-        my $reporter = BOM::MyAffiliates::AccumulatorReporter->new(
-            brand           => Brands->new(name => $c->stash('brand')),
-            processing_date => Date::Utility->new($date));
-        $file_name = $reporter->output_file_name();
-        $file_path = $reporter->output_file_path();
     } elsif ($type eq 'lookback_report') {
         my $reporter = BOM::MyAffiliates::LookbackReporter->new(
             brand           => Brands->new(name => $c->stash('brand')),
             processing_date => Date::Utility->new($date));
+        $file_name = $reporter->output_file_name();
+        $file_path = $reporter->output_file_path();
+    } elsif ($type eq 'accumulator_report') {
+        my $reporter = BOM::MyAffiliates::ContractsWithSpreadReporter->new(
+            brand             => Brands->new(name => $c->stash('brand')),
+            processing_date   => Date::Utility->new($date),
+            contract_category => 'accumulator'
+        );
+        $file_name = $reporter->output_file_name();
+        $file_path = $reporter->output_file_path();
+    } elsif ($type eq 'vanilla_report') {
+        my $reporter = BOM::MyAffiliates::ContractsWithSpreadReporter->new(
+            brand             => Brands->new(name => $c->stash('brand')),
+            processing_date   => Date::Utility->new($date),
+            contract_category => 'vanilla'
+        );
         $file_name = $reporter->output_file_name();
         $file_path = $reporter->output_file_path();
     } else {
