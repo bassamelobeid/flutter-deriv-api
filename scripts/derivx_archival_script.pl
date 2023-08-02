@@ -89,10 +89,7 @@ my $config             = LoadFile($derivx_config_file);
 my $user_db            = BOM::Database::UserDB::rose_db();
 my $today              = Date::Utility->today();
 my $counter            = 0;
-
-# Concatenating this string to respect the Redis key format
-my $starting_id   = $today->minus_time_interval(NUMBER_OF_DAYS . 'd')->epoch . "000-0";
-my $starting_date = $today->minus_time_interval(NUMBER_OF_DAYS . 'd')->datetime_iso8601;
+my $starting_date      = $today->minus_time_interval(NUMBER_OF_DAYS . 'd')->datetime_iso8601;
 
 for my $server_type (@servers) {
     $loop->add(
@@ -130,6 +127,7 @@ async sub get_dx_accounts {
                             FROM users.loginid
                             WHERE platform = 'dxtrade'
                             AND account_type = ?
+                            AND creation_stamp < NOW() - INTERVAL '" . NUMBER_OF_DAYS . " days'
                             AND status IS NULL
                         ),
                         cr_accounts AS (
@@ -194,6 +192,8 @@ async sub process_account {
     my ($cr_account, $binary_user_id, $creation_date, $dx_account, $type, $clearing_code) =
         @{$derivx_account}{qw/cr_account binary_user_id creation_date dx_account account_type clearing_code/};
 
+    $log->debugf("Checking '%s'..., ", $dx_account);
+
     my $client = BOM::User::Client->new({loginid => $cr_account});
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
@@ -204,18 +204,18 @@ async sub process_account {
         client      => $client
     );
 
-    # abs() is used here because 'days_between' attribute returns a negative number
-    # (even if you change variables' places)
-    return if abs(Date::Utility->new($creation_date)->days_between($today)) < NUMBER_OF_DAYS;
-
     my ($username, $domain) = split '@', $config->{servers}{$type}{user};
     my $pass = $config->{servers}{$type}{pass};
+
+    $log->debugf("Logging in to DXSCA API");
 
     await $dxsca_client{$type}->login(
         username => $username,
         domain   => $domain,
         password => $pass,
     );
+
+    $log->debugf("Successfully logged in to DXSCA API");
 
     return if await check_deals($dx_account, $clearing_code, $type);
     return if await check_balance_and_open_positions($dx, $cr_account, $dx_account, $clearing_code, $type);
@@ -231,6 +231,7 @@ async sub process_account {
     } catch ($e) {
         # 404 means account was not found on DerivX,
         # therefore we proceed in archiving it
+        $log->debugf("Error when terminating '%s' : %s", $dx_account, pp($e)) unless @$e[2] = '404';
         die $e unless @$e[2] = '404';
     }
 
@@ -241,12 +242,15 @@ async sub process_account {
 
     my $active_accounts = get_active_dx_accounts($client->user_id);
 
+    $log->debugf("Done terminating and archiving '%s'", $dx_account);
+
     unless (scalar(@$active_accounts)) {
         $dx->reset_password($client->user_id);
         stats_inc("derivx.archival.password.reset.success", {tags => ["client:$client->user_id"]});
         $log->debugf("Password for client '%s' has been reset", $client->user_id);
     }
 
+    $log->debugf("Sending email for '%s'", $dx_account);
     # Sending email only for 'real' accounts, not for demo
     BOM::Platform::Event::Emitter::emit(
         'derivx_account_deactivated',
@@ -256,6 +260,8 @@ async sub process_account {
             account    => $dx_account,
         },
     ) if ($type eq 'real');
+
+    $log->debugf("Email sent for '%s'", $dx_account);
 
     $counter++;
     stats_inc("derivx.archival.success", {tags => ["account:$dx_account"]});
@@ -267,19 +273,27 @@ async sub process_account {
 async sub check_deals {
     my ($dx_account, $clearing_code, $type) = @_;
 
+    $log->debugf("Checking deals for '%s'", $dx_account);
+
     my $client_deals = await $dxsca_client{$type}->order_history(
         accounts       => [$clearing_code . ":" . $dx_account],
         status         => ['COMPLETED'],
         completed_from => $starting_date
     );
 
+    $log->debugf("Found deals for '%s'", $dx_account) if @$client_deals;
+
     return 1 if @$client_deals;
+
+    $log->debugf("Done checking deals for '%s'", $dx_account);
 
     return 0;
 }
 
 async sub check_balance_and_open_positions {
     my ($dx, $cr_account, $dx_account, $clearing_code, $type) = @_;
+
+    $log->debugf("Checking balance and open positions for '%s'", $dx_account);
 
     my $client_portfolio = await $dxsca_client{$type}->portfolio(account => $clearing_code . ":" . $dx_account);
     my $account_balance  = 0;
@@ -291,6 +305,7 @@ async sub check_balance_and_open_positions {
             $account_currency = $client_portfolio->[0]->balances->[0]->currency;
         }
     } else {
+        $log->debugf("Done checking balance and open positions for '%s'", $dx_account);
         return 0;
     }
 
@@ -298,18 +313,24 @@ async sub check_balance_and_open_positions {
 
     if (length($account_balance) or scalar @$open_positions) {
         if ($type eq 'real') {
+            $log->debugf("'%s' has a balance bigger than %s or/and open positions\n", $dx_account, $minimum_balance)
+                if $minimum_balance <= $account_balance or scalar @$open_positions;
             return 1 if $minimum_balance <= $account_balance or scalar @$open_positions;
             transfer_remaining_funds($dx, $cr_account, $dx_account, $account_balance, $account_currency) if $account_balance > 0;
         } elsif ($type eq 'demo') {
-            return 1 if scalar @$open_positions;
+            $log->debugf("'%s' has open positions", $dx_account) if scalar @$open_positions;
+            return 1                                             if scalar @$open_positions;
         }
     }
 
+    $log->debugf("Done checking balance and open positions for '%s'", $dx_account);
     return 0;
 }
 
 sub transfer_remaining_funds {
     my ($dx, $cr_account, $dx_account, $balance, $currency) = @_;
+
+    $log->debugf("Transfering %s %s  from '%s' to '%s'", $balance, $currency, $dx_account, $cr_account);
 
     $dx->withdraw(
         amount       => $balance,
