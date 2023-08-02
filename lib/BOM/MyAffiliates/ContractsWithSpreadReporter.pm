@@ -1,20 +1,32 @@
-package BOM::MyAffiliates::AccumulatorReporter;
+package BOM::MyAffiliates::ContractsWithSpreadReporter;
 
 =head1 NAME
 
-BOM::MyAffiliates::AccumulatorReporter
+BOM::MyAffiliates::ContractsWithSpreadReporter
 
 =head1 DESCRIPTION
 
-This class generates clients' accumulator contracts trading commission reports
+This class generates clients' trading commission reports for contracts with spread. 
+
+When buy transaction is carried out, ask_spread which is the commission charged on buy is inserted into the child table.
+
+When sell transaction is carried out, bid_spread which is the commission charged on sell is inserted into the child table.
+
+Sell commission is only considered when the contract is not yet expired. 
+
+The total commission on contract is then calculated as = ask_spread + bid_spread(only if during the sell process contract is not expired). 
+
+Total Affiliate commission is a percentage of total contract commission. This value is different for financial and non_financial underlyings
+and is set in BackOffice. 
 
 =head1 SYNOPSIS
 
-    use BOM::MyAffiliates::AccumulatorReporter;
+    use BOM::MyAffiliates::ContractsWithSpreadReporter;
 
-    my $reporter = BOM::MyAffiliates::AccumulatorReporter->new(
-        brand           => Brands->new(),
-        processing_date => Date::Utility->new('18-Aug-10'));
+    my $reporter = BOM::MyAffiliates::ContractsWithSpreadReporter->new(
+        brand             => Brands->new(),
+        processing_date   => Date::Utility->new('18-Aug-10'));
+        contract_category => 'turbos'  # turbos is an example of a with spread commission contract
 
     $reporter->activity();
 
@@ -27,8 +39,6 @@ use Text::CSV;
 use Date::Utility;
 use Format::Util::Numbers            qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw(in_usd);
-use Finance::Contract::Longcode      qw(shortcode_to_parameters);
-use Finance::Underlying;
 use BOM::Config::Runtime;
 
 =head2 HEADERS
@@ -49,6 +59,16 @@ Including headers.
 
 has '+include_headers' => (
     default => 1,
+);
+
+=head2 contract_category
+
+The contract category which affiliate report is generated for
+
+=cut
+
+has contract_category => (
+    is => 'ro',
 );
 
 =head2 activity
@@ -116,7 +136,7 @@ sub activity {
 
     $reporter->computation();
 
-    Calculates affiliate commission based on the parameters retrieved from contract's short_code.
+    Calculates affiliate commission.
 
 =cut
 
@@ -127,47 +147,44 @@ sub computation {
     my $when          = $self->processing_date;
     my $apps_by_brand = $self->get_apps_by_brand();
 
-    my $commission = $self->database_mapper()->get_accumulator_commission({
+    my $records = $self->database_mapper()->get_contracts_with_spread_commission({
+        bet_class    => $self->contract_category,
         date         => $when->date_yyyymmdd,
         include_apps => $apps_by_brand->{include_apps},
         exclude_apps => $apps_by_brand->{exclude_apps},
     });
 
     my $result = {};
-    my $info_map;
     my $commission_ratio;
 
-    foreach my $info (@$commission) {
-        $info_map = {
-            loginid    => @$info[0],
-            currency   => @$info[1],
-            short_code => @$info[2]};
-        my $contract_params = shortcode_to_parameters($info_map->{short_code});
-        my $market_type     = Finance::Underlying->by_symbol($contract_params->{underlying})->market_type;
+    foreach my $info (@$records) {
+        my $loginid          = @$info[0];
+        my $currency         = @$info[1];
+        my $market_type      = @$info[2];
+        my $trade_commission = @$info[3];
+        my $commission;
 
         if ($market_type eq "non_financial") {
-            $commission_ratio = $app_config->get('quants.accumulator.affiliate_commission.non_financial');
+            $commission_ratio = $app_config->get('quants.' . $self->contract_category . '.affiliate_commission.non_financial');
         } else {
-            $commission_ratio = $app_config->get('quants.accumulator.affiliate_commission.financial');
+            $commission_ratio = $app_config->get('quants.' . $self->contract_category . '.affiliate_commission.financial');
         }
 
-        # growth_start_step = (tick number from which growth starts to grow) - 1
-        my $trade_commission_value =
-            $contract_params->{amount} * ((1 + $contract_params->{growth_rate})**($contract_params->{growth_start_step}) - 1);
-
-        if (exists $result->{$info_map->{loginid}}) {
-            $trade_commission_value += $result->{$info_map->{loginid}}->{trade_commission};
-            $result->{$info_map->{loginid}} = {
-                trade_commission => $trade_commission_value,
-                commission       => $trade_commission_value * $commission_ratio,
-                currency         => $info_map->{currency}};
+        if (exists $result->{$loginid}) {
+            $commission = $result->{$loginid}->{commission} + $trade_commission * $commission_ratio;
+            $trade_commission += $result->{$loginid}->{trade_commission};
+            $result->{$loginid} = {
+                trade_commission => $trade_commission,
+                commission       => $commission,
+                currency         => $currency
+            };
         } else {
-            $result->{$info_map->{loginid}} = {
-                trade_commission => $trade_commission_value,
-                commission       => $trade_commission_value * $commission_ratio,
-                currency         => $info_map->{currency}};
+            $result->{$loginid} = {
+                trade_commission => $trade_commission,
+                commission       => $trade_commission * $commission_ratio,
+                currency         => $currency
+            };
         }
-
     }
 
     return $result;
@@ -182,7 +199,9 @@ sub computation {
 =cut
 
 sub output_file_prefix {
-    return 'accumulator_';
+    my $self = shift;
+
+    return $self->contract_category . '_';
 }
 
 =head2 headers
