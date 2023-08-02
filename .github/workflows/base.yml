@@ -35,7 +35,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -46,6 +46,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Code structure and syntax
         run: make structure
       - name: unit tests
@@ -62,7 +63,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -73,6 +74,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Accounts-related functionality
         run: make accounts
   security:
@@ -87,7 +89,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -98,6 +100,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Security handling
         run: make security
   pricing:
@@ -112,7 +115,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -123,6 +126,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Pricing
         run: make pricing
   misc:
@@ -137,7 +141,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -148,6 +152,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Uncategorised tests
         run: make misc
   p2p:
@@ -162,7 +167,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -173,6 +178,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Run P2P tests
         run: make p2p
   schema:
@@ -187,7 +193,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -198,6 +204,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Schema tests
         run: make schema
   subscriptions:
@@ -212,7 +219,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -223,6 +230,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Run subscription tests
         run: make subscriptions
   backends:
@@ -237,7 +245,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -248,6 +256,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{inputs.repository || github.repository}}
       - name: Run backends tests
         run: make backends
   update_docs:
@@ -263,7 +272,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git//${{inputs.repository || github.repository}}
+        working-directory: /home/git/${{inputs.repository || github.repository}}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -275,6 +284,7 @@ jobs:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
           need_service: 'false'
+          repository: ${{inputs.repository || github.repository}}
       - name: Update developer.binary.com schema documentation
         run: |
           script/websocket_schema_update.sh

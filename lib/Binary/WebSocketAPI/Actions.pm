@@ -704,6 +704,7 @@ sub actions_config {
                 category     => 'account',
             }
         ],
+        ['wallet_migration'],
     ];
 }
 

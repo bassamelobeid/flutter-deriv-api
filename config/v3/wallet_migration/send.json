@@ -1,33 +1,26 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Trading Platform: Available Accounts (request)",
-    "description": "The company allows client to create trading account with multiple counter parties.",
+    "title": "Wallet migration managment (request)",
+    "description": "This API call allows managing wallet migration process.",
     "hidden": 1,
     "type": "object",
     "auth_required": 1,
     "auth_scopes": [
-        "read"
+        "admin"
     ],
     "additionalProperties": false,
     "required": [
-        "trading_platform_available_accounts",
-        "platform"
+        "wallet_migration"
     ],
     "properties": {
-        "trading_platform_available_accounts": {
-            "title": "Trading Platform: Available Accounts",
-            "description": "Must be `1`",
-            "type": "integer",
-            "enum": [
-                1
-            ]
-        },
-        "platform": {
-            "description": "Name of trading platform.",
+        "wallet_migration": {
+            "title": "Wallet migration action.",
+            "description": "Wallet migration action.",
             "type": "string",
             "enum": [
-                "mt5",
-                "ctrader"
+                "state",
+                "start",
+                "reset"
             ]
         },
         "passthrough": {
