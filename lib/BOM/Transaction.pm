@@ -873,10 +873,8 @@ sub prepare_bet_data_for_buy {
             $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
         }
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_VANILLA) {
-        $bet_params->{barrier}     = $contract->barrier->as_absolute;
-        $bet_params->{entry_spot}  = $contract->entry_spot;
-        $bet_params->{entry_epoch} = Date::Utility->new($contract->entry_tick->epoch)->db_timestamp;
-        $bet_params->{ask_spread}  = $contract->buy_commission;
+        $bet_params->{ask_spread} = $contract->buy_commission;
+
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TURBOS) {
         $bet_params->{ask_spread} = $contract->buy_commission;
 
