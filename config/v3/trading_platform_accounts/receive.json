@@ -179,7 +179,8 @@
                         "type": "string",
                         "enum": [
                             "dxtrade",
-                            "mt5"
+                            "mt5",
+                            "ctrader"
                         ]
                     },
                     "server": {
