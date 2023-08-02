@@ -429,7 +429,7 @@ Returns a hashref with result => 1 if succeed, hashref with error field otherwis
 
 =cut
 
-    async method withdraw_and_archive ($params) {
+    async method withdraw_and_archive($params) {
         return $self->return_error("withdraw_and_archive", "No parameters passed") unless ($params);
 
         my $loginid        = $params->{loginid};
@@ -544,7 +544,7 @@ or error field otherwise
 
 =cut
 
-    async method check_activity_and_process_client ($params) {
+    async method check_activity_and_process_client($params) {
         return $self->return_error("check_activity_and_process_client", "No parameters passed") unless ($params);
 
         my $loginid = $params->{loginid};
