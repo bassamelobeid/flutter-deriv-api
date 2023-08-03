@@ -285,6 +285,10 @@ sub authorize {
             push @params, (platform => $platform);
         }
 
+        if (my $lang = defang($c->param('l'))) {
+            push @params, (lang => uc($lang));
+        }
+
         stats_inc('login.authorizer.success', {tags => ["brand:$brand_name", "two_factor_auth:$is_verified"]});
 
         # clear login session
