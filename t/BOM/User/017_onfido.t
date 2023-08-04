@@ -1062,7 +1062,7 @@ subtest 'get consider reasons' => sub {
             $redis->del($pending_key);
             ok !BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S2', 'A', 'B']}), 'Could not emit the event';
             cmp_deeply $emission, {}, 'No event emitted';
-            is $redis->get($key), 3, 'Counter not increased';
+            is $redis->get($key), 0, 'Counter not increased';
             $log->contains_ok(qr/attempted ready_for_authentication emission without an applicant/, 'warning log ok');
         };
 
