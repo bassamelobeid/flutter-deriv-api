@@ -806,14 +806,21 @@ sub ready_for_authentication {
         return 0;
     }
 
+    my $user_applicant = get_user_onfido_applicant($client->binary_user_id);
+
+    unless ($user_applicant->{id}) {
+        $log->warnf('attempted ready_for_authentication emission without an applicant? user: %d', $client->binary_user_id);
+        stats_inc('onfido.ready_for_authentication.no_applicant');
+        return 0;
+    }
+
     $redis->multi;
     $redis->incr(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
     $redis->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, timeout_per_user());
     $redis->exec;
 
-    my $user_applicant = get_user_onfido_applicant($client->binary_user_id);
-    my $documents      = $args->{documents};
-    my $staff_name     = $args->{staff_name};
+    my $documents  = $args->{documents};
+    my $staff_name = $args->{staff_name};
 
     BOM::Platform::Event::Emitter::emit(
         ready_for_authentication => {

@@ -1055,8 +1055,20 @@ subtest 'get consider reasons' => sub {
             $log->contains_ok(qr/Unexpected Onfido request when pending flag is still alive/, 'warning log ok');    # this time the log is there
         };
 
+        subtest 'no applicant' => sub {
+            $applicant_id = undef;
+            $log->clear();
+            $emission = {};
+            $redis->del($pending_key);
+            ok !BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S2', 'A', 'B']}), 'Could not emit the event';
+            cmp_deeply $emission, {}, 'No event emitted';
+            is $redis->get($key), 3, 'Counter not increased';
+            $log->contains_ok(qr/attempted ready_for_authentication emission without an applicant/, 'warning log ok');
+        };
+
         $emission = {};
         $redis->del($pending_key);
+        $applicant_id = 'X1';
         ok BOM::User::Onfido::ready_for_authentication(
             $test_client,
             {
