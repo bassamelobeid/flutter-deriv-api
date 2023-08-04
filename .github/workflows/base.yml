@@ -8,6 +8,7 @@ on:
     tags:
       - '*'
   pull_request:
+    branches: [ develop_ghactions ]
   workflow_call:
     inputs:
       repository:
@@ -18,11 +19,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
   cancel-in-progress: true
 jobs:
-  check-git-message:
-    runs-on: ubuntu-latest
-    steps:
-      - name: check git message
-        uses: regentmarkets/github-actions/check-git-message@master
   syntax_diff_unit:
     uses: regentmarkets/github-actions/.github/workflows/syntax_diff_unit.yml@master
     secrets: inherit
