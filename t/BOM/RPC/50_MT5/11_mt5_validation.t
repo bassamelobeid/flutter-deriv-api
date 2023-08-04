@@ -1531,7 +1531,7 @@ subtest 'Any client, TIN is mandatory' => sub {
     }
 };
 
-subtest 'Any client, POA is outdated' => sub {
+subtest 'High risk clients, POA is outdated' => sub {
     # this naughy mock was blocking the status update, muk use acid!
     $mocked_user->mock(
         'update_loginid_status' => sub {
@@ -1546,8 +1546,130 @@ subtest 'Any client, POA is outdated' => sub {
             return 'expired';
         });
 
+    $client_mock->mock(
+        'get_poi_status_jurisdiction',
+        sub {
+            return 'verified';
+        });
+
     my $user = BOM::User->create(
-        email    => 'poa+outdated@binary.com',
+        email    => 'poa+outdated+highrisk@binary.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->account_opening_reason('Speculative');
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->aml_risk_classification('high');
+    $client->binary_user_id($user->id);
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    financial_assessment($client, 'financial_info');
+    $client->save();
+    $user->add_client($client);
+
+    my $mf = create_client('MF');
+    $mf->set_default_account('GBP');
+    $mf->account_opening_reason('Speculative');
+    $mf->place_of_birth('at');
+    $mf->residence('at');
+    $mf->aml_risk_classification('high');
+    $mf->binary_user_id($user->id);
+    $mf->tax_residence('at');
+    $mf->tax_identification_number('1234');
+    $mf->save();
+    $user->add_client($mf);
+
+    financial_assessment($mf, 'full');
+
+    my $tests = [{
+            description      => 'Labuan',
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp',
+            company          => 'labuan',
+            status           => 'proof_failed',
+        },
+        {
+            description      => 'DBVI',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'bvi',
+            status           => 'poa_outdated',
+        },
+        {
+            description      => 'Vanuatu',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'vanuatu',
+            status           => 'poa_outdated',
+        },
+        {
+            description      => 'Malatainvest',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'maltainvest',
+            status           => undef,
+        },
+        {
+            description      => 'SVG',
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            company          => 'svg',
+            status           => undef,
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($description, $status) = @{$test}{qw/description status/};
+
+        subtest $description => sub {
+            my $cli = $client;
+            $cli = $mf if $test->{company} eq 'maltainvest';
+
+            my $token = BOM::Platform::Token::API->new->create_token($cli->loginid, 'test token');
+
+            my $loginid = create_mt5_account->($c, $token, $cli, {%{$test}{qw/account_type mt5_account_type company/}});
+
+            $user->{loginid_details} = undef;    # avoid the cache
+
+            my $loginid_details = $user->loginid_details;
+
+            my $mt5 = $loginid_details->{$loginid};
+
+            my $status_str = $status // 'undef';
+            is $mt5->{status}, $status, "Expected $status_str status for the LC";
+        };
+    }
+
+    $client_mock->unmock_all;
+};
+
+subtest 'Low risk clients, POA is outdated' => sub {
+    $mocked_user->mock(
+        'update_loginid_status' => sub {
+            return $mocked_user->original('update_loginid_status')->(@_);
+        });
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+
+    $client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'expired';
+        });
+
+    # this naughy mock was throwing poa_failed instead of the expected result
+    $client_mock->mock(
+        'get_poi_status_jurisdiction',
+        sub {
+            return 'verified';
+        });
+
+    my $user = BOM::User->create(
+        email    => 'poa+outdated+lowrisk@binary.com',
         password => 'Abcd33@!',
     );
     $user->update_trading_password('Abcd33@!');
@@ -1633,7 +1755,12 @@ subtest 'Any client, POA is outdated' => sub {
             my $mt5 = $loginid_details->{$loginid};
 
             my $status_str = $status // 'undef';
-            is $mt5->{status}, $status, "Expected $status_str for the LC";
+
+            if (defined $status and $status eq 'poa_outdated') {
+                is $mt5->{status}, 'poa_pending', "Expected poa_pending status when $status_str for low risk LC";
+            } else {
+                is $mt5->{status}, $status, "Expected $status_str status for the LC";
+            }
         };
     }
 

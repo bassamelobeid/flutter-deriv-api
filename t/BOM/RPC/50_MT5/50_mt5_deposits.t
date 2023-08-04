@@ -1185,7 +1185,7 @@ subtest 'vanuatu withdrawal' => sub {
     $c->call_ok($method, $params)->has_error('Withdrawal failed.')
         ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
 
-    # outdated POA, poa_outdated, fail.
+    # outdated POA, poa_outdated, still pass for low risk client.
     $user_client_mock->mock(
         'get_poa_status',
         sub {
@@ -1193,8 +1193,7 @@ subtest 'vanuatu withdrawal' => sub {
         });
     $mock_logindetails->{MTR1001020}->{creation_stamp} = '2018-02-13 07:13:52.94334';
     $mock_logindetails->{MTR1001020}->{status}         = 'poa_outdated';
-    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
-        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+    $c->call_ok($method, $params)->has_no_error('withdrawal - expired POA, low risk client, pass');
 
     $user_client_mock->mock(
         'get_poa_status',

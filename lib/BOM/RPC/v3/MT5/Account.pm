@@ -298,6 +298,7 @@ sub mt5_accounts_lookup {
 
                 if (exists $setting->{login} and exists $client->user->loginid_details->{$setting->{login} // ''}) {
                     $setting->{status} = $client->user->loginid_details->{$setting->{login}}->{status};
+                    $setting->{status} = undef if ($setting->{status} // '') eq 'poa_outdated' and $client->risk_level_aml ne 'high';
                 }
                 $setting = _filter_settings($setting,
                     qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type sub_account_category server server_info status/
