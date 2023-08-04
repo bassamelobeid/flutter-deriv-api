@@ -39,6 +39,9 @@ use BOM::User::AuditLog;
 sub authorize {
     my $c = shift;
 
+    # specify caching directives for the browser
+    $c->res->headers->cache_control('no-store, no-cache, must-revalidate, max-age=0');
+    $c->res->headers->expires('0');
     # APP_ID verification logic
     my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
 

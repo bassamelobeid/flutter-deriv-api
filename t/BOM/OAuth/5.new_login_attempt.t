@@ -104,6 +104,21 @@ sub do_client_login {
 
 }
 
+subtest "it should set the correct cache control and expires headers" => sub {
+    # Create a Test::Mojo object
+    my $t = Test::Mojo->new('BOM::OAuth');
+    # Perform a request to your route or method that sets the headers
+    $t->get_ok("/authorize?app_id=$app_id")->status_is(200);
+
+    # Test the cache-control header
+    my $cache_control_value = $t->tx->res->headers->cache_control;
+    is($cache_control_value, 'no-store, no-cache, must-revalidate, max-age=0', 'Cache-Control header is set correctly');
+
+    # Test the expires header
+    my $expires_value = $t->tx->res->headers->expires;
+    is($expires_value, '0', 'Expires header is set correctly');
+};
+
 subtest "it should not send an email for first time login" => sub {
     do_client_login();
     is($events->{'unknown_login'} //= 0, 0, 'email should not be sent for first login');
