@@ -33,56 +33,48 @@ my $tests = [{
         official        => 1,
         in_session      => 1,
         scope_confirmed => 1,
-        lang            => "EN",
     },
     {
         platform        => 'p2p',
         official        => 1,
         in_session      => 1,
         scope_confirmed => 0,
-        lang            => "ES",
     },
     {
         platform        => 'p3p',
         official        => 0,
         in_session      => 1,
-        scope_confirmed => 1,
-        lang            => "EN",
+        scope_confirmed => 1
     },
     {
         platform        => 'p3p',
         official        => 0,
         in_session      => 1,
-        scope_confirmed => 0,
-        lang            => "ES",
+        scope_confirmed => 0
     },
     {
         platform        => undef,
         official        => 1,
         in_session      => 0,
-        scope_confirmed => 1,
-        lang            => "ES",
+        scope_confirmed => 1
     },
     {
         platform        => undef,
         official        => 1,
         in_session      => 0,
-        scope_confirmed => 0,
-        lang            => "ES",
+        scope_confirmed => 0
     },
     {
         platform        => undef,
         official        => 0,
         in_session      => 0,
-        scope_confirmed => 1,
-        lang            => "ES",
+        scope_confirmed => 1
     },
     {
         platform        => undef,
         official        => 0,
         in_session      => 0,
-        scope_confirmed => 0,
-        lang            => "ES",
+        scope_confirmed => 0
     },
     {
         platform        => '--- trying hard $$$',
@@ -90,7 +82,6 @@ my $tests = [{
         in_session      => 0,
         scope_confirmed => 0,
         invalid         => 1,
-        lang            => "ES",
     },
     {
         platform        => '--- trying hard $$$',
@@ -98,7 +89,6 @@ my $tests = [{
         in_session      => 0,
         scope_confirmed => 0,
         invalid         => 1,
-        lang            => "ES",
     },
     {
         platform        => '--- trying hard $$$',
@@ -106,7 +96,6 @@ my $tests = [{
         in_session      => 0,
         scope_confirmed => 1,
         invalid         => 1,
-        lang            => "ES",
     },
 ];
 
@@ -171,15 +160,13 @@ $model_mock->mock(
     });
 
 for ($tests->@*) {
-    my ($platform, $in_session, $official, $scope_confirmed, $invalid, $lang) = @{$_}{qw/platform in_session official scope_confirmed invalid lang/};
+    my ($platform, $in_session, $official, $scope_confirmed, $invalid) = @{$_}{qw/platform in_session official scope_confirmed invalid/};
     $is_official_app    = $official;
     $is_scope_confirmed = $scope_confirmed;
 
     my $title =
           'Platform is '
         . ($platform // 'not given')
-        . " lang - "
-        . $lang
         . ($official        ? ' official'          : ' unofficial')
         . ($scope_confirmed ? ' + scope confirmed' : ' + scope not confirmed');
 
@@ -191,8 +178,7 @@ for ($tests->@*) {
         my $url = "/authorize?app_id=$app_id";
 
         $platform = uri_escape($platform) if $platform;
-        $url .= "&platform=$platform" if $platform;
-        $url .= "&l=$lang"            if $lang;
+        $url .= "&platform=$platform"     if $platform;
         $t = $t->get_ok($url)->content_like(qr/login/);
 
         is $session->{platform}, $platform, 'Defined platform in session' if $in_session;
@@ -209,9 +195,7 @@ for ($tests->@*) {
 
         if ($official || $scope_confirmed) {
             my $uri = Mojo::URL->new($t->tx->res->headers->header('location'));
-            if ($lang) {
-                is $uri->query->param('lang'), $lang, 'Expected lang param passed into the redirection';
-            }
+
             if ($platform && !$invalid) {
                 is $uri->query->param('platform'), $platform, 'Expected platform param passed into the redirection';
             } else {
