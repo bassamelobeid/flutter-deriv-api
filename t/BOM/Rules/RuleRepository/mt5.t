@@ -46,6 +46,10 @@ subtest $rule_name => sub {
 
     $client_cr->account('USD');
 
+    # make the client high risk to not break tests
+    $client_cr->aml_risk_classification('high');
+    $client_cr->save();
+
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
 
     # undefined group
@@ -229,6 +233,32 @@ subtest $rule_name => sub {
     $poa_status = 'verified';
     ok $rule_engine->apply_rules($rule_name, $args->%*), 'Rule passes when POA=verified';
 
+    # defined group
+    # jurisdiction has limits
+    # mt5 id status = verified
+    # poa status = expired
+    # client is low risk and fully auth
+    $client_cr->aml_risk_classification('low');
+    $client_cr->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $client_cr->save();
+
+    $args = {
+        loginid              => $client_cr->loginid,
+        new_mt5_jurisdiction => 'vanuatu',
+        loginid_details      => {
+            MTR1000 => {
+                attributes => {group => 'vanuatu'},
+                status     => 'poa_failed',
+            },
+        },
+        mt5_id => 'MTR1000',
+    };
+
+    $poa_status = 'expired';
+    ok $rule_engine->apply_rules($rule_name, $args->%*), 'Rule passes when POA=expired';
+
+    $client_cr->aml_risk_classification('high');
+    $client_cr->save();
     # defined group, poa status is none
     # jurisdiction has limits
     # mt5 id status = poa_pending
@@ -385,6 +415,58 @@ subtest $rule_name => sub {
             "POA Failed status = poa_failed, loginid status = $loginid_status"
         );
     }
+
+    # defined group
+    # jurisdiction has limits
+    # mt5 id status = poa_pending... ETC
+    # accounts have been created 6 days ago
+    # client is not high risk
+    $client_cr->aml_risk_classification('low');
+    $client_cr->save();
+
+    for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
+        $args = {
+            loginid              => $client_cr->loginid,
+            new_mt5_jurisdiction => 'vanuatu',
+            loginid_details      => {
+                MTR1000 => {
+                    platform       => 'mt5',
+                    account_type   => 'real',
+                    attributes     => {group => 'vanuatu'},
+                    status         => $loginid_status,
+                    creation_stamp => $now->minus_time_interval('6d')->datetime_iso8601,
+                },
+                MTR1001 => {
+                    platform       => 'mt5',
+                    account_type   => 'real',
+                    attributes     => {group => 'vanuatu'},
+                    status         => $loginid_status,
+                    creation_stamp => $now->datetime_iso8601,
+                },
+            },
+            mt5_id => 'MTR1000',
+        };
+
+        $poa_status = 'none';
+
+        if ($loginid_status eq 'poa_outdated') {
+            ok $rule_engine->apply_rules($rule_name, $args->%*),
+                "Rule passes when client is not high risk even if loginid status = $loginid_status and POA Failed status = poa_failed";
+        } else {
+            cmp_deeply(
+                exception { $rule_engine->apply_rules($rule_name, $args->%*) },
+                {
+                    error_code => 'POAVerificationFailed',
+                    rule       => $rule_name,
+                    params     => {mt5_status => 'poa_failed'},
+                },
+                "Exception still caught when client is not high risk when POA Failed status = poa_failed, loginid status = $loginid_status"
+            );
+        }
+    }
+
+    $client_cr->aml_risk_classification('high');
+    $client_cr->save();
 
     # defined group, poa status is none
     # jurisdiction has limits
@@ -799,15 +881,8 @@ subtest 'Vanuatu + IDV' => sub {
 
         $idv_status = 'verified';
 
-        cmp_deeply(
-            exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
-            {
-                error_code => 'POAVerificationFailed',
-                rule       => 'mt5_account.account_poa_status_allowed',
-                params     => {mt5_status => 'poa_pending'}
-            },
-            "Vanuatu existing account, POA is pending, IDV verified"
-        );
+        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            undef, "Vanuatu existing account, POA is pending, IDV verified");
 
         cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
             undef, "Vanuatu existing account, POA is pending, IDV verified");
