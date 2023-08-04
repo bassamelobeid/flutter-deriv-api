@@ -895,6 +895,8 @@ async sub client_verification {
                                 datadog_tags => \@common_datadog_tags,
                             });
 
+                            $client->{status} = undef;
+
                             if ($age_verified =
                                 await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido'))
                             {
@@ -928,7 +930,6 @@ async sub client_verification {
 
                     foreach my $onfido_doc ($documents->@*) {
                         my $onfido_doc_id = $onfido_doc->{id};
-
                         await $redis_events_write->connect;
                         my $db_doc_id = await $redis_events_write->get(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id);
 
@@ -1400,6 +1401,11 @@ async sub onfido_doc_ready_for_upload {
 
         if ($is_doc_really_there) {
             DataDog::DogStatsd::Helper::stats_inc('onfido.document.skip_repeated');
+
+            my ($doc) = $client->find_client_authentication_document(query => [id => $is_doc_really_there->{id}]);
+
+            $doc->status($final_status) if $doc;
+            $doc->save                  if $doc;
         } else {
             $upload_info = $client->db->dbic->run(
                 ping => sub {

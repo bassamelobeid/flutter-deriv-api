@@ -5490,6 +5490,75 @@ subtest 'Onfido DOB checks' => sub {
         ok !$test_client->status->disabled,         'Not disabled';
         ok !$test_client->status->age_verification, 'Not age verified';
         ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch status set';
+
+        subtest 'check cache - fixing the dob mismatch' => sub {
+            my $ryu_data = {
+                document_list => [
+                    WebService::Async::Onfido::Document->new(
+                        id              => 'aaa',
+                        file_type       => 'png',
+                        type            => 'passport',
+                        issuing_country => 'BRA',
+                    ),
+                    WebService::Async::Onfido::Document->new(
+                        id              => 'bbb',
+                        file_type       => 'png',
+                        type            => 'passport',
+                        issuing_country => 'BRA',
+                    ),
+                ],
+            };
+
+            my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+            $onfido_mocker->mock(
+                'get_document_details',
+                sub {
+                    my (undef, %args) = @_;
+                    my $document_id = $args{document_id};
+                    my $doc_hash    = +{map { ($_->id => $_) } $ryu_data->{document_list}->@*};
+
+                    return Future->done($doc_hash->{$document_id});
+                });
+
+            my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+            $mocked_report->mock(
+                'documents',
+                sub {
+                    return $ryu_data->{document_list};
+                });
+
+            $test_client->date_of_birth('1989-10-10');
+            $test_client->save;
+            $test_client->status->_build_all();
+            my ($doc) = $test_client->find_client_authentication_document();
+
+            my $redis = $services->redis_events_write();
+            $redis->set(BOM::Event::Actions::Client::ONFIDO_DOCUMENT_ID_PREFIX . 'bbb', $doc->id)->get;
+
+            lives_ok {
+                @metrics = ();
+                BOM::Event::Actions::Client::client_verification({
+                        check_url => $check_href,
+                    })->get;
+                cmp_deeply + {@metrics},
+                    +{
+                    'onfido.api.hit'                            => undef,
+                    'event.onfido.client_verification.dispatch' => undef,
+                    'event.onfido.client_verification.result'   => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:age_verified']},
+                    'event.onfido.client_verification.success'  => undef,
+                    'onfido.document.skip_repeated'             => undef,
+                    },
+                    'Expected dd metrics';
+
+                my $documents_status = +{map { ($_->id => $_->status) } $test_client->find_client_authentication_document()};
+
+                is $documents_status->{$doc->id}, 'verified', 'documents are verified as well';
+            }
+            'the event made it alive!';
+
+            $onfido_mocker->unmock_all();
+            $mocked_report->unmock_all();
+        };
     };
 
     $mocked_report->unmock_all();
