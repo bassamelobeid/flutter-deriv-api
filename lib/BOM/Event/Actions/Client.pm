@@ -690,16 +690,21 @@ async sub ready_for_authentication {
             });
 
     } catch ($e) {
-        DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.failure', {tags => $tags});
-        $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
-        exception_logged();
+        if (!$client) {
+            DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.not_ready');
+        } else {
+            DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.failure', {tags => $tags});
+            $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
+            exception_logged();
+        }
     }
 
     unless ($res) {
-
         # release the pending lock under check failure scenario
-        my $redis_events_write = _redis_events_write();
-        await $redis_events_write->del(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id);
+        if ($client) {
+            my $redis_events_write = _redis_events_write();
+            await $redis_events_write->del(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id);
+        }
     }
 
     return;

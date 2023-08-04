@@ -824,6 +824,23 @@ for my $client ($test_client, $test_client_mf) {
 
             my $doc_ids = [map { $_ . $client->loginid } $client->landing_company->short eq 'maltainvest' ? qw/aaa bbb selfie/ : qw/aaa bbb/];
 
+            subtest 'no applicant id' => sub {
+                lives_ok {
+                    @metrics = ();
+                    BOM::Event::Actions::Client::ready_for_authentication({
+                            loginid   => $client->loginid,
+                            documents => $doc_ids,
+                        })->get;
+
+                    cmp_deeply [@metrics],
+                        [
+                        'event.onfido.ready_for_authentication.not_ready' => undef,
+                        ],
+                        'Expected dd metrics';
+                }
+                'gracefully handle a no applicant id scenario';
+            };
+
             lives_ok {
                 @metrics = ();
                 BOM::Event::Actions::Client::ready_for_authentication({
