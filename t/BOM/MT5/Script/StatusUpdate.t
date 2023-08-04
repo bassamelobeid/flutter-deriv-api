@@ -725,7 +725,7 @@ subtest 'check_poa_issuance' => sub {
     $user->add_loginid('MTD10000001', 'mt5', 'demo', 'USD', {test => 'test'});
     $user->update_loginid_status('MTD10000001', 'proof_failed');
 
-    $user->add_loginid('MTR10000002', 'mt5', 'real', 'USD', {test => 'test'});
+    $user->add_loginid('MTR10000002', 'mt5', 'real', 'USD', {group => 'real\p01_ts01\financial\labuan_stp_usd'});
 
     $user->add_loginid('MTD10000002', 'mt5', 'demo', 'USD', {test => 'test'});
 
@@ -790,7 +790,7 @@ subtest 'check_poa_issuance' => sub {
         +{
         MTR10000001 => 'proof_failed',
         MTD10000001 => 'proof_failed',
-        MTD10000002 => 'poa_outdated',
+        MTD10000002 => undef,
         MTR10000002 => 'poa_outdated',
         },
         'status updated';

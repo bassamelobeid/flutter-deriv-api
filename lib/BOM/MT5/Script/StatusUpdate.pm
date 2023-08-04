@@ -9,7 +9,7 @@ use BOM::MT5::User::Async;
 use Date::Utility;
 use BOM::Config;
 use BOM::User::Client;
-use List::Util qw(min max);
+use List::Util qw(uniq min max);
 use Log::Any   qw($log);
 use Syntax::Keyword::Try;
 use BOM::Platform::Event::Emitter;
@@ -23,6 +23,7 @@ use Time::Moment;
 use BOM::User::Client::AuthenticationDocuments::Config;
 use DataDog::DogStatsd::Helper qw(stats_event);
 use Data::Dump                 qw(pp);
+use BOM::Config::MT5;
 
 use constant DISABLE_ACCOUNT_DAYS       => 30;
 use constant SECOND_REMINDER_EMAIL_DAYS => 20;
@@ -1144,9 +1145,12 @@ Set the status of the MT5 accounts as `poa_outdated` on outdated POAs scenario.
 
         return undef unless $boundary;
 
+        my $mt5_config   = BOM::Config::MT5->new;
+        my $reg_accounts = [uniq map { $mt5_config->available_groups({company => $_, server_type => 'real'}, 1) } qw/bvi labuan vanuatu/];
+
         $userdb->dbic->run(
             fixup => sub {
-                $_->do('SELECT users.update_outdated_poa_mt5_loginids(?::DATE)', undef, $boundary->date_yyyymmdd);
+                $_->do('SELECT users.update_outdated_poa_mt5_loginids(?::DATE,?::VARCHAR[])', undef, $boundary->date_yyyymmdd, $reg_accounts);
             });
     }
 }
