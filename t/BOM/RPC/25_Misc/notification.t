@@ -64,7 +64,15 @@ subtest 'Notification - validations' => sub {
     is $c->tcall($method, $params)->{error}, undef, 'Valid category and event';
 };
 
-subtest 'Notification - authenntication events' => sub {
+subtest 'Notification - authentication events' => sub {
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    my $applicant_id;
+    $onfido_mock->mock(
+        'get_user_onfido_applicant',
+        sub {
+            return {id => $applicant_id};
+        });
+
     my $params = {
         token => $token,
         args  => {
@@ -83,12 +91,19 @@ subtest 'Notification - authenntication events' => sub {
 
     $redis->del($pending_key);
     is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
+    is_deeply [@emit_args], [], 'Enitted event args are correct';
+    ok !$redis->get($key),        'Counter not increased';
+    ok $redis->get($pending_key), 'Pending acquired';
+
+    $applicant_id = 'test';
+    $redis->del($pending_key);
+    is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
     is scalar @emit_args, 2,                          'Correct number of event args';
     is $emit_args[0],     'ready_for_authentication', 'Emitted event name is correct';
     is_deeply $emit_args[1],
         {
         loginid      => $test_client->loginid,
-        applicant_id => undef,
+        applicant_id => 'test',
         },
         'Enitted event args are correct';
     is $redis->get($key), 1, 'Counter increased';
@@ -105,7 +120,7 @@ subtest 'Notification - authenntication events' => sub {
     is_deeply $emit_args[1],
         {
         loginid      => $test_client->loginid,
-        applicant_id => undef,
+        applicant_id => 'test',
         documents    => [10, 11],
         },
         'Enitted event args are correct';
