@@ -8,6 +8,7 @@ on:
     tags:
       - '*'
   pull_request:
+    branches: [ develop_ghactions ]
   workflow_call:
     inputs:
       repository:
@@ -18,13 +19,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
   cancel-in-progress: true
 jobs:
-  check-git-message:
-    runs-on: ubuntu-latest
-    steps:
-      - name: check git message
-        uses: regentmarkets/github-actions/check-git-message@master
   syntax:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -47,7 +42,6 @@ jobs:
       - name: Code structure and syntax
         run: make syntax
   merlin:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -70,7 +64,6 @@ jobs:
       - name: Merlin
         run: make merlin_benchmark
   SDFX_benchmark_major:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -93,7 +86,6 @@ jobs:
       - name: SDFX benchmark major
         run: make SDFX_benchmark_major
   SDFX_benchmark_minor:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -116,7 +108,6 @@ jobs:
       - name: SDFX benchmark minor
         run: make SDFX_benchmark_minor
   SDEQ_benchmark_OTC_DJI:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -139,7 +130,6 @@ jobs:
       - name: SDEQ benchmark OTC_DJI
         run: make SDEQ_benchmark_OTC_DJI
   SDEQ_benchmark_OTC_FCHI:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -162,7 +152,6 @@ jobs:
       - name: SDEQ benchmark OTC_FCHI
         run: make SDEQ_benchmark_OTC_FCHI
   SDEQ_benchmark_SSECOMP:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -185,7 +174,6 @@ jobs:
       - name: SDEQ benchmark SSECOMP
         run: make SDEQ_benchmark_SSECOMP
   SDEQ_benchmark_OTC_FTSE:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
@@ -208,7 +196,6 @@ jobs:
       - name: SDEQ benchmark OTC_FTSE
         run: make SDEQ_benchmark_OTC_FTSE
   OVRA_benchmark:
-    needs: check-git-message
     runs-on: ubuntu-latest
     container:
       image: regentmarkets/debian-ci:stable
