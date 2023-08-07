@@ -744,73 +744,75 @@ async sub idv_webhook_relay {
 
     my $api_base_url = sprintf('http://%s:%s', $config->{host}, $config->{port});
 
-    my ($response, $idv_retry_response, $decoded_response, $webhook_response, $login_id, $status);
+    my ($response, $decoded_response, $login_id, $status);
 
     my $status_message = [];
 
     my $url = "$api_base_url/v1/idv/webhook";
 
-    try {
-        # if 'x-retry-attempts' present in header, it means that it came from the IDV retry mechanism
-        if ($args->{headers}->{'x-retry-attempts'}) {
-            my $retry_attempts = $args->{headers}->{'x-retry-attempts'};
-            $log->debugf("Got IDV webhook with attempt number: $retry_attempts");
-            $idv_retry_response = $args->{data}->{json};
+    # if 'X-Retry-Attempts' present in header, it means that it came from the IDV retry mechanism
+    if (my $retries = $args->{headers}->{'X-Retry-Attempts'}) {
+        $log->debugf("Got IDV webhook with retries: $retries");
+        my $retry_response = $args->{data}->{json};
 
-        }
-        # if 'x-request-id' present in header, it means that it came from MetaMap IDV providers
-        elsif ($args->{headers}->{'x-request-id'}) {
+        $status         = $retry_response->{status};
+        $status_message = $retry_response->{messages};
+        $login_id       = $retry_response->{req_echo}->{profile}->{id};
+
+        await verify_process({
+            loginid       => $login_id,
+            status        => $status,
+            response_hash => $retry_response,
+            message       => $status_message,
+        });
+
+        $decoded_response = $retry_response;
+
+    } else {
+        try {
             # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
             await $loop->later;
 
             $response =
                 (await _http()->POST($url, encode_json($args->{data}->{json}), (content_type => 'application/json', headers => $args->{headers})))
                 ->content;
+            $decoded_response = eval { decode_json_utf8 $response }
+                // {};    # further json encoding of this hashref should not convert to utf8 again, use `json_encode_text` instead
 
-            $decoded_response = decode_json_utf8($response);
-            # further json encoding of this hashref should not convert to utf8 again, use `json_encode_text` instead
-        } else {
-            die 'no recognizable headers';
-        }
+            $status         = $decoded_response->{status};
+            $status_message = $decoded_response->{messages};
+            $login_id       = $decoded_response->{req_echo}->{profile}->{id};
 
-        $webhook_response = $idv_retry_response // $decoded_response;
+            my $verify_process_response = await verify_process({
+                loginid       => $login_id,
+                status        => $status,
+                response_hash => $decoded_response,
+                message       => $status_message,
+            });
+        } catch ($e) {
+            if (blessed($e) and $e->isa('Future::Exception')) {
+                my ($payload) = $e->details;
+                $response = $payload->content;
 
-        die 'no req_echo' unless defined $webhook_response->{req_echo};
+                $decoded_response = eval { decode_json_utf8 $response } // {};
 
-        $status         = $webhook_response->{status};
-        $status_message = $webhook_response->{messages};
-        $login_id       = $webhook_response->{req_echo}->{profile}->{id};
+                $status = 'failed';
 
-        await verify_process({
-            loginid       => $login_id,
-            status        => $status,
-            response_hash => $webhook_response,
-            message       => $status_message,
-        });
+                $status_message = $log->errorf(
+                    "Identity Verification Microservice responded an error to our request for passing the webhook response with code: %s, message: %s - %s",
+                    $decoded_response->{code} // 'UNKNOWN',
+                    $e->message,
+                    $decoded_response->{error} // 'UNKNOWN'
+                );
+            } elsif ($e =~ /\bconnection refused\b/i) {
 
-    } catch ($e) {
-        if (blessed($e) and $e->isa('Future::Exception')) {
-            my ($payload) = $e->details;
-            $response = $payload->content;
+                # Update the status to failed as for it to not remain in perpetual 'pending' state
+                $status         = 'failed';
+                $status_message = "CONNECTION_REFUSED";
 
-            $webhook_response = eval { decode_json_utf8 $response } // {};
-
-            $status = 'failed';
-
-            $status_message = $log->errorf(
-                "Identity Verification Microservice responded an error to our request for passing the webhook response with code: %s, message: %s - %s",
-                $webhook_response->{code} // 'UNKNOWN',
-                $e->message,
-                $webhook_response->{error} // 'UNKNOWN'
-            );
-        } elsif ($e =~ /\bconnection refused\b/i) {
-
-            # Update the status to failed as for it to not remain in perpetual 'pending' state
-            $status         = 'failed';
-            $status_message = "CONNECTION_REFUSED";
-
-        } else {
-            $log->errorf('Unhandled IDV exception: %s', $e);
+            } else {
+                $log->errorf('Unhandled IDV exception: %s', $e);
+            }
         }
     }
 
@@ -819,7 +821,7 @@ async sub idv_webhook_relay {
         $status_message = 'UNAVAILABLE_MICROSERVICE';
     }
 
-    return ($status, $webhook_response, $status_message);
+    return ($status, $decoded_response, $status_message);
 
 }
 
