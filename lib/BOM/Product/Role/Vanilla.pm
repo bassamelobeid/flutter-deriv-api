@@ -183,7 +183,7 @@ sub _build_number_of_contracts {
     my $self = shift;
 
     # we want payout per pip for financials
-    my $number_of_contracts = $self->_user_input_stake / $self->initial_ask_probability->amount;
+    my $number_of_contracts     = $self->_user_input_stake / $self->initial_ask_probability->amount;
     my $currency_decimal_places = Format::Util::Numbers::get_precision_config()->{price}->{$self->currency} + ADDED_CURRENCY_PRECISION;
     my $rounding_precision      = 10**($currency_decimal_places * -1);
     # Based on the documentation for roundcommon, this sub uses the same rounding technique as financialrounding, the only difference is that it acccepts precision
