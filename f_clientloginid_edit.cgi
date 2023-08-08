@@ -62,7 +62,7 @@ PrintContentType();
 # here we want to try to set up alarm with the same time out.
 alarm(30);
 local $SIG{ALRM} = sub {
-    $log->errorf('Timeout processing request f_clientloginid_edit.cgi: %s', request()->params);
+    $log->errorf('Timeout processing request f_clientloginid_edit.cgi');
     code_exit_BO(qq[ERROR: Timeout loading page, try again later]);
 };
 use constant {
