@@ -235,6 +235,56 @@ test_schema('app_list', $res);
 $get_apps = [grep { $_->{app_id} ne '1' } @{$res->{app_list}}];
 is_deeply($get_apps, [$app1, $app3, $app_no_admin], 'app_delete ok');
 
+$t = $t->send_ok({
+        json => {
+            app_register          => 1,
+            name                  => 'App1 with Markup',
+            scopes                => ['read', 'trade'],
+            redirect_uri          => 'https://www.example.com/',
+            homepage              => 'https://www.homepage.com/',
+            app_markup_percentage => 4
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{error}->{message}, 'Input validation failed: app_markup_percentage', 'app_markup_percentage max. limit value is violated';
+
+$t = $t->send_ok({
+        json => {
+            app_register          => 1,
+            name                  => 'App1 with Markup',
+            scopes                => ['read', 'trade'],
+            redirect_uri          => 'https://www.example.com/',
+            homepage              => 'https://www.homepage.com/',
+            app_markup_percentage => 2
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{msg_type}, 'app_register';
+is $res->{app_register}->{app_markup_percentage}, 2, 'app_markup_percentage value is correct';
+
+$t = $t->send_ok({
+        json => {
+            app_update            => 1,
+            name                  => 'App2 with Markup',
+            scopes                => ['read', 'trade'],
+            redirect_uri          => 'https://www.example.com/',
+            homepage              => 'https://www.homepage.com/',
+            app_markup_percentage => 1
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{msg_type},                            'app_update', 'app_markup_percentage value within limit during upadate';
+is $res->{app_update}->{app_markup_percentage}, 1,            'app_markup_percentage value is correct';
+
+$t = $t->send_ok({
+        json => {
+            app_update            => 1,
+            name                  => 'App3 with Markup',
+            scopes                => ['read', 'trade'],
+            redirect_uri          => 'https://www.example.com/',
+            homepage              => 'https://www.homepage.com/',
+            app_markup_percentage => 6
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{error}->{message}, 'Input validation failed: app_markup_percentage', 'app_markup_percentage max. limit value is violated during update';
+
 ## for used and revoke
 my $test_appid = $app1->{app_id};
 $oauth = BOM::Database::Model::OAuth->new;
