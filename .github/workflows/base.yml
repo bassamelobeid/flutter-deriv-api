@@ -14,6 +14,8 @@ jobs:
   syntax_diff_unit:
     uses: regentmarkets/github-actions/.github/workflows/syntax_diff_unit.yml@master
     secrets: inherit
+    with:
+      repository: ${{ inputs.repository }}
   produt_contract:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
