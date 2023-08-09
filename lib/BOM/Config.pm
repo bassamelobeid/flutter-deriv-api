@@ -120,6 +120,21 @@ sub third_party {
     return $config;
 }
 
+=head2 service_social_login
+
+Get information about social login service config info
+Example:
+    my $config     = BOM::Config::service_social_login();
+    my $host = $config->{host};
+Returns a hashref of all config info of social login service.
+
+=cut
+
+sub service_social_login {
+    state $config = YAML::XS::LoadFile('/etc/rmg/microservice_social_login.yml');
+    return $config;
+}
+
 =head2 backoffice
 
 Get information about our Backoffice system
