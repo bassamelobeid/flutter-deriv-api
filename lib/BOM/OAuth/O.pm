@@ -35,6 +35,7 @@ use BOM::OAuth::Static     qw(get_message_mapping);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
 use BOM::User::AuditLog;
+use BOM::OAuth::SocialLoginClient;
 
 sub authorize {
     my $c = shift;
@@ -58,6 +59,13 @@ sub authorize {
     $oneall_callback->scheme('https');
     $c->stash('oneall_callback' => $oneall_callback);
 
+    # Setup Social Login
+    try {
+        BOM::OAuth::Helper::setup_social_login($c);
+    } catch ($e) {
+        $log->errorf("Error while setup social login links - $e");
+    }
+
     # load available networks for brand
     $c->stash('login_providers' => $c->stash('brand')->login_providers);
 
@@ -74,6 +82,8 @@ sub authorize {
         login_providers           => $c->stash('login_providers'),
         login_method              => undef,
         is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($app->{id}),
+        social_login_links        => $c->stash('social_login_links'),
+        use_oneall                => $c->_use_oneall_web,
         dd_rum_config             => _datadog_config());
     try {
         $template_params{website_domain} = $c->_website_domain($app->{id});
@@ -108,6 +118,15 @@ sub authorize {
             # Get client from Oneall Social Login.
             my $oneall_user_id = $c->session('_oneall_user_id');
             my $login          = $c->_login($app, $oneall_user_id) or return;
+            $clients = $login->{clients};
+            $client  = $clients->[0];
+            $c->session('_is_logged_in', 1);
+            $c->session('_loginid',      $client->loginid);
+            $c->session('_self_closed',  $login->{login_result}->{self_closed});
+        } elsif ($c->session('_sls_user_id')) {    #exact same logic as oneall
+                                                   # Get client from sls Social Login.
+            my $sls_user_id = $c->session('_sls_user_id');
+            my $login       = $c->_login($app, $sls_user_id) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
             $c->session('_is_logged_in', 1);
@@ -152,6 +171,15 @@ sub authorize {
                     _stats_inc_error($brand_name, "INVALID_SOCIAL");
                     return $c->_bad_request('the request was missing valid social login method');
                 }
+
+                # Handle sign-up for Social Login service
+                unless ($c->_use_oneall_web) {
+                    my $provider_link = $c->stash('social_login_links')->{$method};
+                    return $c->redirect_to($provider_link) if $provider_link;
+                    _stats_inc_error($brand_name, "INVALID_SOCIAL");
+                    return $c->_bad_request('the request was missing valid social login method');
+                }
+
                 $template_params{login_method} = $method;
                 return $c->render(%template_params);
             }
@@ -245,6 +273,7 @@ sub authorize {
                 $uri .= '&state=' . $state if defined $state;
                 # clear session for oneall login when scope is canceled
                 delete $c->session->{_oneall_user_id};
+                delete $c->session->{_sls_user_id};
                 delete $c->session->{_otp_verified};
                 return $c->redirect_to($uri);
             }
@@ -294,12 +323,14 @@ sub authorize {
         delete $c->session->{_is_logged_in};
         delete $c->session->{_loginid};
         delete $c->session->{_oneall_user_id};
+        delete $c->session->{_sls_user_id};
         delete $c->session->{_otp_verified};
 
         $c->session(expires => 1);
 
         return BOM::OAuth::Common::redirect_to($c, $redirect_uri, \@params);
     } catch {
+
         $template_params{error} = localize(get_message_mapping()->{invalid});
         return $c->render(%template_params);
     }
@@ -389,6 +420,7 @@ sub _handle_self_closed {
     if ($c->param('cancel_reactivate')) {
         # clear session for oneall login when reactivation is canceled
         delete $c->session->{_oneall_user_id};
+        delete $c->session->{_sls_user_id};
         delete $c->session->{_otp_verified};
 
         my $uri = Mojo::URL->new($app->{redirect_uri});
@@ -440,6 +472,8 @@ sub _login {
             login_method              => undef,
             is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($id),
             website_domain            => $c->_website_domain($id),
+            social_login_links        => $c->stash('social_login_links'),
+            use_oneall                => $c->_use_oneall_web,
             email_entered             => $email,
         );
 
@@ -455,6 +489,33 @@ sub _login {
 sub _is_social_login_available {
     my $c = shift;
     return (not BOM::OAuth::Common::is_social_login_suspended() and scalar @{$c->stash('login_providers')} > 0);
+}
+
+=head2 _oneall_ff_web
+
+Get social login feature flag value for web.
+
+=cut
+
+sub _oneall_ff_web {
+
+    return BOM::Config::Runtime->instance->app_config->social_login->use_oneall_web;
+}
+
+=head2 _use_oneall_web
+
+determine which service will be used social-login or oneAll based on feature flag;
+
+=cut
+
+sub _use_oneall_web {
+    my $c = shift;
+
+    my $use_oneall              = $c->_oneall_ff_web;
+    my $query_string_flag_value = $c->req->param('use_service');
+    #For AB testing, If we are using OneAll, we can override the value by providing query string param.
+    return 0 if $query_string_flag_value;
+    return $use_oneall;
 }
 
 sub _get_client {

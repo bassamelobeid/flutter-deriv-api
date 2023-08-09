@@ -69,8 +69,8 @@ sub startup {
 
     my $r = $app->routes;
     $r->any('/authorize')->to('O#authorize');
-
     $r->any('/oneall/callback')->to('OneAll#callback');
+    $r->any('/social-login/callback/:sls_provider' => [id => qr/\w+/])->to('SocialLoginController#callback');
 
     $r->any('session/:service/sso')->to('SingleSignOn#authorize');
     $r->any('session/:service/authorize')->to('SingleSignOn#create');

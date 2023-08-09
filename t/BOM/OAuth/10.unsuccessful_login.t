@@ -30,6 +30,17 @@ $mock->mock(
         $stats_inc->{$key} = 1;
     });
 
+#mock config for social login service
+my $mock_config = Test::MockModule->new('BOM::Config');
+$mock_config->mock(
+    service_social_login => sub {
+        return {
+            social_login => {
+                port => 'dummy',
+                host => 'dummy'
+            }};
+    });
+
 # Mock secure cookie session as false as http is used in tests.
 my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
 $mocked_cookie_session->mock(

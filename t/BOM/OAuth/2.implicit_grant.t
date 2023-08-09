@@ -55,6 +55,17 @@ my $password = 'jskjd8292922';
 my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
 $mocked_request->mock('domain_name', 'www.binaryqa.com');
 
+#mock config for social login service
+my $mock_config = Test::MockModule->new('BOM::Config');
+$mock_config->mock(
+    service_social_login => sub {
+        return {
+            social_login => {
+                port => 'dummy',
+                host => 'dummy'
+            }};
+    });
+
 # Mock secure cookie session as false as http is used in tests.
 my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
 $mocked_cookie_session->mock(

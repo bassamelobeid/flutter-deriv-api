@@ -21,6 +21,16 @@ my $app_id = do {
     });
     $app->{app_id};
 };
+#mock config for social login service
+my $mock_config = Test::MockModule->new('BOM::Config');
+$mock_config->mock(
+    service_social_login => sub {
+        return {
+            social_login => {
+                port => 'dummy',
+                host => 'dummy'
+            }};
+    });
 
 my $tests = [{
         date       => Date::Utility->new->_minus_months(1)->date_yyyymmdd,
