@@ -23,7 +23,7 @@ sub insert_connect {
     my $provider              = $provider_data->{user}->{identity}->{provider};
     my $provider_identity_uid = $provider_data->{user}->{identity}->{provider_identity_uid};
 
-    my $connected_user_id = $self->get_user_id_by_connect($provider_data);
+    my $connected_user_id = $self->get_user_id_by_connect($provider_data, $email);
 
     return {error => 'CONNECTED_BY_OTHER'} if ($connected_user_id && $connected_user_id != $user_id);
 
@@ -48,7 +48,7 @@ sub insert_connect {
 }
 
 sub get_user_id_by_connect {
-    my ($self, $provider_data) = @_;
+    my ($self, $provider_data, $email) = @_;
 
     my $provider              = $provider_data->{user}->{identity}->{provider};
     my $provider_identity_uid = $provider_data->{user}->{identity}->{provider_identity_uid};
@@ -56,8 +56,9 @@ sub get_user_id_by_connect {
     return $self->dbic->run(
         fixup => sub {
             $_->selectrow_array("
-        SELECT binary_user_id FROM users.binary_user_connects WHERE provider = ? AND provider_identity_uid = ?
-    ", undef, $provider, $provider_identity_uid);
+        SELECT binary_user_id FROM users.binary_user_connects
+        WHERE provider = ? AND (provider_identity_uid = ? OR email = ?) 
+    ", undef, $provider, $provider_identity_uid, $email);
         });
 }
 
