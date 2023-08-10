@@ -131,7 +131,7 @@ subtest 'client documents expiry' => sub {
             is($client->documents->expired(), 0, $test);
 
             $test = q{BOM::User::Client->documents->expired returns 0 if all documents have no expiration date};
-## Create a second document
+            ## Create a second document
             $sth_doc_new->execute($client->loginid, 'passport', 'PNG', undef, 66666, '204a5098dac0dc176c88e4ab5312dbd5',
                 'none', 'front', undef, 0, 'legacy');
             $id2 = $sth_doc_new->fetch()->[0];
@@ -531,7 +531,7 @@ subtest 'has valid documents' => sub {
                 'proof_of_identity' => {
                     'is_expired'  => 1,
                     'is_verified' => 1,
-                    'documents'   => {},
+                    'documents'   => {'document1' => {type => 'passport'}},
                 }};
 
             ok !$client_cr->documents->valid($docs, 'proof_of_identity', 1), 'Expire check was enforced';
@@ -1223,6 +1223,86 @@ subtest 'manual & onfido' => sub {
 
         ok !$client_cr->documents->expired, 'does not have expired documents';
     };
+};
+
+subtest 'client IDV+Photo scenario: photo document type should not expire' => sub {
+    my $user = BOM::User->create(
+        email    => 'client_idv@deriv.com',
+        password => 'secret_pwd'
+    );
+
+    my $client = create_client('CR');
+    $user->add_client($client);
+
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock(
+        'is_document_expiry_check_required',
+        sub {
+            return 1;
+        });
+
+    my $docs;
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            return $docs;
+        });
+
+    $docs = {};
+    ok !$client->documents->expired(), 'Empty documents are not expired';
+
+    $docs = {
+        'proof_of_identity' => {
+            'is_expired' => 1,
+            'documents'  => {'document1' => {'type' => 'passport'}},
+        }};
+
+    ok $client->documents->expired(), 'Expirable documents are expired';
+
+    $docs = {
+        'proof_of_identity' => {
+            'is_expired' => 1,
+            'documents'  => {'document1' => {'type' => 'photo'}},
+        }};
+
+    ok !$client->documents->expired(), 'Not expirable documents are not expired';
+
+    $docs = {
+        'proof_of_identity' => {
+            'is_expired' => 1,
+            'documents'  => {
+                'document1' => {'type' => 'photo'},
+                'document2' => {'type' => 'passport'}
+            },
+        }};
+
+    ok $client->documents->expired(), 'At least 1 expirable document are expired';
+
+    $docs = {
+        'proof_of_identity' => {
+            'is_expired' => 0,
+            'documents'  => {
+                'document1' => {'type' => 'photo'},
+                'document2' => {'type' => 'passport'}
+            },
+        }};
+
+    ok !$client->documents->expired(), 'Not expired expirable documents are not expired';
+
+    $docs = {
+        'onfido' => {
+            'is_expired' => 1,
+            'documents'  => {'document1' => {'type' => 'photo'}},
+        }};
+
+    ok !$client->documents->expired(), 'Same behavior despite document category';
+
+    $documents_mock->unmock_all;
+    $mock_client->unmock_all;
 };
 
 sub upload_new_doc {

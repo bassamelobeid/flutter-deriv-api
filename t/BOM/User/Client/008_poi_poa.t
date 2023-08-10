@@ -21,6 +21,12 @@ $mocked_documents->mock(
         return $uploaded;
     });
 
+my $expirable_doc = {
+    test_document => {
+        type => 'passport',
+    },
+};
+
 subtest 'get_poa_status' => sub {
     subtest 'Unregulated account' => sub {
         my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -331,7 +337,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_cr->get_poi_status, 'none', 'Client POI status is none';
@@ -347,7 +353,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 1,
-                    documents  => {test => 1},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_cr->get_poi_status, 'expired', 'Client POI status is expired';
@@ -389,7 +395,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             $onfido_document_status = 'in_progress';
@@ -403,7 +409,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded = {
                     proof_of_identity => {
                         is_expired => 1,
-                        documents  => {},
+                        documents  => $expirable_doc,
                     }};
                 $onfido_document_status = 'in_progress';
                 is $test_client_cr->get_poi_status, 'pending', 'Client POI status is still pending';
@@ -419,7 +425,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_pending => 1,
-                    documents  => {test => 1},
+                    documents  => {test => {}},
                 }};
 
             $onfido_document_status = undef;
@@ -435,7 +441,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 1,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_cr->get_poi_status, 'pending', 'Client POI status is pending';
@@ -456,7 +462,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_cr->get_poi_status, 'rejected', 'Client POI status is rejected';
@@ -474,7 +480,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_cr->get_poi_status, 'suspected', 'Client POI status is suspected';
@@ -491,7 +497,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_cr->get_poi_status, 'verified', 'Client POI status is verified';
@@ -509,7 +515,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded = {
                     onfido => {
                         is_expired => 0,
-                        documents  => {},
+                        documents  => $expirable_doc,
                     }};
                 $onfido_document_status = 'complete';
                 $onfido_sub_result      = 'rejected';
@@ -522,7 +528,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded               = {
                     onfido => {
                         is_expired => 1,
-                        documents  => {test => 1},
+                        documents  => $expirable_doc,
                     }};
                 is $test_client_cr->get_poi_status, 'expired', 'POI status of an authenticated client is <expired> - if expiry check is required';
 
@@ -532,7 +538,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded               = {
                     onfido => {
                         is_expired => 1,
-                        documents  => {test => 1},
+                        documents  => $expirable_doc,
                     }};
                 is $test_client_cr->get_poi_status, 'rejected',
                     'POI status of an authenticated client is <rejected> - if expiry check is required and onfido result is not clear';
@@ -561,7 +567,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded = {
                     onfido => {
                         is_expired => 0,
-                        documents  => {},
+                        documents  => $expirable_doc,
                     }};
                 $onfido_document_status = 'complete';
                 $onfido_sub_result      = 'suspected';
@@ -575,7 +581,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded               = {
                     onfido => {
                         is_expired => 1,
-                        documents  => {test => 1},
+                        documents  => $expirable_doc,
                     }};
                 is $test_client_cr->get_poi_status, 'expired', 'POI status of an authenticated client is <expired> - if expiry check is required';
 
@@ -585,7 +591,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded               = {
                     onfido => {
                         is_expired => 1,
-                        documents  => {test => 1},
+                        documents  => $expirable_doc,
                     }};
                 is $test_client_cr->get_poi_status, 'suspected',
                     'POI status of an authenticated client is <suspected> - if expiry check is required and onfido result is not clear';
@@ -617,7 +623,7 @@ subtest 'get_poi_status' => sub {
             $uploaded               = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             $authenticated = 1;
@@ -672,7 +678,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             $onfido_document_status = undef;
@@ -737,9 +743,7 @@ subtest 'get_poi_status' => sub {
             $uploaded    = {
                 proof_of_identity => {
                     is_pending => 1,
-                    documents  => {
-                        asdf => {},
-                    },
+                    documents  => $expirable_doc,
                 },
             };
 
@@ -750,9 +754,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_pending => 0,
-                    documents  => {
-                        asdf => {},
-                    },
+                    documents  => $expirable_doc,
                 },
             };
 
@@ -763,9 +765,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_pending => 0,
-                    documents  => {
-                        asdf => {},
-                    },
+                    documents  => $expirable_doc,
                 },
             };
 
@@ -777,9 +777,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 1,
-                    documents  => {
-                        asdf => {},
-                    },
+                    documents  => $expirable_doc,
                 },
             };
 
@@ -792,10 +790,7 @@ subtest 'get_poi_status' => sub {
                 proof_of_identity => {
                     is_expired => 1,
                     is_pending => 1,
-                    documents  => {
-                        asdf => {},
-                        test => {},
-                    },
+                    documents  => $expirable_doc,
                 },
             };
 
@@ -807,10 +802,7 @@ subtest 'get_poi_status' => sub {
                 proof_of_identity => {
                     is_expired => 0,
                     is_pending => 0,
-                    documents  => {
-                        asdf => {},
-                        test => {},
-                    },
+                    documents  => $expirable_doc,
                 },
             };
 
@@ -835,6 +827,12 @@ subtest 'get_poi_status' => sub {
             my $ignore_age_verification;
 
             $mocked_client->mock(
+                'latest_poi_by',
+                sub {
+                    return 'idv';
+                });
+
+            $mocked_client->mock(
                 'get_idv_status',
                 sub {
                     return 'none';
@@ -845,7 +843,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             $ignore_age_verification = 0;
@@ -881,12 +879,7 @@ subtest 'get_poi_status' => sub {
         $mocked_client->mock('fully_authenticated', sub { return 0 });
 
         subtest 'POI status none' => sub {
-            $uploaded = {
-                proof_of_identity => {
-                    is_expired => 0,
-                    documents  => {},
-                }};
-
+            $uploaded = {};
             is $test_client_mf->get_poi_status, 'none', 'Client POI status is none';
         };
 
@@ -910,7 +903,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             $onfido_document_status = 'awaiting_applicant';
@@ -927,7 +920,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_mf->get_poi_status, 'rejected', 'Client POI status is rejected';
@@ -945,7 +938,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 onfido => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_mf->get_poi_status, 'suspected', 'Client POI status is suspected';
@@ -960,7 +953,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_mf->get_poi_status, 'verified', 'Client POI status is verified';
@@ -974,7 +967,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
-                    documents  => {},
+                    documents  => $expirable_doc,
                 }};
 
             is $test_client_mf->get_poi_status, 'verified', 'Client POI status is verified by manual';
@@ -3130,7 +3123,7 @@ subtest 'fully auth at BO scenario' => sub {
     # fully auth at BO
     # note when fully auth at BO the age verified status is not set by staff (maybe a trigger disrupting?)
 
-    $documents           = {test => {}};
+    $documents           = $expirable_doc;
     $is_pending          = 0;
     $fully_authenticated = 1;
     $age_verification    = {
@@ -3144,7 +3137,7 @@ subtest 'fully auth at BO scenario' => sub {
 
     # important to test!
     # expired flow
-    $documents                         = {test => {}};
+    $documents                         = $expirable_doc;
     $is_expired                        = 1;
     $is_document_expiry_check_required = 1;
     $fully_authenticated               = 1;
@@ -3158,9 +3151,7 @@ subtest 'fully auth at BO scenario' => sub {
     is $test_client->get_manual_poi_status, 'expired', 'Expired status';
 
     # the client uploads a non expired document
-    $documents = {
-        test => {},
-    };
+    $documents                         = $expirable_doc;
     $is_expired                        = 1;
     $is_pending                        = 1;
     $is_document_expiry_check_required = 1;
@@ -3175,9 +3166,7 @@ subtest 'fully auth at BO scenario' => sub {
     is $test_client->get_manual_poi_status, 'pending', 'Pending status';
 
     # document is verified
-    $documents = {
-        test => {},
-    };
+    $documents                         = $expirable_doc;
     $is_expired                        = 0;
     $is_pending                        = 0;
     $is_document_expiry_check_required = 1;
