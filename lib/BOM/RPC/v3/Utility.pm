@@ -52,6 +52,7 @@ use BOM::User;
 use BOM::Transaction::Validation;
 use BOM::Config;
 use BOM::Rules::Engine;
+use BOM::TradingPlatform;
 use Time::Moment;
 
 use Exporter qw(import export_to_level);
@@ -407,6 +408,55 @@ sub check_password {
             message_to_client => localize('You cannot use your email address as your password.')}) if lc $new_password eq lc $email;
 
     return undef;
+}
+
+=head2 notify_financial_assessment
+
+return true if a notification needs to be displayed for the client if Financial assessment was not completed.
+- if BVI , labuan are available as mt5 trading platforms.
+- Financial assesment is not complete.
+- mt5 accounts exists in SVG jurisdiction.
+
+=over 4
+
+=item * C<client> - bom client object.
+
+=back
+
+return binary value indicating if notification should be added or not
+
+=cut
+
+sub notify_financial_assessment {
+    my $client = shift;
+    # get financial assessment information if completed then we return 0
+    # this is for svg accounts
+    my $financial_assessment = BOM::User::FinancialAssessment::decode_fa($client->financial_assessment());
+    return 0 if BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information', $client->landing_company->short);
+
+    # get the trading plaforms supported from here
+    my $platform = BOM::TradingPlatform->new(
+        platform => 'mt5',
+        client   => $client
+    );
+    my $platforms           = $platform->available_accounts({country_code => $client->residence});
+    my @supported_platforms = grep { $_->{shortcode} ne "svg" } @$platforms;
+    return 0 if !@supported_platforms;
+
+    # get mt5 real account and see if they are svg
+    my $loginids = $client->user->loginid_details;
+    my @accounts = grep {
+                defined $loginids->{$_}{'attributes'}{'account_type'}
+            and defined $loginids->{$_}{'attributes'}{'landing_company'}
+            and defined $loginids->{$_}{'account_type'}
+            and defined $loginids->{$_}{'platform'}
+            and $loginids->{$_}{'account_type'} eq "real"
+            and $loginids->{$_}{'attributes'}{'landing_company'} eq "svg"
+            and $loginids->{$_}{'attributes'}{'account_type'} eq "real"
+            and $loginids->{$_}{'platform'} eq "mt5"
+    } keys %$loginids;
+    return 1 if @accounts;
+
 }
 
 =head2 validate_mt5_password

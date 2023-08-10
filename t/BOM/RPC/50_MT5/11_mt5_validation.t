@@ -328,7 +328,9 @@ subtest 'new account' => sub {
 };
 
 subtest 'CR account types - low risk' => sub {
-    my $client = create_client('CR');
+    my $client       = create_client('CR');
+    my $mock_mt5_rpc = Test::MockModule->new('BOM::TradingPlatform::MT5');
+    my $client_mock  = Test::MockModule->new('BOM::User::Client');
     $client->set_default_account('USD');
     $client->place_of_birth('ai');
     $client->residence('ai');
@@ -372,6 +374,7 @@ subtest 'CR account types - low risk' => sub {
 
     #real accounts
     financial_assessment($client, 'none');
+    ok !BOM::RPC::v3::Utility::notify_financial_assessment($client), ' check if financial assessment notification is not applied';
     $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
     like $mt5_account_info->{group}, qr/real\\p01_ts04\\synthetic\\svg_std_usd\\\d{2}/, 'correct CR gaming group';
 
@@ -404,8 +407,19 @@ subtest 'CR account types - low risk' => sub {
             mt5_account_type => 'financial_stp'
         },
     );
-    authenticate($client);
 
+    authenticate($client);
+    $mock_mt5_rpc->mock(
+        get_accounts => sub {
+            return [{landing_company_short => 'svg'}];
+        });
+    ok BOM::RPC::v3::Utility::notify_financial_assessment($client), ' check if financial assessment notification is applied';
+    $client->place_of_birth('cn');
+    $client->residence('cn');
+    ok !BOM::RPC::v3::Utility::notify_financial_assessment($client),
+        ' check if financial assessment notification is not applied for high risk clients';
+    $client->place_of_birth('ai');
+    $client->residence('ai');
     $documents_expired = 1;
     create_mt5_account->(
         $c, $token, $client,
@@ -490,6 +504,7 @@ subtest 'CR account types - high risk' => sub {
         });
     ok $login, 'financial mt5 account is created without authentication';
     is $mt5_account_info->{group}, 'real\p01_ts01\financial\svg_std_usd', 'correct CR financial group';
+
 };
 
 subtest 'MLT account types - low risk' => sub {

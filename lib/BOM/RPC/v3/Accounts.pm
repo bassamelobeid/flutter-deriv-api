@@ -903,14 +903,13 @@ rpc get_account_status => sub {
 
     my $is_withdrawal_locked_for_fa =
         $client->status->withdrawal_locked && $client->status->withdrawal_locked->{reason} =~ /FA needs to be completed/;
-
     push @$status, 'document_' . $id_auth_status if $authentication_in_progress;
-
     if ($client->fully_authenticated()) {
         push @$status, 'authenticated';
         # we send this status as client is already authenticated
         # so they can view or upload more documents if needed
         push @$status, 'allow_document_upload';
+        push @$status, 'financial_assessment_notification' if BOM::RPC::v3::Utility::notify_financial_assessment($client);
     } elsif ($client->landing_company->is_authentication_mandatory
         or $risk_aml eq 'high'
         or $risk_sr eq 'high'
