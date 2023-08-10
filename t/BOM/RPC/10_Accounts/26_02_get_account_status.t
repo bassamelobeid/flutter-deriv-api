@@ -1864,8 +1864,8 @@ subtest 'fully auth at BO' => sub {
                     is_pending => 0,
                     is_expired => 1,
                     documents  => {
-                        test => {
-                            test => 1,
+                        document1 => {
+                            type => 'passport',
                         }}}};
         });
 
@@ -1882,8 +1882,8 @@ subtest 'fully auth at BO' => sub {
                     is_pending => 1,
                     is_expired => 1,
                     documents  => {
-                        test => {
-                            test => 1,
+                        document1 => {
+                            type => 'passport',
                         }}}};
         });
 
@@ -1900,8 +1900,8 @@ subtest 'fully auth at BO' => sub {
                     is_pending => 0,
                     is_expired => 0,
                     documents  => {
-                        test => {
-                            test => 1,
+                        document1 => {
+                            type => 'passport',
                         }}}};
         });
     $result = $c->tcall('get_account_status', {token => $token});
