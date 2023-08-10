@@ -634,6 +634,65 @@ subtest "cannot create user when user do not have CR account" => sub {
     $mock_mt5->unmock_all();
 };
 
+subtest "Client can still view traders hub even if 'UserGet' returns errors" => sub {
+    my @error_scenarios = ({
+            description => "UserGet returns ERR_NOTFOUND",
+            url         => 'http://localhost/mt5/real_p02_ts01/UserGet',
+            status      => 200,
+            content     => '{"message":"Not found","code":"13","error":"ERR_NOTFOUND"}',
+            expected    => []
+        },
+        {
+            description => "UserGet returns ConnectionTimeout",
+            url         => 'http://localhost/mt5/real_p02_ts01/UserGet',
+            status      => 599,
+            content     => 'Timed out while waiting for socket to become ready for reading',
+            expected    => []});
+
+    my $mock_http_tiny = Test::MockModule->new('HTTP::Tiny');
+
+    foreach my $error_scenario (@error_scenarios) {
+        my $client = BOM::User::Client->new({loginid => 'CR10000'});
+
+        my $derivez = BOM::TradingPlatform->new(
+            platform    => 'derivez',
+            client      => $client,
+            rule_engine => BOM::Rules::Engine->new(client => $client),
+        );
+
+        isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
+
+        my %params = (
+            platform => 'derivez',
+            type     => 'real'
+        );
+
+        # Mock HTTP::Tiny to return mocked responses for specific URLs
+        $mock_http_tiny->mock(
+            post => sub {
+                my ($self, $url, $data) = @_;
+                if ($url eq $error_scenario->{url}) {
+                    return {
+                        status  => $error_scenario->{status},
+                        content => $error_scenario->{content}};
+                }
+                return {
+                    status  => 200,
+                    content => 'Default Mock Response'
+                };
+            });
+
+        # Returning empty array list here since we are skipping problematic accounts and avoid crashing the whole MT5 page
+        cmp_deeply(
+            $derivez->get_accounts(%params),
+            $error_scenario->{expected},
+            "Client can still view traders hub even if UserGet $error_scenario->{description}"
+        );
+    }
+
+    $mock_http_tiny->unmock_all();
+};
+
 subtest get_account_info => sub {
     my $mock_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
 

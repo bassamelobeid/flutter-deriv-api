@@ -688,12 +688,14 @@ sub _get_user_with_group {
                     my ($err) = @_;
 
                     # Log error and increment stats counter
-                    my $error_message = "Error in getting group details for user $loginid: $err->{message_to_client}";
-                    $log->errorf("_get_user_with_group failed for group %s: %s", $loginid, $error_message);
-                    stats_inc("derivez.get_group.error", {tags => ["login:$loginid", "error_message:$error_message"]});
+                    $log->errorf("_get_user_with_group failed for group %s: %s", $loginid, $err->{code});
+                    stats_inc("derivez.get_group.error", {tags => ["error_message:$err->{code}"]});
 
                     # Return a failed Future with the error
-                    return Future->fail({code => $err->{code}, message => $err->{message_to_client}});
+                    # We need to return $err here since there is a difference between error structure from API and proxy container
+                    # e.g $err->{message_to_client} only available on proxy container error
+
+                    return Future->fail($err);
                 });
         }
     )->catch(
@@ -701,12 +703,13 @@ sub _get_user_with_group {
             my ($err) = @_;
 
             # Log error and increment stats counter
-            my $error_message = "Error in getting user details for user $loginid: $err->{message_to_client}";
-            $log->errorf("_get_user_with_group failed for user %s: %s", $loginid, $error_message);
-            stats_inc("derivez.get_user.error", {tags => ["login:$loginid", "error_message:$error_message"]});
+            $log->errorf("_get_user_with_group failed for user %s: %s", $loginid, $err->{code});
+            stats_inc("derivez.get_user.error", {tags => ["error_code:$err->{code}"]});
 
             # Return a failed Future with the error
-            return Future->fail({code => $err->{code}, message => $err->{message_to_client}});
+            # We need to return $err here since there is a difference between error structure from API and proxy container
+            # e.g $err->{message_to_client} only available on proxy container error
+            return Future->fail($err);
         });
 }
 

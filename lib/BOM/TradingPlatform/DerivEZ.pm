@@ -4,7 +4,6 @@ use strict;
 use warnings;
 no indirect;
 
-use BOM::Platform::Context qw (localize request);
 use BOM::Rules::Engine;
 use BOM::MT5::User::Async;
 use Syntax::Keyword::Try;
@@ -13,7 +12,7 @@ use Log::Any                   qw($log);
 use List::Util                 qw(any first);
 use DataDog::DogStatsd::Helper qw/stats_inc/;
 use BOM::Platform::Event::Emitter;
-use BOM::Platform::Context qw (request);
+use BOM::Platform::Context qw (localize request);
 use BOM::User::Client;
 use LandingCompany::Registry;
 use BOM::TradingPlatform::Helper::HelperDerivEZ qw(
