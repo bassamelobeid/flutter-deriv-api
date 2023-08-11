@@ -12,22 +12,23 @@ use BOM::Backoffice::Sysinit      ();
 use BOM::Cryptocurrency::BatchAPI;
 use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
-use Log::Any                    qw($log);
-use BOM::Cryptocurrency::Helper qw(has_manual_credit);
+use Log::Any qw($log);
+use LandingCompany::Registry;
 
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Crypto Wrong Currency Deposit");
 
+my @all_cryptos      = LandingCompany::Registry::all_crypto_currencies();
 my $transaction_hash = trim(request()->param('transaction_hash'));
 my $to_address       = trim(request()->param('to_address'));
+my $currency_code    = request()->param('currency');
 my $broker           = request()->broker_code;
 my $clientdb         = BOM::Database::ClientDB->new({broker_code => $broker});
 my $response_bodies;
-my $sibiling_account;
-my $has_manual_credit;
-my $is_confirmed;
+my $sibling_account;
+my $status;
 
 my $batch = BOM::Cryptocurrency::BatchAPI->new();
 
@@ -39,6 +40,7 @@ if ($transaction_hash) {
         body   => {
             transaction_hash => $transaction_hash,
             to_address       => $to_address,
+            currency_code    => $currency_code,
         },
     );
 
@@ -49,29 +51,11 @@ if ($transaction_hash) {
         my $wrong_currency_code   = $response_bodies->{wrong_currency};
         my $correct_currency_code = $response_bodies->{correct_currency};
         my $client_loginid        = $response_bodies->{client_loginid};
-        $sibiling_account = get_sibiling_account_by_currency_code($client_loginid, $wrong_currency_code);
-
-        if ($sibiling_account) {
-            $has_manual_credit = has_manual_credit($to_address, $wrong_currency_code, $sibiling_account);
-
-            $batch = BOM::Cryptocurrency::BatchAPI->new();
-            $batch->add_request(
-                id     => 'is_transaction_confirmed',
-                action => 'deposit/is_transaction_confirmed',
-                body   => {
-                    transaction_hash => $transaction_hash,
-                    to_address       => $to_address,
-                    currency_code    => $wrong_currency_code,
-                    client_loginid   => $sibiling_account,
-                },
-            );
-
-            $batch->process();
-            $is_confirmed = $batch->get_response_body('is_transaction_confirmed');
-        }
-
+        $status          = $response_bodies->{status};
+        $sibling_account = $response_bodies->{sibling_client_loginid};
+        # Check if sibling account has been created in the database
+        $sibling_account = get_sibiling_account_by_currency_code($client_loginid, $wrong_currency_code) if $status eq 'ERROR';
     }
-
 }
 
 BOM::Backoffice::Request::template()->process(
@@ -81,9 +65,11 @@ BOM::Backoffice::Request::template()->process(
         data              => $response_bodies,
         transaction_hash  => $transaction_hash,
         to_address        => $to_address,
-        sibiling_account  => $sibiling_account,
-        has_manual_credit => $has_manual_credit,
+        sibling_account   => $sibling_account,
+        currency_options  => \@all_cryptos,
+        currency_selected => $currency_code,
+        status            => $status,
         credit_url        => request()->url_for('backoffice/crypto_credit_wrong_currency_deposits.cgi'),
-        is_confirmed      => $is_confirmed->{is_confirmed}}) || die BOM::Backoffice::Request::template()->error(), "\n";
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();

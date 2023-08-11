@@ -11,12 +11,14 @@ use Path::Tiny;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
+use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('INVESTIGATIVE TOOLS');
 
-my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
+my $sanctions   = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
+my @all_cryptos = LandingCompany::Registry::all_crypto_currencies();
 
 if (request()->param('whattodo') eq 'unsanctions') {
     my $error_message;
@@ -73,7 +75,8 @@ Bar("Crypto Wrong Currency Deposit");
 BOM::Backoffice::Request::template()->process(
     'backoffice/crypto_wrong_currency_deposit.html.tt',
     {
-        data_url => request()->url_for('backoffice/crypto_wrong_currency_deposit.cgi'),
+        data_url         => request()->url_for('backoffice/crypto_wrong_currency_deposit.cgi'),
+        currency_options => \@all_cryptos,
 
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 

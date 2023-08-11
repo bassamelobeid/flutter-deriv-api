@@ -1,3 +1,4 @@
+[% SET currencies = ['ETH', 'USDC', 'eUSDT'] %]
 <div><b>Please be inform that tool is only working for ETH network currently.</b></div>
 <br>
 <form id='form' ACTION="[% data_url %]" METHOD=POST>
@@ -9,6 +10,16 @@
         <tr>
             <td><label>Address:</label></td>
             <td><input type=text size=70 name='to_address' value='[% to_address %]' required data-lpignore='true' /></td>
+        </tr>
+        <tr>
+            <td><label>Currency on Blockchain:</label></td>
+            <td>
+                <select name="currency" id="rypto_currencies_list">
+                    [% FOR crypto IN currencies.sort %]
+                        <option value="[% crypto %]"[% IF currency_selected == crypto %] selected="selected"[% END %]>[% crypto %]</option>
+                    [% END %]
+                </select>
+            </td>
         </tr>
         <tr>
             <td><input type="hidden" name="credit" id="credit" value=""></td>
@@ -27,20 +38,22 @@
             <li>Client might used a network which we do not support.</li>
          </ul>
     [% ELSE %]  
-        [% IF has_manual_credit || is_confirmed %]
-            <p class ="notify notify--warning">Please note that, we have credited the client
-            [% IF has_manual_credit %] manually.</p> [% END %]
-            [% IF is_confirmed %]. Check deposit page for more info.</p>[% END %]
-        [% ELSE %]    
+        [% IF status == 'CONFIRMED' %]
+            <p>The payment is confirmed and the client loginid <b><span id="sibiling_account">[% sibling_account %]</span></b> is credited with amount <b><span id="amount">[% data.amount %]</span></b> for this payment.</p>
+        [% ELSIF status == 'ERROR' %]    
             <p>This is to confirm that we have received <b><span id="amount">[% data.amount %]</span> <span id="wrong_currency">[% data.wrong_currency %]</span></b> to address <b>[% to_address %]</b> that belongs to <b>[% data.client_loginid %](<span id="correct_currency">[% data.correct_currency %]</span>)</b></p>
             <p>Transaction hash: <b>[% transaction_hash %]</b></p>
-            [% IF sibiling_account %]
-                <p>Account funds need to be credited: <b><span id="sibiling_account">[% sibiling_account %]</span> ([% data.wrong_currency %])</b></p>
+            [% IF sibling_account %]
+                <p>Account funds need to be credited: <b><span id="sibiling_account">[% sibling_account %]</span> ([% data.wrong_currency %])</b></p>
                 <input type="button"  onclick="credit()" class="btn btn--primary" name="credit" value="credit" />
                 <p id="process"></p>
             [% ELSE %]
                 <p>Client needs to create <b>[% data.wrong_currency %]</b> account.</p>
             [% END %]
+        [% ELSIF status == 'PENDING' %]
+            <p class ="notify notify--warning">The payment is under processing (the payment status is <b>PENDING</b>)</p>
+        [% ELSE %]
+            <p class ="notify notify--warning">We were unable to process your search request at the moment.</p>
         [% END %]    
     [% END %]
 [% END %]
