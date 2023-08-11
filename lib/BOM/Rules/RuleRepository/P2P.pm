@@ -42,15 +42,18 @@ rule 'p2p.withdrawal_check' => {
 
         return 1 if ($args->{action} // '') ne 'withdrawal';
 
-        my $limit = BOM::Config::Runtime->instance->app_config->payments->p2p_withdrawal_limit;
+        my $config = BOM::Config::Runtime->instance->app_config->payments;
+        my $limit  = $config->p2p_withdrawal_limit;
         return 1 if $limit >= 100;    # setting is a percentage
 
         my $amount   = $args->{amount} // die 'Amount is required';
         my $client   = $context->client($args);
         my $currency = $client->currency;
-        my $days     = BOM::Config::Runtime->instance->app_config->payments->p2p_deposits_lookback;
+        my $days     = $config->p2p_deposits_lookback;
 
         return 1 if $client->payment_agent and ($client->payment_agent->status // '') eq 'authorized';
+
+        return 1 unless BOM::Config::P2P::available_countries()->{$client->residence};
 
         my ($net_p2p) = $client->db->dbic->run(
             fixup => sub {
@@ -58,6 +61,7 @@ rule 'p2p.withdrawal_check' => {
             }) // 0;
 
         return 1 if $net_p2p <= 0;
+
         my $p2p_excluded     = $net_p2p * (1 - ($limit / 100));
         my $availble_balance = $client->account->balance - $p2p_excluded;
 

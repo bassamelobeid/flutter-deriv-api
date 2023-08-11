@@ -248,6 +248,65 @@ subtest $rule_name => sub {
         ok $rule_engine->apply_rules($rule_name, %args), 'Rule passes for authorized PA';
     };
 
+    subtest 'Exclude banned countries for withdrawal error' => sub {
+
+        my $config     = BOM::Config::Runtime->instance->app_config->payments;
+        my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+        my $client     = BOM::Test::Helper::P2P::create_advertiser(balance => 50);
+
+        my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
+            client           => $advertiser,
+            type             => 'buy',
+            max_order_amount => 50,
+            amount           => 50,
+        );
+        my (undef, $order) = BOM::Test::Helper::P2P::create_order(
+            client    => $client,
+            advert_id => $ad->{id},
+            amount    => 25
+        );
+        $advertiser->p2p_order_confirm(id => $order->{id});
+        $client->p2p_order_confirm(id => $order->{id});
+
+        $config->p2p->restricted_countries(['au']);
+        $config->p2p_withdrawal_limit(0);
+        $advertiser->residence('ng');
+        $client->residence('au');
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $advertiser);
+        my %args        = (
+            loginid      => $advertiser->loginid,
+            currency     => 'USD',
+            action       => 'withdrawal',
+            amount       => -5,
+            payment_type => 'doughflow'
+        );
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('p2p.withdrawal_check', %args) },
+            {
+                error_code => 'P2PDepositsWithdrawalZero',
+                params     => ['0.00', '25.00', 'USD'],
+                rule       => 'p2p.withdrawal_check',
+            },
+            'Cannot withdraw even ng is not banned'
+        );
+
+        $rule_engine = BOM::Rules::Engine->new(client => $client);
+        %args        = (
+            loginid      => $client->loginid,
+            currency     => 'USD',
+            action       => 'withdrawal',
+            amount       => -5,
+            payment_type => 'doughflow'
+        );
+        ok $rule_engine->apply_rules('p2p.withdrawal_check', %args), 'Can withdraw even au is banned';
+
+        $config->p2p->restricted_countries([]);
+        $config->p2p_withdrawal_limit(100);
+
+    };
+
 };
 
 done_testing();
