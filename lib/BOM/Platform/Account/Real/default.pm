@@ -159,17 +159,23 @@ Back populate data to client siblings if new data is added
 sub copy_data_to_siblings {
     my ($cur_client) = @_;
     my @fields_to_back_populate =
-        qw(residence address_line_1 address_line_2 address_city address_state address_postcode phone place_of_birth date_of_birth citizen salutation first_name last_name account_opening_reason secret_answer secret_question tax_residence tax_identification_number);
+        qw(residence address_line_1 address_line_2 address_city address_state address_postcode phone place_of_birth date_of_birth citizen salutation first_name last_name secret_answer secret_question);
+    my @tax_and_account_opening_reason_fields_to_back_populate = qw(account_opening_reason tax_residence tax_identification_number);
 
     for my $sibling ($cur_client->user->clients) {
         try {
             next if $sibling->is_virtual;
             next if $sibling->loginid eq $cur_client->loginid;
             for my $field (@fields_to_back_populate) {
-
                 if (!$sibling->$field && $cur_client->$field) {
                     $sibling->$field($cur_client->$field);
                 }
+            }
+            # Always populate tax information to siblings
+            for my $field (@tax_and_account_opening_reason_fields_to_back_populate) {
+                my $current_value = $cur_client->$field // '';
+                my $sibling_value = $sibling->$field    // '';
+                $sibling->$field($current_value) if $current_value ne $sibling_value && $current_value ne '';
             }
             $sibling->save();
         } catch ($e) {
