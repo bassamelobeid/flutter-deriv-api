@@ -19,6 +19,7 @@ use BOM::User::Password;
 use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
 use BOM::Test::Helper::ExchangeRates qw (populate_exchange_rates populate_exchange_rates_db);
+use BOM::Test::Helper::P2P;
 
 my $db = BOM::Database::ClientDB->new({broker_code => 'CR', operation => 'write'})->db->dbic;
 
@@ -384,6 +385,41 @@ subtest 'Crypto' => sub {
 
     is $client_usd->allow_paymentagent_withdrawal, undef, 'has traded - fiat account can withdraw';
     is $client_eth->allow_paymentagent_withdrawal, undef, 'has traded - crypto account can withdraw';
+};
+
+subtest 'P2P restricted country withdrawal' => sub {
+
+    BOM::Test::Helper::P2P::create_escrow;
+    BOM::Test::Helper::P2P::bypass_sendbird();
+    my $config     = BOM::Config::Runtime->instance->app_config->payments;
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $client     = BOM::Test::Helper::P2P::create_advertiser(balance => 500);
+    my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
+        client           => $advertiser,
+        type             => 'buy',
+        max_order_amount => 100,
+        amount           => 100,
+    );
+
+    my (undef, $order) = BOM::Test::Helper::P2P::create_order(
+        client    => $client,
+        advert_id => $ad->{id},
+        amount    => 100
+    );
+
+    $advertiser->p2p_order_confirm(id => $order->{id});
+    $client->p2p_order_confirm(id => $order->{id});
+
+    BOM::Config::Runtime->instance->app_config->payments->pa_sum_deposits_limit(99);
+
+    is $advertiser->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod',
+        'If Deposit is from p2p and resident is not banned he can withdraw only from p2p';
+
+    $config->p2p->restricted_countries(['ng']);
+    $advertiser->residence('ng');
+
+    is $advertiser->allow_paymentagent_withdrawal, undef, 'can withdraw as PA if p2p deposited and country residence is banned';
+
 };
 
 done_testing();

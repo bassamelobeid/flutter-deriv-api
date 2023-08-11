@@ -8913,6 +8913,7 @@ sub allow_paymentagent_withdrawal {
     my $start = Time::HiRes::time;
 
     my $summary_of_deposits = $self->get_summary_of_deposits($from_time);
+    $summary_of_deposits->{has_p2p} = 0 unless BOM::Config::P2P::available_countries()->{$self->residence};
 
     my $elapsed = Time::HiRes::time - $start;
     stats_timing('bom_rpc.allow_payment_agent_withdraw.timing', $elapsed);
