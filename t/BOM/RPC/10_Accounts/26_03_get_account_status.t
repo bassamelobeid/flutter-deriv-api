@@ -375,10 +375,7 @@ subtest 'expired docs account' => sub {
     $documents = {
         proof_of_identity => {
             is_expired => 1,
-            documents  => {
-                document1 => {
-                    type => 'passport',
-                }}}};
+            documents  => {test => {test => 1}}}};
 
     $result = $c->tcall('get_account_status', {token => $token});
 
@@ -387,16 +384,12 @@ subtest 'expired docs account' => sub {
     $documents = {
         proof_of_identity => {
             is_expired => 1,
-            documents  => {
-                document1 => {
-                    type => 'passport',
-                }
-            },
+            documents  => {test => {test => 1}}
         },
         onfido => {
             documents => {
-                document1 => {
-                    type => 'passport',
+                hola => {
+                    tarola => 1,
                 }
             },
             is_expired => 0,
@@ -409,17 +402,13 @@ subtest 'expired docs account' => sub {
     $documents = {
         proof_of_identity => {
             is_expired => 1,
-            documents  => {
-                document1 => {
-                    type => 'passport',
-                }
-            },
+            documents  => {test => {test => 1}}
         },
         # no exp date onfido doc!
         onfido => {
             documents => {
-                document1 => {
-                    type => 'passport',
+                hola => {
+                    tarola => 1,
                 }
             },
         }};
@@ -431,16 +420,12 @@ subtest 'expired docs account' => sub {
     $documents = {
         proof_of_identity => {
             is_expired => 1,
-            documents  => {
-                document1 => {
-                    type => 'passport',
-                }
-            },
+            documents  => {test => {test => 1}}
         },
         onfido => {
             documents => {
-                document1 => {
-                    type => 'passport',
+                hola => {
+                    tarola => 1,
                 }
             },
             lifetime_valid => 1,
@@ -453,16 +438,12 @@ subtest 'expired docs account' => sub {
     $documents = {
         proof_of_identity => {
             is_expired => 1,
-            documents  => {
-                document1 => {
-                    type => 'passport',
-                }
-            },
+            documents  => {test => {test => 1}}
         },
         onfido => {
             documents => {
-                document1 => {
-                    type => 'passport',
+                hola => {
+                    tarola => 1,
                 }
             },
             is_expired => 1,
