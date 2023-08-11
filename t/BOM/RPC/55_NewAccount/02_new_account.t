@@ -1082,6 +1082,69 @@ subtest $method => sub {
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
     };
 
+    subtest 'Check tax information and account opening reason is synchronize to CR from MF new account' => sub {
+        my $password = 'Abcd33!@';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        $email = 'cr1_email' . rand(999) . '@binary.com';
+        $user  = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code               => 'CR',
+                email                     => $email,
+                residence                 => 'za',
+                tax_residence             => 'ag',
+                tax_identification_number => '1234567891',
+                account_opening_reason    => 'Speculative',
+                secret_answer             => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
+        $auth_token = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
+
+        $user->add_client($client_cr1);
+        my @hash_array = ({
+                field_name => "tax_residence",
+                value      => "agd",
+
+            },
+            {
+                field_name => "tax_identification_number",
+                value      => "12345678918",
+            },
+            {
+                field_name => "account_opening_reason",
+                value      => "Income Earning",
+            });
+
+        $params->{token}                             = $auth_token;
+        $params->{args}->{residence}                 = 'za';
+        $params->{args}->{citizen}                   = 'za';
+        $params->{args}->{tax_residence}             = $hash_array[0]->{value};
+        $params->{args}->{tax_identification_number} = $hash_array[1]->{value};
+        $params->{args}->{account_opening_reason}    = $hash_array[2]->{value};
+        delete $params->{args}->{non_pep_declaration};
+
+        my $result = $rpc_ct->call_ok($method, $params)->result;
+        is $result->{error}->{code}, undef, 'Allow to open new account';
+
+        my $new_loginid = $result->{client_id};
+        my $token_db    = BOM::Database::Model::AccessToken->new();
+        my $tokens      = $token_db->get_all_tokens_by_loginid($new_loginid);
+        is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
+
+        my $auth_token_mf = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token');
+
+        my $cl = BOM::User::Client->new({loginid => $new_loginid});
+
+        my $result_mf = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
+        my $result_cr = $rpc_ct->call_ok('get_settings', {token => $auth_token})->result;
+
+        foreach my $hash (@hash_array) {
+            is($result_mf->{$hash->{field_name}}, $hash->{value}, "MF client has $hash->{field_name} set as $hash->{value}");
+            is($result_cr->{$hash->{field_name}}, $hash->{value}, "CR client has $hash->{field_name} set as $hash->{value}");
+        }
+    };
+
     subtest 'Create a new account maltainvest from a virtual account' => sub {
         #create a virtual de client
         my $password = 'Abcd33!@';
