@@ -407,8 +407,6 @@ sub expired {
 
         next unless defined $category->{is_expired};
 
-        next unless $self->has_expirable_docs($category);
-
         $has_expirable_docs = 1;
 
         return 0 if $self->valid($cat, $enforce);
@@ -417,38 +415,6 @@ sub expired {
     return 1 if $has_expirable_docs;
 
     return 0;
-}
-
-=head2 has_expirable_docs
-
-Filters out the non-expirable docs based on the document_type_categories.yml,
-returning 1 if the client has expirable docs, o.w. returns 0.
-
-It takes the following parameter as a hashref:
-
-=over 4
-
-=item * category, documents corresponding to said category
-
-=back
-
-It returns the computed flag.
-
-=cut
-
-sub has_expirable_docs {
-    my ($self, $category) = @_;
-
-    my $documents = $category->{documents};
-
-    my %types = map { $_ => 1 } $self->expirable_types->@*;
-
-    my $expirable_documents =
-        {map { $_ => $documents->{$_} } grep { exists $types{$documents->{$_}->{type}} } keys $documents->%*};
-
-    my $has_expirable_docs = scalar keys $expirable_documents->%* > 0;
-
-    return $has_expirable_docs;
 }
 
 =head2 valid
