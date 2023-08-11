@@ -17,6 +17,7 @@ use BOM::RPC::v3::MT5::Account;
 use Test::BOM::RPC::Accounts;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
+use Test::BOM::RPC::Accounts;
 use BOM::TradingPlatform;
 
 my $redis = BOM::Config::Redis::redis_exchangerates_write();
@@ -1442,6 +1443,107 @@ subtest 'Transfer between derivez accounts' => sub {
     };
 
     $mock_async_call->unmock_all();
+};
+
+subtest 'vanuatu can deposit upon account creation where account rights are trading disabled' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
+    # Use HTTP Proxy
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->mt5->http_proxy->real->p01_ts01(1);
+
+    my $user = BOM::User->create(
+        email    => 'absss@gmail.com',
+        password => 'test'
+    )->add_client($client);
+
+    $client->account('USD');
+    $client->payment_free_gift(
+        currency => 'USD',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token usd');
+
+    # Need to complete financial assessment.
+    my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
+    $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $client->save;
+
+    # Add mt5 labuan|vanuatu|bvi account to the user
+    my %mt5_account = (
+        real => {login => 'MTR1001020'},
+    );
+    $user->add_loginid($mt5_account{real}{login});
+
+    my %proxy_user_get_json            = %Test::BOM::RPC::Accounts::proxy_user_get_json;
+    my %proxy_group_get_json           = %Test::BOM::RPC::Accounts::proxy_group_get_json;
+    my $proxy_user_deposit_change_json = $Test::BOM::RPC::Accounts::proxy_user_deposit_change_json;
+    my %mock_responses                 = (
+        'http://localhost/mt5/real_p01_ts01/UserGet' => {
+            status  => 200,
+            content => $proxy_user_get_json{'real\p01_ts01\financial\vanuatu_std-hr_usd'}
+        },
+        'http://localhost/mt5/real_p01_ts01/GroupGet' => {
+            status  => 200,
+            content => $proxy_group_get_json{'real\p01_ts01\financial\vanuatu_std-hr_usd'}
+        },
+        'http://localhost/mt5/real_p01_ts01/UserDepositChange' => {
+            status  => 200,
+            content => $proxy_user_deposit_change_json
+        },
+    );
+
+    # Mock HTTP::Tiny to return mocked responses for specific URLs
+    my $mock_http_tiny = Test::MockModule->new('HTTP::Tiny');
+    $mock_http_tiny->mock(
+        post => sub {
+            my ($self, $url, $data) = @_;
+
+            my $response = $mock_responses{$url}
+                || {
+                status  => 200,
+                content => 'Timed out while waiting for socket to become ready for reading'
+                };
+            return $response;
+        });
+
+    # Mocking deposit to evaluate the received amount
+    my $mock_async_call = Test::MockModule->new('BOM::MT5::User::Async');
+    my $received_amount;
+    $mock_async_call->mock(
+        'deposit',
+        sub {
+            my ($variable) = @_;
+
+            $received_amount = $variable->{amount};
+            return $mock_async_call->original('deposit')->(@_);
+        });
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_from => $client->loginid,
+            account_to   => $mt5_account{real}{login},
+            amount       => 5,
+            currency     => 'USD',
+        },
+    };
+
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("mt5 under vanuatu group can deposit on mt5 first deposit");
+    is $client->account->balance, '5.00', 'deposit it correct with the amount';
+    is $received_amount,          '5',    'deposit to mt5 account is correct';
+
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_error->error_message_is(
+        "You cannot make a deposit because your MT5 account is disabled. Please contact our Customer Support team.",
+        "mt5 under vanuatu group cannot deposit if their account have been disabled after mt5 first deposit"
+    );
+    is $client->account->balance, '5.00', 'balance is correct';
+
+    $app_config->system->mt5->http_proxy->real->p01_ts01(0);
+    $mock_http_tiny->unmock_all();
 };
 
 # reset

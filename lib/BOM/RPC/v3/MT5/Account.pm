@@ -645,7 +645,9 @@ Returns the MT5 new account permissions
 =cut
 
 sub _get_new_account_permissions {
-    return USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT | USER_RIGHT_API | USER_RIGHT_REPORTS;
+    # We have made a decision to disable trading upon mt5 account creation
+    # NOTE: Disabled trading MT5 account will not count total account quota in mt5 server
+    return USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT | USER_RIGHT_API | USER_RIGHT_REPORTS | USER_RIGHT_TRADE_DISABLED;
 }
 
 async_rpc "mt5_new_account",
@@ -2248,7 +2250,9 @@ sub _mt5_validate_and_get_amount {
                 and ($client->status->no_withdrawal_or_trading or $client->status->withdrawal_locked));
 
             # Deposit should be locked if mt5 vanuatu/labuan account is disabled
-            if (    $action eq 'deposit'
+            # Will only allow deposit on first mt5 deposit since we disabled trading upon account creation
+            if (    $client->has_mt5_deposits($mt5_loginid)
+                and $action eq 'deposit'
                 and $mt5_group =~ /(?:labuan|vanuatu|bvi)/)
             {
                 my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};

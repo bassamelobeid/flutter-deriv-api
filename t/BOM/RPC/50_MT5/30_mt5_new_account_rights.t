@@ -83,4 +83,48 @@ subtest 'Payment Agent Account have trading rights disabled for REAL and enabled
 
 };
 
+subtest 'new mt5 account real and demo should have trading right disabled' => sub {
+    my $client = create_client('CR', undef, {residence => 'id'});
+    $client->set_default_account('USD');
+
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'Abcd1234',
+    )->add_client($client);
+    $user->update_trading_password($DETAILS{password}{main});
+
+    my $token = $m->create_token($client->loginid, 'test token');
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+
+    my $mt5_args;
+    my $mt5_mock = Test::MockModule->new('BOM::MT5::User::Async');
+    $mt5_mock->mock(
+        'create_user',
+        sub {
+            ($mt5_args) = @_;
+            return $mt5_mock->original('create_user')->(@_);
+        });
+
+    # 485 will have 'USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT | USER_RIGHT_API | USER_RIGHT_REPORTS | USER_RIGHT_TRADE_DISABLED'
+    my $result = $c->call_ok($method, $params)->has_no_error('mt5 real account created successfully')->result;
+    is $mt5_args->{rights}, '485', 'New MT5 real account should have trading disabled upon creation';
+
+    $params->{args}->{account_type} = 'demo';
+    $result = $c->call_ok($method, $params)->has_no_error('mt5 demo account created successfully')->result;
+    is $result->{account_type}, 'demo';
+    is $mt5_args->{rights}, '485', 'New MT5 demo account should have trading disabled upon creation';
+};
+
 done_testing();

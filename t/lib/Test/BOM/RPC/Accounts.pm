@@ -149,3 +149,14 @@ our %FINANCIAL_DATA_MF = (
     "source_of_wealth"                         => "Company Ownership",
 );
 
+our $proxy_user_deposit_change_json = '{"user":{"ticket":4010001269},"ret_code":0}';
+
+our %proxy_user_get_json = (
+    'real\p01_ts01\financial\vanuatu_std-hr_usd' =>
+        '{"user":{"name":"Meta traderman","leverage":500,"balance":"0.00","email":"test.account@binary.com","group":"real\\\\p01_ts01\\\\financial\\\\vanuatu_std-hr_usd","rights":485,"login":1001020,"color":4278190080,"country":"Indonesia"},"ret_code":0}',
+);
+
+our %proxy_group_get_json = (
+    'real\p01_ts01\financial\vanuatu_std-hr_usd' =>
+        '{"group":{"group":"real\\\\p01_ts01\\\\financial\\\\vanuatu_std-hr_usd","leverage":500,"company":"Deriv Limited","currency":"USD"},"ret_code":0}',
+);

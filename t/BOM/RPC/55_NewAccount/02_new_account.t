@@ -430,7 +430,8 @@ subtest $method => sub {
     };
 
     subtest 'Check new account permission' => sub {
-        is(BOM::RPC::v3::MT5::Account::_get_new_account_permissions, 481, 'MT5 New account permission check');
+        # We have made a decision to disable trading upon mt5 account creation
+        is(BOM::RPC::v3::MT5::Account::_get_new_account_permissions, 485, 'MT5 New account permission check');
     };
 
     subtest 'Auth client' => sub {
