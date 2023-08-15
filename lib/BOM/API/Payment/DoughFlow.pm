@@ -268,12 +268,14 @@ sub shared_payment_method_POST {
     if ($error_code eq 'NDB2006') {
         my $client_loginid  = $c->request_parameters->{client_loginid} // '';
         my $shared_loginids = $c->request_parameters->{shared_loginid} // '';
+        my $payment_method  = $c->request_parameters->{payment_method} // '';
 
         BOM::Platform::Event::Emitter::emit(
             'shared_payment_method_found',
             {
                 client_loginid => $client_loginid,
                 shared_loginid => $shared_loginids,
+                payment_method => $payment_method,
             });
     }
 

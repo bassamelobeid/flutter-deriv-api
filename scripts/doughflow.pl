@@ -110,6 +110,7 @@ my $params = {
     defined $lang           ? (udef1          => $lang)           : (),
     defined $brand          ? (udef2          => $brand)          : (),
     defined $transaction_id ? (transaction_id => $transaction_id) : (),
+    defined $payment_method ? (payment_method => $payment_method) : (),
 };
 
 # DF doesn't know both the payment processor and the payment method for all operations
@@ -175,6 +176,7 @@ if ($method eq 'post') {
 }
 $log->debugf("Request %s %s", scalar @body eq 1 ? 'body' : 'params', @body);
 $method = 'post' unless $method;
+
 my $tx = $ua->$method($url, $headers, @body);
 
 my $result      = $tx->result;
