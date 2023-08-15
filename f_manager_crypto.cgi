@@ -338,11 +338,12 @@ $actions->{withdrawals} = sub {
         id     => $view_action,
         action => 'transaction/get_list',
         body   => {
-            currency_code => $currency,
-            status        => $view_type eq 'pending' ? 'LOCKED' : uc($view_type),
-            type          => 'withdrawal',
-            detail_level  => 'full',
-            offset        => $offset,
+            currency_code  => $currency,
+            status         => $view_type eq 'pending' ? 'LOCKED' : uc($view_type),
+            type           => 'withdrawal',
+            detail_level   => 'full',
+            offset         => $offset,
+            sort_direction => 'DESC',
         },
     };
 
