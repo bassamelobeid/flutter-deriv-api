@@ -41,6 +41,8 @@ my $shared_user = BOM::User->create(
 );
 $shared_user->add_client($shared_client);
 my @track_args;
+my $payment_method      = 'VISA';
+my $payment_method_text = join(' ', '| Payment method:', $payment_method);
 
 my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{shared_payment_method_found};
 
@@ -57,6 +59,7 @@ subtest 'Shared PM event' => sub {
     $action_handler->({
             client_loginid => $test_client->loginid,
             shared_loginid => $shared_client->loginid,
+            payment_method => $payment_method,
         })->get;
 
     ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
@@ -87,11 +90,16 @@ subtest 'Shared PM event' => sub {
                 $action_handler->({
                         client_loginid => $test_client->loginid,
                         shared_loginid => $next_client->loginid,
+                        payment_method => $payment_method,
                     })->get;
+                # Replace text from "| Payment method" till the end with an empty string
+                $current_reason =~ s/\| Payment method.*$//;
 
-                is $test_client->status->_get('shared_payment_method')->{reason}, join(' ', $current_reason, $next_client->loginid),
+                is $test_client->status->_get('shared_payment_method')->{reason},
+                    join(' ', $current_reason, $next_client->loginid, $payment_method_text),
                     'Test client shared reason is OK';
-                is $next_client->status->_get('shared_payment_method')->{reason}, join(' ', 'Shared with:', $test_client->loginid),
+                is $next_client->status->_get('shared_payment_method')->{reason},
+                    join(' ', 'Shared with:', $test_client->loginid, $payment_method_text),
                     'Next client shared reason is OK';
 
                 subtest 'Repeated loginid should not be stacked' => sub {
@@ -100,6 +108,7 @@ subtest 'Shared PM event' => sub {
                     $action_handler->({
                             client_loginid => $test_client->loginid,
                             shared_loginid => $next_client->loginid,
+                            payment_method => $payment_method,
                         })->get;
 
                     is $test_client->status->reason('shared_payment_method'), $current_reason, 'Repeated loginid is not stacked';
@@ -138,13 +147,21 @@ subtest 'Shared PM event' => sub {
                     $action_handler->({
                             client_loginid => $test_client->loginid,
                             shared_loginid => $next_client->loginid,
+                            payment_method => $payment_method,
                         })->get;
+
+                    # Replace text from "| Payment method" till the end with an empty string
+                    $reason =~ s/\| Payment method.*$//;
 
                     # Check if the new loginid is already part of the reason
                     my $new_test_reason =
-                        index($reason, $new_loginid) >= 0 ? $reason : join(',', join(' ', $reason, $next_client->loginid), $test_client_MF->loginid);
+                        index($reason, $new_loginid) >= 0
+                        ? $reason
+                        : join(',', join(' ', $reason, $next_client->loginid), $test_client_MF->loginid) . ' ' . $payment_method_text;
+
                     is $test_client->status->_get('shared_payment_method')->{reason}, $new_test_reason, 'Test client shared reason is OK';
-                    is $next_client->status->_get('shared_payment_method')->{reason}, join(' ', 'Shared with:', $test_client->loginid),
+                    is $next_client->status->_get('shared_payment_method')->{reason},
+                        join(' ', 'Shared with:', $test_client->loginid, $payment_method_text),
                         'Next client shared reason is OK';
                 };
             }
@@ -185,6 +202,7 @@ subtest 'multiple loginids sent in params' => sub {
     $action_handler->({
             client_loginid => $test_client->loginid,
             shared_loginid => $shared_client->loginid . ',' . $shared_client_another->loginid,
+            payment_method => $payment_method,
         })->get;
 
     ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
@@ -192,7 +210,7 @@ subtest 'multiple loginids sent in params' => sub {
     ok $test_client->status->allow_document_upload, 'Client has allow_document_upload status';
 
     is $test_client->status->shared_payment_method->{reason},
-        'Shared with: ' . join(',', $shared_client->loginid, $shared_client_another->loginid, $test_client_MF->loginid),
+        'Shared with: ' . join(',', $shared_client->loginid, $shared_client_another->loginid, $test_client_MF->loginid) . ' ' . $payment_method_text,
         'the status reason contains both the shared clients loginids';
 
     ok $shared_client->status->cashier_locked,        'shared client has cashier_locked status';
@@ -203,7 +221,7 @@ subtest 'multiple loginids sent in params' => sub {
     ok $shared_client_another->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_client_another->status->allow_document_upload, 'shared has allow_document_upload status';
 
-    is $shared_client_another->status->shared_payment_method->{reason}, 'Shared with: ' . $test_client->loginid,
+    is $shared_client_another->status->shared_payment_method->{reason}, 'Shared with: ' . $test_client->loginid . ' ' . $payment_method_text,
         'Correct reason for shared payment method';
 
     $mocker_client->unmock_all;
@@ -272,7 +290,8 @@ subtest 'check status is copied to both account in case of diel account' => sub 
         });
     $action_handler->({
             client_loginid => $client_from->loginid,
-            shared_loginid => $shared_diel_client_mf->loginid
+            shared_loginid => $shared_diel_client_mf->loginid,
+            payment_method => $payment_method,
         })->get;
 
     is scalar @emissions, 2, "Two events are send";
@@ -287,21 +306,21 @@ subtest 'check status is copied to both account in case of diel account' => sub 
     ok $client_from->status->allow_document_upload, 'Client has allow_document_upload status';
 
     is $client_from->status->shared_payment_method->{reason},
-        'Shared with: ' . join(',', $shared_diel_client_mf->loginid, $shared_diel_client_cr->loginid),
+        'Shared with: ' . join(',', $shared_diel_client_mf->loginid, $shared_diel_client_cr->loginid) . ' ' . $payment_method_text,
         'the status reason contains both the shared clients loginids';
 
     ok $shared_diel_client_cr->status->cashier_locked,        'shared client has cashier_locked status';
     ok $shared_diel_client_cr->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_diel_client_cr->status->allow_document_upload, 'shared has allow_document_upload status';
 
-    is $shared_diel_client_cr->status->shared_payment_method->{reason}, 'Shared with: ' . $client_from->loginid,
+    is $shared_diel_client_cr->status->shared_payment_method->{reason}, 'Shared with: ' . $client_from->loginid . ' ' . $payment_method_text,
         'Correct reason for shared payment method';
 
     ok $shared_diel_client_mf->status->cashier_locked,        'shared client has cashier_locked status';
     ok $shared_diel_client_mf->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_diel_client_mf->status->allow_document_upload, 'shared has allow_document_upload status';
 
-    is $shared_diel_client_mf->status->shared_payment_method->{reason}, 'Shared with: ' . $client_from->loginid,
+    is $shared_diel_client_mf->status->shared_payment_method->{reason}, 'Shared with: ' . $client_from->loginid . ' ' . $payment_method_text,
         'Correct reason for shared payment method';
 
     ok !$client_side_effect_another->status->cashier_locked,        'Side effect client has no cashier_locked status';
@@ -340,6 +359,7 @@ subtest 'Already age verified client' => sub {
     $action_handler->({
             client_loginid => $test_client->loginid,
             shared_loginid => $shared_client->loginid,
+            payment_method => $payment_method,
         })->get;
 
     ok $test_client->status->cashier_locked,         'Client has cashier_locked status';

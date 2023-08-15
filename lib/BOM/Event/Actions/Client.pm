@@ -3320,6 +3320,7 @@ async sub shared_payment_method_found {
     my ($args)          = @_;
     my $client_loginid  = $args->{client_loginid} or die 'No client login ID specified';
     my $shared_loginids = $args->{shared_loginid} or die 'No shared client login ID specified';
+    my $payment_method  = $args->{payment_method} or die 'No payment method specified';
 
     my $client = BOM::User::Client->new({loginid => $client_loginid})
         or die 'Could not instantiate client for login ID ' . $client_loginid;
@@ -3328,18 +3329,11 @@ async sub shared_payment_method_found {
 
     die "Invalid shared loginids specified. Loginids string passed is empty." unless @shared_loginid_array;
 
-    my $siblings = $client->get_siblings_information(
-        include_virtual  => 0,
-        include_disabled => 0,
-        include_self     => 0,
-        include_wallet   => 0,
-    );
-    my $siblings_loginids = [map { $siblings->{$_}->{loginid} } keys %$siblings];
     my @shared_clients    = ();
     my @filtered_loginids = ();
     my %seen              = ();
-    push @shared_loginid_array, @$siblings_loginids;
-    my %send_email_count = ($client->user->id => 1);
+    my $user_client       = $client->user;
+    my %send_email_count  = ($user_client->id => 1);
 
     foreach my $shared_loginid (@shared_loginid_array) {
 
@@ -3374,12 +3368,27 @@ async sub shared_payment_method_found {
             push @shared_clients,    $shared_sibling_client;
         }
     }
+
+    # Get sibling accounts of client
+
+    my @sibling_clients =
+        grep { not($_->status->closed or $_->status->disabled or $_->is_virtual or $_->is_wallet or $_->loginid eq $client_loginid) }
+        $user_client->clients(
+        include_disabled   => 0,
+        include_duplicated => 0
+        );
+    foreach my $sibling_client (@sibling_clients) {
+        # Check if client already exists move to next
+        next if $seen{$sibling_client->loginid}++;
+        push @filtered_loginids, $sibling_client->loginid;
+        push @shared_clients,    $sibling_client;
+    }
     splice @filtered_loginids, 10;    # The number of loginids in the reason is limited to 10
 
     # Lock the cashier and set shared PM to both clients
     $args->{staff} //= 'system';
     $client->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-    $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, join(',', @filtered_loginids)));
+    $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, join(',', @filtered_loginids), $payment_method));
 
     # This may be dropped when POI/POA refactoring is done
     $client->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
@@ -3387,7 +3396,7 @@ async sub shared_payment_method_found {
 
     foreach my $shared (@shared_clients) {
         $shared->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-        $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid));
+        $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid, $payment_method));
 
         # This may be dropped when POI/POA refactoring is done
         $shared->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
@@ -3426,9 +3435,10 @@ Returns,
 =cut
 
 sub _shared_payment_reason {
-    my $client         = shift;
-    my $shared_loginid = shift;
-    my $current        = $client->status->reason('shared_payment_method') // 'Shared with:';
+
+    my ($client, $shared_loginid, $payment_method) = @_;
+
+    my $current = $client->status->reason('shared_payment_method') // 'Shared with:';
 
     my $loginids_extractor = sub {
         my $string            = shift;
@@ -3441,9 +3451,13 @@ sub _shared_payment_reason {
         return @loginids;
     };
 
+    $payment_method = $payment_method ? join(' ', '| Payment method:', $payment_method) : '';
+
     my @loginids = $loginids_extractor->($current);
     return $current if (any { $shared_loginid =~ /\b$_\b/ } @loginids) || scalar(@loginids) >= 10;
-    return join(' ', $current, $shared_loginid);
+    # Replace text from "| Payment method" till the end with an empty string
+    $current =~ s/\| Payment method.*$//;
+    return join(' ', $current, $shared_loginid, $payment_method);
 }
 
 =head2 _send_shared_payment_method_email
