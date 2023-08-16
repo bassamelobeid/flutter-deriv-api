@@ -113,7 +113,9 @@ sub process {
         $data = $self->handle_error($data->{error}, $message, $data) if exists $data->{error};
         return undef unless $data;
         my $message = $self->handle_message($data);
-        stats_timing('bom_websocket_api.v_3.subscription.handling.timing', 1000 * Time::HiRes::tv_interval($tv),);
+        my $pid     = $$;
+        my $delay   = 1000 * Time::HiRes::tv_interval($tv);
+        stats_timing('bom_websocket_api.v_3.subscription.handling.timing', $delay, {tags => ['pid:' . $pid, 'stats_tag:' . $self->stats_tag]});
         return $message;
     } catch ($e) {
         $log->errorf("Failure processing Redis subscription message: %s from original message %s, module %s, channel %s",
