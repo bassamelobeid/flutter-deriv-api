@@ -9,10 +9,9 @@ use Moo;
 use curry;
 use curry::weak;
 use Future::Mojo;
-use Time::HiRes;
 use Log::Any                   qw($log);
 use Scalar::Util               qw(refaddr weaken);
-use DataDog::DogStatsd::Helper qw(stats_inc stats_dec stats_timing);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);
 use Binary::WebSocketAPI::v3::Subscription;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(
     redis_feed_master
@@ -267,14 +266,7 @@ sub on_message {
         # when we received the message, also please see:
         # https://trello.com/c/Qm0MSFBD/#comment-5be403a7dceb540885f49d2a
         my @client_subscriptions = values %$entry;
-        my $tv                   = [Time::HiRes::gettimeofday()];
-        my $pid                  = $$;
         $_ && $_->process($message) for @client_subscriptions;
-        stats_timing(
-            'bom_websocket_api.v_3.subscription.process_all.time',
-            1000 * Time::HiRes::tv_interval($tv),
-            {tags => ['pid:' . $pid, 'redis_server:' . $self->name]});
-
     } elsif (!exists($self->channel_unsubscribing->{$channel})) {
         $log->errorf('Had a message for channel [%s] but that channel is not subscribed', $channel);
         stats_inc("SubscriptionManager.UnsubscribedMsg");
