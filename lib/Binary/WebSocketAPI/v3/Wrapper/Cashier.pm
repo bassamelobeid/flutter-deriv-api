@@ -6,7 +6,8 @@ use Log::Any qw($log);
 
 sub log_paymentagent_error {
     my ($c, $response) = @_;
-    $log->info($response->{error}->{message}) if (exists $response->{error}->{message});
+    $log->info($response->{error}->{message})
+        if (exists $response->{error}->{message});
     return;
 }
 

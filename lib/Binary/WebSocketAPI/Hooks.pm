@@ -16,6 +16,7 @@ use Mojo::IOLoop;
 use Net::Address::IP::Local;
 use Mojo::WebSocketProxy::Backend::ConsumerGroups;
 use Path::Tiny;
+
 #  module is loaded on server start and shared across connections
 #  %schema_cache is added onto as each unique request type is received.
 #  by the _load_schema sub in this module
@@ -79,8 +80,31 @@ sub _load_schema {
     return $schema_cache{$request_type}{$direction};
 }
 
+=head2 add_correlation_id
+
+Incrementing request id and generating correlation id based on following pattern:
+
+[server name]_[pid]:[connection id]_[request id]:[timestamp]
+
+Return undef
+
+=cut
+
+sub add_correlation_id {
+    my ($c, $req_storage) = @_;
+
+    my $request_number = $c->app->stat->{cumulative_connection_requests}++;
+
+    my $conn_number = $c->app->stat->{cumulative_client_connections};
+
+    $req_storage->{call_params}->{correlation_id} = sprintf("%s_%s:%s_%s:%s", $c->server_name, $$, $conn_number, $request_number, time);
+
+    return;
+}
+
 sub start_timing {
     my ($c, $req_storage) = @_;
+
     if ($req_storage) {
         $req_storage->{tv} = [Time::HiRes::gettimeofday];
 
@@ -356,7 +380,6 @@ sub _set_defaults {
 
 sub before_forward {
     my ($c, $req_storage) = @_;
-
     $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
 
@@ -599,6 +622,7 @@ sub close_bad_connection {
 
 sub add_app_id {
     my ($c, $req_storage) = @_;
+
     $req_storage->{call_params}->{valid_source}               = $c->stash('valid_source');
     $req_storage->{call_params}->{source}                     = $c->stash('source');
     $req_storage->{call_params}->{source_bypass_verification} = $c->stash('source_bypass_verification');

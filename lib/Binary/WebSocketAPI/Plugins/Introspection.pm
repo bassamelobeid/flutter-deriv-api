@@ -89,7 +89,7 @@ sub start_server {
             return unless $err;
             $log->errorf('Failed to subscribe to introspection endpoint: %s', $err);
         });
-    $log->info('Introspection listening on: ' . INTROSPECTION_CHANNEL);
+    $log->debug('Introspection listening on: ' . INTROSPECTION_CHANNEL);
     return;
 }
 
@@ -432,7 +432,7 @@ L<App::Devel::MAT::Explorer::GTK>.
 command dumpmem => sub {
     require Devel::MAT::Dumper;
     my $filename = '/var/lib/binary/websockets/' . strftime('%Y-%m-%d-%H%M%S', gmtime) . '-dump-' . $$ . '.pmat';
-    $log->infof("Writing memory dump to [%s] for %s", $filename, $$);
+    $log->debugf("Writing memory dump to [%s] for %s", $filename, $$);
     my $start = Time::HiRes::time;
     Devel::MAT::Dumper::dump($filename);
     my $elapsed = 1000.0 * (Time::HiRes::time - $start);

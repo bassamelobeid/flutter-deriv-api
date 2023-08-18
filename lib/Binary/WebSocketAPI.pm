@@ -142,11 +142,11 @@ sub get_redis_value_setup {
 
             if ($key eq 'rpc::logging') {
                 %RPC_LOGGING = $value ? $json->decode(Encode::decode_utf8($value))->%* : ();
-                $log->info("Enabled logging for RPC: " . join(', ', keys %RPC_LOGGING)) if %RPC_LOGGING;
+                $log->debug("Enabled logging for RPC: " . join(', ', keys %RPC_LOGGING)) if %RPC_LOGGING;
             } else {
                 return unless $value;
 
-                $log->info("Have $key_display applying: $value");
+                $log->debug("Have $key_display applying: $value");
 
                 if ($key eq 'app_id::diverted') {
                     %DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($value))};
@@ -189,7 +189,7 @@ sub backend_setup {
                 $log->error("Error reading backends from master redis: $err");
             }
             if ($backends_str) {
-                $log->info("Found rpc backends in redis, applying.");
+                $log->debug("Found rpc backends in redis, applying.");
                 try {
                     my $backends = decode_json_utf8($backends_str);
                     for my $method (keys %$backends) {
@@ -224,7 +224,6 @@ sub backend_setup {
 
 sub startup {
     my $app = shift;
-
     $app->moniker('websocket');
     $app->plugin('Config' => {file => $ENV{WEBSOCKET_CONFIG} || '/etc/rmg/websocket.conf'});
 
@@ -238,12 +237,12 @@ sub startup {
             $log->error("EventLoop error: $err");
         });
 
-    $log->info("Binary.com Websockets API: Starting.");
-    $log->infof("Mojolicious Mode is %s", $app->mode);
-    $log->infof("Log Level        is %s", $log->adapter->can('level') ? $log->adapter->level : $log->adapter->{log_level});
+    $log->debug("Binary.com Websockets API: Starting.");
+    $log->debug("Mojolicious Mode is %s", $app->mode);
+    $log->debug("Log Level        is %s", $log->adapter->can('level') ? $log->adapter->level : $log->adapter->{log_level});
 
     apply_usergroup $app->config->{hypnotoad}, sub {
-        $log->info(@_);
+        $log->debug(@_);
     };
     $node_config = YAML::XS::LoadFile('/etc/rmg/node.yml');
     # binary.com plugins
@@ -414,9 +413,9 @@ sub startup {
                 \&Binary::WebSocketAPI::Hooks::assign_ws_backend,        \&Binary::WebSocketAPI::Hooks::check_app_id
             ],
             before_call => [
-                \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
-                \&Binary::WebSocketAPI::Hooks::add_log_config,                 \&Binary::WebSocketAPI::Hooks::add_brand,
-                \&Binary::WebSocketAPI::Hooks::start_timing
+                \&Binary::WebSocketAPI::Hooks::add_correlation_id, \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward,
+                \&Binary::WebSocketAPI::Hooks::add_app_id,         \&Binary::WebSocketAPI::Hooks::add_log_config,
+                \&Binary::WebSocketAPI::Hooks::add_brand,          \&Binary::WebSocketAPI::Hooks::start_timing
             ],
             before_get_rpc_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response  => [
@@ -464,6 +463,7 @@ sub startup {
                     # handled CallError
                     $log->info(($error->{type} // 'n/a') . " [" . $req_storage->{msg_type} . "], details: $details");
                 }
+
                 DataDog::DogStatsd::Helper::stats_inc(
                     "bom_websocket_api.v_3.rpc.error.count",
                     {

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin;
 use Log::Any::Adapter 'DERIV',
-    log_level => 'warn',
+    log_level => 'info',
     stderr    => 'json';
 # Mojo will redirect STDERR without autoflush, so we should set autoflush by hand
 *STDERR->autoflush(1);
