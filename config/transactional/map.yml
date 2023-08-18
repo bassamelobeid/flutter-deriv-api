@@ -12,3 +12,7 @@ reset_password_confirmation:
   - reset_password_confirmation:
       email:
         exists: 1
+account_reactivated:
+  - account_reactivated:
+      new_campaign:
+        exists: 1

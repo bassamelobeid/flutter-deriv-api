@@ -3818,10 +3818,59 @@ subtest 'account_reactivated for track worker' => sub {
                 needs_poi        => bool(0),
                 lang             => 'ES',
                 new_campaign     => 1,
+                email            => $test_client->email
             }
         },
         'track event params'
     );
+};
+
+subtest 'account_reactivated for transactional track worker' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $needs_verification = 0;
+    my $mock_client        = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine('needs_poi_verification', sub { return $needs_verification; });
+    request(
+        BOM::Platform::Context::Request->new(
+            brand_name => 'deriv',
+            language   => 'ES',
+            app_id     => $app_id,
+        ));
+    my $brand = request->brand;
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{account_reactivated};
+    undef @track_args;
+    undef @emit_args;
+    undef @transactional_args;
+    my $call_args = {
+        loginid => $test_client->loginid,
+        reason  => 'test reason'
+    };
+    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
+    my (undef, %args) = @track_args;
+
+    cmp_deeply(
+        \%args,
+        {
+            context    => ignore(),
+            event      => 'track_account_reactivated',
+            properties => {
+                first_name       => $test_client->first_name,
+                loginid          => $test_client->loginid,
+                brand            => 'deriv',
+                profile_url      => $brand->profile_url({language => uc(request->language // 'es')}),
+                resp_trading_url => $brand->responsible_trading_url({language => uc(request->language // 'es')}),
+                live_chat_url    => $brand->live_chat_url({language => uc(request->language // 'es')}),
+                needs_poi        => bool(0),
+                lang             => 'ES',
+                new_campaign     => 1,
+                email            => $test_client->email
+            }
+        },
+        'track event params'
+    );
+    ok @transactional_args, 'CIO transactional is invoked';
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
 };
 
 subtest 'withdrawal_limit_reached' => sub {
@@ -6283,6 +6332,83 @@ subtest 'verify email closed account other' => sub {
     my ($customer, %args) = @track_args;
     is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
+subtest 'verify email closed account other transactional email ' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+    undef @transactional_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name       => 'Backend',
+            verification_url => 'https://Binary.url',
+            email            => 'Backend@binary.com',
+            code             => 'CODE',
+            language         => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_other};
+
+    my $result = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+    ok @transactional_args, 'CIO transactional is invoked';
+    my ($customer, %args) = @track_args;
+    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+};
+
+subtest 'verify email closed account reset password transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+    undef @transactional_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name       => 'Backend',
+            verification_url => 'https://Binary.url',
+            email            => 'Backend@binary.com',
+            code             => 'CODE',
+            language         => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_reset_password};
+
+    my $result = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+    ok @transactional_args, 'CIO transactional is invoked';
+    my ($customer, %args) = @track_args;
+    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+
 };
 
 subtest 'verify email closed account reset password' => sub {

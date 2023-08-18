@@ -53,7 +53,7 @@ my %EVENT_PROPERTIES = (
             is_to_account_pa gateway_code remark time id)
     ],
     account_closure     => [qw(new_campaign name brand closing_reason loginids_disabled loginids_failed email_consent)],
-    account_reactivated => [qw(first_name needs_poi profile_url resp_trading_url live_chat_url new_campaign)],
+    account_reactivated => [qw(first_name needs_poi profile_url resp_trading_url live_chat_url new_campaign email)],
     app_registered      => [qw(name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_updated         => [qw(name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_deleted         => [qw(app_id)],
@@ -162,7 +162,7 @@ my %EVENT_PROPERTIES = (
     pa_withdraw_confirm         => [qw(email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
     withdrawal_rejected         => [qw(first_name reason remark)],
     request_edd_document_upload => [qw(first_name email login_url expiry_date live_chat_url)],
-    p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url)],
+    p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url email)],
     poi_poa_resubmission        =>
         [qw(first_name poi_reason poi_title poi_subtitle footnote poi_layout poa_reason poa_title poa_subtitle poa_layout title is_eu)],
     professional_status_requested            => [qw(first_name email request_professional_status)],
@@ -243,12 +243,20 @@ my @COMMON_EVENT_METHODS = qw(
 my @TRANSACTIONAL_EVENTS = qw(
     pa_withdraw_confirm
     request_change_email
+
     request_payment_withdraw
     unknown_login
     account_opening_new
     reset_password_request
     pa_transfer_confirm
     reset_password_confirmation
+
+    account_reactivated
+    verify_email_closed_account_reset_password
+    p2p_order_confirm_verify
+    account_opening_existing
+    account_verification_for_pending_payout
+    verify_email_closed_account_other
 );
 
 my $loop = IO::Async::Loop->new;
