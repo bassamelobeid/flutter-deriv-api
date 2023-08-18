@@ -2400,12 +2400,38 @@ subtest 'sync_onfido_details' => sub {
     $applicant = $onfido->applicant_get(applicant_id => $applicant_id)->get;
     is($applicant->{first_name}, 'Firstname', 'now the name is same again');
 
-    subtest 'Virtual account should get stopped out' => sub {
-        my $exception = exception {
-            BOM::Event::Actions::Client::sync_onfido_details({loginid => $vrtc_client->loginid})->get;
-        };
+    subtest 'Catch exceptions' => sub {
+        # mock and make applicant_update fail for e
+        my $handler   = BOM::Event::Process->new(category => 'generic')->actions->{sync_onfido_details};
+        my $call_args = {};
 
-        ok $exception =~ /Virtual account should not meddle with Onfido/, 'Expected exception has been thrown for virtual client';
+        like exception { $handler->($call_args)->get }, qr/No loginid supplied/, 'Expected exception for empty args';
+
+        $call_args->{loginid} = 'CR0';
+        like exception { $handler->($call_args)->get }, qr/Client not found:/, 'Expected exception when bogus loginid is given';
+
+        $call_args->{loginid} = $vrtc_client->loginid;
+        like exception { $handler->($call_args)->get }, qr/Virtual account should not meddle with Onfido/, 'Expected exception for virtual client';
+
+        $call_args->{loginid} = $test_client->loginid;
+
+        my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+        $onfido_mocker->mock(
+            'applicant_update',
+            sub {
+                my $response = HTTP::Response->new(429, 'Too Many Requests');
+                Future->fail('429', http => $response);
+            });
+
+        $handler->($call_args)->get;
+        my $loginid = $test_client->loginid;
+        $log->contains_ok(qr/Failed to update details in Onfido for $loginid : 429/, 'Expected fail message logged');
+
+        $onfido_mocker->unmock_all;
+
+        $call_args->{loginid} = $test_client->loginid;
+        is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+
     };
 
 };

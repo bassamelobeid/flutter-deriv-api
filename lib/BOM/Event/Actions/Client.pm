@@ -1507,8 +1507,7 @@ async sub sync_onfido_details {
         return $response;
 
     } catch ($e) {
-        local $log->context->{applicant_info} = $client_details_onfido->{address} if $client_details_onfido && $client_details_onfido->{address};
-        $log->errorf('Failed to update details in Onfido for %s : %s', $data->{loginid}, $e);
+        $log->errorf('Failed to update details in Onfido for %s : %s', $loginid, $e);
         exception_logged();
     }
 
