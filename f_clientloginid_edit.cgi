@@ -221,6 +221,20 @@ if (defined $input{run_onfido_check}) {
         code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
     }
 
+    my $document_to_check = BOM::User::Onfido::get_onfido_document($client->binary_user_id, $applicant_id);
+    unless ($document_to_check) {
+        print "<p class=\"notify notify--warning\">No corresponding document for the applicant id found for client $loginid.</p>";
+        code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+    }
+
+    if ($client->is_face_similarity_required) {
+        my $selfie_to_check = BOM::User::Onfido::get_onfido_live_photo($client->binary_user_id, $applicant_id);
+        unless ($selfie_to_check) {
+            print "<p class=\"notify notify--warning\">No corresponding selfie for the applicant id found for client $loginid.</p>";
+            code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+        }
+    }
+
     BOM::User::Onfido::ready_for_authentication(
         $client,
         {
