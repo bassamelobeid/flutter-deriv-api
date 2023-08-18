@@ -960,6 +960,7 @@ for my $client ($test_client, $test_client_mf) {
             };
 
             # assume any onfido API call can fail and so disrupt the process
+            # test for various onfido status failures and expected metrics
             # under this scenario we will delete the pending flag
 
             subtest 'ready for authentication - unexpected status code' => sub {
@@ -985,11 +986,23 @@ for my $client ($test_client, $test_client_mf) {
 
                 BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
 
-                $onfido_mocker->mock(
-                    'applicant_update',
+                my $events_mocker = Test::MockModule->new('BOM::Event::Actions::Client');
+
+                $events_mocker->mock(
+                    '_check_applicant',
                     sub {
-                        my $response = HTTP::Response->new(429, 'Too Many Requests');
-                        Future->fail('429', http => $response);
+                        my $response = HTTP::Response->new(400, 'Bad request');
+                        Future->fail('400', http => $response);
+                    });
+
+                my @metrics;
+                $dog_mock->mock(
+                    'stats_inc',
+                    sub {
+                        push @metrics, @_ if scalar @_ == 2;
+                        push @metrics, @_, undef if scalar @_ == 1;
+
+                        return 1;
                     });
 
                 $log->clear();
@@ -1007,8 +1020,104 @@ for my $client ($test_client, $test_client_mf) {
                         documents    => $doc_ids,
                     })->get;
 
+                cmp_deeply [@metrics],
+                    [
+                    'event.onfido.ready_for_authentication.dispatch'    => {tags => ['country:IDN']},
+                    'event.onfido.ready_for_authentication.bad_request' => {tags => ['country:IDN']},
+                    ],
+                    'Expected dd metrics for bad request';
+
+                @metrics = ();
+
+                $events_mocker->mock(
+                    '_check_applicant',
+                    sub {
+                        my $response = HTTP::Response->new(422, 'Missing info');
+                        Future->fail('422', http => $response);
+                    });
+
+                BOM::Event::Actions::Client::ready_for_authentication({
+                        loginid      => $client->loginid,
+                        applicant_id => $applicant->id,
+                        documents    => $doc_ids,
+                    })->get;
+
+                cmp_deeply [@metrics],
+                    [
+                    'event.onfido.ready_for_authentication.dispatch'     => {tags => ['country:IDN']},
+                    'event.onfido.ready_for_authentication.missing_info' => {tags => ['country:IDN']},
+                    ],
+                    'Expected dd metrics for missing information';
+
+                @metrics = ();
+
+                $events_mocker->mock(
+                    '_check_applicant',
+                    sub {
+                        my $response = HTTP::Response->new(429, 'Too many requests');
+                        Future->fail('429', http => $response);
+                    });
+
+                BOM::Event::Actions::Client::ready_for_authentication({
+                        loginid      => $client->loginid,
+                        applicant_id => $applicant->id,
+                        documents    => $doc_ids,
+                    })->get;
+
+                cmp_deeply [@metrics],
+                    [
+                    'event.onfido.ready_for_authentication.dispatch'   => {tags => ['country:IDN']},
+                    'event.onfido.ready_for_authentication.rate_limit' => undef,
+                    ],
+                    'Expected dd metrics for too many requests';
+
+                @metrics = ();
+
+                $events_mocker->mock(
+                    '_check_applicant',
+                    sub {
+                        my $response = HTTP::Response->new(500, 'Internal server error');
+                        Future->fail('500', http => $response);
+                    });
+
+                BOM::Event::Actions::Client::ready_for_authentication({
+                        loginid      => $client->loginid,
+                        applicant_id => $applicant->id,
+                        documents    => $doc_ids,
+                    })->get;
+
+                cmp_deeply [@metrics],
+                    [
+                    'event.onfido.ready_for_authentication.dispatch'     => {tags => ['country:IDN']},
+                    'event.onfido.ready_for_authentication.server_error' => undef,
+                    ],
+                    'Expected dd metrics for internal server error';
+
+                @metrics = ();
+
+                $events_mocker->mock(
+                    '_check_applicant',
+                    sub {
+                        my $response = HTTP::Response->new(403, 'Onfido acc error');
+                        Future->fail('403', http => $response);
+                    });
+
+                BOM::Event::Actions::Client::ready_for_authentication({
+                        loginid      => $client->loginid,
+                        applicant_id => $applicant->id,
+                        documents    => $doc_ids,
+                    })->get;
+
+                cmp_deeply [@metrics],
+                    [
+                    'event.onfido.ready_for_authentication.dispatch'   => {tags => ['country:IDN']},
+                    'event.onfido.ready_for_authentication.onfido_acc' => {tags => ['country:IDN']},
+                    ],
+                    'Expected dd metrics for onfido acc error';
+
                 ok !BOM::User::Onfido::pending_request($user->id), 'pending flag is gone';
                 is $client->get_onfido_status, 'rejected', 'Rejected due to failure';
+                $events_mocker->unmock_all;
             };
 
             $onfido_mocker->unmock_all;
@@ -1250,6 +1359,79 @@ for my $client ($test_client, $test_client_mf) {
             "client verification with a handled exception";
 
             $report_mock->unmock_all;
+
+            lives_ok {
+                my $mocked_check = Test::MockModule->new('WebService::Async::Onfido::Check');
+                $mocked_check->mock(
+                    'reports',
+                    sub {
+                        my $response = HTTP::Response->new(500, 'Internal Server Error');
+                        Future->fail(Future::Exception->new('HTTP Failure', 'http', $response))->get;
+                    });
+
+                $dd_bag  = {};
+                @metrics = ();
+                $log->clear();
+                my $redis = BOM::Config::Redis::redis_events();
+                $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
+                BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+                ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
+
+                cmp_deeply + {@metrics},
+                    +{
+                    'event.onfido.client_verification.dispatch'     => undef,
+                    'onfido.api.hit'                                => undef,
+                    'event.onfido.client_verification.failure'      => undef,
+                    'event.onfido.client_verification.failure'      => undef,
+                    'event.onfido.client_verification.server_error' => undef,
+                    },
+                    'Expected dd metrics for error 500';
+
+                $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                is $db_check->{status}, 'in_progress', 'check still not completed';
+
+                $log->contains_ok(qr/Exception while handling client verification \(\/v3\.4\/checks\/.*\)/, 'Expected log');
+
+                $mocked_check->unmock_all();
+            }
+            "client verification - Handled: Onfido internal server error";
+
+            lives_ok {
+                my $mocked_check = Test::MockModule->new('WebService::Async::Onfido::Check');
+                $mocked_check->mock(
+                    'reports',
+                    sub {
+                        my $response = HTTP::Response->new(429, 'Internal Server Error');
+                        Future->fail(Future::Exception->new('HTTP Failure', 'http', $response))->get;
+                    });
+
+                $dd_bag  = {};
+                @metrics = ();
+                $log->clear();
+                my $redis = BOM::Config::Redis::redis_events();
+                $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
+                BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+                ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
+
+                cmp_deeply + {@metrics},
+                    +{
+                    'event.onfido.client_verification.dispatch'   => undef,
+                    'onfido.api.hit'                              => undef,
+                    'event.onfido.client_verification.failure'    => undef,
+                    'event.onfido.client_verification.failure'    => undef,
+                    'event.onfido.client_verification.rate_limit' => undef,
+                    },
+                    'Expected dd metrics for error 429';
+
+                $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
+                is $db_check->{status}, 'in_progress', 'check still not completed';
+
+                $log->contains_ok(qr/Exception while handling client verification \(\/v3\.4\/checks\/.*\)/, 'Expected log');
+
+                $mocked_check->unmock_all();
+            }
+            "client verification - Handled: Too many requests for Onfido";
+
             my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
                 fixup => sub {
                     $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $client->user_id, $applicant_id);

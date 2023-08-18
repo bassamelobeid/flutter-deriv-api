@@ -747,7 +747,7 @@ subtest 'Applicant Check' => sub {
             applicant_id => 'mocked-applicant-id',
             documents    => [qw/aaa bbb ccc/],
         })->get;
-    $log->contains_ok(qr/An error occurred while processing Onfido verification for/, 'expected log found');
+    $log->contains_ok(qr/Failed to process Onfido verification for/, 'expected log found');
 
     cmp_deeply \%request,
         {
@@ -767,7 +767,7 @@ subtest 'Applicant Check' => sub {
             applicant_id => 'mocked-applicant-id',
             staff_name   => 'test',
         })->get;
-    $log->contains_ok(qr/An error occurred while processing Onfido verification for/, 'expected log found');
+    $log->contains_ok(qr/Failed to process Onfido verification for/, 'expected log found');
 
     cmp_deeply \%request,
         {

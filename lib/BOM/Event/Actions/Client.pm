@@ -132,7 +132,6 @@ use constant APPLICANT_ONFIDO_TIMING_TTL => 86400;
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     passport                                     => 'passport',
     certified_passport                           => 'passport',
-    selfie_with_id                               => 'live_photo',
     driving_licence                              => 'driving_licence',
     driverslicense                               => 'driving_licence',
     cardstatement                                => 'bank_statement',
@@ -624,7 +623,8 @@ async sub ready_for_authentication {
             await $redis_events_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, ONFIDO_REQUEST_PER_USER_TIMEOUT)
                 if ($time_to_live < 0);
 
-            die "Onfido authentication requests limit $limit_for_user is hit by $loginid (to be expired in $time_to_live seconds).";
+            die
+                "Onfido authentication requests limit $limit_for_user is hit by $loginid - Tries counter: $user_request_count (to be expired in $time_to_live seconds).";
         }
         my $app_config = BOM::Config::Runtime->instance->app_config;
         $app_config->check_for_update;
@@ -693,9 +693,8 @@ async sub ready_for_authentication {
         if (!$client) {
             DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.not_ready');
         } else {
-            DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.failure', {tags => $tags});
-            $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
-            exception_logged();
+            my $event_name = 'ready_for_authentication';
+            await _handle_onfido_exception($e, $client->loginid, $event_name, $tags);
         }
     }
 
@@ -992,8 +991,8 @@ async sub client_verification {
                 });
 
         } catch ($e) {
-            DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
-            $log->errorf('Failed to do verification callback - %s', $e);
+            my $event_name = 'client_verification';
+            await _handle_onfido_exception($e, $client->loginid, $event_name);
             die $e;
         }
     } catch ($e) {
@@ -2433,14 +2432,48 @@ async sub _check_applicant {
         }
 
     } catch ($e) {
-        DataDog::DogStatsd::Helper::stats_inc('event.onfido.check_applicant.failure', {tags => $tags});
-
-        $log->errorf('An error occurred while processing Onfido verification for %s : %s', $client->loginid, $e);
-        exception_logged();
+        my $event_name = 'check_applicant';
+        await _handle_onfido_exception($e, $client->loginid, $event_name, $tags);
     }
 
     await Future->needs_all(_update_onfido_check_count($redis_events_write));
     return $res;
+}
+
+=head2 _handle_onfido_exception
+
+Handle the onfido exceptions and send proper metrics for each failure.
+
+=cut
+
+async sub _handle_onfido_exception {
+    my ($e, $loginid, $event_name, $tags) = @_;
+
+    if (blessed($e) and $e->isa('Future::Exception')) {
+        my ($payload) = $e->details;
+
+        if ($payload->code == 400) {
+            DataDog::DogStatsd::Helper::stats_inc("event.onfido.$event_name.bad_request", {tags => $tags});
+            $log->errorf('Format is incorrect for the Onfido verification for %s: %s', $loginid, $e->message);
+        } elsif ($payload->code == 422) {
+            DataDog::DogStatsd::Helper::stats_inc("event.onfido.$event_name.missing_info", {tags => $tags});
+            $log->errorf('Missing variable for the Onfido verification for %s: %s', $loginid, $e->message);
+        } elsif ($payload->code == 429) {
+            DataDog::DogStatsd::Helper::stats_inc("event.onfido.$event_name.rate_limit");
+            $log->errorf('Too many requests for Onfido - %s', $e);
+        } elsif ($payload->code == 500) {
+            DataDog::DogStatsd::Helper::stats_inc("event.onfido.$event_name.server_error");
+            $log->errorf('Internal error from Onfido - %s', $e);
+        } else {
+            DataDog::DogStatsd::Helper::stats_inc("event.onfido.$event_name.onfido_acc", {tags => $tags});
+            $log->errorf('Onfido account issue error %s: %s', $payload->code, $e->message);
+        }
+
+    } else {
+        DataDog::DogStatsd::Helper::stats_inc("event.onfido.$event_name.failure", {tags => $tags});
+        $log->errorf('Failed to process Onfido verification for %s: %s', $loginid, $e);
+    }
+    exception_logged();
 }
 
 async sub _update_onfido_check_count {
