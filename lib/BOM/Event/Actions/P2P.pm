@@ -26,7 +26,7 @@ use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Event::Emitter;
-use BOM::User::Utility;
+use BOM::User::Utility   qw(p2p_rate_rounding);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use BOM::Event::Services::Track;
@@ -458,9 +458,12 @@ sub archived_ad {
 
     die 'Empty ads' unless scalar $ads->@*;
 
+    my @deactivated_ads = map { $client->_p2p_adverts(id => $_, limit => 1)->[0] } $ads->@*;
+    $_->{effective_rate} = p2p_rate_rounding($_->{effective_rate}, display => 1) foreach @deactivated_ads;
+
     return BOM::Event::Services::Track::p2p_archived_ad({
         client  => $client,
-        adverts => [map { $client->_p2p_adverts(id => $_, limit => 1)->@* } $ads->@*],
+        adverts => \@deactivated_ads,
     });
 }
 

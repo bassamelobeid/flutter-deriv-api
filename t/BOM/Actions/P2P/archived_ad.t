@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Event::Services::Track;
 use BOM::Platform::Context qw(request);
 use Format::Util::Numbers  qw(financialrounding formatnumber);
+use BOM::User::Utility     qw(p2p_rate_rounding);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -77,10 +78,13 @@ subtest 'Archived ad' => sub {
             my ($customer, $args) = @track_args;
             isa_ok $customer, 'WebService::Async::Segment::Customer', 'Expected identify result';
 
+            my @deactivated_ads = map { $advertiser->_p2p_adverts(id => $_, limit => 1)->[0] } ($advert->{id}, $advert2->{id});
+            $_->{effective_rate} = p2p_rate_rounding($_->{effective_rate}, display => 1) foreach @deactivated_ads;
+
             cmp_deeply $args->{properties},
                 {
                 loginid => $advertiser->loginid,
-                adverts => [map { $advertiser->_p2p_adverts(id => $_->{id}, limit => 1)->@* } ($advert, $advert2)],
+                adverts => \@deactivated_ads,
                 brand   => $brand,
                 lang    => 'EN'
                 },
