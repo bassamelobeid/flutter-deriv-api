@@ -191,7 +191,7 @@ requires "JSON::MaybeUTF8", "== 2.000";
 requires "JSON::MaybeXS", "== 1.004004";
 requires "JSON::PP", "== 4.16";
 requires "JSON::PP::Boolean", "== 4.16";
-requires "JSON::Validator", "== 3.06";
+requires "JSON::Validator", "== 3.07";
 requires "JSON::Validator::Error", 0;
 requires "JSON::Validator::Formats", 0;
 requires "JSON::Validator::Joi", 0;
