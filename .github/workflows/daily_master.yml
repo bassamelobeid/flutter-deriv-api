@@ -5,7 +5,8 @@ on:
     - cron: '33 20 * * *'
 jobs:
   syntax_unit:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ci-dev
     container:
       image: regentmarkets/debian-ci:stable
       credentials:
@@ -32,7 +33,8 @@ jobs:
       - name: unit tests
         run: make unit
   core1:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ci-dev
     container:
       image: regentmarkets/debian-ci:stable
       credentials:
@@ -59,7 +61,8 @@ jobs:
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           make test1
   core2:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ci-dev
     container:
       image: regentmarkets/debian-ci:stable
       credentials:
@@ -86,7 +89,8 @@ jobs:
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           make test2
   schema:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ci-dev
     container:
       image: regentmarkets/debian-ci:stable
       credentials:
