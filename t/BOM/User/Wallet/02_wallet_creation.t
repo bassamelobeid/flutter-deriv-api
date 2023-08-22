@@ -41,7 +41,8 @@ my $details = {
     secret_answer            => '',
     binary_user_id           => BOM::Test::Data::Utility::UnitTestDatabase::get_next_binary_user_id(),
     non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
-    account_type             => 'doughflow'
+    account_type             => 'doughflow',
+    landing_company          => "svg"
 
 };
 
@@ -56,7 +57,8 @@ subtest 'Lock check' => sub {
     like $err, qr{User \d+ is trying to create 2 wallets at the same time}, 'Got valid error message';
 };
 
-subtest 'create a real wallet' => sub {
+subtest 'create a real wallet CRW' => sub {
+
     my $wallet = $user->create_wallet(%$details);
 
     is $wallet->is_wallet, 1, 'is wallet client instance';
@@ -64,6 +66,8 @@ subtest 'create a real wallet' => sub {
     is($wallet->account_type, 'doughflow', 'Account type is correct');
 
     is($wallet->currency, 'USD', 'Wallet Currecny Code: USD');
+
+    is($wallet->landing_company->short, 'svg', 'Wallet LC Code: svg');
 };
 
 subtest 'Dublicate check' => sub {
@@ -72,6 +76,21 @@ subtest 'Dublicate check' => sub {
     ok $err, 'Got error in case of creating dublicate wallet account';
     is ref $err,      'HASH',            'Error is a hash';
     is $err->{error}, 'DuplicateWallet', 'Error contains valid error code';
+};
+
+subtest 'create a real wallet MFW' => sub {
+
+    $details->{landing_company} = 'maltainvest';
+    $details->{broker_code}     = 'MFW';
+    my $wallet = $user->create_wallet(%$details);
+
+    is $wallet->is_wallet, 1, 'is wallet client instance';
+
+    is($wallet->account_type, 'doughflow', 'Account type is correct');
+
+    is($wallet->currency, 'USD', 'Wallet Currecny Code: USD');
+
+    is($wallet->landing_company->short, 'maltainvest', 'Wallet LC Code: maltainvest');
 };
 
 done_testing();

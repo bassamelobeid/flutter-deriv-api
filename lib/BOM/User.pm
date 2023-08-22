@@ -267,10 +267,12 @@ sub create_wallet {
     die "User $self->{id} is trying to create 2 wallets at the same time" unless BOM::Platform::Redis::acquire_lock($lock_name, 30);
     try {
         #Check for dublicates
+
         for my $client ($self->clients(include_disabled => 0)) {
             next unless $client->is_wallet;
-            next unless ($client->account_type           // '') eq ($args{account_type} // '');
-            next unless ($client->account->currency_code // '') eq ($args{currency}     // '');
+            next unless ($client->account_type           // '') eq ($args{account_type}    // '');
+            next unless ($client->account->currency_code // '') eq ($args{currency}        // '');
+            next unless ($client->landing_company->short // '') eq ($args{landing_company} // '');
 
             die +{error => 'DuplicateWallet'};
         }
