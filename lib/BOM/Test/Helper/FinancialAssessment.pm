@@ -62,15 +62,16 @@ sub mock_maltainvest_fa {
         "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
         "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
         "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-        "employment_industry"                      => "Finance",                                                                                 # +15
-        "education_level"                          => "Secondary",                                                                               # +1
-        "income_source"                            => "Self-Employed",                                                                           # +0
-        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
-        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
-        "occupation"                               => 'Managers',                                                                                # +0
-        "employment_status"                        => "Self-Employed",                                                                           # +0
-        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
-        "account_turnover"                         => 'Less than $25,000',                                                                       # +0
+        "employment_industry"                      => "Finance",
+        "education_level"                          => "Secondary",
+        "income_source"                            => "Self-Employed",
+        "net_income"                               => '$25,000 - $50,000',
+        "estimated_worth"                          => '$100,000 - $250,000',
+        "occupation"                               => 'Managers',
+        "employment_status"                        => "Self-Employed",
+        "source_of_wealth"                         => "Company Ownership",
+        "account_turnover"                         => 'Less than $25,000',
+        "account_opening_reason"                   => "Speculative",
     );
     return \%data if $raw;
     return encode_json_utf8(\%data);
