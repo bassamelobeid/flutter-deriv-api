@@ -16,6 +16,7 @@ use Archive::Zip qw( :ERROR_CODES );
 use Brands;
 
 use BOM::MyAffiliates::TurnoverReporter;
+use BOM::MyAffiliates::SFTP;
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
@@ -98,6 +99,8 @@ try {
             name => $output_zip,
             path => $output_zip_path
         });
+
+    BOM::MyAffiliates::SFTP::send_csv_via_sftp($output_filepath, 'turnover', $reporter->brand->name);
 
     $reporter->send_report(
         subject => 'CRON generate_affiliate_turnover_daily (' . $brand_object->name . ') for date ' . $processing_date->date_yyyymmdd,

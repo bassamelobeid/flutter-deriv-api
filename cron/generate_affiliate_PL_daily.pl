@@ -13,6 +13,7 @@ use Archive::Zip qw( :ERROR_CODES );
 use Brands;
 
 use BOM::MyAffiliates::ActivityReporter;
+use BOM::MyAffiliates::SFTP;
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
@@ -110,6 +111,9 @@ my $output_zip =
     . $from_date->date_yyyymmdd . "-"
     . $to_date->date_yyyymmdd . ".zip";
 my $output_zip_path = path("/tmp")->child($output_zip)->stringify;
+
+BOM::MyAffiliates::SFTP::send_csv_via_sftp($output_zip_path, 'activity', $brand_object->name);
+
 try {
     unless ($zip->numberOfMembers) {
         $statsd->event('Failed to generate MyAffiliates PL report', 'MyAffiliates PL report generated an empty zip archive');

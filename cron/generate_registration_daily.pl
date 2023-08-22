@@ -11,6 +11,7 @@ use Syntax::Keyword::Try;
 
 use Brands;
 
+use BOM::MyAffiliates::SFTP;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Platform::Email qw(send_email);
 
@@ -65,6 +66,8 @@ sub run {
         output_filepath => $output_filepath
     );
 
+    BOM::MyAffiliates::SFTP::send_csv_via_sftp($output_filepath, 'registrations', $reporter->brand->name);
+
     my $reporter_deriv = BOM::MyAffiliates::GenerateRegistrationDaily->new(
         processing_date => $processing_date,
         brand           => Brands->new(name => 'deriv'));
@@ -91,6 +94,8 @@ sub run {
         reporter        => $reporter_deriv,
         output_filepath => $output_filepath
     );
+
+    BOM::MyAffiliates::SFTP::send_csv_via_sftp($output_filepath, 'registrations', $reporter_deriv->brand->name);
 
     $log->debugf('Sending email for affiliate registration report');
     $reporter->send_report(
