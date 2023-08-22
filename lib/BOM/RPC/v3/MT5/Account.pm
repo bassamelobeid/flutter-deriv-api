@@ -2560,15 +2560,8 @@ sub _validate_client {
     # check if binary client expired documents
     # documents->expired check internaly if landing company
     # needs expired documents check or not
-    return ('ExpiredDocuments', request()->brand->emails('support')) if ($client_obj->documents->expired());
-
-    # if mt5 financial accounts is used for deposit or withdraw
-    # then check if client has valid documents or not
-    # valid documents don't have additional landing companies check
-    # that we have in documents->expired
-    # TODO: Remove this once we have async mt5 in place
     return ('ExpiredDocuments', request()->brand->emails('support'))
-        if ($mt5_lc->documents_expiration_check_required() and not $client_obj->documents->valid());
+        if ($client_obj->documents->expired($mt5_lc->documents_expiration_check_required()));
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
 

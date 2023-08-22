@@ -41,14 +41,14 @@ $runtime_payment->transfer_between_accounts->limits->MT5(999);
 scope_guard { restore_time() };
 
 my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
-my $has_valid_documents;
+my $has_expired_documents;
 $documents_mock->mock(
-    'valid',
+    'expired',
     sub {
         my ($self) = @_;
 
-        return $has_valid_documents if defined $has_valid_documents;
-        return $documents_mock->original('valid')->(@_);
+        return $has_expired_documents if defined $has_expired_documents;
+        return $documents_mock->original('expired')->(@_);
     });
 
 my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');
@@ -593,12 +593,13 @@ subtest 'labuan withdrawal' => sub {
 
     $mocked_status->unmock_all;
 
+    $has_expired_documents = 1;
     $c->call_ok($method, $params)->has_error('request failed as labuan needs to have valid documents')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_is(
         'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.');
 
-    $has_valid_documents = 1;
+    $has_expired_documents = 0;
 
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from labuan mt5 without FA before first deposit');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
@@ -628,7 +629,8 @@ subtest 'labuan withdrawal' => sub {
     $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
     $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 200, "Correct balance after withdrawal";
-    $has_valid_documents = undef;
+
+    $has_expired_documents = undef;
 };
 
 subtest 'mf_withdrawal' => sub {
@@ -665,7 +667,7 @@ subtest 'mf_withdrawal' => sub {
     my $mocked_client = Test::MockModule->new(ref($test_mf_client));
     $mocked_client->mock(is_financial_assessment_complete => 1);
 
-    $has_valid_documents = 1;
+    $has_expired_documents = 0;
 
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
@@ -673,7 +675,7 @@ subtest 'mf_withdrawal' => sub {
 
     cmp_ok $test_mf_client->default_account->balance, '==', 350, "Correct balance after withdrawal";
 
-    $has_valid_documents = undef;
+    $has_expired_documents = undef;
     $demo_account_mock->unmock_all();
 };
 
@@ -710,7 +712,7 @@ subtest 'mf_deposit' => sub {
     my $mocked_client = Test::MockModule->new(ref($test_mf_client));
     $mocked_client->mock(is_financial_assessment_complete => 1);
 
-    $has_valid_documents = 1;
+    $has_expired_documents = 0;
 
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
@@ -725,7 +727,7 @@ subtest 'mf_deposit' => sub {
     $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_deposit');
 
     cmp_ok $test_mf_client->default_account->balance, '==', 650, "Correct balance after deposit";
-    $has_valid_documents = undef;
+    $has_expired_documents = undef;
     $demo_account_mock->unmock_all();
 };
 subtest 'labuan deposit' => sub {
@@ -750,7 +752,7 @@ subtest 'labuan deposit' => sub {
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
 
-    $has_valid_documents = 1;
+    $has_expired_documents = 0;
     $c->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired', 'Custom error code for FA required');
 
     $manager_module->mock(
@@ -789,7 +791,7 @@ subtest 'labuan deposit' => sub {
     $c->call_ok($method, $params)->has_no_error('Deposit allowed when mt5 account gets enabled');
     cmp_ok $test_client->default_account->balance, '==', 1030 + 120, "Correct balance after deposit";
     $account_mock->unmock('_is_financial_assessment_complete');
-    $has_valid_documents = undef;
+    $has_expired_documents = undef;
 };
 
 subtest 'bvi withdrawal' => sub {
@@ -946,7 +948,7 @@ subtest 'bvi withdrawal' => sub {
     };
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-    $has_valid_documents = 1;
+    $has_expired_documents = 0;
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('bvi'); });
 
@@ -1152,7 +1154,7 @@ subtest 'vanuatu withdrawal' => sub {
     };
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-    $has_valid_documents = 1;
+    $has_expired_documents = 0;
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('vanuatu'); });
 
