@@ -106,7 +106,7 @@ if (my $id = $input{update}) {
             my $redis = BOM::Config::Redis->redis_p2p_write();
 
             # if user was eligible for a band upgrade before this change, will delete his field in redis
-            $redis->hdel(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $id) if $existing->{trade_band} ne $input{trade_band};
+            $redis->hdel(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $id) if $input{trade_band} && ($existing->{trade_band} ne $input{trade_band});
 
             if (my $blocked_until = $update->{blocked_until}) {
                 my $blocked_du = Date::Utility->new($blocked_until);

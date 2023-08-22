@@ -161,7 +161,7 @@ if ($whattodo eq 'show') {
         $pa      = $client->set_payment_agent;
         $editing = 0;
     }
-    my $old_status = $pa->status;
+    my $old_status = $pa->status // '';
 
     my $currency = $pa->currency_code // $client->default_account->currency_code;
 
