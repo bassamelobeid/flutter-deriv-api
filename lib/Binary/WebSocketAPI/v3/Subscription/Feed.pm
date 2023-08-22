@@ -34,9 +34,11 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription>
 
 =cut
 
-use Scalar::Util qw(looks_like_number);
-use List::Util   qw(first);
-use Log::Any     qw($log);
+use Time::HiRes;
+use DataDog::DogStatsd::Helper qw(stats_timing);
+use Scalar::Util               qw(looks_like_number);
+use List::Util                 qw(first);
+use Log::Any                   qw($log);
 use Moo;
 with 'Binary::WebSocketAPI::v3::Subscription';
 
@@ -195,6 +197,10 @@ sub handle_message {
                     subscription => {id => $self->uuid},
                 }});
     }
+
+    my $tv  = Time::HiRes::gettimeofday;
+    my $pid = $$;
+    stats_timing('bom_websocket_api.v_3.subscription.feed.send_latency', 1000 * ($tv - $epoch), {tags => ['pid:' . $pid, 'symbol:' . $symbol]});
 
     return;
 }
