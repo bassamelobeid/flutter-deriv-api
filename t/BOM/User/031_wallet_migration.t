@@ -4,6 +4,7 @@ use Test::More;
 use Test::MockModule;
 use Test::Deep;
 use Test::Fatal;
+use Test::Warnings;
 
 use Data::Dumper;
 
