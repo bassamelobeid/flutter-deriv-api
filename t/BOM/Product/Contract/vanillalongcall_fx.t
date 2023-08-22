@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More tests => 7;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -77,35 +77,45 @@ my $fx_per_symbol_config = {
                 'day' => {
                     '1' => 0,
                     '2' => 0,
-                    '3' => 0
+                    '3' => 0,
+                    '4' => 0
                 },
                 'week' => {
-                    '1' => 0,
-                    '2' => 0,
-                    '3' => 0
+                    '1'  => 0,
+                    '2'  => 0,
+                    '3'  => 0,
+                    '9'  => 0,
+                    '10' => 0
                 }
             },
             '0.5' => {
                 'day' => {
                     '1' => 0,
                     '2' => 0,
-                    '3' => 0
+                    '3' => 0,
+                    '4' => 0
                 },
                 'week' => {
-                    '1' => 0,
-                    '2' => 0,
+                    '1'  => 0,
+                    '2'  => 0,
+                    '3'  => 0,
+                    '9'  => 0,
+                    '10' => 0
                 }
             },
             '0.9' => {
                 'day' => {
                     '1' => 0,
                     '2' => 0,
-                    '3' => 0
+                    '3' => 0,
+                    '4' => 0
                 },
                 'week' => {
-                    '1' => 0,
-                    '2' => 0,
-                    '3' => 0
+                    '1'  => 0,
+                    '2'  => 0,
+                    '3'  => 0,
+                    '9'  => 0,
+                    '10' => 0
                 }}}
     },
     'spread_vol' => {
@@ -114,64 +124,49 @@ my $fx_per_symbol_config = {
                 'day' => {
                     '1' => 0,
                     '2' => 0,
-                    '3' => 0
+                    '3' => 0,
+                    '4' => 0
                 },
                 'week' => {
-                    '1' => 0,
-                    '2' => 0,
-                    '3' => 0
+                    '1'  => 0,
+                    '2'  => 0,
+                    '3'  => 0,
+                    '9'  => 0,
+                    '10' => 0
                 }
             },
             '0.5' => {
                 'day' => {
                     '1' => 0,
                     '2' => 0,
-                    '3' => 0
+                    '3' => 0,
+                    '4' => 0
                 },
                 'week' => {
-                    '1' => 0,
-                    '2' => 0,
-                    '3' => 0
+                    '1'  => 0,
+                    '2'  => 0,
+                    '3'  => 0,
+                    '9'  => 0,
+                    '10' => 0
                 }
             },
             '0.9' => {
                 'day' => {
                     '1' => 0,
                     '2' => 0,
-                    '3' => 0
+                    '3' => 0,
+                    '4' => 0
                 },
                 'week' => {
-                    '1' => 0,
-                    '2' => 0,
-                    '3' => 0
+                    '1'  => 0,
+                    '2'  => 0,
+                    '3'  => 0,
+                    '9'  => 0,
+                    '10' => 0
                 }}}}};
 
-my $spread_specific_time = {
-    'frxUSDJPY' => {
-        '0.1' => {
-            '1D' => {
-                'abcd1234' => {
-                    'end_time'    => '2015-03-10 00:00:00',
-                    'spread_spot' => 0,
-                    'spread_vol'  => 0,
-                    'start_time'  => '2015-03-09 00:00:00'
-                }
-            },
-        },
-        '0.5' => {
-            '2D' => {
-                'abce3214' => {
-                    'end_time'    => '2015-03-10 21:45:00',
-                    'spread_spot' => 0,
-                    'spread_vol'  => 0,
-                    'start_time'  => '2015-03-09 00:00:00'
-                }
-            },
-        }}};
 $fx_per_symbol_config = JSON::MaybeXS::encode_json($fx_per_symbol_config);
-$spread_specific_time = JSON::MaybeXS::encode_json($spread_specific_time);
 $app_config->set({'quants.vanilla.fx_per_symbol_config.frxUSDJPY' => $fx_per_symbol_config});
-$app_config->set({'quants.vanilla.fx_spread_specific_time'        => $spread_specific_time});
 
 my $risk_profile_config = {'USD' => 20};
 $risk_profile_config = JSON::MaybeXS::encode_json($risk_profile_config);
@@ -212,165 +207,6 @@ subtest 'longcode' => sub {
         ],
         'longcode matches'
     );
-};
-
-subtest 'check spread spot and spread vol is applied (specific time)' => sub {
-
-    my $new_args = dclone($args);
-
-    my $c = produce_contract($new_args);
-    is sprintf("%.1f", $c->delta),                                             '0.5',     'delta is approximately 0.5';
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 2,         '2 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount),                           '0.81152', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount),                           '0.81152', 'correct ask probability';
-
-    # same duration, different delta
-    $new_args->{barrier} = '135.12';
-    $c = produce_contract($new_args);
-    is sprintf("%.1f", $c->delta),                                             '0.1',     'delta is approximately 0.1';
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 2,         '2 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount),                           '0.20901', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount),                           '0.20901', 'correct ask probability';
-
-    $new_args->{barrier}  = '132.17';
-    $new_args->{duration} = '1d';
-    $c                    = produce_contract($new_args);
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 1, '1 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount), '0.63756', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '0.63756', 'correct ask probability';
-
-    # add spread to  delta 0.5 and expiry 2 days contract should become more expensive
-    $spread_specific_time                                                          = JSON::MaybeXS::decode_json($spread_specific_time);
-    $spread_specific_time->{frxUSDJPY}->{0.5}->{'2D'}->{'abce3214'}->{spread_spot} = 0.012;
-    $spread_specific_time->{frxUSDJPY}->{0.5}->{'2D'}->{'abce3214'}->{spread_vol}  = 0.023;
-    $spread_specific_time                                                          = JSON::MaybeXS::encode_json($spread_specific_time);
-
-    $app_config->set({'quants.vanilla.fx_spread_specific_time' => $spread_specific_time});
-
-    $new_args->{duration} = '2d';
-    $c = produce_contract($new_args);
-    is sprintf("%.1f", $c->delta),                                             '0.5',     'delta is approximately 0.5';
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 2,         '2 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount),                           '0.75745', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount),                           '0.86559', 'correct ask probability';
-
-    # these contract shouldn't be more expensive as there is no markup
-    $new_args->{barrier}  = '135.12';
-    $new_args->{duration} = '2d';
-    $c                    = produce_contract($new_args);
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 2, '2 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount), '0.20901', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '0.20901', 'correct ask probability';
-
-    $new_args->{duration} = '1d';
-    $new_args->{barrier}  = '132.17';
-    $c                    = produce_contract($new_args);
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 1, '1 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount), '0.63756', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '0.63756', 'correct ask probability';
-
-    $spread_specific_time = JSON::MaybeXS::decode_json($spread_specific_time);
-    delete $spread_specific_time->{frxUSDJPY}->{0.5}->{'2D'}->{'abce3214'};
-    $spread_specific_time = JSON::MaybeXS::encode_json($spread_specific_time);
-
-    $app_config->set({'quants.vanilla.fx_spread_specific_time' => $spread_specific_time});
-
-};
-
-subtest 'check spread spot and spread vol is applied (days)' => sub {
-
-    my $new_args = dclone($args);
-
-    my $c = produce_contract($new_args);
-    is sprintf("%.1f", $c->delta),                                             '0.5',     'delta is approximately 0.5';
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 2,         '2 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount),                           '0.81152', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount),                           '0.81152', 'correct ask probability';
-
-    $new_args->{duration} = '1d';
-    $c = produce_contract($new_args);
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 1, '1 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount), '0.63756', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '0.63756', 'correct ask probability';
-
-    # add spread to  delta 0.5 and expiry 2 days contract should become more expensive
-    $fx_per_symbol_config                                            = JSON::MaybeXS::decode_json($fx_per_symbol_config);
-    $fx_per_symbol_config->{spread_spot}->{delta}->{0.5}->{day}->{2} = 0.01;
-    $fx_per_symbol_config->{spread_vol}->{delta}->{0.5}->{day}->{2}  = 0.01;
-    $fx_per_symbol_config                                            = JSON::MaybeXS::encode_json($fx_per_symbol_config);
-
-    $app_config->set({'quants.vanilla.fx_per_symbol_config.frxUSDJPY' => $fx_per_symbol_config});
-
-    $new_args->{duration} = '2d';
-    $c = produce_contract($new_args);
-    is sprintf("%.1f", $c->delta),                                             '0.5', 'delta is approximately 0.5';
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 2,     '2 days expiry contract';
-
-    is sprintf("%.5f", $c->bid_probability->amount), '0.78679', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '0.83626', 'correct ask probability';
-
-    # this contract shouldn't be more expensive as there is no markup
-    $new_args->{duration} = '1d';
-    $c = produce_contract($new_args);
-    is business_days_between($c->date_start, $c->date_expiry, $c->underlying), 1, '1 days expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount), '0.63756', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '0.63756', 'correct ask probability';
-
-    $fx_per_symbol_config                                            = JSON::MaybeXS::decode_json($fx_per_symbol_config);
-    $fx_per_symbol_config->{spread_spot}->{delta}->{0.5}->{day}->{3} = 0;
-    $fx_per_symbol_config->{spread_vol}->{delta}->{0.5}->{day}->{3}  = 0;
-    $fx_per_symbol_config                                            = JSON::MaybeXS::encode_json($fx_per_symbol_config);
-
-    $app_config->set({'quants.vanilla.fx_per_symbol_config.frxUSDJPY' => $fx_per_symbol_config});
-};
-
-subtest 'check spread spot and spread vol is applied (weeks)' => sub {
-
-    my $new_args = dclone($args);
-
-    # > 7 days to account for weekends
-    $new_args->{duration} = '10d';
-    my $c = produce_contract($new_args);
-    is sprintf("%.1f", $c->delta),                     '0.5',     'delta is approximately 0.5';
-    is weeks_between($c->date_start, $c->date_expiry), 1,         '1 week expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount),   '1.47114', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount),   '1.47114', 'correct ask probability';
-
-    $new_args->{duration} = '14d';
-    $c = produce_contract($new_args);
-    is weeks_between($c->date_start, $c->date_expiry), 2, '2 week expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount), '1.63456', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '1.63456', 'correct ask probability';
-
-    # add spread to  delta 0.5 and expiry 3 days contract should become more expensive
-    $fx_per_symbol_config                                             = JSON::MaybeXS::decode_json($fx_per_symbol_config);
-    $fx_per_symbol_config->{spread_spot}->{delta}->{0.5}->{week}->{2} = 0.01;
-    $fx_per_symbol_config->{spread_vol}->{delta}->{0.5}->{week}->{2}  = 0.01;
-    $fx_per_symbol_config                                             = JSON::MaybeXS::encode_json($fx_per_symbol_config);
-
-    $app_config->set({'quants.vanilla.fx_per_symbol_config.frxUSDJPY' => $fx_per_symbol_config});
-
-    $new_args->{duration} = '14d';
-    $c = produce_contract($new_args);
-    is sprintf("%.1f", $c->delta),                     '0.5', 'delta is approximately 0.5';
-    is weeks_between($c->date_start, $c->date_expiry), 2,     '2 week expiry contract';
-
-    is sprintf("%.5f", $c->bid_probability->amount), '1.57933', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '1.68979', 'correct ask probability';
-
-    # this contract shouldn't be more expensive as there is no markup
-    $new_args->{duration} = '10d';
-    $c = produce_contract($new_args);
-    is weeks_between($c->date_start, $c->date_expiry), 1, '1 week expiry contract';
-    is sprintf("%.5f", $c->bid_probability->amount), '1.47114', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '1.47114', 'correct ask probability';
-
-    $fx_per_symbol_config                                             = JSON::MaybeXS::decode_json($fx_per_symbol_config);
-    $fx_per_symbol_config->{spread_spot}->{delta}->{0.5}->{week}->{2} = 0;
-    $fx_per_symbol_config->{spread_vol}->{delta}->{0.5}->{week}->{2}  = 0;
-    $fx_per_symbol_config                                             = JSON::MaybeXS::encode_json($fx_per_symbol_config);
-
-    $app_config->set({'quants.vanilla.fx_per_symbol_config.frxUSDJPY' => $fx_per_symbol_config});
 };
 
 subtest 'check correct exit tick' => sub {
@@ -434,17 +270,17 @@ subtest 'entry and exit tick' => sub {
         $args->{duration}     = '2d';
         $args->{date_pricing} = $now;
         my $c = produce_contract($args);
-        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.01196', 'number of contracts are correct';
+        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.01232', 'number of contracts are correct';
 
         $args->{date_pricing}        = $now->plus_time_interval('3d');
         $args->{number_of_contracts} = $c->number_of_contracts;
         $c                           = produce_contract($args);
-        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.01196', 'number of contracts are correct';
+        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.01232', 'number of contracts are correct';
         ok $c->is_expired, 'expired';
         is $c->entry_tick->quote,    '132.185', 'correct entry tick';
         is $c->barrier->as_absolute, '132.170', 'correct strike price';
         is $c->exit_tick->quote,     '132.694', 'correct exit tick';
-        is $c->value,                '6.27',    '(132.694 - 132.170) * (0.01196/0.001), but rounded to 2 dp due to USD being the currency';
+        is $c->value,                '6.46',    '(132.694 - 132.170) * (0.01232/0.001), but rounded to 2 dp due to USD being the currency';
     }
     'winning the contract';
 
@@ -454,17 +290,17 @@ subtest 'entry and exit tick' => sub {
         $args->{date_pricing} = $now;
         $args->{barrier}      = '132.800';
         my $c = produce_contract($args);
-        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.00891', 'number of contracts are correct';
+        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.00911', 'number of contracts are correct';
 
         $args->{date_pricing}        = $now->plus_time_interval('3d');
         $args->{number_of_contracts} = $c->number_of_contracts;
         $c                           = produce_contract($args);
-        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.00891', 'number of contracts are correct';
+        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.00911', 'number of contracts are correct';
         ok $c->is_expired, 'expired';
         is $c->entry_tick->quote,    '132.185', 'correct entry tick';
         is $c->barrier->as_absolute, '132.800', 'correct strike price';
         is $c->exit_tick->quote,     '132.694', 'correct exit tick';
-        is $c->value,                '0.94',    '(132.800 - 132.694) * (0.00891/0.001), but rounded to 2 dp due to USD being the currency';
+        is $c->value,                '0.97',    '(132.800 - 132.694) * (0.00911/0.001), but rounded to 2 dp due to USD being the currency';
     }
     'winning the contract';
 

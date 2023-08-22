@@ -15,6 +15,7 @@ use BOM::Product::Utils qw(business_days_between weeks_between);
 use Math::Util::CalculatedValue;
 use Syntax::Keyword::Try;
 use BOM::Config::Quants qw(minimum_stake_limit);
+use Quant::Framework::Spread::InterpolatedSpread;
 
 =head2 ADDED_CURRENCY_PRECISION
 
@@ -103,6 +104,33 @@ has number_of_contracts => (
     lazy    => 1,
     builder => '_build_number_of_contracts',
 );
+
+has spread_calculator => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_spread_calculator',
+);
+
+=head2 _build_spread_calculator
+
+returns a Quant::Framework::Spread::InterpolatedSpread object
+
+=cut
+
+sub _build_spread_calculator {
+    my $self = shift;
+
+    return Quant::Framework::Spread::InterpolatedSpread->new({
+        date_start    => $self->date_start,
+        custom_spread =>
+            JSON::MaybeXS::decode_json($self->app_config->get('quants.vanilla.fx_spread_specific_time'))->{$self->underlying->symbol},
+        spread_spot              => $self->per_symbol_config()->{spread_spot},
+        spread_vol               => $self->per_symbol_config()->{spread_vol},
+        maturities_allowed_days  => $self->per_symbol_config()->{maturities_allowed_days},
+        maturities_allowed_weeks => $self->per_symbol_config()->{maturities_allowed_weeks},
+    });
+
+}
 
 =head2 _build_min_stake
 
@@ -208,6 +236,37 @@ sub per_symbol_config {
 
     return JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.fx_per_symbol_config.$symbol")) unless $self->is_synthetic;
     return JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.per_symbol_config.$symbol" . "_$expiry"));
+}
+
+=head2 get_tenor
+
+Returns tenor of the contract in form of number and unit (days and weeks).
+For example, '5D', '3W'
+
+=cut
+
+sub get_tenor {
+    my $self = shift;
+
+    my $per_symbol_config     = $self->per_symbol_config();
+    my $nyt_offset            = $self->date_expiry->timezone_offset('America/New_York');
+    my $nyt                   = $self->date_expiry->plus_time_interval($nyt_offset);
+    my $business_days_between = business_days_between($self->date_start, $nyt, $self->underlying);
+    my $weeks_between         = weeks_between($self->date_start, $nyt);
+
+    my $maturity;
+
+    if (any { $_ eq $business_days_between } $per_symbol_config->{maturities_allowed_days}->@*) {
+        $maturity = $business_days_between . "D";
+    } elsif (any { $_ eq $weeks_between } $per_symbol_config->{maturities_allowed_weeks}->@*) {
+        $maturity = $weeks_between . "W";
+    } else {
+        # expiry is not offered, to avoid logs, we will use the maximum maturity in weeks
+        $maturity = max $per_symbol_config->{maturities_allowed_weeks}->@*;
+    }
+
+    return $maturity;
+
 }
 
 =head2 minimum_number_of_implied_contracts
@@ -478,7 +537,12 @@ sub max_duration {
 
 =head2 spread
 
-calculate commission for vanilla options
+Calculate commission for vanilla options.
+- Returns no spread if underlying is synthetic
+- Returns specific spread if we have specific spread for this contract
+- Returns interpolated spread if none of the above
+
+Returns a Math::Util::CalculatedValue object
 
 =cut
 
@@ -492,73 +556,19 @@ sub spread {
             base_amount => 0
         }) if $self->is_synthetic;    # only applicable to financial offerings
 
-    my $per_symbol_config        = $self->per_symbol_config();
-    my $symbol                   = $self->underlying->symbol;
-    my $delta                    = abs($self->delta);
-    my @delta_offered            = (keys %{$per_symbol_config->{spread_spot}->{delta}});
-    my @maturities_allowed_days  = @{$per_symbol_config->{maturities_allowed_days}};
-    my @maturities_allowed_weeks = @{$per_symbol_config->{maturities_allowed_weeks}};
-
-    my $closest_delta = $delta_offered[0];
-    foreach my $d (@delta_offered) {
-        if (abs($d - $delta) < abs($closest_delta - $delta)) {
-            $closest_delta = $d;
-        }
-    }
-
-    my $nyt_offset = $self->date_expiry->timezone_offset('America/New_York');
-    my $nyt        = $self->date_expiry->plus_time_interval($nyt_offset);
-
-    my $business_days_between = business_days_between($self->date_start, $nyt, $self->underlying);
-    my $weeks_between         = weeks_between($self->date_start, $nyt);
-
-    my $spread_spot_config = $per_symbol_config->{spread_spot}->{delta}->{$closest_delta};
-    my $spread_vol_config  = $per_symbol_config->{spread_vol}->{delta}->{$closest_delta};
-
-    my ($spread_spot, $spread_vol, $maturity);
-
-    if (any { $_ eq $business_days_between } @maturities_allowed_days) {
-        $spread_spot = $spread_spot_config->{day}->{$business_days_between};
-        $spread_vol  = $spread_vol_config->{day}->{$business_days_between};
-        $maturity    = $business_days_between . "D";
-    } elsif (any { $_ eq $weeks_between } @maturities_allowed_weeks) {
-        $spread_spot = $spread_spot_config->{week}->{$weeks_between};
-        $spread_vol  = $spread_vol_config->{week}->{$weeks_between};
-        $maturity    = $weeks_between . "W";
-    } else {
-        # it is not defined in config
-        return Math::Util::CalculatedValue->new({
+    # difference between t and tenor
+    # t = 1/365
+    # tenor = 1D
+    return Math::Util::CalculatedValue->new({
             name        => 'spread',
             description => 'vanilla options commission spread',
             set_by      => 'Contract',
-            base_amount => 0
-        });
-    }
-
-    my $fx_spread_specific_time = JSON::MaybeXS::decode_json($self->app_config->get('quants.vanilla.fx_spread_specific_time'));
-
-    my @existing_specific_spread = (keys %{$fx_spread_specific_time->{$symbol}->{$closest_delta}->{$maturity}});
-
-    my $spread_obj;
-    foreach my $entry (@existing_specific_spread) {
-        $spread_obj = $fx_spread_specific_time->{$symbol}->{$closest_delta}->{$maturity}->{$entry};
-
-        my $start_time = Date::Utility->new($spread_obj->{start_time});
-        my $end_time   = Date::Utility->new($spread_obj->{end_time});
-
-        if (($start_time->is_before($self->date_start)) and ($self->date_start->is_before($end_time))) {
-            $spread_spot = $spread_obj->{spread_spot};
-            $spread_vol  = $spread_obj->{spread_vol};
-        }
-    }
-
-    my $spread = Math::Util::CalculatedValue->new({
-            name        => 'spread',
-            description => 'vanilla options commission spread',
-            set_by      => 'Contract',
-            base_amount => 0.5 * ((abs($self->delta) * $spread_spot) + ($self->vega * $spread_vol))});
-
-    return $spread;
+            base_amount => $self->spread_calculator->get_spread({
+                    delta => abs($self->delta),
+                    vega  => $self->vega,
+                    t     => $self->timeinyears->amount,
+                    tenor => $self->get_tenor
+                })});
 }
 
 =head2 initial_ask_probability
@@ -742,8 +752,8 @@ sub _validation_methods {
     push @validation_methods, '_validate_rollover_blackout';
 
     # add vanilla specific validations
-    push @validation_methods, '_validate_barrier_choice' unless $self->for_sale;
     push @validation_methods, '_validate_expiry'         unless $self->is_synthetic;
+    push @validation_methods, '_validate_barrier_choice' unless $self->for_sale;
     push @validation_methods, '_validate_stake'          unless $self->for_sale;
     return \@validation_methods;
 }
