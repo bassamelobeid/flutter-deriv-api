@@ -11,6 +11,21 @@ subtest 'Checksum for records' => sub {
     isnt $chk1, BOM::DualControl::checksum_for_records([2, 3, 4]), 'Different input gives different checksums';
 };
 
+subtest 'Self Tagging DCC' => sub {
+    my $dcc1 = BOM::DualControl->new({
+            staff           => 'mojtaba',
+            transactiontype => 'SELFTAGGING'
+        })->self_tagging_control_code();
+
+    my $error = BOM::DualControl->new({
+            staff           => 'not_mojtaba',    #someone else should do the DCC
+            transactiontype => 'SELFTAGGING'
+        })->validate_self_tagging_control_code($dcc1);
+
+    ok !$error, 'No error for same dataset';
+
+};
+
 subtest 'Batch payment DCC' => sub {
     my $dcc1 = BOM::DualControl->new({
             staff           => 'murzilka',

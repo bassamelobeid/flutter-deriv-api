@@ -255,6 +255,10 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
             text => 'IDV Dashboard',
         },
         {
+            link => 'f_self_tagging',
+            text => 'Self Tagging'
+        },
+        {
             link => 'affiliate_reputation_details',
             text => 'Affiliate Reputation'
         }];

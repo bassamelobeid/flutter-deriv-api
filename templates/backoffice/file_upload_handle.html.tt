@@ -14,13 +14,22 @@
                     \$('label[name="bulk_login_IDs"]').hide();
                     \$('label[name="client_email_message"]').show();
                     \$('label[name="login_IDs"]').show();
-                } else {
+                } else if (\$("#transtype option:selected").val() == "UPDATECLIENT_DETAILS_BULK"){
                     \$('input[name="bulk_clientloginids"]').show();
                     \$('input[name="client_loginid"]').removeAttr('required');
                     \$('input[name="client_email"]').removeAttr('required');
                     \$('input[name="client_email"]').hide();
                     \$('input[name="client_loginid"]').hide();
                     \$('label[name="bulk_login_IDs"]').show();
+                    \$('label[name="client_email_message"]').hide();
+                    \$('label[name="login_IDs"]').hide();
+                } else {
+                    \$('input[name="bulk_clientloginids"]').hide();
+                    \$('input[name="client_loginid"]').removeAttr('required');
+                    \$('input[name="client_email"]').removeAttr('required');
+                    \$('input[name="client_email"]').hide();
+                    \$('input[name="client_loginid"]').hide();
+                    \$('label[name="bulk_login_IDs"]').hide();
                     \$('label[name="client_email_message"]').hide();
                     \$('label[name="login_IDs"]').hide();
                 }

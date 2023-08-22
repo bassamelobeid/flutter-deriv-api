@@ -25,7 +25,7 @@ my $title = 'Make dual control code';
 my $now   = Date::Utility->new;
 my $input = request()->params;
 
-unless ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token/) {
+unless ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token|SELFTAGGING/) {
     code_exit_BO('please select a valid transaction type to update client details', $title);
 }
 
@@ -72,6 +72,10 @@ if ($input->{'transtype'} =~ /^UPDATECLIENTDETAILS|Edit affiliates token/) {
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->batch_status_update_control_code([map { join "\0" => $_->@* } $lines->@*]);
 
+} elsif ($input->{'transtype'} eq "SELFTAGGING") {
+    $code = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => $input->{'transtype'}})->self_tagging_control_code();
 }
 
 Bar($title);
@@ -130,6 +134,28 @@ if ($input->{'transtype'} eq "UPDATECLIENT_DETAILS_BULK") {
         . encode_entities($client->last_name)
         . ' current email is '
         . encode_entities($client_email);
+} elsif ($input->{'transtype'} eq "SELFTAGGING") {
+    my $message =
+          "The dual control code created by $clerk  (for a "
+        . $input->{'transtype'}
+        . " )is: $code This code is valid for 1 hour (from "
+        . $now->datetime_ddmmmyy_hhmmss
+        . ") only.";
+    $message .= " Reminder/comment: " . $input->{'reminder'} if $input->{'reminder'};
+
+    BOM::User::AuditLog::log($message, '', $clerk);
+
+    print '<p>'
+        . 'DCC: (single click to copy)<br>'
+        . '<div class="dcc-code copy-on-click">'
+        . encode_entities($code)
+        . '</div><script>initCopyText()</script><br>'
+        . 'This code is valid for 1 hour from now: UTC '
+        . Date::Utility->new->datetime_ddmmmyy_hhmmss . '<br>'
+        . 'Creator: '
+        . $clerk . '<br>';
+    print 'Comment/reminder: ' . $input->{reminder} . '</p>' if $input->{'reminder'};
+
 } else {
     print "Transaction type is not valid";
 }

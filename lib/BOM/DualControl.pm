@@ -64,6 +64,23 @@ sub client_control_code {
     return $code;
 }
 
+=head2 self_tagging_control_code
+
+Generates self-Tagging DCC in left main menu
+
+=cut
+
+sub self_tagging_control_code {
+    my ($self) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $self->_environment));
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
+}
+
 =head2 payment_control_code
 
 Generates payment DCC
@@ -195,6 +212,31 @@ sub validate_client_control_code {
     $error_status = $self->_validate_client_email($code, $email);
     return $error_status if $error_status;
     $error_status = $self->_validate_client_userid($code, $user_id);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
+    return;
+}
+
+=head2 validate_self_tagging_control_code
+
+Validates Self-Tagging DCC in left main menu
+
+=cut
+
+sub validate_self_tagging_control_code {
+    my ($self, $incode) = @_;
+
+    my $code         = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_element_count($code, 4);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
