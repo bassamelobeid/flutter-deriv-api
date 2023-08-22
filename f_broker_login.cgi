@@ -90,7 +90,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
 }
 
 # ACCOUNTING REPORTS
-if (BOM::Backoffice::Auth0::has_authorisation(['Accounts'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Accounts_basic', 'Accounts_normal'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -107,7 +107,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Accounts'])) {
 }
 
 # MANUAL input OF DEPOSITS & WITHDRAWALS
-if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Payments', 'Accounts_basic', 'Accounts_normal'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
