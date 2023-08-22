@@ -9127,4 +9127,36 @@ sub is_idv_validated {
 
 }
 
+=head2 update_affiliate_token_for_batch_of_clients
+
+Update myaffiliate token for list of clients
+
+Arguments:
+
+=over 4
+
+=item affiliate_token - affiliate token that going to be used for replacing current tokens for clients
+
+=item broker_code - broker code for clientDB => CR, MF , ...
+
+=item login_ids - list of client login ids to used for the replacement action
+
+=back
+
+return 1 if successful otherwise 0
+
+=cut
+
+sub update_affiliate_token_for_batch_of_clients {
+    my ($affiliate_token, $broker_code, $login_ids) = @_;
+    my $client_dbic = BOM::Database::ClientDB->new({broker_code => $broker_code // 'CR'})->db->dbic;
+
+    my $count = $client_dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT betonmarkets.update_affiliate_token_on_batch_of_clients(?, ?)', {Slice => {}}, $login_ids, $affiliate_token);
+        });
+    return $count;
+
+}
+
 1;
