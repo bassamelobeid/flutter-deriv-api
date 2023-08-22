@@ -444,7 +444,7 @@ sub run {
                 {
                 currency  => $currency,
                 countries => \@float_countries,
-                age       => 'inf'
+                age_hours => 'inf'
                 };
             next;
         }
@@ -478,7 +478,7 @@ sub run {
             '<table border=1 style="border-collapse:collapse;"><tr><th>Currency</th><th>Age (hours)</th><th>Source</th><th>Time</th><th>Quote</th><th>Float rate country(s)</th></tr>',
         );
 
-        for my $alert (sort { $b->{age} <=> $a->{age} } @alerts) {
+        for my $alert (sort { $b->{age_hours} <=> $a->{age_hours} } @alerts) {
             push @lines, '<tr><td>' . $alert->{currency} . ' (' . $all_currencies{$alert->{currency}}->{name} . ')</td>';
             if ($alert->{quote}) {
                 push @lines,

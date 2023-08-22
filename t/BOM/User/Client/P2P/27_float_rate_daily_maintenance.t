@@ -301,6 +301,11 @@ subtest 'quants alert email' => sub {
         ng => {
             fixed_ads => 'disabled',
             float_ads => 'enabled'
+        },
+        za => {
+            fixed_ads => 'disabled',
+            float_ads => 'enabled'
+
         }};
 
     $config->country_advert_config(encode_json_utf8($ad_config));
@@ -316,7 +321,11 @@ subtest 'quants alert email' => sub {
             epoch  => Date::Utility->new('1999-07-01')->epoch,
             source => 'manual'
         },
-    );
+        ZAR => {
+            quote  => 456,
+            epoch  => Date::Utility->new('1999-12-20')->epoch,
+            source => 'feed'
+        });
 
     my $mock_utility = Test::MockModule->new('BOM::User::Utility');
     $mock_utility->redefine(p2p_exchange_rate => sub { $mock_rates{$_[0]} });
@@ -325,11 +334,13 @@ subtest 'quants alert email' => sub {
     BOM::User::Script::P2PDailyMaintenance->new->run;
     my $email = mailbox_search(subject => qr/Outdated exchange rates for P2P Float Rate countries on 2000-01-01/);
     ok $email, 'Email sent';
-    like $email->{body},   qr/Nigeria/,   'outdated rate reported';
-    unlike $email->{body}, qr/No rate/,   'no rate not reported';
-    unlike $email->{body}, qr/Indonesia/, 'recent rate not reported';
+    like $email->{body},   qr/Nigeria/,      'outdated rate reported';
+    like $email->{body},   qr/South Africa/, 'outdated rate reported';
+    unlike $email->{body}, qr/No rate/,      'no rate not reported';
+    unlike $email->{body}, qr/Indonesia/,    'recent rate not reported';
 
     $ad_config->{ng}{float_ads} = 'disabled';
+    $ad_config->{za}{float_ads} = 'disabled';
     $config->country_advert_config(encode_json_utf8($ad_config));
 
     mailbox_clear();
@@ -337,15 +348,19 @@ subtest 'quants alert email' => sub {
     $email = mailbox_search(subject => qr/Outdated exchange rates for P2P Float Rate countries on 2000-01-01/);
     ok !$email, 'No email sent when no outdated rates';
 
-    %mock_rates = ();
+    delete $mock_rates{IDR};
 
     mailbox_clear();
+    $ad_config->{za}{float_ads} = 'enabled';
+    $config->country_advert_config(encode_json_utf8($ad_config));
     BOM::User::Script::P2PDailyMaintenance->new->run;
     $email = mailbox_search(subject => qr/Outdated exchange rates for P2P Float Rate countries on 2000-01-01/);
+
     ok $email, 'Email sent';
-    unlike $email->{body}, qr/Nigeria/,   'missing rate not reported if float rates disabled';
-    like $email->{body},   qr/No rate/,   'no rate reported';
-    like $email->{body},   qr/Indonesia/, 'country with no rate reported';
+    unlike $email->{body}, qr/Nigeria/,      'missing rate not reported if float rates disabled';
+    like $email->{body},   qr/No rate/,      'no rate reported';
+    like $email->{body},   qr/Indonesia/,    'country with no rate reported';
+    like $email->{body},   qr/South Africa/, 'outdated rate reported';
 };
 
 done_testing;
