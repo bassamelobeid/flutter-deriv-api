@@ -704,29 +704,7 @@ $params = {
     language => 'EN',
     source   => $app_id,
     country  => 'ru',
-    args     => {
-        "set_financial_assessment"                 => 1,
-        "risk_tolerance"                           => "Yes",
-        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-        "cfd_experience"                           => "Less than a year",
-        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-        "trading_experience_financial_instruments" => "Less than a year",
-        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-        "cfd_trading_definition"                   => "Speculate on the price movement.",
-        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-        "employment_industry"                      => "Finance",                                                                                 # +15
-        "education_level"                          => "Secondary",                                                                               # +1
-        "income_source"                            => "Self-Employed",                                                                           # +0
-        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
-        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
-        "occupation"                               => 'Managers',                                                                                # +0
-        "employment_status"                        => "Self-Employed",                                                                           # +0
-        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
-        "account_turnover"                         => 'Less than $25,000',
-    },
-};
+    args     => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)};
 
 subtest $method => sub {
     my ($user, $client, $auth_token);
@@ -1569,32 +1547,9 @@ subtest $method => sub {
             ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
             ->error_details_is({missing => ["tax_residence", "tax_identification_number", "account_opening_reason"]});
 
-        $params->{args}->{financial_assessment} = {
-            "set_financial_assessment"                 => 1,
-            "risk_tolerance"                           => "Yes",
-            "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-            "cfd_experience"                           => "Less than a year",
-            "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-            "trading_experience_financial_instruments" => "Less than a year",
-            "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-            "cfd_trading_definition"                   => "Speculate on the price movement.",
-            "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-            "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-            "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-            "employment_industry"                      => "Finance",                # +15
-            "education_level"                          => "Secondary",              # +1
-            "income_source"                            => "Self-Employed",          # +0
-            "net_income"                               => '$25,000 - $50,000',      # +1
-            "estimated_worth"                          => '$100,000 - $250,000',    # +1
-            "occupation"                               => 'Managers',               # +0
-            "employment_status"                        => "Self-Employed",          # +0
-            "source_of_wealth"                         => "Company Ownership",      # +0
-            "account_turnover"                         => 'Less than $25,000',
-            'tax_residence'                            => 'de',
-            'tax_identification_number'                => 'MRTSVT79M29F8P9P',
-            'account_opening_reason'                   => 'Income Earning',
-        };
-
+        $params->{args}->{tax_residence}             = 'de';
+        $params->{args}->{tax_identification_number} = 'MRTSVT79M29F8P9P';
+        $params->{args}->{financial_assessment}      = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_no_error('If passed argumets are ok a new real wallet will be created successfully');
         $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return wallet landing company');
@@ -1661,6 +1616,127 @@ subtest $method => sub {
     };
 };
 
+$method = 'new_account_wallet';
+$params = {
+    language => 'EN',
+    source   => $app_id,
+    args     => {
+        last_name        => 'Test' . rand(999),
+        first_name       => 'Test1' . rand(999),
+        date_of_birth    => '1977-01-04',
+        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
+        address_city     => 'Bloemfontein',
+        address_state    => 'Free State',
+        address_postcode => '112233',
+        residence        => 'za',
+        salutation       => 'Mr.',
+        citizen          => 'za'
+    },
+};
+
+subtest $method => sub {
+    my ($user, $client, $vr_client, $auth_token);
+
+    subtest 'Initialization' => sub {
+        lives_ok {
+            my $password = 'Abcd3s3!@';
+            my $hash_pwd = BOM::User::Password::hashpw($password);
+            $email = 'new_email' . rand(999) . '@binary.com';
+            $user  = BOM::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $email,
+                citizen     => 'za',
+                residence   => 'za'
+            });
+            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+            $user->add_client($client);
+        }
+        'Initial users and clients';
+    };
+
+    my $mock_countries = Test::MockModule->new('Brands::Countries');
+
+    subtest 'Create new MFW/CRW wallet real - Diel country' => sub {
+        $emit_data = {};
+        $params->{token} = $auth_token;
+        my $app_config = BOM::Config::Runtime->instance->app_config;
+        $user->update_email_fields(email_verified => 1);
+        $app_config->system->suspend->wallets(0);
+
+        $params->{args}->{currency}     = 'USD';
+        $params->{args}->{citizen}      = 'za';
+        $params->{args}->{account_type} = 'doughflow';
+        $mock_countries->redefine(wallet_companies_for_country => ['maltainvest', 'svg']);
+        $params->{args}->{landing_company_short} = 'maltainvest';
+
+        my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRW',
+            email       => $email,
+            citizen     => 'za',
+            residence   => 'za'
+        });
+        $auth_token = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
+        $user->add_client($vr_client);
+        $params->{token} = $auth_token;
+
+        $params->{args}->{tax_residence}             = 'de';
+        $params->{args}->{tax_identification_number} = 'MRTSVT79M29F8P9P';
+        $params->{args}->{financial_assessment}      = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+
+        ## Wallet Created
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_no_error('If passed argumets are ok a new real MF wallet will be created successfully');
+        $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return wallet landing company');
+
+        ## Same wallet duplicate error
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('DuplicateWallet', 'It should return error code when the same MFW is added')
+            ->error_message_is('Sorry, a wallet already exists with those details.', 'It should return error message for duplicates');
+
+        ## Same wallet duplicate error with different currency
+        $params->{args}->{currency} = 'EUR';
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('CurrencyTypeNotAllowed',
+            'It should return error code when the same MFW is added with different currency')
+            ->error_message_is('Please note that you are limited to one fiat currency account.', 'It should return error message for duplicates');
+
+        delete $params->{args}->{financial_assessment};
+
+        $params->{args}->{landing_company_short} = 'svg';
+        $params->{args}->{currency}              = 'USD';
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_no_error('If passed argumets are ok a new real CR wallet will be created successfully');
+        $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return wallet landing company');
+
+        ## Same wallet duplicate error
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('DuplicateWallet', 'It should return error code when the same CRW is addeds')
+            ->error_message_is('Sorry, a wallet already exists with those details.', 'It should return error message for duplicates');
+
+        $app_config->system->suspend->wallets(1);
+    };
+
+    $mock_countries->unmock_all;
+};
+
+$params = {
+    language => 'EN',
+    source   => $app_id,
+    args     => {
+        last_name        => 'Test' . rand(999),
+        first_name       => 'Test1' . rand(999),
+        date_of_birth    => '1987-09-04',
+        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
+        address_city     => 'Samara',
+        address_state    => 'Papua',
+        address_postcode => '112233',
+    },
+};
 subtest 'Empty phone number' => sub {
     my $email = 'empty+phone1241241@asdf.com';
     $params->{country}                   = 'br';
@@ -1769,37 +1845,17 @@ subtest 'Forbidden postcodes' => sub {
     my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
     $params->{country} = 'gb';
     $params->{args}    = {
-        "residence"                                => 'gb',
-        "first_name"                               => 'mr family',
-        "last_name"                                => 'man',
-        "date_of_birth"                            => '1999-01-02',
-        "email"                                    => $email,
-        "phone"                                    => '+15417541234',
-        "salutation"                               => 'hello',
-        "citizen"                                  => 'gb',
-        "set_financial_assessment"                 => 1,
-        "risk_tolerance"                           => "Yes",
-        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-        "cfd_experience"                           => "Less than a year",
-        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-        "trading_experience_financial_instruments" => "Less than a year",
-        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-        "cfd_trading_definition"                   => "Speculate on the price movement.",
-        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-        "employment_industry"                      => "Finance",                                                                                 # +15
-        "education_level"                          => "Secondary",                                                                               # +1
-        "income_source"                            => "Self-Employed",                                                                           # +0
-        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
-        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
-        "occupation"                               => 'Managers',                                                                                # +0
-        "employment_status"                        => "Self-Employed",                                                                           # +0
-        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
-        "account_turnover"                         => 'Less than $25,000',
-        "tax_residence"                            => 'gb',
-        "tax_identification_number"                => 'E1241241',
-        "account_opening_reason"                   => 'Speculative',
+        "residence"                 => 'gb',
+        "first_name"                => 'mr family',
+        "last_name"                 => 'man',
+        "date_of_birth"             => '1999-01-02',
+        "email"                     => $email,
+        "phone"                     => '+15417541234',
+        "salutation"                => 'hello',
+        "citizen"                   => 'gb',
+        "tax_residence"             => 'gb',
+        "tax_identification_number" => 'E1241241',
+        BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)->%*
     };
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
 
@@ -1855,29 +1911,9 @@ subtest 'Italian TIN test' => sub {
 
         $params->{args} = {
             $params->{args}->%*,
-
-            "risk_tolerance"                           => "Yes",
-            "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-            "cfd_experience"                           => "Less than a year",
-            "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-            "trading_experience_financial_instruments" => "Less than a year",
-            "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-            "cfd_trading_definition"                   => "Speculate on the price movement.",
-            "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-            "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-            "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-            "employment_industry"                      => "Finance",                # +15
-            "education_level"                          => "Secondary",              # +1
-            "income_source"                            => "Self-Employed",          # +0
-            "net_income"                               => '$25,000 - $50,000',      # +1
-            "estimated_worth"                          => '$100,000 - $250,000',    # +1
-            "occupation"                               => 'Managers',               # +0
-            "employment_status"                        => "Self-Employed",          # +0
-            "source_of_wealth"                         => "Company Ownership",      # +0
-            "account_turnover"                         => 'Less than $25,000',
-            'tax_residence'                            => 'it',
-            'tax_identification_number'                => 'MRTSVT79M29F899P',
-            'account_opening_reason'                   => 'Speculative',
+            BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)->%*,
+            'tax_residence'             => 'it',
+            'tax_identification_number' => 'MRTSVT79M29F899P',
         };
 
         my $result =
@@ -1925,29 +1961,9 @@ subtest 'Italian TIN test' => sub {
 
         $params->{args} = {
             $params->{args}->%*,
-            "set_financial_assessment"                 => 1,
-            "risk_tolerance"                           => "Yes",
-            "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-            "cfd_experience"                           => "Less than a year",
-            "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-            "trading_experience_financial_instruments" => "Less than a year",
-            "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-            "cfd_trading_definition"                   => "Speculate on the price movement.",
-            "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-            "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-            "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-            "employment_industry"                      => "Finance",                # +15
-            "education_level"                          => "Secondary",              # +1
-            "income_source"                            => "Self-Employed",          # +0
-            "net_income"                               => '$25,000 - $50,000',      # +1
-            "estimated_worth"                          => '$100,000 - $250,000',    # +1
-            "occupation"                               => 'Managers',               # +0
-            "employment_status"                        => "Self-Employed",          # +0
-            "source_of_wealth"                         => "Company Ownership",      # +0
-            "account_turnover"                         => 'Less than $25,000',
-            'tax_residence'                            => 'it',
-            'tax_identification_number'                => 'MRTSVT79M29F8P9P',
-            'account_opening_reason'                   => 'Income Earning',
+            BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)->%*,
+            'tax_residence'             => 'it',
+            'tax_identification_number' => 'MRTSVT79M29F8P9P',
         };
 
         my $result =
@@ -1995,29 +2011,9 @@ subtest 'Italian TIN test' => sub {
 
         $params->{args} = {
             $params->{args}->%*,
-            "set_financial_assessment"                 => 1,
-            "risk_tolerance"                           => "Yes",
-            "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-            "cfd_experience"                           => "Less than a year",
-            "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-            "trading_experience_financial_instruments" => "Less than a year",
-            "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-            "cfd_trading_definition"                   => "Speculate on the price movement.",
-            "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-            "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-            "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-            "employment_industry"                      => "Finance",                # +15
-            "education_level"                          => "Secondary",              # +1
-            "income_source"                            => "Self-Employed",          # +0
-            "net_income"                               => '$25,000 - $50,000',      # +1
-            "estimated_worth"                          => '$100,000 - $250,000',    # +1
-            "occupation"                               => 'Managers',               # +0
-            "employment_status"                        => "Self-Employed",          # +0
-            "source_of_wealth"                         => "Company Ownership",      # +0
-            "account_turnover"                         => 'Less than $25,000',
-            'tax_residence'                            => 'it',
-            'tax_identification_number'                => 'MRTSVT79M29F8_9P',
-            'account_opening_reason'                   => 'Hedging',
+            BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)->%*,
+            'tax_identification_number' => 'MRTSVT79M29F8_9P',
+            'account_opening_reason'    => 'Hedging',
         };
 
         my $result =
@@ -2065,29 +2061,9 @@ subtest 'MF under Duplicated account' => sub {
 
     $params->{args} = {
         $params->{args}->%*,
-        "set_financial_assessment"                 => 1,
-        "risk_tolerance"                           => "Yes",
-        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-        "cfd_experience"                           => "Less than a year",
-        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-        "trading_experience_financial_instruments" => "Less than a year",
-        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-        "cfd_trading_definition"                   => "Speculate on the price movement.",
-        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-        "employment_industry"                      => "Finance",                                                                                 # +15
-        "education_level"                          => "Secondary",                                                                               # +1
-        "income_source"                            => "Self-Employed",                                                                           # +0
-        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
-        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
-        "occupation"                               => 'Managers',                                                                                # +0
-        "employment_status"                        => "Self-Employed",                                                                           # +0
-        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
-        "account_turnover"                         => 'Less than $25,000',
-        'tax_residence'                            => 'it',
-        'tax_identification_number'                => 'MRTSVT79M29F8_9P',
-        'account_opening_reason'                   => 'Hedging',
+        BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)->%*,
+        'tax_residence'             => 'it',
+        'tax_identification_number' => 'MRTSVT79M29F8_9P',
     };
 
     my $result =
@@ -2140,29 +2116,9 @@ subtest 'MF under Duplicated account - DIEL country' => sub {
 
     $params->{args} = {
         $params->{args}->%*,
-        "set_financial_assessment"                 => 1,
-        "risk_tolerance"                           => "Yes",
-        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-        "cfd_experience"                           => "Less than a year",
-        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-        "trading_experience_financial_instruments" => "Less than a year",
-        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-        "cfd_trading_definition"                   => "Speculate on the price movement.",
-        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-        "employment_industry"                      => "Finance",                                                                                 # +15
-        "education_level"                          => "Secondary",                                                                               # +1
-        "income_source"                            => "Self-Employed",                                                                           # +0
-        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
-        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
-        "occupation"                               => 'Managers',                                                                                # +0
-        "employment_status"                        => "Self-Employed",                                                                           # +0
-        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
-        "account_turnover"                         => 'Less than $25,000',
-        'tax_residence'                            => 'it',
-        'tax_identification_number'                => 'MRTSVT79M29F8_9P',
-        'account_opening_reason'                   => 'Hedging',
+        BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)->%*,
+        'tax_residence'             => 'it',
+        'tax_identification_number' => 'MRTSVT79M29F8_9P',
     };
 
     my $result =
@@ -2293,29 +2249,9 @@ subtest 'MF under Duplicated account - Spain' => sub {
 
     $params->{args} = {
         $params->{args}->%*,
-        "set_financial_assessment"                 => 1,
-        "risk_tolerance"                           => "Yes",
-        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-        "cfd_experience"                           => "Less than a year",
-        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-        "trading_experience_financial_instruments" => "Less than a year",
-        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-        "cfd_trading_definition"                   => "Speculate on the price movement.",
-        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-        "employment_industry"                      => "Finance",                                                                                 # +15
-        "education_level"                          => "Secondary",                                                                               # +1
-        "income_source"                            => "Self-Employed",                                                                           # +0
-        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
-        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
-        "occupation"                               => 'Managers',                                                                                # +0
-        "employment_status"                        => "Self-Employed",                                                                           # +0
-        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
-        "account_turnover"                         => 'Less than $25,000',
-        'tax_residence'                            => 'es',
-        'tax_identification_number'                => 'MRTSVT79M29F8_9P',
-        'account_opening_reason'                   => 'Hedging',
+        BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)->%*,
+        'tax_residence'             => 'es',
+        'tax_identification_number' => 'MRTSVT79M29F8_9P',
     };
 
     my $result =
