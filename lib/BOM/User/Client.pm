@@ -9159,4 +9159,47 @@ sub update_affiliate_token_for_batch_of_clients {
 
 }
 
+=head2 is_mt5_additional_kyc_required 
+
+Applicable to svg and non-high risk countries only Check if the client is has not filled any of the information 
+i,e tax information and account opening reason and place of birth - 
+if not, then we need add status with the flag 'additional_kyc_required'    
+restrict high risk countries from bvi, labuan and vanuatua
+
+Returns 1 if additional_kyc_ else 0.
+
+=cut
+
+sub is_mt5_additional_kyc_required {
+    my ($self) = @_;
+    return 0 if $self->landing_company->short ne 'svg';
+    # get the trading plaforms supported from here
+    my $platform = BOM::TradingPlatform->new(
+        platform => 'mt5',
+        client   => $self
+    );
+    return 0 unless $self->residence;
+    my $platforms = $platform->available_accounts({country_code => $self->residence});
+
+    return 0 unless $platforms;
+    my @supported_platforms = grep { $_->{shortcode} =~ /^(bvi|vanuatu|labuan)$/ } @$platforms;
+
+    return 0 unless @supported_platforms;
+
+    my @signup_and_compliance_values = ();
+
+    foreach my $company (@supported_platforms) {
+        push @signup_and_compliance_values, $company->{requirements}{signup}->@*;
+        my $compliance_values = $company->{requirements}->{compliance};
+        if ($compliance_values && $compliance_values->{tax_information}) {
+            push @signup_and_compliance_values, $compliance_values->{tax_information}->@*;
+        }
+    }
+    my @unique_fields = uniq(@signup_and_compliance_values);
+    foreach my $field (@unique_fields) {
+        return 1 if !defined $self->{$field} || $self->{$field} eq '';
+    }
+    return 0;
+}
+
 1;
