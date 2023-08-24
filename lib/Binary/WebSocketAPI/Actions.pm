@@ -105,6 +105,12 @@ sub actions_config {
                 category => 'mt5_hybrid',
             }
         ],
+        [
+            'kyc_auth_status',
+            {
+                category => 'mt5_hybrid',
+            }
+        ],
 
         [
             'change_password',
