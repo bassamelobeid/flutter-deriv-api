@@ -1071,6 +1071,202 @@ rpc get_account_status => sub {
     };
 };
 
+=head2 kyc_auth_status
+
+    Gets the KYC (POI and POA) authentication object for the given client.
+
+=cut
+
+rpc kyc_auth_status => sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+
+    my $kyc_authentication_object = {
+        identity => {
+            last_rejected      => {},
+            available_services => [],
+            service            => 'none',
+            status             => 'none',
+        },
+        address => {
+            status => 'none',
+        },
+    };
+
+    my $duplicated;
+    $duplicated = $client->duplicate_sibling_from_vr if $client->is_virtual;
+
+    return $kyc_authentication_object if $client->is_virtual && !$duplicated;
+
+    my $documents = $client->documents->uploaded();
+    my $kyc_args  = {
+        client    => $duplicated // $client,
+        documents => $documents,
+    };
+
+    $kyc_authentication_object->{address}  = _get_authentication_poa($kyc_args);
+    $kyc_authentication_object->{identity} = _get_kyc_authentication_poi($kyc_args);
+
+    return $kyc_authentication_object;
+};
+
+=head2 _get_kyc_authentication_poi
+
+Resolves the C<identity> structure of the KYC authentication object.
+
+It takes the following parameters as hashref:
+
+=over 4
+
+=item * C<client> a L<BOM::User::Client> instance
+
+=item * C<documents> hashref containing the client's documents by type
+
+=back
+
+Returns,
+    hashref containing the structure needed for C<identity> at KYC authentication object with the following structure:
+
+=over 4
+
+=item * C<last_rejected> an arrayref with the reasons for the latest failed POI attempt
+
+=item * C<available_services> a arrayref containing the available services for the next POI attempt
+
+=item * C<service> the service responsible for the current POI status
+
+=item * C<status> the current POI status
+
+=back
+
+=cut
+
+sub _get_kyc_authentication_poi {
+    my $args = shift;
+    my ($client, $documents) = @{$args}{qw/client documents/};
+
+    my $poi_status = $client->get_poi_status($documents);
+    my ($latest_poi_by) = $client->latest_poi_by();
+    $latest_poi_by //= 'none';
+
+    my $poi_rejected = $poi_status =~ /rejected|suspected/;
+
+    my $last_rejected = {};
+    $last_rejected = _get_last_rejected($client) if $poi_rejected;
+
+    my $available_services = _get_available_services($client);
+
+    return {
+        last_rejected      => $last_rejected,
+        available_services => $available_services,
+        service            => $latest_poi_by,
+        status             => $poi_status,
+    };
+}
+
+=head2 _get_last_rejected
+
+Resolves the C<last_rejected> structure of the KYC Identity authentication object.
+
+It takes the following parameter:
+
+=over 4
+
+=item * C<client> a L<BOM::User::Client> instance
+
+=over 4
+
+=back
+
+Returns hashref containing,
+    - the reasons for the rejected POI attempt,
+    - [IDV only] the document type of the attempt.
+
+=back
+
+    The last_rejected information is only returned in case the current POI status is 'rejected' or 'suspected'.
+    Otherwise showing this information is not relevant.
+
+=cut
+
+sub _get_last_rejected {
+    my ($client) = @_;
+
+    my ($latest_poi_by) = $client->latest_poi_by();
+
+    return unless defined $latest_poi_by;    # 'none'
+
+    my $onfido_reject_reasons_catalog;
+    my $idv_reject_reasons_catalog;
+    my $reject_reasons_catalog;
+
+    my $idv_rejected_document_type;
+
+    my $service_reasons;
+
+    if ($latest_poi_by eq 'idv') {
+        my $idv          = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+        my $idv_document = $idv->get_last_updated_document();
+        $idv_rejected_document_type = $idv_document->{document_type};
+
+        $idv_reject_reasons_catalog = BOM::Platform::Utility::rejected_identity_verification_reasons();
+
+        my $idv_reject_reasons;
+        $idv_reject_reasons = eval { decode_json_utf8($idv_document->{status_messages} // '[]') };
+        $service_reasons    = $idv_reject_reasons;
+
+    } elsif ($latest_poi_by eq 'onfido') {
+        my $onfido_reject_reasons;
+        push $onfido_reject_reasons->@*, BOM::User::Onfido::get_consider_reasons($client)->@*;
+        push $onfido_reject_reasons->@*, BOM::User::Onfido::get_rules_reasons($client)->@*;
+
+        $onfido_reject_reasons_catalog = BOM::Platform::Utility::rejected_onfido_reasons();
+        $service_reasons               = $onfido_reject_reasons;
+    }
+
+    $reject_reasons_catalog = $latest_poi_by eq 'manual' ? () : ($idv_reject_reasons_catalog // $onfido_reject_reasons_catalog);
+
+    my $last_rejected_reasons =
+        [uniq map { exists $reject_reasons_catalog->{$_} ? localize($reject_reasons_catalog->{$_}) : () } grep { $_ } $service_reasons->@*];
+
+    return {
+        rejected_reasons => $last_rejected_reasons,
+        (defined $idv_rejected_document_type ? (document_type => $idv_rejected_document_type) : ())};
+}
+
+=head2 _get_available_services
+
+Resolves the C<available_services> structure of the KYC Identity authentication object.
+
+It takes the following param:
+
+=over 4
+
+=item * L<BOM::User::Client> the client
+
+=back
+
+Returns,
+    arrayref containing the available services to the next POI attempt: 'idv', 'onfido', and/or 'manual'
+
+=cut
+
+sub _get_available_services {
+    my ($client) = @_;
+
+    my $available_services = [];
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+    push @$available_services, 'idv' if $idv_model->is_available($client);
+
+    push @$available_services, 'onfido' if BOM::User::Onfido::is_available($client);
+
+    push @$available_services, 'manual' if $client->documents->is_upload_available;
+
+    return $available_services;
+}
+
 =head2 _get_authentication
 
 Gets the authentication object for the given client.

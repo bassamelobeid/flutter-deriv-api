@@ -186,19 +186,16 @@ sub successful_upload {
 }
 
 sub validate_input {
-    my $params       = shift;
-    my $args         = $params->{args};
-    my $client       = $params->{client};
-    my $file_size    = $args->{file_size};
-    my $status       = $args->{status};
-    my $redis        = BOM::Config::Redis::redis_replicated_write();
-    my $key          = MAX_UPLOADS_KEY . $client->binary_user_id;
-    my $upload_tries = $redis->get($key) // 0;
+    my $params    = shift;
+    my $args      = $params->{args};
+    my $client    = $params->{client};
+    my $file_size = $args->{file_size};
+    my $status    = $args->{status};
 
-    return 'max_upload_attempts_exceeded' if $upload_tries and $upload_tries > MAX_UPLOAD_TRIES_PER_DAY;
-    return 'max_size'                     if $file_size    and $file_size > MAX_FILE_SIZE;
-    return $args->{reason}                if $status       and $status eq 'failure';
-    return 'virtual'                      if $client->is_virtual;
+    return 'max_upload_attempts_exceeded' unless $client->documents->is_upload_available;
+    return 'max_size'      if $file_size and $file_size > MAX_FILE_SIZE;
+    return $args->{reason} if $status    and $status eq 'failure';
+    return 'virtual'       if $client->is_virtual;
 
     my $error = validate_expiration_date($args->{expiration_date}) // validate_id_and_exp_date({$args->%*, client => $client})
         // validate_proof_of_ownership({%$args{qw/proof_of_ownership document_type/}, %$params{qw/client/}})
