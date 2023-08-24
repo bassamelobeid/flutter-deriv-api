@@ -1058,6 +1058,9 @@ rpc get_account_status => sub {
         $status = [grep { $_ ne 'poi_dob_mismatch' } @$status];
     }
 
+    # Applicable to svg and non-high risk countries only Check if the client is has not filled any of the information
+    push(@$status, 'mt5_additional_kyc_required') if $client->is_mt5_additional_kyc_required();
+
     return {
         status                        => [sort(uniq(@$status))],
         risk_classification           => $risk_sr eq 'high' ? $risk_sr : $risk_aml // '',

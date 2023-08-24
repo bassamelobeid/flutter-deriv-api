@@ -224,7 +224,8 @@ subtest 'IDV + Photo ID' => sub {
             'allow_document_upload',          'authenticated',
             'authenticated_with_idv_photoid', 'cashier_locked',
             'dxtrade_password_not_set',       'financial_information_not_complete',
-            'mt5_password_not_set',           'trading_experience_not_complete'
+            'mt5_additional_kyc_required',    'mt5_password_not_set',
+            'trading_experience_not_complete'
         ],
         p2p_status     => 'none',
         authentication => {
@@ -284,8 +285,8 @@ subtest 'IDV + Photo ID' => sub {
             'allow_document_upload',              'cashier_locked',
             'dxtrade_password_not_set',           'financial_assessment_not_complete',
             'financial_information_not_complete', 'idv_disallowed',
-            'idv_revoked',                        'mt5_password_not_set',
-            'trading_experience_not_complete'
+            'idv_revoked',                        'mt5_additional_kyc_required',
+            'mt5_password_not_set',               'trading_experience_not_complete'
         ],
         p2p_status     => 'none',
         authentication => {

@@ -218,6 +218,7 @@ subtest 'get account status' => sub {
                     'cashier_locked',                     'dxtrade_password_not_set',
                     'financial_information_not_complete', 'idv_disallowed',
                     'mt5_password_not_set',               'trading_experience_not_complete',
+
                 ],
                 "cashier is locked for virtual accounts"
             );
@@ -235,8 +236,9 @@ subtest 'get account status' => sub {
                 $result->{status},
                 [
                     'allow_document_upload',    'cashier_locked',
-                    'dxtrade_password_not_set', 'financial_information_not_complete',
-                    'mt5_password_not_set',     'trading_experience_not_complete'
+                    'dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_additional_kyc_required',
+                    'mt5_password_not_set',     'trading_experience_not_complete',
+
                 ],
                 "cashier is locked correctly."
             );
@@ -248,8 +250,8 @@ subtest 'get account status' => sub {
                 $result->{status},
                 [
                     'allow_document_upload',              'dxtrade_password_not_set',
-                    'financial_information_not_complete', 'mt5_password_not_set',
-                    'trading_experience_not_complete'
+                    'financial_information_not_complete', 'mt5_additional_kyc_required',
+                    'mt5_password_not_set',               'trading_experience_not_complete',
                 ],
                 "cashier is not locked for correctly"
             );
@@ -260,8 +262,9 @@ subtest 'get account status' => sub {
                 $result->{status},
                 [
                     'allow_document_upload',              'dxtrade_password_not_set',
-                    'financial_information_not_complete', 'mt5_password_not_set',
-                    'trading_experience_not_complete',    'withdrawal_locked'
+                    'financial_information_not_complete', 'mt5_additional_kyc_required',
+                    'mt5_password_not_set',               'trading_experience_not_complete',
+                    'withdrawal_locked',
                 ],
                 "withdrawal is locked correctly"
             );
@@ -272,8 +275,8 @@ subtest 'get account status' => sub {
                 $result->{status},
                 [
                     'allow_document_upload',              'dxtrade_password_not_set',
-                    'financial_information_not_complete', 'mt5_password_not_set',
-                    'trading_experience_not_complete'
+                    'financial_information_not_complete', 'mt5_additional_kyc_required',
+                    'mt5_password_not_set',               'trading_experience_not_complete'
                 ],
                 "withdrawal is not locked correctly"
             );
@@ -283,9 +286,10 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result->{status},
                 [
-                    'allow_document_upload',    'deposit_locked',
-                    'dxtrade_password_not_set', 'financial_information_not_complete',
-                    'mt5_password_not_set',     'trading_experience_not_complete'
+                    'allow_document_upload',       'deposit_locked',
+                    'dxtrade_password_not_set',    'financial_information_not_complete',
+                    'mt5_additional_kyc_required', 'mt5_password_not_set',
+                    'trading_experience_not_complete',
                 ],
                 "deposit is not locked correctly"
             );
@@ -296,8 +300,8 @@ subtest 'get account status' => sub {
                 $result->{status},
                 [
                     'allow_document_upload',              'dxtrade_password_not_set',
-                    'financial_information_not_complete', 'mt5_password_not_set',
-                    'trading_experience_not_complete'
+                    'financial_information_not_complete', 'mt5_additional_kyc_required',
+                    'mt5_password_not_set',               'trading_experience_not_complete',
                 ],
                 "deposit is not locked correctly"
             );
@@ -310,9 +314,10 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result->{status},
                 [
-                    'allow_document_upload',    'cashier_locked',
-                    'dxtrade_password_not_set', 'financial_information_not_complete',
-                    'mt5_password_not_set',     'trading_experience_not_complete'
+                    'allow_document_upload',       'cashier_locked',
+                    'dxtrade_password_not_set',    'financial_information_not_complete',
+                    'mt5_additional_kyc_required', 'mt5_password_not_set',
+                    'trading_experience_not_complete',
                 ],
                 "cashier_locked when both deposit and withdrawal are locked"
             );
@@ -357,6 +362,65 @@ subtest 'get account status' => sub {
             is $result->{p2p_status}, "temp_ban", "P2P advertiser is temporarily blocked";
 
             BOM::Test::Helper::P2P::set_advertiser_blocked_until($test_client_p2p, 0);
+
+        };
+
+        subtest 'Check additional_kyc_required is triggered status for CR clients' => sub {
+
+            my $password = 'Abcd33!@';
+            my $hash_pwd = BOM::User::Password::hashpw($password);
+            my $email    = 'cr1_email' . rand(999) . '@binary.com';
+            my $user     = BOM::User->create(
+                email          => $email,
+                password       => $hash_pwd,
+                email_verified => 1,
+            );
+            my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                    broker_code   => 'CR',
+                    email         => $email,
+                    residence     => 'id',
+                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
+            my $auth_token = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
+            my $result     = $c->tcall('get_account_status', {token => $auth_token});
+
+            ## Check if mt5_additional_kyc_required is in list of status
+            my $is_triggered = scalar grep { $_ eq 'mt5_additional_kyc_required' } $result->{status}->@*;
+
+            is $is_triggered, 1, "mt5_additional_kyc_required is triggered";
+            # set field values to trigger mt5_additional_kyc_required
+            $client_cr1->tax_residence('id');
+            $client_cr1->tax_identification_number('1112222');
+            $client_cr1->place_of_birth('id');
+            $client_cr1->account_opening_reason('Speculative');
+            $client_cr1->save;
+
+            $result = $c->tcall('get_account_status', {token => $auth_token});
+            ## Check if mt5_additional_kyc_required is in list of status
+            $is_triggered = scalar grep { $_ eq 'mt5_additional_kyc_required' } $result->{status}->@*;
+            is $is_triggered, 0, "mt5_additional_kyc_required is not triggered";
+        };
+        subtest 'Check mt5_additional_kyc_required is not triggered for malatinvest clients' => sub {
+
+            my $password = 'Abcd33!@';
+            my $hash_pwd = BOM::User::Password::hashpw($password);
+            my $email    = 'cr1_email' . rand(999) . '@binary.com';
+            my $user     = BOM::User->create(
+                email          => $email,
+                password       => $hash_pwd,
+                email_verified => 1,
+            );
+            my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                    broker_code   => 'MF',
+                    email         => $email,
+                    residence     => 'id',
+                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
+            my $auth_token = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
+            my $result     = $c->tcall('get_account_status', {token => $auth_token});
+
+            ## Check if mt5_additional_kyc_required is in list of status
+            my $is_triggered = scalar grep { $_ eq 'mt5_additional_kyc_required' } $result->{status}->@*;
+
+            is $is_triggered, 0, "mt5_additional_kyc_required is not triggered for MF";
 
         };
 
@@ -889,7 +953,7 @@ subtest 'get account status' => sub {
                     },
                     p2p_status => "none",
                     status     => [
-                        qw(allow_document_upload dxtrade_password_not_set financial_information_not_complete mt5_password_not_set trading_experience_not_complete)
+                        qw(allow_document_upload dxtrade_password_not_set financial_information_not_complete mt5_additional_kyc_required mt5_password_not_set trading_experience_not_complete)
                     ],
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -3635,7 +3699,7 @@ subtest 'Social identity provider' => sub {
         {
             social_identity_provider => 'google',
             status                   => bag(
-                qw(allow_document_upload dxtrade_password_not_set social_signup financial_information_not_complete mt5_password_not_set trading_experience_not_complete)
+                qw(allow_document_upload dxtrade_password_not_set social_signup financial_information_not_complete mt5_additional_kyc_required mt5_password_not_set trading_experience_not_complete)
             ),
             currency_config => {
                 'USD' => {
@@ -3731,8 +3795,10 @@ subtest 'affiliate code of conduct' => sub {
     cmp_deeply(
         $result->{status},
         [
-            'allow_document_upload', 'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete',
-            'mt5_password_not_set',  'trading_experience_not_complete'
+            'allow_document_upload',       'cashier_locked',
+            'dxtrade_password_not_set',    'financial_information_not_complete',
+            'mt5_additional_kyc_required', 'mt5_password_not_set',
+            'trading_experience_not_complete'
         ],
         "needs_affiliate_coc_approval status is not added when code_of_conduct_approval is undef"
     );
@@ -3745,7 +3811,8 @@ subtest 'affiliate code of conduct' => sub {
     cmp_deeply(
         $result->{status},
         [
-            'allow_document_upload', 'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete',
+            'allow_document_upload', 'cashier_locked', 'dxtrade_password_not_set',
+            'financial_information_not_complete', 'mt5_additional_kyc_required',
             'mt5_password_not_set',
             'needs_affiliate_coc_approval', 'trading_experience_not_complete',
 
@@ -3761,8 +3828,10 @@ subtest 'affiliate code of conduct' => sub {
     cmp_deeply(
         $result->{status},
         [
-            'allow_document_upload', 'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete',
-            'mt5_password_not_set',  'trading_experience_not_complete'
+            'allow_document_upload',       'cashier_locked',
+            'dxtrade_password_not_set',    'financial_information_not_complete',
+            'mt5_additional_kyc_required', 'mt5_password_not_set',
+            'trading_experience_not_complete'
         ],
         "needs_affiliate_coc_approval status is removed when code_of_conduct_approval is 1"
     );
