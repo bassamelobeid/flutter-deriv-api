@@ -770,4 +770,45 @@ sub add_opt_out {
     return;
 }
 
+=head2 is_available
+
+Checks if IDV service is available for the client
+
+It takes the following param:
+
+=over 4
+
+=item * L<BOM::User::Client> the client
+
+=back
+
+Returns,
+    1 if IDV is available for the client
+    0 if IDV is not available for the client
+
+IDV is available for the client if IDV is not disallowed and:
+    - has IDV submissions left or
+    - has no IDV submissions left, IDV status is 'expired', and 
+        has document expired chance
+
+Note: if client is virtual it checks if there is a duplicate client to grab the idv_disallowed flag
+
+=cut
+
+sub is_available {
+    my ($self, $client) = @_;
+
+    my $has_submissions_left = $self->submissions_left() > 0;
+
+    my $expired_document_chance;
+    $expired_document_chance = $self->has_expired_document_chance() ? 1 : 0
+        if !$has_submissions_left && $client->get_idv_status() eq 'expired';
+
+    my $idv_disallowed = BOM::User::IdentityVerification::is_idv_disallowed($client);
+
+    my $is_available = ($has_submissions_left || $expired_document_chance) && !$idv_disallowed;
+
+    return $is_available ? 1 : 0;
+}
+
 1;

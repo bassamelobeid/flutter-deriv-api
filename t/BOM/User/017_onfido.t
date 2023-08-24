@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
@@ -1138,4 +1138,18 @@ subtest 'applicant info' => sub {
         location => {country_of_residence => 'PRY'},
         },
         'Expected applicant info';
+};
+
+subtest 'is available' => sub {
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+
+    $onfido_mock->mock(submissions_left => 1);
+
+    ok BOM::User::Onfido::is_available($test_client), 'onfido is available if submissions left';
+
+    $onfido_mock->mock(submissions_left => 0);
+
+    ok !BOM::User::Onfido::is_available($test_client), 'onfido is not available if no submissions left';
+
+    $onfido_mock->unmock_all();
 };

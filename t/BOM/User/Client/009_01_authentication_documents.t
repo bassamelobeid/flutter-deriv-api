@@ -877,4 +877,27 @@ subtest 'check_words_similarity' => sub {
 
 };
 
+subtest 'is upload available' => sub {
+    my $user_cr = BOM::User->create(
+        email    => 'is_available@deriv.com',
+        password => 'secret_pwd'
+    );
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $user_cr->add_client($client_cr);
+
+    my $client_model = BOM::User::Client->new({loginid => $client_cr->loginid});
+
+    ok $client_model->documents->is_upload_available, 'is available if has attempts left';
+
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $key   = 'MAX_UPLOADS_KEY::' . $client_cr->binary_user_id;
+    $redis->set($key, 21,);
+
+    ok !$client_model->documents->is_upload_available, 'is not available if has no attempts left';
+};
+
 done_testing();

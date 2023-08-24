@@ -1194,4 +1194,73 @@ subtest 'idv opt out' => sub {
 
 };
 
+subtest 'is available' => sub {
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $user_cr = BOM::User->create(
+        email    => 'is_available@deriv.com',
+        password => 'secret_pwd'
+    );
+
+    $user_cr->add_client($client_cr);
+
+    my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+    # mocks idv_submissions_left has_expired_document_chance idv_disallowed
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    # mocks idv_status
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $user_cr->id);
+
+    my $test_cases = [{
+            idv_submissions_left => 1,
+            expected             => 1,
+        },
+        {
+            idv_submissions_left        => 0,
+            idv_expired_document_chance => 1,
+            idv_status                  => 'none',
+            expected                    => 0,
+        },
+        {
+            idv_submissions_left        => 0,
+            idv_expired_document_chance => 0,
+            idv_status                  => 'expired',
+            expected                    => 0,
+        },
+        {
+            idv_submissions_left        => 0,
+            idv_expired_document_chance => 1,
+            idv_status                  => 'expired',
+            expected                    => 1,
+        },
+        {
+            idv_submissions_left        => 1,
+            idv_expired_document_chance => 1,
+            idv_status                  => 'expired',
+            idv_disallowed              => 1,
+            expected                    => 0,
+        },
+        {
+            idv_submissions_left => 0,
+            idv_status           => 'none',
+            expected             => 0,
+        }];
+
+    for my $test_case ($test_cases->@*) {
+        $client_mock->mock(get_idv_status => $test_case->{idv_status});
+
+        $idv_mock->mock(submissions_left            => $test_case->{idv_submissions_left});
+        $idv_mock->mock(has_expired_document_chance => $test_case->{idv_expired_document_chance});
+        $idv_mock->mock(is_idv_disallowed           => $test_case->{idv_disallowed});
+
+        cmp_deeply($idv_model->is_available($client_cr), $test_case->{expected}, 'expected availability');
+    }
+
+    $client_mock->unmock_all;
+    $idv_mock->unmock_all;
+};
+
 done_testing();

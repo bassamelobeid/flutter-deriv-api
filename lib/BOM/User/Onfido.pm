@@ -934,4 +934,32 @@ sub applicant_info {
     return $details;
 }
 
+=head2 is_available
+
+Checks if Onfido service is available for the client
+
+It takes the following param:
+
+=over 4
+
+=item * L<BOM::User::Client> the client
+
+=back
+
+Returns,
+    1 if Onfido is available for the client
+    0 if Onfido is not available for the client
+
+
+Onfido is available for the client if:
+    - has Onfido submissions left
+
+=cut
+
+sub is_available {
+    my ($client) = @_;
+
+    return BOM::User::Onfido::submissions_left($client) > 0;
+}
+
 1;

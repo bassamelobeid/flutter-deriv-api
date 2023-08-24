@@ -14,9 +14,10 @@ use BOM::Config::Redis;
 
 use constant POA_ADDRES_MISMATCH_TTL  => 604_800;
 use constant POA_ADDRESS_MISMATCH_KEY => 'POA_ADDRESS_MISMATCH::';
+use constant MAX_UPLOAD_TRIES_PER_DAY => 20;
+use constant MAX_UPLOADS_KEY          => 'MAX_UPLOADS_KEY::';
 
 use BOM::User::Client::AuthenticationDocuments::Config;
-use BOM::Config::Redis;
 
 =head1 NAME
 
@@ -1194,6 +1195,38 @@ sub get_poinc_count {
         }
     }
     return $poinc_count;
+}
+
+=head2 is_upload_available
+
+Checks if Manual Upload is available for the client
+
+It takes the following param:
+
+=over 4
+
+=item * L<BOM::User::Client> the client
+
+=back
+
+Returns,
+    1 if Manual Upload is available for the client
+    0 if Manual Upload is not available for the client
+
+Manual Upload is available for the client if:
+    - has not exceeded the maximum allowed uploads per day 
+
+=cut
+
+sub is_upload_available {
+    my ($self) = @_;
+
+    my $redis        = BOM::Config::Redis::redis_replicated_write();
+    my $key          = MAX_UPLOADS_KEY . $self->client->binary_user_id;
+    my $upload_tries = $redis->get($key) // 0;
+    my $is_available = $upload_tries < MAX_UPLOAD_TRIES_PER_DAY;
+
+    return $is_available;
 }
 
 1;
