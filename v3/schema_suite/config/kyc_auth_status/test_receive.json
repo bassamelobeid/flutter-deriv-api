@@ -1,0 +1,75 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "kyc_auth_status": {
+         "type": "object",
+         "required": [
+            "identity",
+            "address"
+         ],
+         "properties": {
+            "identity": {
+               "type": "object",
+               "required": [
+                  "available_services",
+                  "service",
+                  "status"
+               ],
+               "properties": {
+                  "last_rejected": {
+                     "type": "object",
+                     "properties": {
+                        "rejected_reasons": {
+                           "type": "array"
+                        },
+                        "document_type": {
+                           "type": "string"
+                        }
+                     }
+                  },
+                  "available_services": {
+                     "type": "array"
+                  },
+                  "service": {
+                     "type": "string"
+                  },
+                  "status": {
+                     "type": "string"
+                  }
+               }
+            },
+            "address": {
+               "type": "object",
+               "required": [
+                  "status"
+               ],
+               "properties": {
+                  "status": {
+                     "type": "string",
+                     "enum": [
+                        "none",
+                        "pending",
+                        "rejected",
+                        "verified",
+                        "expired"
+                     ]
+                  }
+               }
+            }
+         }
+      },
+      "echo_req": {},
+      "msg_type": {
+         "type": "string",
+         "pattern": "^kyc_auth_status$"
+      }
+   }
+}

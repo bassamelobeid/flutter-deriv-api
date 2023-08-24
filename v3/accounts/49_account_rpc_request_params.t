@@ -368,6 +368,10 @@ $res = $t->await::get_account_status({get_account_status => 1});
 ok(ref $res->{get_account_status});
 is $call_params->{token}, $token;
 
+$res = $t->await::kyc_auth_status({kyc_auth_status => 1});
+ok(ref $res->{kyc_auth_status});
+is $call_params->{token}, $token;
+
 %$rpc_response = (status => 1);
 $res           = $t->await::change_password({
     change_password => 1,
@@ -450,6 +454,7 @@ $t->await::set_financial_assessment({
         %{BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()}});
 $t->await::login_history({login_history => 1});
 $t->await::get_account_status({get_account_status => 1});
+$t->await::kyc_auth_status({kyc_auth_status => 1});
 $t->await::change_password({
     change_password => 1,
     old_password    => '123456',

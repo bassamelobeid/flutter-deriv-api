@@ -18,7 +18,7 @@ use BOM::User::Client;
 
 use await;
 
-unless ($ENV{TEST_DECOUPLE_VR}){
+unless ($ENV{TEST_DECOUPLE_VR}) {
     plan skip_all => 'Test is disabled. Set TEST_DECOUPLE_VR=1 to enable it';
 }
 
@@ -43,7 +43,6 @@ my $user = BOM::User->create(
 
 $user->add_client($client_vr);
 
-
 $client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
@@ -59,20 +58,22 @@ diag("will call topup_virtual, that will block rpc worker");
 throws_ok {
     # it is expected that message_ok will fail, lets mock ok to ignore this failure
     my $mock_more = Test::MockModule->new('Test::More');
-    $mock_more->mock('ok',sub {1});
+    $mock_more->mock('ok', sub { 1 });
     my $mock_await = Test::MockModule->new('await');
-    $mock_await->mock('ok', sub{1});
-    $t->await::topup_virtual({topup_virtual => 1},{wait_max => 1});
-} qr/timeout/, "topup_virtual should be timeout because table is locked and then rpc worker is blocked";
+    $mock_await->mock('ok', sub { 1 });
+    $t->await::topup_virtual({topup_virtual => 1}, {wait_max => 1});
+}
+qr/timeout/, "topup_virtual should be timeout because table is locked and then rpc worker is blocked";
 diag("Now rpc worker is blocked");
 diag("reset binary-websocket-api connection");
 BOM::Test::Helper::reconnect($t);
-lives_ok {$t->await::ping({ping => 1}); } "ping ok because it will not use rpc woker";
+lives_ok { $t->await::ping({ping => 1}); } "ping ok because it will not use rpc woker";
 
 # Here it will fail because rpc worker is blocked
 lives_ok {
-    $t->await::trading_times({trading_times => "2023-07-26"},{wait_max => 1});
-} "trade_time should be ok if rpc worker is available";
+    $t->await::trading_times({trading_times => "2023-07-26"}, {wait_max => 1});
+}
+"trade_time should be ok if rpc worker is available";
 
 diag("unlock table");
 $client_dbh->rollback;
@@ -86,8 +87,9 @@ diag("locked");
 diag("reset binary-websocket-api connection");
 BOM::Test::Helper::reconnect($t);
 lives_ok {
-    $t->await::trading_times({trading_times => "2023-07-26"},{wait_max => 1});
-} "trade_time should still be ok even db locked again because rpc worker is free and it needn't that table";
+    $t->await::trading_times({trading_times => "2023-07-26"}, {wait_max => 1});
+}
+"trade_time should still be ok even db locked again because rpc worker is free and it needn't that table";
 diag("unlock table");
 $client_dbh->rollback;
 

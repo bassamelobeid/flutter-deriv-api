@@ -41,6 +41,9 @@ is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied b/c it is trade'
 $t   = $t->send_ok({json => {get_account_status => 1}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 ok $res->{get_account_status}, 'get_account_status is read scope';
+$t   = $t->send_ok({json => {kyc_auth_status => 1}})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+ok $res->{kyc_auth_status}, 'kyc_auth_status is read scope';
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only($app_id, $cr_1);
 $t         = $t->send_ok({json => {authorize => $token}})->message_ok;

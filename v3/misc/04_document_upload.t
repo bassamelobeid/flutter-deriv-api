@@ -47,13 +47,13 @@ my $chunk_size  = 6;
 my $PASSTHROUGH = {key => 'value'};
 
 my %generic_req = (
-    passthrough     => $PASSTHROUGH,
-    document_upload => 1,
-    document_id     => '12456',
-    document_format => 'JPEG',
-    document_type   => 'passport',
+    passthrough              => $PASSTHROUGH,
+    document_upload          => 1,
+    document_id              => '12456',
+    document_format          => 'JPEG',
+    document_type            => 'passport',
     document_issuing_country => 'br',
-    expiration_date => Date::Utility->today()->plus_time_interval('1d')->date,
+    expiration_date          => Date::Utility->today()->plus_time_interval('1d')->date,
 );
 
 use constant {FAIL_TEST_DATA => 'Some text'};

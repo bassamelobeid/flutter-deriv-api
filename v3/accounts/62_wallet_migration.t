@@ -45,9 +45,11 @@ subtest 'Wallet migration' => sub {
                             loginid          => $vr_client->loginid,
                             account_category => 'trading',
                             platform         => 'dtrade',
-                            account_type => 'standard',
-                        }],
-                }],
+                            account_type     => 'standard',
+                        }
+                    ],
+                }
+            ],
             'Got correct account list'
         );
 

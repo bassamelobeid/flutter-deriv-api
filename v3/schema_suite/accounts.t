@@ -38,6 +38,7 @@ test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test
 test_sendrecv 'login_history/test_send.json', 'login_history/test_receive.json';
 test_sendrecv_params 'get_settings/test_send.json', 'get_settings/test_receive_vrtc.json', 'Indonesia', 'id';
 test_sendrecv 'get_account_status/test_send.json', 'get_account_status/test_receive.json';
+test_sendrecv 'kyc_auth_status/test_send.json',    'kyc_auth_status/test_receive.json';
 
 # TRADE SCOPE CALLS (VRTC)
 test_sendrecv 'topup_virtual/test_send.json', 'topup_virtual/test_receive.json';
@@ -162,6 +163,7 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_error.j
     $suite->get_stashed('new_account_real/new_account_real/oauth_token');
 test_sendrecv 'balance/test_send.json',            'balance/test_receive_error.json';
 test_sendrecv 'get_account_status/test_send.json', 'get_account_status/test_receive_error.json';
+test_sendrecv 'kyc_auth_status/test_send.json',    'kyc_auth_status/test_receive_error.json';
 
 # VIRTUAL ACCOUNT OPENING FOR (MF)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'error@binary.com', 'account_opening';
