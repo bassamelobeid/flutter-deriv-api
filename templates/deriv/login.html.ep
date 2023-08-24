@@ -148,6 +148,25 @@
         element.parentNode.querySelector('label').classList[should_raise ? 'add' : 'remove']('raised-label');
     }
 
+    function scrollToErrorOneall() {
+        const element = document.querySelector('p.error-oneall');
+  
+        if (element) {
+        const offsetTop = element.offsetTop;
+        const offsetLeft = element.offsetLeft;
+    
+        window.scrollTo({
+        top: offsetTop,
+        left: offsetLeft,
+        behavior: 'smooth'
+        });
+        }
+    }
+
+    setTimeout(function() {
+	scrollToErrorOneall();
+    }, 1000);
+
     function togglePasswordVisibility() {
         if (txtPass.type === 'password') {
             txtPass.type = 'text';
