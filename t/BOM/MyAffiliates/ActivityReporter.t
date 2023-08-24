@@ -153,7 +153,7 @@ subtest 'binary' => sub {
         diag $reporter->headers_data();
         is(
             $csv[0],
-            '2011-03-08,' . $client->loginid . ',1165.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',987.00,9098.00,1.00',
+            '2011-03-08,' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',987.00,9098.00,1.00',
             'Check if values are correct in report'
         );
     };
@@ -357,7 +357,7 @@ subtest 'deriv' => sub {
         diag $reporter->headers_data();
         is(
             $csv[0],
-            '2011-03-08,deriv_' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',987.00,9098.00,1.00',
+            '2011-03-08,deriv_' . $client->loginid . ',1165.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',987.00,9098.00,1.00',
             'Check if values are correct in report'
         );
     };
@@ -439,6 +439,30 @@ subtest 'MF Deposits - Deriv & Binary - USD' => sub {
     $fmb->sell_price(40);
     $fmb_helper->sell_bet;
 
+    subtest 'Activity report for specific date - Binary MF - USD' => sub {
+        plan tests => 3;
+
+        my $processing_date = Date::Utility->new(substr($day_one, 0, 10));
+        my $reporter        = BOM::MyAffiliates::ActivityReporter->new(
+            brand           => Brands->new(name => 'binary'),
+            processing_date => $processing_date,
+        );
+        $first_funded_date = $first_funded_date gt $processing_date->date_yyyymmdd ? $processing_date->date_yyyymmdd : $first_funded_date;
+        is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
+
+        my @csv = $reporter->activity();
+        @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
+
+        is(@csv, 1, 'Check if there is only one entry for our client on the report');
+        chomp $csv[0];
+        diag $reporter->headers_data();
+        is(
+            $csv[0],
+            '2011-03-08,' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',0.00,0.00,1.00',
+            'Check if values are correct in report'
+        );
+    };
+
     subtest 'Activity report for specific date - Deriv MF - USD' => sub {
         plan tests => 3;
 
@@ -483,6 +507,30 @@ subtest 'MF Deposits - Deriv & Binary - USD' => sub {
         is(
             $csv[0],
             '2011-03-08,' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',0.00,0.00,1.00',
+            'Check if values are correct in report'
+        );
+    };
+
+    subtest 'Activity report for specific date - Deriv MF - USD' => sub {
+        plan tests => 3;
+
+        my $processing_date = Date::Utility->new(substr($day_one, 0, 10));
+        my $reporter        = BOM::MyAffiliates::ActivityReporter->new(
+            brand           => Brands->new(name => 'deriv'),
+            processing_date => $processing_date,
+        );
+        $first_funded_date = $first_funded_date gt $processing_date->date_yyyymmdd ? $processing_date->date_yyyymmdd : $first_funded_date;
+        is $reporter->output_file_path(), '/db/myaffiliates/deriv/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
+
+        my @csv = $reporter->activity();
+        @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
+
+        is(@csv, 1, 'Check if there is only one entry for our client on the report');
+        chomp $csv[0];
+        diag $reporter->headers_data();
+        is(
+            $csv[0],
+            '2011-03-08,deriv_' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',0.00,0.00,1.00',
             'Check if values are correct in report'
         );
     };
@@ -565,6 +613,30 @@ subtest 'MF Deposits - Deriv & Binary - AUD' => sub {
     $fmb->sell_price(40);
     $fmb_helper->sell_bet;
 
+    subtest 'Activity report for specific date - Binary MF - AUD' => sub {
+        plan tests => 3;
+
+        my $processing_date = Date::Utility->new(substr($day_one, 0, 10));
+        my $reporter        = BOM::MyAffiliates::ActivityReporter->new(
+            brand           => Brands->new(name => 'binary'),
+            processing_date => $processing_date,
+        );
+        $first_funded_date = $first_funded_date gt $processing_date->date_yyyymmdd ? $processing_date->date_yyyymmdd : $first_funded_date;
+        is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
+
+        my @csv = $reporter->activity();
+        @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
+
+        is(@csv, 1, 'Check if there is only one entry for our client on the report');
+        chomp $csv[0];
+        diag $reporter->headers_data();
+        is(
+            $csv[0],
+            '2011-03-08,' . $client->loginid . ',0.00,18196.00,0.00,0.00,0.00,' . $first_funded_date . ',0.00,0.00,2.00',
+            'Check if values are correct in report'
+        );
+    };
+
     subtest 'Activity report for specific date - Deriv MF - AUD' => sub {
         plan tests => 3;
 
@@ -609,6 +681,30 @@ subtest 'MF Deposits - Deriv & Binary - AUD' => sub {
         is(
             $csv[0],
             '2011-03-08,' . $client->loginid . ',0.00,18196.00,0.00,0.00,0.00,' . $first_funded_date . ',0.00,0.00,2.00',
+            'Check if values are correct in report'
+        );
+    };
+
+    subtest 'Activity report for specific date - Deriv MF - AUD' => sub {
+        plan tests => 3;
+
+        my $processing_date = Date::Utility->new(substr($day_one, 0, 10));
+        my $reporter        = BOM::MyAffiliates::ActivityReporter->new(
+            brand           => Brands->new(name => 'deriv'),
+            processing_date => $processing_date,
+        );
+        $first_funded_date = $first_funded_date gt $processing_date->date_yyyymmdd ? $processing_date->date_yyyymmdd : $first_funded_date;
+        is $reporter->output_file_path(), '/db/myaffiliates/deriv/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
+
+        my @csv = $reporter->activity();
+        @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
+
+        is(@csv, 1, 'Check if there is only one entry for our client on the report');
+        chomp $csv[0];
+        diag $reporter->headers_data();
+        is(
+            $csv[0],
+            '2011-03-08,deriv_' . $client->loginid . ',0.00,18196.00,0.00,0.00,0.00,' . $first_funded_date . ',0.00,0.00,2.00',
             'Check if values are correct in report'
         );
     };
