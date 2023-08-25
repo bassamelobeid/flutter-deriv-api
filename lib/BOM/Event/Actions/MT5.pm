@@ -37,6 +37,7 @@ use Future::Utils qw(fmap_void);
 use Time::Moment;
 use WebService::MyAffiliates;
 use Scalar::Util;
+use Data::Dump 'pp';
 
 use LandingCompany::Registry;
 use Future;
@@ -292,7 +293,26 @@ async sub mt5_change_color {
     die 'Loginid is required' unless $loginid;
     die 'Color is required'   unless $color;
 
-    my $user_detail = await BOM::MT5::User::Async::get_user($loginid);
+    my $user_detail;
+
+    try {
+        $user_detail = await BOM::MT5::User::Async::get_user($loginid);
+    } catch ($e) {
+        if ($e->{code} eq 'NotFound') {
+            my $user = BOM::User->new(loginid => $loginid);
+            BOM::Platform::Event::Emitter::emit(
+                'update_loginid_status',
+                {
+                    loginid        => $loginid,
+                    binary_user_id => $user->id,
+                    status_code    => 'archived'
+                });
+            die "Account $loginid not found among the active accounts, changed the status to archived";
+        }
+
+        die pp($e);
+    }
+
     $user_detail->{color} = $color;
     my $updated_user = await BOM::MT5::User::Async::update_user($user_detail);
 

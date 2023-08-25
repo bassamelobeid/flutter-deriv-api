@@ -328,7 +328,17 @@ subtest 'mt5 track event' => sub {
         $args->{loginid} = 'MT90000';
         $args->{color}   = 16711680;
 
+        $mocked_mt5->mock('get_user', sub { Future->fail({code => "NotFound"}) });
+        $mocked_user->mock('new', sub { bless {id => 1}, 'BOM::User' });
+
+        my $response =
+            index($action_handler->($args)->{failure}[0], 'Account MT90000 not found among the active accounts, changed the status to archived');
+
+        is $response, 0, 'correct exception when MT5 account is not found';
+
+        $mocked_mt5->mock('get_user',    sub { Future->done({login => "MT90000", email => 'test123@test.com'}) });
         $mocked_mt5->mock('update_user', sub { Future->done({login => "MT90000", color => 123}) });
+
         like exception { $action_handler->($args)->get; }, qr/Could not change client MT90000 color to 16711680/,
             'correct exception when failed to update color field';
 
@@ -336,6 +346,8 @@ subtest 'mt5 track event' => sub {
         my $result = $action_handler->($args)->get;
         ok $result, 'Success mt5 color change result';
 
+        $mocked_mt5->unmock('get_user');
+        $mocked_user->unmock('new');
     };
 
     subtest 'mt5 store tranactions' => sub {
