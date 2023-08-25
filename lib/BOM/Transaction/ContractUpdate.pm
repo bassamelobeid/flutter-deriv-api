@@ -17,8 +17,6 @@ use Syntax::Keyword::Try;
 use ExpiryQueue;
 use Log::Any   qw($log);
 use List::Util qw(min);
-# For debugging purpose, will be removed once error is fixed.
-use Data::Dump 'pp';
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -329,16 +327,21 @@ sub update {
     my $contract_category = $self->contract->category_code;
     my $update_args       = {contract_id => $self->contract_id};
 
-    foreach my $order_name (keys %{$self->update_params}) {
-        if (my $order = $self->$order_name) {
-            # $order->order_amount will be undef for cancel operation so we pass
-            # in 0 to database function to perform cancellation
-            if ($contract_category eq 'multiplier') {
-                $update_args->{$order_name} = $order->order_amount // 0;
-            } elsif ($contract_category eq 'accumulator' or $contract_category eq 'turbos') {    # turbos and accumulator contract
-                $update_args->{$order_name} = $order->{amount} // 0;
+    if (keys %{$self->update_params}) {
+        foreach my $order_name (keys %{$self->update_params}) {
+            if (my $order = $self->$order_name) {
+                # $order->order_amount will be undef for cancel operation so we pass
+                # in 0 to database function to perform cancellation
+                if ($contract_category eq 'multiplier') {
+                    $update_args->{$order_name} = $order->order_amount // 0;
+                } elsif ($contract_category eq 'accumulator' or $contract_category eq 'turbos') {    # turbos and accumulator contract
+                    $update_args->{$order_name} = $order->{amount} // 0;
+                }
             }
         }
+    } else {
+        # returning error if limit_order is empty hash
+        return {error => "Cannot perform update, please specify limit_order"};
     }
 
     my $update_method = "update_" . $contract_category . "_contract";
@@ -350,6 +353,9 @@ sub update {
 
     my $fmb = $self->_fmb_datamapper->get_contract_details_with_transaction_ids($self->contract_id)->[0];
 
+    # return error if take_profit/stop_loss is null
+    return {error => "Cannot perform update, please specify take_profit / stop_loss"} unless $res_table->{$fmb->{id}};
+    
     # because of replication delay we need to bring it up to date
     my $child = $res_table->{$fmb->{id}};
 
@@ -390,10 +396,6 @@ sub build_contract_update_response {
 
             }};
     }
-
-    $log->errorf("error in processing update contract for category %s with parameters %s",
-        $category, pp($contract->can('_order') ? $contract->_order : +{}));
-
 }
 
 has [qw(take_profit stop_loss)] => (
