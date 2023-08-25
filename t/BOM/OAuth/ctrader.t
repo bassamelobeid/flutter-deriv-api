@@ -56,17 +56,18 @@ subtest 'onetime authorize' => sub {
     my $token = $t->post_ok('/api/v1/ctrader/oauth2/crmApiToken' => json => {password => $api_password})->tx->res->json->{crmApiToken};
 
     note "Making request with no API token";
-    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize' => 'some_body')->status_is(401)->json_is('/error_code', 'INVALID_TOKEN');
+    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize' => 'some_body')->status_is(403)->json_is('/error_code', 'INVALID_TOKEN');
 
     note "Making request with incorrent API token";
-    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?token=some_token' => 'some_body')->status_is(401)->json_is('/error_code', 'INVALID_TOKEN');
+    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?crmApiToken=some_token' => 'some_body')->status_is(403)
+        ->json_is('/error_code', 'INVALID_TOKEN');
 
     note "Making request with correct API token";
-    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?token=' . $token => 'some_body')->status_is(400)
+    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?crmApiToken=' . $token => 'some_body')->status_is(400)
         ->json_is('/error_code', 'INVALID_OTT_TOKEN');
 
     note "Making request with invalid one-time token";
-    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?token=' . $token, json => {code => 'Invalid_OTT'})->status_is(400)
+    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?crmApiToken=' . $token, json => {code => 'Invalid_OTT'})->status_is(400)
         ->json_is('/error_code', 'INVALID_OTT_TOKEN');
 
     # Generate one time token
@@ -74,11 +75,11 @@ subtest 'onetime authorize' => sub {
     my $ott     = $ctrader->generate_login_token('Mozzila 5.0');
 
     note "Making request with valid one-time token";
-    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?token=' . $token, json => {code => $ott})->status_is(200)->json_is('/userId', 1)
+    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?crmApiToken=' . $token, json => {code => $ott})->status_is(200)->json_is('/userId', 1)
         ->json_like('/accessToken', qr/ct\d+-\w+/);
 
     note "Trying to use same token twice ";
-    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?token=' . $token, json => {code => $ott})->status_is(400)
+    $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?crmApiToken=' . $token, json => {code => $ott})->status_is(400)
         ->json_is('/error_code', 'INVALID_OTT_TOKEN');
 };
 
@@ -87,33 +88,37 @@ subtest 'authorize' => sub {
     my $token = $t->post_ok('/api/v1/ctrader/oauth2/crmApiToken' => json => {password => $api_password})->tx->res->json->{crmApiToken};
 
     note "Making request with no API token";
-    $t->post_ok('/api/v1/ctrader/oauth2/authorize' => 'some_body')->status_is(401)->json_is('/error_code', 'INVALID_TOKEN');
+    $t->post_ok('/api/v1/ctrader/oauth2/authorize' => 'some_body')->status_is(403)->json_is('/error_code', 'INVALID_TOKEN');
 
     note "Making request with incorrent API token";
-    $t->post_ok('/api/v1/ctrader/oauth2/authorize?token=some_token' => 'some_body')->status_is(401)->json_is('/error_code', 'INVALID_TOKEN');
+    $t->post_ok('/api/v1/ctrader/oauth2/authorize?crmApiToken=some_token' => 'some_body')->status_is(403)->json_is('/error_code', 'INVALID_TOKEN');
 
     note "Making request with correct API token";
-    $t->post_ok('/api/v1/ctrader/oauth2/authorize?token=' . $token => 'some_body')->status_is(400)->json_is('/error_code', 'INVALID_ACCESS_TOKEN');
+    $t->post_ok('/api/v1/ctrader/oauth2/authorize?crmApiToken=' . $token => 'some_body')->status_is(404)
+        ->json_is('/error_code', 'INVALID_ACCESS_TOKEN');
 
     note "Making request with invalid access token";
-    $t->post_ok('/api/v1/ctrader/oauth2/authorize?token=' . $token => json => {accessToken => 'Invalid_token'})->status_is(400)
+    $t->post_ok('/api/v1/ctrader/oauth2/authorize?crmApiToken=' . $token => json => {accessToken => 'Invalid_token'})->status_is(404)
         ->json_is('/error_code', 'INVALID_ACCESS_TOKEN');
 
     #Acquare access token.
-    my $ctrader      = BOM::TradingPlatform::CTrader->new(client => $client);
-    my $ott          = $ctrader->generate_login_token('Mozzila 5.0');
-    my $access_token = $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?token=' . $token, json => {code => $ott})->tx->res->json->{accessToken};
+    my $ctrader = BOM::TradingPlatform::CTrader->new(client => $client);
+    my $ott     = $ctrader->generate_login_token('Mozzila 5.0');
+    my $access_token =
+        $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?crmApiToken=' . $token, json => {code => $ott})->tx->res->json->{accessToken};
 
     note "Making request with valid access token";
-    $t->post_ok('/api/v1/ctrader/oauth2/authorize?token=' . $token => json => {accessToken => $access_token})->status_is(200)->json_is('/userId', 1);
+    $t->post_ok('/api/v1/ctrader/oauth2/authorize?crmApiToken=' . $token => json => {accessToken => $access_token})->status_is(200)
+        ->json_is('/userId', 1);
 
     note "Making request with valid access token multiple times working fine as well";
-    $t->post_ok('/api/v1/ctrader/oauth2/authorize?token=' . $token => json => {accessToken => $access_token})->status_is(200)->json_is('/userId', 1);
+    $t->post_ok('/api/v1/ctrader/oauth2/authorize?crmApiToken=' . $token => json => {accessToken => $access_token})->status_is(200)
+        ->json_is('/userId', 1);
 };
 
 subtest generate_onetime_token => sub {
     # Check that API endpoing returns correct error.
-    $t->post_ok('/api/v1/ctrader/oauth2/onetime/generate')->status_is(501)->json_is('/error_code', 'NOT_IMPLEMENTED');
+    $t->post_ok('/api/v1/ctrader/oauth2/onetime/generate')->status_is(403)->json_is('/error_code', 'INVALID_TOKEN');
 };
 
 done_testing();

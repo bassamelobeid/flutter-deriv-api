@@ -37,6 +37,8 @@ use BOM::Platform::Email   qw(send_email);
 use BOM::User::AuditLog;
 use BOM::OAuth::SocialLoginClient;
 
+use constant CTRADER_APPID => 36218;
+
 sub authorize {
     my $c = shift;
 
@@ -48,6 +50,14 @@ sub authorize {
 
     return $c->_bad_request('the request was missing app_id') unless $app_id;
     return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^[0-9]+$/);
+
+    my $social_login_bypass = 0;
+    if ($app_id == CTRADER_APPID) {
+        $c->app->sessions->secure(1);
+        $c->app->sessions->samesite('None');
+        $c->res->headers->header('Content-Security-Policy' => join(" ", 'frame-ancestors', 'https://ct-uat.deriv.com/'));
+        $social_login_bypass = 1;
+    }
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
     my $app         = $oauth_model->verify_app($app_id);
@@ -71,6 +81,8 @@ sub authorize {
 
     my $r          = $c->stash('request');
     my $brand_name = $c->stash('brand')->name;
+    my $partnerId  = $c->param('partnerId');
+    $partnerId = '' unless ($c->param('partnerId') // '') =~ /^[\w\-]{1,32}$/;
 
     my %template_params = (
         template                  => $c->_get_template_name('login'),
@@ -78,13 +90,16 @@ sub authorize {
         app                       => $app,
         r                         => $r,
         csrf_token                => $c->csrf_token,
-        use_social_login          => $c->_is_social_login_available(),
+        use_social_login          => $social_login_bypass ? 0 : $c->_is_social_login_available(),
         login_providers           => $c->stash('login_providers'),
         login_method              => undef,
         is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($app->{id}),
         social_login_links        => $c->stash('social_login_links'),
         use_oneall                => $c->_use_oneall_web,
         dd_rum_config             => _datadog_config());
+
+    $template_params{partnerId} = $partnerId if $partnerId;
+
     try {
         $template_params{website_domain} = $c->_website_domain($app->{id});
 
@@ -103,7 +118,7 @@ sub authorize {
             and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
             and defang($c->param('login')))
         {
-            my $login = $c->_login($app) or return;
+            my $login = $c->_login({app => $app, social_login_bypass => $social_login_bypass}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
             $c->session('_is_logged_in', 1);
@@ -117,7 +132,7 @@ sub authorize {
 
             # Get client from Oneall Social Login.
             my $oneall_user_id = $c->session('_oneall_user_id');
-            my $login          = $c->_login($app, $oneall_user_id) or return;
+            my $login          = $c->_login({app => $app, oneall_user_id => $oneall_user_id}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
             $c->session('_is_logged_in', 1);
@@ -126,7 +141,7 @@ sub authorize {
         } elsif ($c->session('_sls_user_id')) {    #exact same logic as oneall
                                                    # Get client from sls Social Login.
             my $sls_user_id = $c->session('_sls_user_id');
-            my $login       = $c->_login($app, $sls_user_id) or return;
+            my $login       = $c->_login({app => $app, oneall_user_id => $sls_user_id}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
             $c->session('_is_logged_in', 1);
@@ -440,7 +455,9 @@ sub _handle_self_closed {
 }
 
 sub _login {
-    my ($c, $app, $oneall_user_id) = @_;
+    my ($c, $params) = @_;
+    my ($app, $oneall_user_id, $social_login_bypass) =
+        @{$params}{qw/app oneall_user_id social_login_bypass/};
 
     my $email    = trim lc(defang $c->param('email'));
     my $password = $c->param('password');
@@ -471,7 +488,7 @@ sub _login {
             error                     => localize(get_message_mapping()->{$err} // $err),
             r                         => $c->stash('request'),
             csrf_token                => $c->csrf_token,
-            use_social_login          => $c->_is_social_login_available(),
+            use_social_login          => $social_login_bypass ? 0 : $c->_is_social_login_available(),
             login_providers           => $c->stash('login_providers'),
             login_method              => undef,
             is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($id),

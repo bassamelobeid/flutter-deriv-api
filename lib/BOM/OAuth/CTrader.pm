@@ -105,13 +105,13 @@ sub pta_login {
 
     return $c->reply->not_found unless $c->is_access_allowed;
 
-    if (!$c->validate_token($c->param('token'))) {
+    if (!$c->validate_token($c->param('crmApiToken'))) {
         return $c->render(
             json => {
                 error_code => 'INVALID_TOKEN',
                 message    => 'The provided token is invalid.'
             },
-            status => 401,
+            status => 403,
         );
     }
 
@@ -175,13 +175,13 @@ sub authorize {
 
     return $c->reply->not_found unless $c->is_access_allowed;
 
-    if (!$c->validate_token($c->param('token'))) {
+    if (!$c->validate_token($c->param('crmApiToken'))) {
         return $c->render(
             json => {
                 error_code => 'INVALID_TOKEN',
                 message    => 'The provided token is invalid.',
             },
-            status => 401,
+            status => 403,
         );
     }
 
@@ -199,7 +199,7 @@ sub authorize {
                 error_code => 'INVALID_ACCESS_TOKEN',
                 message    => 'The provided access token is invalid.',
             },
-            status => 400,
+            status => 404,
         );
     } catch ($e) {
         return $c->render(
@@ -225,13 +225,17 @@ sub generate_onetime_token {
 
     return $c->reply->not_found unless $c->is_access_allowed;
 
-    return $c->render(
-        json => {
-            error_code => 'NOT_IMPLEMENTED',
-            message    => 'This feature is not available yet.',
-        },
-        status => 501,
-    );
+    if (!$c->validate_token($c->param('crmApiToken'))) {
+        return $c->render(
+            json => {
+                error_code => 'INVALID_TOKEN',
+                message    => 'The provided token is invalid.',
+            },
+            status => 403,
+        );
+    }
+
+    return $c->render(json => {token => 'generictoken'});
 }
 
 =head2 validate_password
