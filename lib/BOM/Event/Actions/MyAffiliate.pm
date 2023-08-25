@@ -18,6 +18,7 @@ use BOM::Platform::Event::Emitter;
 use List::Util                 qw(uniq);
 use Path::Tiny                 qw(path);
 use DataDog::DogStatsd::Helper qw(stats_event);
+use Scalar::Util;
 
 use constant AFFILIATE_CHUNK_SIZE => 300;
 
@@ -237,6 +238,17 @@ async sub _populate_mt5_affiliate_to_client {
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     return ["$loginid: not a valid loginid"] unless $client;
+
+    if ($affiliate_id) {
+        return ["Affiliate token not found for $loginid"] unless $client->myaffiliates_token;
+
+        my $myaffiliates    = BOM::MyAffiliates->new(timeout => 300);
+        my $myaffiliates_id = $myaffiliates->get_affiliate_id_from_token($client->myaffiliates_token);
+
+        return ["Could not match the affiliate $affiliate_id based on the provided token '" . $client->myaffiliates_token . "'"]
+            unless Scalar::Util::looks_like_number($myaffiliates_id)
+            and $affiliate_id == $myaffiliates_id;
+    }
 
     my $user       = $client->user;
     my @mt5_logins = $user->mt5_logins;

@@ -192,4 +192,59 @@ subtest "affiliate_loginids_sync" => sub {
     is($msg->{from}, 'no-reply@binary.com', 'Correct from Address');
 };
 
+subtest "populate_mt5_affiliate_to_client" => sub {
+    my $populate_aff_result = BOM::Event::Actions::MyAffiliate::_populate_mt5_affiliate_to_client('CR123456', 123456);
+
+    cmp_deeply $populate_aff_result->{result}[0], ['CR123456: not a valid loginid'], 'Correct error message when login is incorrect';
+
+    $populate_aff_result = BOM::Event::Actions::MyAffiliate::_populate_mt5_affiliate_to_client($test_client->loginid, 123456);
+
+    cmp_deeply $populate_aff_result->{result}[0], ['Affiliate token not found for ' . $test_client->loginid],
+        'Correct error message when token is not found';
+
+    $test_client->myaffiliates_token('FakeToken');
+    $test_client->save;
+
+    $mock_myaffiliate->mock(
+        'get_affiliate_id_from_token' => sub {
+            return '';
+        });
+
+    $populate_aff_result = BOM::Event::Actions::MyAffiliate::_populate_mt5_affiliate_to_client($test_client->loginid, 123456);
+    cmp_deeply $populate_aff_result->{result}[0], ["Could not match the affiliate 123456 based on the provided token 'FakeToken'"],
+        'Correct error message when affiliates do not match';
+
+    my $bom_user = Test::MockModule->new('BOM::User');
+
+    $bom_user->mock(
+        'mt5_logins' => sub {
+            return 'MTR400123456';
+        });
+
+    $mock_myaffiliate->mock(
+        'get_affiliate_id_from_token' => sub {
+            return 123456;
+        });
+
+    $event_mock->mock(
+        '_set_affiliate_for_mt5' => async sub {
+            return '654321';
+        });
+
+    $populate_aff_result = BOM::Event::Actions::MyAffiliate::_populate_mt5_affiliate_to_client($test_client->loginid, 123456);
+    cmp_deeply $populate_aff_result->{result}[0], [$test_client->loginid . ': account MTR400123456 agent updated to 654321'],
+        'Correct message when agent is set for client';
+
+    $event_mock->mock(
+        '_set_affiliate_for_mt5' => async sub {
+            die "Testing error message";
+        });
+
+    $populate_aff_result = BOM::Event::Actions::MyAffiliate::_populate_mt5_affiliate_to_client($test_client->loginid, 123456);
+
+    my $res = index($populate_aff_result->{result}[0][0], $test_client->loginid . ': account MTR400123456 had an error: Testing error message');
+
+    is $res, 0, 'Correct error message when setting affiliate for client';
+};
+
 done_testing();
