@@ -847,11 +847,11 @@ async sub client_verification {
             # TODO: remove this check when we have fully integrated Onfido
             try {
                 my @reports;
-                if ($client->landing_company->requires_face_similarity_check) {
-                    #for MF accounts we take into consideration the document and the face similarity check report
+                if ($client->is_face_similarity_required) {
+                    #for MF accounts or new high risk clients we take into consideration the document and the face similarity check report
                     @reports = await $check->reports->as_list;
                 } else {
-                    #for CR and ROW we filter out and use only the report for the documents
+                    #for CR and ROW that are low risk we filter out and use only the report for the documents
                     @reports = await $check->reports->filter(name => 'document')->as_list;
                 }
 
@@ -887,7 +887,7 @@ async sub client_verification {
                         my $selfie_result = $selfie_report ? $selfie_report->result : '';
 
                         # we first check if facial similarity is clear for LCs with the required flag active, currently just for MF
-                        if ($selfie_result eq 'clear' || !$client->landing_company->requires_face_similarity_check) {
+                        if ($selfie_result eq 'clear' || !$client->is_face_similarity_required) {
                             await check_onfido_rules({
                                 loginid      => $client->loginid,
                                 check_id     => $check_id,
@@ -2338,7 +2338,7 @@ async sub _check_applicant {
         unless ($staff_name) {
             my $onfido_docs;
 
-            if ($client->landing_company->requires_face_similarity_check) {
+            if ($client->is_face_similarity_required) {
                 my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
 
                 # logs do often report 422 errors, this may be due to lack of live photo uploaded,
@@ -2393,7 +2393,7 @@ async sub _check_applicant {
             $staff_name ? () : (document_ids => $documents),
 
             # On v3 we need to specify the report names depending of the LC's requirements
-            report_names => $client->landing_company->requires_face_similarity_check ? [qw/document facial_similarity_photo/] : [qw/document/],
+            report_names => $client->is_face_similarity_required ? [qw/document facial_similarity_photo/] : [qw/document/],
         );
 
         my $future_applicant_check = $onfido->applicant_check(%request)->on_fail(

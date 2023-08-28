@@ -822,7 +822,7 @@ for my $client ($test_client, $test_client_mf) {
             my $redis_r_read = $services->redis_replicated_read();
             $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->get;
 
-            my $doc_ids = [map { $_ . $client->loginid } $client->landing_company->short eq 'maltainvest' ? qw/aaa bbb selfie/ : qw/aaa bbb/];
+            my $doc_ids = [map { $_ . $client->loginid } $client->is_face_similarity_required ? qw/aaa bbb selfie/ : qw/aaa bbb/];
 
             subtest 'no applicant id' => sub {
                 lives_ok {
@@ -924,7 +924,7 @@ for my $client ($test_client, $test_client_mf) {
                     });
 
                 my $consecutive_doc_ids =
-                    [map { $_ . $client->loginid } $consecutive_cli->landing_company->short eq 'maltainvest' ? qw/aaa bbb selfie/ : qw/aaa bbb/];
+                    [map { $_ . $client->loginid } $consecutive_cli->is_face_similarity_required ? qw/aaa bbb selfie/ : qw/aaa bbb/];
                 my $generator = sub {
                     $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $consecutive_cli->binary_user_id)->get;
                     my $f = BOM::Event::Actions::Client::ready_for_authentication({
@@ -1600,7 +1600,7 @@ for my $client ($test_client, $test_client_mf) {
                     is $db_doc->status, 'verified', 'upload doc status is verified';
 
                     my $expected_filter;
-                    $expected_filter = {name => 'document'} if $client->landing_company->short eq 'svg';
+                    $expected_filter = {name => 'document'} if !$client->is_face_similarity_required;
                     cmp_deeply $onfido_report_filters, $expected_filter, 'Expected filtering';
 
                     cmp_bag [@emit_args],

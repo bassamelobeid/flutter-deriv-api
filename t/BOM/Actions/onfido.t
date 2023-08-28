@@ -627,9 +627,9 @@ subtest 'Forged documents email' => sub {
 };
 
 subtest 'Applicant Check' => sub {
-    my $lc_mock = Test::MockModule->new(ref($test_client->landing_company));
+    my $lc_mock = Test::MockModule->new('BOM::User::Client');
     $lc_mock->mock(
-        'requires_face_similarity_check',
+        'is_face_similarity_required',
         sub {
             return 1;
         });
