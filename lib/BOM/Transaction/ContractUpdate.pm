@@ -355,7 +355,7 @@ sub update {
 
     # return error if take_profit/stop_loss is null
     return {error => "Cannot perform update, please specify take_profit / stop_loss"} unless $res_table->{$fmb->{id}};
-    
+
     # because of replication delay we need to bring it up to date
     my $child = $res_table->{$fmb->{id}};
 
