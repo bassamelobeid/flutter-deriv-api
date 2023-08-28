@@ -9127,6 +9127,26 @@ sub is_idv_validated {
 
 }
 
+=head2 is_face_similarity_required 
+
+Check to see if the client requires Face similarity check for Onfido.
+
+This applies for MF accounts and CR that have high aml risk. 
+
+Returns 1 if required else 0.
+
+=cut
+
+sub is_face_similarity_required {
+    my ($self) = @_;
+
+    return 1 if $self->landing_company->requires_face_similarity_check;
+
+    return 1 if $self->risk_level_aml eq 'high';
+
+    return 0;
+}
+
 =head2 update_affiliate_token_for_batch_of_clients
 
 Update myaffiliate token for list of clients

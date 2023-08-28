@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
@@ -1138,6 +1138,26 @@ subtest 'applicant info' => sub {
         location => {country_of_residence => 'PRY'},
         },
         'Expected applicant info';
+};
+
+subtest 'is face similarity check required' => sub {
+    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $cr_client->aml_risk_classification('low');
+
+    ok !$cr_client->is_face_similarity_required, 'Face check not required for low risk CR accounts';
+
+    $cr_client->aml_risk_classification('high');
+
+    ok $cr_client->is_face_similarity_required, 'Face check required for high risk CR accounts';
+
+    my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    ok $mf_client->is_face_similarity_required, 'Face check required for MF accounts';
 };
 
 subtest 'is available' => sub {
