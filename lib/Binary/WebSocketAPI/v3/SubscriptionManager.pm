@@ -132,8 +132,14 @@ sub subscribe {
             my $f        = Future::Mojo->new->set_label('RedisSubscription[' . $channel . ']');
             my $callback = sub {
                 my (undef, $err) = @_;
-                return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
+
+                # In specific scenarios, Redis might attempt to re-execute this callback following a Redis failure.
+                # Avoid reattempting if this future has already encountered failure.
+                return if $f->is_ready();
+
                 # We can do nothing useful if we are already shutting down
+                return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
+
                 $log->tracef('Subscribed to redis server for %s channel %s in pid %i', $class, $channel, $$);
                 if ($err) {
                     $log->errorf("Failed Redis subscription for %s channel %s - %s", $class, $channel, $err);

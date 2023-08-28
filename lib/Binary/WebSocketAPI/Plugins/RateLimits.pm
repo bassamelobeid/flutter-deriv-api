@@ -69,6 +69,11 @@ sub _update_redis {
         $diff,
         sub {
             my ($redis, $error, $count) = @_;
+
+            # In specific scenarios, Redis might attempt to re-execute this callback following a Redis failure.
+            # Avoid reattempting if this future has already encountered failure.
+            return if $f->is_ready();
+
             # We can do nothing useful if we are already shutting down
             return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
 
