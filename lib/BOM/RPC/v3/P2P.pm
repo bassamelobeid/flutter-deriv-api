@@ -100,7 +100,7 @@ our %ERROR_MAP = do {
         OrderCreateFailClient                => localize("There was a problem in placing this order. [_1]"),
         OrderCreateFailClientBalance         => localize('The amount of the order exceeds your funds available in Deriv P2P.'),
         AdvertiserNameRequired               => localize("Please provide your name."),
-        AdvertiserNameTaken                  => localize("This name is already in use. Please provide a different name."),
+        AdvertiserNameTaken                  => localize("That nickname is taken. Pick another."),
         AdvertiserNotEligibleForLimitUpgrade =>
             localize("You are not eligible for P2P buy and sell limit upgrade. Please contact our Customer Support team for more information."),
         P2PLimitUpgradeFailed => localize(
