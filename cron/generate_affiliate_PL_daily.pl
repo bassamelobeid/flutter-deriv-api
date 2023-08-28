@@ -95,6 +95,7 @@ while ($to_date->days_between($processing_date) >= 0) {
 
         $output_filepath->spew_utf8(@csv);
         $log->debugf('Data file name %s created.', $output_filepath);
+        BOM::MyAffiliates::SFTP::send_csv_via_sftp($output_filepath, 'activity', $brand_object->name);
         $zip->addFile($output_filepath->stringify, $output_filepath->basename);
     } catch ($error) {
         $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate csv files due: $error");
@@ -111,8 +112,6 @@ my $output_zip =
     . $from_date->date_yyyymmdd . "-"
     . $to_date->date_yyyymmdd . ".zip";
 my $output_zip_path = path("/tmp")->child($output_zip)->stringify;
-
-BOM::MyAffiliates::SFTP::send_csv_via_sftp($output_zip_path, 'activity', $brand_object->name);
 
 try {
     unless ($zip->numberOfMembers) {
