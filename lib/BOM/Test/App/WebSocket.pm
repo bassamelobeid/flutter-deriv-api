@@ -16,8 +16,8 @@ sub build_test_app {
     return build_wsapi_test($args, {}, sub { _store_stream_data($self->{streams}, @_) });
 }
 
-sub test_schema {
-    my ($self, $req_params, $expected_json_schema, $descr, $should_be_failed) = @_;
+sub send_recv {
+    my ($self, $req_params) = @_;
 
     my $t = $self->{t};
     $t = $t->send_ok({json => $req_params});
@@ -27,7 +27,9 @@ sub test_schema {
     my @subscribed_streams_ids = map { $_->{id} } values %{$self->{streams}};
     while ($i++ < $max_times && !$result) {
         $t->message_ok;
-        my $message = $json->decode(Encode::decode_utf8($t->message->[1]));
+        my $message = $t->message;
+        return if !$message;
+        $message = $json->decode(Encode::decode_utf8($message->[1]));
         # skip subscribed stream's messages
         next
             if ref $message->{$message->{msg_type}} eq 'HASH'
@@ -37,9 +39,13 @@ sub test_schema {
     if (!$result) {
         diag("There isn't testing message in last $max_times stream messages");
     }
+    return $result;
+}
 
+sub test_schema {
+    my ($self, $req_params, $expected_json_schema, $descr, $should_be_failed) = @_;
+    my $result = $self->send_recv($req_params);
     $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
-
     return $result;
 }
 

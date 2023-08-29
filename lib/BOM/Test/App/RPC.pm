@@ -24,12 +24,14 @@ sub build_test_app {
     return $consumer;
 }
 
+sub send_recv {
+    my ($self, $req_params) = @_;
+    return BOM::Test::RPC::QueueClient->new()->call_ok(@$req_params)->result;
+}
+
 sub test_schema {
     my ($self, $req_params, $expected_json_schema, $descr, $should_be_failed) = @_;
-
-    my $c      = BOM::Test::RPC::QueueClient->new();
-    my $result = $c->call_ok(@$req_params)->result;
-
+    my $result = $self->send_recv($req_params);
     return $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
 }
 
