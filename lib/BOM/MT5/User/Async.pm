@@ -540,12 +540,16 @@ sub _invoke_using_proxy {
         $out =~ s/[\x0D\x0A]//g;
         $out = decode_json($out);
 
-        # Converting all keys down to 2nd level to lowercase in order to prevent case related key errors
-        if (ref $out eq ref {}) {
+        # Preserve case compatibility. MT5 server returns to MT5 proxy fields in PascalCase,
+        # MT5 proxy sometimes convert them to camelCase, but sometimes omits conversion
+        # (actual logic on MT5 side is more complex, thus it is not fixed there).
+        # Here we ensure that properties up to 2nd level are named using camelCase.
+        # TODO: the data model for BOM::MT5::User::Async should be fully defined.
+        if (ref $out eq 'HASH') {
             $out = {map { lc $_ => $out->{$_} } keys %$out};
             foreach my $key (keys %$out) {
-                if (ref $out->{$key} eq ref {}) {
-                    $out->{$key} = {map { lc $_ => $out->{$key}->{$_} } keys %{$out->{$key}}};
+                if (ref $out->{$key} eq 'HASH') {
+                    $out->{$key} = {map { lcfirst($_) => $out->{$key}->{$_} } keys %{$out->{$key}}};
                 }
             }
         }
