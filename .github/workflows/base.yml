@@ -8,14 +8,15 @@ on:
         required: true
         type: string  
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
   schema:
     needs: syntax_diff_unit
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ci-dev
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -23,7 +24,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
@@ -32,15 +33,15 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{secrets.WRITE_GITHUB_SSH_KEY }}
           repository: ${{ inputs.repository }}
       - name: json_schemas tests
         run: |
           make json_schemas
   syntax_diff_unit: 
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ci-dev
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -48,7 +49,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
@@ -57,9 +58,8 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
           need_service: false
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: Code Structure and syntax 
         run: |
           make syntax_diff
@@ -67,9 +67,10 @@ jobs:
         run: make unit
   core1:
     needs: syntax_diff_unit
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ci-dev
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -77,7 +78,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
@@ -86,8 +87,7 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: Run tests 
         run: |
           sudo touch /var/log/fixedodds/audit.log
@@ -95,9 +95,10 @@ jobs:
           make test1
   core2:
     needs: syntax_diff_unit
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ci-dev
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -105,7 +106,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
@@ -114,8 +115,7 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: Run tests 
         run: |
           sudo touch /var/log/fixedodds/audit.log
