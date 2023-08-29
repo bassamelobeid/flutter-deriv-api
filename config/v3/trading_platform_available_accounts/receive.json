@@ -35,6 +35,7 @@
                         "type": "string",
                         "enum": [
                             "financial",
+                            "synthetic",
                             "gaming",
                             "all"
                         ]

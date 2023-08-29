@@ -90,7 +90,8 @@
                     "type": "string",
                     "enum": [
                         "financial",
-                        "financial_stp"
+                        "financial_stp",
+                        "swap_free"
                     ]
                 }
             }
