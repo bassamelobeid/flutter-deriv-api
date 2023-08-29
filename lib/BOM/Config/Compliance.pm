@@ -32,7 +32,11 @@ use constant RISK_THRESHOLDS => ({
     },
 );
 
-use constant RISK_LEVELS => qw/standard high/;
+use constant RISK_LEVELS => qw/standard high restricted/;
+# adding a new risk contstant for threshold levels
+# this is different from aml risk levels due to additonal "restricted" level
+use constant RISK_THRESHOLDS_LEVELS => qw/standard high/;
+use constant RISK_AML_LEVELS        => qw/standard high/;
 
 =head2 new
 
@@ -79,8 +83,8 @@ The return thresholds by broker codes is a hash-ref with the following structure
 
 {
     revision: ...,
-    svg: { high: ..., standard: ...},
-    maltainvest: { high: ..., standard: ...}
+    svg: { restricted: ..., high: ..., standard: ...},
+    maltainvest: { restricted: ..., high: ..., standard: ...}
 }
 
 =cut
@@ -108,7 +112,7 @@ sub get_risk_thresholds {
 
     my $result;
     for my $lc (@valid_landing_companies) {
-        $result->{$lc->short}->{"yearly_$_"} = $config{$lc->short}->{"yearly_$_"} for RISK_LEVELS;
+        $result->{$lc->short}->{"yearly_$_"} = $config{$lc->short}->{"yearly_$_"} for RISK_THRESHOLDS_LEVELS;
     }
 
     $result->{revision} = $app_config->global_revision;

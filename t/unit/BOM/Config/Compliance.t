@@ -170,19 +170,22 @@ subtest 'get_jurisdiction_risk_rating' => sub {
             return [];
         });
 
-    $mocked_jurisdition_config = '{"maltainvest": {"standard":["c","d"], "high":["a","b"]}, "labuan": {"high":["e","f"]} }';
+    $mocked_jurisdition_config = '{"maltainvest": {"standard":["c","d"], "high":["a","b"]}, "labuan": {"high":["e","f"], "restricted": ["g"]} }';
     my $expected = {
         maltainvest => {
-            standard => ["c", "d"],
-            high     => ["a", "b"]
+            standard   => ["c", "d"],
+            high       => ["a", "b"],
+            restricted => []
         },
         labuan => {
-            standard => [],
-            high     => ["e", "f"]
+            standard   => [],
+            high       => ["e", "f"],
+            restricted => ["g"]
         },
         bvi => {
-            standard => [],
-            high     => []
+            standard   => [],
+            high       => [],
+            restricted => []
         },
         revision => $mocked_global_revision
     };
@@ -191,8 +194,9 @@ subtest 'get_jurisdiction_risk_rating' => sub {
         BOM::Config::Compliance->get_jurisdiction_risk_rating('aml'),
         {
             maltainvest => {
-                standard => [qw/c d/],
-                high     => [qw/a b/]
+                standard   => [qw/c d/],
+                high       => [qw/a b/],
+                restricted => []
             },
             revision => $mocked_global_revision
         },
@@ -202,12 +206,14 @@ subtest 'get_jurisdiction_risk_rating' => sub {
         BOM::Config::Compliance->get_jurisdiction_risk_rating('mt5'),
         {
             labuan => {
-                standard => [],
-                high     => bag(qw/e f/),
+                standard   => [],
+                high       => bag(qw/e f/),
+                restricted => ["g"]
             },
             bvi => {
-                standard => [],
-                high     => []
+                standard   => [],
+                high       => [],
+                restricted => []
             },
             revision => $mocked_global_revision
         },
@@ -260,8 +266,9 @@ subtest 'validate_jurisdiction_risk_rating' => sub {
     $mock_countries->unmock_all();
     $expected = {
         maltainvest => {
-            standard => ["es"],
-            high     => ["be", "de"]
+            standard   => ["es"],
+            high       => ["be", "de"],
+            restricted => []
         },
     };
     is_deeply($compliance_obj->validate_jurisdiction_risk_rating('aml', %$input_args), $expected, "Countries are sorted correctly");

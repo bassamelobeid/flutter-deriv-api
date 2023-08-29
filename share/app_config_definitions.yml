@@ -1487,7 +1487,7 @@ compliance:
       description: "The MT5 jurisdiction risk ratings of landing companies, mapping from landing company name to arrays for 'standard' and 'high'-risk country codes"
       isa: json_string
       global: 1
-      default: '{"labuan": {"standard":[], "high":[]}, "vanuatu": {"standard":[], "high":[]}, "bvi": {"standard":[], "high":[]} }'
+      default: '{"labuan": {"standard":[], "high":[], "restricted":[]}, "vanuatu": {"standard":[], "high":[], "restricted":[]}, "bvi": {"standard":[], "high":[], "restricted":[]} }'
     npj_country_list:
       description: "2 character lowercase country code list for each landing company for which we need to exclude TIN verification ex : {'labuan': ['id'], 'bvi': ['id','my'],'vanuatu': ['id']}"
       isa: json_string
