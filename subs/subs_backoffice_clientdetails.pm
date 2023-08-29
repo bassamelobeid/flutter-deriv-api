@@ -381,7 +381,7 @@ sub get_professional_status {
 
 sub print_client_details {
 
-    my $client = shift;
+    my ($client, $client_aml_jurisdiction_risk) = @_;
 
     # IDENTITY SECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
@@ -734,6 +734,7 @@ SQL
         professional_status                          => get_professional_status($client),
         show_funds_message                           => ($config->{ukgc_funds_protection} and not $client->is_virtual),
         show_risk_approval                           => ($client->landing_company->short eq 'maltainvest'),
+        client_aml_jurisdiction_risk                 => $client_aml_jurisdiction_risk,
         show_tnc_status                              => !$client->is_virtual,
         show_non_pep_declaration_time                => !$client->is_virtual,
         non_pep_declaration_time                     => $client->non_pep_declaration_time,

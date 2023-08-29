@@ -94,6 +94,12 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td class="label">Currency</td>
         <td>: <b>[% client.default_account.currency_code || 'NO CURRENCY HAS BEEN SET BY CLIENT' %]</b></td>
     </tr>
+    [% IF show_risk_approval %]
+        <tr>
+            <td class="label"> AML JURISDICTION RISK CLASSIFICATION </td>
+            <td>: <b>[% client_aml_jurisdiction_risk %]</b></td>
+        </tr>
+    [% END %]
     <tr>
 [%-
         last_check = client.sanctions_check;

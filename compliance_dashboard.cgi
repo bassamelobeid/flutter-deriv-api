@@ -231,8 +231,8 @@ $npj_countries_list        //= $compliance_config->get_npj_countries_list($_);
 
 my $show_landing_company = sub {
     my ($type, $landing_company) = @_;
-    my $is_mt5 = $type eq 'mt5';
-
+    my $is_mt5      = $type eq 'mt5';
+    my @risk_levels = $is_mt5 ? BOM::Config::Compliance::RISK_LEVELS : BOM::Config::Compliance::RISK_AML_LEVELS;
     # Compliance team insists to show broker codes CR and MF rather than landing company names svg and maltainvest
     my $lc_display_name = $is_mt5 ? $landing_company->short : $landing_company->broker_codes->[0];
 
@@ -247,7 +247,7 @@ my $show_landing_company = sub {
             thresholds      => $thresholds->{$type},
             jurisdiction    => $jurisdiction_rating->{$type},
             threshold_names => [BOM::Config::Compliance::RISK_THRESHOLDS],
-            risk_levels     => [BOM::Config::Compliance::RISK_LEVELS],
+            risk_levels     => [@risk_levels],
             is_readonly     => $thresholds_readonly,
         }) || die BOM::Backoffice::Request::template()->error() . "\n";
 };

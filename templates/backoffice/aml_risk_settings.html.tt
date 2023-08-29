@@ -32,12 +32,12 @@
         <table>
             <tr><th colspan=2 style="background-color:lightgray"> [% IF is_mt5 %] real/[% END %][% lc_display_name %] Jurisdiction Risk Ratings </th></tr>
             [% FOR level IN risk_levels %]
-            <tr>
-                <td>[% level %]</td>
-                <td><input type='text' name="[% landing_company %].[% level %]"
-                    value="[% jurisdiction.$landing_company.$level.join(' ') %]">
-                </td>
-            </tr>
+                    <tr> 
+                        <td>[% level %]</td>
+                        <td><input type='text' name="[% landing_company %].[% level %]"
+                            value="[% jurisdiction.$landing_company.$level.join(' ') %]">
+                        </td>
+                    </tr>                
             [% END %]
             <tr>
                 <td>Control Code</td>

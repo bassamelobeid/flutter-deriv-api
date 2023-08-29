@@ -1675,9 +1675,16 @@ foreach my $lid ($user_clients->@*) {
 # show MT5 a/c
 
 # inverse jurisdiction ratings; for example high => [id, ru] is converted to {id => high, ru => high}
-my $mt5_jurisdiction_mt5 = BOM::Config::Compliance->get_jurisdiction_risk_rating('mt5');
-my $mt5_jurisdiction_aml = BOM::Config::Compliance->get_jurisdiction_risk_rating('aml');
-my $mt5_jurisdiction     = {%$mt5_jurisdiction_mt5, %$mt5_jurisdiction_aml};
+my $mt5_jurisdiction_mt5         = BOM::Config::Compliance->get_jurisdiction_risk_rating('mt5');
+my $aml_jurisdiction_risk        = BOM::Config::Compliance->get_jurisdiction_risk_rating('aml');
+my $mt5_jurisdiction             = {%$mt5_jurisdiction_mt5, %$aml_jurisdiction_risk};
+my $jurisdiction_ratings         = $aml_jurisdiction_risk->{$client->landing_company->short};
+my $client_aml_jurisdiction_risk = 'low';
+for my $rating (keys %$jurisdiction_ratings) {
+    if (grep { $_ eq $client->residence } $jurisdiction_ratings->{$rating}->@*) {
+        $client_aml_jurisdiction_risk = $rating;
+    }
+}
 
 delete $mt5_jurisdiction->{revision};
 for my $landing_company (keys %$mt5_jurisdiction) {
@@ -1820,7 +1827,7 @@ print qq[<hr><form action="$self_post?loginID=$encoded_loginid" id="clientInfoFo
 
 # Get latest client object to make sure it contains updated client info (after editing client details form)
 $client = BOM::User::Client->new({loginid => $loginid});
-print_client_details($client);
+print_client_details($client, $client_aml_jurisdiction_risk);
 
 my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type="reset"]):not([type="button"])';
 
