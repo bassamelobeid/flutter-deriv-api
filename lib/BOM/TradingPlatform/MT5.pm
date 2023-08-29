@@ -340,10 +340,10 @@ sub available_accounts {
     my @trading_accounts;
     foreach my $market_type (sort keys $accounts->%*) {
         foreach my $account ($accounts->{$market_type}->@*) {
-            my $lc                   = LandingCompany::Registry->by_name($account->{company});
-            my $jurisdiction_ratings = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$lc->short} // {};
-            my $high_risk_countries  = {map { $_ => 1 } @{$jurisdiction_ratings->{high} // []}};
-            next if $high_risk_countries->{$args->{country_code}};
+            my $lc                        = LandingCompany::Registry->by_name($account->{company});
+            my $jurisdiction_ratings      = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$lc->short} // {};
+            my $restricted_risk_countries = {map { $_ => 1 } @{$jurisdiction_ratings->{restricted} // []}};
+            next if $restricted_risk_countries->{$args->{country_code}};
 
             push @trading_accounts,
                 +{

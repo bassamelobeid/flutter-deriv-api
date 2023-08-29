@@ -167,8 +167,8 @@ sub validate_user {
     # Check if this country is one of the high risk country
     my $jurisdiction_ratings = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$new_account_params->{landing_company_short}}
         // {};
-    my $high_risk_countries = {map { $_ => 1 } @{$jurisdiction_ratings->{high} // []}};
-    die +{code => 'DerivezNotAllowed'} if $high_risk_countries->{$residence};
+    my $restricted_risk_countries = {map { $_ => 1 } @{$jurisdiction_ratings->{restricted} // []}};
+    die +{code => 'DerivezNotAllowed'} if $restricted_risk_countries->{$residence};
 
     my $compliance_requirements = $requirements->{compliance};
     if ($new_account_params->{group} !~ /^demo/) {
