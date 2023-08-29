@@ -235,4 +235,35 @@ for ($tests->@*) {
     };
 }
 
+subtest 'check route redirection' => sub {
+    my $auth_url = "/authorize?app_id=$app_id&en=ln&route=dashboard";
+    my $route    = 'dashboard';
+    $t = $t->get_ok($auth_url)->content_like(qr/login/);
+    my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+    my $res        = $t->post_ok(
+        $auth_url => form => {
+            login      => 1,
+            email      => $email,
+            password   => $password,
+            csrf_token => $csrf_token
+        })->status_is(302);
+
+    my $uri = Mojo::URL->new($t->tx->res->headers->header('location'));
+
+    is $uri->query->param('route'), "dashboard", 'Expected route param passed into the redirection';
+
+    is $redirect_uri, $uri, 'Expected redirect URI';
+};
+
+subtest 'format_route_param' => sub {
+    my $result_1                   = BOM::OAuth::O::format_route_param('user/profile?param=value');
+    my $expected_formatted_route_1 = 'user%2Fprofile%3Fparam%3Dvalue';
+    is($result_1, $expected_formatted_route_1, 'format_route_param should URI-escape the route parameter');
+
+    my $result_2                   = BOM::OAuth::O::format_route_param('dashboard');
+    my $expected_formatted_route_2 = 'dashboard';
+    is($result_2, $expected_formatted_route_2, 'format_route_param should not change non-escaped route');
+
+};
+
 done_testing()

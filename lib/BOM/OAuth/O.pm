@@ -35,6 +35,7 @@ use BOM::OAuth::Static     qw(get_message_mapping);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
 use BOM::User::AuditLog;
+use URI::Escape;
 use BOM::OAuth::SocialLoginClient;
 
 use constant CTRADER_APPID => 36218;
@@ -300,6 +301,7 @@ sub authorize {
 
         # show scope confirms if not yet approved
         # do not show the scope confirm screen if APP ID is a primary official app
+
         return $c->render(
             template       => $c->_get_template_name('scope_confirms'),
             layout         => $brand_name,
@@ -319,8 +321,12 @@ sub authorize {
             ip      => $client_ip,
             app_id  => $app_id,
         };
+
         my @params = BOM::OAuth::Common::generate_url_token_params($c, $client_params);
 
+        if (my $route = $c->param('route')) {
+            push @params, (route => format_route_param($route));
+        }
         push @params, (state => $state)
             if defined $state;
 
@@ -346,7 +352,6 @@ sub authorize {
         delete $c->session->{_otp_verified};
 
         $c->session(expires => 1);
-
         return BOM::OAuth::Common::redirect_to($c, $redirect_uri, \@params);
     } catch {
 
@@ -598,6 +603,28 @@ sub _datadog_config {
         VERSION                    => '1.0',
         ENV                        => $is_production ? 'production' : 'qa',
     };
+}
+
+=head2 format_route_param
+
+the route param passed in auth call will be move forward to redirect url as query param
+
+Arguments:
+
+=over 1
+
+=item C<$route_param>
+
+the route param maintaining the previous route before auth call
+
+=back
+
+=cut
+
+sub format_route_param {
+    my $route_param = shift;
+    $route_param = defined $route_param ? uri_escape($route_param) : "";
+    return $route_param;
 }
 
 1;
