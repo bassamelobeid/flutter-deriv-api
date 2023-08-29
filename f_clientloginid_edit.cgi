@@ -383,20 +383,42 @@ if ($input{document_list}) {
                 $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:<b>$new_doc_status</b> only applies for poa documents</div>";
             }
         } else {
-            $doc->status($new_doc_status);
+            my $field_error;
 
             # Update other fields as well
             foreach my $field ('issue_date', 'document_id', 'comments') {
                 my $input_key = $field . '_' . $doc_id;
+
                 if (defined $input{$input_key}) {
-                    $doc->$field($input{$input_key});
+                    my $to_update_value = $input{$input_key};
+
+                    if ($field eq 'issue_date') {
+                        if ($to_update_value ne (eval { Date::Utility->new($to_update_value)->date_yyyymmdd; } // '')) {
+                            $full_msg .=
+                                "<div class=\"notify notify--warning\"><b>ERROR: $file_name has an invalid date format <b>$to_update_value</b>, please use yyyy-mm-dd</div>";
+                            $field_error = 1;
+                            next;
+                        }
+
+                        if (Date::Utility->new($to_update_value)->is_before(Date::Utility->new->minus_time_interval('1y'))) {
+                            $full_msg .=
+                                "<div class=\"notify notify--warning\"><b>ERROR: $file_name is too old, it must have been issued within the last 12 months.</div>";
+                            $field_error = 1;
+                            next;
+                        }
+                    }
+
+                    $doc->$field($to_update_value) unless $field_error;
                 }
             }
+
+            $doc->status($new_doc_status) unless $field_error;
+
             $full_msg .= (
                 $doc->save
                 ? "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>"
                 : "<div class=\"notify notify--warning\"><b>ERROR:</b> did not update <b>$file_name</b> record from db</div>"
-            );
+            ) unless $field_error;
         }
     }
     print $full_msg;
@@ -650,6 +672,12 @@ if ($input{whattodo} eq 'uploadID') {
             && $issue_date ne (eval { Date::Utility->new($issue_date)->date_yyyymmdd; } // ''))
         {
             print qq[<p class="notify notify--warning">Issue date "$issue_date" is not a valid date.</p>];
+            code_exit_BO(qq[<p><a class="link"href="$self_href">&laquo; Return to client details<a/></p>]);
+        } elsif ($issue_date
+            && Date::Utility->new($issue_date)->is_before(Date::Utility->new->minus_time_interval('1y')))
+        {
+            print
+                qq[<p class="notify notify--warning">ERROR: Issue date "$issue_date" is too old, it must have been issued within the last 12 months.</p>];
             code_exit_BO(qq[<p><a class="link"href="$self_href">&laquo; Return to client details<a/></p>]);
         }
 
@@ -1269,6 +1297,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                 if ($document_field =~ /^(expiration_date|issue_date)$/) {
                     try {
                         $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
+
+                        if ($document_field =~ /issue_date/) {
+                            if (Date::Utility->new($val)->is_before(Date::Utility->new->minus_time_interval('1y'))) {
+                                print
+                                    qq{<p class="notify notify--warning">ERROR: POA issue date is too old $val, it must have been issued within the last 12 months.</p>};
+                                next CLIENT_KEY;
+                            }
+                        }
                     } catch ($e) {
                         my $err = (split "\n", $e)[0];    #handle Date::Utility's confess() call
                         print qq{<p class="notify notify--warning">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
