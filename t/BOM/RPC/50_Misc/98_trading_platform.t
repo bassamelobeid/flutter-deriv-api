@@ -698,19 +698,22 @@ subtest 'trading_platform_available_accounts' => sub {
 
     my $jurisdiction = {
         bvi => {
-            standard => [qw/br/],
-            high     => [qw/id ru/],
-            revision => 1,
+            standard   => [qw/br/],
+            high       => [],
+            restricted => [qw/id ru/],
+            revision   => 1,
         },
         vanuatu => {
-            standard => [qw/br/],
-            high     => [qw/id/],
-            revision => 1,
+            standard   => [qw/br/],
+            high       => [],
+            restricted => [qw/id/],
+            revision   => 1,
         },
         labuan => {
-            standard => [qw/br/],
-            high     => [qw/id/],
-            revision => 1,
+            standard   => [qw/br/],
+            high       => [],
+            restricted => [qw/id/],
+            revision   => 1,
         }};
     my $mock_config = Test::MockModule->new('BOM::Config::Compliance');
     $mock_config->redefine(
