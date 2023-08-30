@@ -51,19 +51,22 @@ subtest 'additional kyc required' => sub {
 
     my $jurisdiction = {
         bvi => {
-            standard => [qw/br/],
-            high     => [qw/id ru/],
-            revision => 1,
+            standard   => [qw/br/],
+            restricted => [qw/id/],
+            high       => [qw/ru/],
+            revision   => 1,
         },
         vanuatu => {
-            standard => [qw/br/],
-            high     => [qw/id/],
-            revision => 1,
+            standard   => [qw/br/],
+            restricted => [qw/id/],
+            high       => [qw/ru/],
+            revision   => 1,
         },
         labuan => {
-            standard => [qw/br/],
-            high     => [qw/id/],
-            revision => 1,
+            standard   => [qw/br/],
+            restricted => [qw/id/],
+            high       => [qw/ru/],
+            revision   => 1,
         }};
     my $mock_config = Test::MockModule->new('BOM::Config::Compliance');
     $mock_config->redefine(
