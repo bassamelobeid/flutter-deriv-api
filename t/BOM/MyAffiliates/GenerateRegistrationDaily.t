@@ -11,6 +11,12 @@ use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 
+sub check_headers {
+    my ($reporter, $activity_data) = @_;
+    my $are_headers_correct = grep { $_ =~ $reporter->headers_data } @{$activity_data};
+    ok $are_headers_correct, "Headers are correct";
+}
+
 subtest 'client with no promocode' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code                   => 'CR',
@@ -35,6 +41,8 @@ subtest 'client with no promocode' => sub {
 
     my $is_new_client_reported = grep { $_ =~ $client->loginid } @activity_data;
     ok $is_new_client_reported, "Created client is now on the new-registrations list to report to my affiliates";
+
+    check_headers($reporter, \@activity_data);
 };
 
 subtest 'client with promocode' => sub {
@@ -82,6 +90,8 @@ subtest 'client with promocode' => sub {
     $is_new_client_reported = grep { $_ =~ $client->loginid } @activity_data;
     ok $is_new_client_reported,
         "Created client is now on the new-registrations list to report to affiliates as client has promocode and checked in myaffiliates is true";
+
+    check_headers($reporter, \@activity_data);
 };
 
 subtest 'client with no promocode - brands' => sub {
@@ -108,6 +118,8 @@ subtest 'client with no promocode - brands' => sub {
         my @activity_data          = $reporter->activity();
         my $is_new_client_reported = grep { $_ =~ $client->loginid } @activity_data;
         ok $is_new_client_reported, "Created client is now on the new-registrations list to report to my affiliates";
+
+        check_headers($reporter, \@activity_data);
     };
 
     subtest 'binary' => sub {
@@ -134,6 +146,8 @@ subtest 'client with no promocode - brands' => sub {
         my $is_new_client_reported = grep { $_ =~ $client->loginid } @activity_data;
         ok $is_new_client_reported,
             "Created client is now on the new-registrations list to report to my affiliates for binary brand - any un-official app is included in binary brand";
+
+        check_headers($reporter, \@activity_data);
     };
 };
 

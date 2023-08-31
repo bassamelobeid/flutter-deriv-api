@@ -21,10 +21,6 @@ use constant HEADERS => qw(
     Date Loginid AffiliateToken
 );
 
-has '+include_headers' => (
-    default => 0,
-);
-
 has new_clients => (
     is         => 'rw',
     lazy_build => 1
@@ -61,6 +57,8 @@ sub report {
     return 0 unless $self->any_new_clients;
 
     my @output = ();
+
+    push @output, $self->format_data($self->headers_data()) if ($self->include_headers);
 
     my $csv = Text::CSV->new;
     foreach (@{$self->new_clients}) {

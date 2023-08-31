@@ -34,10 +34,6 @@ use constant HEADERS => qw(
     date client_loginid company_profit_loss deposits turnover_ticktrade intraday_turnover other_turnover first_funded_date withdrawals first_funded_amount exchange_rate
 );
 
-has '+include_headers' => (
-    default => 0,
-);
-
 =head2 activity
 
     $reporter->activity();
@@ -62,7 +58,7 @@ sub activity {
     my @output          = ();
     my %conversion_hash = ();
 
-    push @output, $self->headers_data() if ($self->include_headers and keys %{$activity});
+    push @output, $self->format_data($self->headers_data()) if ($self->include_headers and keys %{$activity});
 
     foreach my $loginid (sort keys %{$activity}) {
 
