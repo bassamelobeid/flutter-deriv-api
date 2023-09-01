@@ -33,10 +33,6 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription>
 
 =cut
 
-use Scalar::Util           qw(looks_like_number);
-use List::Util             qw(first);
-use Log::Any               qw($log);
-use BOM::Platform::Context qw (localize request);
 use Moo;
 
 with 'Binary::WebSocketAPI::v3::Subscription';
@@ -103,13 +99,12 @@ This method is used to localize the symbol name
 =cut
 
 sub _localize_symbol {
-
     my ($self, $payload) = @_;
     my $response = {};
 
     my $assets = $payload->{mt5}->{assets};
 
-    $_->{symbol} = localize($_->{symbol}) for $assets->@*;
+    $_->{symbol} = $self->c->l($_->{symbol}) for $assets->@*;
 
     $response->{mt5} = {assets => $assets};
 
