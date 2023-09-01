@@ -79,7 +79,7 @@ initialize_realtime_ticks_db();
 
 sub db {
     return BOM::Database::ClientDB->new({
-            broker_code => 'VRTC',
+            broker_code => 'CR',
         })->db;
 }
 
@@ -153,7 +153,7 @@ my $args = {
 };
 
 lives_ok {
-    $cl = create_client('VRTC');
+    $cl = create_client('CR');
 
     #make sure client can trade
     ok(!BOM::Transaction::Validation->new({clients => [{client => $cl}]})->check_trade_status($cl),      "client can trade: check_trade_status");
@@ -437,263 +437,261 @@ subtest 'sell slippage' => sub {
     }
 };
 
-# TODO: Enable these when we launch on real account because of Transaction.pmL679 these tests will not work
+subtest 'max profit limit exceeded validation', sub {
+    lives_ok {
+        my $contract = produce_contract($args);
 
-#subtest 'max profit limit exceeded validation', sub {
-#    lives_ok {
-#        my $contract = produce_contract($args);
-#
-#        my $txn = BOM::Transaction->new({
-#            client        => $cl,
-#            contract      => $contract,
-#            price         => 100,
-#            amount        => 100,
-#            amount_type   => 'stake',
-#            purchase_date => $contract->date_start,
-#        });
-#
-#        my %options = (skip_validation => 1);
-#        my $error   = $txn->buy(%options);
-#        is $error, undef, 'no error';
-#
-#        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db vanilla => $txn->transaction_id;
-#
-#        $args->{date_pricing} = $args->{date_start}->epoch + 1;
-#        $contract = produce_contract($args);
-#
-#        $txn = BOM::Transaction->new({
-#            purchase_date => $contract->date_start->epoch + 1,
-#            client        => $cl,
-#            contract      => $contract,
-#            contract_id   => $fmb->{id},
-#            price         => $contract->bid_price,
-#        });
-#        $error = $txn->sell(%options);
-#        is $error, undef, 'no error';
-#
-#        # client currently is in loss now
-#        # setting negative max_daily_pnl to validate
-#        $mock_transaction->mock(
-#            get_vanilla_per_symbol_config => sub {
-#                my %config = (
-#                    'max_daily_volume' => 99999,
-#                    'max_daily_pnl'    => -200,
-#                );
-#                return \%config;
-#            });
-#
-#        $args->{date_start}   = $args->{date_start}->epoch + 1;
-#        $args->{date_pricing} = $args->{date_start};
-#        $args->{barrier}      = '+0';
-#        $contract             = produce_contract($args);
-#        $txn                  = BOM::Transaction->new({
-#            client        => $cl,
-#            contract      => $contract,
-#            price         => 100,
-#            amount        => 100,
-#            amount_type   => 'stake',
-#            purchase_date => $contract->date_start,
-#        });
-#
-#        $error = $txn->buy;
-#        is $error->get_type,             'ClientContractProfitLimitExceeded',                      'correct error type';
-#        is $error->{-message_to_client}, 'Maximum daily profit limit exceeded for this contract.', 'correct error message';
-#
-#    }
-#};
-#
-#subtest 'max daily volume validation', sub {
-#    lives_ok {
-#        my $contract = produce_contract($args);
-#
-#        my $txn = BOM::Transaction->new({
-#            client        => $cl,
-#            contract      => $contract,
-#            price         => 100,
-#            amount        => 100,
-#            amount_type   => 'stake',
-#            purchase_date => $contract->date_start,
-#        });
-#
-#        my %options = (skip_validation => 1);
-#        my $error   = $txn->buy(%options);
-#        is $error, undef, 'no error';
-#
-#        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db vanilla => $txn->transaction_id;
-#
-#        $args->{date_pricing} = $args->{date_start} + 1;
-#        $contract = produce_contract($args);
-#
-#        $txn = BOM::Transaction->new({
-#            purchase_date => $contract->date_start->epoch + 1,
-#            client        => $cl,
-#            contract      => $contract,
-#            contract_id   => $fmb->{id},
-#            price         => $contract->bid_price,
-#        });
-#        $error = $txn->sell(%options);
-#        is $error, undef, 'no error';
-#
-#        $mock_transaction->mock(
-#            get_vanilla_per_symbol_config => sub {
-#                my %config = (
-#                    'max_daily_volume' => 0,
-#                    'max_daily_pnl'    => 99999,
-#                );
-#                return \%config;
-#            });
-#
-#        $args->{date_start}   = $args->{date_start} + 1;
-#        $args->{date_pricing} = $args->{date_start};
-#        $args->{barrier}      = '+0';
-#        $contract             = produce_contract($args);
-#        $txn                  = BOM::Transaction->new({
-#            client        => $cl,
-#            contract      => $contract,
-#            price         => 100,
-#            amount        => 100,
-#            amount_type   => 'stake',
-#            purchase_date => $contract->date_start,
-#        });
-#
-#        $error = $txn->buy;
-#        is $error->get_type,             'ProductSpecificTurnoverLimitExceeded',                          'correct error type';
-#        is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'correct error message';
-#
-#    }
-#};
-#
-#subtest 'max open position validation', sub {
-#    lives_ok {
-#        my $contract = produce_contract($args);
-#
-#        my $txn = BOM::Transaction->new({
-#            client        => $cl,
-#            contract      => $contract,
-#            price         => 100,
-#            amount        => 100,
-#            amount_type   => 'stake',
-#            purchase_date => $contract->date_start,
-#        });
-#
-#        my %options = (skip_validation => 1);
-#        my $error   = $txn->buy(%options);
-#        is $error, undef, 'no error';
-#
-#        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db vanilla => $txn->transaction_id;
-#
-#        $args->{date_pricing} = $args->{date_start} + 1;
-#        $contract = produce_contract($args);
-#
-#        $txn = BOM::Transaction->new({
-#            purchase_date => $contract->date_start->epoch + 1,
-#            client        => $cl,
-#            contract      => $contract,
-#            contract_id   => $fmb->{id},
-#            price         => $contract->bid_price,
-#        });
-#        $error = $txn->sell(%options);
-#        is $error, undef, 'no error';
-#
-#        $mock_transaction->mock(
-#            get_vanilla_per_symbol_config => sub {
-#                my %config = (
-#                    'max_open_position' => 0,
-#                    'max_daily_volume'  => 99999,
-#                    'max_daily_pnl'     => 99999
-#                );
-#                return \%config;
-#            });
-#
-#        $args->{date_start}   = $args->{date_start} + 1;
-#        $args->{date_pricing} = $args->{date_start};
-#        $args->{barrier}      = '+0';
-#        $contract             = produce_contract($args);
-#        $txn                  = BOM::Transaction->new({
-#            client        => $cl,
-#            contract      => $contract,
-#            price         => 100,
-#            amount        => 100,
-#            amount_type   => 'stake',
-#            purchase_date => $contract->date_start,
-#        });
-#
-#        $error = $txn->buy;
-#        is $error->get_type,             'OpenPositionLimitExceeded',                                'correct error type';
-#        is $error->{-message_to_client}, 'You have too many open positions for this contract type.', 'correct error message';
-#
-#    }
-#};
-#
-#subtest 'user specific limit validation', sub {
-#    lives_ok {
-#        my $contract = produce_contract($args);
-#
-#        my $txn = BOM::Transaction->new({
-#            client        => $cl,
-#            contract      => $contract,
-#            price         => 100,
-#            amount        => 100,
-#            amount_type   => 'stake',
-#            purchase_date => $contract->date_start,
-#        });
-#
-#        my %options = (skip_validation => 1);
-#        my $error   = $txn->buy(%options);
-#        is $error, undef, 'no error';
-#
-#        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db vanilla => $txn->transaction_id;
-#
-#        $args->{date_pricing} = $args->{date_start} + 1;
-#        $contract = produce_contract($args);
-#
-#        $txn = BOM::Transaction->new({
-#            purchase_date => $contract->date_start->epoch + 1,
-#            client        => $cl,
-#            contract      => $contract,
-#            contract_id   => $fmb->{id},
-#            price         => $contract->bid_price,
-#        });
-#        $error = $txn->sell(%options);
-#        is $error, undef, 'no error';
-#
-#        # we expect user specific limit to override per symbol limits!
-#        $mock_transaction->mock(
-#            get_vanilla_per_symbol_config => sub {
-#                my %config = (
-#                    'max_open_position' => 10,
-#                    'max_daily_volume'  => 99999,
-#                    'max_daily_pnl'     => 99999
-#                );
-#                return \%config;
-#            },
-#            get_vanilla_user_specific_limit => sub {
-#                my %config = (
-#                    'max_open_position' => 0,
-#                    'max_daily_volume'  => 99999,
-#                    'max_daily_pnl'     => 99999
-#                );
-#                return \%config;
-#            });
-#
-#        $args->{date_start}   = $args->{date_start} + 1;
-#        $args->{date_pricing} = $args->{date_start};
-#        $args->{barrier}      = '+0';
-#        $contract             = produce_contract($args);
-#        $txn                  = BOM::Transaction->new({
-#            client        => $cl,
-#            contract      => $contract,
-#            price         => 100,
-#            amount        => 100,
-#            amount_type   => 'stake',
-#            purchase_date => $contract->date_start,
-#        });
-#
-#        $error = $txn->buy;
-#        is $error->get_type,             'OpenPositionLimitExceeded',                                'correct error type';
-#        is $error->{-message_to_client}, 'You have too many open positions for this contract type.', 'correct error message';
-#
-#    }
-#};
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        my %options = (skip_validation => 1);
+        my $error   = $txn->buy(%options);
+        is $error, undef, 'no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db vanilla => $txn->transaction_id;
+
+        $args->{date_pricing} = $args->{date_start}->epoch + 1;
+        $contract = produce_contract($args);
+
+        $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start->epoch + 1,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+        });
+        $error = $txn->sell(%options);
+        is $error, undef, 'no error';
+
+        # client currently is in loss now
+        # setting negative max_daily_pnl to validate
+        $mock_transaction->mock(
+            get_vanilla_per_symbol_config => sub {
+                my %config = (
+                    'max_daily_volume' => 99999,
+                    'max_daily_pnl'    => -200,
+                );
+                return \%config;
+            });
+
+        $args->{date_start}   = $args->{date_start}->epoch + 1;
+        $args->{date_pricing} = $args->{date_start};
+        $args->{barrier}      = '+0.10';
+        $contract             = produce_contract($args);
+        $txn                  = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        is $error->get_type,             'ClientContractProfitLimitExceeded',                      'correct error type';
+        is $error->{-message_to_client}, 'Maximum daily profit limit exceeded for this contract.', 'correct error message';
+
+    }
+};
+
+subtest 'max daily volume validation', sub {
+    lives_ok {
+        my $contract = produce_contract($args);
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        my %options = (skip_validation => 1);
+        my $error   = $txn->buy(%options);
+        is $error, undef, 'no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db vanilla => $txn->transaction_id;
+
+        $args->{date_pricing} = $args->{date_start} + 1;
+        $contract = produce_contract($args);
+
+        $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start->epoch + 1,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+        });
+        $error = $txn->sell(%options);
+        is $error, undef, 'no error';
+
+        $mock_transaction->mock(
+            get_vanilla_per_symbol_config => sub {
+                my %config = (
+                    'max_daily_volume' => 0,
+                    'max_daily_pnl'    => 99999,
+                );
+                return \%config;
+            });
+
+        $args->{date_start}   = $args->{date_start} + 1;
+        $args->{date_pricing} = $args->{date_start};
+        $args->{barrier}      = '+0.10';
+        $contract             = produce_contract($args);
+        $txn                  = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        is $error->get_type,             'ProductSpecificTurnoverLimitExceeded',                          'correct error type';
+        is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'correct error message';
+
+    }
+};
+
+subtest 'max open position validation', sub {
+    lives_ok {
+        my $contract = produce_contract($args);
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        my %options = (skip_validation => 1);
+        my $error   = $txn->buy(%options);
+        is $error, undef, 'no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db vanilla => $txn->transaction_id;
+
+        $args->{date_pricing} = $args->{date_start} + 1;
+        $contract = produce_contract($args);
+
+        $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start->epoch + 1,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+        });
+        $error = $txn->sell(%options);
+        is $error, undef, 'no error';
+
+        $mock_transaction->mock(
+            get_vanilla_per_symbol_config => sub {
+                my %config = (
+                    'max_open_position' => 0,
+                    'max_daily_volume'  => 99999,
+                    'max_daily_pnl'     => 99999
+                );
+                return \%config;
+            });
+
+        $args->{date_start}   = $args->{date_start} + 1;
+        $args->{date_pricing} = $args->{date_start};
+        $args->{barrier}      = '+0.10';
+        $contract             = produce_contract($args);
+        $txn                  = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        is $error->get_type,             'OpenPositionLimitExceeded',                                'correct error type';
+        is $error->{-message_to_client}, 'You have too many open positions for this contract type.', 'correct error message';
+
+    }
+};
+
+subtest 'user specific limit validation', sub {
+    lives_ok {
+        my $contract = produce_contract($args);
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        my %options = (skip_validation => 1);
+        my $error   = $txn->buy(%options);
+        is $error, undef, 'no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db vanilla => $txn->transaction_id;
+
+        $args->{date_pricing} = $args->{date_start} + 1;
+        $contract = produce_contract($args);
+
+        $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start->epoch + 1,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+        });
+        $error = $txn->sell(%options);
+        is $error, undef, 'no error';
+
+        # we expect user specific limit to override per symbol limits!
+        $mock_transaction->mock(
+            get_vanilla_per_symbol_config => sub {
+                my %config = (
+                    'max_open_position' => 10,
+                    'max_daily_volume'  => 99999,
+                    'max_daily_pnl'     => 99999
+                );
+                return \%config;
+            },
+            get_vanilla_user_specific_limit => sub {
+                my %config = (
+                    'max_open_position' => 0,
+                    'max_daily_volume'  => 99999,
+                    'max_daily_pnl'     => 99999
+                );
+                return \%config;
+            });
+
+        $args->{date_start}   = $args->{date_start} + 1;
+        $args->{date_pricing} = $args->{date_start};
+        $args->{barrier}      = '+0.10';
+        $contract             = produce_contract($args);
+        $txn                  = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        is $error->get_type,             'OpenPositionLimitExceeded',                                'correct error type';
+        is $error->{-message_to_client}, 'You have too many open positions for this contract type.', 'correct error message';
+
+    }
+};
 
 done_testing();
