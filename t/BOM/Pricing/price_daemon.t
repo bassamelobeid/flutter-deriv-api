@@ -240,13 +240,4 @@ subtest 'country code' => sub {
     is($actual, $expected, "correct language code");
 };
 
-subtest 'validate redis' => sub {
-    my $valid_key =
-        "PRICER_ARGS::[\"amount\",\"1000\",\"basis\",\"stake\",\"contract_type\",\"MULTUP\",\"currency\",\"USD\",\"duration_unit\",\"s\",\"landing_company\",\"svg\",\"multiplier\",\"100\",\"price_daemon_cmd\",\"price\",\"product_type\",\"basic\",\"proposal\",\"1\",\"skips_price_validation\",\"1\",\"subscribe\",\"1\",\"symbol\",\"1HZ10V\"]";
-    my $expected_type = "set";
-
-    ok validate_redis_key_type($redis_pricer,  $key_pattern, $expected_type), "Valid key type is validated";
-    ok !validate_redis_key_type($redis_pricer, $key_pattern, 'none'),         "Invalid key type is not validated";
-};
-
-done_testing();
+done_testing;

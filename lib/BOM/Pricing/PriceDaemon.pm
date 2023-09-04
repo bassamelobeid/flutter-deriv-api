@@ -210,16 +210,16 @@ sub run {
         my $response;
         try {
             # Possible transient failure/dupe spot time
-            my $pricer_args = $rkey;
-            my $language    = '';
-            if (validate_redis_key($redis_pricer, $pricer_args, 'set')) {
+            my $pricer_args      = $key->[1];
+            my $pricer_data_type = $redis_pricer->type($pricer_args);
+            my $language         = '';
+            if ($pricer_data_type eq 'set') {
                 my $pricer_value = $redis_pricer->smembers($pricer_args);
-                $language           = get_local_language($pricer_value);
-                $params->{language} = $language // 'EN';
-                $response           = $self->process_job($redis_pricer, $next, $params) // next LOOP;
-            } else {
-                next LOOP;
+                $language = get_local_language($pricer_value);
             }
+
+            $params->{language} = $language // 'EN';
+            $response = $self->process_job($redis_pricer, $next, $params) // next LOOP;
         } catch ($e) {
             $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $e, $params);
             $redis_pricer->del($rkey, $next);
@@ -424,18 +424,6 @@ sub get_local_language {
     my $args         = shift;
     my $last_element = @{$args} ? (split(',', $args->[0]))[-1] : undef;
     return $last_element;
-}
-
-=head2 validate_redis_key
-
-Validate the redis key.
-
-=cut
-
-sub validate_redis_key {
-    my ($redis, $redis_key, $expected_type) = @_;
-    my $actual_type = $redis->type($redis_key);
-    return $actual_type eq $expected_type;
 }
 
 1;
