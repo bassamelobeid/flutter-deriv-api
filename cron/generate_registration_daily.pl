@@ -74,6 +74,8 @@ sub run {
 
     my $csv_object = Text::CSV->new;
     my @output     = ();
+    my $is_header  = 1;                # First row contains columns then should not be prefixed
+
     foreach my $csv_record (@csv) {
         my $status = $csv_object->parse($csv_record);
         die "Cannot parse $csv_record" unless $status;
@@ -81,9 +83,13 @@ sub run {
         my @columns = $csv_object->fields();
         # add deriv prefix
         # mandatory for myaffiliates to work properly
-        $columns[1] = $reporter_deriv->prefix_field($columns[1]);
+        if (!$is_header) {
+            $columns[1] = $reporter_deriv->prefix_field($columns[1]);
+        }
+
         $csv_object->combine(@columns);
         push @output, $reporter_deriv->format_data($csv_object->string);
+        $is_header = 0;
     }
 
     $output_filepath = _get_output_file_path($reporter_deriv);

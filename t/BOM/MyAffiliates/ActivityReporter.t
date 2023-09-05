@@ -27,12 +27,17 @@ my $custom_rates = {
     'AUD'  => 2,
 };
 
-sub check_headers {
+sub check_headers_should_exist {
     my ($reporter, $csv) = @_;
     my $are_headers_correct = grep { $_ =~ $reporter->headers_data } @{$csv};
-    ok $are_headers_correct, "Headers are correct";
+    ok $are_headers_correct, "Headers should exist and be correct.";
 }
 
+sub check_headers_should_not_exist {    # MyAffiliates does not want headers in the report for Binary PL (and Binary Registration)
+    my ($reporter, $csv) = @_;
+    my $are_headers_correct = grep { $_ =~ $reporter->headers_data } @{$csv};
+    ok !$are_headers_correct, "Headers should not exist ";
+}
 populate_exchange_rates($custom_rates);
 
 subtest 'binary' => sub {
@@ -152,7 +157,7 @@ subtest 'binary' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_not_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -209,7 +214,7 @@ subtest 'Not funded account with transaction (bonus?)' => sub {
         processing_date => Date::Utility->new(substr($day_one, 0, 10)));
 
     my @csv = $reporter->activity();
-    check_headers($reporter, \@csv);
+    check_headers_should_not_exist($reporter, \@csv);
 
     @csv = grep { my $id = $client->loginid; /$id/ } @csv;
     is(@csv, 1, 'Client is on the list');
@@ -239,7 +244,7 @@ subtest 'Virtual clients are not reported' => sub {
         processing_date => Date::Utility->new(substr($day_one, 0, 10)));
 
     my @csv = $reporter->activity();
-    check_headers($reporter, \@csv);
+    check_headers_should_not_exist($reporter, \@csv);
 
     @csv = grep { /VRTC/ } @csv;    # Filters only VRTC clients
     is(@csv, 0, 'No Virtual client is not on the list');
@@ -362,7 +367,7 @@ subtest 'deriv' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/deriv/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -465,7 +470,7 @@ subtest 'MF Deposits - Deriv & Binary - USD' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_not_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -491,7 +496,7 @@ subtest 'MF Deposits - Deriv & Binary - USD' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/deriv/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -517,7 +522,7 @@ subtest 'MF Deposits - Deriv & Binary - USD' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_not_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -543,7 +548,7 @@ subtest 'MF Deposits - Deriv & Binary - USD' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/deriv/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -647,7 +652,7 @@ subtest 'MF Deposits - Deriv & Binary - AUD' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_not_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -673,7 +678,7 @@ subtest 'MF Deposits - Deriv & Binary - AUD' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/deriv/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -699,7 +704,7 @@ subtest 'MF Deposits - Deriv & Binary - AUD' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_not_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
@@ -725,7 +730,7 @@ subtest 'MF Deposits - Deriv & Binary - AUD' => sub {
         is $reporter->output_file_path(), '/db/myaffiliates/deriv/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
-        check_headers($reporter, \@csv);
+        check_headers_should_exist($reporter, \@csv);
 
         @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 

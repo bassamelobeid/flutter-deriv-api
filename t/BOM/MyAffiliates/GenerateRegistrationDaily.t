@@ -11,10 +11,16 @@ use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 
-sub check_headers {
+sub check_headers_should_exist {
     my ($reporter, $activity_data) = @_;
     my $are_headers_correct = grep { $_ =~ $reporter->headers_data } @{$activity_data};
-    ok $are_headers_correct, "Headers are correct";
+    ok $are_headers_correct, "Headers should exist and be correct.";
+}
+
+sub check_headers_should_not_exist {
+    my ($reporter, $activity_data) = @_;
+    my $are_headers_correct = grep { $_ =~ $reporter->headers_data } @{$activity_data};
+    ok !$are_headers_correct, "Headers should not exist ";
 }
 
 subtest 'client with no promocode' => sub {
@@ -42,7 +48,7 @@ subtest 'client with no promocode' => sub {
     my $is_new_client_reported = grep { $_ =~ $client->loginid } @activity_data;
     ok $is_new_client_reported, "Created client is now on the new-registrations list to report to my affiliates";
 
-    check_headers($reporter, \@activity_data);
+    check_headers_should_not_exist($reporter, \@activity_data);    # For binary we should not contain any header for Registrations
 };
 
 subtest 'client with promocode' => sub {
@@ -91,7 +97,7 @@ subtest 'client with promocode' => sub {
     ok $is_new_client_reported,
         "Created client is now on the new-registrations list to report to affiliates as client has promocode and checked in myaffiliates is true";
 
-    check_headers($reporter, \@activity_data);
+    check_headers_should_not_exist($reporter, \@activity_data);    # For binary we should not contain any header for Registrations
 };
 
 subtest 'client with no promocode - brands' => sub {
@@ -119,7 +125,7 @@ subtest 'client with no promocode - brands' => sub {
         my $is_new_client_reported = grep { $_ =~ $client->loginid } @activity_data;
         ok $is_new_client_reported, "Created client is now on the new-registrations list to report to my affiliates";
 
-        check_headers($reporter, \@activity_data);
+        check_headers_should_exist($reporter, \@activity_data);
     };
 
     subtest 'binary' => sub {
@@ -147,7 +153,7 @@ subtest 'client with no promocode - brands' => sub {
         ok $is_new_client_reported,
             "Created client is now on the new-registrations list to report to my affiliates for binary brand - any un-official app is included in binary brand";
 
-        check_headers($reporter, \@activity_data);
+        check_headers_should_not_exist($reporter, \@activity_data);
     };
 };
 

@@ -58,7 +58,8 @@ sub report {
 
     my @output = ();
 
-    push @output, $self->format_data($self->headers_data()) if ($self->include_headers);
+    # MyAffiliates thirdparty only accept headers for `Deriv` not `Binary`. this is why we have $self->brand->name eq 'deriv' condiction check
+    push @output, $self->format_data($self->headers_data()) if ($self->include_headers and $self->brand->name eq 'deriv');
 
     my $csv = Text::CSV->new;
     foreach (@{$self->new_clients}) {
