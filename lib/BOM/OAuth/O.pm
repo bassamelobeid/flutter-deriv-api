@@ -56,7 +56,7 @@ sub authorize {
     if ($app_id == CTRADER_APPID) {
         $c->app->sessions->secure(1);
         $c->app->sessions->samesite('None');
-        $c->res->headers->header('Content-Security-Policy' => join(" ", 'frame-ancestors', 'https://ct-uat.deriv.com/'));
+        $c->res->headers->header('Content-Security-Policy' => join(" ", 'frame-ancestors', 'https://ct-uat.deriv.com/', 'https://ct.deriv.com/'));
         $social_login_bypass = 1;
     }
 
