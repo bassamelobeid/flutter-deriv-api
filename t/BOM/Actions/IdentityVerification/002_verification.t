@@ -2032,94 +2032,126 @@ subtest 'testing unexpected error' => sub {
 
 };
 
-subtest 'unit test - idv_webhook_relay: Metamap' => sub {
+subtest 'unit test - idv_webhook_relay' => sub {
+
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{idv_webhook_received};
-
-    my $email = 'test_webhook_requested@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
 
     @requests = ();
     @options  = ();
     @urls     = ();
 
-    my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
-            data => {
-                json => {
-                    test => 1,
-                }
-            },
-            headers => {'x-request-id' => '1234'}})->get;
+    subtest 'sus callback' => sub {
+        $log->clear();
 
-    cmp_bag([@urls],     ['http://dummy:8080/v1/idv/webhook'], 'Expected URL returned');
-    cmp_bag([@requests], ['{"test":1}'],                       'Expected request body returned');
-    cmp_bag(
-        [@options],
-        [{
-                'content_type' => 'application/json',
-                'headers'      => {'x-request-id' => '1234'}}
-        ],
-        'Expected request body returned'
-    );
-};
+        my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
+                data => {
+                    json => {
+                        test => 1,
+                    }
+                },
+                headers => {'x-sus-header' => '1234'}})->get;
 
-subtest 'unit test - idv_webhook_relay: IDV retry mechanism' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{idv_webhook_received};
+        $log->contains_ok(qr/no recognizable headers/, 'expected message was logged');
 
-    my $email = 'retry_mechanism@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
+        cmp_bag([@urls],     [], 'no URL returned');
+        cmp_bag([@requests], [], 'no request body returned');
+        cmp_bag([@options],  [], 'no request body returned');
+    };
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    subtest 'MetaMap callback' => sub {
+        $log->clear();
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+        my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
+                data => {
+                    json => {
+                        test => 1,
+                    }
+                },
+                headers => {'x-request-id' => '1234'}})->get;
 
-    @urls = ();
-    $log->clear();
+        cmp_bag([@urls],     ['http://dummy:8080/v1/idv/webhook'], 'Expected URL returned');
+        cmp_bag([@requests], ['{"test":1}'],                       'Expected request body returned');
+        cmp_bag(
+            [@options],
+            [{
+                    'content_type' => 'application/json',
+                    'headers'      => {'x-request-id' => '1234'}}
+            ],
+            'Expected request body returned'
+        );
 
-    $idv_mock->mock(
-        'verify_process',
-        sub {
-            return Future->done(1);
-        });
+        $log->clear();
+        @urls     = ();
+        @requests = ();
+        @options  = ();
+    };
 
-    my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
-            data => {
-                json => {
-                    test => 1,
-                }
-            },
-            headers => {'X-Retry-Attempts' => '1'}})->get;
+    subtest 'Retry Mechanism callback' => sub {
+        $idv_mock->mock(
+            'verify_process',
+            sub {
+                return Future->done(1);
+            });
 
-    cmp_deeply([@urls], [], 'Expected empty urls (no HTTP request made)');
+        my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
+                data => {
+                    json => {
+                        test => 1,
+                    }
+                },
+                headers => {'x-retry-attempts' => '1'}})->get;
 
-    $log->contains_ok(qr/Got IDV webhook with retries: 1/, "Expected log found");
-    $idv_mock->unmock_all();
+        cmp_deeply([@urls], [], 'Expected empty urls (no HTTP request made)');
 
+        $log->contains_ok(qr/Got IDV webhook with attempt number: 1/, 'Expected log found');
+        $log->contains_ok(qr/no req_echo/,                            'Expected log found');
+
+        @urls = ();
+        $log->clear();
+
+        $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
+                data => {
+                    json => {
+                        req_echo => 1,
+                    }
+                },
+                headers => {'x-retry-attempts' => '1'}})->get;
+
+        cmp_deeply([@urls], [], 'Expected empty urls (no HTTP request made)');
+
+        $log->contains_ok(qr/Got IDV webhook with attempt number: 1/, 'Expected log found');
+        $log->does_not_contain_ok(qr/no req_echo/, 'Expected log not found');
+
+        $log->clear();
+        $idv_mock->unmock_all();
+    };
+
+    subtest 'Case Insensitive callback' => sub {
+        $idv_mock->mock(
+            'verify_process',
+            sub {
+                return Future->done(1);
+            });
+
+        @urls = ();
+        $log->clear();
+
+        my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
+                data => {
+                    json => {
+                        req_echo => 1,
+                    }
+                },
+                headers => {'X-ReTry-AttemPts' => '1'}})->get;
+
+        cmp_deeply([@urls], [], 'Expected empty urls (no HTTP request made)');
+
+        $log->contains_ok(qr/Got IDV webhook with attempt number: 1/, 'Expected log found');
+        $log->does_not_contain_ok(qr/no req_echo/, 'Expected log not found');
+
+        $log->clear();
+        $idv_mock->unmock_all();
+    }
 };
 
 subtest 'testing _detect_mime_type' => sub {
