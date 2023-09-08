@@ -7,7 +7,7 @@ jobs:
   code_coverage:
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -15,7 +15,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{ github.repository }}
     env:
       LOG_LEVEL: debug
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -26,7 +26,7 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
+          repository: ${{ github.repository }}
       - name: code cover tests
         run: make cover
       - name: schema_suite tests
