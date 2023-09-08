@@ -8,7 +8,7 @@ on:
         required: true
         type: string 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
   core_unit_syntax_diff:
