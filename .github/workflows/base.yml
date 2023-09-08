@@ -8,7 +8,7 @@ on:
         required: true
         type: string 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
   syntax_diff_unit:
@@ -20,7 +20,7 @@ jobs:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -28,7 +28,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository }}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -36,15 +36,14 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: Product contract test
         run: make unit_test_product_contract
   validation:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -52,7 +51,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -60,15 +59,14 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: Validation
         run: make unit_test_validation
   memory_test:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -76,7 +74,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -84,15 +82,14 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: MemoryTest
         run: make memory_test
   pricing:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -100,7 +97,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -108,15 +105,14 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: Pricing
         run: make unit_test_pricing
   product_others:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -124,7 +120,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -132,8 +128,7 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: Product extended
         run: make unit_test_product_contract_extended
       - name: Product base
@@ -152,7 +147,7 @@ jobs:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -160,7 +155,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -168,8 +163,7 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: Merlin Benchmark
         run: |
           cd /home/git/regentmarkets/bom-quant-benchmark
@@ -183,7 +177,7 @@ jobs:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -199,8 +193,7 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: SDFX benchmark major
         run: make SDFX_benchmark_major
         if: always()
@@ -226,7 +219,7 @@ jobs:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -234,7 +227,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{inputs.repository}}
+        working-directory: /home/git/${{ inputs.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -242,8 +235,7 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-          repository: ${{inputs.repository}}
+          repository: ${{ inputs.repository }}
       - name: perl-Pricing-Engine-European-Digital-Slope
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope
