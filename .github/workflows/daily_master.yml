@@ -7,7 +7,7 @@ jobs:
   syntax_unit:
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -15,7 +15,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{ github.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -23,7 +23,6 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
       - name: Code structure and syntax
         run: |
@@ -34,29 +33,27 @@ jobs:
   core:
     uses: regentmarkets/github-actions/.github/workflows/core.yml@master
     secrets: inherit
-  # Temporarily comment it out until the translation-related issue is resolved.
-  # translations:
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: regentmarkets/debian-ci:stable
-  #     credentials:
-  #       username: circle4regentmarkets
-  #       password: ${{ secrets.DOCKER_PASSWORD }}
-  #     options: --user nobody:nogroup
-  #   defaults:
-  #     run:
-  #       shell: bash -le {0}
-  #       working-directory: /home/git/${{github.repository}}
-  #   env:
-  #     LOG_LEVEL: debug
-  #     CUSTOMERIO_TOKENS_I18N: ${{ secrets.CUSTOMERIO_TOKENS_I18N }}
-  #     WEBLATE_TOKEN: ${{ secrets.WEBLATE_TOKEN }}
-  #   steps:
-  #     - name: setup CI step
-  #       uses: regentmarkets/github-actions/ci-setup@master
-  #       with:
-  #         read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-  #         write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
-  #         repository: ${{ github.repository }}
-  #     - name: Automated translations
-  #       run: bin/translation-build.sh
+  translations:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.DEBIAN_CI }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{ github.repository }}
+    env:
+      LOG_LEVEL: debug
+      CUSTOMERIO_TOKENS_I18N: ${{ secrets.CUSTOMERIO_TOKENS_I18N }}
+      WEBLATE_TOKEN: ${{ secrets.WEBLATE_TOKEN }}
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: ${{ github.repository }}
+      - name: Automated translations
+        run: bin/translation-build.sh

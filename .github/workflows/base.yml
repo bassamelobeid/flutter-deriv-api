@@ -14,7 +14,7 @@ jobs:
   core_unit_syntax_diff:
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:stable
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -30,7 +30,6 @@ jobs:
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          write_github_ssh_key: ${{ secrets.WRITE_GITHUB_SSH_KEY }}
           repository: ${{ inputs.repository }}
       - name: Core tests
         run: make test
