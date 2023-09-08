@@ -1,0 +1,15 @@
+name : Dependent Tests
+
+on:
+  workflow_call:
+jobs:
+  binary-websocket-api:
+    uses: regentmarkets/binary-websocket-api/.github/workflows/base.yml@develop_ghactions
+    secrets: inherit
+    with: 
+      repository: regentmarkets/binary-websocket-api
+  bom-rpc:
+    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@master
+    secrets: inherit
+    with: 
+      repository: regentmarkets/bom-rpc
