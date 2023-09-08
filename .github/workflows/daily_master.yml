@@ -1,0 +1,18 @@
+name: Daily master test
+run-name: Daily test on master branch
+on:
+  schedule:
+    - cron: '8 20 * * *'
+jobs:
+  syntax_unit:
+    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
+    secrets: inherit
+    with:
+      env_vars: |
+        OAUTH_CONFIG=/home/git/regentmarkets/bom-oauth/oauth.conf.example
+  core:
+    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
+    secrets: inherit
+    with:
+      env_vars: |
+        OAUTH_CONFIG=/home/git/regentmarkets/bom-oauth/oauth.conf.example

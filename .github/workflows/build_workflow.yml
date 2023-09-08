@@ -1,0 +1,26 @@
+name: Build workflow
+run-name: Build workflow
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core_unit_syntax_diff:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    secrets: inherit
+    with:
+      repository: ${{ github.repository }}
+      env_vars: |
+        OAUTH_CONFIG=/home/git/regentmarkets/bom-oauth/oauth.conf.example
+  # Temporarily comment out dependent job
+  # dependent:
+  #   needs: core_unit_syntax_diff
+  #   if:  ${{ github.event_name != 'push' }}
+  #   uses: ./.github/workflows/dependent.yml
+  #   secrets: inherit
+
