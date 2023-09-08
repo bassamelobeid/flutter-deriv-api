@@ -1,14 +1,6 @@
-name: Build workflow
-run-name: Build workflow
+name: Repository tests
+run-name: Repository tests
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - master
-    tags:
-      - '*'
-  pull_request:
-    branches: [ develop_ghactions ]
   workflow_call:
     inputs:
       repository:
@@ -16,7 +8,7 @@ on:
         required: true
         type: string 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{inputs.repository}}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
   core_unit_syntax_diff:
