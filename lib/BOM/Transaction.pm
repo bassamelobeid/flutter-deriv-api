@@ -701,7 +701,7 @@ sub calculate_limits {
 
         $limits{max_open_bets_per_bet_class} = $per_symbol_limits->{max_open_positions};
         $limits{max_aggregate_open_stake} =
-            convert_currency($per_symbol_limits->{max_aggregate_open_stake}->{'growth_rate_' . $self->contract->growth_rate}, 'USD', $currency);
+            $per_symbol_limits->{max_aggregate_open_stake}->{'growth_rate_' . $self->contract->growth_rate};
 
         if ($user_specific_limits) {
             $limits{max_open_bets_per_bet_class} = $user_specific_limits->{max_open_positions} if $user_specific_limits->{max_open_positions};

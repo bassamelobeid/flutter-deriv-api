@@ -732,4 +732,29 @@ subtest 'buy accumulator on crash/boom with VRTC' => sub {
 
 };
 
+subtest 'calculate limits', sub {
+    my $crcl = create_client('CR');
+    top_up $crcl, 'USD', 5000;
+
+    my $acc_usd = $crcl->account;
+    is $acc_usd->currency_code, 'USD', 'got USD account';
+
+    my $bal;
+    is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
+    my $contract = produce_contract($args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $crcl,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $lim = $txn->calculate_limits;
+    is $lim->{max_aggregate_open_stake}, 3000, "max_aggregate_open_stake is correct";
+};
+
 done_testing();
