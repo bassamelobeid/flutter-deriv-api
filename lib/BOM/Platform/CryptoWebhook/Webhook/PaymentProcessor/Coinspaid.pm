@@ -170,25 +170,27 @@ sub process_deposit {
     my ($id, $transactions, $fees, $error, $status, $currency_received) = @{$payload}{qw/id transactions fees error status currency_received/};
 
     #todo proper error code and error message implementation
-    my @required_params = qw/id transactions fees status currency_received/;
+    my @required_params = qw/id transactions status currency_received/;
     my $missing_param   = first { !defined($payload->{$_}) || (ref $payload->{$_} eq 'ARRAY' && !@{$payload->{$_}}) } @required_params;
     return {error => "$missing_param not found in payload"} if $missing_param;
+
+    defined $currency_received->{$_} or (return {error => "$_ not found in currency_received payload"}) for qw(currency amount amount_minus_fee);
 
     my ($currency, $amount, $amount_minus_fee) = @{$currency_received}{qw/ currency amount amount_minus_fee/};
 
     my $fee = Math::BigFloat->new($amount)->bsub($amount_minus_fee);
 
-    # this is temporary logging to collect dd metrics, this is being done so that we know actual fee structure
-    # coinspaid sends and after analysing this with enough data, we will update our fee handling
-    $log->warnf("Error processing Coinspaid Deposit Fee. more detail: %s", $fees) if $status eq 'confirmed' && !$fee->is_positive();
+    $log->warnf("Error processing Coinspaid Deposit Fee. fees: %s, trace_id: %s, tx_id: %s",
+        $fees, $id, (ref $transactions eq 'ARRAY' ? $transactions->[0]{txid} : $transactions))
+        if $status eq 'confirmed' && $fee->is_negative();
 
     my @normalized_txns;
     #since coinspaid returns transactions as an array list, we handle each of it
     # if any of transaction parsing fails, we discard all the transactions & return not ok result to coinspaid
     for my $txn ($transactions->@*) {
-        defined $txn->{$_} or (return {error => sprintf('%s not found in payload, coinspaid_id: %s', $_, $id)}) for qw(address currency txid amount);
+        defined $txn->{$_} or (return {error => "$_ not found in transactions payload"}) for qw(address currency txid amount);
 
-        return {error => sprintf('transaction amount not matching with currency_received amount, coinspaid_id: %s', $id)}
+        return {error => "transaction amount not matching with currency_received amount"}
             if Math::BigFloat->new($txn->{amount})->bne($amount);
 
         my $normalize_txn = {
@@ -258,7 +260,7 @@ sub process_withdrawal {
     #since coinspaid returns transactions as an array list, we handle each of it
     #if any of transaction parsing fails, we discard all the transactions & return not ok result to coinspaid
     for my $txn ($transactions->@*) {
-        defined $txn->{$_} or (return {error => sprintf('%s not found in payload, coinspaid_id: %s', $_, $id)}) for qw(address currency txid amount);
+        defined $txn->{$_} or (return {error => "$_ not found in transactions payload"}) for qw(address currency txid amount);
 
         my $normalize_txn = {
             trace_id        => $id,

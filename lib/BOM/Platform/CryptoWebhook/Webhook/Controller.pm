@@ -48,7 +48,9 @@ sub processor_coinspaid {
 
     if ($result->{error}) {
         #logging this may be omitted
-        $log->infof("Error processing Coinspaid %s. more detail: %s", $payload_type, $result->{error});
+        $log->infof("Error processing Coinspaid %s. Error: %s, trace_id: %s, tx_id: %s",
+            $payload_type, $result->{error}, $json->{id},
+            (ref $json->{transactions} eq 'ARRAY' ? $json->{transactions}->[0]{txid} : $json->{transactions}));
         return $self->render_request_with_dd(200, $processor_name, DD_INVALID_PAYLOAD);
     }
 

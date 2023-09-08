@@ -8,6 +8,9 @@ use Test::MockModule;
 use Digest::SHA qw(hmac_sha512_hex);
 use Syntax::Keyword::Try;
 
+use Log::Any::Test;
+use Log::Any qw($log);
+
 use BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor;
 use BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor::Coinspaid;
 
@@ -108,13 +111,6 @@ subtest 'process_deposit' => sub {
             payload => {
                 id           => 123,
                 transactions => [{address => 'address1'}],
-            },
-            error => {error => 'fees not found in payload'},
-        },
-        {
-            payload => {
-                id           => 123,
-                transactions => [{address => 'address1'}],
                 fees         => [{amount  => .01}]
             },
             error => {error => 'status not found in payload'},
@@ -127,6 +123,39 @@ subtest 'process_deposit' => sub {
                 status       => 'confirmed',
             },
             error => {error => 'currency_received not found in payload'},
+        },
+        {
+            payload => {
+                id                => 123,
+                transactions      => [{address => 'address1'}],
+                fees              => [{amount  => .01}],
+                status            => 'confirmed',
+                currency_received => {},
+            },
+            error => {error => 'currency not found in currency_received payload'},
+        },
+        {
+            payload => {
+                id                => 123,
+                transactions      => [{address => 'address1'}],
+                fees              => [{amount  => .01}],
+                status            => 'confirmed',
+                currency_received => {currency => 'tUSDT'},
+            },
+            error => {error => 'amount not found in currency_received payload'},
+        },
+        {
+            payload => {
+                id                => 123,
+                transactions      => [{address => 'address1'}],
+                fees              => [{amount  => .01}],
+                status            => 'confirmed',
+                currency_received => {
+                    currency => 'tUSDT',
+                    amount   => '0.01',
+                },
+            },
+            error => {error => 'amount_minus_fee not found in currency_received payload'},
         }];
 
     for my $case ($cases->@*) {
@@ -141,9 +170,13 @@ subtest 'process_deposit' => sub {
                 transactions      => [{txid   => 'txid1'}],
                 fees              => [{amount => .01}],
                 status            => 'pending',
-                currency_received => {amount => .01},
+                currency_received => {
+                    amount           => .01,
+                    currency         => 'tUSDT',
+                    amount_minus_fee => 0.009,
+                },
             },
-            error => {error => 'address not found in payload, coinspaid_id: 123'},
+            error => {error => 'address not found in transactions payload'},
         },
         {
             payload => {
@@ -151,9 +184,14 @@ subtest 'process_deposit' => sub {
                 transactions      => [{address => 'address1'}],
                 fees              => [{amount  => .01}],
                 status            => 'pending',
-                currency_received => {amount => .01},
+                currency_received => {
+                    amount           => .01,
+                    currency         => 'tUSDT',
+                    amount_minus_fee => 0.009,
+                },
+
             },
-            error => {error => 'currency not found in payload, coinspaid_id: 123'},
+            error => {error => 'currency not found in transactions payload'},
         },
         {
             payload => {
@@ -165,9 +203,14 @@ subtest 'process_deposit' => sub {
                 ],
                 fees              => [{amount => .01}],
                 status            => 'pending',
-                currency_received => {amount => .01},
+                currency_received => {
+                    amount           => .01,
+                    currency         => 'tUSDT',
+                    amount_minus_fee => 0.009,
+                },
+
             },
-            error => {error => 'txid not found in payload, coinspaid_id: 123'},
+            error => {error => 'txid not found in transactions payload'},
         },
         {
             payload => {
@@ -180,9 +223,14 @@ subtest 'process_deposit' => sub {
                 ],
                 fees              => [{amount => .01}],
                 status            => 'pending',
-                currency_received => {amount => .01},
+                currency_received => {
+                    amount           => .01,
+                    currency         => 'tUSDT',
+                    amount_minus_fee => 0.009,
+                },
+
             },
-            error => {error => 'amount not found in payload, coinspaid_id: 123'},
+            error => {error => 'amount not found in transactions payload'},
         },
         {
             payload => {
@@ -196,9 +244,13 @@ subtest 'process_deposit' => sub {
                 ],
                 fees              => [{amount => .01}],
                 status            => 'pending',
-                currency_received => {amount => .01},
+                currency_received => {
+                    amount           => .01,
+                    currency         => 'tUSDT',
+                    amount_minus_fee => 0.009,
+                },
             },
-            error => {error => 'transaction amount not matching with currency_received amount, coinspaid_id: 123'},
+            error => {error => 'transaction amount not matching with currency_received amount'},
         },
     ];
 
@@ -256,6 +308,22 @@ subtest 'process_deposit' => sub {
 
     my $coinspaid = BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor->new(processor_name => 'Coinspaid');
     is_deeply $coinspaid->process_deposit($payload), $expected_result_1, 'Correct response for valid payload for deposit txn';
+
+    # case when transaction fee is negative, it should emit a warn log
+    $log->clear();
+    $payload->{transactions}[0]->{amount}           = 11;
+    $payload->{currency_received}{amount}           = 11;
+    $payload->{currency_received}{amount_minus_fee} = 12;
+    is $coinspaid->process_deposit($payload)->{is_success}, 1, 'Correct response for negative fee case';
+    cmp_bag $log->msgs,
+        [{
+            level    => 'warning',
+            category => 'BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor::Coinspaid',
+            message  =>
+                "Error processing Coinspaid Deposit Fee. fees: [{amount => \"0.02\",type => \"mining\"},{amount => \"0.01\",type => \"fee_crypto_deposit\"},{amount => \"0.03\",type => \"fee_crypto_deposit\"}], trace_id: 123, tx_id: tx_hash1"
+        }
+        ],
+        'Correct warning raised for negative fee case';
 };
 
 subtest 'process_withdrawal' => sub {
@@ -309,7 +377,7 @@ subtest 'process_withdrawal' => sub {
                 fees         => [{amount => .091}],
                 status       => 'pending',
             },
-            error => {error => 'address not found in payload, coinspaid_id: 123'},
+            error => {error => 'address not found in transactions payload'},
         },
         {
             payload => {
@@ -319,7 +387,7 @@ subtest 'process_withdrawal' => sub {
                 fees         => [{amount  => .091}],
                 status       => 'pending',
             },
-            error => {error => 'currency not found in payload, coinspaid_id: 123'},
+            error => {error => 'currency not found in transactions payload'},
         },
         {
             payload => {
@@ -333,7 +401,7 @@ subtest 'process_withdrawal' => sub {
                 fees   => [{amount => .091}],
                 status => 'pending',
             },
-            error => {error => 'txid not found in payload, coinspaid_id: 123'},
+            error => {error => 'txid not found in transactions payload'},
         },
         {
             payload => {
@@ -348,7 +416,7 @@ subtest 'process_withdrawal' => sub {
                 fees   => [{amount => .091}],
                 status => 'pending',
             },
-            error => {error => 'amount not found in payload, coinspaid_id: 123'},
+            error => {error => 'amount not found in transactions payload'},
         },
     ];
 

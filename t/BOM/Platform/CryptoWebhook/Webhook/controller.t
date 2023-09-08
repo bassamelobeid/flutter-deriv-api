@@ -4,6 +4,8 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::MockModule;
+use Log::Any::Test;
+use Log::Any qw($log);
 
 use BOM::Platform::CryptoWebhook::Webhook::Controller;
 use Mojo::Message::Request;
@@ -119,7 +121,7 @@ subtest 'processor_coinspaid' => sub {
                 return 1;
             },
             process_deposit => sub {
-                return {error => "fees not found in payload"};
+                return {error => "status not found in payload"};
             },
             process_withdrawal => sub {
                 return {error => "status not found in payload"};
@@ -138,10 +140,18 @@ subtest 'processor_coinspaid' => sub {
                     };
                 },
             );
-
+            $log->clear;
             my $controller = BOM::Platform::CryptoWebhook::Webhook::Controller->new();
             my $response   = $controller->processor_coinspaid();
-            my $error      = $controller->rendered(200);
+            cmp_bag $log->msgs,
+                [{
+                    level    => 'info',
+                    category => 'BOM::Platform::CryptoWebhook::Webhook::Controller',
+                    message  => "Error processing Coinspaid $txn_type. Error: status not found in payload, trace_id: 1234, tx_id: <undef>",
+                }
+                ],
+                "Correct dd info raised for $txn_type case";
+            my $error = $controller->rendered(200);
             cmp_deeply $response, $error, 'Renders the correct error when fields missing from payload.';
             test_dd({
                     stats_inc => {'bom_platform.crypto_webhook.invalid_payload' => 1},
