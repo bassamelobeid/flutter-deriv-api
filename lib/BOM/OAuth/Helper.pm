@@ -2,8 +2,11 @@ package BOM::OAuth::Helper;
 
 use strict;
 use warnings;
-use JSON::MaybeUTF8 qw(:v1);
-use MIME::Base64    qw(encode_base64 decode_base64);
+use MIME::Base64 qw(encode_base64 decode_base64);
+use JSON::MaybeXS;    #Using `JSON::MaybeXS` to maintain order of the result string.
+
+use Exporter qw(import);
+our @EXPORT_OK = qw(request_details_string exception_string);
 
 =head2 extract_brand_from_params
 
@@ -76,7 +79,7 @@ adds a signed, secure, http-only and CORS, cookie to the response named 'sls' co
 sub set_social_login_cookie {
     my ($c, $session) = @_;
 
-    my $encoded = encode_base64(encode_json_utf8($session), '');
+    my $encoded = encode_base64(JSON::MaybeXS->new->utf8->canonical->encode($session), '');
     $c->signed_cookie(
         'sls' => $encoded,
         {
@@ -96,7 +99,59 @@ sub get_social_login_cookie {
     my $c      = shift;
     my $cookie = $c->signed_cookie('sls');
     die '"sls" Cookie is missing' unless $cookie;
-    return decode_json_utf8(decode_base64($cookie));
+    return JSON::MaybeXS->new->utf8->decode(decode_base64($cookie));
+}
+
+=head2 request_details_string
+
+Returns a formatted string of the request path and details about request's
+IP, Country, Referrer, and User_Agent.
+
+=cut
+
+sub request_details_string {
+    my $request         = shift;
+    my $request_context = shift;
+
+    my $path = $request->url->path->to_string;
+
+    my $request_headers = $request->headers;
+
+    my $request_details = JSON::MaybeXS->new->utf8->canonical->encode({
+        IP         => $request_context->client_ip,
+        Country    => $request_context->country_code,
+        Referrer   => $request_headers->referrer,
+        User_Agent => $request_headers->user_agent,
+    });
+
+    my $full_message = "request to $path $request_details";
+    return $full_message;
+}
+
+=head2 exception_string
+
+Unify different forms of exceptions raised from bom-oauth into a string.
+
+=cut
+
+sub exception_string {
+    my $exception = shift;
+
+    if (defined $exception && !ref $exception) {
+        return $exception;
+    }
+
+    if (ref $exception eq 'Mojo::Exception') {
+        return $exception->{message};
+    }
+
+    if (ref $exception eq 'ARRAY') {
+        my $message = "";
+        $message .= $_ for $exception->@*;
+        return $message;
+    }
+
+    return "Unknown Error";
 }
 
 1;

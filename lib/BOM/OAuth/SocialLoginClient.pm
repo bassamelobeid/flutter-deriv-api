@@ -79,10 +79,15 @@ method get_providers {
 
     my $result = $self->api_call($method, $path);
 
-    return "sls error: $result->{data}->{message}" unless $result->{code} == OK_STATUS_CODE;
-    return $result->{data}->{data} if $result->{data}->{data};
-    die 'Response does not contain expected result';
+    if ($result->{code} != OK_STATUS_CODE) {
+        return $result->{data}->{message};
+    }
 
+    if ($result->{data}->{data}) {
+        return $result->{data}->{data};
+    }
+
+    die 'Response does not contain expected result';
 }
 
 =head2 retrieve_user_info
@@ -98,10 +103,20 @@ method retrieve_user_info {
     my $method = "POST";
 
     my $response = $self->api_call($method, $path, $params);
-    return $response->{data}->{data}                  if $response->{data}->{data}  && $response->{code} == OK_STATUS_CODE;
-    return $response->{data}                          if $response->{data}->{error} && $response->{code} == BAD_REQUEST_STATUS_CODE;
-    die "sls error $path: $response->{data}->{error}" if $response->{data}->{error};    #error other than BAD_REQUEST e.g. service unavailable.
-    die "sls client $path: Response does not contain expected result";
+
+    if ($response->{data}->{data} && $response->{code} == OK_STATUS_CODE) {
+        return $response->{data}->{data};
+    }
+    if ($response->{data}->{error} && $response->{code} == BAD_REQUEST_STATUS_CODE) {
+        return $response->{data};
+    }
+
+    #error other than BAD_REQUEST e.g. service unavailable.
+    if ($response->{data}->{error}) {
+        die $response->{data}->{error};
+    }
+
+    die "Response does not contain expected result";
 }
 
 1;

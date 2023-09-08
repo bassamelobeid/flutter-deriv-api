@@ -32,7 +32,7 @@ subtest 'Social login client providers' => sub {
     $response  = {message => 'error'};
     $code      = 500;
     $providers = $sls->get_providers;
-    is $providers, 'sls error: error', 'return the error if error';
+    is $providers, 'error', 'return the error if error';
 
     $response = 'wrong formated response';
     dies_ok { $sls->get_providers } "Die if malformed response";

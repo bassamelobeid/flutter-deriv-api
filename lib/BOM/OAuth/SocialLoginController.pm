@@ -5,7 +5,7 @@ use warnings;
 use Log::Any qw( $log );
 use Mojo::Base 'Mojolicious::Controller';
 use Syntax::Keyword::Try;
-use BOM::OAuth::Helper;
+use BOM::OAuth::Helper         qw(request_details_string exception_string);
 use BOM::OAuth::Static         qw( get_message_mapping );
 use BOM::Platform::Context     qw( localize );
 use DataDog::DogStatsd::Helper qw( stats_inc );
@@ -28,7 +28,10 @@ Remove query string parameters carried with the callback.
 sub redirect_to_auth_page {
     my ($c, $error_code, @args) = @_;
 
-    $c->session(social_error => localize(get_message_mapping()->{$error_code}, @args)) if $error_code;
+    if ($error_code) {
+        $c->session(social_error => localize(get_message_mapping()->{$error_code}, @args));
+        $log->warnf($c->_to_error_message("processing failed with error code $error_code"));
+    }
     my $redirect = $c->req->url->path('/oauth2/authorize')->to_abs->scheme('https');
     $c->_populate_redirect_query_params($redirect);
     return $c->redirect_to($redirect);
@@ -71,7 +74,7 @@ sub _extract_request_parametrs {
         $cookie = BOM::OAuth::Helper::get_social_login_cookie($c);
         $cookie->{query_params}->{brand} //= Brands->new(app_id => $cookie->{query_params}->{app_id})->name;    #try using app_id
     } catch ($e) {
-        $log->errorf($e);
+        $log->errorf($c->_to_error_message($e));
     }
 
     my $provider = $c->stash('sls_provider');    #from callback path /callback/sls_provider.
@@ -254,7 +257,8 @@ sub callback {
     try {
         $user_data = $c->_retrieve_user_info($provider_response);    #first thing to do to invalidate auth_code.
     } catch ($e) {
-        $log->errorf((ref $e eq 'Mojo::Exception' ? $e->{message} : 'Unknown error in social login callback'));
+        my $additional_info = "Error while retrive user info from $provider_response->{provider}";
+        $log->errorf($c->_to_error_message($e, $additional_info));
     }
 
     try {
@@ -267,7 +271,7 @@ sub callback {
         }
         ## Bad request, could be due to missing/manipulated data..
         if ($user_data->{error}) {
-            $log->errorf("Faild to get user info: $user_data->{error}");
+            $log->errorf($c->_to_error_message("Exchange failed with $provider_response->{provider}: $user_data->{error}"));
             return $c->redirect_to_auth_page('NO_AUTHENTICATION');
         }
 
@@ -307,7 +311,7 @@ sub callback {
         #faild signin attempt;
         return $c->redirect_to_auth_page($res->{error}, ($res->{args} // [])->@*);
     } catch ($e) {
-        $log->errorf((ref $e eq 'Mojo::Exception' ? $e->{message} : 'Unknown error in social login callback'));
+        $log->errorf($c->_to_error_message($e));
         stats_inc('login.social_login.error', {tags => [$c->_dd_brand_tag]});
         return $c->redirect_to_auth_page('invalid');
     }
@@ -351,6 +355,28 @@ sub _extract_exchange_params {
         provider_name => $provider_response->{provider} // ''
     };
     return $exchange_params;
+}
+
+=head2 _to_error_message
+
+Returns a string represents social login exception with possiblity to provide additional info.
+Will append the request details. 
+
+=cut
+
+sub _to_error_message {
+    my $c         = shift;
+    my $exception = shift;
+    my $message   = shift;
+
+    my $exception_message = exception_string($exception);
+    my $request_details   = request_details_string($c->req, $c->stash('request'));
+    my $result            = "Social Login exception - ";
+    if ($message) {
+        $result .= "$message - ";
+    }
+    $result .= "$exception_message while processing $request_details";
+    return $result;
 }
 
 1;

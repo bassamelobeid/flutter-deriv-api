@@ -30,7 +30,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::OAuth::Common;
-use BOM::OAuth::Helper;
+use BOM::OAuth::Helper     qw(request_details_string exception_string);
 use BOM::OAuth::Static     qw(get_message_mapping);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
@@ -74,7 +74,7 @@ sub authorize {
     try {
         BOM::OAuth::Helper::setup_social_login($c);
     } catch ($e) {
-        $log->errorf("Error while setup social login links - $e");
+        $log->errorf("Error while setup social login links: %s - %s", exception_string($e), request_details_string($c->req, $c->stash('request')));
     }
 
     # load available networks for brand
@@ -564,6 +564,7 @@ sub _get_client {
 sub _bad_request {
     my ($c, $error) = @_;
 
+    $log->warnf("Bad Request - $error - " . request_details_string($c->req, $c->stash('request')));
     return $c->throw_error('invalid_request', $error);
 }
 
