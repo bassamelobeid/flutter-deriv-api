@@ -36,6 +36,11 @@ sub _publish {
         return;
     }
 
+    if ($msg->{type} =~ /^accumulator/) {
+        _publish_accumulator_aggregate_stake_error($msg);
+        return;
+    }
+
     my ($subject, $email_list, $status);
     my $brand         = Brands->new(name => 'deriv');
     my $message_title = $msg->{type};
@@ -91,6 +96,49 @@ sub _publish {
     }
 
     return;
+}
+
+=head2 _publish_accumulator_aggregate_stake_error
+
+send alert to DD if the message is related to accumulator aggregate stake limit
+
+=cut
+
+sub _publish_accumulator_aggregate_stake_error {
+    my $msg = shift;
+
+    my $message_body = $json->encode($msg);
+    my $key;
+    my $subject;
+
+    if ($msg->{type} =~ /^accumulator_half/) {
+        $subject = "Accumulator max_aggregate_open_stake is crossing half of the threshold";
+        $key     = join '_', ('Accumulator', $msg->{symbol}, $msg->{growth_rate}, 'max_aggregate_stake', 'halfway');
+    } else {
+        $subject = "Accumulator max_aggregate_open_stake is crossing the threshold";
+        $key     = join '_', ('Accumulator', $msg->{symbol}, $msg->{growth_rate}, 'max_aggregate_stake', 'crossed');
+    }
+
+    unless (BOM::Config::Redis::redis_replicated_read()->exists($key)) {
+        my $brand      = Brands->new(name => 'deriv');
+        my $email_list = join ", ", map { $brand->emails($_) } qw(quants);
+
+        send_email({
+            from    => 'system@binary.com',
+            to      => $email_list,
+            subject => $subject,
+            message => [$message_body],
+        });
+
+        BOM::Config::Redis::redis_replicated_write()->set($key, 1, 'EX', 3600);
+    }
+
+    stats_event(
+        $subject,
+        $message_body,
+        {
+            alert_type => 'warning',
+            tags       => ['trade_warning:hit_limit']});
 }
 
 sub _refresh_notification_cache {
