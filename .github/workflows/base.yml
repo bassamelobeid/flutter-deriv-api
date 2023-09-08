@@ -13,8 +13,7 @@ concurrency:
 jobs:
   schema:
     needs: syntax_diff_unit
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -38,8 +37,7 @@ jobs:
         run: |
           make json_schemas
   syntax_diff_unit: 
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -67,8 +65,7 @@ jobs:
         run: make unit
   core1:
     needs: syntax_diff_unit
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -95,8 +92,7 @@ jobs:
           make test1
   core2:
     needs: syntax_diff_unit
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:

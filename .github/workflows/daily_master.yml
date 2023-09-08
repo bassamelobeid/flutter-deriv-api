@@ -5,8 +5,7 @@ on:
     - cron: '33 20 * * *'
 jobs:
   syntax_unit:
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -16,7 +15,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{github.repository}}
+        working-directory: /home/git/${{ github.repository }}
     env:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
@@ -26,14 +25,13 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           need_service: false
-          repository: ${{github.repository}} 
+          repository: ${{ github.repository }}
       - name: Code structure and syntax
         run: make syntax
       - name: unit tests
         run: make unit
   core1:
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -59,8 +57,7 @@ jobs:
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           make test1
   core2:
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -86,8 +83,7 @@ jobs:
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           make test2
   schema:
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:

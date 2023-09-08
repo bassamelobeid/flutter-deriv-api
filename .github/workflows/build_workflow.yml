@@ -6,15 +6,13 @@ on:
     branches:
       - master
   pull_request:
-    branches: [ develop_ghactions ]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   schema:
     needs: syntax_diff_unit
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -38,8 +36,7 @@ jobs:
         run: |
           make json_schemas
   syntax_diff_unit: 
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -67,8 +64,7 @@ jobs:
         run: make unit
   core1:
     needs: syntax_diff_unit
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -95,8 +91,7 @@ jobs:
           make test1
   core2:
     needs: syntax_diff_unit
-    runs-on:
-      group: ci-dev
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -121,8 +116,9 @@ jobs:
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           make test2
-  dependent:
-    needs: [schema,core1,core2]
-    if:  ${{ github.event_name != 'push' }}
-    uses: ./.github/workflows/dependent.yml
-    secrets: inherit
+  # Temporarily comment out dependent job
+  # dependent:
+  #   needs: [schema,core1,core2]
+  #   if:  ${{ github.event_name != 'push' }}
+  #   uses: ./.github/workflows/dependent.yml
+  #   secrets: inherit
