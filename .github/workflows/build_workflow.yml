@@ -1,14 +1,13 @@
-name: Repository Tests
-run-name: Repository Tests
+name: Build workflow
+run-name: Build workflow
 on:
-  workflow_call:
-    inputs:
-      repository:
-        description: 'Repository name for running tests'
-        required: true
-        type: string 
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
@@ -22,7 +21,7 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
+        working-directory: /home/git/${{ github.repository }}
     env:
       LOG_LEVEL: debug
     steps:
@@ -31,6 +30,12 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           need_service: 'false'
-          repository: ${{ inputs.repository }}
+          repository: ${{ github.repository }}
       - name: Standard tests
         run: make test
+  # Temporarily comment out dependent job
+  # dependent:
+  #   needs: build
+  #   if:  ${{ github.event_name != 'push' }}
+  #   uses: ./.github/workflows/dependent.yml
+  #   secrets: inherit
