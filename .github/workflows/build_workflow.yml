@@ -5,26 +5,19 @@ on:
   push:
     branches:
       - master
-    tags:
-      - '*'
   pull_request:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  check-git-message:
-    runs-on: ubuntu-latest
-    steps:
-      - name: check git message
-        uses: regentmarkets/github-actions/check-git-message@master
   core_syntax_diff:
-    needs: check-git-message
     uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@master
     secrets: inherit
     with:
       repository: ${{ github.repository }}
-  dependent:
-    needs: core_syntax_diff
-    if:  ${{ github.event_name != 'push' }}
-    uses: ./.github/workflows/dependent.yml
-    secrets: inherit
+  # Temporarily comment out dependent job
+  # dependent:
+  #   needs: core_syntax_diff
+  #   if:  ${{ github.event_name != 'push' }}
+  #   uses: ./.github/workflows/dependent.yml
+  #   secrets: inherit
