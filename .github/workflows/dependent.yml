@@ -1,0 +1,10 @@
+name : Dependent Tests
+
+on:
+  workflow_call:
+jobs:
+  bom-backoffice:
+    uses: regentmarkets/bom-backoffice/.github/workflows/base.yml@develop_ghactions
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-backoffice
