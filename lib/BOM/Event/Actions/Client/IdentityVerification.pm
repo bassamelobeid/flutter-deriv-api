@@ -43,7 +43,6 @@ use BOM::Platform::S3Client;
 use constant IDV_UPLOAD_TIMEOUT_SECONDS => 30;
 
 use constant RESULT_STATUS => {
-    pass     => \&idv_pass,
     verified => \&idv_verified,
     failed   => \&idv_failed,
     refuted  => \&idv_refuted,
@@ -420,13 +419,13 @@ async sub idv_pending {
     });
 }
 
-=head2 idv_pass
+=head2 idv_mismtach_lookback
 
-Pass Result Status, when there is no failure when calling IDV
+To check if a name or DOB mismatch has been resolved.
 
 =cut
 
-async sub idv_pass {
+async sub idv_mismtach_lookback {
     my ($args) = @_;
 
     my ($client, $document, $messages, $response_hash) = @{$args}{qw/client document messages response_hash/};
@@ -438,7 +437,7 @@ async sub idv_pass {
     );
 
     my $rules_result = $rule_engine->verify_action(
-        'identity_verification',
+        'idv_mismatch_lookback',
         loginid  => $client->loginid,
         result   => $response_hash->{report},
         document => $document,

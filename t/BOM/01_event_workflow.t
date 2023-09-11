@@ -125,7 +125,7 @@ subtest 'process - generic jobs' => sub {
                 affiliate_sync_initiated withdrawal_limit_reached payops_event_update_account_status payops_event_request_poo
                 crypto_withdrawal idv_webhook_received
                 client_promo_codes_upload onfido_doc_ready_for_upload shared_payment_method_found
-                dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_archived_account_reset_trading_password
+                dispute_notification account_reactivated verify_false_profile_info poi_check_rules mt5_archived_account_reset_trading_password
                 identity_verification_requested identity_verification_processed
                 mt5_inactive_account_closure_report bulk_authentication
                 check_name_changes_after_first_deposit p2p_adverts_updated

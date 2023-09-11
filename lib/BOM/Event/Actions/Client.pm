@@ -26,7 +26,7 @@ use Format::Util::Numbers qw(financialrounding formatnumber);
 use Future::AsyncAwait;
 use Future::Utils qw(fmap0);
 use IO::Async::Loop;
-use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
+use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8 decode_json_text);
 use List::Util             qw(any all first uniq none min uniqstr);
 use Locale::Codes::Country qw(country_code2code);
 use Log::Any               qw($log);
@@ -71,6 +71,7 @@ use BOM::Platform::Client::AntiFraud;
 use Locale::Country qw/code2country/;
 use BOM::Platform::Client::AntiFraud;
 use BOM::Platform::Utility;
+use BOM::Event::Actions::Client::IdentityVerification;
 
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
@@ -1139,6 +1140,126 @@ async sub _store_applicant_documents {
     return undef;
 }
 
+=head2 poi_check_rules
+
+Checks which sub to call when a client corrects their details depending on the latest_poi_by.
+
+=over 4
+
+Returns a L<Future> which resolves to undef.
+
+=back
+
+=cut
+
+async sub poi_check_rules {
+    my ($args)  = @_;
+    my $loginid = $args->{loginid}                              or die 'No loginid supplied';
+    my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
+
+    if ($client->is_virtual) {
+        DataDog::DogStatsd::Helper::stats_inc('events.poi_check_rules.is_virtual');
+        return undef;
+    }
+
+    my ($latest) = $client->latest_poi_by;
+    $latest //= '';
+
+    if ($latest eq 'manual') {
+        DataDog::DogStatsd::Helper::stats_inc('events.poi_check_rules.latest_is_manual');
+        return undef;
+    }
+
+    #we pass full args, only login id is required, the rest is optional
+
+    await check_idv_rules($args) if $latest eq 'idv';
+
+    await check_onfido_rules($args) if $latest eq 'onfido';
+
+    return undef;
+}
+
+=head2 check_idv_rules
+
+Applies the `check_results` L<BOM::Rules::Engine> action upon the latest Onfido check.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<loginid> - the login id of the client.
+
+=item * C<datadog_tags> - (optional) tags to send send along the DD metrics.
+
+=back
+
+The following side effects could happen on rules engine verification error:
+
+=over 4
+
+=item * C<NameMismatch>: the client will be flagged with the C<poi_name_mismatch> status.
+
+=item * C<DobMismatch>: the client will be flagged with the C<poi_dob_mismatch> status.
+
+=back
+
+Returns a L<Future> which resolves to C<1> on success.
+
+=cut
+
+async sub check_idv_rules {
+    my ($args)  = @_;
+    my $loginid = $args->{loginid};
+    my $client  = BOM::User::Client->new({loginid => $loginid});
+    my $tags    = $args->{datadog_tags};
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
+    my $idv_document       = $idv_model->get_last_updated_document();
+    my $idv_document_check = $idv_model->get_document_check_detail($idv_document->{id});
+    my $report_decoded     = eval { decode_json_text($idv_document_check->{report}) };
+    $idv_document_check->{report} = $report_decoded;
+    my $messages = eval { decode_json_text($idv_document->{status_messages}) } // [];
+    my $provider = $idv_document_check->{provider};
+
+    if ($report_decoded) {
+        await BOM::Event::Actions::Client::IdentityVerification::idv_mismtach_lookback({
+            client        => $client,
+            messages      => $messages,
+            document      => $idv_document,
+            response_hash => $idv_document_check,
+            provider      => $provider,
+        });
+
+        if ($client->status->age_verification) {
+            push @$tags, 'result:age_verified_corrected';
+            DataDog::DogStatsd::Helper::stats_inc(
+                'event.idv.client_verification.result',
+                {
+                    tags => $tags,
+                });
+        } elsif ($client->status->poi_name_mismatch) {
+            push @$tags, 'result:name_mismatch';
+            DataDog::DogStatsd::Helper::stats_inc(
+                'event.idv.client_verification.result',
+                {
+                    tags => $tags,
+                });
+        } elsif ($client->status->poi_dob_mismatch) {
+            push @$tags, 'result:dob_mismatch';
+            DataDog::DogStatsd::Helper::stats_inc(
+                'event.idv.client_verification.result',
+                {
+                    tags => $tags,
+                });
+        }
+    }
+
+    # TODO: define what to do with idv providers that do not return a report of clients data
+
+    return 1;
+}
+
 =head2 check_onfido_rules
 
 Applies the `check_results` L<BOM::Rules::Engine> action upon the latest Onfido check.
@@ -1171,9 +1292,8 @@ Returns a L<Future> which resolves to C<1> on success.
 
 async sub check_onfido_rules {
     my ($args)  = @_;
-    my $loginid = $args->{loginid}                              or die 'No loginid supplied';
-    my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
-    die "Virtual account should not meddle with Onfido" if $client->is_virtual;
+    my $loginid = $args->{loginid};
+    my $client  = BOM::User::Client->new({loginid => $loginid});
 
     my $tags     = $args->{datadog_tags};
     my $check_id = $args->{check_id};

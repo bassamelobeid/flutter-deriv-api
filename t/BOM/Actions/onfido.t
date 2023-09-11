@@ -281,8 +281,8 @@ subtest '_get_document_details' => sub {
     $track_mocker->unmock_all;
 };
 
-subtest 'Check Onfido Rules' => sub {
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{check_onfido_rules};
+subtest 'Check POI Rules' => sub {
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{poi_check_rules};
     my $first_name;
     my $last_name;
     my $date_of_birth;
@@ -330,6 +330,13 @@ subtest 'Check Onfido Rules' => sub {
     $test_client->date_of_birth('1990-01-02');
     $test_client->save;
 
+    my $test_client_mock = Test::MockModule->new('BOM::User::Client');
+    $test_client_mock->mock(
+        'latest_poi_by',
+        sub {
+            return ('onfido');
+        });
+
     for (qw/consider clear suspect/) {
         $check_result = $_;
 
@@ -343,7 +350,7 @@ subtest 'Check Onfido Rules' => sub {
                 $first_name    = 'elon';
                 $date_of_birth = '1990-01-05';
 
-                ok $action_handler->({
+                ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
                     })->get, 'Successful event execution';
@@ -356,7 +363,7 @@ subtest 'Check Onfido Rules' => sub {
                 $first_name    = 'elon';
                 $date_of_birth = '1990-01-02';
 
-                ok $action_handler->({
+                ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
                     })->get, 'Successfull event execution';
@@ -385,7 +392,7 @@ subtest 'Check Onfido Rules' => sub {
                 $first_name = 'elon';
 
                 $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
-                ok $action_handler->({
+                ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
                     })->get, 'Successfull event execution';
@@ -401,7 +408,7 @@ subtest 'Check Onfido Rules' => sub {
                 $last_name     = 'musketter';
 
                 $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
-                ok $action_handler->({
+                ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
                     })->get, 'Successfull event execution';
@@ -421,7 +428,7 @@ subtest 'Check Onfido Rules' => sub {
                 $last_name     = 'musk';
 
                 $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
-                ok $action_handler->({
+                ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
                     })->get, 'Successfull event execution';
@@ -437,7 +444,7 @@ subtest 'Check Onfido Rules' => sub {
                 $last_name     = 'musketter';
 
                 $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
-                ok $action_handler->({
+                ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
                     })->get, 'Successfull event execution';
@@ -453,17 +460,32 @@ subtest 'Check Onfido Rules' => sub {
     }
 
     subtest 'Virtual account should get stopped out' => sub {
-        my $exception = exception {
-            $action_handler->({
-                    loginid  => $vrtc_client->loginid,
-                    check_id => 'TEST'
-                })->get;
-        };
 
-        ok $exception =~ /Virtual account should not meddle with Onfido/, 'Expected excetion has been thrown for virtual client';
+        my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+        my @metrics;
+        $dog_mock->mock(
+            'stats_inc',
+            sub {
+                push @metrics, @_ if scalar @_ == 2;
+                push @metrics, @_, undef if scalar @_ == 1;
+
+                return 1;
+            });
+
+        ok !$action_handler->({
+                loginid  => $vrtc_client->loginid,
+                check_id => 'TEST'
+            })->get, 'Handled exception in event execution';
+
+        cmp_deeply [@metrics],
+            [
+            'events.poi_check_rules.is_virtual' => undef,
+            ],
+            'Expected dd metric';
     };
 
     $onfido_mock->unmock_all;
+    $test_client_mock->unmock_all;
 };
 
 subtest 'Final status' => sub {

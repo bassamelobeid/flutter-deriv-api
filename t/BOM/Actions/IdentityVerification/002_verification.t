@@ -11,7 +11,7 @@ use Test::Fatal;
 use Date::Utility;
 use Future::Exception;
 use HTTP::Response;
-use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8 decode_json_text);
 
 use BOM::Config::Redis;
 use BOM::Event::Process;
@@ -165,7 +165,7 @@ subtest 'verify identity by smile_identity through microservice is passed and da
         HTTP::Response->new(
             200, undef, undef,
             encode_json_utf8({
-                    status => 'pass',
+                    status => 'verified',
                     report => {
                         full_name => $personal_info->{FullName},
                         birthdate => $personal_info->{DOB},
@@ -487,81 +487,6 @@ subtest 'testing failed status' => sub {
 
 };
 
-subtest 'testing pass status' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
-
-    my $email = 'test_verify_pass@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
-
-    my $args = {
-        loginid => $client->loginid,
-    };
-
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
-    $updates  = 0;
-    @requests = ();
-
-    $idv_model->add_document({
-        issuing_country => 'br',
-        number          => '123.456.789-33',
-        type            => 'cpf'
-    });
-
-    my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
-
-    $resp = Future->done(
-        HTTP::Response->new(
-            200, undef, undef,
-            encode_json_utf8({
-                    status   => 'pass',
-                    messages => [],
-                    report   => {full_name => "John Doe"}})));
-
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
-
-    my $document = $idv_model->get_last_updated_document;
-
-    cmp_deeply(
-        $document,
-        {
-            'document_number'          => '123.456.789-33',
-            'status'                   => 'refuted',
-            'document_expiration_date' => undef,
-            'is_checked'               => 1,
-            'issuing_country'          => 'br',
-            'status_messages'          => '["UNDERAGE", "DOB_MISMATCH"]',
-            'id'                       => re('\d+'),
-            'document_type'            => 'cpf'
-        },
-        'Document has refuted from pass -  status'
-    );
-};
-
 subtest 'testing the exceptions verify_identity' => sub {
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
     my $email             = 'test_exceptions_id@binary.com';
@@ -630,7 +555,7 @@ subtest 'testing the exceptions verify_identity' => sub {
         $idv_event_handler->($args)->get;
     };
 
-    ok $error=~ /No submissions left, IDV request has ignored for loginid: CR10005/, 'expected exception caught no submissions';
+    ok $error=~ /No submissions left, IDV request has ignored for loginid: CR10004/, 'expected exception caught no submissions';
 
     $idv_model_mock->unmock_all();
 
@@ -861,252 +786,6 @@ subtest 'testing unavailable status' => sub {
     );
 };
 
-subtest 'testing pass status and DOB' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
-
-    my $email = 'test_verify_pass+DOB@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
-
-    my $args = {
-        loginid => $client->loginid,
-    };
-
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
-    $updates  = 0;
-    @requests = ();
-
-    my $current_submissions = $idv_model->submissions_left;
-
-    $idv_model->add_document({
-        issuing_country => 'br',
-        number          => '123.456.789-33',
-        type            => 'cpf'
-    });
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
-
-    $resp = Future->done(
-        HTTP::Response->new(
-            200, undef, undef,
-            encode_json_utf8({
-                    status   => 'pass',
-                    messages => [],
-                    report   => {birthdate => "1988-02-12"}})));
-
-    my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $idv_model->user_id, 1);
-    ok $redis->get(IDV_LOCK_PENDING . $idv_model->user_id), 'There is a redis lock';
-
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
-
-    my $document = $idv_model->get_last_updated_document;
-
-    cmp_deeply(
-        $document,
-        {
-            'document_number'          => '123.456.789-33',
-            'status'                   => 'refuted',
-            'document_expiration_date' => undef,
-            'is_checked'               => 1,
-            'issuing_country'          => 'br',
-            'status_messages'          => '["NAME_MISMATCH"]',
-            'id'                       => re('\d+'),
-            'document_type'            => 'cpf'
-        },
-        'Document has refuted from pass -  status name mismatch'
-    );
-
-    ok !$redis->get(IDV_LOCK_PENDING . $idv_model->user_id), 'There isn\'t a redis lock';
-
-    # the decrease of attempts occurs before event triggering so testing that the counter did not change is enough
-    is $idv_model->submissions_left, $current_submissions, 'Submission left did not change for name mismatch case';
-};
-
-subtest 'testing pass status and underage' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
-
-    my $email = 'test_verify_pass+underage@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
-
-    my $args = {
-        loginid => $client->loginid,
-    };
-
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
-    $updates  = 0;
-    @requests = ();
-
-    $idv_model->add_document({
-        issuing_country => 'br',
-        number          => '123.456.789-33',
-        type            => 'cpf'
-    });
-
-    my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    my $underage_date = Date::Utility->new()->minus_years(17)->date_yyyymmdd;
-    $client->date_of_birth($underage_date);
-    $client->save();
-
-    $resp = Future->done(
-        HTTP::Response->new(
-            200, undef, undef,
-            encode_json_utf8({
-                    status   => 'pass',
-                    messages => [],
-                    report   => {
-                        full_name => "John Doe",
-                        birthdate => $underage_date
-                    }})));
-
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
-
-    my $document = $idv_model->get_last_updated_document;
-
-    cmp_deeply(
-        $document,
-        {
-            'document_number'          => '123.456.789-33',
-            'status'                   => 'refuted',
-            'document_expiration_date' => undef,
-            'is_checked'               => 1,
-            'issuing_country'          => 'br',
-            'status_messages'          => '["UNDERAGE"]',
-            'id'                       => re('\d+'),
-            'document_type'            => 'cpf'
-        },
-        'Document has refuted from pass -  status underage'
-    );
-
-    # number of attempts is reset to 0 and acc is blocked for this case
-    is $idv_model->submissions_left, 0, 'No attempts left for underage client';
-};
-subtest 'testing pass status and underage in messages' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
-
-    my $email = 'test_verify_pass+underage_message@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
-
-    my $args = {
-        loginid => $client->loginid,
-    };
-
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
-    $updates  = 0;
-    @requests = ();
-
-    $idv_model->add_document({
-        issuing_country => 'br',
-        number          => '123.456.789-33',
-        type            => 'cpf'
-    });
-
-    my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    my $underage_date = Date::Utility->new()->minus_years(17)->date_yyyymmdd;
-    $client->date_of_birth($underage_date);
-    $client->save();
-
-    $resp = Future->done(
-        HTTP::Response->new(
-            200, undef, undef,
-            encode_json_utf8({
-                    status   => 'pass',
-                    messages => ['UNDERAGE'],
-                    report   => {
-                        full_name => "John Doe",
-                        birthdate => $underage_date
-                    }})));
-
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
-
-    ok $client->status->disabled, 'Client status properly disabled due to underage';
-
-    my $document = $idv_model->get_last_updated_document;
-
-    cmp_deeply(
-        $document,
-        {
-            'document_number'          => '123.456.789-33',
-            'status'                   => 'refuted',
-            'document_expiration_date' => undef,
-            'is_checked'               => 1,
-            'issuing_country'          => 'br',
-            'status_messages'          => '["UNDERAGE"]',
-            'id'                       => '11',
-            'document_type'            => 'cpf'
-        },
-        'Document has refuted from pass -  status underage'
-    );
-
-};
-
 subtest 'testing refuted status and expired' => sub {
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
@@ -1280,6 +959,135 @@ subtest 'testing refuted status and dob mismatch' => sub {
 
     # the decrease of attempts occurs before event triggering so testing that the counter did not change is enough
     is $idv_model->submissions_left, $current_submissions, 'Submission left did not change for dob mismatch case';
+
+    subtest 'fixing DOB mismatch + metric' => sub {
+        my $idv_fixing_handler = BOM::Event::Process->new(category => 'generic')->actions->{poi_check_rules};
+        my $dog_mock           = Test::MockModule->new('DataDog::DogStatsd::Helper');
+        my @metrics;
+
+        my $client_mock = Test::MockModule->new('BOM::Event::Actions::Client');
+
+        $dog_mock->mock(
+            'stats_inc',
+            sub {
+                push @metrics, @_ if scalar @_ == 2;
+                push @metrics, @_, undef if scalar @_ == 1;
+
+                return 1;
+            });
+
+        # test for the case where the json decode fails/provider does not return a report
+        my $json_calls = 0;
+        $client_mock->mock(
+            'decode_json_text',
+            sub {
+                $json_calls++;
+
+                die '1st JSON decode throw' if $json_calls == 1;
+
+                return $client_mock->original('decode_json_text')->(@_);
+            });
+
+        $idv_fixing_handler->($args)->get;
+
+        is $json_calls, 2, 'two json calls';
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+
+        ok $client->status->poi_dob_mismatch,  'dob mismatch remains';
+        ok !$client->status->age_verification, 'client is still not age verified';
+
+        $document = $idv_model->get_last_updated_document;
+        is $document->{status}, 'refuted', 'document is still refuted';
+
+        cmp_deeply [@metrics], [], 'No dd metrics json decode failed';
+
+        @metrics    = ();
+        $json_calls = 0;
+
+        $client_mock->unmock('decode_json_text');
+
+        # test for the case where the 2nd json decode fails/no messages passed to idv_rules
+        $client_mock->mock(
+            'decode_json_text',
+            sub {
+                $json_calls++;
+
+                die '2nd JSON decode throw' if $json_calls > 1;
+
+                return $client_mock->original('decode_json_text')->(@_);
+            });
+
+        $idv_fixing_handler->($args)->get;
+
+        is $json_calls, 2, 'two json calls';
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+
+        ok $client->status->poi_dob_mismatch,  'dob mismatch remains';
+        ok !$client->status->age_verification, 'client is still not age verified';
+
+        $document = $idv_model->get_last_updated_document;
+        is $document->{status},          'refuted',          'document is still refuted';
+        is $document->{status_messages}, '["DOB_MISMATCH"]', 'messages is populated with error reason';
+
+        cmp_deeply [@metrics],
+            [
+            'event.idv.client_verification.result' => {tags => ['result:dob_mismatch']},
+            ],
+            'Expected dd metrics dob mismatch';
+
+        @metrics = ();
+
+        $client_mock->unmock('decode_json_text');
+        # test consequences of coalescing into empty messages, something like messages yes: auth by idv and messages no: auth by idv_photo
+
+        # test the case where rules are called correctly but still there is a mismatch
+        $idv_fixing_handler->($args)->get;
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+
+        ok $client->status->poi_dob_mismatch,  'dob mismatch remains';
+        ok !$client->status->age_verification, 'client is still not age verified';
+
+        $document = $idv_model->get_last_updated_document;
+        is $document->{status}, 'refuted', 'document is still refuted';
+
+        cmp_deeply [@metrics],
+            [
+            'event.idv.client_verification.result' => {tags => ['result:dob_mismatch']},
+            ],
+            'Expected dd metrics dob mismatch';
+
+        @metrics = ();
+
+        # now clients details are corrected
+        $client->date_of_birth('1997-03-12');
+        $client->save();
+
+        $idv_fixing_handler->($args)->get;
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+
+        ok !$client->status->poi_dob_mismatch, 'dob mismatch status is gone';
+        ok $client->status->age_verification,  'client is now age verified';
+
+        $document = $idv_model->get_last_updated_document;
+        is $document->{status}, 'verified', 'document is now also verified';
+
+        is !$client->authentication_status, '', 'Messages is empty';
+        ok !$client->fully_authenticated, 'Client is not fully auth';
+
+        cmp_deeply [@metrics],
+            [
+            'event.idv.client_verification.result' => {tags => ['result:age_verified_corrected']},
+            ],
+            'Expected dd metrics for verfied result';
+
+        $dog_mock->unmock_all;
+        $client_mock->unmock_all;
+    }
+
 };
 
 subtest 'testing refuted status and name mismatch' => sub {
@@ -1327,7 +1135,7 @@ subtest 'testing refuted status and name mismatch' => sub {
     $client->address_postcode('12345900');
     $client->residence('br');
     $client->first_name('John');
-    $client->last_name('Doe');
+    $client->last_name('Foe');
     $client->date_of_birth('1996-02-12');
     $client->save();
 
@@ -1339,7 +1147,7 @@ subtest 'testing refuted status and name mismatch' => sub {
                     messages => ['NAME_MISMATCH'],
                     report   => {
                         full_name => "John Mary Doe",
-
+                        birthdate => '1996-02-12',
                     }})));
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
@@ -1365,6 +1173,62 @@ subtest 'testing refuted status and name mismatch' => sub {
 
     # the decrease of attempts occurs before event triggering so testing that the counter did not change is enough
     is $idv_model->submissions_left, $current_submissions, 'Submission left did not change for name mismatch case';
+
+    subtest 'fixing name mismatch + metric' => sub {
+        my $idv_fixing_handler = BOM::Event::Process->new(category => 'generic')->actions->{poi_check_rules};
+        my $dog_mock           = Test::MockModule->new('DataDog::DogStatsd::Helper');
+        my @metrics;
+
+        $dog_mock->mock(
+            'stats_inc',
+            sub {
+                push @metrics, @_ if scalar @_ == 2;
+                push @metrics, @_, undef if scalar @_ == 1;
+
+                return 1;
+            });
+
+        $idv_fixing_handler->($args)->get;
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+
+        ok $client->status->poi_name_mismatch, 'name mismatch remains';
+        ok !$client->status->age_verification, 'client is still not age verified';
+
+        $document = $idv_model->get_last_updated_document;
+        is $document->{status}, 'refuted', 'document is still refuted';
+
+        cmp_deeply [@metrics],
+            [
+            'event.idv.client_verification.result' => {tags => ['result:name_mismatch']},
+            ],
+            'Expected dd metrics name mismatch';
+
+        @metrics = ();
+
+        # now clients details are corrected
+        $client->first_name('John Mary');
+        $client->last_name('Doe');
+        $client->save();
+
+        $idv_fixing_handler->($args)->get;
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+
+        ok !$client->status->poi_name_mismatch, 'name mismatch status is gone';
+        ok $client->status->age_verification,   'client is now age verified';
+
+        $document = $idv_model->get_last_updated_document;
+        is $document->{status}, 'verified', 'document is now also verified';
+
+        cmp_deeply [@metrics],
+            [
+            'event.idv.client_verification.result' => {tags => ['result:age_verified_corrected']},
+            ],
+            'Expected dd metrics for verfied result';
+
+        $dog_mock->unmock_all;
+    }
 };
 
 subtest 'pictures collected from IDV' => sub {
@@ -1498,7 +1362,7 @@ subtest 'pictures collected from IDV' => sub {
             is $doc->{issuing_country}, 'br',       'issuing country is correctly populated';
         };
 
-        subtest "testing $what being sent as paramter - verified" => sub {
+        subtest "testing $what being sent as parameter - verified" => sub {
             my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
             my $email = "test_verify_photo$what\@binary.com";
@@ -2173,7 +2037,7 @@ subtest 'testing _detect_mime_type' => sub {
 
 };
 
-subtest 'testing photo being sent as paramter - undef file type' => sub {
+subtest 'testing photo being sent as parameter - undef file type' => sub {
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $email = 'test_verify_photo_unfef_file_type@binary.com';
