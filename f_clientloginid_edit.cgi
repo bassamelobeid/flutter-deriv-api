@@ -1432,7 +1432,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     }
 
     if ($updated_fields{first_name} || $updated_fields{last_name}) {
-        BOM::Platform::Event::Emitter::emit('check_onfido_rules', {loginid => $client->loginid});
+        BOM::Platform::Event::Emitter::emit('poi_check_rules', {loginid => $client->loginid});
     }
 
     # Sync onfido with latest updates
