@@ -19,3 +19,10 @@ idv_add_opt_out:
   ruleset:
     - idv.check_verification_necessity
     - idv.check_opt_out_availability
+
+idv_mismatch_lookback:
+  description: A set of rules to be applied on only when IDV had DOB or name mismatch
+  ruleset:
+    - idv.check_name_comparison
+    - idv.check_dob_conformity
+    - idv.check_age_legality

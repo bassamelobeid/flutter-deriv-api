@@ -73,6 +73,8 @@ rule 'idv.check_age_legality' => {
         die 'client is missing'     unless $client;
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
+        return undef unless $result->{birthdate};
+
         my $date_of_birth = eval { Date::Utility->new($result->{birthdate}) };
 
         return undef unless $date_of_birth;

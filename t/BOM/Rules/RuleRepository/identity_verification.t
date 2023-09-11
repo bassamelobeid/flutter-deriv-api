@@ -239,6 +239,15 @@ subtest 'rule idv.check_age_legality' => sub {
 
     my $tests = [{
             result => {
+                birthdate => undef,
+            },
+            client => {
+                residence => 'de',
+            },
+            error => undef
+        },
+        {
+            result => {
                 birthdate => Date::Utility->new->date_ddmmyyyy,
             },
             client => {
