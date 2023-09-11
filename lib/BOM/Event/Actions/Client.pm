@@ -128,6 +128,10 @@ use constant APPLICANT_CHECK_LOCK_TTL    => 30;
 use constant APPLICANT_ONFIDO_TIMING     => 'ONFIDO::APPLICANT::TIMING::';
 use constant APPLICANT_ONFIDO_TIMING_TTL => 86400;
 
+# Fraud Prevention constants
+use constant NUMBER_OF_RETRIES => 2;
+use constant SLEEP_TIMER       => 3;
+
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     passport                                     => 'passport',
@@ -2961,19 +2965,31 @@ async sub check_email_for_fraud {
 
     try {
         return unless BOM::Config::Services->is_enabled('fraud_prevention');
-
+        my $retry = NUMBER_OF_RETRIES;
+        my $result;
         my $cfg = BOM::Config::Services->config('fraud_prevention');
 
         my $url = join q{} => ('http://', $cfg->{host}, ':', $cfg->{port}, '/check_email');
 
         # Schedule the next HTTP call to be invoked as soon as the current round of IO operations is complete.
-        await $loop->later;
-
-        my $result = await _http()->POST(
-            $url, encode_json_utf8({email => $client->email}),
-            content_type => 'application/json',
-            timeout      => 5,
-        );
+        # await $loop->later;
+        while ($retry--) {
+            try {
+                $result = await _http()->POST(
+                    $url, encode_json_utf8({email => $client->email}),
+                    content_type => 'application/json',
+                    timeout      => 5,
+                );
+                last if $result;
+            } catch ($err) {
+                if (blessed($err) and $err->isa("Future::Exception") and $err->category eq 'http') {
+                    $log->warnf("retrying -> $retry < http error occured while checking email for fraud: %s", $err->message);
+                    sleep SLEEP_TIMER;
+                } else {
+                    die $err;
+                }
+            }
+        }
 
         my $resp = decode_json_utf8($result->content);
 
