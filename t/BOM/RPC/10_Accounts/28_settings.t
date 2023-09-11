@@ -1125,7 +1125,7 @@ subtest 'set settings' => sub {
         "address line 1",
         "Was able to set settings correctly for second CR client"
     );
-    ok($emitted->{check_onfido_rules}, 'onfido rules emit exist');
+    ok($emitted->{poi_check_rules}, 'poi rules emit exist');
 
     is $emitted->{check_name_changes_after_first_deposit}, undef, 'no name change check yet';
     $params->{args} = {first_name => 'bob'};
@@ -1163,7 +1163,7 @@ subtest 'set_settings on virtual account should not change real account settings
 
     # Virtual account should not get beef with onfido
     ok !$emitted->{sync_onfido_details};
-    ok !$emitted->{check_onfido_rules};
+    ok !$emitted->{poi_check_rules};
 };
 
 subtest 'set_setting with empty phone' => sub {

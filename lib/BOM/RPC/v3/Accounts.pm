@@ -2208,7 +2208,7 @@ rpc set_settings => sub {
 
     # Send request to update onfido details (only for reals)
     unless ($current_client->is_virtual) {
-        BOM::Platform::Event::Emitter::emit('check_onfido_rules',  {loginid => $current_client->loginid});
+        BOM::Platform::Event::Emitter::emit('poi_check_rules',     {loginid => $current_client->loginid});
         BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
     }
 
