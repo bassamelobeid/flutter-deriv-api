@@ -31,6 +31,7 @@ use BOM::Event::Utility qw(exception_logged);
 use BOM::Event::Actions::Authentication;
 use BOM::Event::Services::Track;
 use BOM::Event::Actions::Common;
+use BOM::Event::Actions::External;
 
 use Scalar::Util qw(blessed);
 
@@ -123,6 +124,7 @@ my $action_mapping = {
         ctrader_account_created                     => \&BOM::Event::Actions::CTrader::ctrader_account_created,
         underage_client_detected                    => \&BOM::Event::Actions::Client::underage_client_detected,
         wallet_migration_started                    => \&BOM::Event::Actions::Wallets::wallet_migration_started,
+        nodejs_hello                                => \&BOM::Event::Actions::External::nodejs_hello,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,
