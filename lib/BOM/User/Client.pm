@@ -8200,10 +8200,13 @@ sub p2p_withdrawable_balance {
     my ($self) = @_;
 
     my $balance = $self->account->balance;
-    my $limit   = BOM::Config::Runtime->instance->app_config->payments->p2p_withdrawal_limit;
-    return $balance if $limit >= 100;    # setting is a percentage
+    my $config  = BOM::Config::Runtime->instance->app_config->payments;
+    my $limit   = $config->p2p_withdrawal_limit;
 
-    my $lookback = BOM::Config::Runtime->instance->app_config->payments->p2p_deposits_lookback;
+    return $balance if $limit >= 100;                                                      # setting is a percentage
+    return $balance unless BOM::Config::P2P::available_countries()->{$self->residence};    # banned countries can withdraw p2p deposits
+
+    my $lookback = $config->p2p_deposits_lookback;
 
     my ($p2p_net) = $self->db->dbic->run(
         fixup => sub {

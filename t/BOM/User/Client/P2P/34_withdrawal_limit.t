@@ -26,8 +26,10 @@ subtest 'positive p2p and reversible, balance more than p2p+reversible' => sub {
     # net reversible = +100
     # Balance = 250
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
-    my $client     = BOM::Test::Helper::P2P::create_advertiser(balance => 50);
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'id'});
+    my $client     = BOM::Test::Helper::P2P::create_advertiser(
+        balance        => 50,
+        client_details => {residence => 'th'});
 
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
         client           => $advertiser,
@@ -55,6 +57,12 @@ subtest 'positive p2p and reversible, balance more than p2p+reversible' => sub {
     $config->p2p_withdrawal_limit(0);
     cmp_ok $advertiser->p2p_withdrawable_balance, '==', 0, 'zero available with 0% limit';
     check_total($advertiser);
+
+    $config->p2p->restricted_countries(['id']);
+    cmp_ok $advertiser->p2p_withdrawable_balance, '==', $advertiser->account->balance, 'full balance availble when country is banned';
+    $config->p2p->restricted_countries(['th']);
+    cmp_ok $advertiser->p2p_withdrawable_balance, '==', 0, 'zero available when other country banned';
+    $config->p2p->restricted_countries([]);
 
     $advertiser->payment_doughflow(
         currency          => $advertiser->currency,
