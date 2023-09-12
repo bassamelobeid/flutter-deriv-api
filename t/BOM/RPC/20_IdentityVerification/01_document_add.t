@@ -663,4 +663,144 @@ subtest 'idv opt out' => sub {
     $mock_emitter->unmock_all;
 };
 
+subtest 'on_qa_identity_verification' => sub {
+    my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
+    my $mock_emitter   = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $mock_qa        = Test::MockModule->new('BOM::Config');
+
+    my @raised_events = ();
+    $mock_emitter->mock(
+        emit => sub {
+            push @raised_events, shift;
+        });
+
+    $mock_idv_model->mock('submissions_left' => 3);
+    $client_cr->status->clear_age_verification();
+
+    my $params = {
+        token    => $token_cr,
+        language => 'EN',
+        args     => {
+            issuing_country => 'qq',
+            document_type   => 'drivers_license',
+            document_number => 'ABC000000000',
+        }};
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
+
+    $mock_qa->mock('on_qa' => 1);
+
+    $idv_model->remove_lock;
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
+
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(0);
+
+    @raised_events = ();
+
+    $mock_idv_model->mock(
+        'get_claimed_documents',
+        [{
+                status => 'verified',
+            },
+            {
+                status => 'failed',
+            },
+            {status => 'rejected'}]);
+
+    $idv_model->remove_lock;
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
+
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
+
+    @raised_events = ();
+
+    $mock_idv_model->mock(
+        'get_claimed_documents',
+        [{
+                status => 'failed',
+            },
+            {
+                status => 'failed',
+            },
+            {status => 'pending'}]);
+
+    $idv_model->remove_lock;
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
+
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
+
+    @raised_events = ();
+
+    $params->{args} = {
+        issuing_country => 'qq',
+        document_type   => 'xxx',
+        document_number => 'ABC000000000',
+    };
+
+    $idv_model->remove_lock;
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
+
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
+
+    @raised_events = ();
+
+    $params->{args} = {
+        issuing_country => 'qq',
+        document_type   => 'drivers_license',
+        document_number => 'WRONG NUMBER',
+    };
+
+    $idv_model->remove_lock;
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
+
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
+
+    @raised_events = ();
+
+    $params->{args} = {
+        issuing_country     => 'in',
+        document_type       => 'passport',
+        document_number     => '12345679',
+        document_additional => '123456789ABCDEF'
+    };
+
+    $mock_idv_model->mock(
+        'get_claimed_documents',
+        [{
+                status => 'failed',
+            },
+            {
+                status => 'failed',
+            },
+            {status => 'rejected'}]);
+
+    $idv_model->remove_lock;
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
+
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
+
+    $mock_qa->mock('on_qa' => 0);
+
+    @raised_events = ();
+
+    $params->{args} = {
+        issuing_country => 'qq',
+        document_type   => 'drivers_license',
+        document_number => 'ABC000000000',
+    };
+
+    $idv_model->remove_lock;
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('NotSupportedCountry', 'country "qq" does not exist outside qa env');
+
+    is_deeply \@raised_events, [], 'the event was not raised as expected';
+
+    $mock_idv_model->unmock_all();
+    $mock_qa->unmock_all();
+    $mock_emitter->unmock_all;
+
+};
+
 done_testing();
