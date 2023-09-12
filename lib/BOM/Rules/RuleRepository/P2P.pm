@@ -42,35 +42,21 @@ rule 'p2p.withdrawal_check' => {
 
         return 1 if ($args->{action} // '') ne 'withdrawal';
 
-        my $config = BOM::Config::Runtime->instance->app_config->payments;
-        my $limit  = $config->p2p_withdrawal_limit;
-        return 1 if $limit >= 100;    # setting is a percentage
-
-        my $amount   = $args->{amount} // die 'Amount is required';
-        my $client   = $context->client($args);
-        my $currency = $client->currency;
-        my $days     = $config->p2p_deposits_lookback;
-
+        my $client = $context->client($args);
         return 1 if $client->payment_agent and ($client->payment_agent->status // '') eq 'authorized';
 
-        return 1 unless BOM::Config::P2P::available_countries()->{$client->residence};
-
-        my ($net_p2p) = $client->db->dbic->run(
-            fixup => sub {
-                return $_->selectrow_array('SELECT payment.aggregate_payments_by_type(?,?,?)', undef, $client->account->id, 'p2p', $days);
-            }) // 0;
-
-        return 1 if $net_p2p <= 0;
-
-        my $p2p_excluded     = $net_p2p * (1 - ($limit / 100));
-        my $availble_balance = $client->account->balance - $p2p_excluded;
+        my $amount            = $args->{amount} // die 'Amount is required';
+        my $available_balance = $client->p2p_withdrawable_balance;
+        my $currency          = $client->currency;
 
         my $error_code = (($args->{payment_type} // '') eq 'internal_transfer') ? 'P2PDepositsTransfer' : 'P2PDepositsWithdrawal';
-        $error_code .= 'Zero' if $availble_balance <= 0;
+        $error_code .= 'Zero' if $available_balance <= 0;
 
-        $self->fail($error_code,
-            params => [formatnumber('amount', $currency, $availble_balance), formatnumber('amount', $currency, $p2p_excluded), $currency])
-            if financialrounding('amount', $currency, abs($amount)) > financialrounding('amount', $currency, $availble_balance);
+        if (financialrounding('amount', $currency, abs($amount)) > financialrounding('amount', $currency, $available_balance)) {
+            my $p2p_excluded = $client->account->balance - $available_balance;
+            $self->fail($error_code,
+                params => [formatnumber('amount', $currency, $available_balance), formatnumber('amount', $currency, $p2p_excluded), $currency]);
+        }
 
         return 1;
     },
