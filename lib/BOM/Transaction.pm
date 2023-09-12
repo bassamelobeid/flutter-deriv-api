@@ -874,6 +874,8 @@ sub prepare_bet_data_for_buy {
         }
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_VANILLA) {
         $bet_params->{ask_spread} = $contract->buy_commission;
+        $bet_params->{barrier}    = $contract->barrier->as_absolute;
+        $bet_params->{entry_spot} = $contract->entry_spot;
 
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TURBOS) {
         $bet_params->{ask_spread} = $contract->buy_commission;

@@ -247,6 +247,8 @@ subtest 'buy vanilla long options', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id},                'financial_market_bet_id';
             is $chld->{ask_spread},              $contract->buy_commission, 'ask_spread matched';
+            is $chld->{entry_spot},              '100',                     'correct entry spot price';
+            is $chld->{barrier},                 '104.50',                  'correct strike price (normalized)';
             is $chld->{bid_spread},              undef,                     'bid_spread is undef here as it gets value during sell';
 
         };
@@ -319,6 +321,8 @@ subtest 'sell a bet', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id},                 'financial_market_bet_id';
+            is $chld->{entry_spot},              '100',                      'correct entry spot price';
+            is $chld->{barrier},                 '104.50',                   'correct strike price (normalized)';
             is $chld->{bid_spread},              $contract->sell_commission, 'bid_spread matched';
         };
 
