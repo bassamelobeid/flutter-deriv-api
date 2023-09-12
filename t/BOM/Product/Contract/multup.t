@@ -742,7 +742,7 @@ subtest 'commission multiplier' => sub {
     is $c->commission_multiplier, 3,      'commission multiplier is 3';
 
     note "AUD event does not affect $args->{underlying} when it is out of range";
-    $args->{date_start} = $args->{date_pricing} = $new_now->plus_time_interval('1m');
+    $args->{date_start} = $args->{date_pricing} = $new_now->plus_time_interval('4m');
     $c = produce_contract($args);
     is $c->commission,            0.0003279, 'commission is at 0.0003279';
     is $c->commission_multiplier, 1.093,     'commission multiplier is 1.093';

@@ -45,14 +45,10 @@ sub BUILD {
     # We want to charge a minimum commission for each contract.
     # Since, commission is a function of barrier calculation, we will need to fix it at BUILD
     my $commission;
-
     if (defined $self->_order->{stop_out} and defined $self->_order->{stop_out}->{commission}) {
         $commission = $self->_order->{stop_out}->{commission};
     } else {
-        my $custom_commission = $self->_get_valid_custom_commission_adjustment;
-        my $commission_adj    = $custom_commission->{commission_adj} // 1.0;
-
-        my $base_commission       = $self->_multiplier_config->{commission} * $commission_adj;
+        my $base_commission       = $self->_multiplier_config->{commission};
         my $commission_multiplier = $self->commission_multiplier;
 
         unless (defined $base_commission and defined $commission_multiplier) {
@@ -810,8 +806,7 @@ sub cancellation_cv {
 
     $cost_cv->include_adjustment('multiply', $volume_cv);
 
-    my $custom_commission = $self->_get_valid_custom_commission_adjustment;
-    my $dc_commission     = $custom_commission->{dc_commission} // $self->_multiplier_config->{cancellation_commission};
+    my $dc_commission = $self->_multiplier_config->{cancellation_commission} * $self->dc_commission_multiplier;
 
     my $comm_multiplier_cv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'commission_multiplier',
@@ -1048,12 +1043,17 @@ sub _validate_commission {
 sub _validate_multiplier_range {
     my $self = shift;
 
-    my $available_multiplier = $self->_multiplier_config->{multiplier_range};
-    unless (first { $self->multiplier == $_ } @$available_multiplier) {
+    my $custom_range = $self->_get_valid_custom_multiplier_range();
+    my @available_multiplier =
+        grep { (not defined $custom_range->{min} or $_ >= $custom_range->{min}) and (not defined $custom_range->{max} or $_ <= $custom_range->{max}) }
+        $self->_multiplier_config->{multiplier_range}->@*;
+    unless (first { $self->multiplier == $_ } @available_multiplier) {
         return {
             message           => 'multiplier out of range',
-            message_to_client => [$ERROR_MAPPING->{MultiplierOutOfRange}, join(',', @$available_multiplier)],
-            details           => {field => 'multiplier'},
+            message_to_client => @available_multiplier
+            ? [$ERROR_MAPPING->{MultiplierOutOfRange}, join(',', @available_multiplier)]
+            : [$ERROR_MAPPING->{MultiplierRangeDisabled}],
+            details => {field => 'multiplier'},
         };
     }
 
@@ -1154,34 +1154,62 @@ has _custom_commission_adjustment => (
 sub _build__custom_commission_adjustment {
     my $self = shift;
 
-    return $self->_quants_config->get_config('custom_multiplier_commission', +{underlying_symbol => $self->underlying->symbol});
+    my $custom = $self->_quants_config->get_config('custom_multiplier_commission', +{underlying_symbol => $self->underlying->symbol});
+    # multiplier commission is presented to client at purchase time. Hence, we're only applying this adjustment at buy (not sell).
+    my $epoch = $self->date_start->epoch;
+
+    return [grep { $epoch >= Date::Utility->new($_->{start_time})->epoch && $epoch <= Date::Utility->new($_->{end_time})->epoch } @$custom];
 }
 
 sub _get_valid_custom_commission_adjustment {
     my $self = shift;
 
-    my $c_start = $self->date_start->epoch;
-
-    my $commission_adj;
-    my $dc_commission;
+    my @commission_adj;
+    my @dc_commission;
     foreach my $custom (@{$self->_custom_commission_adjustment}) {
-        my $start_epoch     = Date::Utility->new($custom->{start_time})->epoch;
-        my $end_epoch       = Date::Utility->new($custom->{end_time})->epoch;
-        my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch);
+        my $min_multiplier = $custom->{min_multiplier};
+        my $max_multiplier = $custom->{max_multiplier};
 
-        my $min_multiplier = $custom->{min_multiplier} // 0;
-        my $max_multiplier = $custom->{max_multiplier} // 0;
-        my $valid_range    = ($self->multiplier >= $min_multiplier and $self->multiplier <= $max_multiplier) ? 1 : 0;
+        # notthing to apply if either min or max is defined.
+        next if (defined $min_multiplier xor defined $max_multiplier);
 
-        if ($valid_timeframe and $valid_range) {
-            $commission_adj = $custom->{commission_adjustment};
-            $dc_commission  = $custom->{dc_commission};
+        my $valid_range = ((not defined $min_multiplier or $self->multiplier >= $min_multiplier)
+                and (not defined $max_multiplier or $self->multiplier <= $max_multiplier)) ? 1 : 0;
+
+        if ($valid_range) {
+            push @commission_adj, $custom->{commission_adjustment} if defined $custom->{commission_adjustment};
+            push @dc_commission,  $custom->{dc_commission}         if defined $custom->{dc_commission};
         }
     }
 
     return {
-        commission_adj => $commission_adj,
-        dc_commission  => $dc_commission
+        commission_adj => max(@commission_adj),
+        dc_commission  => max(@dc_commission),
+    };
+}
+
+=head2 _get_valid_custom_multiplier_range
+
+Custom multiplier minimum and maximum range can be set in the backoffice.
+
+Return a hash reference of 'min' and 'max' if configuration matches.
+
+=cut
+
+sub _get_valid_custom_multiplier_range {
+    my $self = shift;
+
+    my @max_range;
+    my @min_range;
+    foreach my $custom (grep { not defined $_->{commission_adjustment} and not defined $_->{dc_commission} } $self->_custom_commission_adjustment->@*)
+    {
+        push @min_range, $custom->{min_multiplier} if (defined $custom->{min_multiplier});
+        push @max_range, $custom->{max_multiplier} if (defined $custom->{max_multiplier});
+    }
+
+    return {
+        min => max(@min_range),
+        max => min(@max_range),
     };
 }
 
@@ -1300,23 +1328,48 @@ sub commission_multiplier {
 
     # we do apply specific adjustment to forex commission
     my $market = $self->underlying->market->name;
-    return 1 if $market eq 'synthetic_index';
 
-    my $ee_multiplier = $self->_get_economic_event_commission_multiplier();
-    # Currently the multiplier for economic event is hard-coded to 3. In the future, this value might be configurable from the
-    # backoffice tool.
-    my $seasonality_multiplier = Quant::Framework::Spread::Seasonality->new->get_spread_seasonality($self->underlying->symbol, $self->date_start);
+    my $ee_multiplier          = 1;
+    my $seasonality_multiplier = 1;
 
-    unless (defined $seasonality_multiplier) {
-        $self->_add_error({
-            message           => 'spread seasonality not defined for ' . $self->underlying->symbol,
-            message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
-        });
-        # setting it max commission multiplier
-        $seasonality_multiplier = MAX_COMMISSION_MULTIPLIER;
+    if ($market ne 'synthetic_index') {
+        $ee_multiplier = $self->_get_economic_event_commission_multiplier();
+        # Currently the multiplier for economic event is hard-coded to 3. In the future, this value might be configurable from the
+        # backoffice tool.
+        $seasonality_multiplier = Quant::Framework::Spread::Seasonality->new->get_spread_seasonality($self->underlying->symbol, $self->date_start);
+
+        unless (defined $seasonality_multiplier) {
+            $self->_add_error({
+                message           => 'spread seasonality not defined for ' . $self->underlying->symbol,
+                message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
+            });
+            # setting it max commission multiplier
+            $seasonality_multiplier = MAX_COMMISSION_MULTIPLIER;
+        }
     }
 
-    return min(MAX_COMMISSION_MULTIPLIER, max($ee_multiplier, $seasonality_multiplier, MIN_COMMISSION_MULTIPLIER));
+    my $custom_commission            = $self->_get_valid_custom_commission_adjustment;
+    my $custom_commission_multiplier = $custom_commission->{commission_adj} // 1.0;
+
+    my $comm_multiplier = max($ee_multiplier, $seasonality_multiplier, $custom_commission_multiplier);
+
+    return max(MIN_COMMISSION_MULTIPLIER, min(MAX_COMMISSION_MULTIPLIER, $comm_multiplier));
+}
+
+=head2 dc_commission_multiplier
+
+A factor used to scale deal cancellation commission.
+
+=cut
+
+sub dc_commission_multiplier {
+    my $self = shift;
+
+    my $custom_commission        = $self->_get_valid_custom_commission_adjustment;
+    my $dc_commission_multiplier = $custom_commission->{dc_commission} // 1.0;
+
+    return max(MIN_COMMISSION_MULTIPLIER, min(MAX_COMMISSION_MULTIPLIER, $dc_commission_multiplier));
+
 }
 
 =head2 _get_economic_event_commission_mutliplier
@@ -1358,8 +1411,8 @@ sub _get_economic_event_commission_multiplier {
     my $ee_calendar = Quant::Framework::EconomicEventCalendar->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date));
     my @high_impact_events = grep { $_->{impact} == 5 } @{
         $ee_calendar->get_latest_events_for_period({
-                from => $self->date_start->minus_time_interval('2m'),
-                to   => $self->date_start->plus_time_interval('2m')
+                from => $self->date_start->minus_time_interval('5m'),
+                to   => $self->date_start->plus_time_interval('5m')
             },
             $for_date
         )};

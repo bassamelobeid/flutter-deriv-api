@@ -132,6 +132,7 @@ my $config = {
         StopLossTooHigh               => 'Invalid stop loss. Stop loss cannot be more than [_1].',
         CommissionNotDefined          => 'This symbol is not available.',
         MultiplierOutOfRange          => 'Multiplier is not in acceptable range. Accepts [_1].',
+        MultiplierRangeDisabled       => 'Multiplier is not in acceptable range.',
         GrowthRateOutOfRange          => 'Growth rate is not in acceptable range. Accepts [_1].',
         MissingTradingPeriodStart     => '[_1] must be supplied for multi barrier contracts.',
         SameStartSellTime             => 'Contract cannot be sold at this time. Please try again.',
