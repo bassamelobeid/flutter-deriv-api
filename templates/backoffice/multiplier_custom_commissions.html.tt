@@ -1,17 +1,27 @@
-<p><b>Add new multiplier custom commission adjustment with the tool below: </b></p>
+<p><b>This tool allows you to do the following: </b></p>
+<li>To set multiplier range for a specific in the future.</li>
+<li>To set commission multiplier for the main contract and/or deal cancellation for a specific time in the future.</li>
+<li>To set commission multiplier for the main contract and/or deal cancellation for a specific time in the future for a specific multiplier range.</li>
 
+<p>Note:</p>
+<li>If you specify a <b>currency symbol</b>, it will be applied to underlying symbol that matches the currency.</li>
+<li>If you specify an <b>underlying symbol</b>, it will be applied to only the underlying symbols listed.</li>
+<li>To apply minimum or/and maximum multiplier range, you can leave out commission adjustment and deal cancellation adjustment.</li>
+<li>To apply commission to all multiplier range, you can leave out minimum and maximum multiplier.</li>
+
+</br>
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id='custom_multiplier_commission_form'>
     <tr><td>Name</td><td> : <input type="text" name="name" data-lpignore="true" /></td><td>Accepts only words and integers (required)</td></tr>
     <tr><td>Start Time</td><td> : <input type="text" name="start_time" id="custom_multiplier_commission_start_time" data-lpignore="true" /></td><td>Accepts valid date utility format, e.g. epoch or '2020-10-17 10:00:30' (required)</td></tr>
     <tr><td>End Time</td><td> : <input type="text" name="end_time" id="custom_multiplier_commission_end_time" data-lpignore="true" /></td><td>Accepts valid date utility format, e.g. epoch or '2020-10-17 10:05:30' (required)</td></tr>
-    <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol" data-lpignore="true" /></td></tr>
-    <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol" data-lpignore="true" /></td></tr>
+    <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol" data-lpignore="true" /></td><td>Accepts comma separated currency symbol, e.g. USD,AUD</td></tr>
+    <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol" data-lpignore="true" /></td><td>Accepts comma separated underlying symbol, e.g. frxUSDJPY,frxAUDUSD</td></tr>
 
     <tr><td>Min multiplier </td><td> : <input type="text" name="min_multiplier" data-lpignore="true" /></td></tr>
     <tr><td>Max multiplier </td><td> : <input type="text" name="max_multiplier" data-lpignore="true" /></td></tr>
-    <tr><td>Commission_adjustment </td><td> : <input type="text" name="multiplier_commission_adjustment" data-lpignore="true" /></td></tr>
-    <tr><td>DC Commission </td><td> : <input type="text" name="dc_commission" data-lpignore="true" /></td></tr>
+    <tr><td>Commission scaling factor </td><td> : <input type="text" name="multiplier_commission_adjustment" data-lpignore="true" /></td><td>A commission multiplication factor, e.g. if set to 3, it will triple the base commission</td></tr>
+    <tr><td>Deal cancellation commission scaling factor </td><td> : <input type="text" name="dc_commission" data-lpignore="true" /></td><td>A deal cancellation commission multiplication factor, e.g. if set to 3, it will triple the base commission</td></tr>
     <tr><td></td><button onclick="saveCustomMultiplierCommission()" style="margin-left: 8px;" class="btn btn--primary">Save</button></td><td class="result"></td></tr>
 </table>
 </fieldset>

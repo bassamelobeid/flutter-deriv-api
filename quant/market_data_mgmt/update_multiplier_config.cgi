@@ -270,7 +270,7 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
     my $symbol_limits        = $custom_volume_limits->{symbols} // {};
     my $output;
     try {
-        my $market = $r->param('market');
+        my $market = lc $r->param('market');
         my $symbol = $r->param('symbol');
 
         my $limit;
