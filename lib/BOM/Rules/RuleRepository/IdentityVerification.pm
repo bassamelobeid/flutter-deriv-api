@@ -210,20 +210,24 @@ rule 'idv.check_document_acceptability' => {
 
         $self->fail('UnderageBlocked', params => {underage_user_id => $underage_user_id}) if $underage_user_id;
 
-        my $claimed_documents = $idv_model->get_claimed_documents({
-                issuing_country => $issuing_country,
-                type            => $document_type,
-                number          => $document_number,
-            }) // [];
+        my $qq_bypass = BOM::Config::on_qa() && $issuing_country eq 'qq';
 
-        for my $claimed_doc (@$claimed_documents) {
-            # Claimed document refers to when there is a document same as
-            # given document which is already verified or verification
-            # status still needs to be determined (pending) so that
-            # no one else should be able to use the same again
-            $self->fail('ClaimedDocument')
-                if $claimed_doc->{status} eq 'verified'
-                or $claimed_doc->{status} eq 'pending';
+        unless ($qq_bypass) {
+            my $claimed_documents = $idv_model->get_claimed_documents({
+                    issuing_country => $issuing_country,
+                    type            => $document_type,
+                    number          => $document_number,
+                }) // [];
+
+            for my $claimed_doc (@$claimed_documents) {
+                # Claimed document refers to when there is a document same as
+                # given document which is already verified or verification
+                # status still needs to be determined (pending) so that
+                # no one else should be able to use the same again
+                $self->fail('ClaimedDocument')
+                    if $claimed_doc->{status} eq 'verified'
+                    or $claimed_doc->{status} eq 'pending';
+            }
         }
 
         return undef;
