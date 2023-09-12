@@ -494,7 +494,7 @@ sub get_transactions {
     my $after  = $args->{after}  || '1970-01-01 00:00:00';
     my $limit  = $args->{limit}  || 50;
 
-    my $transaction_id = looks_like_number($args->{transaction_id}) ? $args->{transaction_id} : undef;
+    my $transaction_id = int_or_undef($args->{transaction_id});
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
@@ -516,6 +516,17 @@ sub get_transactions {
             }
             return $transactions;
         });
+}
+
+=head2 int_or_undef($num)
+
+if $num contains an integer number returns integer number otherwise returns undef
+
+=cut
+
+sub int_or_undef {
+    my $num = shift;
+    return defined $num && $num =~ /^[0-9]+$/ ? int($num) : undef;
 }
 
 sub get_bet_transactions_for_broker {

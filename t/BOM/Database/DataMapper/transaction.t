@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::Most (tests => 37);
+use Test::Most (tests => 38);
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::Exception;
 use Test::Warnings;
@@ -415,4 +415,13 @@ subtest 'unprocessed bets' => sub {
         "get unprocessed bets"
     );
 
+};
+
+subtest 'int_or_undef' => sub {
+    my $tcs = [["123", 123], ["123.5", undef], ["501E2", undef], [97531, 97531], ["", undef], [undef, undef],];
+    for my $tc (@$tcs) {
+        my $first  = $tc->[0] // "undef";
+        my $second = $tc->[1] // "undef";
+        is(BOM::Database::DataMapper::Transaction::int_or_undef($tc->[0]), $tc->[1], "$first => $second");
+    }
 };
