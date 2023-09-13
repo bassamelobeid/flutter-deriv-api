@@ -59,8 +59,8 @@ for my $broker (@brokers) {
     my $data = $db->run(
         fixup => sub {
             $_->selectall_arrayref(
-                "SELECT ROUND(EXTRACT(EPOCH FROM o.created_time)) created_at, 
-                o.id, o.amount, o.status, 
+                "SELECT DISTINCT ON (o.id) o.id, ROUND(EXTRACT(EPOCH FROM o.created_time)) created_at, 
+                o.amount, o.status, 
                 o.client_loginid AS client_loginid, adv.client_loginid AS advertiser_loginid,
                 adv.id AS advertiser_id, cli_adv.id AS client_id,
                 p2p.order_type(ad.type) AS order_type, 
@@ -76,7 +76,8 @@ for my $broker (@brokers) {
                     JOIN p2p.p2p_advertiser cli_adv on cli_adv.client_loginid = o.client_loginid
                     LEFT JOIN audit.p2p_order AS buyconfirm ON buyconfirm.status = 'buyer-confirmed' AND buyconfirm.id = o.id
                     LEFT JOIN audit.p2p_order AS refund ON refund.status IN ('cancelled','refunded','dispute-refunded') and refund.id = o.id
-                    LEFT JOIN audit.p2p_order AS complete ON complete.status IN ('completed','dispute-completed') AND complete.id = o.id",
+                    LEFT JOIN audit.p2p_order AS complete ON complete.status IN ('completed','dispute-completed') AND complete.id = o.id 
+                    ORDER BY  o.id, complete_at, buy_confirm_at, refund_at",
                 {Slice => {}});
 
         });
@@ -114,7 +115,7 @@ for my $order (values %orders) {
         $redis->hset($key_prefix . '::BUY_CONFIRM_TIMES', $id, $order->{buy_confirm_at});
     }
 
-    if ($stats{buy_times} and $order->{buy_confirm_at}) {
+    if ($stats{buy_times} and $order->{buy_confirm_at} and not any { $order->{status} eq $_ } ('dispute-refunded', 'dispute-completed')) {
         add_stat($buyer_prefix . '::BUY_TIMES', $order->{buy_confirm_at}, $id, $order->{buy_time});
     }
 
@@ -141,7 +142,7 @@ for my $order (values %orders) {
             add_stat($seller_prefix . '::SELL_COMPLETION', $order->{complete_at}, $id, 1);
         }
 
-        if ($stats{release_times} and defined $order->{release_time}) {
+        if ($stats{release_times} and defined $order->{release_time} and $order->{status} ne 'dispute-completed') {
             add_stat($seller_prefix . '::RELEASE_TIMES', $order->{complete_at}, $id, $order->{release_time});
         }
 
