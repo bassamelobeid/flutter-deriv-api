@@ -125,6 +125,8 @@ my $action_mapping = {
         underage_client_detected                    => \&BOM::Event::Actions::Client::underage_client_detected,
         wallet_migration_started                    => \&BOM::Event::Actions::Wallets::wallet_migration_started,
         nodejs_hello                                => \&BOM::Event::Actions::External::nodejs_hello,
+        withdrawal_estimated_fee_updated            => \&BOM::Event::Actions::CryptoCashier::withdrawal_estimated_fee_updated,
+
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,

@@ -9,6 +9,7 @@ use Test::MockModule;
 use BOM::Event::Actions::CryptoCashier;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
+use constant {REDIS_WITHDRAWAL_ESTIMATED_FEE_NAMESPACE => "CRYPTOCASHIER::ESTIMATIONS::FEE::"};
 my $mocked_crypto_cashier = Test::MockModule->new('BOM::Event::Actions::CryptoCashier');
 my $mocked_redis          = Test::MockModule->new('RedisDB');
 my $mocked_event_emitter  = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -223,6 +224,37 @@ subtest 'deposit_confirmed_handler' => sub {
     is_deeply \@events, $expected_events, 'Correct events';
 
     $mocked_event_emitter->unmock_all;
+};
+
+subtest 'withdrawal_estimated_fee_updated' => sub {
+    my $currency_code = "BTC";
+    my $fee_info      = {
+        currency_code => $currency_code,
+        value         => 1,
+        unique_id     => '123-456',
+        expiry_time   => 1,
+    };
+    my $fee_info_cp = {%$fee_info};
+    delete $fee_info->{currency_code};
+    my $expected_fee_info = {
+        withdrawal_fee => $fee_info,
+    };
+
+    my $expected_redis_key = REDIS_WITHDRAWAL_ESTIMATED_FEE_NAMESPACE . $currency_code;
+    my ($redis_key, $message);
+    $mocked_redis->mock(
+        publish => sub {
+            (undef, $redis_key, $message) = @_;
+            $message = decode_json_utf8($message);
+            return;
+        },
+    );
+
+    BOM::Event::Actions::CryptoCashier::withdrawal_estimated_fee_updated($fee_info_cp);
+    is $redis_key, $expected_redis_key, 'Correct Redis channel key';
+    is_deeply $message, $expected_fee_info, 'Correct published message';
+
+    $mocked_redis->unmock_all;
 };
 
 done_testing;

@@ -21,7 +21,8 @@ use Log::Any        qw($log);
 use Syntax::Keyword::Try;
 
 use constant {
-    REDIS_TRANSACTION_NAMESPACE => "CASHIER::PAYMENTS::",
+    REDIS_TRANSACTION_NAMESPACE              => "CASHIER::PAYMENTS::",
+    REDIS_WITHDRAWAL_ESTIMATED_FEE_NAMESPACE => "CRYPTOCASHIER::ESTIMATIONS::FEE::"
 };
 
 use constant TRANSACTION_HANDLERS => {
@@ -211,6 +212,38 @@ sub withdrawal_rejected_handler {
     } catch ($e) {
         $log->warnf("Failed to emit crypto_withdrawal_rejected_email_v2 event for %s: %s", $txn_metadata->{loginid}, $e);
     }
+}
+
+=head2 withdrawal_estimated_fee_updated
+
+A crypto withdrawal estimated fee has been updated.
+
+The fee_info data contains the following:
+
+=over 4
+
+=item * C<currency_code>      - The currency code of the currency.
+
+=item * C<value>              - calculated estimated fee amount
+
+=item * C<unique_id>          - UUID of the calculated estimated fee
+
+=item * C<expiry_time>        - epoch time when redis key with estimated fee expires
+
+=back
+
+=cut
+
+sub withdrawal_estimated_fee_updated {
+    my ($fee_info)    = shift;
+    my $redis         = BOM::Config::Redis->redis_transaction_write();
+    my $currency_code = delete $fee_info->{currency_code};
+    my $redis_key     = REDIS_WITHDRAWAL_ESTIMATED_FEE_NAMESPACE . $currency_code;
+    $redis->publish(
+        $redis_key,
+        encode_json_utf8({
+                withdrawal_fee => $fee_info,
+            }));
 }
 
 1;
