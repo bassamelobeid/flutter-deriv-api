@@ -2707,7 +2707,6 @@ sub _multiplier_child_info {
 
     my $info = {
         financial_market_bet_id => $contract_id + 0,
-        basis_spot              => $contract->basis_spot + 0,
         multiplier              => $contract->multiplier + 0,
     };
 

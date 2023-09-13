@@ -483,6 +483,11 @@ subtest 'buy MULTUP with stop loss', sub {
 
 subtest 'sell a bet', sub {
     lives_ok {
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $contract_start_time,     $underlying->symbol],
+            [100,    $contract_start_time + 1, $underlying->symbol],
+            [101,    $contract_start_time + 2, $underlying->symbol]);
         my $contract = produce_contract({
                 underlying   => $underlying,
                 date_start   => $contract_start_time,
@@ -603,7 +608,7 @@ subtest 'sell failure due to update' => sub {
             underlying   => $underlying,
             bet_type     => 'MULTUP',
             date_start   => $contract->date_start,
-            date_pricing => $contract->date_start->plus_time_interval(1),
+            date_pricing => $contract->date_start->plus_time_interval(2),
             currency     => 'USD',
             multiplier   => 10,
             amount       => 100,
@@ -642,11 +647,10 @@ subtest 'sell failure due to update' => sub {
         skip "skip running time sensitive tests for code coverage tests", 2 if $ENV{DEVEL_COVER_OPTIONS};
         subtest 'sell_expired_contract with contract id' => sub {
             # expiring the contract by setting current tick to 101.15 (the value of take profit)
-            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                underlying => $underlying->symbol,
-                epoch      => $contract->date_pricing->epoch,
-                quote      => 101.15,
-            });
+            BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+                [100.01, $contract->date_start->epoch,     $underlying->symbol],
+                [100,    $contract->date_start->epoch + 1, $underlying->symbol],
+                [101.15, $contract->date_start->epoch + 2, $underlying->symbol]);
             sleep 1;
             my $out = BOM::Transaction::sell_expired_contracts({
                     client       => $cl,
@@ -656,11 +660,11 @@ subtest 'sell failure due to update' => sub {
         };
 
         subtest 'sell_expired_contract without contract id' => sub {
-            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                underlying => $underlying->symbol,
-                epoch      => $contract->date_pricing->epoch + 1,
-                quote      => 0,
-            });
+            BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+                [100.01, $contract->date_start->epoch,     $underlying->symbol],
+                [100,    $contract->date_start->epoch + 1, $underlying->symbol],
+                [101.15, $contract->date_start->epoch + 2, $underlying->symbol],
+                [0,      $contract->date_start->epoch + 3, $underlying->symbol]);
             sleep 1;
             my $out = BOM::Transaction::sell_expired_contracts({
                 client => $cl,
@@ -726,7 +730,7 @@ subtest 'buy multiplier for forex major pair' => sub {
             purchase_date => $contract->date_start,
         });
 
-        ok !$txn->buy;
+        ok !$txn->buy, 'buy without error';
     }
     'can buy frxAUDJPY';
 };
