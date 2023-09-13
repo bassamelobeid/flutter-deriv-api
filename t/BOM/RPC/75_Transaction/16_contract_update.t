@@ -45,6 +45,13 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     },
     1
 );
+my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch + 1,
+        quote      => 100,
+    },
+    1
+);
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxAUDJPY',
@@ -65,6 +72,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 my $mocked = Test::MockModule->new('BOM::Product::Contract::Multup');
 $mocked->mock('current_tick',               sub { return $current_tick });
+$mocked->mock('entry_tick',                 sub { return $entry_tick });
 $mocked->mock('maximum_feed_delay_seconds', sub { return 300 });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
