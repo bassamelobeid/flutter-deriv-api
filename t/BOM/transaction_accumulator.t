@@ -257,6 +257,7 @@ subtest 'buy ACCU', sub {
             is $chld->{'take_profit_order_date'},   undef,      'take_profit_order_date is undef';
             is $chld->{'ask_spread'},               undef,      'ask_spread is undef';
             is $chld->{'bid_spread'},               undef,      'bid_spread is undef';
+            is $chld->{'tick_final_count'},         undef,      'tick_final_count is undef';
         };
 
     }
@@ -327,6 +328,7 @@ subtest 'sell a bet', sub {
             is $chld->{'take_profit_order_date'},   undef,              'take_profit_order_date is undef';
             is $chld->{'ask_spread'},               undef,              'ask_spread is undef';
             is $chld->{'bid_spread'},               0.0099999999999989, 'bid_spread is charged for sell';
+            is $chld->{tick_final_count},           1,                  'tick_final_count is as expected';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';

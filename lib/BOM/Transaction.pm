@@ -1400,6 +1400,9 @@ sub prepare_bet_data_for_sell {
     if ($contract->category_code =~ /^(multiplier|accumulator|turbos)$/) {
         $bet_params->{verify_child} = _get_info_to_verify_child($self->contract_id, $contract);
     }
+    if ($contract->category_code eq "accumulator") {
+        $bet_params->{tick_final_count} = $contract->tick_count_after_entry;
+    }
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -2368,6 +2371,9 @@ sub sell_expired_contracts {
                     $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
                     $bet->{bid_spread}   = $contract->sell_commission
                         if ($contract->can('sell_commission') and $contract->category_code eq 'accumulator');
+                }
+                if ($contract->category_code eq 'accumulator') {
+                    $bet->{tick_final_count} = $contract->tick_count_after_entry;
                 }
 
                 $bet->{quantity} = 1;
