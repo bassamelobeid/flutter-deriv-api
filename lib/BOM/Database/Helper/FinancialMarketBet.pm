@@ -330,16 +330,22 @@ sub sell_bet {
         $bet->{$_} //= $self->bet->$_ for (qw/id sell_price sell_time/);
     }
 
+    # FMB child table
+    my $chld =
+          $bet->{absolute_barrier}     ? {absolute_barrier => $bet->{absolute_barrier}}
+        : defined $bet->{is_cancelled} ? {is_cancelled => $bet->{is_cancelled}}
+        : $bet->{bid_spread}           ? {bid_spread => $bet->{bid_spread}}
+        :                                undef;
+    if (defined $bet->{tick_final_count}) {
+        $chld->{tick_final_count} = $bet->{tick_final_count};
+    }
+
     @param = (
         # FMB stuff
         @{$self->account_data}{qw/client_loginid currency_code/},
         @{$bet}{qw/id sell_price sell_time/},
 
-        # FMB child table
-        $bet->{absolute_barrier}       ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}}))
-        : defined $bet->{is_cancelled} ? Encode::encode_utf8($json->encode(+{is_cancelled     => $bet->{is_cancelled}}))
-        : $bet->{bid_spread}           ? Encode::encode_utf8($json->encode(+{bid_spread       => $bet->{bid_spread}}))
-        : undef,
+        $chld ? Encode::encode_utf8($json->encode($chld)) : undef,
 
         $bet->{is_expired} // 1,
 
@@ -588,14 +594,21 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
         my $bet       = $bets->[$i];
         my $qv        = $qvs->[$i];
         my $transdata = $txns->[$i];
+        # FMB child table
+        my $chld =
+              $bet->{absolute_barrier}     ? {absolute_barrier => $bet->{absolute_barrier}}
+            : defined $bet->{is_cancelled} ? {is_cancelled => $bet->{is_cancelled}}
+            : $bet->{bid_spread}           ? {bid_spread => $bet->{bid_spread}}
+            :                                undef;
+        if (defined $bet->{tick_final_count}) {
+            $chld->{tick_final_count} = $bet->{tick_final_count};
+        }
+
         push @param, (
             # FMB stuff
             @{$bet}{qw/id sell_price sell_time/},
 
-            # FMB child table
-              $bet->{absolute_barrier} ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}}))
-            : $bet->{bid_spread}       ? Encode::encode_utf8($json->encode(+{bid_spread       => $bet->{bid_spread}}))
-            : undef,
+            $chld ? Encode::encode_utf8($json->encode($chld)) : undef,
 
             $bet->{is_expired} // 1,
 

@@ -18,6 +18,7 @@ __PACKAGE__->meta->setup(
         growth_rate              => {type => 'numeric'},
         ask_spread               => {type => 'numeric'},
         bid_spread               => {type => 'numeric'},
+        tick_final_count         => {type => 'integer'},
     ],
 
     primary_key_columns => ['financial_market_bet_id'],
