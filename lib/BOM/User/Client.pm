@@ -2539,7 +2539,9 @@ use constant {
         PP021 => "OrderRefundInvalid",
         PP022 => 'OrderNotConfirmedPending',
         PP023 => 'OrderConfirmCompleted',
-        PP024 => 'OrderReviewExists'
+        PP024 => 'OrderReviewExists',
+        PP025 => 'AdvertiserExist'
+
     },
 };
 
