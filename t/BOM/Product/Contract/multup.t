@@ -80,6 +80,7 @@ subtest 'pricing new - general' => sub {
     is $c->stop_out->order_amount,      -100;
     is $c->stop_out->basis_spot,        '100.00';
     is $c->stop_out->barrier_value,     '90.00';
+    ok !$c->has_user_defined_barrier, 'no user defined barrier';
 
     $args->{limit_order} = {
         'take_profit' => 50,
@@ -1417,6 +1418,29 @@ subtest 'basis entry slippage' => sub {
     $mocked->mock('pricing_new', sub { return 0 });       # mocking condition where pricing_new is false, so entry_spot is not undef
 
     is $c->basis_spot + 0, $c->entry_tick->quote, "basis_spot matches with entry_tick under normal circumstances";
+    $mocked->unmock_all();
 };
 
+subtest 'waiting for entry tick - financial' => sub {
+    $now = Date::Utility->new('2023-08-24');              #trading day for forex
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'frxEURUSD'], [101, $now->epoch, 'frxEURUSD'],);
+
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'frxEURUSD',
+        date_start   => $now,
+        date_pricing => $now->epoch + 1,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+    };
+
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_sell, 'invalid to sell';
+    my $err = $c->primary_validation_error;
+    ok $err;
+    is $err->message,                'Waiting for entry tick [symbol: frxEURUSD]', 'message - Waiting for entry tick [symbol: frxEURUSD]';
+    is $err->message_to_client->[0], 'Waiting for entry tick.',                    'message_to_client - Waiting for entry tick.';
+};
 done_testing();

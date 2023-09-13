@@ -25,170 +25,385 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 my $mocked = Test::MockModule->new('BOM::Product::Contract::Multup');
 # setting commission to zero for easy calculation
-$mocked->mock('commission',        sub { return 0 });
-$mocked->mock('commission_amount', sub { return 0 });
+sub _reset_commission {
+    $mocked->mock('commission',        sub { return 0 });
+    $mocked->mock('commission_amount', sub { return 0 });
+}
 
 subtest 'hit stop out' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90.01, $now->epoch + 1, 'R_100']);
-    my $args = {
-        bet_type     => 'MULTUP',
-        underlying   => 'R_100',
-        date_start   => $now,
-        date_pricing => $now->epoch + 1,
-        amount_type  => 'stake',
-        amount       => 100,
-        multiplier   => 10,
-        currency     => 'USD',
-        limit_order  => {
-            stop_out => {
-                order_type   => 'stop_out',
-                order_amount => -100,
-                order_date   => $now->epoch,
-                basis_spot   => '100.00',
-            }}};
-    my $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
-    ok !$c->hit_tick,   'no hit tick';
+    subtest 'synthetic' => sub {
+        _reset_commission();
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90.01, $now->epoch + 1, 'R_100']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            date_start   => $now,
+            date_pricing => $now->epoch + 1,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }}};
+        my $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+        ok !$c->hit_tick,   'no hit tick';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->hit_tick,   'has hit tick';
-    is $c->value,         '0.00',    'value of contract is zero';
-    is $c->current_pnl(), '-100.00', 'pnl at -100';
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->value,         '0.00',    'value of contract is zero';
+        is $c->current_pnl(), '-100.00', 'pnl at -100';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [89, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->hit_tick,   'has hit tick';
-    is $c->value,         '0.00',    'value of contract is zero and does not go negative';
-    is $c->current_pnl(), '-110.00', 'pnl at -110';
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [89, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->value,         '0.00',    'value of contract is zero and does not go negative';
+        is $c->current_pnl(), '-110.00', 'pnl at -110';
 
-    note('stop out with 0.01 commission');
-    $mocked->mock('commission', sub { return 0.01 });
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [91.01, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
+        note('stop out with 0.01 commission');
+        $mocked->mock('commission', sub { return 0.01 });
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [91.01, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [91, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->hit_tick,   'has hit tick';
-    is $c->hit_tick->quote, 91,        'hit tick is 91';
-    is $c->value,           '0.00',    'value of contract is zero';
-    is $c->current_pnl(),   '-100.00', 'pnl at -100';
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [91, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->hit_tick->quote, 91,        'hit tick is 91';
+        is $c->value,           '0.00',    'value of contract is zero';
+        is $c->current_pnl(),   '-100.00', 'pnl at -100';
+    };
+
+    subtest 'forex' => sub {
+        _reset_commission();
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [90.01,  $now->epoch + 2, 'frxUSDJPY']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'frxUSDJPY',
+            date_start   => $now,
+            date_pricing => $now->epoch + 2,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }}};
+        my $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+        ok !$c->hit_tick,   'no hit tick';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [90,     $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->value,         '0.00',    'value of contract is zero';
+        is $c->current_pnl(), '-100.00', 'pnl at -100';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [89,     $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->value,         '0.00',    'value of contract is zero and does not go negative';
+        is $c->current_pnl(), '-110.00', 'pnl at -110';
+
+        note('stop out with 0.01 commission');
+        $mocked->mock('commission', sub { return 0.01 });
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [91.01,  $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [91,     $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->hit_tick->quote, 91,        'hit tick is 91';
+        is $c->value,           '0.00',    'value of contract is zero';
+        is $c->current_pnl(),   '-100.00', 'pnl at -100';
+    };
 };
 
 subtest 'hit take profit' => sub {
-    $mocked->mock('commission', sub { return 0 });
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [100.99, $now->epoch + 1, 'R_100']);
-    my $args = {
-        bet_type     => 'MULTUP',
-        underlying   => 'R_100',
-        date_start   => $now,
-        date_pricing => $now->epoch + 1,
-        amount_type  => 'stake',
-        amount       => 100,
-        multiplier   => 10,
-        currency     => 'USD',
-        limit_order  => {
-            stop_out => {
-                order_type   => 'stop_out',
-                order_amount => -100,
-                order_date   => $now->epoch,
-                basis_spot   => '100.00',
+    subtest 'synthetic' => sub {
+        _reset_commission();
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [100.99, $now->epoch + 1, 'R_100']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            date_start   => $now,
+            date_pricing => $now->epoch + 1,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                },
+                take_profit => {
+                    order_type   => 'take_profit',
+                    order_amount => 10,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }
             },
-            take_profit => {
-                order_type   => 'take_profit',
-                order_amount => 10,
-                order_date   => $now->epoch,
-                basis_spot   => '100.00',
-            }
-        },
+        };
+        my $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+        ok !$c->hit_tick,   'no hit tick';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->value,         '110.00', 'value of contract is 110';
+        is $c->current_pnl(), '10.00',  'pnl at 10';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101.01, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->value,         '110.10', 'value of contract is 110.1';
+        is $c->current_pnl(), '10.10',  'pnl at 10.1';
+
+        note('take profit with 0.01 commission');
+        $mocked->mock('commission', sub { return 0.01 });
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101.99, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [102, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->hit_tick->quote, 102,      'hit tick is 102';
+        is $c->value,           '110.00', 'value of contract is zero and does not go negative';
+        is $c->current_pnl(),   '10.00',  'pnl at 10';
     };
-    my $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
-    ok !$c->hit_tick,   'no hit tick';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->hit_tick,   'has hit tick';
-    is $c->value,         '110.00', 'value of contract is 110';
-    is $c->current_pnl(), '10.00',  'pnl at 10';
+    subtest 'forex' => sub {
+        _reset_commission();
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [100.99, $now->epoch + 2, 'frxUSDJPY']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'frxUSDJPY',
+            date_start   => $now,
+            date_pricing => $now->epoch + 2,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                },
+                take_profit => {
+                    order_type   => 'take_profit',
+                    order_amount => 10,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }
+            },
+        };
+        my $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+        ok !$c->hit_tick,   'no hit tick';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101.01, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->hit_tick,   'has hit tick';
-    is $c->value,         '110.10', 'value of contract is 110.1';
-    is $c->current_pnl(), '10.10',  'pnl at 10.1';
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [101,    $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->value,         '110.00', 'value of contract is 110';
+        is $c->current_pnl(), '10.00',  'pnl at 10';
 
-    note('take profit with 0.01 commission');
-    $mocked->mock('commission', sub { return 0.01 });
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101.99, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [101.01, $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->value,         '110.10', 'value of contract is 110.1';
+        is $c->current_pnl(), '10.10',  'pnl at 10.1';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [102, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->hit_tick,   'has hit tick';
-    is $c->hit_tick->quote, 102,      'hit tick is 102';
-    is $c->value,           '110.00', 'value of contract is zero and does not go negative';
-    is $c->current_pnl(),   '10.00',  'pnl at 10';
+        note('take profit with 0.01 commission');
+        $mocked->mock('commission', sub { return 0.01 });
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [101.99, $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100.01, $now->epoch,     'frxUSDJPY'],
+            [100,    $now->epoch + 1, 'frxUSDJPY'],
+            [102,    $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->hit_tick->quote, 102,      'hit tick is 102';
+        is $c->value,           '110.00', 'value of contract is zero and does not go negative';
+        is $c->current_pnl(),   '10.00',  'pnl at 10';
+    };
 };
 
 subtest 'hit stop loss' => sub {
-    $mocked->mock('commission', sub { return 0 });
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90.51, $now->epoch + 1, 'R_100']);
-    my $args = {
-        bet_type     => 'MULTUP',
-        underlying   => 'R_100',
-        date_start   => $now,
-        date_pricing => $now->epoch + 1,
-        amount_type  => 'stake',
-        amount       => 100,
-        multiplier   => 10,
-        currency     => 'USD',
-        limit_order  => {
-            stop_out => {
-                order_type   => 'stop_out',
-                order_amount => -100,
-                order_date   => $now->epoch,
-                basis_spot   => '100.00',
-            },
-            stop_loss => {
-                order_type   => 'stop_loss',
-                order_amount => -95,
-                order_date   => $now->epoch,
-                basis_spot   => '100.00',
-            }}};
-    my $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
-    ok !$c->hit_tick,   'no hit tick';
+    subtest 'synthetic' => sub {
+        _reset_commission();
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90.51, $now->epoch + 1, 'R_100']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            date_start   => $now,
+            date_pricing => $now->epoch + 1,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                },
+                stop_loss => {
+                    order_type   => 'stop_loss',
+                    order_amount => -95,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }}};
+        my $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+        ok !$c->hit_tick,   'no hit tick';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90.50, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->hit_tick,   'has hit tick';
-    is $c->hit_tick->quote, 90.50,    'hit tick is 90.50';
-    is $c->value,           '5.00',   'value of contract is 5.00';
-    is $c->current_pnl(),   '-95.00', 'pnl at -95.00';
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90.50, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->hit_tick->quote, 90.50,    'hit tick is 90.50';
+        is $c->value,           '5.00',   'value of contract is 5.00';
+        is $c->current_pnl(),   '-95.00', 'pnl at -95.00';
 
-    note('stop out with 0.01 commission');
-    $mocked->mock('commission', sub { return 0.01 });
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [91.51, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
+        note('stop out with 0.01 commission');
+        $mocked->mock('commission', sub { return 0.01 });
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [91.51, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [91.49, $now->epoch + 1, 'R_100']);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->hit_tick,   'has hit tick';
-    is $c->hit_tick->quote, 91.49,    'hit tick is 91.49';
-    is $c->value,           '4.90',   'value of contract is 4.90';
-    is $c->current_pnl(),   '-95.10', 'pnl at -95.10';
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [91.49, $now->epoch + 1, 'R_100']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->hit_tick->quote, 91.49,    'hit tick is 91.49';
+        is $c->value,           '4.90',   'value of contract is 4.90';
+        is $c->current_pnl(),   '-95.10', 'pnl at -95.10';
+    };
+
+    subtest 'forex' => sub {
+        _reset_commission();
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100,   $now->epoch,     'frxUSDJPY'],
+            [100,   $now->epoch + 1, 'frxUSDJPY'],
+            [90.51, $now->epoch + 2, 'frxUSDJPY']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'frxUSDJPY',
+            date_start   => $now,
+            date_pricing => $now->epoch + 2,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                },
+                stop_loss => {
+                    order_type   => 'stop_loss',
+                    order_amount => -95,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }}};
+        my $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+        ok !$c->hit_tick,   'no hit tick';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100,   $now->epoch,     'frxUSDJPY'],
+            [100,   $now->epoch + 1, 'frxUSDJPY'],
+            [90.50, $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->hit_tick->quote, 90.50,    'hit tick is 90.50';
+        is $c->value,           '5.00',   'value of contract is 5.00';
+        is $c->current_pnl(),   '-95.00', 'pnl at -95.00';
+
+        note('stop out with 0.01 commission');
+        $mocked->mock('commission', sub { return 0.01 });
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100,   $now->epoch,     'frxUSDJPY'],
+            [100,   $now->epoch + 1, 'frxUSDJPY'],
+            [91.51, $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'not expired';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100,   $now->epoch,     'frxUSDJPY'],
+            [100,   $now->epoch + 1, 'frxUSDJPY'],
+            [91.49, $now->epoch + 2, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->hit_tick,   'has hit tick';
+        is $c->hit_tick->quote, 91.49,    'hit tick is 91.49';
+        is $c->value,           '4.90',   'value of contract is 4.90';
+        is $c->current_pnl(),   '-95.10', 'pnl at -95.10';
+    };
 };
 
 $mocked->mock('commission', sub { return 0 });

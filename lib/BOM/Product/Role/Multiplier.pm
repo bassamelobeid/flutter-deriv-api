@@ -166,7 +166,11 @@ sub _build_basis_spot {
         return $self->underlying->pipsized_value($tick->quote) if defined($tick);
         return $self->current_spot;
     }
-    # after consistent tick, we should be able to use $underlying->tick_at($self->date_start->epoch);
+
+    # Due to abuse we need to move entry tick for financial instruments to next tick after contract start time.
+    return $self->entry_tick->quote if $self->underlying->market->name ne 'synthetic_index' && $self->entry_tick;
+
+    # We will keep synthetic indices on the current tick because of the nature of some of the synthetic indices like crash/boom. To avoid getting into dispute with clients, this is more user friendly.
     return $self->stop_out->basis_spot if $self->stop_out and $self->stop_out->basis_spot;
     return BOM::Product::Exception->throw(
         error_code => 'MissingBasisSpot',
@@ -333,6 +337,7 @@ sub _build_hit_tick {
 
     # hit tick is not relevant when the contract hasn't started
     return undef if $self->pricing_new;
+    return undef unless $self->entry_tick;
     # we can't really combined the search for stop out and take profit because
     # we can potentially look at different periods once we allow changing of take profit
     # when contract is opened.
@@ -490,8 +495,10 @@ override '_build_pricing_engine_name' => sub {
 override '_build_entry_tick' => sub {
     my $self = shift;
 
-    return undef if $self->pricing_new;
+    return undef                                                        if $self->pricing_new;
+    return $self->underlying->next_tick_after($self->date_start->epoch) if $self->underlying->market->name ne 'synthetic_index';
 
+    # for synthetic indices, the entry tick is the latest available tick at contract start time.
     my $tick = $self->underlying->tick_at($self->date_start->epoch);
     # less wait for consistent entry tick here.
     return undef unless $tick;
@@ -526,6 +533,16 @@ sub is_valid_to_sell {
         $self->_add_error({
             message           => 'Contract already sold',
             message_to_client => [$ERROR_MAPPING->{ContractAlreadySold}],
+        });
+        return 0;
+    }
+
+    # contract cannot be sold before it's even started
+    if (!$self->entry_tick) {
+        $self->_add_error({
+            message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
+            message_to_client => [$ERROR_MAPPING->{EntryTickMissing}],
+            details           => {},
         });
         return 0;
     }

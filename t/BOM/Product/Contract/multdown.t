@@ -55,6 +55,7 @@ subtest 'pricing new - general' => sub {
     is $c->stop_out->order_amount,      -100;
     is $c->stop_out->basis_spot,        '100.00';
     is $c->stop_out->barrier_value,     '110.00';
+    ok !$c->has_user_defined_barrier, 'no user defined barrier';
 
     $args->{limit_order} = {
         'take_profit' => 50,
