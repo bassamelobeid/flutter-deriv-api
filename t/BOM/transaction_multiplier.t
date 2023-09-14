@@ -485,9 +485,9 @@ subtest 'sell a bet', sub {
     lives_ok {
 
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100.01, $contract_start_time,     $underlying->symbol],
-            [100,    $contract_start_time + 1, $underlying->symbol],
-            [101,    $contract_start_time + 2, $underlying->symbol]);
+            [100, $contract_start_time,     $underlying->symbol],
+            [100, $contract_start_time + 1, $underlying->symbol],
+            [101, $contract_start_time + 2, $underlying->symbol]);
         my $contract = produce_contract({
                 underlying   => $underlying,
                 date_start   => $contract_start_time,
@@ -648,10 +648,12 @@ subtest 'sell failure due to update' => sub {
         subtest 'sell_expired_contract with contract id' => sub {
             # expiring the contract by setting current tick to 101.15 (the value of take profit)
             BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-                [100.01, $contract->date_start->epoch,     $underlying->symbol],
-                [100,    $contract->date_start->epoch + 1, $underlying->symbol],
-                [101.15, $contract->date_start->epoch + 2, $underlying->symbol]);
-            sleep 1;
+                [100,    $contract->date_start->epoch - 20, $underlying->symbol],
+                [100,    $contract->date_start->epoch - 1,  $underlying->symbol],
+                [100,    $contract->date_start->epoch,      $underlying->symbol],
+                [100,    $contract->date_start->epoch + 1,  $underlying->symbol],
+                [101.15, $contract->date_start->epoch + 2,  $underlying->symbol]);
+            sleep 2;
             my $out = BOM::Transaction::sell_expired_contracts({
                     client       => $cl,
                     source       => 23,
@@ -661,10 +663,12 @@ subtest 'sell failure due to update' => sub {
 
         subtest 'sell_expired_contract without contract id' => sub {
             BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-                [100.01, $contract->date_start->epoch,     $underlying->symbol],
-                [100,    $contract->date_start->epoch + 1, $underlying->symbol],
-                [101.15, $contract->date_start->epoch + 2, $underlying->symbol],
-                [0,      $contract->date_start->epoch + 3, $underlying->symbol]);
+                [100,    $contract->date_start->epoch - 20, $underlying->symbol],
+                [100,    $contract->date_start->epoch - 1,  $underlying->symbol],
+                [100,    $contract->date_start->epoch,      $underlying->symbol],
+                [100,    $contract->date_start->epoch + 1,  $underlying->symbol],
+                [101.15, $contract->date_start->epoch + 2,  $underlying->symbol],
+                [0,      $contract->date_start->epoch + 3,  $underlying->symbol]);
             sleep 1;
             my $out = BOM::Transaction::sell_expired_contracts({
                 client => $cl,
@@ -1570,12 +1574,10 @@ subtest 'buy and sell multiplier for AUD, NZD and JPY forex pair during rollover
         my $underlying = create_underlying('frxAUDJPY');
         set_absolute_time($datetime->epoch);
 
-        my $tick_params = {
-            symbol => 'frxAUDJPY',
-            epoch  => $datetime->epoch,
-            quote  => 100
-        };
-        my $tick_rollover = Postgres::FeedDB::Spot::Tick->new($tick_params);
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $datetime->epoch,     $underlying->symbol],
+            [100, $datetime->epoch + 1, $underlying->symbol],
+            [101, $datetime->epoch + 2, $underlying->symbol]);
 
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
@@ -1593,7 +1595,6 @@ subtest 'buy and sell multiplier for AUD, NZD and JPY forex pair during rollover
             date_start   => $datetime->epoch,
             date_pricing => $datetime->epoch,
             amount_type  => 'stake',
-            current_tick => $current_tick,
         });
         ok($contract->is_valid_to_buy, 'Valid for purchase');
 
@@ -1606,10 +1607,40 @@ subtest 'buy and sell multiplier for AUD, NZD and JPY forex pair during rollover
             source        => 19,
             purchase_date => $contract->date_start,
         });
-        my $buy_error  = $txn->buy;
-        my $sell_error = $txn->sell;
+        my $buy_error = $txn->buy;
+        is $buy_error, undef;
 
-        is $buy_error,  undef;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
+
+        my $contract_sell = produce_contract({
+                underlying   => 'frxAUDJPY',
+                bet_type     => 'MULTUP',
+                currency     => 'USD',
+                multiplier   => 100,
+                amount       => 100,
+                date_start   => $datetime->epoch,
+                date_pricing => $datetime->epoch + 1,
+                amount_type  => 'stake',
+                limit_order  => {
+                    stop_out => {
+                        order_type   => 'stop_out',
+                        order_amount => -100,
+                        order_date   => $contract->date_start->epoch,
+                        basis_spot   => '100.0',
+                    }}});
+
+        my $txn_sell = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract_sell,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            contract_id   => $fmb->{id},
+            purchase_date => $contract->date_start,
+        });
+        my $sell_error = $txn_sell->sell;
+
         is $sell_error, undef;
     }
     'can buy and sell frxAUDJPY during rollover time';
@@ -1621,12 +1652,10 @@ subtest 'buy and sell multiplier for AUD, NZD and JPY forex pair during rollover
         my $underlying = create_underlying('frxUSDJPY');
         set_absolute_time($datetime->epoch);
 
-        my $tick_params = {
-            symbol => 'frxUSDJPY',
-            epoch  => $datetime->epoch,
-            quote  => 100
-        };
-        my $tick_rollover = Postgres::FeedDB::Spot::Tick->new($tick_params);
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $datetime->epoch,     $underlying->symbol],
+            [100, $datetime->epoch + 1, $underlying->symbol],
+            [101, $datetime->epoch + 2, $underlying->symbol]);
 
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
@@ -1657,10 +1686,39 @@ subtest 'buy and sell multiplier for AUD, NZD and JPY forex pair during rollover
             source        => 19,
             purchase_date => $contract->date_start,
         });
-        my $buy_error  = $txn->buy;
-        my $sell_error = $txn->sell;
+        my $buy_error = $txn->buy;
+        is $buy_error, undef;
 
-        is $buy_error,  undef;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
+
+        my $contract_sell = produce_contract({
+                underlying   => 'frxUSDJPY',
+                bet_type     => 'MULTUP',
+                currency     => 'USD',
+                multiplier   => 100,
+                amount       => 100,
+                date_start   => $datetime->epoch,
+                date_pricing => $datetime->epoch + 1,
+                amount_type  => 'stake',
+                limit_order  => {
+                    stop_out => {
+                        order_type   => 'stop_out',
+                        order_amount => -100,
+                        order_date   => $contract->date_start->epoch,
+                        basis_spot   => '100.0',
+                    }}});
+        my $txn_sell = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract_sell,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+            contract_id   => $fmb->{id},
+        });
+        my $sell_error = $txn_sell->sell;
+
         is $sell_error, undef;
     }
     'can buy and sell frxUSDJPY during rollover time';
