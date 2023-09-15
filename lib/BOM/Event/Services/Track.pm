@@ -172,12 +172,6 @@ my %EVENT_PROPERTIES = (
     dp_successful_login                      => [qw(timestamp)],
     pa_first_time_approved                   => [qw(first_name contact_email tnc_url)],
     shared_payment_method_email_notification => [qw(client_first_name client_last_name ask_poi authentication_url payment_methods_url email)],
-    professional_status_requested            => [qw(first_name email request_professional_status)],
-    payops_event_email                       => [qw(contents subject loginid email_template properties)],
-    p2p_limit_changed                        => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
-    p2p_limit_upgrade_available              => [qw(loginid advertiser_id)],
-    dp_successful_login                      => [qw(timestamp)],
-    pa_first_time_approved                   => [qw(first_name contact_email tnc_url)],
     derivez_inactive_notification            => [qw(email name closure_date accounts)],
     derivez_inactive_account_closed          => [qw(name title derivez_accounts live_chat_url)],
 
