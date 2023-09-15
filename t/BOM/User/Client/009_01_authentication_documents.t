@@ -18,7 +18,7 @@ my $categories = [{
         document_id_required => 1,
         documents_uploaded   => 'proof_of_identity',
         preferred            => [
-            qw/tax_photo_id pan_card nimc_slip passport driving_licence voter_card national_identity_card student_card poi_others proofid driverslicense/
+            qw/tax_photo_id pan_card nimc_slip passport driving_licence voter_card national_identity_card student_card poi_others proofid driverslicense selfie_with_id/
         ],
         date_expiration =>
             [qw/tax_photo_id nimc_slip passport driving_licence voter_card national_identity_card student_card driverslicense proofid/],
@@ -343,7 +343,7 @@ subtest 'Preferred types' => sub {
             coi business_poa article_of_association memorandum authorisation_letter declarations business_documents_others
             power_of_attorney code_of_conduct others
             amlglobalcheck nimc_slip
-            tax_photo_id pan_card ip_mismatch_confirmation affiliate_reputation_check
+            tax_photo_id pan_card ip_mismatch_confirmation affiliate_reputation_check selfie_with_id
             /
     ];
 

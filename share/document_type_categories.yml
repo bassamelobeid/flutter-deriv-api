@@ -96,6 +96,7 @@ POI:
     selfie_with_id:
       providers:
         onfido: live_photo
+      preferred: 1
       deprecated: 1
       date: none
       sides: *photo
