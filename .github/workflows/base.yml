@@ -1,5 +1,5 @@
-name: Build workflow
-run-name: Build workflow
+name: Repository tests
+run-name: Repository tests
 on:
   workflow_call:
     inputs:
