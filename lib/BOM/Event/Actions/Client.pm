@@ -297,8 +297,11 @@ async sub document_upload {
         my $is_poa_document = any { $_ eq $document_entry->{document_type} } $client->documents->poa_types->@*;
         my $is_poi_document =
             any { $_ eq $document_entry->{document_type} } intersect($client->documents->poi_types->@*, $client->documents->preferred_types->@*);
-        my $is_onfido_document =
-            any { $_ eq $document_entry->{document_type} } keys $client->documents->provider_types->{onfido}->%*;
+
+        my $is_onfido_document;
+        if ($document_entry->{document_format} ne 'PDF' || $document_entry->{document_type} ne 'selfie_with_id') {
+            $is_onfido_document = any { $_ eq $document_entry->{document_type} } keys $client->documents->provider_types->{onfido}->%*;
+        }
 
         my $is_pow_document = any { $_ eq $document_entry->{document_type} } $client->documents->pow_types->@*;
         $log->warnf("Unsupported document by onfido $document_entry->{document_type}") if $is_poi_document && !$is_onfido_document;
