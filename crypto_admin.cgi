@@ -74,6 +74,12 @@ my $controller_url    = request()->url_for('backoffice/crypto_admin.cgi') . '#re
 our $template_currency_mapper = {
     LTC => 'BTC',
 };
+my $tool_selected =
+      defined $input{txn_type}
+    ? $input{txn_type} eq 'deposit'
+        ? 'Resolve failed deposit payment'
+        : 'Resolve failed withdrawal payment'
+    : $input{gt_reconciliation_action};
 
 my $tt = BOM::Backoffice::Request::template;
 
@@ -116,23 +122,41 @@ my $request_type;
 my $req_type;
 $req_type = $input{req_type} =~ /^gt_/ ? $input{req_type} : 'not_general_req' if $input{req_type};
 
-$request_type->{gt_get_error_txn} = sub {
+my $gt_actions = {
+    'Resolve failed deposit payment' => {
+        action            => 'deposit/update_bulk',
+        request_body_type => 'deposit_error',
+        transaction_type  => 'deposit',
+    },
+    'Resolve failed withdrawal payment' => {
+        action            => 'withdrawal/update_bulk',
+        request_body_type => 'withdrawal_error',
+        transaction_type  => 'withdrawal',
+    },
+};
+
+my @tool_options = sort keys %$gt_actions;
+
+$request_type->{gt_get_reconciliation_txn} = sub {
+    my $request_id = 'get_error_transactions';
+
     push @batch_requests,
         {
-        id     => 'get_error_withdrawals',
+        id     => $request_id,
         action => 'transaction/get_list',
         body   => {
-            type          => 'withdrawal_error',
+            type          => $gt_actions->{$tool_selected}->{request_body_type},
             currency_code => $input{gt_currency},
         },
         };
     return sub {
         my ($response_bodies) = @_;
 
-        my $error = _error_handler($response_bodies, "get_error_withdrawals");
+        my $error = _error_handler($response_bodies, $request_id);
+
         if ($error) {
             $tt->process(
-                'backoffice/crypto_admin/error_withdrawals.html.tt',
+                'backoffice/crypto_admin/error_transactions.html.tt',
                 {
                     controller_url => $controller_url,
                     currency       => $input{gt_currency},
@@ -141,20 +165,21 @@ $request_type->{gt_get_error_txn} = sub {
             return;
         }
 
-        my $error_withdrawals = $response_bodies->{get_error_withdrawals}{transaction_list};
+        my $error_transactions = $response_bodies->{$request_id}{transaction_list};
+        my $redis_read         = BOM::Config::Redis::redis_replicated_read();
 
-        my $redis_read = BOM::Config::Redis::redis_replicated_read();
-        foreach my $txn_record (keys %$error_withdrawals) {
+        foreach my $txn_record (keys %$error_transactions) {
             my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_record);
-            $error_withdrawals->{$txn_record}->{approved_by} = $approver;
+            $error_transactions->{$txn_record}->{approved_by} = $approver;
         }
 
         $tt->process(
-            'backoffice/crypto_admin/error_withdrawals.html.tt',
+            'backoffice/crypto_admin/error_transactions.html.tt',
             {
-                controller_url    => $controller_url,
-                currency          => $input{gt_currency},
-                error_withdrawals => $error_withdrawals,
+                controller_url     => $controller_url,
+                currency           => $input{gt_currency},
+                error_transactions => $error_transactions,
+                transaction_type   => $gt_actions->{$tool_selected}->{transaction_type},
             }) || die $tt->error();
     }
 };
@@ -179,12 +204,12 @@ $request_type->{gt_revert_processing_txn} = sub {
                 };
         }
 
-        #approving the list of txn if already aproved previously by other users
+        #approving the list of txn if already approved previously by other users
         if (scalar $txid_approver_mapping->@*) {
             push @batch_requests,
                 {
                 id     => 'revert_txn_status',
-                action => 'withdrawal/update_bulk',
+                action => $gt_actions->{$tool_selected}->{action},
                 body   => {
                     currency_code    => $input{gt_currency},
                     update_type      => 'process',
@@ -228,12 +253,14 @@ $request_type->{gt_revert_processing_txn} = sub {
         }
 
         my $txid_sent_for_revert = [];
+
         for (grep { $h_txn_to_process{$_} && $h_txn_to_process{$_} ne $staff } @txn_to_process) {
             push @{$txid_sent_for_revert}, {id => $_};
         }
 
         #approving the list of txn if already aproved previously by other users
         if (scalar $txid_sent_for_revert->@* && $response_bodies->{revert_txn_status}{transaction_list}) {
+
             my $reverted_trxns = $response_bodies->{revert_txn_status}{transaction_list};
 
             for ($reverted_trxns->@*) {
@@ -249,7 +276,7 @@ $request_type->{gt_revert_processing_txn} = sub {
                 push @{
                     $messages{
                               "<p class='error'>The revert of following transaction(s) failed. Error: "
-                            . "Another withdrawal transaction with same address is still being processed, "
+                            . "Another transaction with same address is still being processed, "
                             . "please wait for the pending transaction to be completed before trying to revert it<br />%s</p>"
                     }
                     },
@@ -272,7 +299,7 @@ $request_type->{gt_update_error_txn_sent} = sub {
             push @batch_requests,
                 {
                 id     => 'update_sent_error_txns',
-                action => 'withdrawal/update_bulk',
+                action => $gt_actions->{$tool_selected}->{action},
                 body   => {
                     currency_code    => $input{gt_currency},
                     update_type      => 'sent',
@@ -993,6 +1020,8 @@ $tt->process(
         controller_url    => $controller_url,
         currency_options  => \@all_cryptos,
         currency_selected => $currency_selected,
+        tool_options      => \@tool_options,
+        tool_selected     => $tool_selected,
     },
     undef,
     {binmode => ':utf8'});
