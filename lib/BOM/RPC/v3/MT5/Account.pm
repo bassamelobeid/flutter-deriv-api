@@ -301,7 +301,7 @@ sub mt5_accounts_lookup {
                     $setting->{status} = undef if ($setting->{status} // '') eq 'poa_outdated' and $client->risk_level_aml ne 'high';
                 }
                 $setting = _filter_settings($setting,
-                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type sub_account_category server server_info status/
+                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type sub_account_category server server_info status webtrader_url/
                 ) if !$setting->{error};
                 return Future->done($setting);
             }
@@ -1392,7 +1392,7 @@ async_rpc "mt5_get_settings",
             return create_error_future('MT5AccountInactive') if !$settings->{active};
 
             $settings = _filter_settings($settings,
-                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type sub_account_category zipCode server server_info/
+                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type sub_account_category zipCode server server_info webtrader_url/
             );
 
             return Future->done($settings);
@@ -1429,12 +1429,17 @@ sub set_mt5_account_settings {
     $settings->{sub_account_category}  = $config->{sub_account_category};
 
     if ($config->{server}) {
-        my $server_config = BOM::Config::MT5->new(group => $group_name)->server_by_id();
+        my $mt5webapi_config = BOM::Config::MT5->new(group => $group_name);
+        my $server_config    = $mt5webapi_config->server_by_id();
+        my $webtrader_url    = $mt5webapi_config->get_webtrader_url();
+
         $settings->{server_info} = {
             id          => $config->{server},
             geolocation => $server_config->{$config->{server}}{geolocation},
             environment => $server_config->{$config->{server}}{environment},
         };
+
+        $settings->{webtrader_url} = $webtrader_url;
     }
 }
 
