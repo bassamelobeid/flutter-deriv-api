@@ -420,4 +420,22 @@ sub get_server_webapi_info {
     return \%servers;
 }
 
+=head2 get_webtrader_url
+
+Get the server webtrader url from mt5webapi yaml file
+
+=cut
+
+sub get_webtrader_url {
+    my $self = shift;
+
+    try {
+        my $config = $self->webapi_config->{$self->{group_type}};
+
+        return $config->{$self->{server_type}}->{webtrader_url};
+    } catch ($e) {
+        die "Cannot get webtrader url, ERROR: $e";
+    }
+}
+
 1;
