@@ -209,6 +209,67 @@ subtest "cTrader Account Creation" => sub {
     };
 };
 
+subtest "cTrader Available Account" => sub {
+    subtest "cTrader Available Accounts Supported Country" => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $client->email('ctraderaccountsupportedcountry@test.com');
+        my $user = BOM::User->create(
+            email    => $client->email,
+            password => 'test'
+        )->add_client($client);
+        $client->set_default_account('USD');
+        $client->binary_user_id($user->id);
+        $client->residence('id');
+        $client->save;
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $client,
+            rule_engine => BOM::Rules::Engine->new(client => $client));
+        isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
+
+        my $expected_response = [{
+                linkable_landing_companies => ["svg"],
+                market_type                => "all",
+                name                       => "Deriv (SVG) LLC",
+                requirements               => {
+                    signup     => ["first_name",   "last_name", "residence", "date_of_birth"],
+                    withdrawal => ["address_city", "address_line_1"],
+                },
+                shortcode        => "svg",
+                sub_account_type => "standard",
+            },
+        ];
+
+        my $response = $ctrader->available_accounts();
+        cmp_deeply($response, $expected_response, 'Can get cTrader available accounts');
+    };
+
+    subtest "cTrader Available Accounts Un-Supported Country" => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $client->email('ctraderaccountunsupportedcountry@test.com');
+        my $user = BOM::User->create(
+            email    => $client->email,
+            password => 'test'
+        )->add_client($client);
+        $client->set_default_account('USD');
+        $client->binary_user_id($user->id);
+        $client->residence('ae');
+        $client->save;
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $client,
+            rule_engine => BOM::Rules::Engine->new(client => $client));
+        isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
+
+        my $expected_response = [];
+
+        my $response = $ctrader->available_accounts();
+        cmp_deeply($response, $expected_response, 'Get nothing from cTrader available accounts');
+    };
+};
+
 #Unsupported Country adhoc test
 #Group to group id adhoc test
 

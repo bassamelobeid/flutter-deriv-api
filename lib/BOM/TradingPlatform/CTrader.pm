@@ -791,7 +791,8 @@ sub available_accounts {
         sub_account_type           => 'standard',
         market_type                => 'all',
         linkable_landing_companies => $lc->mt5_require_deriv_account_at,
-        };
+        }
+        if $lc;
 
     return \@trading_accounts;
 }
