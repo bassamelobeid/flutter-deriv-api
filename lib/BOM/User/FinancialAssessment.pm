@@ -50,11 +50,18 @@ sub update_financial_assessment {
     foreach my $key (keys %$filtered_args) {
         $data_to_be_saved->{$key} = $filtered_args->{$key};
     }
-
     # We need to update Financial Assessment data for each client.
     foreach my $cli (@all_clients) {
+
         $cli->financial_assessment({data => encode_json_utf8($data_to_be_saved)});
+
+        if (    $cli->status->mt5_withdrawal_locked
+            and $cli->status->mt5_withdrawal_locked->{'reason'} =~ /FA is required for the first deposit on regulated MT5./g)
+        {
+            $cli->status->clear_mt5_withdrawal_locked;
+        }
         $cli->save;
+
     }
 
     $client->update_status_after_auth_fa();

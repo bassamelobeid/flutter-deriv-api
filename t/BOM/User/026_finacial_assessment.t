@@ -105,6 +105,69 @@ subtest 'CR is_financial_assessment_complete' => sub {
 
 };
 
+sub create_user {
+    my $hash_pwd = BOM::User::Password::hashpw('passW0rd');
+    my $email    = 'test' . rand(999) . '@binary.com';
+
+    return BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+}
+
+sub create_client {
+    my $user     = shift;
+    my $currency = shift;
+
+    my $client_details = {
+        broker_code              => 'CR',
+        residence                => 'au',
+        client_password          => 'x',
+        last_name                => 'test',
+        first_name               => 'tee',
+        email                    => 'test@regentmarkets.com',
+        salutation               => 'Ms',
+        address_line_1           => 'ADDR 1',
+        address_city             => 'Segamat',
+        phone                    => '+60123456789',
+        secret_question          => "Mother's maiden name",
+        secret_answer            => 'blah',
+        non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
+    };
+
+    my $client = $user->create_client(%$client_details, @_);
+    $client->set_default_account($currency) if $currency;
+
+    return $client;
+}
+
+subtest 'Check clear withdrawallock from sibling account when financial assessment is updated' => sub {
+
+    my $financial_information = {
+        "employment_industry" => "Finance",
+        "education_level"     => "Secondary",
+        "income_source"       => "Self-Employed",
+        "net_income"          => '$25,000 - $50,000',
+        "estimated_worth"     => '$100,000 - $250,000',
+        "occupation"          => 'Senior Manager',
+        "employment_status"   => "Self-Employed",
+        "source_of_wealth"    => "Company Ownership",
+        "account_turnover"    => 'Less than $25,000'
+    };
+    my $updated_fa;
+    my $user_fa    = create_user();
+    my $usd_client = create_client($user_fa, 'USD');
+    my $btc_client = create_client($user_fa, 'BTC');
+    my $eth_client = create_client($user_fa, 'ETH');
+    $usd_client->status->set('mt5_withdrawal_locked', 'test', 'FA is required for the first deposit on regulated MT5.');
+    $btc_client->status->set('mt5_withdrawal_locked', 'test', 'FA is required for the first deposit on regulated MT5.');
+    $eth_client->status->set('mt5_withdrawal_locked', 'test', 'FA is required for the first deposit on regulated MT5.');
+    update_financial_assessment($user_fa, $financial_information);
+    ok !$usd_client->status->mt5_withdrawal_locked, 'withdrawal locked removed after updating financial information';
+    ok !$btc_client->status->mt5_withdrawal_locked, 'withdrawal locked removed after updating financial information';
+    ok !$eth_client->status->mt5_withdrawal_locked, 'withdrawal locked removed after updating financial information';
+};
+
 subtest 'MF is_financial_assessment_complete' => sub {
 
     my $TE_only = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()->{trading_experience_regulated};
