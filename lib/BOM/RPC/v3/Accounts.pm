@@ -3272,11 +3272,6 @@ rpc set_financial_assessment => sub {
         delete $response->{trading_experience_regulated};
     }
 
-    if (    $client->status->mt5_withdrawal_locked
-        and $client->status->mt5_withdrawal_locked->{'reason'} =~ /FA is required for the first deposit on regulated MT5./g)
-    {
-        $client->status->clear_mt5_withdrawal_locked;
-    }
     BOM::Platform::Event::Emitter::emit(
         'set_financial_assessment',
         {
