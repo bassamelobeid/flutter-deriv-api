@@ -2112,6 +2112,14 @@ rpc set_settings => sub {
     my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
     my $secret_question        = $args->{secret_question} // '';
 
+    my $poi_fields = {
+        first_name    => $first_name,
+        last_name     => $last_name,
+        date_of_birth => $date_of_birth,
+    };
+
+    my @poi_fields_changed = grep { ($poi_fields->{$_} // '') ne ($current_client->$_ // '') } keys $poi_fields->%*;
+
     # If this is a virtual account update, we don't want to change anything else - otherwise
     # let's apply the new fields to all other accounts as well.
     my @loginids = ();
@@ -2208,7 +2216,7 @@ rpc set_settings => sub {
 
     # Send request to update onfido details (only for reals)
     unless ($current_client->is_virtual) {
-        BOM::Platform::Event::Emitter::emit('poi_check_rules',     {loginid => $current_client->loginid});
+        BOM::Platform::Event::Emitter::emit('poi_check_rules',     {loginid => $current_client->loginid}) if @poi_fields_changed;
         BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
     }
 

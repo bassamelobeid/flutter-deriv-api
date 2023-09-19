@@ -1107,6 +1107,7 @@ subtest 'set settings' => sub {
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_Y_cr_1;
     delete $params->{args}{address_state};
+    delete $emitted->{poi_check_rules};
     cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
     ok($emitted->{profile_change}, 'profile_change emit exist');
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
@@ -1125,12 +1126,29 @@ subtest 'set settings' => sub {
         "address line 1",
         "Was able to set settings correctly for second CR client"
     );
-    ok($emitted->{poi_check_rules}, 'poi rules emit exist');
+    ok(!$emitted->{poi_check_rules}, 'poi rules not emitted');
 
     is $emitted->{check_name_changes_after_first_deposit}, undef, 'no name change check yet';
     $params->{args} = {first_name => 'bob'};
     $c->tcall($method, $params);
     is_deeply($emitted->{check_name_changes_after_first_deposit}, {loginid => $test_client_Y_cr_1->loginid}, 'name change check event emitted');
+
+    my $poi_fields = {
+        first_name    => 'Maria',
+        last_name     => 'Juana',
+        date_of_birth => '1969-06-09'
+    };
+
+    subtest 'narrow down poi check rules triggering' => sub {
+        for my $poi_field (keys $poi_fields->%*) {
+            delete $emitted->{poi_check_rules};
+            $params->{args} = {$poi_field => $poi_fields->{$poi_field}};
+
+            cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
+
+            ok $emitted->{poi_check_rules}, "POI check rules triggered by $poi_field update";
+        }
+    };
 };
 
 subtest 'set_settings on virtual account should not change real account settings' => sub {
