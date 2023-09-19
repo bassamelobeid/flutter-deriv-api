@@ -29,7 +29,7 @@ my $today = Date::Utility->new->date_ddmmmyy;
 
 my $tt = BOM::Backoffice::Request::template;
 
-if (BOM::Backoffice::Auth0::has_authorisation(['Payments', 'Accounts_normal', 'Accounts_basic'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Payments', 'AccountsAdmin', 'AccountsLimited'])) {
 
     Bar("Quick check of a client account");
 
@@ -66,7 +66,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Payments', 'Accounts_normal', 'A
 
     $tt->process('backoffice/account/manager_batch_doughflow.tt') || die $tt->error();
 
-    unless (BOM::Backoffice::Auth0::has_authorisation(['Accounts_basic'])) {
+    unless (BOM::Backoffice::Auth0::has_authorisation(['AccountsLimited'])) {
         Bar("Make Dual Control Code");
         print "<p>To comply with ISO17799 requirements, deposits/withdrawals to client accounts require 2 staff members to authorise.
 One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when inputting the transaction.</p>";
