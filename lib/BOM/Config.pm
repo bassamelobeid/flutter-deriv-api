@@ -760,6 +760,17 @@ sub mt5_webapi_config {
     return $config;
 }
 
+=head2 mt5_symbols_config
+
+Config for mt5 to deriv symbols mapping, where the key is MT5 symbol and value is Deriv symbol.
+
+=cut
+
+sub mt5_symbols_config {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5-symbols.yml');
+    return $config;
+}
+
 =head2 onfido_supported_documents
 
 Get document types supported by onfido.
