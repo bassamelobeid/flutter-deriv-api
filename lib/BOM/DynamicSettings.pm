@@ -359,6 +359,8 @@ sub get_settings_by_group {
                 quants.underlyings.suspend_early_sellback
                 quants.callputspreads.disable_sellback
                 quants.callputspreads.minimum_allowed_sellback_duration
+                quants.live_pricing_config.eu.symbols
+                quants.live_pricing_config.row.symbols
             )
         ],
         it => [qw(
