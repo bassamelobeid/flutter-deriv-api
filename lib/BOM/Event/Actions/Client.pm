@@ -1216,17 +1216,22 @@ async sub check_idv_rules {
     my $client  = BOM::User::Client->new({loginid => $loginid});
     my $tags    = $args->{datadog_tags};
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
-
+    my $idv_model          = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
     my $idv_document       = $idv_model->get_last_updated_document();
     my $idv_document_check = $idv_model->get_document_check_detail($idv_document->{id});
-    my $report_decoded     = eval { decode_json_text($idv_document_check->{report}) };
+    my $report_decoded     = eval { decode_json_text($idv_document_check->{report} // '{}') } // {};
+
+    # ignore reports from providers that do not return personal info
+    my @required_fields = qw/birthdate full_name/;
+    my @required_data   = grep { defined $_ } @{$report_decoded}{@required_fields};
+    return 1 unless scalar @required_fields == scalar @required_data;
+
     $idv_document_check->{report} = $report_decoded;
-    my $messages = eval { decode_json_text($idv_document->{status_messages}) } // [];
+    my $messages = eval { decode_json_text($idv_document->{status_messages} // '[]') } // [];
     my $provider = $idv_document_check->{provider};
 
     if ($report_decoded) {
-        await BOM::Event::Actions::Client::IdentityVerification::idv_mismtach_lookback({
+        await BOM::Event::Actions::Client::IdentityVerification::idv_mismatch_lookback({
             client        => $client,
             messages      => $messages,
             document      => $idv_document,
@@ -1241,15 +1246,10 @@ async sub check_idv_rules {
                 {
                     tags => $tags,
                 });
-        } elsif ($client->status->poi_name_mismatch) {
-            push @$tags, 'result:name_mismatch';
-            DataDog::DogStatsd::Helper::stats_inc(
-                'event.idv.client_verification.result',
-                {
-                    tags => $tags,
-                });
-        } elsif ($client->status->poi_dob_mismatch) {
-            push @$tags, 'result:dob_mismatch';
+        } else {
+            push @$tags, 'result:name_mismatch' if $client->status->poi_name_mismatch;
+            push @$tags, 'result:dob_mismatch'  if $client->status->poi_dob_mismatch;
+
             DataDog::DogStatsd::Helper::stats_inc(
                 'event.idv.client_verification.result',
                 {

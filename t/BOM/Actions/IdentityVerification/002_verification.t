@@ -332,10 +332,12 @@ subtest 'microservice is unavailable' => sub {
 
     my $doc  = $idv_model->get_last_updated_document();
     my $msgs = decode_json_utf8 $doc->{status_messages};
-    $expected_json_usage->{encode_json_text} = 2;    # non microservice execution branch does not include $report
+    my $aux  = $expected_json_usage->{encode_json_text};    # no request/response to encode
+    delete $expected_json_usage->{encode_json_text};
 
     cmp_deeply($encoding, $expected_json_usage, 'Expected JSON usage');
     is_deeply $msgs, ['UNAVAILABLE_MICROSERVICE'], 'message is correct';
+    $expected_json_usage->{encode_json_text} = $aux;
 };
 
 subtest 'verify_process - apply side effects' => sub {
@@ -927,9 +929,11 @@ subtest 'testing refuted status and dob mismatch' => sub {
         HTTP::Response->new(
             200, undef, undef,
             encode_json_utf8({
-                    status   => 'refuted',
-                    messages => ['DOB_MISMATCH'],
-                    report   => {
+                    status        => 'refuted',
+                    messages      => ['DOB_MISMATCH'],
+                    request_body  => {'test' => 1},
+                    response_body => {'asdf' => 2},
+                    report        => {
                         full_name => "John Doe",
                         birthdate => "1997-03-12",
                     }})));
@@ -990,7 +994,7 @@ subtest 'testing refuted status and dob mismatch' => sub {
 
         $idv_fixing_handler->($args)->get;
 
-        is $json_calls, 2, 'two json calls';
+        is $json_calls, 1, 'one json calls as the execution halts without a proper report';
 
         $client = BOM::User::Client->new({loginid => $client->loginid});
 
@@ -999,7 +1003,6 @@ subtest 'testing refuted status and dob mismatch' => sub {
 
         $document = $idv_model->get_last_updated_document;
         is $document->{status}, 'refuted', 'document is still refuted';
-
         cmp_deeply [@metrics], [], 'No dd metrics json decode failed';
 
         @metrics    = ();
@@ -1018,6 +1021,7 @@ subtest 'testing refuted status and dob mismatch' => sub {
                 return $client_mock->original('decode_json_text')->(@_);
             });
 
+        my $idv_document_check = $idv_model->get_document_check_detail($document->{id});
         $idv_fixing_handler->($args)->get;
 
         is $json_calls, 2, 'two json calls';
@@ -1043,6 +1047,8 @@ subtest 'testing refuted status and dob mismatch' => sub {
         # test consequences of coalescing into empty messages, something like messages yes: auth by idv and messages no: auth by idv_photo
 
         # test the case where rules are called correctly but still there is a mismatch
+        cmp_deeply $idv_document_check, $idv_model->get_document_check_detail($document->{id}), 'document check is unaffected';
+
         $idv_fixing_handler->($args)->get;
 
         $client = BOM::User::Client->new({loginid => $client->loginid});
@@ -1065,6 +1071,8 @@ subtest 'testing refuted status and dob mismatch' => sub {
         $client->date_of_birth('1997-03-12');
         $client->save();
 
+        cmp_deeply $idv_document_check, $idv_model->get_document_check_detail($document->{id}), 'document check is unaffected';
+
         $idv_fixing_handler->($args)->get;
 
         $client = BOM::User::Client->new({loginid => $client->loginid});
@@ -1084,10 +1092,11 @@ subtest 'testing refuted status and dob mismatch' => sub {
             ],
             'Expected dd metrics for verfied result';
 
+        cmp_deeply $idv_document_check, $idv_model->get_document_check_detail($document->{id}), 'document check is unaffected';
+
         $dog_mock->unmock_all;
         $client_mock->unmock_all;
     }
-
 };
 
 subtest 'testing refuted status and name mismatch' => sub {
@@ -1220,6 +1229,242 @@ subtest 'testing refuted status and name mismatch' => sub {
 
         $document = $idv_model->get_last_updated_document;
         is $document->{status}, 'verified', 'document is now also verified';
+
+        cmp_deeply [@metrics],
+            [
+            'event.idv.client_verification.result' => {tags => ['result:age_verified_corrected']},
+            ],
+            'Expected dd metrics for verfied result';
+
+        $dog_mock->unmock_all;
+    }
+};
+
+subtest 'insufficient report to fix the mismatch' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'insufficient+data@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    my $current_submissions = $idv_model->submissions_left;
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf',
+    });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Foe');
+    $client->date_of_birth('1996-02-12');
+    $client->save();
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'refuted',
+                    messages => ['NAME_MISMATCH', 'DOB_MISMATCH'],
+                    report   => {
+
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    ok $client->status->poi_name_mismatch, 'POI name mismatch status applied properly';
+
+    ok $client->status->poi_dob_mismatch, 'POI dob mismatch status applied properly';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["NAME_MISMATCH", "DOB_MISMATCH"]',
+            'id'                       => re('\d+'),
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted from pass -  status dob + name mismatch'
+    );
+
+    # the decrease of attempts occurs before event triggering so testing that the counter did not change is enough
+    is $idv_model->submissions_left, $current_submissions, 'Submission left did not change for name mismatch case';
+
+    subtest 'attempt to fix mismatch' => sub {
+        my $idv_fixing_handler = BOM::Event::Process->new(category => 'generic')->actions->{poi_check_rules};
+        my $dog_mock           = Test::MockModule->new('DataDog::DogStatsd::Helper');
+        my @metrics;
+        $encoding = {};
+
+        $dog_mock->mock(
+            'stats_inc',
+            sub {
+                push @metrics, @_ if scalar @_ == 2;
+                push @metrics, @_, undef if scalar @_ == 1;
+
+                return 1;
+            });
+
+        $document = $idv_model->get_last_updated_document;
+
+        my $idv_document_check = $idv_model->get_document_check_detail($document->{id});
+
+        $idv_fixing_handler->($args)->get;
+
+        cmp_deeply($idv_document_check, $idv_model->get_document_check_detail($document->{id}), 'idv check is unaffected');
+
+        cmp_deeply($encoding, {}, 'expected json calls (none)');
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+
+        ok $client->status->poi_dob_mismatch,  'name mismatch remains';
+        ok $client->status->poi_name_mismatch, 'name mismatch remains';
+        ok !$client->status->age_verification, 'client is still not age verified';
+
+        is $document->{status}, 'refuted', 'document is still refuted';
+
+        cmp_deeply [@metrics], [], 'Expected dd metrics when nothing happens';
+
+        @metrics = ();
+
+        # now inject that report... stuff still in mismatch
+        $encoding = {};
+
+        my $json_report = encode_json_utf8({
+            full_name => 'Maria Juana',
+            birthdate => '2001-09-01',
+        });
+
+        $idv_model->update_document_check({
+            document_id => $document->{id},
+            status      => 'refuted',
+            messages    => ['NAME_MISMATCH', 'DOB_MISMATCH'],
+            report      => $json_report,
+            provider    => 'zaig',
+        });
+        $idv_fixing_handler->($args)->get;
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+
+        cmp_deeply($encoding, {encode_json_text => 1}, 'expected json calls (one for the report)');
+
+        my $new_check = $idv_model->get_document_check_detail($document->{id});
+        $new_check->{report} = decode_json_text($new_check->{report});
+
+        cmp_deeply(
+            +{
+                $idv_document_check->%*,
+                report => {
+                    full_name => 'Maria Juana',
+                    birthdate => '2001-09-01',
+                }
+            },
+            $new_check,
+            'idv check has a valid report now'
+        );
+
+        ok $client->status->poi_dob_mismatch,  'name mismatch remains';
+        ok $client->status->poi_name_mismatch, 'name mismatch remains';
+        ok !$client->status->age_verification, 'client is still not age verified';
+
+        $document = $idv_model->get_last_updated_document;
+        is $document->{status}, 'refuted', 'document is still refuted';
+
+        cmp_deeply [@metrics],
+            ['event.idv.client_verification.result', {tags => ['result:name_mismatch', 'result:dob_mismatch']}],
+            'Expected dd metrics when rules results are observed';
+
+        @metrics = ();
+
+        # now clients details are corrected
+        $idv_model->update_document_check({
+                document_id => $document->{id},
+                status      => 'refuted',
+                messages    => ['NAME_MISMATCH', 'DOB_MISMATCH'],
+                report      => encode_json_utf8({
+                        full_name => 'Maria Juana',
+                        birthdate => '2001-09-01',
+                    }
+                ),
+                response_body => encode_json_utf8({abc => 1}),
+                request_body  => encode_json_utf8({xyz => 2}),
+                provider      => 'zaig',
+            });
+        $idv_document_check = $idv_model->get_document_check_detail($document->{id});
+        $client->first_name('Maria');
+        $client->last_name('Juana');
+        $client->date_of_birth('2001-09-01');
+        $client->save();
+
+        $idv_fixing_handler->($args)->get;
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+        cmp_deeply(
+            $encoding,
+            {
+                encode_json_text => 2,
+            },
+            'expected json calls ( response + request )'
+        );
+
+        $new_check             = $idv_model->get_document_check_detail($document->{id});
+        $new_check->{report}   = decode_json_text($new_check->{report});
+        $new_check->{request}  = decode_json_text($new_check->{request});
+        $new_check->{response} = decode_json_text($new_check->{response});
+
+        cmp_deeply(
+            +{
+                $idv_document_check->%*,
+                request  => {xyz => 2},
+                response => {abc => 1},
+                report   => {
+                    full_name => 'Maria Juana',
+                    birthdate => '2001-09-01',
+                }
+            },
+            $new_check,
+            'idv check has a valid report now'
+        );
+
+        ok !$client->status->poi_name_mismatch, 'name mismatch is gone';
+        ok !$client->status->poi_dob_mismatch,  'dob mismatch is gone';
+        ok $client->status->age_verification,   'client is age verified';
+
+        $document = $idv_model->get_last_updated_document;
+        is $document->{status}, 'verified', 'document is verified now';
 
         cmp_deeply [@metrics],
             [

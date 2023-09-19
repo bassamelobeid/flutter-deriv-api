@@ -311,8 +311,8 @@ async sub idv_verified {
         messages        => [uniq @$messages],
         report          => encode_json_text($response_hash->{report} // {}),
         expiration_date => $response_hash->{report}->{expiry_date},
-        request_body    => encode_json_text($response_hash->{request_body}  // {}),
-        response_body   => encode_json_text($response_hash->{response_body} // {}),
+        request_body    => $response_hash->{request_body} ? encode_json_text($response_hash->{request_body})  : undef,
+        response_body   => $response_hash->{request_body} ? encode_json_text($response_hash->{response_body}) : undef,
         photo           => $pictures
     });
 }
@@ -349,8 +349,8 @@ async sub idv_refuted {
         expiration_date => $response_hash->{report}->{expiry_date},
         messages        => [uniq @$messages],
         provider        => $provider,
-        request_body    => encode_json_text($response_hash->{request_body}  // {}),
-        response_body   => encode_json_text($response_hash->{response_body} // {}),
+        request_body    => $response_hash->{request_body} ? encode_json_text($response_hash->{request_body})  : undef,
+        response_body   => $response_hash->{request_body} ? encode_json_text($response_hash->{response_body}) : undef,
         photo           => $pictures,
     });
 
@@ -390,8 +390,8 @@ async sub idv_failed {
         status        => 'failed',
         messages      => $messages,
         provider      => $provider,
-        request_body  => encode_json_text($response_hash->{request_body}  // {}),
-        response_body => encode_json_text($response_hash->{response_body} // {}),
+        request_body  => $response_hash->{request_body} ? encode_json_text($response_hash->{request_body})  : undef,
+        response_body => $response_hash->{request_body} ? encode_json_text($response_hash->{response_body}) : undef,
     });
 
     $log->infof('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, $messages);
@@ -419,13 +419,13 @@ async sub idv_pending {
     });
 }
 
-=head2 idv_mismtach_lookback
+=head2 idv_mismatch_lookback
 
 To check if a name or DOB mismatch has been resolved.
 
 =cut
 
-async sub idv_mismtach_lookback {
+async sub idv_mismatch_lookback {
     my ($args) = @_;
 
     my ($client, $document, $messages, $response_hash) = @{$args}{qw/client document messages response_hash/};
@@ -468,7 +468,7 @@ async sub idv_callback {
         status       => 'deferred',
         messages     => $messages,
         provider     => $provider,
-        request_body => encode_json_text($response_hash->{request_body} // {}),
+        request_body => $response_hash->{request_body} ? encode_json_text($response_hash->{request_body}) : undef,
     });
 }
 
