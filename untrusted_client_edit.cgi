@@ -43,6 +43,7 @@ $status_checked = [$status_checked] unless ref($status_checked);
 my $additional_info = request()->param('additional_info');
 my $p2p_approved    = request()->param('p2p_approved');
 my $add_regex       = qr/^add|^sync/;
+my $max_lines       = 2000;
 
 if (my $error_message = write_operation_error()) {
     print_error_and_exit($error_message);
@@ -61,7 +62,7 @@ if ($bulk_loginids) {
 
 # adding dcc verification code here
 # start
-    # code_exit_BO(_get_display_error_message("ERROR: dual control code is mandatory for bulk status update")) if $DCcode eq '';
+    code_exit_BO(_get_display_error_message("ERROR: dual control code is mandatory for bulk status update")) if $DCcode eq '';
     try {
         $file  = $cgi->upload('bulk_loginids');
         $csv   = Text::CSV->new({binary => 1});
@@ -70,14 +71,14 @@ if ($bulk_loginids) {
         code_exit_BO(_get_display_error_message("ERROR: " . $e)) if $e;
     }
 
-    # my $dcc_error = BOM::DualControl->new({
-    #         staff           => $clerk,
-    #         transactiontype => "UPDATECLIENT_DETAILS_BULK"
-    #     })->validate_batch_anonymization_control_code($DCcode, [map { join "\0" => $_->@* } $lines->@*]);
-    # code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg()))                                       if $dcc_error;
-    # code_exit_BO(_get_display_error_message("ERROR: the given file is empty, please provide the required client_ids")) if (scalar(@$lines) == 0);
-    # code_exit_BO(_get_display_error_message("ERROR: the number of client_ids exceeds limit of 2000 please reduce the number of entries"))
-    #     if scalar(@$lines) > 2000;
+    code_exit_BO(_get_display_error_message("ERROR: the given file is empty, please provide the required client_ids")) if (scalar($lines->@*) == 0);
+    code_exit_BO(_get_display_error_message("ERROR: the number of client_ids exceeds limit of $max_lines please reduce the number of entries"))
+        if scalar(@$lines) > $max_lines;
+    my $dcc_error = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => "UPDATECLIENT_DETAILS_BULK"
+        })->validate_batch_anonymization_control_code($DCcode, [map { join "\0" => $_->@* } $lines->@*]);
+    code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
     for my $line (@$lines) {
         push @login_ids, $line->[0];
     }
