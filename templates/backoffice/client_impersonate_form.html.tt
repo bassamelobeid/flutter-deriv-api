@@ -1,12 +1,17 @@
 <div class="row">
-    <form action="[% impersonate_url %]" method="get">
+    <form action="[% impersonate_url %]" method="post" onsubmit="removeSpaces()" target="_blank">
+        <label for="txt_impersonate_loginid">Login ID:</label>
         [% IF encoded_loginid %]
-            <input type="hidden" name="impersonate_loginid" value="[% encoded_loginid %]" />
+            <input type="text" size="15" name="impersonate_loginid" id="txt_impersonate_loginid" value="[% encoded_loginid %]" />
         [% ELSE %]
-            <label for="txt_impersonate_loginid">Login ID:</label>
             <input type="text" size="15" name="impersonate_loginid" id="txt_impersonate_loginid" data-lpignore="true" />
         [% END %]
+        <label for="txt_impersonate_dcc">DCC:</label>
+        <input type="text" size="15" name="impersonate_dcc" id="txt_impersonate_dcc" data-lpignore="true" />
         <input type="hidden" name="broker" value="[% encoded_broker %]" />
-        <input type="submit" class="btn [% IF encoded_loginid %]btn--secondary[% ELSE %]btn--primary[% END %]" value="Impersonate" />
+        <input type="submit" class="btn btn--primary" value="Impersonate" />
+        <input type="hidden" name="transaction_type" value="impersonate_code"/>
+        <input type="submit" class="btn btn--primary" value="Make DCC" name= "make_dcc" />
     </form>
+    <p class='error'>MAKE SURE YOU LOGOUT FROM CLIENT ACCOUNT ON THE WEBSITE AFTER YOU ARE DONE!</p>
 </div>

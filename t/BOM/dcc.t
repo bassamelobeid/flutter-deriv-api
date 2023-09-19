@@ -89,5 +89,31 @@ subtest 'Batch Client Status Update DCC' => sub {
     ok $error, 'Fail in case dataset is changed';
 };
 
+subtest 'impersonate client dual control code' => sub {
+    my $dcc1 = BOM::DualControl->new({
+            staff           => 'asdf',
+            transactiontype => 'impersonate_code'
+        })->create_impersonate_control_code('1234');
+
+    my $error = BOM::DualControl->new({
+            staff           => 'not_asdf',          #someone else should do the DCC
+            transactiontype => 'impersonate_code'
+        })->validate_impersonate_control_code($dcc1, '12344');
+
+    ok $error, 'wrong loginid';
+    my $error = BOM::DualControl->new({
+            staff           => 'not_asdf',
+            transactiontype => 'impersonate_code_123'    #wrong transaction type
+        })->validate_impersonate_control_code($dcc1, '12344');
+
+    ok $error, 'wrong transaction type';
+    my $error = BOM::DualControl->new({
+            staff           => 'not_asdf',
+            transactiontype => 'impersonate_code'
+        })->validate_impersonate_control_code($dcc1, '1234');
+    ok !$error, 'correct loginid and transaction type should work';
+
+};
+
 done_testing();
 

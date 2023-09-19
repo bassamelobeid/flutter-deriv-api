@@ -195,6 +195,23 @@ sub batch_status_update_control_code {
 
 }
 
+=head2 create_impersonate_control_code
+
+Dual control code to impersonate a client . This verification code is used to verify the staffs identity
+
+=cut
+
+sub create_impersonate_control_code {
+    my ($self, $loginid) = @_;
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $loginid, $self->_environment));
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
+
+}
+
 sub validate_client_control_code {
     my ($self, $incode, $email, $user_id) = @_;
 
@@ -216,6 +233,32 @@ sub validate_client_control_code {
     $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
     return;
+}
+
+=head2 validate_impersonate_control_code
+
+Validates the dcc code of impersonate client . This verification code is used to verify the staffs identity and the client id
+
+=cut
+
+sub validate_impersonate_control_code {
+    my ($self, $incode, $loginid) = @_;
+
+    my $code         = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_element_count($code, 5);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_payment_loginid($code, $loginid);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
 }
 
 =head2 validate_self_tagging_control_code

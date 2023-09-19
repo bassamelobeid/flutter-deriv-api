@@ -19,7 +19,7 @@
                 <th>Action</th>
                 <th>Status</th>
                 <th>IP Address</th>
-                <th>Company IP?</th>
+                <th>Impersonation</th>
                 <th>Country</th>
                 <th>Environment Info</th>
                 <th>App ID</th>

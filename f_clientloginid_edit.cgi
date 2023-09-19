@@ -1488,6 +1488,7 @@ BOM::Backoffice::Request::template()->process(
         checked         => '',
     });
 
+Bar("IMPERSONATE CLIENT");
 BOM::Backoffice::Request::template()->process(
     'backoffice/client_impersonate_form.html.tt',
     {
