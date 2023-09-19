@@ -274,12 +274,11 @@ sub on_message {
         # https://trello.com/c/Qm0MSFBD/#comment-5be403a7dceb540885f49d2a
         my @client_subscriptions = values %$entry;
         my $tv                   = [Time::HiRes::gettimeofday()];
-        my $pid                  = $$;
         $_ && $_->process($message) for @client_subscriptions;
         stats_timing(
             'bom_websocket_api.v_3.subscription.process_all.time',
             1000 * Time::HiRes::tv_interval($tv),
-            {tags => ['pid:' . $pid, 'redis_server:' . $self->name]});
+            {tags => ['redis_server:' . $self->name]});
 
     } elsif (!exists($self->channel_unsubscribing->{$channel})) {
         $log->errorf('Had a message for channel [%s] but that channel is not subscribed', $channel);

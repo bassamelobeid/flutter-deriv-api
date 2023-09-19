@@ -198,9 +198,8 @@ sub handle_message {
                 }});
     }
 
-    my $tv  = Time::HiRes::gettimeofday;
-    my $pid = $$;
-    stats_timing('bom_websocket_api.v_3.subscription.feed.send_latency', 1000 * ($tv - $epoch), {tags => ['pid:' . $pid, 'symbol:' . $symbol]});
+    my $tv = Time::HiRes::gettimeofday;
+    stats_timing('bom_websocket_api.v_3.subscription.feed.send_latency', 1000 * ($tv - $epoch), {tags => ['symbol:' . $symbol]});
 
     return;
 }
