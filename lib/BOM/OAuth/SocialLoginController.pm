@@ -180,8 +180,9 @@ Helper function to get the datadog brand tag name
 =cut
 
 sub _dd_brand_tag {
-    my $c = shift;
-    return "brand:$c->stash('query_params')->{brand}";
+    my $c     = shift;
+    my $brand = $c->stash('query_params')->{brand};
+    return "brand:$brand";
 }
 
 =head2 _process_new_user
