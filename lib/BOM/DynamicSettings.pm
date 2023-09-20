@@ -50,6 +50,7 @@ use constant AUTHORISATIONS => {
     compliance           => ['Compliance'],
     payment_agents       => ['IT'],
     terms_and_conditions => ['T&C'],
+    internal_transfer    => ['PaymentInternalTransfer'],
 };
 
 sub _textify_obj {
@@ -269,7 +270,6 @@ sub get_settings_by_group {
                 system.suspend.all_logins
                 system.suspend.social_logins
                 system.suspend.logins
-                system.suspend.transfer_between_accounts
                 system.suspend.transfer_currencies
                 system.suspend.onfido
                 system.suspend.p2p
@@ -368,30 +368,25 @@ sub get_settings_by_group {
                 oauth.ctrader_api.white_listed_networks
             )
         ],
-        terms_and_conditions => [qw(
-                cgi.terms_conditions_versions
-            )
-
-        ],
-        payments => [qw(
-                payments.payment_limits
+        internal_transfer => [qw(
+                system.suspend.transfer_currencies
+                system.suspend.transfer_between_accounts
                 payments.transfer_between_accounts.daily_cumulative_limit.enable
                 payments.transfer_between_accounts.daily_cumulative_limit.between_accounts
                 payments.transfer_between_accounts.daily_cumulative_limit.MT5
-                payments.transfer_between_accounts.daily_cumulative_limit.dxtrade
                 payments.transfer_between_accounts.daily_cumulative_limit.derivez
                 payments.transfer_between_accounts.daily_cumulative_limit.ctrader
-                payments.transfer_between_accounts.limits.between_accounts
-                payments.transfer_between_accounts.limits.MT5
-                payments.transfer_between_accounts.limits.dxtrade
                 payments.transfer_between_accounts.limits.fiat_to_crypto
                 payments.transfer_between_accounts.limits.crypto_to_fiat
                 payments.transfer_between_accounts.limits.crypto_to_crypto
+                payments.transfer_between_accounts.limits.between_accounts
+                payments.transfer_between_accounts.limits.MT5
+                payments.transfer_between_accounts.limits.dxtrade
                 payments.transfer_between_accounts.limits.ctrader
                 payments.transfer_between_accounts.limits.derivez
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat
-                payments.transfer_between_accounts.exchange_rate_expiry.fiat_holidays
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
+                payments.transfer_between_accounts.exchange_rate_expiry.fiat_holidays
                 payments.transfer_between_accounts.minimum.default
                 payments.transfer_between_accounts.minimum.MT5
                 payments.transfer_between_accounts.minimum.dxtrade
@@ -402,6 +397,16 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.maximum.dxtrade
                 payments.transfer_between_accounts.maximum.ctrader
                 payments.transfer_between_accounts.maximum.derivez
+            )
+        ],
+        terms_and_conditions => [qw(
+                cgi.terms_conditions_versions
+            )
+
+        ],
+        payments => [qw(
+                payments.payment_limits
+                payments.transfer_between_accounts.daily_cumulative_limit.dxtrade
                 payments.experimental_currencies_allowed
                 payments.reversible_balance_limits.ctc
                 payments.reversible_balance_limits.p2p

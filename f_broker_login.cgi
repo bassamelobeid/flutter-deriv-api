@@ -374,12 +374,6 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
                 </form>
             </div>
             <div class="card__content">
-                <h3>Internal transfer fees</h3>
-                <form action="~ . request()->url_for('backoffice/quant/internal_transfer_fees.cgi') . qq~" method="post">
-                    <input type="submit" class="btn btn--primary" value="Internal transfer fees">
-                </form>
-            </div>
-            <div class="card__content">
                 <h3>Existing limited clients</h3>
                 <form action="~ . request()->url_for('backoffice/quant/client_limit.cgi') . qq~" method="post">
                     <label>$brokerselection</label>
@@ -469,7 +463,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'PaymentsAdmin'])) {
 }
 
 # WEBSITE CUSTOMIZATION
-if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'PaymentInternalTransfer'])) {
 
     my $group_select = create_dropdown(
         name          => 'group',
@@ -499,8 +493,20 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
             </div>
-        </div>
-    </div>~;
+        ~;
+    if (BOM::Backoffice::Auth0::has_authorisation(['PaymentInternalTransfer'])) {
+        print qq~
+            <div class="card__content">
+                <h3>Internal Transfer Settings</h3>
+                <form action="~ . request()->url_for('backoffice/f_internal_transfer.cgi') . qq~" method="get">
+                    <input type=hidden name=broker value=FOG>
+                    <input type=hidden name=page value=global>
+                    <input type=hidden name=l value=EN>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>~;
+    }
+    print qq~</div></div><br>~;
 }
 
 # WEBSITE STATUS

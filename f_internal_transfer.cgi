@@ -13,10 +13,17 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
 use LandingCompany::Registry;
+use BOM::DynamicSettings;
+use BOM::Config;
+use HTML::Entities;
+use Data::Compare;
+use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Utility qw(master_live_server_error);
+use List::Util               qw(any);
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
-BrokerPresentation('INTERNAL TRANSFER FEES');
+BrokerPresentation('INTERNAL TRANSFER SETTINGS');
 
 my @all_currencies = LandingCompany::Registry::all_currencies();
 my $app_config     = BOM::Config::Runtime->instance->app_config();
@@ -52,15 +59,12 @@ for my $currency (@all_currencies) {
 # Get inputs
 my $submit = request()->param('_form_submit');
 
-my $action = request()->url_for('backoffice/quant/internal_transfer_fees.cgi');
+my $action = request()->url_for('backoffice/f_internal_transfer.cgi');
 
 my $defaults_msg = '';
 my $currency_msg = '';
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
-
 if ($submit) {
-    code_exit_BO("permission denied: no write access") if $disabled_write;
     my $new_fee_by_currency = request()->param('fee_by_currency');
     $new_fee_by_currency =~ s/\s//g;
 
@@ -130,8 +134,39 @@ BOM::Backoffice::Request::template()->process(
         stable_stable     => $stable_stable,
         fee_by_currency   => $fee_by_currency,
         max_percent       => $max_fee_percent,
-        disabled          => $disabled_write,
+        disabled          => 0,
         countries         => request()->brand->countries_instance->countries_list,
+    });
+
+#DYNAMIC SETTINGS FOR INTERNAL TRANSFER
+my $settings_list = [@{BOM::DynamicSettings::get_settings_by_group('internal_transfer')}];
+
+Bar("DYNAMIC SETTINGS FOR INTERNAL TRANSFER");
+
+if (!any { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}) {
+    print '<div id="message"><div id="error">' . master_live_server_error() . '</div></div><br />';
+} else {
+    BOM::DynamicSettings::save_settings({
+        'settings'          => request()->params,
+        'settings_in_group' => $settings_list,
+        'save'              => request()->param('submitted'),
+    });
+}
+
+my $title = "DYNAMIC SETTINGS FOR INTERNAL TRANSFER";
+
+my @send_to_template = BOM::DynamicSettings::generate_settings_branch({
+    settings          => [BOM::Config::Runtime->instance->app_config->all_keys()],
+    settings_in_group => $settings_list,
+    group             => 'internal_transfer',
+    title             => $title,
+    submitted         => request()->param('page'),
+});
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/dynamic_settings_internal_transfer.html.tt',
+    {
+        settings => \@send_to_template,
     });
 
 code_exit_BO();

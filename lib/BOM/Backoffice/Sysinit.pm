@@ -124,6 +124,8 @@ my $permissions = {
     'crypto_dynamic_settings.cgi' => ['IT'],
     'f_idv_dashboard.cgi'         => ['CS', 'Compliance', 'CostControl', 'IDV'],
 
+    'f_internal_transfer.cgi' => ['PaymentInternalTransfer'],
+
     'f_save.cgi'                                                              => ['QuantsWrite'],
     'f_upload_holidays.cgi'                                                   => ['QuantsWrite'],
     'f_bet_iv.cgi'                                                            => ['Quants'],
@@ -159,7 +161,6 @@ my $permissions = {
     'quant/settle_contracts.cgi'                                              => ['Quants'],
     'quant/quants_config.cgi'                                                 => ['Quants'],
     'quant/update_quants_config.cgi'                                          => ['QuantsWrite'],
-    'quant/internal_transfer_fees.cgi'                                        => ['Quants'],
     'quant/client_limit.cgi'                                                  => ['Quants'],
     'quant/multiplier_risk_management.cgi'                                    => ['Quants'],
     'quant/accumulator_risk_management.cgi'                                   => ['Quants'],
