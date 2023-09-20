@@ -115,6 +115,10 @@ sub script_run {
 
         # version table = dbix_migration_collector
         $tablename_extension = 'collector';
+    } elsif ($dbset eq 'eth') {
+        $dir      = $home_git . '/regentmarkets/bom-postgres-ethdb/config/sql/';
+        $database = 'eth';
+        $port     = '5441';
     } elsif ($dbset eq 'crypto') {
         $dir      = $home_git . '/regentmarkets/bom-postgres-cryptodb/config/sql/';
         $database = 'crypto';
