@@ -1044,7 +1044,6 @@ subtest 'testing refuted status and dob mismatch' => sub {
         @metrics = ();
 
         $client_mock->unmock('decode_json_text');
-        # test consequences of coalescing into empty messages, something like messages yes: auth by idv and messages no: auth by idv_photo
 
         # test the case where rules are called correctly but still there is a mismatch
         cmp_deeply $idv_document_check, $idv_model->get_document_check_detail($document->{id}), 'document check is unaffected';
@@ -1238,6 +1237,95 @@ subtest 'testing refuted status and name mismatch' => sub {
 
         $dog_mock->unmock_all;
     }
+};
+
+subtest 'undefined status_messages in idv lookback' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_undef_messages@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf',
+    });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1996-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'verified',
+                    messages => undef,
+                    report   => {
+                        full_name => "John Doe",
+                        birthdate => '1996-02-12',
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    my $document = $idv_model->get_last_updated_document;
+    my $dbic     = BOM::Database::UserDB::rose_db()->dbic;
+
+    $dbic->run(
+        fixup => sub {
+            $_->do("UPDATE idv.document SET status_messages = NULL WHERE id = ?", undef, $document->{id});
+        });
+
+    $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'verified',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => undef,
+            'id'                       => re('\d+'),
+            'document_type'            => 'cpf'
+        },
+        'Document is verified - status messages is undef'
+    );
+
+    # test the case where the report does not return status_messages
+    my $idv_fixing_handler = BOM::Event::Process->new(category => 'generic')->actions->{poi_check_rules};
+    $idv_fixing_handler->($args)->get;
+
+    $document = $idv_model->get_last_updated_document;
+
+    is $document->{status_messages}, '[]', 'the event processed without error even without status_messages';
 };
 
 subtest 'insufficient report to fix the mismatch' => sub {

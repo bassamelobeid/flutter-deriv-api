@@ -1258,8 +1258,6 @@ async sub check_idv_rules {
         }
     }
 
-    # TODO: define what to do with idv providers that do not return a report of clients data
-
     return 1;
 }
 
