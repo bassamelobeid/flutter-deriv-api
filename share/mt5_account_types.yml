@@ -373,13 +373,16 @@ real\p02_ts02\financial\svg_std-hr_usd: &real_p02ts02_svg_financial_financial
   server: p02_ts02
 real\p02_ts02\financial\svg_std_usd: *real_p02ts02_svg_financial_financial
 
-real\p01_ts01\financial\vanuatu_std-hr_usd:
+real\p01_ts01\financial\vanuatu_std-hr_usd: &real_p01ts01_vanuatu_financial_financial
   account_type: real
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
   server: p01_ts01
+real\p01_ts01\financial\vanuatu_std_usd: *real_p01ts01_vanuatu_financial_financial
+real\p01_ts01\financial\vanuatu_std-ab_usd: *real_p01ts01_vanuatu_financial_financial
+real\p01_ts01\financial\vanuatu_std-ba_usd: *real_p01ts01_vanuatu_financial_financial
 
 real\p01_ts01\financial\svg_std-ab_usd: &real_svg_financial_booking
   account_type: real
