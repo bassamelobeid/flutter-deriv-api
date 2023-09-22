@@ -263,10 +263,11 @@ subtest 'process_deposit' => sub {
     my $payload = {
         id           => 123,
         transactions => [{
-                address  => 'address1',
-                currency => 'USDTT',
-                txid     => 'tx_hash1',
-                amount   => 10
+                address       => 'address1',
+                currency      => 'USDTT',
+                txid          => 'tx_hash1',
+                amount        => 10,
+                confirmations => 2,
             }
         ],
         fees => [{
@@ -299,6 +300,7 @@ subtest 'process_deposit' => sub {
         currency         => 'tUSDT',
         hash             => 'tx_hash1',
         transaction_fee  => Math::BigFloat->new(10)->bsub(9.97)->bstr,
+        confirmations    => 2,
     };
 
     my $expected_result_1 = {
@@ -408,9 +410,10 @@ subtest 'process_withdrawal' => sub {
                 id           => 123,
                 foreign_id   => 4567,
                 transactions => [{
-                        address  => 'address1',
-                        currency => 'USDTT',
-                        txid     => 'tx_hash1',
+                        address       => 'address1',
+                        currency      => 'USDTT',
+                        txid          => 'tx_hash1',
+                        confirmations => 1,
                     }
                 ],
                 fees   => [{amount => .091}],
@@ -430,10 +433,11 @@ subtest 'process_withdrawal' => sub {
         id           => 123,
         foreign_id   => 4567,
         transactions => [{
-                address  => 'address1',
-                currency => 'USDTT',
-                txid     => 'tx_hash1',
-                amount   => 12
+                address       => 'address1',
+                currency      => 'USDTT',
+                txid          => 'tx_hash1',
+                amount        => 12,
+                confirmations => 1,
             }
         ],
         fees => [{
@@ -461,6 +465,7 @@ subtest 'process_withdrawal' => sub {
         currency        => 'tUSDT',
         hash            => 'tx_hash1',
         transaction_fee => 0.091,
+        confirmations   => 1,
     };
 
     my $expected_result = {
@@ -473,10 +478,11 @@ subtest 'process_withdrawal' => sub {
         id           => 1234,
         foreign_id   => 45678,
         transactions => [{
-                address  => 'address2',
-                currency => 'USDTT',
-                txid     => 'tx_hash2',
-                amount   => 12
+                address       => 'address2',
+                currency      => 'USDTT',
+                txid          => 'tx_hash2',
+                amount        => 12,
+                confirmations => 1,
             }
         ],
         fees => [{
@@ -500,6 +506,7 @@ subtest 'process_withdrawal' => sub {
         currency        => 'tUSDT',
         hash            => 'tx_hash2',
         transaction_fee => 0.099,
+        confirmations   => 1,
     };
 
     my $expected_result_2 = {

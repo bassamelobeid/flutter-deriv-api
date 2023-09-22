@@ -146,6 +146,8 @@ Receives the following named parameters in transaction hashref passed from every
 
 =item * C<transaction_fee>   - transaction fee
 
+=item * C<confirmations>     - transaction confirmations
+
 =back
 
 Return 1 if event emitted successfully otherwise 0
@@ -171,6 +173,7 @@ sub emit_deposit_event {
                 currency         => $transaction->{currency},
                 hash             => $transaction->{hash},
                 transaction_fee  => $transaction->{transaction_fee},
+                confirmations    => $transaction->{confirmations},
                 amount_minus_fee => $transaction->{amount_minus_fee},
             });
         die "event could not be emitter" unless $is_emitted;
@@ -210,6 +213,8 @@ Receives the following named parameters in transaction hashref passed from every
 
 =item * C<transaction_fee>   - transaction fee
 
+=item * C<confirmations>     - transaction confirmations
+
 =back
 
 Return 1 if event emitted successfully otherwise 0
@@ -236,6 +241,7 @@ sub emit_withdrawal_event {
                 currency        => $transaction->{currency},
                 hash            => $transaction->{hash},
                 transaction_fee => $transaction->{transaction_fee},
+                confirmations   => $transaction->{confirmations},
             });
         die "event could not be emitter" unless $is_emitted;
         stats_inc(DD_METRIC_PREFIX . 'withdrawal', {tags => ['currency:' . $transaction->{currency}, 'status:success', 'processor:' . $processor]});

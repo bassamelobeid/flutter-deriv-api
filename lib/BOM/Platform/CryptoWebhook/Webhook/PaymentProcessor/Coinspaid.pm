@@ -202,7 +202,8 @@ sub process_deposit {
             amount_minus_fee => $amount_minus_fee,
             currency         => $self->transform_currency($txn->{currency}),
             hash             => $txn->{txid},
-            transaction_fee  => $fee->bstr() // 0,                             #for pending transactions, fee is not returned from coinspaid
+            transaction_fee  => $fee->bstr()          // 0,    #for pending transactions, fee is not returned from coinspaid
+            confirmations    => $txn->{confirmations} // 0,
         };
 
         push @normalized_txns, $normalize_txn;
@@ -271,7 +272,8 @@ sub process_withdrawal {
             amount          => $txn->{amount},
             currency        => $self->transform_currency($txn->{currency}),
             hash            => $txn->{txid},
-            transaction_fee => $fee->{amount} // 0,
+            transaction_fee => $fee->{amount}        // 0,
+            confirmations   => $txn->{confirmations} // 0,
         };
 
         push @normalized_txns, $normalize_txn;
