@@ -242,9 +242,56 @@ subtest $rule_name => sub {
     $mock_client->unmock_all;
 };
 
+$rule_name = 'financial_asssessment.account_opening_validation';
 subtest $rule_name => sub {
-    my $rule_name = 'financial_asssessment.appropriateness_test';
+    my $rule_engine     = BOM::Rules::Engine->new(client => $client);
+    my $landing_company = 'maltainvest';
+    like
+        exception { $rule_engine->apply_rules($rule_name) },
+        qr/Client loginid is missing/,
+        "Correct error for empty args";
 
+    my %args = %financial_data_mf;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args, landing_company => $landing_company, loginid => $client->loginid) }
+    'Test passes for all sections';
+    delete $args{cfd_experience};
+
+    $args{account_type} = 'affiliate';
+    lives_ok { $rule_engine->apply_rules($rule_name, %args, landing_company => $landing_company, loginid => $client->loginid) }
+    'Client account type is affiliate';
+
+    $args{account_type} = 'doughlow';
+    is_deeply(
+        exception { $rule_engine->apply_rules($rule_name, %args, landing_company => $landing_company, loginid => $client->loginid) },
+        {
+            error_code => 'IncompleteFinancialAssessment',
+            rule       => $rule_name
+        },
+        "Test fail when there is a missing trading experience section"
+    );
+    delete $args{income_source};
+    is_deeply(
+        exception { $rule_engine->apply_rules($rule_name, %args, landing_company => $landing_company, loginid => $client->loginid) },
+        {
+            error_code => 'IncompleteFinancialAssessment',
+            rule       => $rule_name
+        },
+        "Test fail when there is a missing trading experience and financial information sections"
+    );
+    $args{cfd_experience} = "No experience";
+    is_deeply(
+        exception { $rule_engine->apply_rules($rule_name, %args, landing_company => $landing_company, loginid => $client->loginid) },
+        {
+            error_code => 'IncompleteFinancialAssessment',
+            rule       => $rule_name
+        },
+        "Test fail when there is a missing financial information sections"
+    );
+
+};
+
+$rule_name = 'financial_asssessment.appropriateness_test';
+subtest $rule_name => sub {
     my $engine_mf         = BOM::Rules::Engine->new(client => $client_mf);
     my @landing_companies = qw/svg maltainvest/;
     like

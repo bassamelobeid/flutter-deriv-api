@@ -53,6 +53,26 @@ rule 'financial_asssessment.completed' => {
     },
 };
 
+rule 'financial_asssessment.account_opening_validation' => {
+    description => "Checks financial assessment sections are fullfiled on account creation.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        # Affliates account_types bypass FA checks
+        return 1 if $args->{account_type} && $args->{account_type} eq 'affiliate';
+
+        my $is_section_complete_te =
+            BOM::User::FinancialAssessment::is_section_complete($args, 'trading_experience', $context->landing_company($args));
+        my $is_section_complete_fa =
+            BOM::User::FinancialAssessment::is_section_complete($args, 'financial_information', $context->landing_company($args));
+
+        $self->fail('IncompleteFinancialAssessment') unless $is_section_complete_te && $is_section_complete_fa;
+
+        return 1;
+    },
+};
+
 rule 'financial_asssessment.appropriateness_test' => {
     description => "Checks if the client have passed the appropriateness test question and by-pass if the user is not new.",
     code        => sub {

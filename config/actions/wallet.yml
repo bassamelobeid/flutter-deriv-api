@@ -31,6 +31,7 @@ new_wallet:
           - profile.no_pobox_in_address
         maltainvest:
           - profile.no_pobox_in_address
+          - financial_asssessment.account_opening_validation
           - financial_asssessment.appropriateness_test
           - profile.tax_information_is_mandatory
         iom: *from_eu

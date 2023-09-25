@@ -30,6 +30,7 @@ new_account:
           - profile.no_pobox_in_address
         maltainvest:
           - profile.no_pobox_in_address
+          - financial_asssessment.account_opening_validation
           - financial_asssessment.appropriateness_test
         iom: *from_eu
     - type: conditional
