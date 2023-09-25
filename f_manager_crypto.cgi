@@ -343,7 +343,7 @@ $actions->{withdrawals} = sub {
             type           => 'withdrawal',
             detail_level   => 'full',
             offset         => $offset,
-            sort_direction => 'DESC',
+            sort_direction => $view_type eq 'pending' ? 'ASC' : 'DESC',
         },
     };
 
