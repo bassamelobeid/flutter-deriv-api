@@ -11,6 +11,7 @@ use Path::Tiny;
 use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use Crypt::JWT      qw(decode_jwt);
+use Array::Utils    qw( intersect );
 
 use BOM::Config;
 
@@ -93,8 +94,8 @@ sub validate {
             my $provided = shift;
             # Audience so far seems to be an arrayref, but according to Crypt::JWT it normally expects a string - let's support both
             ref($provided)
-                ? (grep { $audience eq $_ } $provided->@*)
-                : ($audience eq $provided);
+                ? intersect(@$audience, @$provided)
+                : (grep { $provided eq $_ } $audience->@*);
         },
         # ... but don't check the subject (unique identifier for the person), because this will be different
         # for each person and we don't yet know who is signing in...

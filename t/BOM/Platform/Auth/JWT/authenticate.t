@@ -29,7 +29,7 @@ my $mock_issuer_details = {
     cloudflared => {
         issuer         => 'https://dummy.com',
         keys_path      => '/path/to/keys',
-        application_id => 'dsasadsaa',
+        application_id => ['dsasadsaa'],
     }};
 
 $config_mock->mock('third_party', $mock_issuer_details);
