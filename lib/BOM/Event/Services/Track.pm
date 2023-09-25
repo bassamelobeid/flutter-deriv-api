@@ -1139,24 +1139,25 @@ sub _send_track_request {
     # filter invalid or unknown properties out
     my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'loginid', 'lang', 'brand'];
     my $valid_properties       = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } @$valid_event_properties};
-    return
-        $customer->track
-        ( #send another event to rudderstack with 'track_prefix' due to https://wikijs.deriv.cloud/en/Backend/CustomerIO/Transactional-Emails#constant-data-analysis
-        event      => "track_$event",
-        properties => $valid_properties,
-        context    => $context,
-    )->then(
-        sub {
-            #chain it after track to avoid sending multiple emails in case of track event fail.
-            return _send_transactional_request(
-                customer   => $customer,
-                event      => $event,
-                properties => $valid_properties,
-                context    => $context,
-            );
-        })
-        if _is_transactional($event)
-        && BOM::Config::Runtime->instance->app_config->customerio->transactional_emails;
+
+    if (_is_transactional($event) && BOM::Config::Runtime->instance->app_config->customerio->transactional_emails) {
+        return
+            $customer->track
+            ( #send another event to rudderstack with 'track_prefix' due to https://wikijs.deriv.cloud/en/Backend/CustomerIO/Transactional-Emails#constant-data-analysis
+            event      => "track_$event",
+            properties => $valid_properties,
+            context    => $context,
+        )->then(
+            sub {
+                #chain it after track to avoid sending multiple emails in case of track event fail.
+                return _send_transactional_request(
+                    event      => $event,
+                    properties => $valid_properties,
+                    email      => $properties->{email},
+                    user_id    => $customer->user_id,
+                );
+            });
+    }
 
     return $customer->track(
         event      => $event,
@@ -1173,13 +1174,13 @@ It is called with the following parameters:
 
 =over
 
-=item * C<customer> - Customer object, traits are not needed.
-
 =item * C<properties> - Free-form dictionary of event properties.
 
-=item * C<event> - The event name that will be sent to the Segment.
+=item * C<event> - The event name that will be sent to the CustomerIO.
 
-=item * C<context> - Request context.
+=item * C<email> - The user email address we are sending this email to.
+
+=item * C<user_id> - The user Id which identify him on CustomerIO. (i.e binary_user_id)
 
 =back
 
@@ -1189,12 +1190,12 @@ sub _send_transactional_request {
     my %args  = @_;
     my $cio   = $services->customerio // die 'Could not load cio';
     my $event = $transactional_mapper->get_event({%args});
-    return Future->fail("No match found for tranasactional Event $args{event} in mapper config.") unless $event;
+    return Future->fail("No match found for transactional Event $args{event} in mapper config.") unless $event;
     my $data = {
         transactional_message_id => $event,
         message_data             => $args{properties},
-        to                       => $args{properties}->{email},
-        identifiers              => {id => $args{customer}->user_id}};
+        to                       => $args{email},
+        identifiers              => {id => $args{user_id}}};
 
     my $tags = ["event:$args{event}"];
     return $cio->send_transactional($data)->then(

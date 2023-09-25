@@ -725,7 +725,7 @@ subtest 'General event validation - filtering by brand' => sub {
                 event => 'request_change_email',
                 $args->%*
             )->get
-        }, qr{No match found for tranasactional Event};
+        }, qr{No match found for transactional Event};
     };
 };
 
