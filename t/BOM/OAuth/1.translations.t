@@ -84,26 +84,26 @@ $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';
 
-$t = callPost($t, "", $password, $csrf_token, "ID");
-$t = $t->content_like(qr/Email belum diberikan./, "no email ID");
+$t = callPost($t, "", $password, $csrf_token, "RU");
+$t = $t->content_like(qr/Не предоставлен эл.адрес./, "no email ID");
 
-$t = callPost($t, $email, "", $csrf_token, "ID");
-$t = $t->content_like(qr/Kata sandi tidak diberikan./, "no password ID");
+$t = callPost($t, $email, "", $csrf_token, "RU");
+$t = $t->content_like(qr/Не указан пароль./, "no password ID");
 
-$t = callPost($t, $email . "invalid", $password, $csrf_token, "ID");
-$t = $t->content_like(qr#Email dan/atau kata sandi Anda tidak benar. Mungkin Anda mendaftar menggunakan akun sosial#, "invalid login or password ID");
+$t = callPost($t, $email . "invalid", $password, $csrf_token, "RU");
+$t = $t->content_like(qr#Неправильный email и/или пароль. Возможно, вы заходили через аккаунт в соц.сетях#, "invalid login or password ID");
 
 $user->update_has_social_signup(1);
 
-$t = callPost($t, $email, $password, $csrf_token, "ID");
-$t = $t->content_like(qr#Email dan/atau kata sandi Anda tidak benar. Mungkin Anda mendaftar menggunakan akun sosial#, "invalid social login ID");
+$t = callPost($t, $email, $password, $csrf_token, "RU");
+$t = $t->content_like(qr#Неправильный email и/или пароль. Возможно, вы заходили через аккаунт в соц.сетях#, "invalid social login ID");
 
 $user->update_has_social_signup(0);
 
 BOM::Config::Runtime->instance->app_config->system->suspend->all_logins(1);
 
-$t = callPost($t, $email, $password, $csrf_token, "ID");
-$t = $t->content_like(qr/Maaf, Transfer Agen Pembayaran dihentikan untuk sementara berhubung perbaikan sistem. Silahkan coba kembali 30 menit lagi./,
+$t = callPost($t, $email, $password, $csrf_token, "RU");
+$t = $t->content_like(qr/Вход на этот счет временно недоступен из-за технического обслуживания системы. Повторите попытку через 30 минут./,
     "temp disabled ID");
 
 BOM::Config::Runtime->instance->app_config->system->suspend->all_logins(0);
@@ -135,21 +135,21 @@ $emitter_mock->mock(
 
 $redis->del("CLIENT_LOGIN_HISTORY::" . $user->id);
 
-$t = callPost($t, $email, $password, $csrf_token, "ID");
+$t = callPost($t, $email, $password, $csrf_token, "RU");
 
 is $events->{unknown_login}->{event}, 'unknown_login', 'send_email has correct event name';
 
 cmp_deeply $events->{unknown_login}->{properties},
     {
     device                    => '',
-    lang                      => 'id',
+    lang                      => 'ru',
     app_name                  => 'Test App',
     is_reset_password_allowed => 0,
     country                   => 'Antarctica',
-    title                     => 'Pengaksesan perangkat baru',
+    title                     => 'Вход с нового устройства',
     ip                        => '127.0.0.1',
     browser                   => undef,
-    password_reset_url        => 'https://www.binary.com/id/user/lost_passwordws.html',
+    password_reset_url        => 'https://www.binary.com/ru/user/lost_passwordws.html',
     first_name                => $client_cr->first_name,
     },
     'expected event properties';
