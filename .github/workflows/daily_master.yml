@@ -1,6 +1,7 @@
 name: Daily master test
 run-name: Daily test on master branch
 on:
+  workflow_dispatch:
   schedule:
     - cron: '8 20 * * *'
 jobs:
