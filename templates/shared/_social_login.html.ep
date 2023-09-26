@@ -3,23 +3,24 @@
     <link href="https://static.deriv.app/css/oneall-deriv.css" type="text/css" rel="stylesheet" />
     <style>
         .providers_row {
-            width: 100%;
             display: flex;
             justify-content: space-between;
             align-content: center;
             flex-direction: column;
+            gap: 0.8rem;
         }
         .provider a.button {
             height: 38px;
         }
-        .provider{
-            margin: 5px;
-        }
         .account-text {
-            margin-top: 10px;
+            margin-top: 17px;
         }
         p.error-oneall {
             margin-top: 0;
+        }
+        .social_login_providers {
+            margin: 1.6rem auto;
+            width: 100%;
         }
     </style>
     <div class="separator">
@@ -32,11 +33,8 @@
         <% if($social_login_links->{$p_name}) { %>
             <div class="provider" id="provider_<%== $p_name%>">
                 <a class="button" id="button_<%== $p_name%>" href="<%== $social_login_links->{$p_name} %>" rel="nofollow" title="Login with <%== $p_name%>" role="button" aria-label="Login with <%== $p_name%>" aria-haspopup="true">
-                    <span class="login_with_name" >
-                        Login with <%== ucfirst($p_name) %>
-                    </span>
+                    <div class="name" id="name_<%== $p_name %>"><%== ucfirst($p_name) %></div>
                 </a>
-                <div class="name" id="name_<%== $p_name %>"><%== ucfirst($p_name) %></div>
             </div>
         <%}%>
     <%}%>
