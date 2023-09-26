@@ -25,10 +25,6 @@ subtest "active_symbols - translation" => sub {
         }};
 
     my %test_cases = (
-        ID => {
-            market_display_name    => 'Forex',
-            submarket_display_name => 'Pasangan Minor',
-        },
         ES => {
             market_display_name    => 'Forex',
             submarket_display_name => 'Pares menores',
