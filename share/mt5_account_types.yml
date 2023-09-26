@@ -666,3 +666,65 @@ demo\p01_ts03\all\svg_std-sf_usd:
   sub_account_type: standard
   sub_account_category: swap_free
   server: p01_ts03
+
+# MT5 Platform 3 Groups
+
+real\p03_ts01\synthetic\svg_std-hr_usd\01: &real_p03_ts01_svg_synthetic_financial
+  account_type: real
+  landing_company_short: svg
+  market_type: synthetic
+  sub_account_type: financial
+  sub_account_category: ''
+  server: p03_ts01
+real\p03_ts01\synthetic\svg_std_usd\01: *real_p03_ts01_svg_synthetic_financial
+real\p03_ts01\synthetic\svg_std_usd\02: *real_p03_ts01_svg_synthetic_financial
+real\p03_ts01\synthetic\svg_std_usd\03: *real_p03_ts01_svg_synthetic_financial
+real\p03_ts01\synthetic\svg_std_usd\04: *real_p03_ts01_svg_synthetic_financial
+
+real\p03_ts01\synthetic\bvi_std_usd: &real_p03_ts01_bvi_synthetic_financial
+  account_type: real
+  landing_company_short: bvi
+  market_type: synthetic
+  sub_account_type: financial
+  sub_account_category: ''
+  server: p03_ts01
+real\p03_ts01\synthetic\bvi_std-hr_usd: *real_p03_ts01_bvi_synthetic_financial
+
+real\p03_ts01\synthetic\vanuatu_std_usd: &real_p03_ts01_vanuatu_synthetic_financial
+  account_type: real
+  landing_company_short: vanuatu
+  market_type: synthetic
+  sub_account_type: financial
+  sub_account_category: ''
+  server: p03_ts01
+real\p03_ts01\synthetic\vanuatu_std-hr_usd: *real_p03_ts01_vanuatu_synthetic_financial
+
+real\p03_ts02\synthetic\svg_std-hr_usd\01: &real_p03_ts02_svg_synthetic_financial
+  account_type: real
+  landing_company_short: svg
+  market_type: synthetic
+  sub_account_type: financial
+  sub_account_category: ''
+  server: p03_ts02
+real\p03_ts02\synthetic\svg_std_usd\01: *real_p03_ts02_svg_synthetic_financial
+real\p03_ts02\synthetic\svg_std_usd\02: *real_p03_ts02_svg_synthetic_financial
+real\p03_ts02\synthetic\svg_std_usd\03: *real_p03_ts02_svg_synthetic_financial
+real\p03_ts02\synthetic\svg_std_usd\04: *real_p03_ts02_svg_synthetic_financial
+
+real\p03_ts02\synthetic\bvi_std_usd: &real_p03_ts02_bvi_synthetic_financial
+  account_type: real
+  landing_company_short: bvi
+  market_type: synthetic
+  sub_account_type: financial
+  sub_account_category: ''
+  server: p03_ts02
+real\p03_ts02\synthetic\bvi_std-hr_usd: *real_p03_ts02_bvi_synthetic_financial
+
+real\p03_ts02\synthetic\vanuatu_std_usd: &real_p03_ts02_vanuatu_synthetic_financial
+  account_type: real
+  landing_company_short: vanuatu
+  market_type: synthetic
+  sub_account_type: financial
+  sub_account_category: ''
+  server: p03_ts02
+real\p03_ts02\synthetic\vanuatu_std-hr_usd: *real_p03_ts02_vanuatu_synthetic_financial

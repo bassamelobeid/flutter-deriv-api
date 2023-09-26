@@ -520,7 +520,7 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 103,
+            count   => 121,
             comment => 'real groups'
         },
         {
@@ -533,7 +533,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'svg'
             },
-            count   => 45,
+            count   => 55,
             comment => 'real svg groups'
         },
         {
@@ -551,7 +551,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'synthetic'
             },
-            count   => 25,
+            count   => 35,
             comment => 'real svg synthetic groups'
         },
         {
@@ -747,7 +747,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'bvi'
             },
-            count   => 19,
+            count   => 23,
             comment => 'real bvi groups'
         },
         {
@@ -765,7 +765,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'synthetic'
             },
-            count   => 10,
+            count   => 14,
             comment => 'real bvi synthetic groups'
         },
         {
@@ -800,7 +800,7 @@ subtest 'available_groups' => sub {
                 company     => 'vanuatu'
             },
             allow_multiple_subgroups => 1,
-            count                    => 14,
+            count                    => 18,
             comment                  => 'real vanuatu groups'
         },
         {
@@ -819,7 +819,7 @@ subtest 'available_groups' => sub {
                 company     => 'vanuatu',
                 market_type => 'synthetic'
             },
-            count   => 10,
+            count   => 14,
             comment => 'real vanuatu synthetic groups'
         },
         {
