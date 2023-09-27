@@ -6,7 +6,7 @@ use MIME::Base64 qw(encode_base64 decode_base64);
 use JSON::MaybeXS;    #Using `JSON::MaybeXS` to maintain order of the result string.
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(request_details_string exception_string);
+our @EXPORT_OK = qw(request_details_string exception_string social_login_callback_base);
 
 =head2 extract_brand_from_params
 
@@ -51,7 +51,11 @@ sub setup_social_login {
     my $service = BOM::OAuth::SocialLoginClient->new(
         host => $config->{social_login}->{host},
         port => $config->{social_login}->{port});
-    my $providers = $service->get_providers;
+
+    #wrapping the url because $c->req->url->host is undef!
+    my $current_domain = Mojo::URL->new($c->req->url->to_abs)->host;
+
+    my $providers = $service->get_providers(social_login_callback_base($current_domain));
     die $providers unless ref $providers;
 
     my $links;
@@ -152,6 +156,23 @@ sub exception_string {
     }
 
     return "Unknown Error";
+}
+
+=head2 social_login_callback_base
+
+generates the social login callback base url for the given domain.
+
+=over 4
+
+=item * C<domain> a string of the domain the request is coming from.
+
+=back
+
+=cut
+
+sub social_login_callback_base {
+    my $domain = shift;
+    return "https://$domain/oauth2/social-login/callback";
 }
 
 1;

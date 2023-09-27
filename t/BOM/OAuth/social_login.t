@@ -196,7 +196,7 @@ subtest 'redirect scenaions' => sub {
     my $test_data;
     $mock_sls->mock(
         'retrieve_user_info' => sub {
-            my ($sls, $exchage_params) = @_;
+            my ($sls, $base_url, $exchage_params) = @_;
             return {
                 email    => $test_data->{email},
                 provider => $test_data->{provider}};
@@ -391,6 +391,23 @@ subtest 'invalid response from social login service' => sub {
     $res = $t->get_ok("/social-login/callback/$test_data->{provider}?code=$test_data->{code}&state=$test_data->{state}");
     $res->status_is(302)->header_like('location' => qr{\/oauth2\/authorize\?app_id\=$app_id\&brand\=$test_data->{brand}});
     is $sessions_hash->{social_error}, localize(get_message_mapping()->{NO_AUTHENTICATION}), 'correct social error for NO_AUTHENTICATION';
+};
+
+subtest 'multi domain support' => sub {
+    $use_oneall = 0;
+    my (@sls_providers_params, @sls_user_info_params);
+    $mock_sls->mock(
+        'get_providers' => sub {
+            @sls_providers_params = @_;
+        },
+        'retrieve_user_info' => sub {
+            @sls_user_info_params = @_;
+        });
+    $t->get_ok("/authorize?app_id=$app_id");
+    like $sls_providers_params[1], qr{127.0.0.1}, 'base url is correct in providers request';
+
+    $t->get_ok("/social-login/callback/provider?code=123&state=123");
+    like $sls_user_info_params[1], qr{127.0.0.1}, 'base url is correct in user info request';
 };
 
 #Helper functions

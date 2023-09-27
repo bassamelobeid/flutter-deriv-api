@@ -5,7 +5,7 @@ use warnings;
 use Log::Any qw( $log );
 use Mojo::Base 'Mojolicious::Controller';
 use Syntax::Keyword::Try;
-use BOM::OAuth::Helper         qw(request_details_string exception_string);
+use BOM::OAuth::Helper         qw(request_details_string exception_string social_login_callback_base);
 use BOM::OAuth::Static         qw( get_message_mapping );
 use BOM::Platform::Context     qw( localize );
 use DataDog::DogStatsd::Helper qw( stats_inc );
@@ -331,7 +331,10 @@ sub _retrieve_user_info {
     my $service         = BOM::OAuth::SocialLoginClient->new(
         host => $config->{social_login}->{host},
         port => $config->{social_login}->{port});
-    my $user_response = $service->retrieve_user_info($exchange_params);
+    #wrapping the url because $c->req->url->host is undef!
+    my $current_domain = Mojo::URL->new($c->req->url->to_abs)->host;
+
+    my $user_response = $service->retrieve_user_info(social_login_callback_base($current_domain), $exchange_params);
     return $user_response;
 }
 

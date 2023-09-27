@@ -42,7 +42,7 @@ sends the request to social login serivce, parse the response and return:
 method api_call ($method, $path, $payload = undef) {
 
     my $full_path = ($port ? "$host:$port" : $host) . "/social-login$path";
-    $full_path = "http://$full_path" unless $full_path =~ /http/;
+    $full_path = "http://$full_path" unless $full_path =~ /^http/;
     try {
 
         my @args = ($method, $full_path);
@@ -68,13 +68,20 @@ method api_call ($method, $path, $payload = undef) {
 
 =head2 get_providers
 
-retreive a list of providers info from the service.
+retrieve a list of providers info from the service.
 return an arrayref of result or error string. 
+
+=over 4
+
+=item * C<base_redirect_url> - The base redirect url based on the domain the service hosted in.
+
+=back
 
 =cut
 
-method get_providers {
-    my $path   = "/providers";
+method get_providers ($base_redirect_url) {
+
+    my $path   = "/providers?base_redirect_url=$base_redirect_url";
     my $method = "GET";
 
     my $result = $self->api_call($method, $path);
@@ -95,11 +102,19 @@ method get_providers {
 the function will send request with cookie and providers params
 returns the user email and provider data
 
+=over 4
+
+=item * C<base_redirect_url> - The base redirect url based on the domain the service hosted in.
+
+=back
+
 =cut
 
 method retrieve_user_info {
-    my $params = shift;
-    my $path   = "/exchange";
+    my $base_redirect_url = shift;
+    my $params            = shift;
+
+    my $path   = "/exchange?base_redirect_url=$base_redirect_url";
     my $method = "POST";
 
     my $response = $self->api_call($method, $path, $params);
