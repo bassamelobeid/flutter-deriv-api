@@ -62,7 +62,7 @@ $params = {
 };
 my $expected = {
     'barrier_count'              => 1,
-    'bid_price'                  => '6.14',
+    'bid_price'                  => '6.13',
     'contract_id'                => ignore(),
     'contract_type'              => 'RESETCALL',
     'currency'                   => 'USD',

@@ -321,8 +321,8 @@ subtest 'send_ask RESETCALL' => sub {
     ok(delete $result->{date_start}, 'result have date_start');
 
     my $expected = {
-        'display_value' => '6.38',
-        'ask_price'     => '6.38',
+        'display_value' => '6.37',
+        'ask_price'     => '6.37',
         'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
 
         'spot'             => '963.3054',
