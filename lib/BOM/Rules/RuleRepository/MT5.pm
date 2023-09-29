@@ -73,17 +73,13 @@ rule 'mt5_account.account_poa_status_allowed' => {
 
         my $current_datetime = Date::Utility->new(Date::Utility->new->datetime);
 
-        # this if seems dubious (repeated from some lines above)
-        if (defined $mt5_id and exists $loginid_details{$mt5_id}) {
-            return 1 unless defined $loginid_details{$mt5_id}->{attributes}->{group};
-            ($mt5_jurisdiction) = $loginid_details{$mt5_id}->{attributes}->{group} =~ m/(bvi|vanuatu)/g;
-        }
+        $self->fail($error_message, params => {mt5_status => 'poa_outdated'}) if $poa_status eq 'expired' and $client->risk_level_aml eq 'high';
 
         foreach my $mt5_account_id (@mt5_accounts) {
             my $mt5_account = $loginid_details{$mt5_account_id};
-            return 1 if not defined $mt5_account->{status};
+            return 1 if not defined $mt5_account->{status} and $poa_status eq 'verified';
 
-            return 1 if $mt5_account->{status} eq 'poa_outdated' and $client->risk_level_aml ne 'high';
+            return 1 if ($mt5_account->{status} // 'active') eq 'poa_outdated' and $client->risk_level_aml ne 'high';
 
             # look back for authentication updates (might have been outdated, etc)
             my $mt5_creation_datetime = Date::Utility->new($mt5_account->{creation_stamp});
@@ -91,8 +87,6 @@ rule 'mt5_account.account_poa_status_allowed' => {
             my $poa_failed_by_expiry  = $days_elapsed <= JURISDICTION_DAYS_LIMIT()->{$mt5_jurisdiction} ? 0 : 1;
             $self->fail($error_message, params => {mt5_status => 'poa_failed'}) if $poa_failed_by_expiry;
         }
-
-        $self->fail($error_message, params => {mt5_status => 'poa_outdated'}) if $poa_status eq 'expired' and $client->risk_level_aml eq 'high';
 
         my $poi_status = $client->get_poi_status_jurisdiction({landing_company => $mt5_jurisdiction});
         $self->fail($error_message, params => {mt5_status => 'poa_pending'}) if $poi_status eq 'verified';

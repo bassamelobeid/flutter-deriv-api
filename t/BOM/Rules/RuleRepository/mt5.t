@@ -881,8 +881,15 @@ subtest 'Vanuatu + IDV' => sub {
 
         $idv_status = 'verified';
 
-        cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
-            undef, "Vanuatu existing account, POA is pending, IDV verified");
+        cmp_deeply(
+            exception { $rule_engine->apply_rules('mt5_account.account_poa_status_allowed', $args->%*) },
+            {
+                error_code => 'POAVerificationFailed',
+                rule       => 'mt5_account.account_poa_status_allowed',
+                params     => {mt5_status => 'poa_pending'}
+            },
+            "Vanuatu existing account, POA is pending, IDV verified"
+        );
 
         cmp_deeply(exception { $rule_engine->apply_rules('mt5_account.account_proof_status_allowed', $args->%*) },
             undef, "Vanuatu existing account, POA is pending, IDV verified");
