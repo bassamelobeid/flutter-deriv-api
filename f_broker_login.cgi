@@ -426,7 +426,11 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
             </div>
 
         </div>
-    </div>
+    </div>~;
+}
+
+if (BOM::Backoffice::Auth0::has_authorisation(['Quants', 'Compliance'])) {
+    print qq~
     <div class="card">
         <div class="card__label toggle">
             CFD Account Management 

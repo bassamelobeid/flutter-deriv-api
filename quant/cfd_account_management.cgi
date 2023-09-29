@@ -7,6 +7,8 @@ use warnings;
 
 use Date::Utility;
 use HTML::Entities;
+use Text::CSV;
+use CGI;
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -93,6 +95,49 @@ if ($input{action} and $input{action} eq 'archive_MT5_accounts') {
     code_exit_BO();
 }
 
+if ($input{action} and $input{action} eq 'jurisdiction_MT5_accounts_status_resync') {
+    my $client_loginids_input = $input{client_loginids_input};
+    $client_loginids_input =~ s/\s+//g;
+    my @client_loginids = split(',', uc($client_loginids_input || ''));
+
+    # read the csv uploaded that reference by client_loginids_csv, process each row of data inside and save it to @client_loginids without including header
+    if ($input{client_loginids_csv}) {
+        my $csv  = Text::CSV->new();
+        my $file = $cgi->upload('client_loginids_csv');
+        $csv = Text::CSV->new();
+        my $lines = $csv->getline_all($file);
+        shift @$lines;
+        foreach my $line (@$lines) {
+            push @client_loginids, $line->[0];
+        }
+
+        close $file;
+    }
+
+    unless (@client_loginids) {
+        go_back({message => 'No Client Loginids Found!', error => 1});
+        code_exit_BO();
+    }
+
+    @client_loginids = uniq(@client_loginids);
+
+    foreach my $client_loginid (@client_loginids) {
+        BOM::Platform::Event::Emitter::emit('sync_mt5_accounts_status', {client_loginid => $client_loginid});
+    }
+
+    my $msg =
+          Date::Utility->new->datetime
+        . "Client MT5 accounts jurisdiction resync "
+        . join(', ', @client_loginids)
+        . " requested by clerk=$staff $ENV{REMOTE_ADDR}";
+    BOM::User::AuditLog::log($msg, undef, $staff);
+
+    Bar('Client MT5 Accounts Jurisdiction Status Re-Synchronization');
+    my $display_msg = "Successfully requested Client MT5 Accounts Jurisdiction Status Re-Synchronization.";
+    go_back({message => $display_msg});
+    code_exit_BO();
+}
+
 Bar("Restore MT5 Account and Sync Status", {nav_link => "Restore Archived MT5 Account"});
 print qq~
     <p>MT5 archived accounts to restore and sync database status to active: </p>
@@ -115,6 +160,41 @@ print qq~
             <input type="text" size="60" name="mt5_accounts_input" placeholder="[Example: MTR123456, MTR654321] (comma separate accounts)" data-lpignore="true" maxlength="500" required/>
         </div>
         <input type="submit" class="btn btn--primary" value="Archive MT5 Accounts">
+    </form>~;
+
+Bar("Client MT5 Accounts Jurisdiction Status Re-Synchronization", {nav_link => "MT5 Jurisdiction Status Re-Syncronization"});
+print qq~
+    <p>Client loginid to synchronize linked MT5 account: </p>
+    <form action="~ . request()->url_for('backoffice/quant/cfd_account_management.cgi') . qq~" method='POST' enctype='multipart/form-data'>
+        <input type="hidden" name="action" value="jurisdiction_MT5_accounts_status_resync">
+        <div class="row">
+            <label>Client to Process:</label>
+            <input type="text" size="60" name="client_loginids_input" placeholder="[Example: CR123456, CR654321] (comma separate accounts)" data-lpignore="true" maxlength="500"/>
+        </div>
+        <div class="row">
+        <label>CSV option available. Format required as shown below:</label>
+        </div>
+        <div class="row">
+        <table>
+            <thead>
+                <tr>
+                    <th style="text-transform: none;">client_loginid</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CR12345</td>
+                </tr>
+                <tr>
+                    <td>CR23456</td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+        <div class="row">
+        <label>Upload CSV:</label><input type="file" name="client_loginids_csv" />
+        </div>
+        <input type="submit" class="btn btn--primary" value="Resync MT5 Accounts Jurisdiction Status">
     </form>~;
 
 code_exit_BO();
