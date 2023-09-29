@@ -63,6 +63,7 @@ my %event_stream_mapping = (
     affiliate_loginids_sync             => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
     derivez_inactive_account_closed     => 'BULK_EVENTS_STREAM',
     derivez_inactive_notification       => 'BULK_EVENTS_STREAM',
+    monolith_hello                      => 'NODEJS_STREAM',
 );
 
 my $config = LoadFile('/etc/rmg/redis-events.yml');
