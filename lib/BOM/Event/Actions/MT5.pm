@@ -1504,25 +1504,17 @@ Update the loginid.status of mt5 accounts in users DB based on POI and POA.
 
 =over 4
 
-=item * C<binary_user_id> - user's binary user id
+=item * C<client_loginid> - Client intance's loginid
 
 =back
 
 =cut
 
 async sub sync_mt5_accounts_status {
-    my $args           = shift;
-    my $binary_user_id = $args->{binary_user_id} // undef;
-    my $user           = BOM::User->new((id => $binary_user_id));
-    my $default_client = $user ? $user->get_default_client : undef;
-    my $client;
-    $client = BOM::User::Client->new({loginid => $args->{client_loginid}}) if $args->{client_loginid};
-    $client = $default_client unless $client;
-    $log->debugf("No default client found for %s", $binary_user_id) unless $default_client;
-
-    die 'Must provide binary_user_id' unless $args->{binary_user_id};
-    die 'User not found'              unless $user;
-    die 'Client not found'            unless $client;
+    my $args = shift;
+    die 'Must provide client_loginid' unless $args->{client_loginid};
+    my $client = BOM::User::Client->new({loginid => $args->{client_loginid}}) // die 'Client not found';
+    my $user   = $client->user                                                // die 'User not found';
 
     my $loginid_details = $user->loginid_details;
 
@@ -1541,8 +1533,8 @@ async sub sync_mt5_accounts_status {
         # removals from whatever reason, it should be responsibility of the invoker if the
         # client should have been checked imho anyway
         next
-            if defined $loginid_data->{status} && none { $loginid_data->{status} eq $_ }
-            ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated');
+            if none { ($loginid_data->{status} // 'active') eq $_ }
+            ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', 'active');
 
         push $jurisdiction_mt5_accounts{$mt5_jurisdiction}->@*, $loginid;
     }

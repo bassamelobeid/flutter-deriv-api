@@ -1834,6 +1834,25 @@ subtest 'sync mt5 accounts status' => sub {
         },
     };
 
+    my $sample_bvi_mt5_active = {
+        MTR1001018 => {
+            account_type => "real",
+            attributes   => {
+                account_type    => "real",
+                currency        => "USD",
+                group           => "real\\p01_ts01\\financial\\bvi_std_usd",
+                landing_company => "svg",
+                leverage        => 300,
+                market_type     => "financial",
+            },
+            creation_stamp => "2018-02-14 07:13:52.94334",
+            currency       => "USD",
+            loginid        => "MTR1001018",
+            platform       => "mt5",
+            status         => undef,
+        },
+    };
+
     my $sample_vanuatu_mt5 = {
         MTR1001020 => {
             account_type => "real",
@@ -1910,6 +1929,12 @@ subtest 'sync mt5 accounts status' => sub {
         });
 
     my %bom_user_client_mock = (
+        new => sub {
+            $mocked_user_client->mock('new', shift // sub { bless $sample_bom_user_client, 'BOM::User::Client' });
+        },
+        user => sub {
+            $mocked_user_client->mock('user', shift // sub { bless $sample_bom_user, 'BOM::User' });
+        },
         get_poi_status => sub {
             $mocked_user_client->mock('get_poi_status_jurisdiction', shift // sub { return 'verified'; });
         },
@@ -1922,6 +1947,8 @@ subtest 'sync mt5 accounts status' => sub {
         $bom_user_mock{get_default_client}->();
         $bom_user_mock{loginid_details}->();
         $bom_user_mock{update_loginid_status}->();
+        $bom_user_client_mock{new}->();
+        $bom_user_client_mock{user}->();
         $bom_user_client_mock{get_poi_status}->();
         $bom_user_client_mock{get_poa_status}->();
     };
@@ -1931,7 +1958,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'BVI Account POI Verified Subcases' => sub {
             subtest 'BVI Account - POI and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -1945,7 +1972,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI verified and POA pending (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -1961,7 +1988,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI verified and POA rejected (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -1977,7 +2004,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI verified and POA pending (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -1998,7 +2025,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI verified and POA rejected (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2021,7 +2048,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'BVI Account POI Pending Subcases' => sub {
             subtest 'BVI Account - POI and POA pending (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2037,7 +2064,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI pending and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2053,7 +2080,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI pending and POA rejected (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2069,7 +2096,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI pending and POA pending (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2084,13 +2111,13 @@ subtest 'sync mt5 accounts status' => sub {
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
-                is_deeply $result->{processed_mt5},  {bvi => ["MTR1001017"]}, 'Correct mt5 processed';
-                is_deeply $result->{updated_status}, {bvi => 'poa_failed'},   'Updated status is poa_failed';
+                is_deeply $result->{processed_mt5},  {bvi => ["MTR1001017"]},         'Correct mt5 processed';
+                is_deeply $result->{updated_status}, {bvi => 'verification_pending'}, 'Updated status is verification_pending';
             };
 
             subtest 'BVI Account - POI pending and POA rejected (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2105,15 +2132,15 @@ subtest 'sync mt5 accounts status' => sub {
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
-                is_deeply $result->{processed_mt5},  {bvi => ["MTR1001017"]}, 'Correct mt5 processed';
-                is_deeply $result->{updated_status}, {bvi => 'poa_failed'},   'Updated status is poa_failed';
+                is_deeply $result->{processed_mt5},  {bvi => ["MTR1001017"]},         'Correct mt5 processed';
+                is_deeply $result->{updated_status}, {bvi => 'verification_pending'}, 'Updated status is verification_pending';
             };
         };
 
         subtest 'BVI Account POI Rejected Subcases' => sub {
             subtest 'BVI Account - POI and POA rejected (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2129,7 +2156,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI rejected and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2145,7 +2172,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI rejected and POA pending (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2161,7 +2188,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'BVI Account - POI rejected and POA pending (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2177,12 +2204,12 @@ subtest 'sync mt5 accounts status' => sub {
 
                 my $result = $action_get->($args);
                 is_deeply $result->{processed_mt5},  {bvi => ["MTR1001017"]}, 'Correct mt5 processed';
-                is_deeply $result->{updated_status}, {bvi => 'poa_failed'},   'Updated status is poa_failed';
+                is_deeply $result->{updated_status}, {bvi => 'proof_failed'}, 'Updated status is proof_failed';
             };
 
             subtest 'BVI Account - POI rejected and POA rejected (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2198,8 +2225,79 @@ subtest 'sync mt5 accounts status' => sub {
 
                 my $result = $action_get->($args);
                 is_deeply $result->{processed_mt5},  {bvi => ["MTR1001017"]}, 'Correct mt5 processed';
-                is_deeply $result->{updated_status}, {bvi => 'poa_failed'},   'Updated status is poa_failed';
+                is_deeply $result->{updated_status}, {bvi => 'proof_failed'}, 'Updated status is proof_failed';
             };
+        };
+
+        subtest 'BVI Account - POI verified and POA pending (past grace period) with update to existing active bvi' => sub {
+            my $args = {
+                client_loginid => 1,
+            };
+
+            $sync_mt5_mock_set->();
+
+            my %expire_bvi_mt5 = %$sample_bvi_mt5;
+            $expire_bvi_mt5{MTR1001017}                   = {%{$sample_bvi_mt5->{MTR1001017}}};
+            $expire_bvi_mt5{MTR1001018}                   = {%{$sample_bvi_mt5_active->{MTR1001018}}};
+            $expire_bvi_mt5{MTR1001017}->{creation_stamp} = "2018-02-4 07:13:52.94334";
+            $expire_bvi_mt5{MTR1001018}->{creation_stamp} = "2018-02-4 07:13:52.94334";
+            my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
+
+            $bom_user_mock{loginid_details}->(sub { $loginid_data });
+            $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
+            $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
+
+            my $result = $action_get->($args);
+            cmp_deeply $result->{processed_mt5}, {bvi => bag("MTR1001017", "MTR1001018")}, 'Correct mt5 processed';
+            is_deeply $result->{updated_status}, {bvi => 'poa_failed'}, 'Updated status is poa_failed';
+        };
+
+        subtest 'BVI Account - POI verified and POA pending (past grace period) with update to only active bvi' => sub {
+            my $args = {
+                client_loginid => 1,
+            };
+
+            $sync_mt5_mock_set->();
+
+            my %expire_bvi_mt5 = %$sample_bvi_mt5;
+            $expire_bvi_mt5{MTR1001017}                   = {%{$sample_bvi_mt5->{MTR1001017}}};
+            $expire_bvi_mt5{MTR1001017}->{status}         = undef;
+            $expire_bvi_mt5{MTR1001018}                   = {%{$sample_bvi_mt5_active->{MTR1001018}}};
+            $expire_bvi_mt5{MTR1001017}->{creation_stamp} = "2018-02-4 07:13:52.94334";
+            $expire_bvi_mt5{MTR1001018}->{creation_stamp} = "2018-02-4 07:13:52.94334";
+            my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
+
+            $bom_user_mock{loginid_details}->(sub { $loginid_data });
+            $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
+            $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
+
+            my $result = $action_get->($args);
+            cmp_deeply $result->{processed_mt5}, {bvi => bag("MTR1001017", "MTR1001018")}, 'Correct mt5 processed';
+            is_deeply $result->{updated_status}, {bvi => 'poa_failed'}, 'Updated status is poa_failed';
+        };
+
+        subtest 'BVI Account - POI verified and POA pending (past grace period) with no update to archived bvi' => sub {
+            my $args = {
+                client_loginid => 1,
+            };
+
+            $sync_mt5_mock_set->();
+
+            my %expire_bvi_mt5 = %$sample_bvi_mt5;
+            $expire_bvi_mt5{MTR1001017}                   = {%{$sample_bvi_mt5->{MTR1001017}}};
+            $expire_bvi_mt5{MTR1001017}->{status}         = 'archived';
+            $expire_bvi_mt5{MTR1001018}                   = {%{$sample_bvi_mt5_active->{MTR1001018}}};
+            $expire_bvi_mt5{MTR1001017}->{creation_stamp} = "2018-02-4 07:13:52.94334";
+            $expire_bvi_mt5{MTR1001018}->{creation_stamp} = "2018-02-4 07:13:52.94334";
+            my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
+
+            $bom_user_mock{loginid_details}->(sub { $loginid_data });
+            $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
+            $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
+
+            my $result = $action_get->($args);
+            cmp_deeply $result->{processed_mt5}, {bvi => bag("MTR1001018")}, 'Correct mt5 processed';
+            is_deeply $result->{updated_status}, {bvi => 'poa_failed'}, 'Updated status is poa_failed';
         };
     };
 
@@ -2208,7 +2306,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'Vanuatu Account POI Verified Subcases' => sub {
             subtest 'Vanuatu Account - POI and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2222,7 +2320,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI verified and POA pending (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2238,7 +2336,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI verified and POA rejected (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2254,7 +2352,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI verified and POA pending (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2275,7 +2373,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI verified and POA rejected (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2298,7 +2396,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'Vanuatu Account POI Pending Subcases' => sub {
             subtest 'Vanuatu Account - POI and POA pending (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2314,7 +2412,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI pending and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2330,7 +2428,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI pending and POA rejected (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2346,7 +2444,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI pending and POA pending (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2361,13 +2459,13 @@ subtest 'sync mt5 accounts status' => sub {
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
-                is_deeply $result->{processed_mt5},  {vanuatu => ["MTR1001020"]}, 'Correct mt5 processed';
-                is_deeply $result->{updated_status}, {vanuatu => 'poa_failed'},   'Updated status is poa_failed';
+                is_deeply $result->{processed_mt5},  {vanuatu => ["MTR1001020"]},         'Correct mt5 processed';
+                is_deeply $result->{updated_status}, {vanuatu => 'verification_pending'}, 'Updated status is verification_pending';
             };
 
             subtest 'Vanuatu Account - POI pending and POA rejected (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2382,15 +2480,15 @@ subtest 'sync mt5 accounts status' => sub {
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
-                is_deeply $result->{processed_mt5},  {vanuatu => ["MTR1001020"]}, 'Correct mt5 processed';
-                is_deeply $result->{updated_status}, {vanuatu => 'poa_failed'},   'Updated status is poa_failed';
+                is_deeply $result->{processed_mt5},  {vanuatu => ["MTR1001020"]},         'Correct mt5 processed';
+                is_deeply $result->{updated_status}, {vanuatu => 'verification_pending'}, 'Updated status is verification_pending';
             };
         };
 
         subtest 'Vanuatu Account POI Rejected Subcases' => sub {
             subtest 'Vanuatu Account - POI and POA rejected (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2406,7 +2504,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI rejected and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2422,7 +2520,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI rejected and POA pending (within grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2438,7 +2536,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Vanuatu Account - POI rejected and POA pending (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2454,12 +2552,12 @@ subtest 'sync mt5 accounts status' => sub {
 
                 my $result = $action_get->($args);
                 is_deeply $result->{processed_mt5},  {vanuatu => ["MTR1001020"]}, 'Correct mt5 processed';
-                is_deeply $result->{updated_status}, {vanuatu => 'poa_failed'},   'Updated status is poa_failed';
+                is_deeply $result->{updated_status}, {vanuatu => 'proof_failed'}, 'Updated status is proof_failed';
             };
 
             subtest 'Vanuatu Account - POI rejected and POA rejected (past grace period)' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2475,7 +2573,7 @@ subtest 'sync mt5 accounts status' => sub {
 
                 my $result = $action_get->($args);
                 is_deeply $result->{processed_mt5},  {vanuatu => ["MTR1001020"]}, 'Correct mt5 processed';
-                is_deeply $result->{updated_status}, {vanuatu => 'poa_failed'},   'Updated status is poa_failed';
+                is_deeply $result->{updated_status}, {vanuatu => 'proof_failed'}, 'Updated status is proof_failed';
             };
         };
     };
@@ -2485,7 +2583,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'Labuan Account POI Verified Subcases' => sub {
             subtest 'Labuan Account - POI and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2499,7 +2597,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Labuan Account - POI verified and POA pending' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2515,7 +2613,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Labuan Account - POI verified and POA rejected' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2533,7 +2631,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'Labuan Account POI Pending Subcases' => sub {
             subtest 'Labuan Account - POI and POA pending' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2549,7 +2647,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Labuan Account - POI pending and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2565,7 +2663,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Labuan Account - POI pending and POA rejected' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2583,7 +2681,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'Labuan Account POI Rejected Subcases' => sub {
             subtest 'Labuan Account - POI and POA rejected' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2599,7 +2697,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Labuan Account - POI rejected and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2615,7 +2713,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Labuan Account - POI rejected and POA pending' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2636,7 +2734,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'Maltainvest Account POI Verified Subcases' => sub {
             subtest 'Maltainvest Account - POI and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2650,7 +2748,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Maltainvest Account - POI verified and POA pending' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2666,7 +2764,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Maltainvest Account - POI verified and POA rejected' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2684,7 +2782,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'Maltainvest Account POI Pending Subcases' => sub {
             subtest 'Maltainvest Account - POI and POA pending' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2700,7 +2798,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Maltainvest Account - POI pending and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2716,7 +2814,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Maltainvest Account - POI pending and POA rejected' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2734,7 +2832,7 @@ subtest 'sync mt5 accounts status' => sub {
         subtest 'Maltainvest Account POI Rejected Subcases' => sub {
             subtest 'Maltainvest Account - POI and POA rejected' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2750,7 +2848,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Maltainvest Account - POI rejected and POA verified' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2766,7 +2864,7 @@ subtest 'sync mt5 accounts status' => sub {
 
             subtest 'Maltainvest Account - POI rejected and POA pending' => sub {
                 my $args = {
-                    binary_user_id => 1,
+                    client_loginid => 1,
                 };
 
                 $sync_mt5_mock_set->();
@@ -2785,7 +2883,7 @@ subtest 'sync mt5 accounts status' => sub {
     subtest 'Mixed Account Test' => sub {
         subtest 'BVI (past grace period) and Vanuatu (within grace period)' => sub {
             my $args = {
-                binary_user_id => 1,
+                client_loginid => 1,
             };
 
             $sync_mt5_mock_set->();
@@ -2817,7 +2915,7 @@ subtest 'sync mt5 accounts status' => sub {
 
         subtest 'BVI (within grace period) and Vanuatu (within grace period)' => sub {
             my $args = {
-                binary_user_id => 1,
+                client_loginid => 1,
             };
 
             $sync_mt5_mock_set->();
@@ -2846,7 +2944,7 @@ subtest 'sync mt5 accounts status' => sub {
 
         subtest 'No MT5 accounts' => sub {
             my $args = {
-                binary_user_id => 1,
+                client_loginid => 1,
             };
 
             $sync_mt5_mock_set->();
@@ -2867,7 +2965,7 @@ subtest 'sync mt5 accounts status' => sub {
     subtest 'Color Update Test' => sub {
         subtest 'POA failed update color to 255' => sub {
             my $args = {
-                binary_user_id => 1,
+                client_loginid => 1,
             };
 
             $sync_mt5_mock_set->();
@@ -2878,7 +2976,7 @@ subtest 'sync mt5 accounts status' => sub {
             my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
             $bom_user_mock{loginid_details}->(sub { $loginid_data });
-            $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
+            $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
             $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
             my $result = $action_get->($args);
@@ -2889,7 +2987,7 @@ subtest 'sync mt5 accounts status' => sub {
 
         subtest 'POA failed is verified update color to -1' => sub {
             my $args = {
-                binary_user_id => 1,
+                client_loginid => 1,
             };
 
             $sync_mt5_mock_set->();
@@ -2951,21 +3049,19 @@ subtest 'sync_mt5_accounts_status' => sub {
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{sync_mt5_accounts_status};
 
-    like exception { $action_handler->($args)->get; }, qr/Must provide binary_user_id/, 'correct exception when user id is missing';
+    like exception { $action_handler->($args)->get; }, qr/Must provide client_loginid/, 'correct exception when user has no client id provided';
 
-    $args->{binary_user_id} = -1;
+    $args->{client_loginid} = 'CR101';
+    $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{sync_mt5_accounts_status};
 
-    like exception { $action_handler->($args)->get; }, qr/User not found/, 'correct exception when user is not found';
-
-    $args->{binary_user_id} = $user->id;
-
-    like exception { $action_handler->($args)->get; }, qr/Client not found/, 'correct exception when user has no clients';
+    like exception { $action_handler->($args)->get; }, qr/Client not found/, 'correct exception when invalid client id provided';
 
     $user->add_client($client);
-
     $client->binary_user_id($user->id);
     $client->user($user);
     $client->save;
+
+    $args->{client_loginid} = $client->loginid;
 
     my $result = $action_handler->($args)->get->get;    # async sub returns explicit Future->done !!
 
