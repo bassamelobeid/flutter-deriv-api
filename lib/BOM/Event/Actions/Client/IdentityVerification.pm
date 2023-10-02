@@ -782,7 +782,11 @@ async sub idv_webhook_relay {
 
         $webhook_response = $idv_retry_response // $decoded_response;
 
-        die 'no req_echo' unless defined $webhook_response->{req_echo};
+        # silently ignore invalid webhook requests
+        if (!defined $webhook_response->{req_echo}) {
+            DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.invalid_webhook_callback');
+            return;
+        }
 
         $status         = $webhook_response->{status};
         $status_message = $webhook_response->{messages};

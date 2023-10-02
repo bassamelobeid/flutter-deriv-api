@@ -2233,6 +2233,15 @@ subtest 'unit test - idv_webhook_relay' => sub {
 
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{idv_webhook_received};
 
+    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @doggy_bag;
+
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            push @doggy_bag, shift;
+        });
+
     @requests = ();
     @options  = ();
     @urls     = ();
@@ -2276,11 +2285,13 @@ subtest 'unit test - idv_webhook_relay' => sub {
             ],
             'Expected request body returned'
         );
+        cmp_deeply [@doggy_bag], [], 'Expected dog bag';
 
         $log->clear();
-        @urls     = ();
-        @requests = ();
-        @options  = ();
+        @urls      = ();
+        @doggy_bag = ();
+        @requests  = ();
+        @options   = ();
     };
 
     subtest 'Retry Mechanism callback' => sub {
@@ -2301,9 +2312,10 @@ subtest 'unit test - idv_webhook_relay' => sub {
         cmp_deeply([@urls], [], 'Expected empty urls (no HTTP request made)');
 
         $log->contains_ok(qr/Got IDV webhook with attempt number: 1/, 'Expected log found');
-        $log->contains_ok(qr/no req_echo/,                            'Expected log found');
+        cmp_deeply [@doggy_bag], ['event.identity_verification.invalid_webhook_callback'], 'Expected dog bag';
 
-        @urls = ();
+        @urls      = ();
+        @doggy_bag = ();
         $log->clear();
 
         $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
@@ -2317,7 +2329,7 @@ subtest 'unit test - idv_webhook_relay' => sub {
         cmp_deeply([@urls], [], 'Expected empty urls (no HTTP request made)');
 
         $log->contains_ok(qr/Got IDV webhook with attempt number: 1/, 'Expected log found');
-        $log->does_not_contain_ok(qr/no req_echo/, 'Expected log not found');
+        cmp_deeply [@doggy_bag], [], 'Expected dog bag';
 
         $log->clear();
         $idv_mock->unmock_all();
@@ -2330,7 +2342,8 @@ subtest 'unit test - idv_webhook_relay' => sub {
                 return Future->done(1);
             });
 
-        @urls = ();
+        @urls      = ();
+        @doggy_bag = ();
         $log->clear();
 
         my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
@@ -2344,11 +2357,12 @@ subtest 'unit test - idv_webhook_relay' => sub {
         cmp_deeply([@urls], [], 'Expected empty urls (no HTTP request made)');
 
         $log->contains_ok(qr/Got IDV webhook with attempt number: 1/, 'Expected log found');
-        $log->does_not_contain_ok(qr/no req_echo/, 'Expected log not found');
+        cmp_deeply [@doggy_bag], [], 'Expected dog bag';
 
         $log->clear();
         $idv_mock->unmock_all();
-    }
+    };
+    $dog_mock->unmock_all();
 };
 
 subtest 'testing _detect_mime_type' => sub {
