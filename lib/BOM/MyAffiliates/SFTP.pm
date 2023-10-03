@@ -20,7 +20,7 @@ use YAML::XS qw(LoadFile);
 use constant CONFIG          => '/etc/rmg/third_party.yml';
 use constant RETRY_LIMIT     => 5;
 use constant WAIT_IN_SECONDS => 30;
-use constant FTP_PATH        => '/myaffiliates/bom/data/';
+use constant FTP_PATH        => '/myaffiliates/bom/data/data2/';
 
 my $temp_config = LoadFile(CONFIG)->{myaffiliates};
 my %config      = %$temp_config;
