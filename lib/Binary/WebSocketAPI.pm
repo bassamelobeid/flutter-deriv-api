@@ -180,7 +180,6 @@ Takes the following argument
 sub backend_setup {
     my ($log) = @_;
     my $backend_setup_finished = 0;
-
     $redis->get(
         'web_socket_proxy::backends',
         sub {
@@ -239,7 +238,7 @@ sub startup {
 
     $log->debug("Binary.com Websockets API: Starting.");
     $log->debug("Mojolicious Mode is %s", $app->mode);
-    $log->debug("Log Level        is %s", $log->adapter->can('level') ? $log->adapter->level : $log->adapter->{log_level});
+    # $log->debug("Log Level        is %s", $log->adapter->can('level') ? $log->adapter->level : $log->adapter->{log_level});
 
     apply_usergroup $app->config->{hypnotoad}, sub {
         $log->debug(@_);
@@ -415,7 +414,8 @@ sub startup {
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::add_correlation_id, \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward,
                 \&Binary::WebSocketAPI::Hooks::add_app_id,         \&Binary::WebSocketAPI::Hooks::add_log_config,
-                \&Binary::WebSocketAPI::Hooks::add_brand,          \&Binary::WebSocketAPI::Hooks::start_timing
+                \&Binary::WebSocketAPI::Hooks::add_brand,          \&Binary::WebSocketAPI::Hooks::start_timing,
+                \&Binary::WebSocketAPI::Hooks::setup_logger
             ],
             before_get_rpc_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response  => [
@@ -461,7 +461,8 @@ sub startup {
                     # we don't log WrongResponse and Timeouts as we have metrics for them
                     # this exception should be removed when we have properly
                     # handled CallError
-                    $log->info(($error->{type} // 'n/a') . " [" . $req_storage->{msg_type} . "], details: $details");
+                    my $req_trace_logger = $c->stash('req_trace_logger') // $log;
+                    $req_trace_logger->info(($error->{type} // 'n/a') . " [" . $req_storage->{msg_type} . "], details: $details");
                 }
 
                 DataDog::DogStatsd::Helper::stats_inc(
@@ -483,7 +484,6 @@ sub startup {
     get_redis_value_setup('domain_based_apps::blocked', $log);
     get_redis_value_setup('rpc::logging',               $log);
     backend_setup($log);
-
     return;
 }
 

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin;
 use Log::Any::Adapter 'DERIV',
-    log_level => 'info',
+    log_level => $ENV{BOM_LOG_LEVEL} // 'info',
     stderr    => 'json';
 # Mojo will redirect STDERR without autoflush, so we should set autoflush by hand
 *STDERR->autoflush(1);
@@ -20,5 +20,6 @@ binmode STDERR, ':encoding(UTF-8)';
 
 # Start command line interface for application
 require Mojolicious::Commands;
+
 Mojolicious::Commands->start_app('Binary::WebSocketAPI');
 

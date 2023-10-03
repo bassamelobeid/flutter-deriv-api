@@ -144,15 +144,15 @@ Takes a Mojolicious app context and returns a L<Future>.
 
 sub process_next_batch {
     my ($self, $c) = @_;
-
+    my $req_trace_logger = $c->stash('req_trace_logger') // $log;
     # Pick one currency+language key using a uniform distribution
     my @keys = keys %pending_short_codes_by_currency_and_language;
-    $log->tracef("Starting longcode lookup, we have %d keys to work with", 0 + @keys);
+    $req_trace_logger->tracef("Starting longcode lookup, we have %d keys to work with", 0 + @keys);
     my $k = $keys[rand @keys];
 
     my $pending = $pending_short_codes_by_currency_and_language{$k};
     my ($currency, $language) = split /\0/, $k;
-    $log->tracef("Currency %s, language %s", $currency, $language);
+    $req_trace_logger->tracef("Currency %s, language %s", $currency, $language);
     unless (keys %$pending) {
         # This should not be possible, so we warn.
         warn "Had no short_codes to look up for currency $currency language $language";
@@ -163,7 +163,7 @@ sub process_next_batch {
     my @items       = shuffle keys %$pending;
     my @short_codes = splice @items, 0, SHORTCODES_PER_BATCH;
     my @f           = delete @{$pending}{@short_codes};
-    $log->tracef("Have %d items with %d remaining", 0 + @short_codes, 0 + @items);
+    $req_trace_logger->tracef("Have %d items with %d remaining", 0 + @short_codes, 0 + @items);
 
     # If things go badly wrong and we have an excessive backlog, let's limit things
     if (@items > MAX_QUEUED_ITEMS_PER_KEY) {
@@ -175,7 +175,7 @@ sub process_next_batch {
     # Discarding the key here should prevent us from hitting empty slots
     delete $pending_short_codes_by_currency_and_language{$k} unless keys %$pending;
 
-    $log->tracef("Calling RPC");
+    $req_trace_logger->tracef("Calling RPC");
     my $rpc_completion = Future::Mojo->new;
     $c->call_rpc({
             args        => {},
