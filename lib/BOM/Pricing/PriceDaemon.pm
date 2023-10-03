@@ -236,6 +236,7 @@ sub run {
             # On websocket the client is subscribing to proposal open contract with "CONTRACT_PRICE::<landing_company>::<account_id>::<contract_id>" as the key
             my $redis_channel     = join '::', ('CONTRACT_PRICE', $params->{landing_company}, $params->{account_id}, $params->{contract_id});
             my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
+            stats_histogram('pricer_daemon.subscribers_per_poc', $subscribers_count, {tags => $self->tags});
 
             # delete the job if no-one is subscribed, or the contract is sold
             if (!$subscribers_count || $response->{is_sold}) {
@@ -244,6 +245,8 @@ sub run {
         }
         # proposal
         else {
+            my $total_subscribers;
+
             # on websocket, multiple clients are subscribed to $pricer_args::$subchannel
             my $pricer_args = $rkey;
             my $subchannels = $redis_pricer->smembers($pricer_args);
@@ -263,13 +266,14 @@ sub run {
                 }
 
                 my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($adjusted_response));
+                $total_subscribers += $subscribers_count;
 
                 # delete the subchannel if no-one is subscribed
                 if ($subscribers_count == 0) {
                     $redis_pricer->srem($pricer_args, $subchannel);
                 }
             }
-
+            stats_histogram('pricer_daemon.subscribers_per_proposal', $total_subscribers, {tags => $self->tags});
         }
 
         $tv_now = [Time::HiRes::gettimeofday];
