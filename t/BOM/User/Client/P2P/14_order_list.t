@@ -183,5 +183,101 @@ subtest 'dispute statuses' => sub {
 
 };
 
+subtest 'Filter date' => sub {
+    my @created_orders_for_date = ();
+    my ($advertiser_for_date, $advert_info_for_date) = BOM::Test::Helper::P2P::create_advert(
+        %ad_params,
+        advertiser => {
+            first_name => 'john',
+            last_name  => 'smith'
+        });
+
+    my $client = BOM::Test::Helper::P2P::create_advertiser(
+        client_details => {
+            first_name => 'mary',
+            last_name  => 'jane'
+        });
+    my $order1 = $client->p2p_order_create(
+        advert_id   => $advert_info_for_date->{id},
+        amount      => 20,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
+    );
+    push @created_orders_for_date, $order1;
+
+    my $client2 = BOM::Test::Helper::P2P::create_advertiser(
+        client_details => {
+            first_name => 'mary2',
+            last_name  => 'jane2'
+        });
+    my $order2 = $client2->p2p_order_create(
+        advert_id   => $advert_info_for_date->{id},
+        amount      => 20,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
+    );
+    push @created_orders_for_date, $order2;
+
+    my $client3 = BOM::Test::Helper::P2P::create_advertiser(
+        client_details => {
+            first_name => 'mary3',
+            last_name  => 'jane3'
+        });
+    my $order3 = $client3->p2p_order_create(
+        advert_id   => $advert_info_for_date->{id},
+        amount      => 20,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
+    );
+    push @created_orders_for_date, $order3;
+
+    my $client4 = BOM::Test::Helper::P2P::create_advertiser(
+        client_details => {
+            first_name => 'mary4',
+            last_name  => 'jane4'
+        });
+    my $order4 = $client4->p2p_order_create(
+        advert_id   => $advert_info_for_date->{id},
+        amount      => 20,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
+    );
+    push @created_orders_for_date, $order4;
+
+    $advertiser->db->dbic->run(
+        fixup => sub {
+            $_->do('UPDATE p2p.p2p_order SET created_time = ? WHERE id = ?;', {Slice => {}}, '2020-01-01', $order1->{id});
+        });
+
+    $advertiser->db->dbic->run(
+        fixup => sub {
+            $_->do('UPDATE p2p.p2p_order SET created_time = ? WHERE id = ?;', {Slice => {}}, '2020-01-01 01:02:03', $order2->{id});
+        });
+
+    $advertiser->db->dbic->run(
+        fixup => sub {
+            $_->do('UPDATE p2p.p2p_order SET created_time = ? WHERE id = ?;', {Slice => {}}, '2020-01-02', $order3->{id});
+        });
+
+    my $all_orders = $advertiser_for_date->p2p_order_list();
+
+    my $from_date_orders = $advertiser_for_date->p2p_order_list(date_from => '2020-01-01 01:02:03');
+
+    my $from_and_to_orders = $advertiser_for_date->p2p_order_list(
+        date_from => '2020-01-01',
+        date_to   => '2020-01-02'
+    );
+
+    my $to_orders = $advertiser_for_date->p2p_order_list(date_to => '2020-01-01 01:02:03');
+
+    my $expected_total = scalar @created_orders_for_date;
+
+    is scalar $all_orders->{list}->@*,         $expected_total, "Total orders number is correct";
+    is scalar $from_date_orders->{list}->@*,   3,               "Old orders filters";
+    is scalar $from_and_to_orders->{list}->@*, 3,               "New orders filters";
+    is scalar $to_orders->{list}->@*,          2,               "New orders filters";
+
+};
+
 BOM::Test::Helper::P2P::reset_escrow();
 done_testing();

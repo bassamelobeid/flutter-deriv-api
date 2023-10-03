@@ -4453,12 +4453,26 @@ sub _p2p_orders {
         $param{$field} += 0 if defined $param{$field};
     }
 
+    my ($date_from, $date_to) = @param{qw/date_from date_to/};
+    if ($date_from and $date_from = eval { Date::Utility->new($param{date_from}) } // die +{error_code => 'InvalidDateFormat'}) {
+        $param{start_time} = $date_from->datetime_yyyymmdd_hhmmss;
+    }
+
+    if ($date_to and $date_to = eval { Date::Utility->new($param{date_to}) } // die +{error_code => 'InvalidDateFormat'}) {
+        $param{end_time} = $date_to->datetime_yyyymmdd_hhmmss;
+        ## If we were passed in a date (but not an epoch or full timestamp)
+        ## add in one day, so that 2018-04-07 grabs the entire day by doing
+        ## a "date_to < 2018-04-08 00:00:000'
+        $date_to->plus_time_interval('1d') unless $date_to->second + 0;
+        $param{end_time} = $date_to->db_timestamp;
+    }
+
     return $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.order_list(?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.order_list(?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
-                @param{qw/id advert_id loginid status limit offset/});
+                @param{qw/id advert_id loginid status start_time end_time limit offset/});
         }) // [];
 }
 
