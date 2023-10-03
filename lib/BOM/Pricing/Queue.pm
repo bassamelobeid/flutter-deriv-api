@@ -292,6 +292,9 @@ async sub submit_jobs {
     # Prioritise bids if we had any, assumes pricer dæmon uses `rpop`
     await $self->redis->lpush('pricer_jobs', @bids) if @bids;
     await $self->redis->lpush('pricer_jobs', @asks) if @asks;
+    if ($tick and $tick->{received}) {
+        stats_timing('pricer_daemon.queue.tick_submit_latency', 1000 * (Time::HiRes::time() - $tick->{received}));
+    }
     $log->debug('pricer_jobs queue updated.');
 }
 
