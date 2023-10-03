@@ -367,7 +367,7 @@ if ($preview and @invalid_lines == 0) {
     my $brand = request()->brand;
     send_email({
         'from'    => $brand->emails('support'),
-        'to'      => $brand->emails('accounting'),
+        'to'      => $brand->emails('payments_notification'),
         'subject' => 'Batch debit/credit client account on ' . Date::Utility->new->date_ddmmmyy,
         'message' => \@clients_has_been_processed,
     });
