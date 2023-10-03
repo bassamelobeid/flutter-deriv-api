@@ -74,11 +74,43 @@ subtest 'identity_verification_document_add' => sub {
 
     $params->{args} = {
         issuing_country => 'ng',
+        document_type   => '',
+        document_number => 'number',
+    };
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('DocumentTypeMissing', 'Document type is missing.');
+
+    $params->{args} = {
+        issuing_country => 'py',
+        document_type   => 'ABC000000000',
+        document_number => 'number',
+    };
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('NotSupportedCountry', 'Not supported country');
+
+    $params->{args} = {
+        issuing_country => '',
+        document_type   => 'ABC000000000',
+        document_number => 'number',
+    };
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('IssuingCountryMissing', 'Issuing country is missing');
+
+    $params->{args} = {
+        issuing_country => 'ng',
         document_type   => 'drivers_license',
         document_number => 'WRONG NUMBER',
     };
     $c->call_ok('identity_verification_document_add', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidDocumentNumber', 'Invalid document number.');
+
+    $params->{args} = {
+        issuing_country => 'ng',
+        document_type   => 'drivers_license',
+        document_number => '',
+    };
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('DocumentNumberMissing', 'Document number is missing.');
 
     $client_cr->status->setnx('age_verification', 'system', 'reason');
 

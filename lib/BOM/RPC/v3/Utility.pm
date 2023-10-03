@@ -741,6 +741,12 @@ sub error_map {
         ExpiredDocument           => localize("The document you used appears to be expired. Please use a valid document."),
         InvalidDocumentAdditional => localize("It looks like the document details you entered are invalid. Please check and try again."),
         UnderageBlocked           => localize("The document you used appears to be from an underage individual. Please use a valid document."),
+        ClientMissing             => localize("The client is missing, please provide a valid client."),
+        IDVResultMissing          => localize("The IDV result is missing."),
+        DocumentMissing           => localize("The document is missing."),
+        IssuingCountryMissing     => localize("The field issuing country is required."),
+        DocumentTypeMissing       => localize("The field document type is required."),
+        DocumentNumberMissing     => localize("The field document number is required."),
     };
 }
 
