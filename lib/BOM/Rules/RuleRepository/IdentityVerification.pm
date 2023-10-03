@@ -25,8 +25,8 @@ rule 'idv.check_expiration_date' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'IDV result is missing' unless my $result   = $args->{result}   and ref $args->{result} eq 'HASH';
-        die 'document is missing'   unless my $document = $args->{document} and ref $args->{document} eq 'HASH';
+        $self->fail('IDVResultMissing') unless my $result   = $args->{result}   and ref $args->{result} eq 'HASH';
+        $self->fail('DocumentMissing')  unless my $document = $args->{document} and ref $args->{document} eq 'HASH';
 
         my $countries_config = Brands::Countries->new();
         my $is_lifetime_valid =
@@ -47,10 +47,8 @@ rule 'idv.check_name_comparison' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $client = $context->client($args);
-
-        die 'client is missing'     unless $client;
-        die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
+        $self->fail('ClientMissing')    unless my $client = $context->client($args);
+        $self->fail('IDVResultMissing') unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my @fields = qw/first_name last_name/;
 
@@ -68,10 +66,8 @@ rule 'idv.check_age_legality' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $client = $context->client($args);
-
-        die 'client is missing'     unless $client;
-        die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
+        $self->fail('ClientMissing')    unless my $client = $context->client($args);
+        $self->fail('IDVResultMissing') unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         return undef unless $result->{birthdate};
 
@@ -93,8 +89,8 @@ rule 'idv.check_dob_conformity' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'client is missing'     unless my $client = $context->client($args);
-        die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
+        $self->fail('ClientMissing')    unless my $client = $context->client($args);
+        $self->fail('IDVResultMissing') unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my $reported_dob = eval { Date::Utility->new($result->{birthdate}) };
         my $profile_dob  = eval { Date::Utility->new($client->date_of_birth) };
@@ -110,7 +106,7 @@ rule 'idv.check_verification_necessity' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'client is missing' unless my $client = $context->client($args);
+        $self->fail('ClientMissing') unless my $client = $context->client($args);
 
         my $idv_model      = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
         my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
@@ -128,9 +124,9 @@ rule 'idv.check_service_availibility' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'client is missing'          unless my $client          = $context->client($args);
-        die 'issuing_country is missing' unless my $issuing_country = $args->{issuing_country};
-        die 'document_type is missing'   unless my $document_type   = $args->{document_type};
+        $self->fail('ClientMissing')         unless my $client          = $context->client($args);
+        $self->fail('IssuingCountryMissing') unless my $issuing_country = $args->{issuing_country};
+        $self->fail('DocumentTypeMissing')   unless my $document_type   = $args->{document_type};
 
         my $countries = Brands::Countries->new;
         my $configs   = $countries->get_idv_config($issuing_country);
@@ -165,9 +161,9 @@ rule 'idv.valid_document_number' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'issuing_country is missing' unless my $issuing_country = $args->{issuing_country};
-        die 'document_type is missing'   unless my $document_type   = $args->{document_type};
-        die 'document_number is missing' unless my $document_number = $args->{document_number};
+        $self->fail('IssuingCountryMissing') unless my $issuing_country = $args->{issuing_country};
+        $self->fail('DocumentTypeMissing')   unless my $document_type   = $args->{document_type};
+        $self->fail('DocumentNumberMissing') unless my $document_number = $args->{document_number};
 
         my $countries = Brands::Countries->new;
         my $configs   = $countries->get_idv_config($issuing_country);
@@ -195,10 +191,10 @@ rule 'idv.check_document_acceptability' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'client is missing'          unless my $client          = $context->client($args);
-        die 'issuing_country is missing' unless my $issuing_country = $args->{issuing_country};
-        die 'document_type is missing'   unless my $document_type   = $args->{document_type};
-        die 'document_number is missing' unless my $document_number = $args->{document_number};
+        $self->fail('ClientMissing')         unless my $client          = $context->client($args);
+        $self->fail('IssuingCountryMissing') unless my $issuing_country = $args->{issuing_country};
+        $self->fail('DocumentTypeMissing')   unless my $document_type   = $args->{document_type};
+        $self->fail('DocumentNumberMissing') unless my $document_number = $args->{document_number};
 
         my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
@@ -239,8 +235,8 @@ rule 'idv.check_opt_out_availability' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'client is missing'          unless my $client          = $context->client($args);
-        die 'issuing_country is missing' unless my $issuing_country = $args->{issuing_country};
+        $self->fail('ClientMissing')         unless my $client          = $context->client($args);
+        $self->fail('IssuingCountryMissing') unless my $issuing_country = $args->{issuing_country};
 
         my $countries = Brands::Countries->new;
         my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);

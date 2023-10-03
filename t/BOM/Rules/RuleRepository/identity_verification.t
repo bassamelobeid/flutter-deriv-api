@@ -28,8 +28,19 @@ subtest 'rule idv.check_expiration_date' => sub {
 
     my $rule_engine = BOM::Rules::Engine->new();
 
-    like exception { $rule_engine->apply_rules($rule_name); },               qr/IDV result is missing/, 'Missing result in passed args';
-    like exception { $rule_engine->apply_rules($rule_name, result => {}); }, qr/document is missing/,   'Missing document in passed args';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) },
+        {
+        error_code => "IDVResultMissing",
+        rule       => $rule_name
+        },
+        "Missing result in passed args";
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, result => {}); },
+        {
+        error_code => "DocumentMissing",
+        rule       => $rule_name
+        },
+        "Missing document in passed args";
 
     my $is_lifetime_valid   = 0;
     my $mock_country_config = Test::MockModule->new('Brands::Countries');
@@ -118,10 +129,19 @@ subtest 'rule idv.check_name_comparison' => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
 
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid); }, qr/IDV result is missing/,
-        'Missing result in passed args';
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, result => []); }, qr/IDV result is missing/,
-        'Missing result in passed args';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid); },
+        {
+        error_code => "IDVResultMissing",
+        rule       => $rule_name
+        },
+        "Missing result in passed args";
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, result => []); },
+        {
+        error_code => "IDVResultMissing",
+        rule       => $rule_name
+        },
+        "Missing result in passed args";
 
     my $tests = [{
             result => {
@@ -225,8 +245,12 @@ subtest 'rule idv.check_age_legality' => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required';
 
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, result => []); }, qr/IDV result is missing/,
-        'Missing result in passed args';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, result => []); },
+        {
+        error_code => "IDVResultMissing",
+        rule       => $rule_name
+        },
+        "Missing result in passed args";
 
     my $mock_country_config = Test::MockModule->new('Brands::Countries');
     $mock_country_config->mock(
@@ -349,13 +373,12 @@ subtest 'rule idv.check_dob_conformity' => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required';
 
-    like exception {
-        $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid);
-        $rule_engine->apply_rules(
-            $rule_name,
-            loginid => $client_cr->loginid,
-            result  => []);
-    }, qr/IDV result is missing/, 'Missing result in passed args';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, result => []); },
+        {
+        error_code => "IDVResultMissing",
+        rule       => $rule_name
+        },
+        "Missing result in passed args";
 
     my $tests = [{
             result => {
@@ -523,10 +546,20 @@ subtest 'rule idv.check_service_availibility' => sub {
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) }, qr/issuing_country is missing/,
-        'document issuing_country is required for this rule';
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx') }, qr/document_type is missing/,
-        'document_type is required for this rule';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) },
+        {
+        error_code => "IssuingCountryMissing",
+        rule       => $rule_name
+        },
+        "document issuing_country is required for this rule";
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx') },
+        {
+        error_code => "DocumentTypeMissing",
+        rule       => $rule_name
+        },
+        "document_type is required for this rule'";
 
     my $mock_country_config   = Test::MockModule->new('Brands::Countries');
     my $mock_platform_utility = Test::MockModule->new('BOM::Platform::Utility');
@@ -687,11 +720,27 @@ subtest 'rule idv.valid_document_number' => sub {
     my $rule_name = 'idv.valid_document_number';
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/issuing_country is missing/, 'document issuing_country is required for this rule';
-    like exception { $rule_engine->apply_rules($rule_name, issuing_country => 'xx') }, qr/document_type is missing/,
-        'document_type is required for this rule';
-    like exception { $rule_engine->apply_rules($rule_name, issuing_country => 'xx', document_type => 'national_id') }, qr/document_number is missing/,
-        'document_number is required for this rule';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name) },
+        {
+        error_code => "IssuingCountryMissing",
+        rule       => $rule_name
+        },
+        "document issuing_country is required for this rule";
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, issuing_country => 'xx') },
+        {
+        error_code => "DocumentTypeMissing",
+        rule       => $rule_name
+        },
+        "document_type is required for this rule'";
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, issuing_country => 'xx', document_type => 'national_id') },
+        {
+        error_code => "DocumentNumberMissing",
+        rule       => $rule_name
+        },
+        "document_number is required for this rule'";
 
     my $mock_country_config = Test::MockModule->new('Brands::Countries');
     my $mock_qa             = Test::MockModule->new('BOM::Config');
@@ -821,13 +870,28 @@ subtest 'rule idv.check_document_acceptability' => sub {
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) }, qr/issuing_country is missing/,
-        'document issuing_country is required for this rule';
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx') }, qr/document_type is missing/,
-        'document_type is required for this rule';
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx', document_type => 'national_id') },
-        qr/document_number is missing/,
-        'document_number is required for this rule';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) },
+        {
+        error_code => "IssuingCountryMissing",
+        rule       => $rule_name
+        },
+        "document issuing_country is required for this rule";
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx') },
+        {
+        error_code => "DocumentTypeMissing",
+        rule       => $rule_name
+        },
+        "document_type is required for this rule'";
+
+    is_deeply
+        exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx', document_type => 'national_id') },
+        {
+        error_code => "DocumentNumberMissing",
+        rule       => $rule_name
+        },
+        "document_number is required for this rule'";
 
     my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
     my $mock_qa        = Test::MockModule->new('BOM::Config');
@@ -979,8 +1043,13 @@ subtest 'rule idv.check_opt_out_availability' => sub {
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
-    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) }, qr/issuing_country is missing/,
-        'document issuing_country is required for this rule';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) },
+        {
+        error_code => "IssuingCountryMissing",
+        rule       => $rule_name
+        },
+        "document issuing_country is required for this rule";
 
     my $mock_country_config = Test::MockModule->new('Brands::Countries');
     my $mock_idv_model      = Test::MockModule->new('BOM::User::IdentityVerification');
