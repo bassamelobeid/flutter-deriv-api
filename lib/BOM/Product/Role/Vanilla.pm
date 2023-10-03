@@ -894,10 +894,18 @@ override _validate_price => sub {
     my $ask_price_as_string = "" . $ask_price;    # Just to be sure we're dealing with a string.
     $ask_price_as_string =~ s/[\.0]+$//;          # Strip trailing zeroes and decimal points to be more friendly.
 
-    return {
-        error_code    => 'stake_too_many_places',
-        error_details => [$prec_num, $ask_price],
-    } if ($ask_price_as_string =~ /\.[0-9]{$re_num,}/);
+    if ($ask_price_as_string =~ /\.[0-9]{$re_num,}/) {
+        return {
+            message           => 'Stake amount has too many decimal places.',
+            message_to_client => [$ERROR_MAPPING->{IncorrectStakeDecimals}, $prec_num],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+        };
+    }
 
     # not validating payout max as vanilla doesn't have a payout until expiry
     return undef;

@@ -60,4 +60,39 @@ subtest 'staking limits' => sub {
     ok !$c->_validate_price, 'no error';
 };
 
+subtest 'staking limits vanilla' => sub {
+    my $args = {
+        bet_type     => 'Vanillalongput',
+        underlying   => 'R_10',
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '10h',
+        currency     => 'USD',
+        amount_type  => 'stake',
+        amount       => 0.0,
+        barrier      => '+17.20',
+    };
+
+    my $c = produce_contract($args);
+    my $err;
+    ok $err = $c->_validate_price, 'error is thrown';
+    is $err->{message}, 'Stake can not be zero .', 'correct error message thrown if stake ask price equals to 0 for Vanilla';
+
+    $args->{amount} = 0.4;
+    $c = produce_contract($args);
+    ok !$c->_validate_price, 'no error';
+
+    $args->{amount} = 0.054;
+    $c = produce_contract($args);
+    ok $err = $c->_validate_price, 'error is thrown';
+    is $err->{message}, 'Stake amount has too many decimal places.',
+        'correct error message thrown if stake amount has more than expected decimal places.';
+
+    $args->{amount} = 0.54;
+    $c = produce_contract($args);
+    ok !$c->_validate_price, 'no error';
+
+};
+
 done_testing;
+
