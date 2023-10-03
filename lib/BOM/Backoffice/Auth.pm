@@ -10,6 +10,7 @@ use List::Util      qw(any first);
 use Syntax::Keyword::Try;
 use Sys::Hostname;
 use Crypt::JWT qw(encode_jwt decode_jwt);
+use Email::Address::XS;
 
 use BOM::Config;
 use BOM::Config::Redis;
@@ -36,7 +37,7 @@ sub login {
         my $staff = BOM::Platform::Auth::JWT->new()->validate(token => $token);
         if ($staff) {
             $staff->{token}    = $token;
-            $staff->{nickname} = $staff->{name} // $staff->{email};
+            $staff->{nickname} = get_staff_nickname($staff);
 
             BOM::Config::Redis::redis_replicated_write()
                 ->set(BACKOFFICE_LOGIN_KEY_PREFIX . $token, encode_json_utf8($staff), 'EX', $staff->{expiry} - time());
@@ -80,7 +81,7 @@ sub has_authorisation {
         if (not $groups or not BOM::Config::on_production()) {
             return 1;
         }
-        foreach my $g (@{$staff->{groups}}) {
+        foreach my $g (@{$staff->{details}{group}}) {
             if (first { /^$g$/ } @{$groups}) {
                 BOM::User::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $staff->{name});
                 return 1;
@@ -149,6 +150,23 @@ sub get_staff {
 
 Check if the staff has write access
 
+Sample schema of $staff we expect
+{
+        'issuer'         => 'https://derivcom.cloudflareaccess.com',
+        'id'             => 'he200958-5b36-4368-2057-4842f23d7fd0',
+        'identity_nonce' => 'rejq7GVraGnLUtqy',
+        'details'        => {
+            'email'             => 'test_name@regentmarkets.com',
+            'backofficeauth0ID' => '',
+            'group'             => [],
+            'name'              => 'test name'
+        },
+        'country' => 'AE',
+        'name'    => 'test name',
+        'expiry'  => 1695803758,
+        'email'   => 'test_name@regentmarkets.com'
+    };
+
 =cut
 
 sub has_write_access {
@@ -159,7 +177,7 @@ sub has_write_access {
         if (not BOM::Config::on_production()) {
             return 1;
         }
-        foreach my $group (@{$staff->{groups}}) {
+        foreach my $group (@{$staff->{details}{group}}) {
             if (any { $_ eq $group } BOM::Backoffice::Utility::write_access_groups()) {
                 BOM::User::AuditLog::log("successful write access requested by $staffname");
                 return 1;
@@ -222,7 +240,7 @@ sub test_authorization_token {
             key     => $rsa,
             type    => 'app',
             payload => {
-                aud     => [$issuer_details->{application_id}],
+                aud     => [$issuer_details->{application_id}[0]],
                 country => 'in',
                 custom  => {
                     group => ['General', 'Marketing', 'CS',],
@@ -255,6 +273,24 @@ sub generate_nonce {
     my $nonce;
     $nonce .= $chars[rand @chars] for 1 .. 16;
     return $nonce;
+}
+
+=head2 get_staff_nickname
+
+Returns a nickname from either the email id or staff name in token details.
+
+=cut
+
+sub get_staff_nickname {
+    my $staff = shift;
+
+    if ($staff) {
+        return Email::Address::XS->parse($staff->{email})->user() if $staff->{email};
+
+        return lc($staff->{name}) if $staff->{name};
+    }
+
+    return undef;
 }
 
 1;
