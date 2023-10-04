@@ -16,8 +16,7 @@ use Mojo::IOLoop;
 use Net::Address::IP::Local;
 use Mojo::WebSocketProxy::Backend::ConsumerGroups;
 use Path::Tiny;
-use UUID::Tiny;
-use Syntax::Keyword::Try;
+
 #  module is loaded on server start and shared across connections
 #  %schema_cache is added onto as each unique request type is received.
 #  by the _load_schema sub in this module
@@ -83,54 +82,29 @@ sub _load_schema {
 
 =head2 add_correlation_id
 
-generates a correlation id and stores it in the stash
+Incrementing request id and generating correlation id based on following pattern:
+
+[server name]_[pid]:[connection id]_[request id]:[timestamp]
 
 Return undef
 
 =cut
 
 sub add_correlation_id {
-    my $c = shift;
+    my ($c, $req_storage) = @_;
 
-    my $correlation_id = UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4);
-    $c->stash('correlation_id', $correlation_id);
+    my $request_number = $c->app->stat->{cumulative_connection_requests}++;
 
-    return;
-}
+    my $conn_number = $c->app->stat->{cumulative_client_connections};
 
-=head2 setup_logger
+    $req_storage->{call_params}->{correlation_id} = sprintf("%s_%s:%s_%s:%s", $c->server_name, $$, $conn_number, $request_number, time);
 
-create a logger object and set adapter to Deriv and inject the logger object in MOJO request stash 
-
-Return undef
-
-=cut
-
-sub setup_logger {
-    my $c = shift;
-
-    # Retrieve the correlation ID from the stash
-    my $correlation_id = $c->stash('correlation_id');
-
-    # Initialize the DERIV adapter and set its context
-    try {
-        Log::Any::Adapter->set(
-            'DERIV',
-            log_level => $ENV{BOM_LOG_LEVEL} // 'info',
-            context   => {correlation_id => $correlation_id});
-
-        # Create a logger instance using the category name
-        my $req_trace_logger = Log::Any->get_logger(category => ref($c));
-
-        $c->stash('req_trace_logger', $req_trace_logger);
-    } catch ($e) {
-        $log->error("Error setting up logger: $e");
-    }
     return;
 }
 
 sub start_timing {
     my ($c, $req_storage) = @_;
+
     if ($req_storage) {
         $req_storage->{tv} = [Time::HiRes::gettimeofday];
 
@@ -269,6 +243,7 @@ sub add_call_debug {
 
 sub log_call_timing_sent {
     my ($c, $req_storage) = @_;
+
     if ($req_storage && $req_storage->{tv} && $req_storage->{method}) {
         my $tags = ["rpc:$req_storage->{method}"];
         push @$tags, "market:" . $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
@@ -407,7 +382,6 @@ sub _set_defaults {
 
 sub before_forward {
     my ($c, $req_storage) = @_;
-
     $req_storage->{origin_args} = {%{$req_storage->{args}}};
     my $args = $req_storage->{args};
 
@@ -650,6 +624,7 @@ sub close_bad_connection {
 
 sub add_app_id {
     my ($c, $req_storage) = @_;
+
     $req_storage->{call_params}->{valid_source}               = $c->stash('valid_source');
     $req_storage->{call_params}->{source}                     = $c->stash('source');
     $req_storage->{call_params}->{source_bypass_verification} = $c->stash('source_bypass_verification');
