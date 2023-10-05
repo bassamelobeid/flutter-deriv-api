@@ -64,4 +64,38 @@ subtest 'trading_times' => sub {
     cmp_deeply($result->{markets}[0]{submarkets}[0]{symbols}[0], $expected, 'Sunday Closes early');
 };
 
+subtest 'trading_times with cfd offerings' => sub {
+    my $params->{args}->{trading_times} = '2022-09-02T10:00:00Z';
+    my $result = BOM::Pricing::v3::MarketData::trading_times($params);
+
+    my $expected_dfx = {
+        'events' => [{
+                'descrip' => 'Closes early (at 20:55)',
+                'dates'   => 'Fridays'
+            }
+        ],
+        'symbol' => 'USDJPYDFX20',
+        'times'  => {
+            'close'      => ['20:55:00'],
+            'settlement' => '23:59:59',
+            'open'       => ['00:00:00']
+        },
+        'name'         => 'USD/JPY DFX20 Index',
+        'trading_days' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']};
+
+    my $expected_dsi = {
+        'events' => [],
+        'symbol' => 'DSI10',
+        'times'  => {
+            'close'      => ['23:59:59'],
+            'settlement' => '23:59:59',
+            'open'       => ['00:00:00']
+        },
+        'name'         => 'DSI10',
+        'trading_days' => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']};
+
+    cmp_deeply($result->{markets}[3]{submarkets}[10]{symbols}[0], $expected_dsi, 'Correct trading times for DSI10');
+    cmp_deeply($result->{markets}[3]{submarkets}[8]{symbols}[13], $expected_dfx, 'Correct trading times for USDJPYDFX20');
+};
+
 done_testing;

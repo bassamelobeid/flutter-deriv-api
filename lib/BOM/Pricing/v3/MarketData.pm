@@ -25,7 +25,8 @@ use BOM::User::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
-use BOM::Product::Offerings::DisplayHelper;
+use BOM::Product::Offerings::DisplayHelper::Options;
+use BOM::Product::Offerings::DisplayHelper::CFD;
 use BOM::Product::Offerings::TradingDuration qw(generate_trading_durations);
 use LandingCompany::Registry;
 
@@ -289,7 +290,7 @@ sub generate_trading_times {
     my $date = shift;
 
     my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
-    my $tree      = BOM::Product::Offerings::DisplayHelper->new(
+    my $tree      = BOM::Product::Offerings::DisplayHelper::CFD->new(
         date      => $date,
         offerings => $offerings
     )->decorate_tree(
@@ -321,8 +322,6 @@ sub generate_trading_times {
                     events       => $ul->{events},
                     times        => $ul->{times},
                     trading_days => $ul->{trading_days},
-                    ($ul->{feed_license} ne 'realtime') ? (feed_license => $ul->{feed_license}) : (),
-                    ($ul->{delay_amount} > 0)           ? (delay_amount => $ul->{delay_amount}) : (),
                     };
             }
         }
@@ -384,7 +383,7 @@ sub generate_asset_index {
         return $cache;
     }
 
-    my $asset_index = BOM::Product::Offerings::DisplayHelper->new(offerings => $offerings)->decorate_tree(
+    my $asset_index = BOM::Product::Offerings::DisplayHelper::Options->new(offerings => $offerings)->decorate_tree(
         markets => {
             code => sub { $_->name },
             name => sub { localize($_->display_name) }
