@@ -10,10 +10,11 @@ use Test::FailWarnings;
 use Test::Deep;
 
 use Brands;
-use BOM::Product::Offerings::TradingContract qw(get_contracts get_offerings_obj virtual_offering_based_on_country_code);
+use BOM::Product::Offerings::TradingContract qw(get_contracts get_unavailable_contracts);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use Brands;
+use List::Util qw(uniq);
 
 subtest 'general' => sub {
     my $error = exception { get_contracts };
@@ -28,6 +29,21 @@ subtest 'general' => sub {
     ok $error->isa('BOM::Product::Exception'), 'error is thrown';
     is $error->error_code, 'OfferingsInvalidSymbol', 'error code - OfferingsInvalidSymbol';
 
+};
+
+subtest 'non available' => sub {
+    my $args = {
+        symbol               => 'frxUSDJPY',
+        landing_company_name => 'virtual',
+    };
+    my $unavailable = get_unavailable_contracts($args);
+    my @expected    = ('accumulator', 'asian', 'digits', 'highlowticks', 'lookback', 'reset', 'runs', 'vanilla',);
+    my @got;
+    for my $ct (@$unavailable) {
+        push @got, $ct->{contract_category};
+    }
+    @got = sort { $a cmp $b } uniq @got;
+    is_deeply(\@got, \@expected, 'non-available contract types are correct');
 };
 
 subtest 'by landing company' => sub {
@@ -193,24 +209,6 @@ subtest 'suspend trading' => sub {
     is $res->error_code, 'OfferingsInvalidSymbol';
     $app_config->set({'quants.markets.suspend_buy' => $prev});
 
-};
-
-subtest 'virtual contracts based on country code' => sub {
-    my $args = {
-        app_id               => 16303,
-        brands               => Brands->new(),
-        landing_company_name => "virtual",
-        country_code         => "es",
-    };
-
-    my %expected = (
-        "multiplier" => 1,
-    );
-
-    my $offerings_obj           = get_offerings_obj($args);
-    my %legal_allowed_contracts = virtual_offering_based_on_country_code($offerings_obj);
-
-    is_deeply(\%legal_allowed_contracts, \%expected, "virtual contracts based on country code matched");
 };
 
 done_testing();
