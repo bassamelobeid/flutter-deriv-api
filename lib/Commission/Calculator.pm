@@ -10,7 +10,8 @@ use Date::Utility;
 use BOM::User::Client;
 use BOM::Config::Runtime;
 use Format::Util::Numbers qw(financialrounding);
-use YAML::XS qw(LoadFile);
+use YAML::XS              qw(LoadFile);
+use POSIX                 qw(ceil);
 
 our $VERSION = '0.1';
 
@@ -103,13 +104,22 @@ C<Net::Async::Redis> instance of exchange rate redis
 
 Default to '/exc/rmg/redis-exchangerates.yml'
 
+=head2 from_date
+
+The date to start the calculation from, in yyyy-mm-dd format. Useful for back calculating commissions
+
 =cut
 
-sub date { shift->{date} }
+sub date      { shift->{date} }
+sub from_date { shift->{from_date} }
 
 sub start_date {
     my $self = shift;
-    my $end  = Date::Utility->new($self->date);
+    # if from_date is provided, use it. Useful for back calculating commissions
+    if ($self->from_date) {
+        return Date::Utility->new($self->from_date)->db_timestamp;
+    }
+    my $end = Date::Utility->new($self->date);
     return $end->minus_time_interval('2d')->db_timestamp;
 }
 sub per_page_limit             { shift->{per_page_limit} }
@@ -144,6 +154,8 @@ optional (default: 10) - number of concurrent database pages and deals to calcul
 
 =item * C<$args{decimal_point}> - optional (default: 4) - number of decimal points for the calculated commission
 
+=item * C<$args{from_date}> - The date to start the calculation from, in yyyy-mm-dd format. Useful for back calculating commissions
+
 =back
 
 return a L<Commission::Calculator> blessed object
@@ -161,11 +173,15 @@ sub new {
         cfd_provider               => $args{cfd_provider},
         affiliate_provider         => $args{affiliate_provider},
         redis_exchangerates_config => $args{redis_exchange_rates_config} || '/etc/rmg/redis-exchangerates.yml',
+        from_date                  => $args{from_date},
     };
 
     die "Please provide a valid date in yyyy-mm-dd format"
         if not defined $self->{date}
         or $self->{date} !~ /\d{4}\-\d{2}\-\d{2}/;
+
+    die "Please provide a valid 'from_date' parameter in yyyy-mm-dd format that is not in the future"
+        if $self->{from_date} && Date::Utility->new($self->{from_date})->epoch() > Date::Utility->new()->epoch();
 
     die "Please provide or db_service (e.g. commission01) arguments"
         if not defined $self->{db_service};
@@ -268,7 +284,8 @@ async sub calculate {
         return;
     }
 
-    my $no_of_pages = $date_deals / $self->per_page_limit;
+    # The ceil function is used to round up the result to the nearest integer.
+    my $no_of_pages = ceil($date_deals / $self->per_page_limit);
     # minimum of 1
     $no_of_pages = 1 if $no_of_pages < 1;
 
@@ -310,7 +327,10 @@ async sub _calculate_page {
                         cfd_provider => $deal->{provider},
                         currency     => $deal->{currency}));
 
-                $log->errorf("No exchange rate found with deal %s for %s (%s)" , $deal->{id}, $deal->{currency} . '-' . $target_currency, $deal->{provider});
+                $log->errorf(
+                    "No exchange rate found with deal %s for %s (%s)",
+                    $deal->{id}, $deal->{currency} . '-' . $target_currency,
+                    $deal->{provider});
                 return;
             }
 
@@ -574,9 +594,12 @@ async sub _get_deals_per_page {
 
     my $deals = [];
 
+    # The offset is calculated by taking the remainder of the page number divided by the concurrency limit and multiplying it by the per-page limit.
+    my $offset = ($page - 1) % $self->concurrency_limit * $self->per_page_limit;
+
     try {
         $deals = await $self->_dbic->query(q{SELECT * FROM transaction.get_deals_for_period($1, $2, $3, $4, $5)},
-            $self->start_date, $self->date, $self->cfd_provider, $self->per_page_limit, $page - 1)->row_hashrefs->as_arrayref;
+            $self->start_date, $self->date, $self->cfd_provider, $self->per_page_limit, $offset)->row_hashrefs->as_arrayref;
         $log->debugf("deals received for date[%s] for cfd_provider[%s]: %s", $self->date, $self->cfd_provider, $deals);
     } catch ($e) {
         await $self->_warn_and_reconnect('get_deals_for_period', $e);

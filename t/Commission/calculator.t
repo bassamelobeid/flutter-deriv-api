@@ -7,6 +7,7 @@ use Test::Deep;
 use Test::More;
 use Test::FailWarnings;
 use Test::MockModule;
+use Test::Exception;
 
 use Future::AsyncAwait;
 use Commission::Calculator;
@@ -208,5 +209,44 @@ foreach my $case (@test_cases) {
         cmp_deeply $stored, $case->{expected_store}, 'expected store count for case[' . $case->{name} . ']';
     };
 }
+
+subtest "Test new input param [from_date] for script" => sub {
+
+    lives_ok {
+        my $calc = Commission::Calculator->new(
+            db_service         => 'test',
+            cfd_provider       => 'test_provider',
+            affiliate_provider => 'myaffiliate',
+            date               => '2021-06-28',
+            from_date          => '2021-06-12'
+        );
+    }
+    'Should not die when given correct from_date format';
+
+    dies_ok {
+        my $calc = Commission::Calculator->new(
+            db_service         => 'test',
+            cfd_provider       => 'test_provider',
+            affiliate_provider => 'myaffiliate',
+            date               => '2021-06-28',
+            from_date          => 'ABC-420-12'
+        );
+    }
+    "Should die when from_date is not a valid date";
+
+    dies_ok {
+        my $future_date = Date::Utility->new();
+        $future_date->add_days(1);    # add 1 day to the current date
+        my $calc = Commission::Calculator->new(
+            db_service         => 'test',
+            cfd_provider       => 'test_provider',
+            affiliate_provider => 'myaffiliate',
+            date               => '2021-06-28',
+            from_date          => $future_date
+        );
+    }
+    "Should die when from_date is a future date";
+
+};
 
 done_testing();

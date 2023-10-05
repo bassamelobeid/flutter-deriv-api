@@ -26,6 +26,7 @@ my $redis_exchange_rates_config = '';
 my $per_page_limit;
 my $concurrency;
 my $date = Date::Utility->new->db_timestamp;
+my $from_date;
 
 GetOptions(
     "x|cfd_provider=s"               => \$cfd_provider,
@@ -34,7 +35,8 @@ GetOptions(
     "e|redis_exchange_rate_config=s" => \$redis_exchange_rates_config,
     "l|per_page_limit=i"             => \$per_page_limit,
     "c|concurrency=i"                => \$concurrency,
-    "d|date=s"                       => \$date
+    "d|date=s"                       => \$date,
+    "f|from_date=s"                  => \$from_date,
 ) or die("Error in command line arguments\n");
 
 my $loop = IO::Async::Loop->new;
@@ -47,6 +49,7 @@ my $calc = Commission::Calculator->new(
     redis_exchange_rates_config => $redis_exchange_rates_config,
     per_page_limit              => $per_page_limit,
     concurrency_limit           => $concurrency,
+    from_date                   => $from_date
 );
 
 $loop->add($calc);
