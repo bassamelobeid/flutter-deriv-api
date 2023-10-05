@@ -23,6 +23,7 @@ use Finance::Underlying::SubMarket;
 use Finance::Contract::Category;
 use Finance::Underlying::Market::Registry;
 use Finance::Underlying::SubMarket::Registry;
+
 use List::UtilsBy   qw(sort_by);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -246,7 +247,7 @@ sub _build_tree {
         };
         foreach my $submarket (
             sort { $a->display_order <=> $b->display_order }
-            map  { Finance::Underlying::SubMarket::Registry->instance->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']))
+            map  { Finance::Underlying::SubMarket::Registry->instance->get($_) } $self->get_submarkets($market))
         {
             my $children       = [];
             my $submarket_info = {
@@ -256,13 +257,10 @@ sub _build_tree {
                 children    => $children,
                 parent      => $market_info,
             };
+
             foreach my $ul (
                 sort_by { $_->display_name =~ s{([0-9]+)}{sprintf "%-09.09d", $1}ger }
-                map { create_underlying($_) } $offerings_obj->query({
-                        market    => $market->name,
-                        submarket => $submarket->name
-                    },
-                    ['underlying_symbol']))
+                map { create_underlying($_) } $self->get_symbols_for_submarket($market, $submarket))
             {
                 my $children        = [];
                 my $underlying_info = {

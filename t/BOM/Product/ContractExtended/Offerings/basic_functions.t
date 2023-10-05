@@ -15,7 +15,7 @@ use Test::Differences;
 
 use List::MoreUtils qw( all none );
 
-use BOM::Product::Offerings::DisplayHelper;
+use BOM::Product::Offerings::DisplayHelper::Options;
 use LandingCompany::Registry;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -39,7 +39,7 @@ my $o = LandingCompany::Registry->by_name('svg')->basic_offerings({
     suspend_markets => ['cryptocurrency'],    # not going to mess up the test with new market
 });
 my $expected_levels = 4;
-my $offerings       = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);
+my $offerings       = new_ok('BOM::Product::Offerings::DisplayHelper::Options' => [{offerings => $o}]);
 
 my $original_levels = $offerings->levels;
 subtest levels => sub {
@@ -88,12 +88,12 @@ subtest 'decorate_tree' => sub {
         '.. decorations called ' . $decoration_name . ' do not exist on any of the "' . $second_level . '" level items');
 
     eq_or_diff($offerings->tree, $original_tree, "Asking for the tree again produces the decorated_tree");
-    my $new_offerings = new_ok('BOM::Product::Offerings::DisplayHelper', [{offerings => $o}]);
+    my $new_offerings = new_ok('BOM::Product::Offerings::DisplayHelper::Options', [{offerings => $o}]);
     isnt($new_offerings->tree, $original_tree, "..but asking the new copy does not have the decorations.");
 };
 
 subtest 'Early close dates on Fridays' => sub {
-    my $tree = BOM::Product::Offerings::DisplayHelper->new(
+    my $tree = BOM::Product::Offerings::DisplayHelper::Options->new(
         date      => Date::Utility->new('2020-07-03'),
         offerings => $o
     )->decorate_tree(
