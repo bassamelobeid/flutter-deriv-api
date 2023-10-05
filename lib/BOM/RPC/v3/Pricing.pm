@@ -89,8 +89,10 @@ sub _serialized_args {
     # key in the price_queue.pl daemon
     push @arr, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
 
-    # Keep country only if it is CN.
-    delete $copy->{country_code} if defined $copy->{country_code} and lc $copy->{country_code} ne 'cn';
+    # TODO - replace hard coded value "CN" and "AQ"
+    # Add "aq" country_code is temporary solution to unblock testing in Antartica region.
+    # Proper solution will be designed and implemented under separate clickup tickets
+    delete $copy->{country_code} if defined $copy->{country_code} and lc $copy->{country_code} ne 'cn' and lc $copy->{country_code} ne "aq";
 
     foreach my $k (sort keys %$copy) {
         push @arr, ($k, $copy->{$k});

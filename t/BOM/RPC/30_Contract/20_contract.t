@@ -242,6 +242,31 @@ subtest 'send_ask' => sub {
     );
 };
 
+subtest 'serialized_args' => sub {
+    my $args = {
+        "amount"                 => 30,
+        "basis"                  => "stake",
+        "contract_type"          => "MULTUP",
+        "country_code"           => "aq",
+        "currency"               => "USD",
+        "duration_unit"          => "s",
+        "landing_company"        => "virtual",
+        "language"               => "EN",
+        "multiplier"             => 100,
+        "price_daemon_cmd"       => "price",
+        "product_type"           => "basic",
+        "proposal"               => 1,
+        "skips_price_validation" => 1,
+        "subscribe"              => 1,
+        "symbol"                 => "1HZ10V"
+    };
+
+    my $expected =
+        "PRICER_ARGS::[\"amount\",\"30\",\"basis\",\"stake\",\"contract_type\",\"MULTUP\",\"country_code\",\"aq\",\"currency\",\"USD\",\"duration_unit\",\"s\",\"landing_company\",\"virtual\",\"multiplier\",\"100\",\"price_daemon_cmd\",\"price\",\"product_type\",\"basic\",\"proposal\",\"1\",\"skips_price_validation\",\"1\",\"subscribe\",\"1\",\"symbol\",\"1HZ10V\"]";
+    my $result = BOM::RPC::v3::Pricing::_serialized_args($args);
+    cmp_deeply($result, $expected, 'result expected');
+};
+
 done_testing();
 
 sub create_ticks {
