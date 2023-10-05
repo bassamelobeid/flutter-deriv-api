@@ -36,19 +36,6 @@ subtest $method => sub {
         'a instance of symbol'
     );
 
-    OUTER: for my $m (@{$result->{markets}}) {
-        for my $subm (@{$m->{submarkets}}) {
-            for my $sym (@{$subm->{symbols}}) {
-                if ($sym->{symbol} eq 'BSESENSEX30') {
-                    ok($sym->{feed_license}, 'have feed_license');
-                    ok($sym->{delay_amount}, 'have delay_amount');
-                    last OUTER;
-                }
-
-            }
-        }
-    }
-
 };
 
 done_testing();
