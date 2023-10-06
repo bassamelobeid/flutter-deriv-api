@@ -43,7 +43,7 @@
     [%
         status_list = {
             deposits    => [ 'new', 'pending', 'confirmed', 'error' ],
-            withdrawals => [ 'pending', 'verified', 'rejected', 'cancelled', 'processing', 'performing_blockchain_txn', 'sent', 'error' ],
+            withdrawals => [ 'pending', 'verified', 'rejected', 'cancelled', 'processing', 'performing_blockchain_txn', 'sent', 'reverting', 'reverted', 'error' ],
         };
         status_names = {
             performing_blockchain_txn => 'Performed blockchain',
@@ -188,6 +188,14 @@
                 <td>Sent</td>
                 <td>List withdrawal requests finally processed i.e debit and both blockchain completed</td>
              </tr>
+             <tr>
+                <td>Reverting</td>
+                <td>List withdrawal requests where client waited too long, we are returning the funds.</td>
+             </tr>
+             <tr>
+                <td>Reverted</td>
+                <td>List withdrawal requests where client waited too long, we returned the funds and credited the client back.</td>
+             </tr>
             <tr>
                 <td>Error</td>
                 <td>List errored out transaction, reason would be specified in error info.</td>
@@ -315,6 +323,8 @@
                         [% INCLUDE info type='date' title='Processing'            content=trx.status_history.PROCESSING %]
                         [% INCLUDE info type='date' title='Performing Blockchain' content=trx.status_history.PERFORMING_BLOCKCHAIN_TXN %]
                         [% INCLUDE info type='date' title='Sent'                  content=trx.status_history.SENT %]
+                        [% INCLUDE info type='date' title='Reverting'             content=trx.status_history.REVERTING %]
+                        [% INCLUDE info type='date' title='Reverted'              content=trx.status_history.REVERTED %]
                     [% END %]
                     </tbody></table>
                 </td>

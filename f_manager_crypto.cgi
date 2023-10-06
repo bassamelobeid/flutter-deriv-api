@@ -273,7 +273,8 @@ $actions->{withdrawals} = sub {
     push @errors, "Invalid action: $action"
         if $action and $action !~ /^[a-zA-Z]{4,15}$/;
     push @errors, "Invalid selection to view type of transactions: $view_type"
-        if not $view_type or $view_type !~ /^(?:pending|verified|rejected|cancelled|processing|performing_blockchain_txn|sent|error)$/;
+        if not $view_type
+        or $view_type !~ /^(?:pending|verified|rejected|cancelled|processing|reverting|performing_blockchain_txn|sent|reverted|error)$/;
 
     my ($update_errors, $reject_email_params);
     if (my ($is_bulk, $trx_action) = ($action || '') =~ /^(bulk|)(Save|Verify|Reject)$/) {

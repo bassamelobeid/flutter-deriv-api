@@ -148,6 +148,8 @@
                                     [% INCLUDE info type='date' title='Processing'            content=trx.status_history.PROCESSING %]
                                     [% INCLUDE info type='date' title='Performing Blockchain' content=trx.status_history.PERFORMING_BLOCKCHAIN_TXN %]
                                     [% INCLUDE info type='date' title='Sent'                  content=trx.status_history.SENT %]
+                                    [% INCLUDE info type='date' title='Reverting'             content=trx.status_history.REVERTING %]
+                                    [% INCLUDE info type='date' title='Reverted'              content=trx.status_history.REVERTED %]
                                 [% END %]
                             </td>
                             <td valign="top">
