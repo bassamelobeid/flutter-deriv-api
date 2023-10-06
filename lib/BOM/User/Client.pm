@@ -6857,12 +6857,13 @@ sub payment_ctc {
     my $crypto_id        = $args{crypto_id} || die "no crypto_id";
     my $transaction_hash = $args{transaction_hash};
 
-    my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
-    my $account     = $self->set_default_account($currency);
+    my $action_type      = $amount > 0 ? 'deposit' : 'withdrawal';
+    my $transaction_type = $args{transaction_type} || $action_type;
+    my $account          = $self->set_default_account($currency);
 
     my $ctc_values = {
         crypto_id        => $crypto_id,
-        transaction_type => $action_type,
+        transaction_type => $transaction_type,
         created_by       => $staff,
         transaction_hash => $transaction_hash,
     };
