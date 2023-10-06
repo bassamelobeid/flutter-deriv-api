@@ -20,6 +20,7 @@ use Binary::WebSocketAPI::v3::Subscription;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Advert;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Order;
+use Binary::WebSocketAPI::v3::Subscription::P2P::P2PSettings;
 use Log::Any qw($log);
 
 sub subscribe_orders {
@@ -154,6 +155,47 @@ sub subscribe_adverts {
     $result->{subscription}{id} = $sub->uuid;
     return $result;
 
+}
+
+=head2 subscribe_p2p_settings
+
+Handle subscriptions for p2p_settings
+
+=cut
+
+sub subscribe_p2p_settings {
+    my ($c, $rpc_response, $req_storage) = @_;
+    my $args     = $req_storage->{args};
+    my $msg_type = $req_storage->{msg_type};
+    # checking rpc response for errors
+    if ($rpc_response->{error}) {
+        return $c->new_error($msg_type, $rpc_response->{error}{code}, $rpc_response->{error}{message_to_client});
+    }
+
+    my $result = {
+        msg_type  => $msg_type,
+        $msg_type => $rpc_response,
+        defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
+    };
+
+    # If no subscription required, just return result
+    return $result unless $args->{subscribe};
+    my $subscription_info = delete $rpc_response->{subscription_info};                       # needed for subscription, not part of response
+    my $sub               = Binary::WebSocketAPI::v3::Subscription::P2P::P2PSettings->new(
+        c    => $c,
+        args => $args,
+        %$subscription_info                                                                  #contains country code for channel creation
+    );
+
+    # check for double subscription
+    if ($sub->already_registered) {
+        return $c->new_error($msg_type, 'AlreadySubscribed', $c->l('You are already subscribed to P2P settings'));
+    }
+
+    $sub->register;
+    $sub->subscribe;
+    $result->{subscription}{id} = $sub->uuid;
+    return $result;
 }
 
 1;

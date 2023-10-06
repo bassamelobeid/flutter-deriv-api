@@ -36,6 +36,7 @@ sub forget_after_logout {
     _forget_p2p_order_subscription($c);
     _forget_p2p_advert_subscription($c);
     _forget_cashier_payments_subscription($c);
+    _forget_p2p_settings_subscription($c);
     return;
 }
 
@@ -60,6 +61,7 @@ sub forget_all {
             p2p_advertiser
             p2p_advert
             cashier_payments
+            p2p_settings
             trading_platform_asset_listing
         );
         my $accepted_types = qr/^${\join q{|} => @accepted_types}$/;
@@ -84,6 +86,8 @@ sub forget_all {
                 @removed_ids{@{_forget_p2p_advert_subscription($c)}} = ();
             } elsif ($type eq 'cashier_payments') {
                 @removed_ids{@{_forget_cashier_payments_subscription($c)}} = ();
+            } elsif ($type eq 'p2p_settings') {
+                @removed_ids{@{_forget_p2p_settings_subscription($c)}} = ();
             } elsif ($type eq 'trading_platform_asset_listing') {
                 @removed_ids{@{_forget_trading_platform_asset_listing($c)}} = ();
             }
@@ -203,6 +207,35 @@ sub _forget_feed_subscription {
         }
     }
     return $removed_ids;
+}
+
+=head2 _forget_p2p_settings_subscription
+
+Handle unsubscribe for p2p_settings.
+
+Takes the following arguments
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=back
+
+Returns an array ref containg uuid of subscriptions effectively cancelled.
+
+=cut
+
+sub _forget_p2p_settings_subscription {
+    my ($c) = @_;
+    my @removed_ids;
+    my @subscriptions = Binary::WebSocketAPI::v3::Subscription::P2P::P2PSettings->get_by_class($c);
+
+    foreach my $subscription (@subscriptions) {
+        my $uuid = $subscription->uuid;
+        push @removed_ids, $uuid;
+        $subscription->unregister;
+    }
+    return \@removed_ids;
 }
 
 sub _forget_p2p_order_subscription {

@@ -577,6 +577,13 @@ sub actions_config {
             }
         ],
         [
+            'p2p_settings',
+            {
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_p2p_settings,
+                msg_group       => 'p2p',
+            }
+        ],
+        [
             'p2p_order_list',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
