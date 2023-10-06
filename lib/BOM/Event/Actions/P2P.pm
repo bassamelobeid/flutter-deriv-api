@@ -37,7 +37,7 @@ use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use BOM::Event::Utility        qw(exception_logged);
-use List::Util                 qw(any first uniq);
+use List::Util                 qw(any first uniq none);
 use Future::AsyncAwait;
 use Template::AutoFilter;
 use Encode;
@@ -145,6 +145,43 @@ sub advertiser_online_status {
         online_advertiser => 1,
         advertiser_id     => $advertiser_id
     });
+
+    return 1;
+}
+
+=head2 settings_updated
+
+One of the fields in p2p_dynamic_settings.cgi|p2p_advert_rates_manage.cgi in backoffice has been
+updated or new exchange rate published for p2p currency with floating rate enabled.
+We will publish p2p_settings response with updated fields to redis channel: "NOTIFY::P2P_SETTINGS::<country code>"
+If P2P dynamic settings was updated, response will be sent to all active subscribers.
+If p2p_advert_rates_manage.cgi or exchange rate was updated, response will be sent to P2P subscribers from specific countries only.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<affected_countries>: arrayref containing specific country codes (optional)
+
+=back
+
+=cut
+
+sub settings_updated {
+    my $data                 = shift;
+    my $redis                = BOM::Config::Redis->redis_p2p_write();
+    my @countries            = map { lc((split /::/, $_)[2]) } $redis->pubsub('channels', "NOTIFY::P2P_SETTINGS::*")->@*;
+    my $app_config           = BOM::Config::Runtime->instance->app_config;
+    my @restricted_countries = $app_config->payments->p2p->restricted_countries->@*;
+
+    $app_config->check_for_update(1) if $data->{force_update} && @countries;
+
+    for my $country (@countries) {
+        next if any { $_ eq $country } @restricted_countries;
+        next if $data->{affected_countries} && none { $_ eq $country } $data->{affected_countries}->@*;
+        my $result = BOM::User::Utility::get_p2p_settings(%$data, country => $country);
+        $redis->publish("NOTIFY::P2P_SETTINGS::${\uc($country)}", encode_json_utf8($result));
+    }
 
     return 1;
 }

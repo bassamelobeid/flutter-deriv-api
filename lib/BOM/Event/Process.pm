@@ -90,6 +90,7 @@ my $action_mapping = {
         p2p_chat_received                           => \&BOM::Event::Actions::P2P::chat_received,
         p2p_timeout_refund                          => \&BOM::Event::Actions::P2P::timeout_refund,
         p2p_dispute_expired                         => \&BOM::Event::Actions::P2P::dispute_expired,
+        p2p_settings_updated                        => \&BOM::Event::Actions::P2P::settings_updated,
         crypto_withdrawal                           => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
         client_promo_codes_upload                   => \&BOM::Event::Actions::Client::client_promo_codes_upload,
         shared_payment_method_found                 => \&BOM::Event::Actions::Client::shared_payment_method_found,
