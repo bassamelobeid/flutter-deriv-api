@@ -183,9 +183,11 @@ subtest 'get_bid' => sub {
             status
             payout
             reset_time
+            reset_barrier
             stash
             expiry_time
     ));
+
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
     $contract = _create_contract();
