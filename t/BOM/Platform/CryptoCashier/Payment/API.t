@@ -19,9 +19,10 @@ use Digest::HMAC;
 use Format::Util::Numbers qw(financialrounding);
 use JSON::MaybeUTF8       qw(:v1);
 
-my $mocked_user  = Test::MockModule->new('BOM::User::Client');
-my $mocked_API   = Test::MockModule->new('BOM::Platform::CryptoCashier::Payment::API');
-my $mocked_event = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my $mocked_user       = Test::MockModule->new('BOM::User::Client');
+my $mocked_API        = Test::MockModule->new('BOM::Platform::CryptoCashier::Payment::API');
+my $mocked_event      = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my $mocked_controller = Test::MockModule->new('BOM::Platform::CryptoCashier::Payment::API::Controller');
 
 my $dd_metrics = {};
 $mocked_API->mock(
@@ -382,6 +383,134 @@ subtest "/v1/payment/withdraw" => sub {
         my $payment_id = $controller->get_payment_id_from_clientdb($body->{client_loginid}, $body->{crypto_id}, 'withdrawal');
 
         call_ok('post' => '/v1/payment/withdraw' => $body)->has_no_error->response_is_deeply({payment_id => $payment_id});
+    };
+};
+
+subtest "/v1/payment/revert_withdrawal" => sub {
+    my $body = {
+        crypto_id      => 3,
+        address        => 'address_hash',
+        amount         => 1,
+        currency_code  => 'BTC',
+        client_loginid => $crypto_loginid,
+    };
+
+    subtest "missing required parameter" => sub {
+
+        for my $field (keys %$body) {
+            my $value = $body->{$field};
+            delete $body->{$field};
+            my $error = create_error('MissingRequiredParameter', message_params => $field);
+            call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_error->error_code_is('MissingRequiredParameter')
+                ->error_message_like($error->{message});
+            $body->{$field} = $value;
+        }
+    };
+
+    subtest "init_payment_validation" => sub {
+        subtest "No client found" => sub {
+            my $old_value = $body->{client_loginid};
+            $body->{client_loginid} = 'CR123';
+
+            my $error = create_error('ClientNotFound', message_params => 'CR123');
+            call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_error->error_code_is('ClientNotFound')
+                ->error_message_like($error->{message});
+
+            $body->{client_loginid} = $old_value;
+        };
+        subtest "Invalid currency" => sub {
+            my $old_value = $body->{currency_code};
+            $body->{currency_code} = 'USD';
+
+            my $error = create_error('InvalidCurrency', message_params => 'USD');
+            call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_error->error_code_is('InvalidCurrency')
+                ->error_message_like($error->{message});
+
+            $body->{currency_code} = $old_value;
+        };
+
+        subtest "wrong currency" => sub {
+            my $old_value = $body->{currency_code};
+            $body->{currency_code} = 'ETH';
+
+            my $error = create_error('CurrencyNotMatch', message_params => 'ETH');
+            call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_error->error_code_is('CurrencyNotMatch')
+                ->error_message_like($error->{message});
+
+            $body->{currency_code} = $old_value;
+        };
+
+        subtest "zero amount" => sub {
+            my $old_value = $body->{amount};
+            $body->{amount} = 0.000000004;
+
+            my $error = create_error('ZeroPaymentAmount');
+            call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_error->error_code_is('ZeroPaymentAmount')
+                ->error_message_like($error->{message});
+
+            $body->{amount} = $old_value;
+        };
+
+    };
+
+    subtest "Failed to revert withdrawal - MissingWithdrawalPayment" => sub {
+
+        my $error = create_error('MissingWithdrawalPayment', message_params => $body->{crypto_id});
+        call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_error->error_code_is('MissingWithdrawalPayment')
+            ->error_message_like($error->{message});
+
+    };
+
+    subtest "Failed to revert withdrawal" => sub {
+        $mocked_user->mock(
+            payment_ctc => sub {
+                return undef;
+            },
+        );
+
+        $mocked_controller->mock(
+            get_payment_id_from_clientdb => sub {
+                my ($self, $client_loginid, $crypto_id, $transaction_type) = @_;
+
+                return 4 if ($transaction_type eq 'withdrawal');
+            });
+
+        my $error = create_error('FailedRevert', message_params => $body->{crypto_id});
+        call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_error->error_code_is('FailedRevert')->error_message_like($error->{message});
+
+        $mocked_user->unmock_all;
+        $mocked_controller->unmock_all;
+    };
+
+    subtest "Withdrawal reverted successfully" => sub {
+
+        $mocked_user->mock(
+            validate_payment => sub {
+                return undef;
+            },
+        );
+
+        call_ok('post' => '/v1/payment/withdraw' => $body)->has_no_error;
+
+        call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_no_error;
+
+        my $controller = BOM::Platform::CryptoCashier::Payment::API::Controller->new;
+        my $payment_id = $controller->get_payment_id_from_clientdb($body->{client_loginid}, $body->{crypto_id}, 'withdraw_revert');
+        $t->json_is(
+            '' => {payment_id => $payment_id},
+            'right object'
+        );
+
+        $mocked_user->unmock_all;
+    };
+
+    subtest "withdraw_revert already processed" => sub {
+        # already reverted in the previous subtest
+        my $controller = BOM::Platform::CryptoCashier::Payment::API::Controller->new;
+        my $payment_id = $controller->get_payment_id_from_clientdb($body->{client_loginid}, $body->{crypto_id}, 'withdraw_revert');
+
+        call_ok('post' => '/v1/payment/revert_withdrawal' => $body)->has_no_error->response_is_deeply({payment_id => $payment_id});
+
     };
 };
 

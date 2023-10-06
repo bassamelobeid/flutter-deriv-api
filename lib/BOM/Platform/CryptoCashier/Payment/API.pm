@@ -63,6 +63,7 @@ sub startup {
     my $r = $app->routes;
     $r->post('/v1/payment/deposit')->to('Controller#deposit');
     $r->post('/v1/payment/withdraw')->to('Controller#withdraw');
+    $r->post('/v1/payment/revert_withdrawal')->to('Controller#revert_withdrawal');
 
     $r->any('/')->to('Controller#invalid_request');
     $r->any('/*')->to('Controller#invalid_request');

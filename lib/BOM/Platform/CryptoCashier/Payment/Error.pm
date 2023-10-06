@@ -27,7 +27,9 @@ our %ERROR_MAP = (
     FailedDebit              => 'Filed to debit the client account for crypto id: %s',
     InvalidPayment           => 'Invalid payment: %s',
     UnknownError             => 'An unknown error has occurred.',
-    SiblingAccountNotFound   => 'Wrong currency deposit. Client doesnt have the correct account. crypto id: %s'
+    SiblingAccountNotFound   => 'Wrong currency deposit. Client doesnt have the correct account. crypto id: %s',
+    FailedRevert             => 'Filed to revert the client\'s withdrawal for crypto id: %s',
+    MissingWithdrawalPayment => 'Withdrawal paymnet not found for crypto id: %s',
 );
 
 =head2 create_error
