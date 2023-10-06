@@ -31,6 +31,7 @@ use constant TRANSACTION_HANDLERS => {
         SENT      => \&withdrawal_handler,
         LOCKED    => \&withdrawal_handler,
         CANCELLED => \&withdrawal_handler,
+        REVERTED  => \&withdrawal_handler,
     },
     deposit => {
         PENDING   => \&deposit_handler,

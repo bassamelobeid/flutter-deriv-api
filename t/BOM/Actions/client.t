@@ -4935,6 +4935,40 @@ subtest 'crypto_withdrawal_email event' => sub {
 
     is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+
+    undef @track_args;
+    BOM::Event::Actions::Client::crypto_withdrawal_email({
+            loginid            => $client->loginid,
+            amount             => '2',
+            currency           => 'ETH',
+            transaction_hash   => undef,
+            transaction_url    => undef,
+            live_chat_url      => 'https://deriv.com/en/?is_livechat_open=true',
+            transaction_status => 'REVERTED',
+            reference_no       => 1,
+            title              => 'Your ETH withdrawal is returned',
+        })->get;
+
+    ($customer, %args) = @track_args;
+
+    is $args{event}, 'crypto_withdrawal_reverted_email', "got correct event name";
+
+    cmp_deeply $args{properties},
+        {
+        'loginid'       => $client->loginid,
+        'email'         => $client->email,
+        'brand'         => 'deriv',
+        'currency'      => 'ETH',
+        'lang'          => 'EN',
+        'amount'        => '2',
+        'reference_no'  => 1,
+        'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
+        'title'         => 'Your ETH withdrawal is returned',
+        },
+        'event properties are ok';
+
+    is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
 subtest 'deposit limits breached' => sub {

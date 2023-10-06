@@ -132,6 +132,7 @@ my %EVENT_PROPERTIES = (
     crypto_withdrawal_sent_email      => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
     crypto_withdrawal_locked_email    => [qw(loginid amount currency live_chat_url title)],
     crypto_withdrawal_cancelled_email => [qw(loginid amount currency reference_no live_chat_url title)],
+    crypto_withdrawal_reverted_email  => [qw(loginid email amount currency reference_no live_chat_url title)],
 
     p2p_advert_created =>
         [qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible)],
@@ -202,6 +203,7 @@ my @COMMON_EVENT_METHODS = qw(
     crypto_withdrawal_sent_email
     crypto_withdrawal_locked_email
     crypto_withdrawal_cancelled_email
+    crypto_withdrawal_reverted_email
     payment_deposit
     payment_withdrawal
     payment_withdrawal_reversal
@@ -244,7 +246,7 @@ my @TRANSACTIONAL_EVENTS = qw(
     reset_password_request
     pa_transfer_confirm
     reset_password_confirmation
-
+    crypto_withdrawal_reverted_email
     account_reactivated
     verify_email_closed_account_reset_password
     p2p_order_confirm_verify

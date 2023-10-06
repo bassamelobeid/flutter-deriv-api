@@ -3251,6 +3251,10 @@ sub crypto_withdrawal_email {
             event_name => \&BOM::Event::Services::Track::crypto_withdrawal_cancelled_email,
             title      => localize('Your [_1] withdrawal is cancelled', $args->{currency}),
         },
+        REVERTED => {
+            event_name => \&BOM::Event::Services::Track::crypto_withdrawal_reverted_email,
+            title      => localize('Your [_1] withdrawal is returned', $args->{currency}),
+        },
     );
 
     return $event_mapper{$args->{transaction_status}}{event_name}({
