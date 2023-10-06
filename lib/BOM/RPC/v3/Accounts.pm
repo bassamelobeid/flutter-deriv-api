@@ -78,6 +78,9 @@ use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use constant DEFAULT_STATEMENT_LIMIT         => 100;
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 
+# limit the number of Landing Companies provided as arguments for kyc_auth_status
+use constant LCS_ARGUMENT_LIMIT => 20;
+
 # Expected withdrawal processing times in days [min, max].
 use constant WITHDRAWAL_PROCESSING_TIMES => {
     bank_wire => [5, 10],
@@ -929,7 +932,7 @@ rpc get_account_status => sub {
 
     my $idv_client = $duplicated // $client;
 
-    push @$status, 'idv_disallowed' if BOM::User::IdentityVerification::is_idv_disallowed($idv_client);
+    push @$status, 'idv_disallowed' if BOM::User::IdentityVerification::is_idv_disallowed({client => $idv_client});
 
     my $user = $client->user;
 
@@ -1076,14 +1079,76 @@ rpc get_account_status => sub {
 
 =head2 kyc_auth_status
 
-    Gets the KYC (POI and POA) authentication object for the given client.
+Gets the KYC (POI and POA) authentication object for the given client.
+
+=over
+
+It takes the following argument:
+
+=over 4
+
+=item * C<landing_company> - (optional) landing company. Default: client's landing company.
+
+=back
+
+    If landing_company argument is provided, it returns a nested structure where KYC authentication
+    status is grouped by landing company.
+
+=back
 
 =cut
 
 rpc kyc_auth_status => sub {
-    my $params = shift;
+    my $params            = shift;
+    my $client            = $params->{client};
+    my $landing_companies = $params->{args}->{landing_companies};
 
-    my $client = $params->{client};
+    my @uniq_landing_companies = uniq @{$landing_companies};
+    splice @uniq_landing_companies, LCS_ARGUMENT_LIMIT if @uniq_landing_companies > LCS_ARGUMENT_LIMIT;
+
+    my $kyc_args = {client => $client};
+
+    my $kyc_authentication_object;
+    my $kyc_jurisdiction_authentication_object;
+
+    if ($landing_companies) {
+        # if valid landing company argument is provided, we return nested structure
+        my @all_lcs = LandingCompany::Registry->get_all;
+        for my $landing_company (@uniq_landing_companies) {
+
+            my $is_valid = grep { $_ eq $landing_company } map { $_->short } @all_lcs;
+            next unless $is_valid;
+
+            $kyc_args->{landing_company} = $landing_company;
+
+            $kyc_jurisdiction_authentication_object->{$landing_company} = _get_kyc_authentication($kyc_args);
+        }
+    }
+
+    my $kyc_auth_status = $kyc_jurisdiction_authentication_object // _get_kyc_authentication($kyc_args);
+    return $kyc_auth_status;
+};
+
+=head2 _get_kyc_authentication
+
+Resolves the C<identity> and C<address> structure of the KYC authentication object.
+
+It takes the following parameters as hashref:
+
+=over 4
+
+=item * C<client> a L<BOM::User::Client> instance.
+
+=item * C<landing_company> - (optional) landing company. Default: client's landing company.
+
+=back
+
+=cut
+
+sub _get_kyc_authentication {
+    my $args            = shift;
+    my $client          = $args->{client};
+    my $landing_company = $args->{landing_company};
 
     my $kyc_authentication_object = {
         identity => {
@@ -1100,19 +1165,20 @@ rpc kyc_auth_status => sub {
     my $duplicated;
     $duplicated = $client->duplicate_sibling_from_vr if $client->is_virtual;
 
-    return $kyc_authentication_object if $client->is_virtual && !$duplicated;
+    return $kyc_authentication_object if $client->is_virtual && !$duplicated && !$landing_company;
 
-    my $documents = $client->documents->uploaded();
-    my $kyc_args  = {
-        client    => $duplicated // $client,
-        documents => $documents,
+    return $kyc_authentication_object if $landing_company && $landing_company eq 'virtual';
+
+    my $kyc_args = {
+        client          => $duplicated // $client,
+        landing_company => $landing_company
     };
 
-    $kyc_authentication_object->{address}  = _get_authentication_poa($kyc_args);
     $kyc_authentication_object->{identity} = _get_kyc_authentication_poi($kyc_args);
+    $kyc_authentication_object->{address}  = _get_authentication_poa($kyc_args);
 
     return $kyc_authentication_object;
-};
+}
 
 =head2 _get_kyc_authentication_poi
 
@@ -1122,9 +1188,9 @@ It takes the following parameters as hashref:
 
 =over 4
 
-=item * C<client> a L<BOM::User::Client> instance
+=item * C<client> a L<BOM::User::Client> instance.
 
-=item * C<documents> hashref containing the client's documents by type
+=item * C<landing_company> (optional) landing company. Default: client's landing company.
 
 =back
 
@@ -1133,37 +1199,38 @@ Returns,
 
 =over 4
 
-=item * C<last_rejected> an arrayref with the reasons for the latest failed POI attempt
+=item * C<last_rejected> an arrayref with the reasons for the latest failed POI attempt.
 
-=item * C<available_services> a arrayref containing the available services for the next POI attempt
+=item * C<available_services> a arrayref containing the available services for the next POI attempt.
 
-=item * C<service> the service responsible for the current POI status
+=item * C<service> the service responsible for the current POI status.
 
-=item * C<status> the current POI status
+=item * C<status> the current POI status.
 
 =back
 
 =cut
 
 sub _get_kyc_authentication_poi {
-    my $args = shift;
-    my ($client, $documents) = @{$args}{qw/client documents/};
+    my $args   = shift;
+    my $client = $args->{client};
 
-    my $poi_status = $client->get_poi_status($documents);
-    my ($latest_poi_by) = $client->latest_poi_by();
-    $latest_poi_by //= 'none';
+    my ($latest_poi_by) = $client->latest_poi_by($args);
+
+    my $poi_status = $args->{landing_company} ? $client->get_poi_status_jurisdiction($args) : $client->get_poi_status($args);
+    $poi_status = 'none' unless $latest_poi_by;
 
     my $poi_rejected = $poi_status =~ /rejected|suspected/;
 
     my $last_rejected = {};
-    $last_rejected = _get_last_rejected($client) if $poi_rejected;
+    $last_rejected = _get_last_rejected($args) if $poi_rejected;
 
-    my $available_services = _get_available_services($client);
+    my $available_services = _get_available_services($args);
 
     return {
         last_rejected      => $last_rejected,
         available_services => $available_services,
-        service            => $latest_poi_by,
+        service            => $latest_poi_by //= 'none',
         status             => $poi_status,
     };
 }
@@ -1176,7 +1243,9 @@ It takes the following parameter:
 
 =over 4
 
-=item * C<client> a L<BOM::User::Client> instance
+=item * C<client> a L<BOM::User::Client> instance.
+
+=item * C<landing_company> (optional) landing company. Default: client's landing company.
 
 =over 4
 
@@ -1194,11 +1263,12 @@ Returns hashref containing,
 =cut
 
 sub _get_last_rejected {
-    my ($client) = @_;
+    my $args   = shift;
+    my $client = $args->{client};
 
-    my ($latest_poi_by) = $client->latest_poi_by();
+    my ($latest_poi_by) = $client->latest_poi_by($args);
 
-    return unless defined $latest_poi_by;    # 'none'
+    return {} unless defined $latest_poi_by;    # 'none'
 
     my $onfido_reject_reasons_catalog;
     my $idv_reject_reasons_catalog;
@@ -1242,11 +1312,13 @@ sub _get_last_rejected {
 
 Resolves the C<available_services> structure of the KYC Identity authentication object.
 
-It takes the following param:
+It takes the following params as a hashref:
 
 =over 4
 
-=item * L<BOM::User::Client> the client
+=item * C<client> a L<BOM::User::Client> instance.
+
+=item * C<landing_company> (optional) landing company. Default: client's landing company.
 
 =back
 
@@ -1256,12 +1328,14 @@ Returns,
 =cut
 
 sub _get_available_services {
-    my ($client) = @_;
+    my $args   = shift;
+    my $client = $args->{client};
 
     my $available_services = [];
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
-    push @$available_services, 'idv' if $idv_model->is_available($client);
+
+    push @$available_services, 'idv' if $idv_model->is_available($args);
 
     push @$available_services, 'onfido' if BOM::User::Onfido::is_available($client);
 

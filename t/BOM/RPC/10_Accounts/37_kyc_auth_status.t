@@ -5,7 +5,6 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use lib '/home/git/regentmarkets/bom-rpc/t/lib';
 use Test::BOM::RPC::QueueClient;
 use List::Util;
 use Encode;
@@ -292,11 +291,19 @@ subtest 'kyc authorization status' => sub {
             $client_cr->set_authentication('ID_DOCUMENT', {status => 'pass'});
             $client_cr->save;
 
+            my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+            $status_mock->mock(
+                age_verification => +{
+                    staff_name         => 'mr cat',
+                    reason             => 'test',
+                    last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                });
+
             my $expected_response = {
                 identity => {
                     last_rejected      => {},
                     available_services => ['onfido', 'manual'],
-                    service            => 'none',
+                    service            => 'manual',
                     status             => 'verified',
                 },
                 address => {
@@ -310,8 +317,8 @@ subtest 'kyc authorization status' => sub {
             ok $client_cr->fully_authenticated,      'client is fully authenticated';
             ok $client_cr->status->age_verification, 'client is age verified';
 
-            cmp_deeply($result->{address}->{status}, $expected_response->{address}->{status}, 'expected poa status for authenticated client');
-            cmp_deeply($result,                      $expected_response,                      'expected response object');
+            cmp_deeply($result, $expected_response, 'expected poa object for authenticated client');
+            $status_mock->unmock_all;
         };
     };
 
@@ -1495,8 +1502,6 @@ subtest 'kyc authorization status' => sub {
 
             $user->add_client($client_cr);
 
-            ok !$client_cr->fully_authenticated, 'Client is not fully authenticated';
-
             $client_cr->db->dbic->run(
                 fixup => sub {
                     my $sth = $_->prepare(
@@ -1514,11 +1519,351 @@ subtest 'kyc authorization status' => sub {
                 });
             is($count_authentication_methods->{count}, 3, 'client has multiple authentication_methods');
 
+            my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+            $status_mock->mock(
+                age_verification => +{
+                    staff_name         => 'mr cat',
+                    reason             => 'test',
+                    last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                });
+
+            ok $client_cr->fully_authenticated,      'Client is fully authenticated';
+            ok $client_cr->status->age_verification, 'Age verified';
+
             my $token_cr = $m->create_token($client_cr->loginid, 'test token');
             my $result   = $c->tcall($method, {token => $token_cr});
 
             is $result->{identity}->{status}, 'verified', 'client is poi verified';
+
+            $status_mock->unmock_all;
         };
+    };
+};
+
+subtest 'kyc authorization status, landing companies provided as argument' => sub {
+
+    subtest 'test 0' => sub {
+        my $user_cr = BOM::User->create(
+            email    => 'kyc_lc_test0@deriv.com',
+            password => 'secret_pwd'
+        );
+
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+
+        $user_cr->add_client($client_cr);
+
+        my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+        my $args   = {landing_companies => ['svg', 'maltainvest']};
+        my $params = {
+            token => $token_cr,
+            args  => $args
+        };
+
+        my $result = $c->tcall($method, $params);
+        is $result->{error}, undef, 'Call has no errors when landing company argument is provided';
+    };
+
+    subtest 'argument validations' => sub {
+        subtest 'should ignore any invalid arguments and not throw' => sub {
+            my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+
+            my $user_cr = BOM::User->create(
+                email    => 'kyc_lc_invalid_arg@deriv.com',
+                password => 'secret_pwd'
+            );
+
+            $user_cr->add_client($client_cr);
+
+            my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+            my $args   = {landing_companies => ['svg', 'big-cat', 'maltainvest', 'small-cat']};
+            my $params = {
+                token => $token_cr,
+                args  => $args
+            };
+
+            my $expected_response = {
+                svg => {
+                    identity => {
+                        status             => 'none',
+                        service            => 'none',
+                        last_rejected      => {},
+                        available_services => ['idv', 'onfido', 'manual']
+                    },
+                    address => {status => 'none'},
+                },
+                maltainvest => {
+                    identity => {
+                        status             => 'none',
+                        service            => 'none',
+                        last_rejected      => {},
+                        available_services => ['onfido', 'manual']
+                    },
+                    address => {status => 'none'}}};
+
+            my $result = $c->tcall($method, $params);
+            is $result->{error}, undef, 'call did not throw error for invalid arguments';
+            cmp_deeply($result, $expected_response, 'expected response object for ignored invalid arguments');
+        };
+
+        subtest 'should fallback to standard response if all arguments are invalid' => sub {
+            my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+
+            my $user_cr = BOM::User->create(
+                email    => 'kyc_lc_all_invalid_arg@deriv.com',
+                password => 'secret_pwd'
+            );
+
+            $user_cr->add_client($client_cr);
+
+            my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+            my $args   = {landing_companies => ['big-cat', 'small-cat', 'tiny-cat']};
+            my $params = {
+                token => $token_cr,
+                args  => $args
+            };
+
+            my $expected_response = {
+                identity => {
+                    last_rejected      => {},
+                    available_services => ['idv', 'onfido', 'manual'],
+                    service            => 'none',
+                    status             => 'none',
+                },
+                address => {
+                    status => 'none',
+                },
+            };
+
+            my $result = $c->tcall($method, $params);
+            is $result->{error}, undef, 'call did not throw error for invalid arguments';
+            cmp_deeply($result, $expected_response, 'expected response object for all invalid arguments');
+        };
+
+        subtest 'should take only unique arguments' => sub {
+            my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+
+            my $user_cr = BOM::User->create(
+                email    => 'kyc_lc_uniq_arg@deriv.com',
+                password => 'secret_pwd'
+            );
+
+            $user_cr->add_client($client_cr);
+
+            my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+            my $args   = {landing_companies => ['svg', 'virtual', 'virtual', 'svg', 'virtual']};
+            my $params = {
+                token => $token_cr,
+                args  => $args
+            };
+
+            my $expected_response = {
+                svg => {
+                    identity => {
+                        status             => 'none',
+                        service            => 'none',
+                        last_rejected      => {},
+                        available_services => ['idv', 'onfido', 'manual']
+                    },
+                    address => {status => 'none'},
+                },
+                virtual => {
+                    identity => {
+                        status             => 'none',
+                        service            => 'none',
+                        last_rejected      => {},
+                        available_services => []
+                    },
+                    address => {status => 'none'}}};
+
+            my $result = $c->tcall($method, $params);
+            cmp_deeply($result, $expected_response, 'expected response object for repeated arguments');
+        };
+
+        subtest 'should limit amount of arguments to 20' => sub {
+            my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+
+            my $user_cr = BOM::User->create(
+                email    => 'kyc_lc_20_arg@deriv.com',
+                password => 'secret_pwd'
+            );
+
+            $user_cr->add_client($client_cr);
+
+            my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+            my $lc_array_30 = [map { "lc$_" } 1 .. 30];
+
+            my $args   = {landing_companies => $lc_array_30};
+            my $params = {
+                token => $token_cr,
+                args  => $args
+            };
+
+            my $landing_company_mock = Test::MockModule->new('LandingCompany');
+            my $counter              = 0;
+            $landing_company_mock->mock(
+                short => sub {
+                    $counter++;
+                    return 'lc';
+                });
+
+            my $result = $c->tcall($method, $params);
+
+            my $n_landing_companies = scalar LandingCompany::Registry->get_all;
+            my $LCS_ARGUMENT_LIMIT  = 20;
+            is $counter, $LCS_ARGUMENT_LIMIT * $n_landing_companies, 'expected number of comparison in loop for arguments limited to 20 lcs';
+
+            $landing_company_mock->unmock_all();
+        };
+    };
+
+    subtest 'landing company as argument is used over client\'s landing company' => sub {
+        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+
+        my $user_vr = BOM::User->create(
+            email    => 'kyc_lc_args_over_default@deriv.com',
+            password => 'secret_pwd'
+        );
+
+        $user_vr->add_client($client_vr);
+
+        my $token_vr = $m->create_token($client_vr->loginid, 'test token');
+
+        my $args   = {landing_companies => ['svg', 'maltainvest']};
+        my $params = {
+            token => $token_vr,
+            args  => $args
+        };
+
+        my $expected_response = {
+            svg => {
+                identity => {
+                    status             => 'none',
+                    service            => 'none',
+                    last_rejected      => {},
+                    available_services => ['idv', 'onfido', 'manual']
+                },
+                address => {status => 'none'},
+            },
+            maltainvest => {
+                identity => {
+                    status             => 'none',
+                    service            => 'none',
+                    last_rejected      => {},
+                    available_services => ['onfido', 'manual']
+                },
+                address => {status => 'none'}}};
+
+        my $result = $c->tcall($method, $params);
+        cmp_deeply($result, $expected_response, 'expected response object for virtual client with provided lc arguments');
+    };
+
+    subtest 'returns correct information per landing companies\' configuration' => sub {
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+
+        my $user = BOM::User->create(
+            email    => 'kyc_lc_many_lcs@deriv.com',
+            password => 'secret_pwd'
+        );
+
+        $user->add_client($client_cr);
+
+        my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+        my $args   = {landing_companies => ['virtual', 'svg', 'labuan', 'maltainvest']};
+        my $params = {
+            token => $token_cr,
+            args  => $args
+        };
+
+        my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+        $idv_mock->mock(
+            get_last_updated_document => {
+                id           => 1,
+                status       => 'verified',
+                requested_at => '2020-01-01 00:00:01',
+                submitted_at => '2020-01-01 00:00:01'
+            });
+
+        my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+        $onfido_mock->mock(
+            get_latest_check => {
+                report_document_status     => 'complete',
+                report_document_sub_result => 'suspected',
+                user_check                 => {
+                    result     => 'consider',
+                    created_at => '2020-01-01 00:00:00'
+                }});
+        $onfido_mock->mock(get_consider_reasons => ['data_comparison.first_name']);
+
+        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+        $status_mock->mock(
+            age_verification => +{
+                staff_name => 'system',
+                reason     => 'test'
+            });
+
+        my $expected_response = {
+            virtual => {
+                identity => {
+                    status             => 'none',
+                    service            => 'none',
+                    last_rejected      => {},
+                    available_services => []
+                },
+                address => {status => 'none'}
+            },
+            svg => {
+                identity => {
+                    status             => 'verified',
+                    service            => 'idv',
+                    last_rejected      => {},
+                    available_services => ['onfido', 'manual']
+                },
+                address => {status => 'none'},
+            },
+            labuan => {
+                identity => {
+                    status             => 'verified',
+                    service            => 'idv',
+                    last_rejected      => {},
+                    available_services => ['onfido', 'manual']
+                },
+                address => {status => 'none'},
+            },
+            maltainvest => {
+                identity => {
+                    status             => 'suspected',
+                    service            => 'onfido',
+                    last_rejected      => {rejected_reasons => ['The name on your document doesn\'t match your profile.']},
+                    available_services => ['onfido', 'manual']
+                },
+                address => {status => 'none'}}};
+
+        my $result = $c->tcall($method, $params);
+        cmp_deeply $result, $expected_response, 'expected response object for many lcs as argument';
+
+        $idv_mock->unmock_all;
+        $onfido_mock->unmock_all;
+        $status_mock->unmock_all;
     };
 };
 

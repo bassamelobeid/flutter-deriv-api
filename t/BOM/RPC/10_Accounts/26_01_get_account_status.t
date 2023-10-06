@@ -3019,21 +3019,19 @@ subtest 'get account status' => sub {
         };
 
         subtest 'idv disallowed' => sub {
-            my $mocked_client = Test::MockModule->new(ref $test_client);
-            my $mocked_lc     = Test::MockModule->new('LandingCompany');
+            my $mocked_client = Test::MockModule->new('BOM::User::Client');
 
-            $test_client->status->clear_allow_document_upload;
-            my $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->clear_allow_document_upload;
+            my $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply($result->{status}, superbagof(qw(financial_information_not_complete)), 'no idv_disallowed if no allow_document_upload');
 
-            $test_client->status->setnx('unwelcome', 'system', 'reason');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->setnx('unwelcome', 'system', 'reason');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply($result->{status}, superbagof(qw(idv_disallowed)), 'no idv_disallowed if no allow_document_upload');
-            $test_client->status->clear_unwelcome;
+            $test_client_cr->status->clear_unwelcome;
 
             $mocked_client->mock(aml_risk_classification => 'high');
-            $mocked_lc->mock(short => 'svg');
-            $result = $c->tcall($method, {token => $token});
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed financial_information_not_complete financial_assessment_not_complete)),
@@ -3041,33 +3039,33 @@ subtest 'get account status' => sub {
             );
             $mocked_client->mock(aml_risk_classification => 'low');
 
-            $test_client->status->upsert('age_verification', 'system', 'verified');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->upsert('age_verification', 'system', 'verified');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply($result->{status}, superbagof(qw(allow_document_upload idv_disallowed)), 'idv_disallowed if client has age verified');
-            $test_client->status->clear_age_verification;
+            $test_client_cr->status->clear_age_verification;
 
-            $test_client->status->upsert('allow_poi_resubmission', 'system', 'resubmission');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->upsert('allow_poi_resubmission', 'system', 'resubmission');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply($result->{status}, superbagof(qw(allow_document_upload idv_disallowed)),
                 'idv_disallowed if client has allow_poi_resubmission');
-            $test_client->status->clear_allow_poi_resubmission;
+            $test_client_cr->status->clear_allow_poi_resubmission;
 
             for my $reason (
                 qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/)
             {
-                $test_client->status->upsert('allow_document_upload', 'system', $reason);
-                $result = $c->tcall($method, {token => $token});
+                $test_client_cr->status->upsert('allow_document_upload', 'system', $reason);
+                $result = $c->tcall($method, {token => $token_cr});
                 cmp_deeply($result->{status}, noneof(qw(idv_disallowed)), 'no idv_disallowed if allow_document_upload with allowed reason');
                 cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), "correct statuses for reason $reason");
             }
 
-            $test_client->status->upsert('allow_document_upload', 'system', 'ANYTHING_ELSE');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->upsert('allow_document_upload', 'system', 'ANYTHING_ELSE');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply($result->{status}, noneof(qw(idv_disallowed)), 'idv allowed correctly for ANYTHING_ELSE');
 
             $mocked_client->mock('get_onfido_status', 'expired');
-            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload)),
@@ -3075,8 +3073,8 @@ subtest 'get account status' => sub {
             );
 
             $mocked_client->mock('get_onfido_status', 'rejected');
-            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload)),
@@ -3085,8 +3083,8 @@ subtest 'get account status' => sub {
             $mocked_client->unmock('get_onfido_status');
 
             $mocked_client->mock('get_manual_poi_status', 'expired');
-            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload)),
@@ -3094,8 +3092,8 @@ subtest 'get account status' => sub {
             );
 
             $mocked_client->mock('get_manual_poi_status', 'rejected');
-            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload)),
@@ -3103,8 +3101,7 @@ subtest 'get account status' => sub {
             );
 
             $mocked_client->unmock('get_manual_poi_status');
-            $test_client->status->clear_allow_document_upload;
-            $mocked_lc->mock(short => 'malta');
+            $test_client_cr->status->clear_allow_document_upload;
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
                 $result->{status},
@@ -3112,9 +3109,8 @@ subtest 'get account status' => sub {
                 'idv not allowed for regulated landing companies'
             );
 
-            $test_client->status->set('age_verification', 'test', 'test');
-            $mocked_lc->mock(short => 'svg');
-            $result = $c->tcall($method, {token => $token});
+            $test_client_cr->status->set('age_verification', 'test', 'test');
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete)),
@@ -3122,7 +3118,7 @@ subtest 'get account status' => sub {
             );
 
             $mocked_client->mock(get_idv_status => 'expired');
-            $result = $c->tcall($method, {token => $token});
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(allow_document_upload financial_information_not_complete)),
