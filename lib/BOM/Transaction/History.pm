@@ -191,7 +191,9 @@ sub _get_txn_remark {
 
     # Crypto
     if ($gateway eq 'ctc') {
-        if ($details->{transaction_hash}) {
+        if ($details->{transaction_type} eq 'withdraw_revert') {
+            return localize('Withdrawal returned. Reference no.: [_1]', $details->{crypto_id});
+        } elsif ($details->{transaction_hash}) {
             return localize('Address: [_1], transaction: [_2]', $details->{address}, $details->{transaction_hash});
         } else {
             return localize('Address: [_1]', $details->{address});
