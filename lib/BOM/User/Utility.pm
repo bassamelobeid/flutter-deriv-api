@@ -20,13 +20,16 @@ use YAML::XS qw(LoadFile);
 use WebService::SendBird;
 use JSON::MaybeUTF8 qw(:v1);
 use Digest::SHA     qw(hmac_sha1_hex);
-use List::Util      qw(any);
+use List::Util      qw (any uniq);
+use POSIX           qw( floor );
+use Math::BigFloat;
 
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::P2P;
+use BOM::Platform::Context qw(localize);
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(parse_mt5_group p2p_rate_rounding p2p_exchange_rate);
@@ -317,6 +320,81 @@ sub p2p_on_advert_view {
     return $updates;
 }
 
+=head2 get_p2p_settings
+
+Returns general settings about peer to peer system. If called from RPC, might get values from app_config cache.
+If called from bom-events for updated p2p_settings, get updated values from app_config.
+
+=over
+
+=item * C<country> - client residence (2 letters country code)
+
+=back
+
+Returns p2p_settings to either RPC call or to bom-events
+
+=cut
+
+sub get_p2p_settings {
+    my %param      = @_;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    my $p2p_advert_config    = BOM::Config::P2P::advert_config()->{$param{country}};
+    my $p2p_config           = $app_config->payments->p2p;
+    my $local_currency       = BOM::Config::CurrencyConfig::local_currency_for_country(country => $param{country});
+    my $exchange_rate        = p2p_exchange_rate($local_currency);
+    my $float_range          = BOM::Config::P2P::currency_float_range($local_currency);
+    my %all_local_currencies = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
+    my %p2p_countries        = BOM::Config::P2P::available_countries()->%*;
+    my @p2p_currencies       = split ',', (BOM::Config::Redis->redis_p2p->get('P2P::LOCAL_CURRENCIES') // '');
+
+    my @local_currencies;
+    for my $symbol (sort keys %all_local_currencies) {
+        next unless any { exists($p2p_countries{$_}) } $all_local_currencies{$symbol}->{countries}->@*;
+        push @local_currencies, {
+            symbol       => $symbol,
+            display_name => localize($all_local_currencies{$symbol}->{name}),    # transations added in BOM::Backoffice::Script::ExtraTranslations
+            has_adverts  => (any { $symbol eq $_ } @p2p_currencies) ? 1 : 0,
+            $symbol eq $local_currency ? (is_default => 1) : (),
+        };
+    }
+
+    my $result = +{
+        $p2p_config->archive_ads_days ? (adverts_archive_period => $p2p_config->archive_ads_days) : (),
+        order_payment_period        => floor($p2p_config->order_timeout / 60),
+        cancellation_block_duration => $p2p_config->cancellation_barring->bar_time,
+        cancellation_grace_period   => $p2p_config->cancellation_grace_period,
+        cancellation_limit          => $p2p_config->cancellation_barring->count,
+        cancellation_count_period   => $p2p_config->cancellation_barring->period,
+        maximum_advert_amount       => $p2p_config->limits->maximum_advert,
+        maximum_order_amount        => $p2p_config->limits->maximum_order,
+        adverts_active_limit        => $p2p_config->limits->maximum_ads_per_type,
+        order_daily_limit           => $p2p_config->limits->count_per_day_per_client,
+        supported_currencies        => [sort(uniq($p2p_config->available_for_currencies->@*))],
+        disabled                    => (
+            not $p2p_config->enabled
+                or $app_config->system->suspend->p2p
+        ) ? 1 : 0,
+        payment_methods_enabled => $p2p_config->payment_methods_enabled,
+        review_period           => $p2p_config->review_period,
+        fixed_rate_adverts      => $p2p_advert_config->{fixed_ads},
+        float_rate_adverts      => $p2p_advert_config->{float_ads},
+        float_rate_offset_limit => Math::BigFloat->new($float_range)->bdiv(2)->bfround(-2, 'trunc')->bstr,
+        $p2p_advert_config->{deactivate_fixed}       ? (fixed_rate_adverts_end_date => $p2p_advert_config->{deactivate_fixed}) : (),
+        ($exchange_rate->{source} // '') eq 'manual' ? (override_exchange_rate      => $exchange_rate->{quote})                : (),
+        feature_level            => $p2p_config->feature_level,
+        local_currencies         => \@local_currencies,
+        cross_border_ads_enabled => (any { lc($_) eq $param{country} } $p2p_config->cross_border_ads_restricted_countries->@*) ? 0 : 1,
+        block_trade              => {
+            disabled              => $p2p_config->block_trade->enabled ? 0 : 1,
+            maximum_advert_amount => $p2p_config->block_trade->maximum_advert,
+        },
+
+    };
+
+    return $result;
+}
+
 =head2 p2p_exchange_rate
 
 Gets P2P rate from the most of recent of feed or backoffice manual quote for the provided country.
@@ -325,11 +403,9 @@ Returns a hashref of quote details or empty hashref if no quote.
 =cut
 
 sub p2p_exchange_rate {
-    my $currency = shift;
-
+    my $currency        = shift;
     my $currency_config = decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->currency_config);
     my $feed_quote      = ExchangeRates::CurrencyConverter::usd_rate($currency);
-
     my @quotes;
     push @quotes,
         {

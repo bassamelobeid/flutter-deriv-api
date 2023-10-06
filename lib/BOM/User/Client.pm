@@ -2545,6 +2545,32 @@ use constant {
     },
 };
 
+=head2 p2p_settings
+
+Returns general P2P settings. If subscribe:1, will add subscription_info which contains client's residence
+which will be used to create subsciption channel in websocket layer and deleted as it's not part of response
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<subscribe> - flag to indicate if this call includes subscription (optional)
+
+=back
+
+Returns, a C<hashref> containing the P2P settings.
+
+=cut
+
+sub p2p_settings {
+    my ($self, %param) = @_;
+    my $residence = $self->residence;
+    die +{error_code => 'RestrictedCountry'} unless BOM::Config::P2P::advert_config()->{$residence};
+    my $result = BOM::User::Utility::get_p2p_settings(country => $residence);
+    $result->{subscription_info} = {country => $residence} if $param{subscribe};
+    return $result;
+}
+
 =head2 p2p_advertiser_create
 
 Attempts to register client as an advertiser.
