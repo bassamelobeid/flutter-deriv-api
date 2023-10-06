@@ -17,6 +17,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 use BOM::Backoffice::Utility qw(master_live_server_error);
+use BOM::Platform::Event::Emitter;
 
 PrintContentType();
 
@@ -54,11 +55,14 @@ if (scalar @{$settings_list;} == 0) {
 if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
     print '<div id="message"><div id="error">' . master_live_server_error() . '</div></div><br />';
 } else {
-    BOM::DynamicSettings::save_settings({
+    my ($settings_saved_flag, @updated_keys) = BOM::DynamicSettings::save_settings({
         'settings'          => request()->params,
         'settings_in_group' => $settings_list,
         'save'              => request()->param('submitted'),
     });
+
+    BOM::Platform::Event::Emitter::emit(p2p_settings_updated => {force_update => 1})
+        if $settings_saved_flag && any { $_ eq "system.suspend.p2p" } @updated_keys;
 }
 my @send_to_template = ();
 

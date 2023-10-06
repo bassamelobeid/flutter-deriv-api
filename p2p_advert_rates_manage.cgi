@@ -22,6 +22,7 @@ use Scalar::Util    qw(looks_like_number);
 use Array::Utils    qw(intersect);
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
+use BOM::Platform::Event::Emitter;
 
 use constant ACTIVATION_KEY => 'P2P::AD_ACTIVATION';
 
@@ -37,6 +38,8 @@ my $app_config      = BOM::Config::Runtime->instance->app_config();
 my $ad_config       = decode_json_utf8($app_config->payments->p2p->country_advert_config);
 my $currency_config = decode_json_utf8($app_config->payments->p2p->currency_config);
 my %p2p_countries   = BOM::Config::P2P::available_countries()->%*;
+my %currencies      = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
+my @p2p_countries   = keys %p2p_countries;
 my %output;
 
 if (request()->http_method eq 'POST') {
@@ -46,23 +49,27 @@ if (request()->http_method eq 'POST') {
 }
 
 if (my $currency = $params{save}) {
+    my $currency_settings_changed = 0;
+    my (@country_ads_changed, @updated_countries) = ();
 
     if ($params{remove_manual_quote}) {
         delete $currency_config->{$currency}->@{qw(manual_quote manual_quote_epoch manual_quote_staff)};
+        $currency_settings_changed = 1;
     } elsif (looks_like_number($params{manual_quote})) {
         $currency_config->{$currency}->{manual_quote}       = $params{manual_quote};
         $currency_config->{$currency}->{manual_quote_epoch} = time;
         $currency_config->{$currency}->{manual_quote_staff} = BOM::Backoffice::Auth0::get_staffname();
+        $currency_settings_changed                          = 1;
     }
 
     if (looks_like_number($params{max_rate_range})) {
         $currency_config->{$currency}{max_rate_range} = $params{max_rate_range};
+        $currency_settings_changed = 1;
     } else {
-        delete $currency_config->{$currency}{max_rate_range};
+        $currency_settings_changed = 1 if delete $currency_config->{$currency}{max_rate_range};
     }
 
-    code_exit_BO()
-        unless BOM::DynamicSettings::save_settings({
+    my ($settings_saved_flag, @updated_keys) = BOM::DynamicSettings::save_settings({
             'settings' => {
                 'payments.p2p.currency_config' => encode_json_utf8($currency_config),
                 revision                       => $params{revision}
@@ -70,6 +77,11 @@ if (my $currency = $params{save}) {
             'settings_in_group' => ['payments.p2p.currency_config'],
             'save'              => 'global',
         });
+
+    code_exit_BO() unless $settings_saved_flag;
+    push @updated_countries, grep { $p2p_countries{$_} } $currencies{$currency}->{countries}->@*
+        if $currency_settings_changed
+        && any { $_ eq "payments.p2p.currency_config" } @updated_keys;
 
     my %country_updates;
     for my $param (keys %params) {
@@ -102,13 +114,16 @@ if (my $currency = $params{save}) {
         my %changes = map { $country . ':' . $_ => $update{$_} }
             grep { $update{$_} ne ($ad_config->{$country}{$_} // $defaults{$_}) } qw(float_ads fixed_ads deactivate_fixed);
 
-        BOM::Config::Redis->redis_p2p_write->hset(ACTIVATION_KEY, %changes) if %changes;
+        if (%changes) {
+            BOM::Config::Redis->redis_p2p_write->hset(ACTIVATION_KEY, %changes);
+            push @country_ads_changed, $country;
+        }
 
         $ad_config->{$country}{$_} = $update{$_} for qw(float_ads fixed_ads deactivate_fixed);
+
     }
 
-    code_exit_BO()
-        unless BOM::DynamicSettings::save_settings({
+    ($settings_saved_flag, @updated_keys) = BOM::DynamicSettings::save_settings({
             'settings' => {
                 'payments.p2p.country_advert_config' => encode_json_utf8($ad_config),
                 revision                             => $app_config->global_revision(),
@@ -117,6 +132,14 @@ if (my $currency = $params{save}) {
             'save'              => 'global',
         });
 
+    code_exit_BO() unless $settings_saved_flag;
+    push @updated_countries, @country_ads_changed if @country_ads_changed && any { $_ eq "payments.p2p.country_advert_config" } @updated_keys;
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_settings_updated => {
+            affected_countries => \@updated_countries,
+            force_update       => 1
+        }) if @updated_countries && !($currencies{$currency}->{is_legacy});
 }
 
 my $age_format = sub {
@@ -168,9 +191,6 @@ for my $country (keys %p2p_countries) {
         "Float rate ads for $p2p_countries{$country} will be deactivated and all users who have active float rate ads will be emailed."
         if ($activation{"$country:float_ads"} // '') eq 'disabled';
 }
-
-my %currencies    = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
-my @p2p_countries = keys %p2p_countries;
 
 for my $currency (sort keys %currencies) {
     my @countries = grep { $p2p_countries{$_} } $currencies{$currency}->{countries}->@*;

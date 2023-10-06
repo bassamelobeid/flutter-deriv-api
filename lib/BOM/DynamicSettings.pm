@@ -85,8 +85,9 @@ sub save_settings {
     my $submitted         = $args->{save};
     my $settings_in_group = $args->{settings_in_group};
 
-    my $message = "";
-    my $success = 0;
+    my $message      = "";
+    my $success      = 0;
+    my @changed_keys = ();
 
     if ($submitted) {
         my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -109,8 +110,8 @@ sub save_settings {
 
             my @settings = $app_config->dynamic_keys();
 
-            my $has_errors    = 0;
             my $values_to_set = {};
+            my $has_errors    = 0;
 
             $message .= qq~
                 <table id="settings_summary" class="collapsed hover border center">
@@ -134,6 +135,7 @@ sub save_settings {
                         $extra_validation->($new_value, $old_value, $s)     if $extra_validation;
                         send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
                         $values_to_set->{$s} = $new_value;
+                        push @changed_keys, $s;
                         $message .= join('',
                             '<tbody><tr class="saved"><td class="status">&#10004;</td><td class="key-name">',
                             encode_entities($s),
@@ -185,7 +187,7 @@ sub save_settings {
         print $message;
     }
 
-    return $success;
+    return wantarray ? ($success, @changed_keys) : $success;
 }
 
 =head2 generate_settings_branch
