@@ -919,4 +919,17 @@ sub ctrader_proxy_api_config {
     return $config;
 }
 
+=head2 thinkific_config
+
+    BOM::Config::thinkific_config()
+
+Loads and caches configuration for thinkific (Deriv Academy)
+
+=cut
+
+sub thinkific_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/thinkific.yml');
+    return $config;
+}
+
 1;
