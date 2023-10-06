@@ -103,4 +103,456 @@ subtest 'country=za; creates financial account with existing gaming account whil
     };
 };
 
+subtest 'mt5 svg migration: idv based jurisdiction selection' => sub {
+    # Since we already create CR account we can reuse it
+    my $client          = BOM::User::Client->new({loginid => 'CR10000'});
+    my $m               = BOM::Platform::Token::API->new;
+    my $token           = $m->create_token($client->loginid, 'test token');
+    my $client_mock     = Test::MockModule->new('BOM::User::Client');
+    my $mock_async_call = Test::MockModule->new('BOM::MT5::User::Async');
+    my $doc_mock        = Test::MockModule->new(ref($client->documents));
+    my $method          = 'mt5_login_list';
+    my $best_issue_date;
+    $doc_mock->mock(
+        'best_issue_date',
+        sub {
+            return Date::Utility->new($best_issue_date) if $best_issue_date;
+            return undef;
+        });
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {},
+    };
+
+    subtest 'not authenticated by IDV' => sub {
+        $client_mock->mock('get_idv_status', sub { return 'none' });
+        $client_mock->mock('get_poa_status', sub { return 'none' });
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}, undef, 'not authenticated by IDV = no eligible';
+
+        $client_mock->unmock_all;
+    };
+
+    subtest 'IDV + POA (pending)' => sub {
+        $client_mock->mock('get_idv_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status', sub { return 'pending' });
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'IDV + POA (pending) = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'IDV + POA rejected' => sub {
+        $client_mock->mock('get_idv_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status', sub { return 'rejected' });
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'IDV + POA rejected = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'IDV + POA verified (submitted within 6 months)' => sub {
+        $client_mock->mock('get_idv_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status', sub { return 'verified' });
+        $best_issue_date = Date::Utility->new()->epoch;
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'vanuatu', 'IDV + POA verified (submitted within 6 months) = vanuatu';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef,     'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'IDV + POA verified (submitted longer than 6 months)' => sub {
+        $client_mock->mock('get_idv_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status', sub { return 'verified' });
+        $best_issue_date = Date::Utility->new()->minus_months(7)->epoch;
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'IDV + POA verified (submitted longer than 6 months) = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'IDV with a Photo ID in the document' => sub {
+        $client->set_authentication_and_status('IDV_PHOTO', {status => 'pass'});
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        ok $client->fully_authenticated, 'Fully auth';
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'IDV with a Photo ID in the document = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client_mock->unmock_all;
+    };
+
+    subtest 'IDV with Address in the document' => sub {
+        $_->delete for @{$client->client_authentication_method};
+        $client = BOM::User::Client->new({loginid => $client->loginid});    # avoid cache hits
+        $client->set_authentication_and_status('IDV', 'test');
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        ok $client->fully_authenticated, 'Fully auth';
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'IDV with Address in the document = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client_mock->unmock_all;
+    };
+
+    subtest 'high risk' => sub {
+        $client->aml_risk_classification('high');
+        $client->save;
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+
+        is $login_list->[0]->{eligible_to_migrate}, undef, 'eligible to migrate is correct = none';
+
+        $client_mock->unmock_all;
+    };
+
+    subtest 'skipping for IB account' => sub {
+        $mock_async_call->mock(
+            'get_user',
+            sub {
+                my $original_future = $mock_async_call->original('get_user')->(@_);
+
+                my $modified_future = $original_future->then(
+                    sub {
+                        my ($variables) = @_;
+
+                        $variables->{comment} = 'IB';
+                        return $variables;
+                    });
+
+                return $modified_future;
+            });
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}, undef, 'skipping for IB account';
+
+        $mock_async_call->unmock_all;
+    };
+
+    subtest 'skipping for mt5 account under -lim sub-account category' => sub {
+        $mock_async_call->mock(
+            'get_user',
+            sub {
+                my $original_future = $mock_async_call->original('get_user')->(@_);
+
+                my $modified_future = $original_future->then(
+                    sub {
+                        my ($variables) = @_;
+
+                        $variables->{group} = 'real\\p01_ts01\\financial\\svg_std-lim_usd';
+                        return $variables;
+                    });
+
+                return $modified_future;
+            });
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}, undef, 'skipping for mt5 account under -lim sub-account category';
+        $mock_async_call->unmock_all;
+    };
+
+    subtest 'skipping for mt5 account under -sf sub-account category' => sub {
+        $mock_async_call->mock(
+            'get_user',
+            sub {
+                my $original_future = $mock_async_call->original('get_user')->(@_);
+
+                my $modified_future = $original_future->then(
+                    sub {
+                        my ($variables) = @_;
+
+                        $variables->{group} = 'real\\p01_ts01\\all\\svg_std-sf_usd';
+                        return $variables;
+                    });
+
+                return $modified_future;
+            });
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}, undef, 'skipping for mt5 account under -sf sub-account category';
+        $mock_async_call->unmock_all;
+    };
+
+    subtest 'skipping for client that already have bvi account' => sub {
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
+        $client_mock->mock('get_idv_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status', sub { return 'pending' });
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[1]->{eligible_to_migrate}->{synthetic}, 'bvi', 'Should get bvi';
+
+        my $bvi_synthetic_params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_type => 'gaming',
+                email        => 'bvi_synthetic_' . $DETAILS{email},
+                name         => $DETAILS{name},
+                mainPassword => $DETAILS{password}{main},
+                leverage     => 100,
+                company      => 'bvi',
+            },
+        };
+        $client->citizen('de');
+        $client->status->set('crs_tin_information', 'test', 'test');
+        $client->account_opening_reason('test');
+        my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
+        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+        $client->save;
+        my $result = $c->call_ok('mt5_new_account', $bvi_synthetic_params)->has_no_error('gaming account successfully created')->result;
+        is $result->{account_type}, 'gaming',                                                 'account_type=gaming';
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\bvi_std_usd'}, 'created in group real\p01_ts02\synthetic\bvi_std_usd';
+
+        $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[2]->{eligible_to_migrate}, undef, 'skipping for client that already bvi have account';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    $client_mock->unmock_all;
+};
+
+subtest 'mt5 svg migration: onfido based jurisdiction selection' => sub {
+    # Since we already create CR account we can reuse it
+    my $client          = BOM::User::Client->new({loginid => 'CR10000'});
+    my $m               = BOM::Platform::Token::API->new;
+    my $token           = $m->create_token($client->loginid, 'test token');
+    my $client_mock     = Test::MockModule->new('BOM::User::Client');
+    my $mock_async_call = Test::MockModule->new('BOM::MT5::User::Async');
+    my $doc_mock        = Test::MockModule->new(ref($client->documents));
+    my $method          = 'mt5_login_list';
+    my $best_issue_date;
+    $doc_mock->mock(
+        'best_issue_date',
+        sub {
+            return Date::Utility->new($best_issue_date) if $best_issue_date;
+            return undef;
+        });
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {},
+    };
+
+    subtest 'not authenticated by onfido' => sub {
+        $client_mock->mock('get_onfido_status', sub { return 'none' });
+        $client_mock->mock('get_poa_status',    sub { return 'none' });
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}, undef, 'not authenticated by onfido = not eligible';
+
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Onfido + POA (pending)' => sub {
+        $client_mock->mock('get_onfido_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',    sub { return 'pending' });
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'Onfido + POA (pending) = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Onfido + POA rejected' => sub {
+        $client_mock->mock('get_onfido_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',    sub { return 'rejected' });
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'Onfido + POA rejected = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Onfido + POA verified (submitted within 6 months)' => sub {
+        $client_mock->mock('get_onfido_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',    sub { return 'verified' });
+        $best_issue_date = Date::Utility->new()->epoch;
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'vanuatu', 'Onfido + POA verified (submitted within 6 months) = vanuatu';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef,     'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Onfido + POA verified (submitted longer than 6 months)' => sub {
+        $client_mock->mock('get_onfido_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',    sub { return 'verified' });
+        $best_issue_date = Date::Utility->new()->minus_months(7)->epoch;
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'Onfido + POA verified (submitted longer than 6 months) = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'high risk' => sub {
+        $client->aml_risk_classification('high');
+        $client->save;
+        $client_mock->mock('get_onfido_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',    sub { return 'verified' });
+        $best_issue_date = Date::Utility->new()->epoch;
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'vanuatu', 'high risk = vanuatu';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef,     'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    $client_mock->unmock_all;
+};
+
+subtest 'mt5 svg migration: manual poi based jurisdiction selection' => sub {
+    # Since we already create CR account we can reuse it
+    my $client          = BOM::User::Client->new({loginid => 'CR10000'});
+    my $m               = BOM::Platform::Token::API->new;
+    my $token           = $m->create_token($client->loginid, 'test token');
+    my $client_mock     = Test::MockModule->new('BOM::User::Client');
+    my $mock_async_call = Test::MockModule->new('BOM::MT5::User::Async');
+    my $doc_mock        = Test::MockModule->new(ref($client->documents));
+    my $method          = 'mt5_login_list';
+    my $best_issue_date;
+    $doc_mock->mock(
+        'best_issue_date',
+        sub {
+            return Date::Utility->new($best_issue_date) if $best_issue_date;
+            return undef;
+        });
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {},
+    };
+
+    subtest 'not authenticated by manual' => sub {
+        $client_mock->mock('get_manual_poi_status', sub { return 'none' });
+        $client_mock->mock('get_poa_status',        sub { return 'none' });
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}, undef, 'not authenticated by manual = not eligible';
+
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Manual POI + POA (pending)' => sub {
+        $client_mock->mock('get_manual_poi_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',        sub { return 'pending' });
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'Manual POI + POA (pending) = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Manual POI + POA rejected' => sub {
+        $client_mock->mock('get_manual_poi_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',        sub { return 'rejected' });
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'Manual POI + POA rejected = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Manual POI + POA verified (submitted within 6 months)' => sub {
+        $client_mock->mock('get_manual_poi_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',        sub { return 'verified' });
+        $best_issue_date = Date::Utility->new()->epoch;
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'vanuatu', 'Manual POI + POA verified (submitted within 6 months) = vanuatu';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef,     'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Manual POI + POA verified (submitted longer than 6 months)' => sub {
+        $client_mock->mock('get_manual_poi_status', sub { return 'verified' });
+        $client_mock->mock('get_poa_status',        sub { return 'verified' });
+        $best_issue_date = Date::Utility->new()->minus_months(7)->epoch;
+
+        $client->status->setnx('age_verification', 'Test', 'Test Case');
+        ok $client->status->age_verification, "Age verified by other sources";
+
+        my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+        is $login_list->[0]->{eligible_to_migrate}->{financial}, 'bvi', 'Manual POI + POA verified (submitted longer than 6 months) = bvi';
+        is $login_list->[0]->{eligible_to_migrate}->{synthetic}, undef, 'Should not get synthetic';
+
+        $client->status->clear_age_verification;
+        $client_mock->unmock_all;
+    };
+
+    $client_mock->unmock_all;
+};
+
 done_testing();

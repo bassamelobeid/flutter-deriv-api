@@ -60,6 +60,9 @@ use constant USER_RIGHT_API            => 0x0000000000000080;
 use constant USER_RIGHT_REPORTS        => 0x0000000000000100;
 use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 
+# Define a constant for 6 months in seconds
+use constant SIX_MONTHS_IN_SECONDS => 6 * 30 * 24 * 60 * 60;
+
 # This is the default trading server key for
 # - demo account
 # - real financial and financial stp accounts
@@ -134,13 +137,38 @@ Returns any of the following:
 async_rpc "mt5_login_list",
     category => 'mt5',
     sub {
-    my $params = shift;
+    my $params            = shift;
+    my $client            = $params->{client};
+    my $additional_fields = ['comment'];
 
-    my $client = $params->{client};
-
-    return get_mt5_logins($client)->then(
+    return get_mt5_logins($client, 'all', $additional_fields)->then(
         sub {
-            my (@logins) = @_;
+            my (@logins)                = @_;
+            my $residence               = $client->residence;
+            my $is_mt5_restricted_group = request()->brand->countries_instance->is_mt5_restricted_group($residence);
+            my $is_mt5_ib               = _is_mt5_ib(\@logins);
+
+            # Removing comment key since it is only being used for migration purposes
+            @logins = map { delete $_->{comment}; $_ } @logins;
+
+            return Future->done(\@logins) if $is_mt5_restricted_group || $is_mt5_ib;
+
+            foreach my $mt5_account (@logins) {
+                next if $mt5_account->{error};
+
+                my $market_type = $mt5_account->{market_type};
+                next if $market_type eq 'all';
+
+                my $eligible_to_migrate = _eligible_to_migrate($client, $mt5_account);
+
+                if (defined($eligible_to_migrate)) {
+                    $mt5_account->{eligible_to_migrate}->{$market_type} = $eligible_to_migrate;
+
+                    my $group_regex = qr/$market_type\\$eligible_to_migrate/;
+                    delete $mt5_account->{eligible_to_migrate} if any { $_->{group} && $_->{group} =~ $group_regex } @logins;
+                }
+            }
+
             return Future->done(\@logins);
         });
     };
@@ -231,9 +259,9 @@ Returns a Future holding list of MT5 account information or a failed future with
 =cut
 
 sub get_mt5_logins {
-    my ($client, $account_type) = @_;
+    my ($client, $account_type, $additional_fields) = @_;
 
-    return mt5_accounts_lookup($client, $account_type)->then(
+    return mt5_accounts_lookup($client, $account_type, $additional_fields // [])->then(
         sub {
             my (@logins) = @_;
             my @valid_logins = grep { defined $_ and $_ } @logins;
@@ -264,7 +292,7 @@ Returns a Future holding list of MT5 account information (or undef) or a failed 
 =cut
 
 sub mt5_accounts_lookup {
-    my ($client, $account_type) = @_;
+    my ($client, $account_type, $additional_fields) = @_;
     my %allowed_error_codes = (
         ConnectionTimeout                                                => 1,
         MT5AccountInactive                                               => 1,
@@ -291,7 +319,9 @@ sub mt5_accounts_lookup {
     for my $login (@mt5_login_list) {
         my $f = mt5_get_settings({
                 client => $client,
-                args   => {login => $login}}
+                args   => {
+                    login             => $login,
+                    additional_fields => $additional_fields // []}}
         )->then(
             sub {
                 my ($setting) = @_;
@@ -300,9 +330,12 @@ sub mt5_accounts_lookup {
                     $setting->{status} = $client->user->loginid_details->{$setting->{login}}->{status};
                     $setting->{status} = undef if ($setting->{status} // '') eq 'poa_outdated' and $client->risk_level_aml ne 'high';
                 }
-                $setting = _filter_settings($setting,
-                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type sub_account_category server server_info status webtrader_url/
-                ) if !$setting->{error};
+
+                my @selected_fields =
+                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type sub_account_category server server_info status webtrader_url/;
+                push @selected_fields, @$additional_fields if @$additional_fields;
+                $setting = _filter_settings($setting, @selected_fields) if !$setting->{error};
+
                 return Future->done($setting);
             }
         )->catch(
@@ -1353,9 +1386,10 @@ async_rpc "mt5_get_settings",
     sub {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $args   = $params->{args};
-    my $login  = $args->{login};
+    my $client            = $params->{client};
+    my $args              = $params->{args};
+    my $login             = $args->{login};
+    my $additional_fields = $args->{additional_fields} // [];
 
     # MT5 login not belongs to user
     return create_error_future('permission') unless _check_logins($client, [$login]);
@@ -1391,9 +1425,10 @@ async_rpc "mt5_get_settings",
 
             return create_error_future('MT5AccountInactive') if !$settings->{active};
 
-            $settings = _filter_settings($settings,
-                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type sub_account_category zipCode server server_info webtrader_url/
-            );
+            my @selected_fields =
+                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type sub_account_category zipCode server server_info webtrader_url/;
+            push @selected_fields, @$additional_fields if @$additional_fields;
+            $settings = _filter_settings($settings, @selected_fields);
 
             return Future->done($settings);
         })->catch($error_handler);
@@ -2686,6 +2721,129 @@ sub _mt5_acc_opening_reason {
     return 'MT5_DVL_ACCOUNT_IS_CREATED' if $mt5_landing_company eq 'vanuatu';
 
     return 'MT5_ACCOUNT_IS_CREATED';
+}
+
+=head2 _eligible_to_migrate
+
+Determine client's eligibility to migrate to BVI/Vanuatu accounts based on market type, sub-account category, and landing company.
+
+=head2 PARAMETERS
+
+=over 4
+
+=item $client
+
+A reference to the client object representing the user account.
+
+=item $mt5_account
+
+A hash reference containing mt5 account information, including keys such as 'sub_account_category', 'market_type', and 'landing_company_short'.
+
+=back
+
+=head2 RETURNS
+
+A hash reference indicating eligibility for the specified market type.
+
+=head2 DESCRIPTION
+
+This method checks whether a client is eligible to migrate to BVI/Vanuatu accounts based on their sub-account category, market type, and landing company. It considers the following criteria for eligibility:
+
+=over 4
+
+=item *
+
+The sub-account category should not be 'swap_free' or 'swap_free_high_risk'.
+
+=item *
+
+The landing company should be 'svg' (short for 'svg').
+
+=item *
+
+The client's Proof of Identity (POI) status should be 'verified'.
+
+=item *
+
+If the client's Proof of Address (POA) is authenticated with IDV (Identity Verification), they are eligible for 'bvi' migration.
+
+=item *
+
+If the client's POA status is 'verified', they are eligible for 'vanuatu' migration.
+
+=back
+
+=head2 EXAMPLES
+
+    my $client = BOM::User::Client->new('CR123');
+    my $mt5_account = {
+        'sub_account_category' => 'standard',
+        'landing_company_short' => 'svg',
+        # other account information...
+    };
+
+    my $eligibility_result = _eligible_to_migrate($client, $mt5_account);
+
+    # Example output:
+    # $eligibility_result = 'vanuatu'
+
+=cut
+
+sub _eligible_to_migrate {
+    my ($client, $mt5_account) = @_;
+    my $sub_account_category  = $mt5_account->{sub_account_category};
+    my $landing_company_short = $mt5_account->{landing_company_short};
+
+    # Step 1: Check eligibility based on sub-account category and landing company
+    if ($sub_account_category =~ /^(swap_free|swap_free_high_risk)$/ || $landing_company_short ne 'svg') {
+        return;    # Not eligible
+    }
+
+    # Step 2: Check eligibility based on POI status
+    return unless $client->get_poi_status eq 'verified';    # Not eligible if POI is not verified
+
+    # Step 3: Check eligibility based on POA status
+    return 'bvi' if $client->poa_authenticated_with_idv;    # Eligible for 'bvi' if POA is authenticated with IDV
+
+    if ($client->get_poa_status eq 'verified') {
+        my $current_epoch  = Date::Utility->new->truncate_to_day;
+        my $document_epoch = $client->documents->best_issue_date;
+
+        # Step 4: Check if the document's best_issue_date is within the last 6 months
+        return (($current_epoch->epoch - $document_epoch->epoch) <= SIX_MONTHS_IN_SECONDS) ? 'vanuatu' : 'bvi' if $document_epoch;
+    }
+
+    return 'bvi';                                           # Default to 'bvi' if none of the above conditions are met
+}
+
+=head2 _is_mt5_ib
+
+Checks if the 'comment' value 'IB' exists in any of the provided MT5 accounts.
+
+=head2 PARAMETERS
+
+=over 4
+
+=item $mt5_accounts
+
+An array reference containing MT5 account data, each represented as a hash reference.
+
+=back
+
+=head2 RETURNS
+
+Returns 1 if the 'comment' value 'IB' exists in any of the MT5 accounts, and 0 if not.
+
+=head2 EXAMPLES
+
+    my $is_mt5_ib = _is_mt5_ib($mt5_accounts);
+
+=cut
+
+sub _is_mt5_ib {
+    my ($mt5_accounts) = @_;
+
+    return any { $_->{comment} && $_->{comment} eq 'IB' } @$mt5_accounts;
 }
 
 1;
