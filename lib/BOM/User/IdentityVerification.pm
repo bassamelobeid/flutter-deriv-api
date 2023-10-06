@@ -14,7 +14,8 @@ use warnings;
 use Date::Utility;
 use JSON::MaybeUTF8 qw(:v2);
 use Syntax::Keyword::Try;
-use Log::Any qw($log);
+use Log::Any   qw($log);
+use List::Util qw(any);
 
 use BOM::Platform::Context qw(request);
 use BOM::Config::Redis;
@@ -573,7 +574,9 @@ Checks whether client allowed to verify identity via IDV based on some business 
 
 =over 4
 
-=item * C<$client> - The corresponding client instance
+=item * C<client> a L<BOM::User::Client> instance.
+
+=item * C<landing_company> (optional) landing company. Default: client's landing company.
 
 =back
 
@@ -582,10 +585,13 @@ Returns bool
 =cut
 
 sub is_idv_disallowed {
-    my $client = shift;
+    my $args = shift;
+    my ($client, $landing_company) = @{$args}{qw/client landing_company/};
 
-    # Only for non-regulated LC
-    return 1 unless $client->landing_company->short eq 'svg';
+    my $lc = $landing_company ? LandingCompany::Registry->by_name($landing_company) : $client->landing_company;
+
+    # IDV allowed only for non-regulated LC
+    return 1 unless any { $_ eq 'idv' } $lc->allowed_poi_providers->@*;
 
     return 1 if $client->status->unwelcome;
 
@@ -772,13 +778,15 @@ sub add_opt_out {
 
 =head2 is_available
 
-Checks if IDV service is available for the client
+Checks if IDV service is available for the client.
 
-It takes the following param:
+It takes the following params as a hashref:
 
 =over 4
 
-=item * L<BOM::User::Client> the client
+=item * C<client> a L<BOM::User::Client> instance.
+
+=item * C<landing_company> (optional) landing company. Default: client's landing company.
 
 =back
 
@@ -791,12 +799,11 @@ IDV is available for the client if IDV is not disallowed and:
     - has no IDV submissions left, IDV status is 'expired', and 
         has document expired chance
 
-Note: if client is virtual it checks if there is a duplicate client to grab the idv_disallowed flag
-
 =cut
 
 sub is_available {
-    my ($self, $client) = @_;
+    my ($self, $args) = @_;
+    my $client = $args->{client};
 
     my $has_submissions_left = $self->submissions_left() > 0;
 
@@ -804,7 +811,7 @@ sub is_available {
     $expired_document_chance = $self->has_expired_document_chance() ? 1 : 0
         if !$has_submissions_left && $client->get_idv_status() eq 'expired';
 
-    my $idv_disallowed = BOM::User::IdentityVerification::is_idv_disallowed($client);
+    my $idv_disallowed = BOM::User::IdentityVerification::is_idv_disallowed($args);
 
     my $is_available = ($has_submissions_left || $expired_document_chance) && !$idv_disallowed;
 

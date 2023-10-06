@@ -7779,13 +7779,14 @@ sub get_poa_status {
 =head2 get_poi_status
 
 Resolves the POI status.
-Infers C<status> from onfido/idv latest check, or returns C<verified> if client already has poa or poi.
+
+Infers C<status> from onfido/idv/manual latest check.
 
 Arguments:
 
 =over 4
 
-=item landing_company - an optional argument by default current client's landing company is used. Different LCs may have different POI  cdrules. 
+=item landing_company - an optional argument by default current client's landing company is used. Different LCs may have different POI rules. 
 
 =back
 
@@ -7797,7 +7798,7 @@ Returns,
 sub get_poi_status {
     my ($self, $args) = @_;
 
-    my ($poi_by) = $self->latest_poi_by;
+    my ($poi_by) = $self->latest_poi_by($args);
 
     $poi_by //= 'none';
 
@@ -7838,8 +7839,9 @@ sub get_poi_status {
 }
 
 =head2 get_poi_status_jurisdiction
+
 Resolves the POI status.
-Infers C<status> from onfido/idv latest check, or returns C<verified> if client already has poi.
+Infers C<status> from onfido/idv/manual latest check, or returns C<verified> if client already has poi.
 support query by jurisdiction type.
 Returns,
     string for the current POI status, it can be: none, expired, pending, rejected, suspected, verified.
@@ -8615,8 +8617,21 @@ sub linked_accounts {
 =head2 latest_poi_by
 
 Resolves the name of the latest POI check subsystem made by this client.
-Returns a couple containing the name of the subsystem (onfido, idv) as the first element
-and the related check as the last element.
+
+It takes a hashref of parameters:
+
+=over
+
+=item * C<only_verified> - (optional) flag to consider only verified documents.
+
+=item * C<landing_company> - (optional) landing company. Default: client's landing company.
+
+=back
+
+Returns an array of triplets containing:
+    [0] Name of the subsystem (idv, onfido, manual)
+    [1] Related check
+    [2] Timestamp of the check
 
 =cut
 
@@ -8624,41 +8639,55 @@ sub latest_poi_by {
     my ($self, $args) = @_;
     my @triplets;
 
-    my $idv = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
+    my $lc = $args->{landing_company} ? LandingCompany::Registry->by_name($args->{landing_company}) : $self->landing_company;
 
-    my $onfido_check = BOM::User::Onfido::get_latest_check($self, $args)->{user_check} // {};
+    my $idv_allowed    = any { $_ eq 'idv' } $lc->allowed_poi_providers->@*;
+    my $onfido_allowed = any { $_ eq 'onfido' } $lc->allowed_poi_providers->@*;
+    my $manual_allowed = any { $_ eq 'manual' } $lc->allowed_poi_providers->@*;
 
-    if (my $onfido_created_at = $onfido_check->{created_at}) {
-        # most probably this check is Onfido-only, reason is even though the check is clear
-        # name/dob mismatch is computed after
-        if (!$args->{only_verified} || $self->get_onfido_status() eq 'verified') {
-            push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
+    if ($onfido_allowed) {
+        my $onfido_check = BOM::User::Onfido::get_latest_check($self, $args)->{user_check} // {};
+
+        if (my $onfido_created_at = $onfido_check->{created_at}) {
+            # most probably this check is Onfido-only, reason is even though the check is clear
+            # name/dob mismatch is computed after
+            if (!$args->{only_verified} || $self->get_onfido_status() eq 'verified') {
+                push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
+            }
         }
     }
 
-    if (my $idv_document = $idv->get_last_updated_document($args)) {
-        if (my $idv_document_check = $idv->get_document_check_detail($idv_document->{id})) {
-            push @triplets,
-                ['idv', +{$idv_document_check->%*, status => $idv_document->{status}},
-                Date::Utility->new($idv_document_check->{requested_at})->epoch];
-        } elsif (!($args->{only_verified} // 0)) {
-            # no check but still a pending document
-            push @triplets, ['idv', undef, Date::Utility->new($idv_document->{submitted_at})->epoch];
+    if ($idv_allowed) {
+        my $idv = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
+
+        if (my $idv_document = $idv->get_last_updated_document($args)) {
+            if (my $idv_document_check = $idv->get_document_check_detail($idv_document->{id})) {
+                push @triplets,
+                    [
+                    'idv', +{$idv_document_check->%*, status => $idv_document->{status}},
+                    Date::Utility->new($idv_document_check->{requested_at})->epoch
+                    ];
+            } elsif (!($args->{only_verified} // 0)) {
+                # no check but still a pending document
+                push @triplets, ['idv', undef, Date::Utility->new($idv_document->{submitted_at})->epoch];
+            }
         }
     }
 
-    if (my $document = $self->documents->latest) {
-        my $origin = $document->{origin} // '';
+    if ($manual_allowed) {
+        if (my $document = $self->documents->latest) {
+            my $origin = $document->{origin} // '';
 
-        if ($origin eq 'client' || $origin eq 'bo') {
-            push @triplets, ['manual', $document, Date::Utility->new($document->{upload_date})->epoch];
+            if ($origin eq 'client' || $origin eq 'bo') {
+                push @triplets, ['manual', $document, Date::Utility->new($document->{upload_date})->epoch];
+            }
         }
-    }
 
-    if (my $age_verification = $self->status->age_verification) {
-        $age_verification->{staff_name} //= 'system';
-        if (lc $age_verification->{staff_name} ne 'system') {
-            push @triplets, ['manual', {status => 'verified'}, Date::Utility->new($age_verification->{last_modified_date})->epoch];
+        if (my $age_verification = $self->status->age_verification) {
+            $age_verification->{staff_name} //= 'system';
+            if (lc $age_verification->{staff_name} ne 'system') {
+                push @triplets, ['manual', {status => 'verified'}, Date::Utility->new($age_verification->{last_modified_date})->epoch];
+            }
         }
     }
 
@@ -9095,7 +9124,7 @@ Arguments:
 
 =over 4
 
-=item landing_company - an optional argument by default current client's  landing company is used. 
+=item landing_company - an optional argument by default current client's landing company is used. 
 
 =back
 

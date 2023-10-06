@@ -635,8 +635,8 @@ subtest 'Expired docs chance' => sub {
 
 subtest 'is idv disallowed' => sub {
     my $user_cr = BOM::User->create(
-        email    => 'cr+idv+disalloed@binary.com',
-        password => "hello",
+        email    => 'cr+idv+disallowed@binary.com',
+        password => 'hello',
     );
     my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
@@ -644,16 +644,17 @@ subtest 'is idv disallowed' => sub {
     });
     $user_cr->add_client($client_cr);
 
-    my $mocked_lc = Test::MockModule->new(ref($client_cr->landing_company));
-    my $short;
+    my $user_mf = BOM::User->create(
+        email    => 'mf+idv+disallowed@binary.com',
+        password => 'bye',
+    );
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        binary_user_id => $user_mf->id,
+    });
+    $user_mf->add_client($client_mf);
 
-    $mocked_lc->mock(
-        'short',
-        sub {
-            return $short;
-        });
-
-    my $mocked_cli = Test::MockModule->new(ref($client_cr));
+    my $mocked_cli = Test::MockModule->new('BOM::User::Client');
     my $manual_status;
     my $onfido_status;
 
@@ -669,15 +670,22 @@ subtest 'is idv disallowed' => sub {
             return $onfido_status;
         });
 
-    $short = 'bvi';
+    my $short;
+    $short = 'svg';
+    ok !BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr, landing_company => $short}), 'Allowed for svg (LC from argument)';
+    ok !BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}),                            'Allowed for svg (LC from client)';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Only svg is allowed to use IDV';
+    $short = 'maltainvest';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_mf}), 'Disallowed for maltainvest (LC from client)';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr, landing_company => $short}),
+        'Disallowed for maltainvest (LC from argument)';
+
+    $short = 'bvi';
+    ok !BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr, landing_company => $short}), 'Allowed for bvi (LC from argument)';
 
     $client_cr->status->set('unwelcome', 'test', 'test');
 
-    $short = 'svg';
-
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for unwelcome clients';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for unwelcome clients';
 
     $client_cr->status->clear_unwelcome();
 
@@ -685,13 +693,13 @@ subtest 'is idv disallowed' => sub {
 
     $client_cr->aml_risk_classification('high');
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for AML high risk clients';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for AML high risk clients';
 
     $client_cr->aml_risk_classification('low');
 
     $client_cr->status->set('age_verification', 'test', 'test');
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for age verified clients';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for age verified clients';
 
     $client_cr->status->clear_age_verification();
 
@@ -699,7 +707,7 @@ subtest 'is idv disallowed' => sub {
 
     $client_cr->status->_build_all();
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for poi resubmissions';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for poi resubmissions';
 
     $client_cr->status->clear_allow_poi_resubmission();
 
@@ -709,27 +717,26 @@ subtest 'is idv disallowed' => sub {
 
     $manual_status = 'expired';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for manual poi status expired';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for manual poi status expired';
 
     $manual_status = 'rejected';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for manual poi status rejected';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for manual poi status rejected';
 
     $manual_status = 'none';
 
     $onfido_status = 'expired';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for onfido poi status expired';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for onfido poi status expired';
 
     $onfido_status = 'rejected';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for onfido poi status rejected';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for onfido poi status rejected';
 
     $onfido_status = 'none';
 
-    ok !BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'IDV is allowed for this client';
+    ok !BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'IDV is allowed for this client';
 
-    $mocked_lc->unmock_all;
     $mocked_cli->unmock_all;
 };
 
@@ -769,18 +776,31 @@ subtest 'identity verification requested' => sub {
 };
 
 subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
+    my $user_cr = BOM::User->create(
+        email    => 'cr+idv+disallowed+rpc@binary.com',
+        password => 'hello',
+    );
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user_cr->id,
+    });
+    $user_cr->add_client($client_cr);
+
+    my $user_mf = BOM::User->create(
+        email    => 'mf+idv+disallowed+rpc@binary.com',
+        password => 'bye',
+    );
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        binary_user_id => $user_mf->id,
+    });
+    $user_mf->add_client($client_mf);
+
     my $mock_data = {};
 
     my $status_mock = Test::MockObject->new();
-    my $lc_mock     = Test::MockObject->new();
-    my $client_mock = Test::MockModule->new('BOM::User::Client');
-    my $client      = BOM::User::Client->rnew();
 
-    $client_mock->mock(
-        'landing_company',
-        sub {
-            return $lc_mock;
-        });
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
 
     $client_mock->mock(
         'residence',
@@ -842,27 +862,21 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
             return $mock_data->{age_verification};
         });
 
-    $lc_mock->mock(
-        'short',
-        sub {
-            return $mock_data->{short};
-        });
-
     $mock_data->{unwelcome} = 1;
     $mock_data->{short}     = 'svg';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for unwelcome client';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for unwelcome client';
 
     $mock_data->{unwelcome} = 0;
     $mock_data->{short}     = 'malta';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for non svg LC';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_mf}), 'Disallowed for non svg LC';
 
     $mock_data->{unwelcome}               = 0;
     $mock_data->{short}                   = 'svg';
     $mock_data->{aml_risk_classification} = 'high';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for high AML risk';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for high AML risk';
 
     $mock_data->{unwelcome}               = 0;
     $mock_data->{short}                   = 'svg';
@@ -870,7 +884,7 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     $mock_data->{get_idv_status}          = 'none';
     $mock_data->{age_verification}        = 1;
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for non expired age verified';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for non expired age verified';
 
     $mock_data->{unwelcome}               = 0;
     $mock_data->{short}                   = 'svg';
@@ -879,7 +893,7 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     $mock_data->{age_verification}        = 0;
     $mock_data->{allow_poi_resubmission}  = 1;
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for allow poi resubmission status';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for allow poi resubmission status';
 
     $mock_data->{unwelcome}               = 0;
     $mock_data->{short}                   = 'svg';
@@ -890,7 +904,7 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     $mock_data->{allow_document_upload}   = {reason => 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'};
     $mock_data->{get_manual_poi_status}   = 'rejected';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for manual POI rejected status';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for manual POI rejected status';
 
     $mock_data->{unwelcome}               = 0;
     $mock_data->{short}                   = 'svg';
@@ -901,7 +915,7 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     $mock_data->{allow_document_upload}   = {reason => 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'};
     $mock_data->{get_manual_poi_status}   = 'expired';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for manual POI expired status';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for manual POI expired status';
 
     $mock_data->{unwelcome}               = 0;
     $mock_data->{short}                   = 'svg';
@@ -913,7 +927,7 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     $mock_data->{get_manual_poi_status}   = 'none';
     $mock_data->{get_onfido_status}       = 'expired';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for onfido expired status';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for onfido expired status';
 
     $mock_data->{unwelcome}               = 0;
     $mock_data->{short}                   = 'svg';
@@ -925,7 +939,7 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     $mock_data->{get_manual_poi_status}   = 'none';
     $mock_data->{get_onfido_status}       = 'rejected';
 
-    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for onfido rejected status';
+    ok BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'Disallowed for onfido rejected status';
 
     $mock_data->{unwelcome}               = 0;
     $mock_data->{short}                   = 'svg';
@@ -938,19 +952,19 @@ subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
     $mock_data->{get_onfido_status}       = 'none';
     $mock_data->{residence}               = 'br';
 
-    ok !BOM::User::IdentityVerification::is_idv_disallowed($client), 'IDV allowed when all conditions are met';
+    ok !BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'IDV allowed when all conditions are met';
 
     for my $reason (
         qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/)
     {
         $mock_data->{allow_document_upload} = {reason => $reason};
 
-        ok !BOM::User::IdentityVerification::is_idv_disallowed($client), 'IDV allowed for doc upload reason: ' . $reason;
+        ok !BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'IDV allowed for doc upload reason: ' . $reason;
     }
 
     $mock_data->{age_verification} = 1;
     $mock_data->{get_idv_status}   = 'expired';
-    ok !BOM::User::IdentityVerification::is_idv_disallowed($client), 'IDV allowed for age verified status when idv status is expired';
+    ok !BOM::User::IdentityVerification::is_idv_disallowed({client => $client_cr}), 'IDV allowed for age verified status when idv status is expired';
 
     $client_mock->unmock_all;
 };
@@ -1256,7 +1270,7 @@ subtest 'is available' => sub {
         $idv_mock->mock(has_expired_document_chance => $test_case->{idv_expired_document_chance});
         $idv_mock->mock(is_idv_disallowed           => $test_case->{idv_disallowed});
 
-        cmp_deeply($idv_model->is_available($client_cr), $test_case->{expected}, 'expected availability');
+        cmp_deeply($idv_model->is_available({client => $client_cr}), $test_case->{expected}, 'expected availability');
     }
 
     $client_mock->unmock_all;

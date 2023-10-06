@@ -236,19 +236,18 @@ subtest 'no salutation, set Gender explicitly' => sub {
 
 subtest 'latest poi by' => sub {
     my $user = BOM::User->create(
-        email          => 'latest+poi+by@bin.com',
-        password       => 'cantgetitout',
-        email_verified => 1,
+        email    => 'latest+poi+by@deriv.com',
+        password => 'cantgetitout'
     );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => 'latest+poi+by@bin.com',
-        binary_user_id => $user->id,
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
     });
-    $user->add_client($client);
+
+    $user->add_client($client_cr);
 
     my $tests = [{
-            title  => 'Onfido wins',
+            title  => 'Onfido + IDV, Onfido is more recent',
             onfido => {
                 created_at => Date::Utility->new->_plus_years(1)->date_yyyymmdd,
             },
@@ -258,7 +257,7 @@ subtest 'latest poi by' => sub {
             expected => 'onfido'
         },
         {
-            title  => 'IDV wins',
+            title  => 'Onfido + IDV, IDV is more recent',
             onfido => {
                 created_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
             },
@@ -305,7 +304,6 @@ subtest 'latest poi by' => sub {
             onfido   => undef,
             expected => undef,
         },
-        # we will combine manual cases
         {
             title  => 'Only Manual - Origin B.O.',
             manual => {
@@ -351,7 +349,7 @@ subtest 'latest poi by' => sub {
             expected => 'idv',
         },
         {
-            title  => 'Manual and Onfido, manual is more recent',
+            title  => 'manual + Onfido, manual is more recent',
             manual => {
                 upload_date => '2020-10-10 00:00:01',
                 origin      => 'bo',
@@ -363,7 +361,7 @@ subtest 'latest poi by' => sub {
             expected => 'manual',
         },
         {
-            title  => 'Manual and Onfido, onfido is more recent',
+            title  => 'manual + Onfido, onfido is more recent',
             manual => {
                 upload_date => '2020-10-10 00:00:00',
                 origin      => 'bo',
@@ -375,7 +373,7 @@ subtest 'latest poi by' => sub {
             expected => 'onfido',
         },
         {
-            title  => 'Manual + Onfido + IDV, manual is more recent',
+            title  => 'manual + Onfido + IDV, manual is more recent',
             manual => {
                 upload_date => '2020-10-10 00:00:01',
                 origin      => 'bo',
@@ -389,7 +387,7 @@ subtest 'latest poi by' => sub {
             expected => 'manual',
         },
         {
-            title  => 'Manual + Onfido + IDV, onfido is more recent',
+            title  => 'manual + Onfido + IDV, Onfido is more recent',
             manual => {
                 upload_date => '2020-10-10 00:00:00',
                 origin      => 'bo',
@@ -403,7 +401,7 @@ subtest 'latest poi by' => sub {
             expected => 'onfido',
         },
         {
-            title  => 'Manual + Onfido + IDV, onfido is more recent (only verified)',
+            title  => 'manual + Onfido + IDV, Onfido is more recent (only verified)',
             manual => {
                 upload_date => '2020-10-10 00:00:00',
                 origin      => 'bo',
@@ -418,7 +416,7 @@ subtest 'latest poi by' => sub {
             only_verified => 1,
         },
         {
-            title  => 'Manual + Onfido + IDV, onfido is more recent (only verified, result=clear, no age verif)',
+            title  => 'manual + Onfido + IDV, Onfido is more recent (only verified, result=clear, not age_verified)',
             manual => {
                 upload_date => '2020-10-10 00:00:00',
                 origin      => 'bo',
@@ -434,7 +432,7 @@ subtest 'latest poi by' => sub {
             only_verified => 1,
         },
         {
-            title  => 'Manual + Onfido + IDV, onfido is more recent (only verified, result=clear, age verif by onfido)',
+            title  => 'manual + Onfido + IDV, Onfido is more recent (only verified, result=clear, age_verified by Onfido)',
             manual => {
                 upload_date => '2020-10-10 00:00:00',
                 origin      => 'bo',
@@ -455,7 +453,7 @@ subtest 'latest poi by' => sub {
             only_verified => 1,
         },
         {
-            title  => 'Manual + Onfido + IDV, onfido is more recent (only verified, result=clear, age verif by idv)',
+            title  => 'manual + Onfido + IDV, Onfido is more recent (only verified, result=clear, age verif by IDV)',
             manual => {
                 upload_date => '2020-10-10 00:00:00',
                 origin      => 'bo',
@@ -476,7 +474,7 @@ subtest 'latest poi by' => sub {
             only_verified => 1,
         },
         {
-            title  => 'Manual + Onfido + IDV, IDV is more recent',
+            title  => 'manual + Onfido + IDV, IDV is more recent',
             manual => {
                 upload_date => '2020-10-10 00:00:00',
                 origin      => 'bo',
@@ -491,7 +489,7 @@ subtest 'latest poi by' => sub {
         },
         # latest poi by for manual age verification
         {
-            title            => 'LC:vanuatu, IDV verified, Onfido rejected, Manual verified',
+            title            => 'LC:vanuatu, IDV verified, Onfido rejected, manual verified',
             age_verification => {
                 created_at => '2020-10-10 00:00:02',
                 staff_name => 'pepito',
@@ -509,7 +507,7 @@ subtest 'latest poi by' => sub {
         },
         # latest poi by for manual age verification counter example from system instead of BO staff
         {
-            title            => 'LC:vanuatu, IDV verified, Onfido rejected, Manual verified (by system?)',
+            title            => 'LC:vanuatu, IDV verified, Onfido rejected, manual verified (by system)',
             age_verification => {
                 created_at => '2020-10-10 00:00:02',
                 staff_name => 'system',
@@ -523,10 +521,10 @@ subtest 'latest poi by' => sub {
             },
             expected        => 'onfido',
             landing_company => 'vanuatu',
-            lc_status       => 'verified',    # POI jurisdiction does not take the latest poi by (yet!)
+            lc_status       => 'verified',
         },
         {
-            title            => 'LC:svg, IDV verified, Onfido rejected, Manual verified (by system?)',
+            title            => 'LC:svg, IDV verified, Onfido rejected, manual verified (by system)',
             age_verification => {
                 created_at => '2020-10-10 00:00:02',
                 staff_name => 'system',
@@ -542,29 +540,111 @@ subtest 'latest poi by' => sub {
             landing_company => 'svg',
             lc_status       => 'verified',
         },
+        {
+            title => 'LC:maltainvest, only IDV (IDV not supported)',
+            idv   => {
+                requested_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+            },
+            onfido          => undef,
+            landing_company => 'maltainvest',
+            expected        => undef,
+            lc_status       => 'none',
+        },
+        {
+            title  => 'LC:maltainvest, only Onfido',
+            onfido => {
+                created_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+            },
+            idv             => undef,
+            landing_company => 'maltainvest',
+            expected        => 'onfido',
+            lc_status       => 'none',
+        },
+        {
+            title  => 'LC:maltainvest, only Onfido-Verified',
+            onfido => {
+                created_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+                result     => 'clear'
+            },
+            age_verification => {
+                created_at => '2020-10-10 00:00:02',
+                staff_name => 'system',
+                reason     => 'by onfido'
+            },
+            idv             => undef,
+            landing_company => 'maltainvest',
+            expected        => 'onfido',
+            lc_status       => 'verified',
+        },
+        {
+            title  => 'LC:maltainvest, Onfido + IDV, Onfido wins even if IDV is more recent',
+            onfido => {
+                created_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+                result     => 'consider',
+            },
+            idv => {
+                requested_at => Date::Utility->new->_plus_years(1)->date_yyyymmdd,
+            },
+            landing_company => 'maltainvest',
+            expected        => 'onfido',
+            lc_status       => 'rejected',
+        },
+        {
+            title  => 'LC:maltainvest, Onfido + manual',
+            onfido => {
+                created_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+                result     => 'consider',
+            },
+            manual => {
+                upload_date => Date::Utility->new->_plus_years(1)->date_yyyymmdd,
+                origin      => 'bo',
+            },
+            age_verification => {
+                created_at => '2020-10-10 00:00:02',
+                staff_name => 'mr cat',
+            },
+            landing_company => 'maltainvest',
+            expected        => 'manual',
+            lc_status       => 'verified',
+        },
+        {
+            title  => 'LC:maltainvest, Onfido + IDV + manual',
+            onfido => {
+                created_at => Date::Utility->new->_plus_years(1)->date_yyyymmdd,
+                result     => 'consider',
+            },
+            manual => {
+                upload_date => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+                origin      => 'bo',
+            },
+            age_verification => {
+                created_at => '2020-10-10 00:00:02',
+                staff_name => 'mr cat',
+            },
+            idv => {
+                requested_at => Date::Utility->new->_plus_years(2)->date_yyyymmdd,
+            },
+            landing_company => 'maltainvest',
+            expected        => 'onfido',
+            lc_status       => 'rejected',
+        },
     ];
 
-    my $mock_onfido = Test::MockModule->new('BOM::User::Onfido');
-    my $idv_mock    = Test::MockModule->new('BOM::User::IdentityVerification');
-    my $doc_mock    = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
-
-    my $onfido_latest;
-    my $idv_latest;
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
     my $manual_latest;
-    my $idv_pending_check;
-
-    $doc_mock->mock(
+    $documents_mock->mock(
         'latest',
         sub {
             my ($self) = @_;
-            my $doc = $manual_latest;
 
             $self->_clear_latest;
 
-            return $doc;
+            return $manual_latest;
         });
 
-    $mock_onfido->mock(
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    my $onfido_latest;
+    $onfido_mock->mock(
         'get_latest_check',
         sub {
             my (undef, $args) = @_;
@@ -582,6 +662,9 @@ subtest 'latest poi by' => sub {
             return $onfido_latest;
         });
 
+    my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+    my $idv_latest;
+    my $idv_pending_check;
     $idv_mock->mock(
         'get_last_updated_document',
         sub {
@@ -592,12 +675,13 @@ subtest 'latest poi by' => sub {
                     issuing_country => 'ng',
                     document_number => '124124123412',
                     submitted_at    => '2020-10-10',
+                    status          => $idv_latest ? 'verified' : 'pending',
+                    id              => 1
                 };
             }
 
             return undef;
         });
-
     $idv_mock->mock(
         'get_document_check_detail',
         sub {
@@ -639,7 +723,12 @@ subtest 'latest poi by' => sub {
 
             $manual_latest = $manual;
 
-            my ($name, $check) = $client->latest_poi_by({only_verified => $only_verified});
+            my $args = {
+                only_verified   => $only_verified,
+                landing_company => $lc // undef
+            };
+
+            my ($name, $check) = $client_cr->latest_poi_by($args);
 
             is $name, $expected, 'Expected POI subsystem reported';
 
@@ -654,7 +743,7 @@ subtest 'latest poi by' => sub {
             }
 
             if ($lc) {
-                is $client->get_poi_status({landing_company => $lc}), $lc_status, "Landing company $lc status is $lc_status";
+                is $client_cr->get_poi_status({landing_company => $lc}), $lc_status, "Landing company $lc status is $lc_status";
             }
         };
     }
