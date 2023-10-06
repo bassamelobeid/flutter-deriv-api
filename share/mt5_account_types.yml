@@ -31,7 +31,14 @@ demo\p01_ts01\financial\svg_std_usd: &demo_svg_financial_financial
   sub_account_type: financial
   sub_account_category: ''
   server: p01_ts01
-demo\p01_ts01\financial\svg_std-lim_usd: *demo_svg_financial_financial
+
+demo\p01_ts01\financial\svg_std-lim_usd:
+  account_type: demo
+  landing_company_short: svg
+  market_type: financial
+  sub_account_type: financial
+  sub_account_category: lim
+  server: p01_ts01
 
 demo\p01_ts01\financial\vanuatu_std_usd:
   account_type: demo
@@ -101,7 +108,14 @@ demo\p01_ts02\financial\svg_std_usd: &demo_svg_financial_financial
   sub_account_type: financial
   sub_account_category: ''
   server: p01_ts02
-demo\p01_ts02\financial\svg_std-lim_usd: *demo_svg_financial_financial
+
+demo\p01_ts02\financial\svg_std-lim_usd:
+  account_type: demo
+  landing_company_short: svg
+  market_type: financial
+  sub_account_type: financial
+  sub_account_category: lim
+  server: p01_ts02
 
 demo\p01_ts02\financial\vanuatu_std_usd:
   account_type: demo
@@ -169,7 +183,14 @@ demo\p01_ts03\financial\svg_std_usd: &demo_svg_financial_financial
   sub_account_type: financial
   sub_account_category: ''
   server: p01_ts03
-demo\p01_ts03\financial\svg_std-lim_usd: *demo_svg_financial_financial
+
+demo\p01_ts03\financial\svg_std-lim_usd:
+  account_type: demo
+  landing_company_short: svg
+  market_type: financial
+  sub_account_type: financial
+  sub_account_category: lim
+  server: p01_ts03
 
 demo\p01_ts03\financial\vanuatu_std_usd:
   account_type: demo
@@ -335,7 +356,14 @@ real\p01_ts01\financial\svg_std-hr_usd: &real_svg_financial_financial
   sub_account_category: ''
   server: p01_ts01
 real\p01_ts01\financial\svg_std_usd: *real_svg_financial_financial
-real\p01_ts01\financial\svg_std-lim_usd: *real_svg_financial_financial
+
+real\p01_ts01\financial\svg_std-lim_usd:
+  account_type: real
+  landing_company_short: svg
+  market_type: financial
+  sub_account_type: financial
+  sub_account_category: lim
+  server: p01_ts01
 
 real\p01_ts02\financial\svg_std-hr_usd: &real_p01ts02_svg_financial_financial
   account_type: real
@@ -578,7 +606,7 @@ real\p01_ts02\synthetic\seychelles_ibt_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
-  sub_account_category: ''
+  sub_account_category: 'ibt'
   server: p01_ts02
 
 real\p01_ts03\synthetic\seychelles_ibt_usd:
@@ -586,7 +614,7 @@ real\p01_ts03\synthetic\seychelles_ibt_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
-  sub_account_category: ''
+  sub_account_category: 'ibt'
   server: p01_ts03
 
 real\p01_ts04\synthetic\seychelles_ibt_usd:
@@ -594,7 +622,7 @@ real\p01_ts04\synthetic\seychelles_ibt_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
-  sub_account_category: ''
+  sub_account_category: 'ibt'
   server: p01_ts04
 
 real\p02_ts02\synthetic\seychelles_ibt_usd:
@@ -602,7 +630,7 @@ real\p02_ts02\synthetic\seychelles_ibt_usd:
   landing_company_short: seychelles
   market_type: synthetic
   sub_account_type: financial
-  sub_account_category: ''
+  sub_account_category: 'ibt'
   server: p02_ts02
 
 # DerivEZ Group
