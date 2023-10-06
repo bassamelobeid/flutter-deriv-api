@@ -113,7 +113,7 @@ rule 'idv.check_verification_necessity' => {
 
         $self->fail('AlreadyAgeVerified') if $client->status->age_verification && !$expired_bypass;
 
-        $self->fail('IdentityVerificationDisallowed') if BOM::User::IdentityVerification::is_idv_disallowed($client);
+        $self->fail('IdentityVerificationDisallowed') if BOM::User::IdentityVerification::is_idv_disallowed({client => $client});
 
         return undef;
     }
