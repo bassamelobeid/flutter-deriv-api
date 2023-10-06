@@ -272,10 +272,13 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
                 loginid           => $client->loginid,
                 underlying_action => $method
             );
-
-            _check_client_access($client, $app_config);
-            BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, ($client->loginid . "::" . $client->residence))
-                if $client->_p2p_advertiser_cached;
+            # skip _check_client_access for p2p_settings because it is not a client based settings
+            # only check needed for p2p_settings is RestrictedCountry which is done in Client.pm
+            if (not($method eq 'p2p_settings' || $method eq 'p2p.settings')) {
+                _check_client_access($client, $app_config);
+                BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, ($client->loginid . "::" . $client->residence))
+                    if $client->_p2p_advertiser_cached;
+            }
 
             my $acc = $client->default_account;
 
@@ -879,6 +882,18 @@ Implementation of p2p_ping endpoint.
 
 p2p_rpc p2p_ping => readonly => 1 => sub {
     return 'pong';
+};
+
+=head2 p2p_settings
+
+Returns general settings for P2P.
+
+=cut
+
+p2p_rpc p2p_settings => readonly => 1 => sub {
+    my %args   = @_;
+    my $client = $args{client};
+    return $client->p2p_settings($args{params}{args}->%*);
 };
 
 1;

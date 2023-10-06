@@ -100,8 +100,7 @@ sub wrap_rpc_sub {
     return sub {
         my @original_args = @_;
         my $params        = $original_args[0] // {};
-
-        my $tv = [Time::HiRes::gettimeofday];
+        my $tv            = [Time::HiRes::gettimeofday];
 
         $params->{profile}->{rpc_send_rpcproc} = Time::HiRes::gettimeofday if $params->{is_profiling};
 
