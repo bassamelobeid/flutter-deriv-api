@@ -831,8 +831,13 @@ sub _build_bid_response {
         $response->{barrier_count} = 0;
         $response->{barrier}       = undef;
     }
-    $response->{reset_time} = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
-    $response->{multiplier} = $contract->multiplier            if $contract->can('multiplier');
+
+    if ($contract->reset_spot) {
+        $response->{reset_time}    = 0 + $contract->reset_spot->epoch;
+        $response->{reset_barrier} = $contract->underlying->pipsized_value($contract->reset_spot->quote);
+    }
+
+    $response->{multiplier} = $contract->multiplier if $contract->can('multiplier');
     unless ($params->{is_valid_to_sell}) {
         $response->{validation_error}      = localize($params->{validation_error});
         $response->{validation_error_code} = $params->{validation_error_code};
