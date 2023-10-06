@@ -60,7 +60,7 @@ subtest 'Examples not requiring auth work without error' => sub {
 
     my @requires_other_services = ('crypto_config', 'ticks');
 
-    for my $call_name (sort {$a cmp $b} path($SCHEMA_DIR)->children) {
+    for my $call_name (sort { $a cmp $b } path($SCHEMA_DIR)->children) {
         next if any { $call_name =~ /\/$_$/ } (@contains_fake_example, @requires_other_services);
         my $send_schema = $json->decode(path("$call_name/send.json")->slurp_utf8);
         next if $send_schema->{auth_required};

@@ -368,6 +368,9 @@ $res = $t->await::get_account_status({get_account_status => 1});
 ok(ref $res->{get_account_status});
 is $call_params->{token}, $token;
 
+$rpc_response = {
+    identity => {},
+    address  => {}};
 $res = $t->await::kyc_auth_status({kyc_auth_status => 1});
 ok(ref $res->{kyc_auth_status});
 is $call_params->{token}, $token;

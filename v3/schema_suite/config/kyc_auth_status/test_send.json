@@ -1,3 +1,7 @@
 {
-  "kyc_auth_status": 1
+  "kyc_auth_status": 1,
+  "landing_companies": [
+    "maltainvest",
+    "svg"
+  ]
 }

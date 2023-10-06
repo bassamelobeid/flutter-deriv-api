@@ -144,6 +144,74 @@ subtest 'IDV attempts' => sub {
     cmp_deeply $res->{kyc_auth_status}, $expected_response_object, 'Expected response object';
 };
 
+subtest 'Landing Companies provided as arguments' => sub {
+    my $user = BOM::User->create(
+        email    => 'idv_lcs@deriv.com',
+        password => 'secret_pwd'
+    );
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id
+    });
+
+    $user->add_client($client_cr);
+
+    my ($token_cr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr->loginid);
+    $t->await::authorize({authorize => $token_cr});
+
+    my $idv = BOM::User::IdentityVerification->new(user_id => $client_cr->binary_user_id);
+
+    my $doc_id_1;
+    my $document;
+    lives_ok {
+        $document = $idv->add_document({
+            issuing_country => 'qq',
+            number          => '123456789',
+            type            => 'passport',
+        });
+        $doc_id_1 = $document->{id};
+        $idv->update_document_check({
+            document_id => $doc_id_1,
+            status      => 'refuted',
+            messages    => ["NAME_MISMATCH"],
+            provider    => 'qa'
+        });
+    }
+    'first client document added and updated successfully';
+
+    my $expected_response_object = {
+        svg => {
+            identity => {
+                last_rejected => {
+                    rejected_reasons => ['The name retrieved from your document doesn\'t match your profile.'],
+                    document_type    => 'passport'
+                },
+                available_services => ['idv', 'onfido', 'manual'],
+                service            => 'idv',
+                status             => 'rejected',
+            },
+            address => {
+                status => 'none',
+            }
+        },
+        malta => {
+            identity => {
+                last_rejected      => {},
+                available_services => ['onfido', 'manual'],
+                service            => 'none',
+                status             => 'none',
+            },
+            address => {
+                status => 'none',
+            },
+        }};
+
+    my $res = $t->await::kyc_auth_status({kyc_auth_status => 1, landing_companies => ['svg', 'malta']});
+    test_schema('kyc_auth_status', $res);
+    cmp_deeply $res->{kyc_auth_status}, $expected_response_object, 'Expected response object';
+};
+
 sub create_vr_account {
     my $args = shift;
     my $acc  = BOM::Platform::Account::Virtual::create_account({

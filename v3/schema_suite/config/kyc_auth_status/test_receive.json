@@ -11,60 +11,124 @@
    "properties" : {
       "kyc_auth_status": {
          "type": "object",
-         "required": [
-            "identity",
-            "address"
-         ],
-         "properties": {
-            "identity": {
+         "oneOf": [
+            {  
                "type": "object",
                "required": [
-                  "available_services",
-                  "service",
-                  "status"
+                  "identity",
+                  "address"
                ],
                "properties": {
-                  "last_rejected": {
+                  "identity": {
                      "type": "object",
+                     "required": [
+                        "available_services",
+                        "service",
+                        "status"
+                     ],
                      "properties": {
-                        "rejected_reasons": {
+                        "last_rejected": {
+                           "type": "object",
+                           "properties": {
+                              "rejected_reasons": {
+                                 "type": "array"
+                              },
+                              "document_type": {
+                                 "type": "string"
+                              }
+                           }
+                        },
+                        "available_services": {
                            "type": "array"
                         },
-                        "document_type": {
+                        "service": {
+                           "type": "string"
+                        },
+                        "status": {
                            "type": "string"
                         }
                      }
                   },
-                  "available_services": {
-                     "type": "array"
-                  },
-                  "service": {
-                     "type": "string"
-                  },
-                  "status": {
-                     "type": "string"
+                  "address": {
+                     "type": "object",
+                     "required": [
+                        "status"
+                     ],
+                     "properties": {
+                        "status": {
+                           "type": "string",
+                           "enum": [
+                              "none",
+                              "pending",
+                              "rejected",
+                              "verified",
+                              "expired"
+                           ]
+                        }
+                     }
                   }
                }
             },
-            "address": {
+            {
                "type": "object",
-               "required": [
-                  "status"
-               ],
-               "properties": {
-                  "status": {
-                     "type": "string",
-                     "enum": [
-                        "none",
-                        "pending",
-                        "rejected",
-                        "verified",
-                        "expired"
-                     ]
+               "additionalProperties": {
+                  "required": [
+                     "identity",
+                     "address"
+                  ],
+                  "properties": {
+                     "identity": {
+                        "type": "object",
+                        "required": [
+                           "available_services",
+                           "service",
+                           "status"
+                        ],
+                        "properties": {
+                           "last_rejected": {
+                              "type": "object",
+                              "properties": {
+                                 "rejected_reasons": {
+                                    "type": "array"
+                                 },
+                                 "document_type": {
+                                    "type": "string"
+                                 }
+                              }
+                           },
+                           "available_services": {
+                              "type": "array"
+                           },
+                           "service": {
+                              "type": "string"
+                           },
+                           "status": {
+                              "type": "string"
+                           }
+                        }
+                     },
+                     "address": {
+                        "type": "object",
+                        "required": [
+                           "status"
+                        ],
+                        "properties": {
+                           "status": {
+                              "type": "string",
+                              "enum": [
+                                 "none",
+                                 "pending",
+                                 "rejected",
+                                 "verified",
+                                 "expired"
+                              ]
+                           }
+                        }
+                     }
                   }
                }
             }
-         }
+         ]
       },
       "echo_req": {},
       "msg_type": {
