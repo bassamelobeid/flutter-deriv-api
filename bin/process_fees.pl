@@ -300,10 +300,8 @@ if ($summary_table or %client_to_be_processed) {
     my $brand = Brands->new(name => 'binary');
     $log->infof('Sending email');
     send_email({
-        'from' => $brand->emails('support'),
-        'to'   =>
-            'tom@binary.com,jennice@binary.com,evelyn@binary.com,manjula@binary.com,syamilah@binary.com,vanitha@binary.com,thevathaasan@binary.com,logeetha@binary.com,'
-            . $brand->emails('accounting'),
+        'from'     => $brand->emails('support'),
+        'to'       => 'i-payments-notification@regentmarkets.com,' . $brand->emails('accounting'),
         'subject'  => 'Batch debit ' . $broker . ' client accounts for dormant fees on ' . Date::Utility->new->date_ddmmmyy,
         'message'  => \@clients_has_been_processed,
         attachment => ["$html"],

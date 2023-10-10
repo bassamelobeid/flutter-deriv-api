@@ -52,6 +52,7 @@ use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 use BOM::Backoffice::VirtualStatus;
+use feature 'switch';
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
@@ -1043,27 +1044,36 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
         _update_mt5_status($client) if $input{'age_verification'} eq 'yes';
     }
-    if (exists $input{professional_client}) {
-        try {
-            if ($input{professional_client}) {
 
-                $client->status->multi_set_clear({
-                    set        => ['professional'],
-                    clear      => ['professional_requested', 'professional_rejected'],
-                    staff_name => $clerk,
-                    reason     => 'Mark as professional as requested',
-                });
+    if (exists $input{client_categorization}) {
+        try {
+            if ($input{client_categorization} eq 'counterparty') {
+                set_client_status(
+                    $client, ['eligible_counterparty'],
+                    ['professional', 'professional_requested', 'professional_rejected'],
+                    'Client Marked as eligible counterparty', $clerk
+                );
             } else {
-                $client->status->multi_set_clear({
-                    set        => ['professional_rejected'],
-                    clear      => ['professional'],
-                    staff_name => $clerk,
-                    reason     => 'Revoke professional status',
-                });
+                my $client_categorization = $input{client_categorization} eq 'professional' ? 'professional' : 'retail';
+                goto $client_categorization;
+
+                retail:
+                my $status_to_clear = $client->status->eligible_counterparty ? ['eligible_counterparty'] : ['professional'];
+                my $status_to_set   = $client->status->eligible_counterparty ? []                        : ['professional_rejected'];
+                set_client_status($client, $status_to_set, $status_to_clear, 'Revoke professional status', $clerk);
+
+                professional:
+                set_client_status(
+                    $client, ['professional'],
+                    ['eligible_counterparty', 'professional_requested', 'professional_rejected'],
+                    'Client Marked as professional as requested', $clerk
+                ) if $client_categorization eq 'professional';
+
             }
+
         } catch ($e) {
             # Print clients that were not updated
-            print "<p class=\"notify notify--warning\">Failed to update professional status of client: $loginid</p>";
+            print "<p class=\"notify notify--warning\">Failed to update professional status of client: $loginid $e</p>";
         }
     }
 
@@ -2570,6 +2580,16 @@ sub _update_mt5_status {
             binary_user_id => $client->binary_user_id,
             client_loginid => $client->loginid
         });
+}
+
+sub set_client_status {
+    my ($client, $set, $clear, $reason, $clerk) = @_;
+    $client->status->multi_set_clear({
+        set        => $set,
+        clear      => $clear,
+        staff_name => $clerk,
+        reason     => $reason,
+    });
 }
 
 1;

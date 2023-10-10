@@ -1008,15 +1008,21 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     [% IF show_allow_professional_client %]
         <tr>
             <td class="label">
-                <input type="radio" name="professional_client" value="1" [% IF professional_status == 'Approved' %]checked[% END %]/>
+                <input type="radio" name="client_categorization" value="professional" [% IF professional_status == 'Approved' %]checked[% END %]/>
             </td>
             <td>Mark client as a Professional investor</td>
         </tr>
         <tr>
             <td class="label">
-                <input type="radio" name="professional_client" value="0" [% IF professional_status != 'Approved' %]checked[% END %]/>
+                <input type="radio" name="client_categorization" value="retail" [% IF professional_status != 'Approved' %]checked[% END %]/>
             </td>
             <td> Mark client as a Retail </td>
+        </tr>
+        <tr>
+            <td class="label">
+                <input type="radio" name="client_categorization" value="counterparty" [% IF eligible_counterparty == 1 %]checked[% END %]/>
+            </td>
+            <td> Mark client as a Eligible Counterparty </td>
         </tr>
     [% ELSE %]
         <tr>

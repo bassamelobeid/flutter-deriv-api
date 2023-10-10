@@ -732,6 +732,7 @@ SQL
         social_responsibility_risk_status_start_date => $social_responsibility_risk_status_start_date,
         social_responsibility_risk_status_end_date   => $social_responsibility_risk_status_end_date,
         professional_status                          => get_professional_status($client),
+        eligible_counterparty                        => $client->status->eligible_counterparty ? 1 : 0,
         show_funds_message                           => ($config->{ukgc_funds_protection} and not $client->is_virtual),
         show_risk_approval                           => ($client->landing_company->short eq 'maltainvest'),
         client_aml_jurisdiction_risk                 => $client_aml_jurisdiction_risk,
