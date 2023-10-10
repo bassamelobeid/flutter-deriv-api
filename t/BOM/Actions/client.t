@@ -4137,11 +4137,21 @@ subtest 'POA email notification' => sub {
 
     $mock_client->unmock_all();
 
+    $client_cr->status->setnx('age_verification', 'test', 'test');
+
     mailbox_clear();
     BOM::Event::Actions::Client::_send_email_notification_for_poa($client_cr)->get;
 
     $msg = mailbox_search(subject => qr/New uploaded POA document for/);
     ok !$msg, 'No email sent for non MF client';
+
+    mailbox_clear();
+    BOM::Event::Actions::Client::_send_email_notification_for_poa($client_mf)->get;
+
+    $msg = mailbox_search(subject => qr/New uploaded POA document for/);
+    ok !$msg, 'No email sent for not age verified MF client';
+
+    $client_mf->status->setnx('age_verification', 'test', 'test');
 
     mailbox_clear();
     BOM::Event::Actions::Client::_send_email_notification_for_poa($client_mf)->get;

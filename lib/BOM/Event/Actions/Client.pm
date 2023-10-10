@@ -2034,13 +2034,12 @@ async sub _send_CS_email_POA_uploaded {
 
 =head2 _send_email_notification_for_poa
 
-Send email to CS when client submits a proof of address
+Sends an email to CS when client submits a proof of address
 document.
 
-- send only if client is not fully authenticated
-- send only if client is MF client
-
-need to extend later for all landing companies
+- sends only if the client is not fully authenticated.
+- sends only if the client is MF client.
+- sends only if the client is age verified.
 
 =cut
 
@@ -2048,6 +2047,7 @@ async sub _send_email_notification_for_poa {
     my $client = shift;
 
     return undef if $client->fully_authenticated();
+    return undef unless $client->status->age_verification;
 
     if ($client->landing_company->short eq 'maltainvest') {
         await _send_CS_email_POA_uploaded($client);
