@@ -39,8 +39,7 @@ sub login {
             $staff->{token}    = $token;
             $staff->{nickname} = get_staff_nickname($staff);
 
-            BOM::Config::Redis::redis_replicated_write()
-                ->set(BACKOFFICE_LOGIN_KEY_PREFIX . $token, encode_json_utf8($staff), 'EX', $staff->{expiry} - time());
+            BOM::Config::Redis::redis_replicated_write()->set(BACKOFFICE_LOGIN_KEY_PREFIX . $token, encode_json_utf8($staff), 'EX', 24 * 3600);
 
             return $staff;
         }
@@ -133,7 +132,7 @@ Gets the current logged in staff, if there isn't one, returns C<undef>.
 sub get_staffname {
     my $staff = get_staff();
 
-    return $staff ? $staff->{name} : undef;
+    return $staff ? $staff->{nickname} : undef;
 }
 
 =head2 get_staff
