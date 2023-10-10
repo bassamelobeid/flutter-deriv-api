@@ -2557,6 +2557,9 @@ async sub _check_applicant {
 
     } catch ($e) {
         my $event_name = 'check_applicant';
+        $log->context->{uploaded_manually_by_staff} = $args->{staff_name} ? 1 : 0;
+        $log->context->{documents}                  = join ',', $args->{documents}->@* if $args->{documents};
+        $log->context->{applicant_id}               = $args->{applicant_id};
         await _handle_onfido_exception($e, $client->loginid, $event_name, $tags);
     }
 

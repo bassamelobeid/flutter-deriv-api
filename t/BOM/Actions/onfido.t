@@ -649,32 +649,13 @@ subtest 'Forged documents email' => sub {
 };
 
 subtest 'Applicant Check' => sub {
-    my $lc_mock = Test::MockModule->new('BOM::User::Client');
-    $lc_mock->mock(
-        'is_face_similarity_required',
-        sub {
-            return 1;
-        });
-
     $test_client->residence('br');
     $test_client->save;
 
     my $ryu_mock = Test::MockModule->new('Ryu::Source');
 
     $onfido_mocker->mock(
-        'photo_list',
-        sub {
-            return Ryu::Source->new;
-        });
-
-    $onfido_mocker->mock(
         'applicant_update',
-        sub {
-            return Future->done();
-        });
-
-    $ryu_mock->mock(
-        'as_list',
         sub {
             return Future->done();
         });
@@ -691,14 +672,6 @@ subtest 'Applicant Check' => sub {
             return Future->done();
         });
 
-    $log->clear();
-    release_onfido_lock();
-    BOM::Event::Actions::Client::_check_applicant({
-            client       => $test_client,
-            applicant_id => 'mocked-applicant-id',
-            documents    => [qw/abc/]})->get;
-    $log->contains_ok(qr/applicant mocked-applicant-id does not have live photos/, 'expected log found');
-
     my %request;
     $onfido_mocker->mock(
         'applicant_check',
@@ -710,105 +683,284 @@ subtest 'Applicant Check' => sub {
             return Future->fail('something awful', undef, $res);
         });
 
-    my @applicant_documents = (
-        WebService::Async::Onfido::Document->new(id => 'aaa'),
-        WebService::Async::Onfido::Document->new(id => 'bbb'),
-        WebService::Async::Onfido::Document->new(id => 'ccc'),
-    );
+    subtest 'Selfie required' => sub {
+        my $client_mock = Test::MockModule->new('BOM::User::Client');
+        $client_mock->mock(
+            'is_face_similarity_required',
+            sub {
+                return 1;
+            });
 
-    $ryu_mock->mock(
-        'as_list',
-        sub {
-            return Future->done(@applicant_documents);
-        });
+        $onfido_mocker->mock(
+            'photo_list',
+            sub {
+                return Ryu::Source->new;
+            });
 
-    $log->clear();
-    release_onfido_lock();
+        $ryu_mock->mock(
+            'as_list',
+            sub {
+                return Future->done();
+            });
 
-    BOM::Event::Actions::Client::_check_applicant({
-            client       => $test_client,
-            applicant_id => 'mocked-applicant-id',
-            documents    => [qw/test/],
-        })->get;
-    $log->contains_ok(qr/invalid live photo/, 'expected log found no selfie');
+        $log->clear();
+        release_onfido_lock();
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                documents    => [qw/abc/]})->get;
+        $log->contains_ok(qr/applicant mocked-applicant-id does not have live photos/, 'expected log found');
 
-    $log->clear();
-    release_onfido_lock();
+        my @applicant_documents = (
+            WebService::Async::Onfido::Document->new(id => 'aaa'),
+            WebService::Async::Onfido::Document->new(id => 'bbb'),
+            WebService::Async::Onfido::Document->new(id => 'ccc'),
+        );
 
-    BOM::Event::Actions::Client::_check_applicant({
-            client       => $test_client,
-            applicant_id => 'mocked-applicant-id',
-        })->get;
-    $log->contains_ok(qr/documents not specified/, 'expected log found');
+        $ryu_mock->mock(
+            'as_list',
+            sub {
+                return Future->done(@applicant_documents);
+            });
 
-    $log->clear();
-    release_onfido_lock();
+        $log->clear();
+        release_onfido_lock();
 
-    BOM::Event::Actions::Client::_check_applicant({
-            client       => $test_client,
-            applicant_id => 'mocked-applicant-id',
-            documents    => [qw/aaa bbb ccc ddd/],
-        })->get;
-    $log->contains_ok(qr/too many documents/, 'expected log found');
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                documents    => [qw/test/],
+            })->get;
+        $log->contains_ok(qr/invalid live photo/, 'expected log found - no selfie');
 
-    $log->clear();
-    release_onfido_lock();
+        $log->clear();
+        release_onfido_lock();
 
-    BOM::Event::Actions::Client::_check_applicant({
-            client       => $test_client,
-            applicant_id => 'mocked-applicant-id',
-            documents    => [qw/aaa bbb ddd/],
-        })->get;
-    $log->contains_ok(qr/invalid documents/, 'expected log found');
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+            })->get;
+        $log->contains_ok(qr/documents not specified/, 'expected log found - not specified');
 
-    $log->clear();
-    release_onfido_lock();
+        $log->clear();
+        release_onfido_lock();
 
-    BOM::Event::Actions::Client::_check_applicant({
-            client       => $test_client,
-            applicant_id => 'mocked-applicant-id',
-            documents    => [qw/aaa bbb ccc/],
-        })->get;
-    $log->contains_ok(qr/Failed to process Onfido verification for/, 'expected log found');
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                documents    => [qw/aaa bbb ccc ddd/],
+            })->get;
+        $log->contains_ok(qr/too many documents/, 'expected log found - too many');
 
-    cmp_deeply \%request,
-        {
-        suppress_form_emails => 1,
-        tags                 => ['automated', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
-        applicant_id         => 'mocked-applicant-id',
-        document_ids         => [qw/aaa bbb ccc/],
-        report_names         => [qw/document facial_similarity_photo/],
-        },
-        'Expected request for applicant check';
+        $log->clear();
+        release_onfido_lock();
 
-    $log->clear();
-    release_onfido_lock();
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                documents    => [qw/aaa bbb ddd/],
+            })->get;
+        $log->contains_ok(qr/invalid documents/, 'expected log found - invalid');
 
-    BOM::Event::Actions::Client::_check_applicant({
-            client       => $test_client,
-            applicant_id => 'mocked-applicant-id',
-            staff_name   => 'test',
-        })->get;
-    $log->contains_ok(qr/Failed to process Onfido verification for/, 'expected log found');
+        $log->clear();
+        release_onfido_lock();
 
-    cmp_deeply \%request,
-        {
-        suppress_form_emails => 1,
-        tags                 => ['staff:test', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
-        applicant_id         => 'mocked-applicant-id',
-        report_names         => [qw/document facial_similarity_photo/],
-        },
-        'Expected request for applicant check (from BO)';
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                documents    => [qw/aaa bbb ccc/],
+            })->get;
+        $log->contains_ok(qr/Failed to process Onfido verification for/, 'expected log found - failed');
 
-    $log->clear();
-    release_onfido_lock();
+        cmp_deeply $log->context,
+            {
+            documents                  => 'aaa,bbb,ccc',
+            uploaded_manually_by_staff => 0,
+            applicant_id               => 'mocked-applicant-id'
+            },
+            'Expected context for applicant check';
 
-    $event_mocker->unmock('_update_onfido_check_count');
-    $event_mocker->unmock('_update_onfido_user_check_count');
-    $onfido_mocker->unmock('applicant_check');
-    $onfido_mocker->unmock('photo_list');
-    $ryu_mock->unmock_all;
-    $lc_mock->unmock_all;
+        cmp_deeply \%request,
+            {
+            suppress_form_emails => 1,
+            tags                 => ['automated', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
+            applicant_id         => 'mocked-applicant-id',
+            document_ids         => [qw/aaa bbb ccc/],
+            report_names         => [qw/document facial_similarity_photo/],
+            },
+            'Expected request for applicant check';
+
+        $log->clear();
+        release_onfido_lock();
+
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                staff_name   => 'test',
+            })->get;
+        $log->contains_ok(qr/Failed to process Onfido verification for/, 'expected log found - failed');
+
+        cmp_deeply $log->context,
+            {
+            documents                  => 'aaa,bbb,ccc',
+            uploaded_manually_by_staff => 1,
+            applicant_id               => 'mocked-applicant-id'
+            },
+            'Expected context for applicant check';
+
+        cmp_deeply \%request,
+            {
+            suppress_form_emails => 1,
+            tags                 => ['staff:test', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
+            applicant_id         => 'mocked-applicant-id',
+            report_names         => [qw/document facial_similarity_photo/],
+            },
+            'Expected request for applicant check (from BO)';
+
+        $log->clear();
+        release_onfido_lock();
+
+        $onfido_mocker->unmock('photo_list');
+        $client_mock->unmock_all;
+    };
+
+    subtest 'Selfie is not required' => sub {
+        my $ryu_data = {
+            photo_list    => [WebService::Async::Onfido::Document->new(id => 'selfie' . $test_client->loginid, file_type => 'png'),],
+            document_list => [
+                WebService::Async::Onfido::Document->new(
+                    id        => 'aaa',
+                    file_type => 'png',
+                    type      => 'passport',
+                ),
+                WebService::Async::Onfido::Document->new(
+                    id        => 'bbb',
+                    file_type => 'png',
+                    type      => 'passport',
+                ),
+            ],
+        };
+        my $ryu_pointer;
+
+        $onfido_mocker->mock(
+            'photo_list',
+            sub {
+                $ryu_pointer = 'photo_list';
+                return Ryu::Source->new;
+            });
+
+        $onfido_mocker->mock(
+            'document_list',
+            sub {
+                $ryu_pointer = 'document_list';
+                return Ryu::Source->new;
+            });
+
+        $ryu_mock->mock(
+            'as_list',
+            sub {
+                if ($ryu_pointer && exists $ryu_data->{$ryu_pointer}) {
+                    my @data = $ryu_data->{$ryu_pointer}->@*;
+                    $ryu_pointer = undef;
+                    return Future->done(@data);
+                }
+
+                return $ryu_mock->original('as_list')->(@_);
+            });
+
+        $log->clear();
+        release_onfido_lock();
+
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+            })->get;
+        $log->contains_ok(qr/documents not specified/, 'expected log found - not specified');
+
+        $log->clear();
+        release_onfido_lock();
+
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                documents    => [qw/aaa bbb ccc/],
+            })->get;
+        $log->contains_ok(qr/too many documents/, 'expected log found - too many');
+
+        $log->clear();
+        release_onfido_lock();
+
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                documents    => [qw/aaa ddd/],
+            })->get;
+        $log->contains_ok(qr/invalid documents/, 'expected log found - invalid');
+
+        $log->clear();
+        release_onfido_lock();
+
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                documents    => [qw/aaa bbb/],
+            })->get;
+        $log->contains_ok(qr/Failed to process Onfido verification for/, 'expected log found - failed');
+
+        cmp_deeply $log->context,
+            {
+            documents                  => 'aaa,bbb',
+            uploaded_manually_by_staff => 0,
+            applicant_id               => 'mocked-applicant-id'
+            },
+            'Expected context for applicant check';
+
+        cmp_deeply \%request,
+            {
+            suppress_form_emails => 1,
+            tags                 => ['automated', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
+            applicant_id         => 'mocked-applicant-id',
+            document_ids         => [qw/aaa bbb/],
+            report_names         => [qw/document/],
+            },
+            'Expected request for applicant check';
+
+        $log->clear();
+        release_onfido_lock();
+
+        BOM::Event::Actions::Client::_check_applicant({
+                client       => $test_client,
+                applicant_id => 'mocked-applicant-id',
+                staff_name   => 'test',
+            })->get;
+        $log->contains_ok(qr/Failed to process Onfido verification for/, 'expected log found - failed');
+
+        cmp_deeply $log->context,
+            {
+            documents                  => 'aaa,bbb',
+            uploaded_manually_by_staff => 1,
+            applicant_id               => 'mocked-applicant-id'
+            },
+            'Expected context for applicant check';
+
+        cmp_deeply \%request,
+            {
+            suppress_form_emails => 1,
+            tags                 => ['staff:test', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
+            applicant_id         => 'mocked-applicant-id',
+            report_names         => [qw/document/],
+            },
+            'Expected request for applicant check (from BO)';
+
+        $log->clear();
+        release_onfido_lock();
+
+        $event_mocker->unmock('_update_onfido_check_count');
+        $event_mocker->unmock('_update_onfido_user_check_count');
+        $onfido_mocker->unmock('applicant_check');
+        $onfido_mocker->unmock('photo_list');
+        $ryu_mock->unmock_all;
+    };
 };
 
 subtest 'Upload document' => sub {
