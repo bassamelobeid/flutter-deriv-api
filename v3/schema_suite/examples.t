@@ -58,7 +58,7 @@ subtest 'Examples not requiring auth work without error' => sub {
         verify_email_cellxpert
     );
 
-    my @requires_other_services = ('crypto_config', 'ticks');
+    my @requires_other_services = ('crypto_config', 'ticks', 'crypto_estimations');
 
     for my $call_name (sort { $a cmp $b } path($SCHEMA_DIR)->children) {
         next if any { $call_name =~ /\/$_$/ } (@contains_fake_example, @requires_other_services);

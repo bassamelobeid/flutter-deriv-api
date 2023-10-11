@@ -181,6 +181,37 @@ subtest 'crypto_config call' => sub {
 
 };
 
+subtest 'crypto_estimations call' => sub {
+
+    my $rpc_response = {
+        "BTC" => {
+            "withdrawal_fee" => {
+                "value"       => 0.0001,
+                "unique_id"   => "c84a793b-8a87-7999-ce10-9b22f7ceead3",
+                "expiry_time" => 1689305114,
+            }}};
+
+    my $mocked_response = Test::MockObject->new();
+    $mocked_response->mock('is_error', sub { 0 });
+    $mocked_response->mock('result',   sub { $rpc_response });
+    {
+        no warnings qw(redefine once);    ## no critic (ProhibitNoWarnings)
+
+        *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
+            return $mocked_response;
+        }
+    }
+
+    my $ws_response = $t->await::crypto_estimations({
+        crypto_estimations => '1',
+        currency_code      => 'BTC',
+    });
+
+    test_schema(crypto_estimations => $ws_response);
+    cmp_deeply $ws_response->{crypto_estimations}, $rpc_response, 'Expected response for crypto_estimations received';
+
+};
+
 $t->finish_ok;
 
 done_testing();
