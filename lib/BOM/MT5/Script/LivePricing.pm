@@ -39,6 +39,8 @@ use Log::Any               qw($log), formatter => sub {
 };
 use BOM::MT5::User::Async;
 use BOM::Config;
+use HTTP::Tiny;
+use DataDog::DogStatsd::Helper qw(stats_timing);
 
 =head2 DEFAULT_MAX_CONNECTION
 
@@ -287,19 +289,22 @@ async sub update_price {
     my $self = shift;
 
     while (1) {
-        # perform update
-        my @futures;
+
+        my $request_start = [Time::HiRes::gettimeofday];
+
         foreach my $region (keys $self->{next_update}->%*) {
             foreach my $market (keys $self->{next_update}->{$region}->%*) {
                 if (delete $self->{next_update}{$region}{$market}{updated}) {
                     my $data   = $self->{next_update}->{$region}{$market};
                     my $target = [$region, qw(mkt), MAPPER->{$market}];
                     $log->debugf("refreshing firebase by target: %s, data: %s", pp($target), encode_json_utf8($data));
-                    push @futures, $self->firebase_set($target, $data);
+                    $self->firebase_set($target, $data);
                 }
             }
         }
-        await Future->wait_all(@futures);
+
+        stats_timing('firebase.update.price.timing', (1000 * Time::HiRes::tv_interval($request_start)));
+
         my $t     = Time::HiRes::time;
         my $after = 1 - ($t - int($t));
         await $self->loop->delay_future(after => $after);
@@ -323,7 +328,7 @@ Put feed value to firebase.
 {
     my $cfg;
 
-    async sub firebase_set {
+    sub firebase_set {
         my ($self, $target, $data) = @_;
 
         $cfg //= LoadFile($self->{firebase_config});
@@ -336,23 +341,27 @@ Put feed value to firebase.
         # extra setup and configuration (see git history for details
         # on how to make that work)
         $uri->query_param(auth => $cfg->{token});
-        my $res = await $self->{ua}->PUT($uri, encode_json_utf8($data), content_type => 'application/json')->transform(
-            done => sub {
-                my ($resp) = @_;
-                decode_json_utf8($resp->content);
-            }
-        )->else(
-            sub {
-                my ($err, $src, $resp, $req) = @_;
-                if ($src eq 'http' and $req and $resp) {
-                    $log->errorf("HTTP error %s, request was %s with response %s", $err, $req->as_string("\n"), $resp->as_string("\n"));
-                } else {
-                    $log->errorf("Other failure (%s): %s", $src // 'unknown', $err);
-                }
-                # We should just log it and move on. Since the prices are purely for display only, consistency is not required.
-                Future->done(@_);
+        my $method  = 'PUT';
+        my $headers = {
+            'Content-Type' => 'application/json',
+        };
+
+        my $response = $self->ua->request(
+            $method, $uri,
+            {
+                headers => $headers,
+                content => encode_json_utf8($data),
             });
-        $log->debugf('JSON response: %s', pp($res));
+
+        if (defined $response && $response->{success}) {
+            $log->debugf('JSON response: %s', pp(decode_json_utf8($response->{content})));
+        } elsif (defined $response) {
+            $log->errorf('HTTP error: %s %s', $response->{status}, $response->{reason});
+        } else {
+            $log->errorf('HTTP request failed');
+        }
+
+        return;
     }
 }
 
@@ -517,19 +526,18 @@ sub _add_to_loop {
     $self->{feed_redis} = $feed_redis;
     $self->add_child($feed_redis);
 
-    my $ua = Net::Async::HTTP->new(
-        fail_on_error            => 1,
-        max_connections_per_host => $self->{max_connection},
-        pipeline                 => 1,
-        max_in_flight            => 1,
-        decode_content           => 1,
-        timeout                  => 90,
-        user_agent               => 'Mozilla/4.0 (perl; firebase-trading-view; tom@deriv.com)',
-    );
-    $self->{ua} = $ua;
-    $self->add_child($ua);
-
     return;
+}
+
+=head2 ua
+
+Returns a L<HTTP::Tiny> if already not declared otherwise return the same instance.
+
+=cut
+
+sub ua {
+    my ($self) = @_;
+    return $self->{ua} //= HTTP::Tiny->new(timeout => 90);
 }
 
 1;
