@@ -62,16 +62,18 @@ requires_auth('trading', 'wallet');
 use Log::Any qw($log);
 
 use constant {
-    MAX_DESCRIPTION_LENGTH        => 250,
-    HANDOFF_TOKEN_TTL             => 5 * 60,
-    TRANSFER_OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)],
-    CRYPTO_CONFIG_RPC_REDIS       => "rpc::cryptocurrency::crypto_config",
-    MT5                           => 'mt5',
-    DXTRADE                       => 'dxtrade',
-    DERIVEZ                       => 'derivez',
-    PA_JUSTIFICATION_PREFIX       => 'PA_WITHDRAW_JUSTIFICATION_SUBMIT::',
-    PA_JUSTIFICATION_TTL          => 60 * 60 * 24,                           # 24 hours in sec
-    CTRADER                       => 'ctrader',
+    MAX_DESCRIPTION_LENGTH           => 250,
+    HANDOFF_TOKEN_TTL                => 5 * 60,
+    TRANSFER_OVERRIDE_ERROR_CODES    => [qw(FinancialAssessmentRequired)],
+    CRYPTO_CONFIG_RPC_REDIS          => "rpc::cryptocurrency::crypto_config",
+    CRYPTO_ESTIMATIONS_RPC_CACHE     => "rpc::cryptocurrency::crypto_estimations",
+    CRYPTO_ESTIMATIONS_RPC_CACHE_TTL => 5,
+    MT5                              => 'mt5',
+    DXTRADE                          => 'dxtrade',
+    DERIVEZ                          => 'derivez',
+    PA_JUSTIFICATION_PREFIX          => 'PA_WITHDRAW_JUSTIFICATION_SUBMIT::',
+    PA_JUSTIFICATION_TTL             => 60 * 60 * 24,                                # 24 hours in sec
+    CTRADER                          => 'ctrader',
 };
 
 my $payment_limits = BOM::Config::payment_limits;
@@ -2249,6 +2251,39 @@ rpc 'crypto_config',
         }
     }
     return $result;
+    };
+
+rpc 'crypto_estimations',
+    auth => [],    #unauthenticated
+    sub {
+    my $params        = shift;
+    my $currency_code = $params->{args}{currency_code} // '';
+
+    unless ($currency_code && BOM::Config::CurrencyConfig::is_valid_crypto_currency($currency_code)) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'CryptoInvalidCurrency',
+            message_to_client => localize('The provided currency [_1] is not a valid cryptocurrency.', $currency_code),
+        });
+    }
+
+    my $result;
+    # Try to retrieve cached data from redis
+    my $redis_read            = BOM::Config::Redis::redis_replicated_read();
+    my $redis_key_estimations = CRYPTO_ESTIMATIONS_RPC_CACHE . "::" . $currency_code;
+
+    $result = $redis_read->get($redis_key_estimations);
+    return decode_json($result) if $result;
+
+    my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
+    $result = $crypto_service->crypto_estimations($currency_code);
+
+    unless ($result->{error}) {
+        my $redis_write = BOM::Config::Redis::redis_replicated_write();
+        $redis_write->setex($redis_key_estimations, CRYPTO_ESTIMATIONS_RPC_CACHE_TTL, encode_json($result));
+    }
+
+    return $result;
+
     };
 
 1;
