@@ -71,10 +71,9 @@ sub startup {
     $r->any('/authorize')->to('O#authorize');
     $r->any('/oneall/callback')->to('OneAll#callback');
     $r->any('/social-login/callback/:sls_provider' => [id => qr/\w+/])->to('SocialLoginController#callback');
-
     $r->any('session/:service/sso')->to('SingleSignOn#authorize');
     $r->any('session/:service/authorize')->to('SingleSignOn#create');
-
+    $r->any('session/thinkific/create')->to('Thinkific#create');
     $r->post('/api/v1/authorize')->to('RestAPI#authorize');
     $r->post('/api/v1/verify')->to('RestAPI#verify');
     $r->post('/api/v1/login')->to('RestAPI#login');
