@@ -1509,10 +1509,6 @@ rpc "affiliate_register_person",
     try {
         my $myAff_response = $params->{third_party_function}->($args->{email}, $args);
 
-        use Data::Dump 'pp';
-        use feature 'say';
-        say pp($myAff_response);
-
         if ($myAff_response->{code} eq 'MYAFFRuntimeError') {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 400,
