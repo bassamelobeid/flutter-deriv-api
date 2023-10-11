@@ -69,13 +69,19 @@
             "type": "integer",
             "enum": [
                 2,
-                4
+                4,
+                6
             ]
         },
         "company_name": {
             "description": "Name of the company.",
             "type": "string",
             "pattern": "^\\w{3,128}$",
+            "sensitive": 1
+        },
+        "company_registration_number": {
+            "description": "Registration number of the company",
+            "type": "integer",
             "sensitive": 1
         },
         "country": {
