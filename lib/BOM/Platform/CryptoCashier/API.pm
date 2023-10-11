@@ -29,11 +29,12 @@ use constant {
     DD_API_CALL_RESULT_KEY => 'bom_platform.cryptocashier.api.v_1.call.result'
 };
 use constant API_ENDPOINTS => {
-    DEPOSIT         => 'deposit',
-    TRANSACTIONS    => 'transactions',
-    WITHDRAW        => 'withdraw',
-    WITHDRAW_CANCEL => 'withdraw_cancel',
-    CRYPTO_CONFIG   => 'crypto_config',
+    DEPOSIT            => 'deposit',
+    TRANSACTIONS       => 'transactions',
+    WITHDRAW           => 'withdraw',
+    WITHDRAW_CANCEL    => 'withdraw_cancel',
+    CRYPTO_CONFIG      => 'crypto_config',
+    CRYPTO_ESTIMATIONS => 'crypto_estimations',
 };
 
 use constant HTTP_METHODS => {
@@ -365,6 +366,40 @@ sub crypto_config {
     });
 
     return $result;
+}
+
+=head2 crypto_estimations
+
+Retrieves crypto estimations for the currency code passed.
+
+Receives the following parameters:
+
+=over 4
+
+=item * C<currency_code> - Currency code for which we want to get the estimations
+
+=back
+
+Returns hashrefs with the following keys:
+
+=over 4
+
+=item * C<crypto_estimations> -hashref , contains the key values as per https://api.deriv.com/api-explorer/#crypto_estimations
+
+=back
+
+=cut
+
+sub crypto_estimations {
+    my ($self, $currency_code) = @_;
+
+    my $result = $self->_request({
+            method       => HTTP_METHODS->{GET},
+            endpoint     => API_ENDPOINTS->{CRYPTO_ESTIMATIONS},
+            query_params => {currency_code => $currency_code}});
+
+    return $result;
+
 }
 
 =head2 _request
