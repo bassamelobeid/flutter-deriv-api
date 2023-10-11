@@ -20,6 +20,7 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 use Binary::WebSocketAPI::v3::Subscription::Feed;
 use Binary::WebSocketAPI::v3::Subscription::ExchangeRates;
 use Binary::WebSocketAPI::v3::Subscription::AssetListing;
+use Binary::WebSocketAPI::v3::Subscription::CryptoEstimations;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 my $json = JSON::MaybeXS->new;
@@ -537,6 +538,61 @@ sub trading_platform_asset_listing {
                         $api_response = $c->new_error($type, 'AlreadySubscribed', $c->l('You are already subscribed to asset listing'));
                     }
 
+                }
+
+                return $api_response;
+            }
+        });
+    return;
+}
+
+=head2 crypto_estimations
+
+Crypto estimation wrapper to handle subscription
+
+=cut
+
+sub crypto_estimations {
+    my ($c, $req_storage) = @_;
+
+    my $type = 'crypto_estimations';
+    $c->call_rpc({
+            args        => $req_storage->{args},
+            method      => $type,
+            msg_type    => $type,
+            category    => $req_storage->{category},
+            call_params => {
+                token         => $c->stash('token'),
+                currency_code => $req_storage->{args}{currency_code},
+            },
+            success => sub {
+                my ($c, $api_response, $req_storage) = @_;
+                if ($req_storage->{args}{subscribe}) {
+
+                    my $worker = Binary::WebSocketAPI::v3::Subscription::CryptoEstimations->new(
+                        c             => $c,
+                        args          => $req_storage->{args},
+                        currency_code => $req_storage->{args}{currency_code},
+                    );
+
+                    unless ($worker->already_registered) {
+                        $worker->register;
+                        $req_storage->{id} = $worker->uuid();
+                        $worker->subscribe();
+                    }
+                }
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
+                return $api_response if $rpc_response->{error};
+
+                if ($req_storage->{args}{subscribe}) {
+                    if ($req_storage->{id}) {
+                        $api_response->{subscription}->{id} = $req_storage->{id};
+                    } else {
+                        $api_response = $c->new_error($type, 'AlreadySubscribed',
+                            $c->l('You are already subscribed to crypto estimations for [_1].', $req_storage->{args}{currency_code}));
+                    }
                 }
 
                 return $api_response;

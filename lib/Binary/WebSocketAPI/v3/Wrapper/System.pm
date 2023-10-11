@@ -61,6 +61,7 @@ sub forget_all {
             p2p_advertiser
             p2p_advert
             cashier_payments
+            crypto_estimations
             p2p_settings
             trading_platform_asset_listing
         );
@@ -86,6 +87,8 @@ sub forget_all {
                 @removed_ids{@{_forget_p2p_advert_subscription($c)}} = ();
             } elsif ($type eq 'cashier_payments') {
                 @removed_ids{@{_forget_cashier_payments_subscription($c)}} = ();
+            } elsif ($type eq 'crypto_estimations') {
+                @removed_ids{@{_forget_crypto_estimations_subscription($c)}} = ();
             } elsif ($type eq 'p2p_settings') {
                 @removed_ids{@{_forget_p2p_settings_subscription($c)}} = ();
             } elsif ($type eq 'trading_platform_asset_listing') {
@@ -299,6 +302,25 @@ sub _forget_cashier_payments_subscription {
     my ($c) = @_;
     my @removed_ids;
     my @subscriptions = Binary::WebSocketAPI::v3::Subscription::CashierPayments->get_by_class($c);
+
+    foreach my $subscription (@subscriptions) {
+        my $uuid = $subscription->uuid;
+        push @removed_ids, $uuid;
+        $subscription->unregister;
+    }
+    return \@removed_ids;
+}
+
+=head2 _forget_crypto_estimations_subscription
+
+Handles forgetting the subscriptions of C<crypto_estimations>.
+
+=cut
+
+sub _forget_crypto_estimations_subscription {
+    my ($c) = @_;
+    my @removed_ids;
+    my @subscriptions = Binary::WebSocketAPI::v3::Subscription::CryptoEstimations->get_by_class($c);
 
     foreach my $subscription (@subscriptions) {
         my $uuid = $subscription->uuid;

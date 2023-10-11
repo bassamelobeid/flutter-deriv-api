@@ -67,6 +67,13 @@ sub actions_config {
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
         ['crypto_config',  {stash_params       => [qw/ token /]}],
+        [
+            'crypto_estimations',
+            {
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::crypto_estimations,
+                category           => 'crypto_cashier',
+            },
+        ],
         ['residence_list'],
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
