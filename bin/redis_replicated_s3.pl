@@ -107,8 +107,8 @@ sub download_redis {
 
         @parts = split /::/, $doc_key;
 
-        my $category = $parts[0];
-        my $key      = $parts[1];
+        my $category = shift @parts;
+        my $key      = join '::', @parts;
         # we have $doc_key like economic_events_cache_snapshot that doesn't follow the naming convention.
         # skip this for now.
         next unless $key;
