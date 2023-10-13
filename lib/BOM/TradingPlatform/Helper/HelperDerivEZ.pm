@@ -517,16 +517,12 @@ sub derivez_accounts_lookup {
     # Determine whether to get real or demo accounts, or both
     $account_type = $account_type ? $account_type : 'all';
 
-    my @clients;
-
-    if ($client->is_wallet) {
-        my @all_linked_accounts = ($client->user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid} || [])->@*;
-
-        @clients = map { $_->{platform} eq "derivez" ? $_->{loginid} : () } @all_linked_accounts;
-    } elsif ($client->is_legacy) {
-        # Getting filtered account to only status as undef and based on the specified account type
-        @clients = $client->user->get_derivez_loginids(type_of_account => $account_type);
-    }
+    # Getting filtered account to only status as undef and based on the specified account type
+    my $wallet_loginid = $client->is_wallet ? $client->loginid : undef;
+    my @clients        = $client->user->get_derivez_loginids(
+        type_of_account => $account_type,
+        wallet_loginid  => $wallet_loginid
+    );
 
     # Loop through all the accounts and create a future for each one to retrieve its settings
     for my $login (@clients) {
@@ -585,7 +581,7 @@ sub _get_settings {
     my ($client, $login) = @_;
 
     # Check if the loginid belongs to the client
-    return Future->fail({code => 'permission'}) unless _check_logins($client, [$login]);
+    return Future->fail({code => 'permission'}) unless $client->user->loginid_details->{$login};
 
     # Check if the account is suspended
     if (BOM::MT5::User::Async::is_suspended('', {login => $login})) {
@@ -838,10 +834,30 @@ sub _is_financial_assessment_complete {
 
 Perform validation for account transfer and getting new updated amount
 
+Takes the following list of arguments:
+
+=over 4
+
+=item client: client instance from trading platform
+
+=item user: user isntance from trading platform
+
+=item derivez_loginid
+
+=item amount: amount in sending account currency
+
+=item error_code: error code to use in raised errors. We also use this to determine transer type - this should be refactored (TODO)
+
+=item request_currency: if passed, derivez currency must match it
+
+=item rule_engine: rule engine instance from trading platform
+
+=back
+
 =cut
 
 sub derivez_validate_and_get_amount {
-    my ($authorized_client, $loginid, $derivez_loginid, $amount, $error_code, $currency_check) = @_;
+    my ($client, $user, $derivez_loginid, $amount, $error_code, $request_currency, $rule_engine) = @_;
     my $brand_name = request()->brand->name;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -850,24 +866,21 @@ sub derivez_validate_and_get_amount {
     # Parameters check from FE
     die +{code => 'DerivEZMissingID'} unless $derivez_loginid;
 
-    # MT5 login or binary loginid not belongs to user
-    my @loginids_list = ($derivez_loginid);
-    push @loginids_list, $loginid if $loginid;
+    die +{code => 'PermissionDenied'} unless $user->loginid_details->{$derivez_loginid};
 
-    die +{
-        code    => 'PermissionDenied',
-        message => 'Both accounts should belong to the authorized client.'
-        }
-        unless _check_logins($authorized_client, \@loginids_list);
+    my ($action, $action_counterpart, $from_loginid, $to_loginid);
+    if ($error_code =~ /Withdrawal/) {
+        ($action, $action_counterpart) = ('withdrawal', 'deposit');
+        ($from_loginid, $to_loginid) = ($derivez_loginid, $client->loginid);
+    } else {
+        ($action, $action_counterpart) = ('deposit', 'withdrawal');
+        ($from_loginid, $to_loginid) = ($client->loginid, $derivez_loginid);
+    }
 
     return _get_user_with_group($derivez_loginid)->then(
         sub {
             # Extract user setting
             my ($user_setting) = @_;
-
-            # Determine action based on error code
-            my $action             = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
-            my $action_counterpart = ($action eq 'withdrawal')     ? 'deposit'    : 'withdraw';
 
             # Extract user details
             my $user_derivez_group           = $user_setting->{group};
@@ -879,8 +892,12 @@ sub derivez_validate_and_get_amount {
             die +{code => $error_code}
                 if ($action eq 'withdrawal' and $user_setting->{status}->{withdrawal_locked});
 
-            # Skip validation for virtual topup
-            if ($account_type eq 'demo' and $action eq 'deposit' and not $loginid) {
+            # Skip validation for virtual topup from VRTC
+            if (   $account_type eq 'demo'
+                && $action eq 'deposit'
+                && $client->is_legacy
+                && !$user->loginid_details->{$derivez_loginid}->{wallet_loginid})
+            {
                 my $max_balance_before_topup = BOM::Config::payment_agent()->{minimum_topup_balance}->{DEFAULT};
 
                 die +{
@@ -894,32 +911,18 @@ sub derivez_validate_and_get_amount {
             die +{code => 'WrongAmount'} if ($amount <= 0);
             die +{code => 'MissingAmount'} unless $amount;
 
-            # Check if the loginid is missing
-            die +{code => 'MissingID'} unless $loginid;
-
             # Check landing company is valid
             die +{code => 'DerivEZInvalidLandingCompany'} unless $user_derivez_landing_company;
 
-            # Check that derivez account currency matches with the tranfer currency parameters
-            die +{code => 'CurrencyConflict'} if $currency_check && $currency_check ne $user_derivez_currency;
-
-            # We should not allow transfer between cfd account (example: mt5 to derivez)
-            # Will accept CR and MF only
-            die +{
-                code    => 'PermissionDenied',
-                message => 'Transfer between cfd account is not permitted.'
-            } if ($loginid =~ /^(?!CR|MF)/);
-
             # Populate variables
             my $requirements                     = $user_derivez_landing_company->requirements->{after_first_deposit}->{financial_assessment} // [];
-            my $client                           = BOM::User::Client->get_client_instance($loginid, 'replica');
             my $brand                            = Brands->new(name => request()->brand);
             my $client_currency                  = $client->account ? $client->account->currency_code() : undef;
             my $user_derivez_currency_type       = LandingCompany::Registry::get_currency_type($user_derivez_currency);
             my $client_currency_type             = LandingCompany::Registry::get_currency_type($client_currency);
             my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
             my $derivez_transfer_limits          = BOM::Config::CurrencyConfig::derivez_transfer_limits($brand_name);
-            my $source_currency                  = $action eq 'deposit' ? $client_currency : $user_derivez_currency;
+            my $amount_currency                  = $action eq 'deposit' ? $client_currency : $user_derivez_currency;
 
             # Parameters
             my $derivez_transfer_amount = undef;
@@ -928,12 +931,24 @@ sub derivez_validate_and_get_amount {
             my $fees_in_client_currency = 0;       #when a withdrawal is done record the fee in the local amount
             my ($min_fee, $fee_calculated_by_percent);
 
+            $rule_engine->verify_action(
+                'account_transfer',
+                transfer_type    => 'mt5',               # yes DerivEZ is actually MT5
+                loginid          => $client->loginid,
+                user             => $user,
+                loginid_from     => $from_loginid,
+                loginid_to       => $to_loginid,
+                amount           => $amount,
+                amount_currency  => $amount_currency,
+                request_currency => $request_currency,
+            );
+
             # Check if financial assessment is required for withdrawals
             if (
                    $action eq 'withdrawal'
-                && $authorized_client->has_mt5_deposits($derivez_loginid)
+                && $client->has_mt5_deposits($derivez_loginid)
                 && !_is_financial_assessment_complete(
-                    client                            => $authorized_client,
+                    client                            => $client,
                     group                             => $user_derivez_group,
                     financial_assessment_requirements => $requirements
                 ))
@@ -941,34 +956,22 @@ sub derivez_validate_and_get_amount {
                 die +{code => 'FinancialAssessmentRequired'};
             }
 
-            # Transfer between real and demo accounts is not permitted
-            die +{code => 'AccountTypesMismatch'} if $client->is_virtual xor ($account_type eq 'demo');
-
-            # Transfer between virtual trading and virtual mt5 is not permitted
-            die +{code => 'InvalidVirtualAccount'} if $client->is_virtual and not $client->is_wallet;
-
             # Check if the amount does not meet the min requirements
-            my $min_transfer_limit = $derivez_transfer_limits->{$source_currency}->{min};
+            my $min_transfer_limit = $derivez_transfer_limits->{$amount_currency}->{min};
             die +{
                 code   => 'InvalidMinAmount',
-                params => [formatnumber('amount', $source_currency, $min_transfer_limit), $source_currency]}
-                if $amount < financialrounding('amount', $source_currency, $min_transfer_limit);
+                params => [formatnumber('amount', $amount_currency, $min_transfer_limit), $amount_currency]}
+                if $amount < financialrounding('amount', $amount_currency, $min_transfer_limit);
 
             # Check if the amount exceed the max_transfer_limit requirements
-            my $max_transfer_limit = $derivez_transfer_limits->{$source_currency}->{max};
+            my $max_transfer_limit = $derivez_transfer_limits->{$amount_currency}->{max};
             die +{
                 code   => 'InvalidMaxAmount',
-                params => [formatnumber('amount', $source_currency, $max_transfer_limit), $source_currency]}
-                if $amount > financialrounding('amount', $source_currency, $max_transfer_limit);
+                params => [formatnumber('amount', $amount_currency, $max_transfer_limit), $amount_currency]}
+                if $amount > financialrounding('amount', $amount_currency, $max_transfer_limit);
 
             # Validate the binary client
             _validate_client($client, $user_derivez_landing_company);
-
-            # Don't allow a virtual token/oauth to process a real account.
-            die +{
-                code    => 'PermissionDenied',
-                message => localize('You cannot transfer between real accounts because the authorized client is virtual.')}
-                if $authorized_client->is_virtual and not $client->is_virtual;
 
             # Do not allow transfer between different currencies
             die +{code => 'TransferBetweenDifferentCurrencies'}
@@ -1045,7 +1048,7 @@ sub derivez_validate_and_get_amount {
                         # To update them, transfer_between_accounts_fees is called again with force_refresh on.
                         die +{
                             code   => 'AmountNotAllowed',
-                            params => [$min_transfer_limit, $source_currency]}
+                            params => [$min_transfer_limit, $amount_currency]}
                             if ($e =~ /The amount .* is below the minimum allowed amount/);
 
                         # Default error:
@@ -1081,7 +1084,7 @@ sub derivez_validate_and_get_amount {
                         # To update them, transfer_between_accounts_fees is called again with force_refresh on.
                         die +{
                             code   => 'AmountNotAllowed',
-                            params => [$min_transfer_limit, $source_currency]}
+                            params => [$min_transfer_limit, $amount_currency]}
                             if ($e =~ /The amount .* is below the minimum allowed amount/);
 
                         # Default error:
@@ -1091,31 +1094,28 @@ sub derivez_validate_and_get_amount {
             }
 
             # Check if the amount is valid
-            my $validate_amount_response = _validate_amount($amount, $source_currency);
+            my $validate_amount_response = _validate_amount($amount, $amount_currency);
             die +{
                 code    => $error_code,
                 message => $validate_amount_response
             } if $validate_amount_response;
 
-            unless ($client->is_virtual and _is_account_demo($user_derivez_group)) {
-                my $rule_engine = BOM::Rules::Engine->new(client => $client);
-                my $validation  = BOM::Platform::Client::CashierValidation::validate(
-                    loginid           => $loginid,
-                    action            => $action_counterpart,
-                    is_internal       => 0,
-                    underlying_action => ($action eq 'deposit' ? 'mt5_transfer' : 'mt5_withdraw'),
-                    rule_engine       => $rule_engine
-                );
+            my $validation = BOM::Platform::Client::CashierValidation::validate(
+                loginid           => $client->loginid,
+                action            => $action_counterpart,
+                is_internal       => 0,
+                underlying_action => ($action eq 'deposit' ? 'mt5_transfer' : 'mt5_withdraw'),
+                rule_engine       => $rule_engine
+            );
 
-                die +{
-                    code    => $error_code,
-                    message => $validation->{error}{message_to_client}} if exists $validation->{error};
-            }
+            die +{
+                code    => $error_code,
+                message => $validation->{error}{message_to_client}} if exists $validation->{error};
 
             return {
                 derivez_amount          => $derivez_transfer_amount,
                 fees                    => $fees,
-                fees_currency           => $source_currency,
+                fees_currency           => $amount_currency,
                 fees_percent            => $fees_percent,
                 fees_in_client_currency => $fees_in_client_currency,
                 derivez_currency_code   => $user_derivez_currency,
@@ -1129,11 +1129,12 @@ sub derivez_validate_and_get_amount {
         sub {
             my $e = shift;
 
-            if (ref $e eq 'HASH' and defined $e->{code}) {
+            if (ref $e eq 'HASH' and ($e->{code} || $e->{error_code})) {
                 die +{
-                    code    => $e->{code},
-                    params  => $e->{params},
-                    message => $e->{message}};
+                    code => $e->{code} // $e->{error_code},
+                    $e->{message} ? (message => $e->{message}) : (),
+                    $e->{params}  ? (params  => $e->{params})  : (),
+                };
             } else {
                 $log->errorf("derivez_validate_and_get_amount: %s", $e);
                 die +{code => 'DerivEZNoAccountDetails'};
@@ -1186,21 +1187,6 @@ sub send_transaction_email {
         email_content_is_html => 1,
         template_loginid      => ucfirst $acc_type . ' ' . $loginid =~ s/${\BOM::User->EZR_REGEX}//r,
     });
-}
-
-=head2 _check_logins
-
-Validate client with valid login id given
-
-=cut
-
-sub _check_logins {
-    my ($client, $logins) = @_;
-    my $user = $client->user;
-    foreach my $login (@{$logins}) {
-        return unless (any { $login eq $_ } ($user->loginids));
-    }
-    return 1;
 }
 
 =head2 _fetch_derivez_lc
@@ -1293,15 +1279,6 @@ sub _validate_client {
     die +{
         code   => 'SetExistingAccountCurrency',
         params => request()->brand->emails('support')} unless $client_currency;
-
-    my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->derivez;
-    my $user_daily_transfer_count = $client_obj->user->daily_transfer_count('derivez');
-
-    die +{
-        code   => 'MaximumTransfers',
-        params => $daily_transfer_limit
-        }
-        unless $user_daily_transfer_count < $daily_transfer_limit;
 
     return undef;
 }

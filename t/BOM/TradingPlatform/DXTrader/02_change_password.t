@@ -19,16 +19,20 @@ $dxconfig->enable_all_market_type->demo(1);
 $dxconfig->enable_all_market_type->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-
-BOM::User->create(
+my $user   = BOM::User->create(
     email    => $client->email,
     password => 'test'
-)->add_client($client);
+);
+$user->add_client($client);
 
 my $dxtrader = BOM::TradingPlatform->new(
     platform    => 'dxtrade',
     client      => $client,
-    rule_engine => BOM::Rules::Engine->new(client => $client),
+    user        => $user,
+    rule_engine => BOM::Rules::Engine->new(
+        client => $client,
+        user   => $user
+    ),
 );
 isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 

@@ -1538,7 +1538,7 @@ Returns information about real siblings of current client, including loginid, la
 
 =item * C<exclude_disabled_no_currency> - if true, disabled siblings with no currency will be excluded; otherwise (default) they will be included.
 
-=item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned;
+=item * C<landing_company> - if it's not empty, only siblings of the given landing company will be returned;
     otherwise (default) there won't be any filter applied on landing companiesd.
 
 =item * include_wallet - include wallet accounts (default 1).
@@ -2439,7 +2439,7 @@ sub check_duplicate_account {
     my $target_broker = $args->{broker_code} // $self->broker_code;
 
     # If client is going to update his virtual account there is no need to check for duplicate account
-    return undef if $target_broker =~ BOM::User::VIRTUAL_REGEX();
+    return undef if $target_broker =~ VIRTUAL_REGEX;
 
     my $checks = ['first_name', 'last_name', 'date_of_birth'];
 
@@ -6523,7 +6523,7 @@ sub validate_payment {
     }
 
     # todo: extend rule engine to support conditional rules matching multiple values
-    my @internal = qw(internal_transfer mt5_transfer dxtrade_transfer);
+    my @internal = qw(internal_transfer mt5_transfer dxtrade_transfer ctrader ctrader_transfer);
     # internal_transfer is included because it can lead to external withdrawal via crypto
     my @p2p_restricted = qw(internal_transfer doughflow payment_agent_transfer);
 
@@ -6981,11 +6981,6 @@ sub payment_mt5_transfer {
         $txn_details,
     );
 
-    $self->user->daily_transfer_incr({
-        type     => 'MT5',
-        amount   => $amount,
-        currency => $currency
-    });
     return $trx;
 }
 
@@ -8386,12 +8381,12 @@ sub is_wallet {
 
 =head2 is_legacy
 
-Methods check if current client account is a legacy account type.
+Returns whether this client instance is binary (legacy type).
 
 =cut
 
 sub is_legacy {
-    return shift->get_account_type->name eq BOM::Config::AccountType::LEGACY_TYPE;
+    return shift->get_account_type->name eq BOM::Config::AccountType::LEGACY_TYPE ? 1 : 0;
 }
 
 =head2 is_affiliate

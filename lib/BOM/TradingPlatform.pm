@@ -140,6 +140,7 @@ sub new_base {
 
     return bless {
         client      => $args{client},
+        user        => $args{user},
         rule_engine => $args{rule_engine}}, $class;
 }
 
@@ -153,9 +154,19 @@ sub client {
     return shift->{client};
 }
 
+=head2 user
+
+Returns user instance provided to new().
+
+=cut
+
+sub user {
+    return shift->{user};
+}
+
 =head2 rule_engine
 
-Returns client instance provided to new().
+Returns rule_engine instance provided to new().
 
 =cut
 
@@ -176,7 +187,11 @@ Generic validation of transfers and fee calculation. There are no platform-speci
 
 =item * C<amount>: amount to be sent from source account.
 
+=item * C<amount_currency>: currency of the amount.
+
 =item * C<platform_currency>: currency of platform account.
+
+=item * C<request_currency>: currency param from websocket request.
 
 =item * C<account_type>: type of platform account, demo or real
 
@@ -184,13 +199,7 @@ Generic validation of transfers and fee calculation. There are no platform-speci
 
 =item * C<landing_company_from>: landing company where we transfer money from
 
-=over 4 
-
 =item * C<type>: type of trading account, demo or real.
-
-=item * C<currency>: currency of the account.
-
-=back
 
 =back
 
@@ -201,36 +210,42 @@ Returns hashref of validated amounts or dies with error.
 sub validate_transfer {
     my ($self, %args) = @_;
 
-    my ($action, $send_amount, $platform_currency, $account_type, $payment_type) =
-        @args{qw/ action amount platform_currency account_type payment_type/};
+    my ($action, $send_amount, $amount_currency, $platform_currency, $request_currency, $account_type, $payment_type) =
+        @args{qw/action amount amount_currency platform_currency request_currency account_type payment_type/};
     my ($recv_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent, $fees_in_client_currency);
+
+    $self->rule_engine->verify_action(
+        'account_transfer',
+        transfer_type    => $self->name,
+        loginid          => $self->client->loginid,
+        user             => $self->user,
+        loginid_from     => $args{from_account},
+        loginid_to       => $args{to_account},
+        amount           => $send_amount,
+        amount_currency  => $amount_currency,
+        request_currency => $request_currency,        # only passed for transfer_between_accounts
+    );
 
     $self->rule_engine->verify_action(
         "trading_account_$action", %args,
         platform => $self->name,
         loginid  => $self->client->loginid,
-        %args{qw(landing_company_from landing_company_to account_type)},
+        %args{qw(landing_company_from landing_company_to account_type platform_currency)},
     );
 
-    die +{error_code => 'PlatformTransferSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->payments;
-    die +{error_code => 'PlatformTransferSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    die +{error_code => 'PlatformTransferSuspended'} if $app_config->system->suspend->payments;
+    die +{error_code => 'PlatformTransferSuspended'} if $app_config->system->suspend->transfer_between_accounts;
     die +{error_code => 'PlatformTransferBlocked'}   if $self->client->status->transfers_blocked;
 
     die +{error_code => 'PlatformTransferNocurrency'} unless $self->client->account;
     my $local_currency = $self->client->account->currency_code;
 
-    my $suspended_currency = first { $_ eq $local_currency or $_ eq $platform_currency }
-        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies->@*;
-    die +{
-        error_code     => 'PlatformTransferCurrencySuspended',
-        message_params => [$suspended_currency]} if $suspended_currency;
-
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
-        die +{error_code => 'PlatformTransferNoVirtual'} if $self->client->is_virtual or $account_type eq 'demo';
-    } else {
-        die +{error_code => 'PlatformTransferWalletOnly'} unless $self->client->is_wallet;
-        die +{error_code => 'PlatformTransferDemoOnly'} if $self->client->is_virtual     and $account_type ne 'demo';
-        die +{error_code => 'PlatformTransferRealOnly'} if not $self->client->is_virtual and $account_type ne 'real';
+    if (my $suspended_currency = first { $_ eq $local_currency or $_ eq $platform_currency } $app_config->system->suspend->transfer_currencies->@*) {
+        die +{
+            error_code => 'PlatformTransferCurrencySuspended',
+            params     => [$suspended_currency],
+        };
     }
 
     try {
@@ -276,8 +291,8 @@ sub validate_transfer {
         );
     } catch ($e) {
         die +{
-            error_code     => 'PlatformTransferError',
-            message_params => [$e->{message_to_client}],
+            error_code => 'PlatformTransferError',
+            params     => [$e->{message_to_client}],
         };
     }
 
