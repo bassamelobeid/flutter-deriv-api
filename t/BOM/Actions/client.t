@@ -1690,6 +1690,8 @@ for my $client ($test_client, $test_client_mf) {
                     @metrics               = ();
                     @emit_args             = ();
                     $onfido_report_filters = undef;
+                    $redis_write->del(+BOM::Event::Actions::Client::ONFIDO_PDF_CHECK_ENQUEUED . $check->{id});
+
                     BOM::Event::Actions::Client::client_verification({
                             check_url => $check_href,
                         })->get;
@@ -1705,6 +1707,8 @@ for my $client ($test_client, $test_client_mf) {
                         'event.onfido.client_verification.success' => undef,
                         },
                         'Expected dd metrics';
+
+                    ok $redis_write->get(+BOM::Event::Actions::Client::ONFIDO_PDF_CHECK_ENQUEUED . $check->{id}), 'lock acquired';
 
                     $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
                     is $db_check->{status}, 'complete', 'check has been completed';
@@ -1728,6 +1732,10 @@ for my $client ($test_client, $test_client_mf) {
                         {
                             binary_user_id => $client->binary_user_id,
                             client_loginid => $client->loginid,
+                        },
+                        'onfido_check_completed',
+                        {
+                            check_id => $check->{id},
                         }
                         ],
                         'expected emissions';
@@ -1783,7 +1791,7 @@ for my $client ($test_client, $test_client_mf) {
                         # we support v2 and v3 check hrefs
                         # TODO: remove this line when ONFIDO sadness stops
                         $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
-
+                        ok $redis_write->get(+BOM::Event::Actions::Client::ONFIDO_PDF_CHECK_ENQUEUED . $check->{id}), 'lock acquired';
                         @metrics               = ();
                         @emit_args             = ();
                         $onfido_report_filters = undef;
@@ -1819,7 +1827,6 @@ for my $client ($test_client, $test_client_mf) {
 
                         $expected_filter = {name => 'document'} if $client->landing_company->short eq 'svg';
                         cmp_deeply $onfido_report_filters, $expected_filter, 'Expected filtering';
-
                         cmp_bag [@emit_args],
                             [
                             'sync_mt5_accounts_status',
@@ -1829,6 +1836,9 @@ for my $client ($test_client, $test_client_mf) {
                             }
                             ],
                             'expected emissions';
+
+                        ok $redis_write->get(+BOM::Event::Actions::Client::ONFIDO_PDF_CHECK_ENQUEUED . $check->{id}), 'lock acquired';
+
                         $mocked_report->unmock_all;
                         $mocked_common->unmock_all;
                         $ryu_mock->unmock('filter');
@@ -1842,6 +1852,7 @@ for my $client ($test_client, $test_client_mf) {
                             result => undef,
                         });
                         subtest 'selfie checking: consider result' => sub {
+                            $redis_write->del(+BOM::Event::Actions::Client::ONFIDO_PDF_CHECK_ENQUEUED . $check->{id});
                             $redis_write->set($doc_key, $db_doc_id)->get;
                             $db_doc_id = undef;
 
@@ -1919,6 +1930,7 @@ for my $client ($test_client, $test_client_mf) {
                             my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
                             is $db_doc->status, 'rejected', 'upload doc status is rejected';
                             cmp_deeply $onfido_report_filters, undef, 'Expected filtering';
+                            ok $redis_write->get(+BOM::Event::Actions::Client::ONFIDO_PDF_CHECK_ENQUEUED . $check->{id}), 'lock acquired';
 
                             cmp_bag [@emit_args],
                                 [
@@ -1926,6 +1938,10 @@ for my $client ($test_client, $test_client_mf) {
                                 {
                                     binary_user_id => $client->binary_user_id,
                                     client_loginid => $client->loginid,
+                                },
+                                'onfido_check_completed',
+                                {
+                                    check_id => $check->{id},
                                 }
                                 ],
                                 'expected emissions';

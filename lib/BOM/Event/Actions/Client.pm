@@ -71,6 +71,7 @@ use BOM::Platform::Client::AntiFraud;
 use Locale::Country qw/code2country/;
 use BOM::Platform::Client::AntiFraud;
 use BOM::Platform::Utility;
+use Digest::MD5 qw(md5_hex);
 use BOM::Event::Actions::Client::IdentityVerification;
 
 # this one shoud come after BOM::Platform::Email
@@ -97,6 +98,8 @@ use constant ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY    => 'ONFIDO::APPLICANT_CONTEX
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
 use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX    => 'ONFIDO::IS_A_RESUBMISSION::ID::';
+use constant ONFIDO_PDF_CHECK_ENQUEUED              => 'ONFIDO::PDF::CHECK::ENQUEUED::';
+use constant ONFIDO_PDF_CHECK_TTL                   => 5400;
 
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
 use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;    # 1 week
@@ -1013,6 +1016,16 @@ async sub client_verification {
     if ($check && $check_completed) {
         $check->{status} = 'complete';
         BOM::User::Onfido::update_onfido_check($check);
+
+        # there is a race against the cronjob for the PDF emission
+        $redis_events_write //= _redis_events_write();
+        my $acquire_lock = await $redis_events_write->set(ONFIDO_PDF_CHECK_ENQUEUED . $check->id, 1, 'EX', ONFIDO_PDF_CHECK_TTL, 'NX');
+
+        BOM::Platform::Event::Emitter::emit(
+            'onfido_check_completed',
+            {
+                check_id => $check->id,
+            }) if $acquire_lock;
     }
 
     # release the applicant check lock
@@ -4330,6 +4343,103 @@ sub underage_client_detected {
     BOM::Event::Actions::Common::handle_under_age_client($client, $provider, $from_client);
 
     return undef;
+}
+
+=head2 onfido_check_completed
+
+This event fires whenever the Onfido check processing is consider done, ready for PDF downloading.
+
+Takes the following arguments as hashref:
+
+=over 4
+
+=item * C<check_id> - the check ID, note that Onfido uses UUID for these, so a string is expected.
+
+=item * C<queue_size_key> - Redis key to decrease the counter when dispatched (optional)
+
+=back
+
+Returns a L<Future> which resolves to C<undef>
+
+=cut
+
+async sub onfido_check_completed {
+    my $args     = shift // {};
+    my $check_id = $args->{check_id} or die 'No Onfido Check provided';
+
+    DataDog::DogStatsd::Helper::stats_inc('event.onfido.pdf.dispatch');
+
+    my $queue_size_key = $args->{queue_size_key};
+    my $start_time     = Time::HiRes::time;
+
+    my $pdf;
+    my $uploaded;
+
+    try {
+        # queue size control
+        if ($queue_size_key) {
+
+            my $redis = _redis_events_write();
+
+            await $redis->connect;
+
+            my $current_size = await $redis->get($queue_size_key);
+
+            $current_size //= 0;
+
+            if ($current_size > 0) {
+                await $redis->decr($queue_size_key);
+            } else {
+                await $redis->set($queue_size_key, 0);
+                DataDog::DogStatsd::Helper::stats_inc('event.onfido.pdf.queue_size_underflow');
+            }
+        }
+        # grabs the PDF from the Onfido API
+
+        $pdf = await _onfido()->download_check(
+            check_id => $check_id,
+        );
+
+        # upload to the S3 bucket
+        # conventions:
+        # name = <check_id>.pdf
+        # no document authentications entry (these aren't)
+
+        my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth_onfido});
+
+        my $file_checksum = md5_hex($pdf);
+
+        $uploaded = await $s3_client->upload_binary($check_id . '.pdf', $pdf, $file_checksum);
+
+        BOM::User::Onfido::update_check_pdf_status($check_id, 'completed') if $uploaded;
+
+        # report timing
+        DataDog::DogStatsd::Helper::stats_timing('event.onfido.pdf.finish', Time::HiRes::time - $start_time);
+    } catch ($e) {
+        # if not found (most probably all 4xx as well), flag the check as not recoverable, however any other status might be considered for a retry
+
+        if (blessed($e) and $e->isa('Future::Exception')) {
+            my ($payload) = $e->details;
+
+            if (blessed($payload) && $payload->can('code')) {
+                if ($payload->can('content')) {
+                    $log->warnf('Onfido http exception with code %d: %s', $payload->code, $payload->content);
+                }
+
+                if ($payload->code >= 400 && $payload->code < 500) {
+                    # api throttling must be forgiven
+                    BOM::User::Onfido::update_check_pdf_status($check_id, 'failed') unless $payload->code == 429;
+                }
+            }
+        }
+
+        # we can infer from the symbol table where things went south
+        DataDog::DogStatsd::Helper::stats_inc('event.onfido.pdf.download_error') if !$pdf;
+        DataDog::DogStatsd::Helper::stats_inc('event.onfido.pdf.s3_error')       if $pdf && !$uploaded;
+
+        # report timing
+        DataDog::DogStatsd::Helper::stats_timing('event.onfido.pdf.finish_with_error', Time::HiRes::time - $start_time);
+    }
 }
 
 1;

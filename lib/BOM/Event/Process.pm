@@ -124,6 +124,7 @@ my $action_mapping = {
         poa_updated                                 => \&BOM::Event::Actions::Client::poa_updated,
         ctrader_account_created                     => \&BOM::Event::Actions::CTrader::ctrader_account_created,
         underage_client_detected                    => \&BOM::Event::Actions::Client::underage_client_detected,
+        onfido_check_completed                      => \&BOM::Event::Actions::Client::onfido_check_completed,
         wallet_migration_started                    => \&BOM::Event::Actions::Wallets::wallet_migration_started,
         nodejs_hello                                => \&BOM::Event::Actions::External::nodejs_hello,
         withdrawal_estimated_fee_updated            => \&BOM::Event::Actions::CryptoCashier::withdrawal_estimated_fee_updated,
