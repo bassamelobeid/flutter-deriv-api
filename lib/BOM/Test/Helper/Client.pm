@@ -13,6 +13,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Database::ClientDB;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Platform::Token::API;
+use BOM::Platform::Locale;
 
 our @EXPORT_OK = qw( create_client top_up close_all_open_contracts);
 
@@ -110,6 +111,12 @@ sub create_wallet_factory {
         password       => BOM::User::Password::hashpw('Abcd3s3!@'),
         email_verified => 1
     );
+
+    $residence //= 'id';
+    unless ($address_state) {
+        my $states = BOM::Platform::Locale::get_state_option($residence);
+        $address_state = $states->[0]->{value} if $states;
+    }
 
     my $wallet_generator = sub {
         my ($broker_code, $account_type, $currency) = @_;
