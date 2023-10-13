@@ -96,7 +96,7 @@ subtest 'get settings' => sub {
 
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_get_settings wrong login')
-        ->error_code_is('PermissionDenied', 'error code for mt5_get_settings wrong login');
+        ->error_code_is('InvalidLoginid', 'error code for mt5_get_settings wrong login');
 };
 
 subtest 'login list' => sub {
@@ -191,7 +191,7 @@ subtest 'login list with archived login id ' => sub {
     $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR41000001 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mt5_acc_mock->mock('_check_logins', sub { return 1; });
+    $mt5_acc_mock->mock('_check_logins', sub { return undef; });
 
     my $mt5_async_mock = Test::MockModule->new('BOM::MT5::User::Async');
     $mt5_async_mock->mock(
@@ -260,7 +260,7 @@ subtest 'create new account fails, when we get error during getting login list' 
     };
 
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('mt5_logins', sub { return qw(MTR40000001 MTR00001014) });
+    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR40000001 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
@@ -292,7 +292,7 @@ subtest 'password check' => sub {
 
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_check wrong login')
-        ->error_code_is('PermissionDenied', 'error code for mt5_password_check wrong login');
+        ->error_code_is('InvalidLoginid', 'error code for mt5_password_check wrong login');
 };
 
 subtest 'mt5 settings with correct account type' => sub {

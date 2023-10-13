@@ -5,6 +5,7 @@ use utf8;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use Test::Deep;
 use YAML::XS qw(LoadFile);
 
 use Format::Util::Numbers qw/formatnumber/;
@@ -53,45 +54,6 @@ my %deposit = (
     payment_type => 'external_cashier',
     remark       => 'test deposit'
 );
-
-my $transfer_limit_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits;
-my $transfer_limits       = {
-    internal => {
-        allowed   => $transfer_limit_config->between_accounts,
-        available => $transfer_limit_config->between_accounts
-    },
-    mt5 => {
-        allowed   => $transfer_limit_config->MT5,
-        available => $transfer_limit_config->MT5
-    },
-    dxtrade => {
-        allowed   => $transfer_limit_config->dxtrade,
-        available => $transfer_limit_config->dxtrade
-    },
-    derivez => {
-        allowed   => $transfer_limit_config->derivez,
-        available => $transfer_limit_config->derivez
-    },
-    ctrader => {
-        allowed   => $transfer_limit_config->ctrader,
-        available => $transfer_limit_config->ctrader
-    }};
-
-my $transfer_daily_cumulative_limit_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit;
-my $transfer_daily_cumulative_limits       = {
-    enabled  => $transfer_daily_cumulative_limit_config->enable,
-    internal => {
-        allowed   => $transfer_daily_cumulative_limit_config->between_accounts,
-        available => $transfer_daily_cumulative_limit_config->between_accounts
-    },
-    mt5 => {
-        allowed   => $transfer_daily_cumulative_limit_config->MT5,
-        available => $transfer_daily_cumulative_limit_config->MT5
-    },
-    dxtrade => {
-        allowed   => $transfer_daily_cumulative_limit_config->dxtrade,
-        available => $transfer_daily_cumulative_limit_config->dxtrade
-    }};
 
 # Test for CR accounts which use USD as the currency
 subtest 'CR - USD' => sub {
@@ -159,10 +121,11 @@ subtest 'CR - USD' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price', 'USD', $limits->{lifetime_limit}),
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'initial expected result',);
 
         # Deposit USD 11000
         $client->smart_payment(%deposit);
@@ -176,7 +139,7 @@ subtest 'CR - USD' => sub {
         $expected_result->{withdrawal_since_inception_monetary} = formatnumber('price', 'USD', $withdraw_amount);
         $expected_result->{remainder}                           = formatnumber('price', 'USD', $limits->{lifetime_limit} - $withdraw_amount);
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'expected result after transcctions',);
     };
 
     # Set expected results to reflect withdrawn amount of USD 1000
@@ -199,14 +162,15 @@ subtest 'CR - USD' => sub {
         'withdrawal_since_inception_monetary' => '1000.00',
         'withdrawal_for_x_days_monetary'      => '1000.00',
         'remainder'                           => formatnumber('price', 'USD', 99998999),
-        'daily_transfers'                     => $transfer_limits,
-        'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+        'daily_transfers'                     => ignore(),
+        'daily_cumulative_amount_transfers'   => ignore(),
     };
 
     subtest 'skip_authentication' => sub {
         my $mock_lc = Test::MockModule->new('LandingCompany');
         $mock_lc->mock('skip_authentication', sub { 1 });
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for non-KYC landing company');
+
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_auth_result, 'result is ok for non-KYC landing company',);
     };
 
     # Test for authenticated accounts
@@ -215,7 +179,7 @@ subtest 'CR - USD' => sub {
         $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for fully authenticated client');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_auth_result, 'result is ok for fully authenticated client',);
     };
 
     # Test for expired documents
@@ -289,10 +253,11 @@ subtest 'CR-EUR' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => $lifetime_limit,
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -307,7 +272,7 @@ subtest 'CR-EUR' => sub {
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'EUR', $withdraw_amount);
         $expected_result->{'remainder'}                           = formatnumber('price', 'EUR', $lifetime_limit - $withdraw_amount);
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
     };
 
     # Convert limits from 99999999 USD to EUR
@@ -339,11 +304,11 @@ subtest 'CR-EUR' => sub {
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price', 'EUR', $lifetime_limit - 1000),
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok for fully authenticated client',);
     };
 };
 
@@ -395,10 +360,11 @@ subtest 'CR-BTC' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00000000',
             'withdrawal_since_inception_monetary' => '0.00000000',
             'remainder'                           => $lifetime_limit,
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
 
         # Deposit BTC 2.00000000
         $client->smart_payment(
@@ -421,7 +387,7 @@ subtest 'CR-BTC' => sub {
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'BTC', $withdraw_amount);
         $expected_result->{'remainder'}                           = formatnumber('price', 'BTC', $lifetime_limit - $withdraw_amount);
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
     };
 
     # Convert limits from 99999999 USD to BTC
@@ -453,11 +419,11 @@ subtest 'CR-BTC' => sub {
             'withdrawal_since_inception_monetary' => '1.00000000',
             'withdrawal_for_x_days_monetary'      => '1.00000000',
             'remainder'                           => formatnumber('price', 'BTC', $lifetime_limit - 1),
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok for fully authenticated client',);
     };
 };
 
@@ -508,10 +474,11 @@ subtest 'MLT' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price', 'EUR', $limits->{lifetime_limit}),
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -526,7 +493,7 @@ subtest 'MLT' => sub {
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'EUR', $withdraw_amount);
         $expected_result->{'remainder'}                           = formatnumber('price', 'EUR', $limits->{lifetime_limit} - $withdraw_amount);
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
     };
 
     # Test for authenticated accounts
@@ -554,11 +521,11 @@ subtest 'MLT' => sub {
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price', 'EUR', 99998999),
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok for fully authenticated client',);
     };
 };
 
@@ -610,10 +577,11 @@ subtest 'MX' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price', 'EUR', $limits->{limit_for_days}),
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -628,7 +596,7 @@ subtest 'MX' => sub {
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'EUR', $withdraw_amount);
         $expected_result->{'remainder'}                           = formatnumber('price', 'EUR', $limits->{limit_for_days} - $withdraw_amount);
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
     };
 
     # Test for authenticated accounts
@@ -656,11 +624,11 @@ subtest 'MX' => sub {
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price', 'EUR', 99998999),
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok for fully authenticated client',);
     };
 
     subtest 'limits with withdrawal_reversals' => sub {
@@ -689,11 +657,11 @@ subtest 'MX' => sub {
             'withdrawal_since_inception_monetary' => '1100.00',
             'withdrawal_for_x_days_monetary'      => '1100.00',
             'remainder'                           => formatnumber('price', 'EUR', 99998899),
-            'daily_transfers'                     => $transfer_limits,
-            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
+            'daily_transfers'                     => ignore(),
+            'daily_cumulative_amount_transfers'   => ignore(),
         };
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'correct withdrawal limits');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'correct withdrawal limits',);
 
         # perform a reversal
         $client->payment_doughflow(
@@ -711,24 +679,339 @@ subtest 'MX' => sub {
         $expected_result->{withdrawal_for_x_days_monetary}      = '1050.00';
         $expected_result->{remainder}                           = formatnumber('price', 'EUR', 99998949);
 
-        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'correct withdrawal limits after 50 EUR reversal');
+        cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'correct withdrawal limits after 50 EUR reversal',);
     }
 };
 
-# Test for VR accounts
-subtest "VR no get_limits" => sub {
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+subtest 'VRTC' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email       => 'vrtc@test.com',
         broker_code => 'VRTC',
     });
+    $client->account('USD');
 
-    my $email = 'raunak@binary.com';
-    $client_vr->email($email);
-    $client_vr->save;
+    BOM::User->create(
+        email    => $client->email,
+        password => 'x',
+    )->add_client($client);
 
-    my ($token_vr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
-    $params->{token} = $token_vr;
-    $c->call_ok('get_limits', $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
+    cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, {stash => ignore()}, 'empty limits for VRTC',);
+};
+
+subtest 'Daily limits' => sub {
+    my $transfer_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts;
+    $transfer_config->daily_cumulative_limit->enable(1);
+
+    my $amt = 5;
+    for my $limit (qw(virtual between_accounts between_wallets MT5 dxtrade derivez ctrader dtrade)) {
+        $transfer_config->limits->$limit($amt);
+        $transfer_config->daily_cumulative_limit->$limit($amt * 100);
+        $amt++;
+    }
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+
+    my $user = BOM::User->create(
+        email    => 'dailylimits@test.com',
+        password => 'x',
+    );
+    my %clients;
+
+    subtest 'Virtual wallet' => sub {
+        $clients{vrw} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            email       => $user->email,
+            broker_code => 'VRW',
+        });
+        $user->add_client($clients{vrw});
+
+        $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $clients{vrw}->loginid);
+
+        $user->daily_transfer_incr_count('virtual', $user->id);
+        $user->daily_transfer_incr_amount(10, 'virtual', $user->id);
+
+        cmp_deeply(
+            $c->call_ok('get_limits', $params)->has_no_error->result,
+            {
+                stash => ignore(),
+            },
+            'No daily limits if no account yet',
+        );
+
+        $clients{vrw}->account('USD');
+
+        cmp_deeply(
+            $c->call_ok('get_limits', $params)->has_no_error->result,
+            superhashof({
+                    daily_cumulative_amount_transfers => {
+                        enabled => bool(1),
+                        virtual => {
+                            allowed   => '500.00',
+                            available => '490.00',
+                        },
+                    },
+                    daily_transfers => {
+                        virtual => {
+                            allowed   => 5,
+                            available => 4,
+                        }
+                    },
+                }
+            ),
+            'VRW gets virtual limit only',
+        );
+
+        $transfer_config->daily_cumulative_limit->enable(0);
+        cmp_ok $c->call_ok('get_limits', $params)->result->{daily_cumulative_amount_transfers}{enabled}, '==', 0,
+            $transfer_config->daily_cumulative_limit->enable(1);
+
+        cmp_deeply(
+            $c->call_ok('get_limits', $params)->has_no_error->result,
+            superhashof({
+                    daily_cumulative_amount_transfers => {
+                        enabled => bool(1),
+                        virtual => {
+                            allowed   => '500.00',
+                            available => '490.00',
+                        }
+                    },
+                    daily_transfers => {
+                        virtual => {
+                            allowed   => 5,
+                            available => 4,
+                        }
+                    },
+                }
+            ),
+            'Count limit hidden when limit <= 0',
+        );
+
+        $transfer_config->daily_cumulative_limit->virtual(0);
+
+        cmp_deeply(
+            $c->call_ok('get_limits', $params)->has_no_error->result,
+            superhashof({
+                    daily_cumulative_amount_transfers => {
+                        enabled => bool(1),
+                    },
+                    daily_transfers => {
+                        virtual => {
+                            allowed   => 5,
+                            available => 4,
+                        }
+                    },
+                }
+            ),
+            'Cumulative limit hidden when limit <= 0',
+        );
+
+        $transfer_config->daily_cumulative_limit->virtual(500);
+        $transfer_config->limits->virtual(0);
+
+        cmp_deeply(
+            $c->call_ok('get_limits', $params)->has_no_error->result,
+            superhashof({
+                    daily_cumulative_amount_transfers => {
+                        enabled => bool(1),
+                        virtual => {
+                            allowed   => '500.00',
+                            available => '490.00',
+                        }
+                    },
+                    daily_transfers => {},
+                }
+            ),
+            'Count limit hidden when limit <= 0',
+        );
+    };
+
+    subtest 'legacy CR' => sub {
+        $clients{legacy} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            email       => $user->email,
+            broker_code => 'CR',
+        });
+        $user->add_client($clients{legacy});
+        $clients{legacy}->account('USD');
+
+        $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $clients{legacy}->loginid);
+
+        for my $type (qw(internal wallet MT5 dxtrade derivez ctrader)) {
+            $user->daily_transfer_incr_count($type, $user->id);
+            $user->daily_transfer_incr_amount(10, $type, $user->id);
+        }
+
+        cmp_deeply(
+            $c->call_ok('get_limits', $params)->has_no_error->result,
+            superhashof({
+                    daily_cumulative_amount_transfers => {
+                        enabled  => bool(1),
+                        internal => {
+                            allowed   => '600.00',
+                            available => '590.00',
+                        },
+                        mt5 => {
+                            allowed   => '800.00',
+                            available => '790.00',
+                        },
+                        dxtrade => {
+                            allowed   => '900.00',
+                            available => '890.00',
+                        },
+                        derivez => {
+                            allowed   => '1000.00',
+                            available => '990.00',
+                        },
+                        ctrader => {
+                            allowed   => '1100.00',
+                            available => '1090.00',
+                        },
+                    },
+                    daily_transfers => {
+                        internal => {
+                            allowed   => 6,
+                            available => 5,
+                        },
+                        mt5 => {
+                            allowed   => 8,
+                            available => 7,
+                        },
+                        dxtrade => {
+                            allowed   => 9,
+                            available => 8,
+                        },
+                        derivez => {
+                            allowed   => 10,
+                            available => 9,
+                        },
+                        ctrader => {
+                            allowed   => 11,
+                            available => 10,
+                        },
+                    },
+                }
+            ),
+            'got expected daily limits'
+        );
+    };
+
+    subtest 'CRW wallet' => sub {
+        $clients{crw} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            email       => $user->email,
+            broker_code => 'CRW',
+        });
+        $user->add_client($clients{crw});
+        $clients{crw}->account('USD');
+
+        $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $clients{crw}->loginid);
+
+        for my $type (qw(dtrade MT5 dxtrade derivez ctrader)) {
+            $user->daily_transfer_incr_count($type, $clients{crw}->loginid) for (1 .. 2);
+            $user->daily_transfer_incr_amount(15, $type, $clients{crw}->loginid);
+        }
+
+        cmp_deeply(
+            $c->call_ok('get_limits', $params)->has_no_error->result,
+            superhashof({
+                    daily_cumulative_amount_transfers => {
+                        enabled  => bool(1),
+                        internal => {
+                            allowed   => '600.00',
+                            available => '590.00',
+                        },
+                        wallets => {
+                            allowed   => '700.00',
+                            available => '690.00',
+                        },
+                        mt5 => {
+                            allowed   => '800.00',
+                            available => '785.00',
+                        },
+                        dxtrade => {
+                            allowed   => '900.00',
+                            available => '885.00',
+                        },
+                        derivez => {
+                            allowed   => '1000.00',
+                            available => '985.00',
+                        },
+                        ctrader => {
+                            allowed   => '1100.00',
+                            available => '1085.00',
+                        },
+                        dtrade => {
+                            allowed   => '1200.00',
+                            available => '1185.00',
+                        },
+                    },
+                    daily_transfers => {
+                        internal => {
+                            allowed   => 6,
+                            available => 5,
+                        },
+                        wallets => {
+                            allowed   => 7,
+                            available => 6,
+                        },
+                        mt5 => {
+                            allowed   => 8,
+                            available => 6,
+                        },
+                        dxtrade => {
+                            allowed   => 9,
+                            available => 7,
+                        },
+                        derivez => {
+                            allowed   => 10,
+                            available => 8,
+                        },
+                        ctrader => {
+                            allowed   => 11,
+                            available => 9,
+                        },
+                        dtrade => {
+                            allowed   => 12,
+                            available => 10,
+                        },
+                    }}
+            ),
+            'got expected daily limits'
+        );
+    };
+
+    subtest 'CR standard' => sub {
+        $clients{standard} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            email        => $user->email,
+            broker_code  => 'CR',
+            account_type => 'standard',
+        });
+        $clients{standard}->account('USD');
+        $user->add_client($clients{standard});
+        $user->link_wallet_to_trading_account({client_id => $clients{standard}->loginid, wallet_id => $clients{crw}->loginid});
+
+        $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $clients{standard}->loginid);
+
+        cmp_deeply(
+            $c->call_ok('get_limits', $params)->has_no_error->result,
+            superhashof({
+                    daily_cumulative_amount_transfers => {
+                        enabled => bool(1),
+                        dtrade  => {
+                            allowed   => '1200.00',
+                            available => '1185.00',
+                        }
+                    },
+                    daily_transfers => {
+                        dtrade => {
+                            allowed   => 12,
+                            available => 10,
+                        }
+                    },
+                }
+            ),
+            'got expected daily limits'
+        );
+    };
 };
 
 done_testing();

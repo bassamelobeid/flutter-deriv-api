@@ -81,7 +81,6 @@ my %ERROR_MAP = do {
         OldPasswordError           => localize("You've used this password before. Please create a different one."),
         MT5InvalidAccount          => localize('An invalid MT5 account ID was provided.'),
         MT5Suspended               => localize('MT5 account management is currently suspended.'),
-        CurrencyShouldMatch        => localize('Currency provided is different from account currency.'),
         RealAccountMissing         => localize('You are on a virtual account. To open a [_1] account, please upgrade to a real account.'),
         FinancialAccountMissing    =>
             localize('Your existing account does not allow [_1] trading. To open a [_1] account, please upgrade to a financial account.'),
@@ -203,6 +202,7 @@ rpc trading_platform_available_accounts => sub {
         my $platform = BOM::TradingPlatform->new(
             platform    => $params->{args}{platform},
             client      => $client,
+            user        => $client->user,
             rule_engine => BOM::Rules::Engine->new(client => $client),
         );
 
@@ -234,6 +234,7 @@ rpc trading_platform_new_account => sub {
         my $platform = BOM::TradingPlatform->new(
             platform    => $params->{args}{platform},
             client      => $client,
+            user        => $client->user,
             rule_engine => BOM::Rules::Engine->new(client => $client),
         );
 
@@ -269,7 +270,9 @@ rpc trading_platform_accounts => sub {
         my $accounts = [];
         my $platform = BOM::TradingPlatform->new(
             platform => $params->{args}{platform},
-            client   => $params->{client});
+            client   => $params->{client},
+            user     => $params->{client}->user,
+        );
 
         # force param will raise an error if any accounts are inaccessible
         $accounts = $platform->get_accounts             if any { $params->{args}{platform} eq $_ } qw/mt5 derivez ctrader/;
@@ -530,7 +533,6 @@ Platform deposit implementation.
 
 sub deposit {
     my $params = shift;
-
     # Note `transfer_between_accounts` may pass `currency` param, which we should validate.
     # The validation will always pass for `transfer_between_deposit` and `transfer_between_withdrawal`
     # as they don't pass the `currency` param, we use the account currency instead which should be valid.
@@ -542,18 +544,22 @@ sub deposit {
         die +{error_code => 'PlatformTransferRealParams'} unless $is_demo or ($from_account and $amount);
 
         my $client = $is_demo ? $params->{client} : get_transfer_client($params, $from_account);
+        my $user   = $params->{user} // $client->user;                                           # to reuse user object from transfer_between_accounts
 
         my $platform = BOM::TradingPlatform->new(
             platform    => $params->{args}{platform},
             client      => $client,
-            rule_engine => BOM::Rules::Engine->new(client => $client),
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(
+                client => $client,
+                user   => $user
+            ),
         );
 
         return $platform->deposit(
-            to_account   => $to_account,
-            from_account => $from_account,
-            amount       => $amount,
-            currency     => $currency,
+            to_account => $to_account,
+            amount     => $amount,
+            currency   => $currency,
         );
 
     } catch ($e) {
@@ -574,16 +580,20 @@ sub withdrawal {
 
     try {
         my $client = get_transfer_client($params, $to_account);
+        my $user   = $params->{user} // $client->user;
 
         my $platform = BOM::TradingPlatform->new(
             platform    => $params->{args}{platform},
             client      => $client,
-            rule_engine => BOM::Rules::Engine->new(client => $client),
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(
+                client => $client,
+                user   => $user
+            ),
         );
 
         return $platform->withdraw(
             from_account => $from_account,
-            to_account   => $to_account,
             amount       => $amount,
             currency     => $currency,
         );
@@ -629,7 +639,7 @@ sub handle_error {
             {
                 return BOM::RPC::v3::Utility::create_error({
                     code              => $code,
-                    message_to_client => localize($message, ($e->{message_params} // [])->@*),
+                    message_to_client => localize($message, ($e->{params} // [])->@*),
                     $e->{details} ? (details => $e->{details}) : (),
                 });
             } elsif (my $formatted_errors = $mt5_errors->format_error($e->{code}, $e)->{error}) {
@@ -679,7 +689,8 @@ sub change_platform_passwords {
 
     my $platform = BOM::TradingPlatform->new(
         platform => $platform_name,
-        client   => $client
+        client   => $client,
+        user     => $client->user,
     );
 
     my $updated_logins = $platform->change_password(password => $password);
@@ -804,7 +815,8 @@ sub change_investor_password {
 
     my $platform = BOM::TradingPlatform->new(
         platform => 'mt5',
-        client   => $client
+        client   => $client,
+        user     => $client->user,
     );
 
     $platform->change_investor_password(
@@ -837,7 +849,7 @@ sub change_investor_password {
                 )};
         })->get;
 
-    my $account_info = $platform->get_account_info($account_id)->get;
+    my $account_info = $platform->get_account_info($account_id);
     my $email        = $client->email;
 
     my $display_name = BOM::RPC::v3::Utility::trading_platform_display_name('mt5');

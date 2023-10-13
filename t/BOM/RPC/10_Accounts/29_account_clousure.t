@@ -281,6 +281,7 @@ subtest 'one time token expiration on account closure' => sub {
     }
 
     my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+
     is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
 
     my $token = $m->create_token($client->loginid, 'test token');

@@ -183,7 +183,7 @@ subtest 'deposit' => sub {
 
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
-        ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
+        ->error_code_is('InvalidLoginid', 'error code for mt5_deposit wrong login');
 
     $test_client->status->set('mt5_withdrawal_locked', 'system', 'testing');
     $params->{args}{to_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
@@ -202,25 +202,22 @@ subtest 'deposit' => sub {
             return $result;
         });
 
-    $c->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('MT5DepositError', 'Payment agents cannot make MT5 deposits.')
-        ->error_message_is('You are not allowed to transfer to this account.', 'Error message is about PAs');
+    $c->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot make MT5 deposits.')
+        ->error_message_is('This service is not available for payment agents.', 'Error message is about PAs');
 
     $tier_details = {
-        cashier_withdraw => 1,
-        p2p              => 1,
+        cashier_withdraw => 0,
+        p2p              => 0,
         trading          => 1,
-        transfer_to_pa   => 1
+        transfer_to_pa   => 0
     };
 
-    $c->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('MT5DepositError',
-        'Payment agents cannot make MT5 deposits, even whith all services allowed.')
-        ->error_message_is('You are not allowed to transfer to this account.', 'MT5 trasfer cannot be allowed');
+    $c->call_ok($method, $params)->has_no_system_error->has_no_error('PA can deposit if trading permission exists');
 
     $mock_client->unmock_all;
-
     $demo_account_mock->unmock_all();
-
+    top_up $test_client, USD => $params->{args}{amount};
 };
 
 subtest 'deposit_exceeded_balance' => sub {
@@ -350,7 +347,6 @@ subtest 'virtual topup' => sub {
     };
 
     $demo_account_mock->unmock_all();
-
 };
 
 subtest 'virtual deposit' => sub {
@@ -379,13 +375,18 @@ subtest 'virtual deposit' => sub {
     $params->{args}->{from_binary} = $test_client_vr->loginid;
 
     $c->call_ok($method, $params)->has_error('fail to deposit from virtual trading account')
-        ->error_code_is('InvalidVirtualAccount', 'Deposit to demo MT5 from virtual trading account is not allowed');
+        ->error_code_is('TransferBlockedClientIsVirtual', 'Deposit to demo MT5 from virtual trading account is not allowed');
 
+    $params->{token} = $m->create_token($test_wallet_vr->loginid, 'test token');
     $params->{args}->{from_binary} = $test_wallet_vr->loginid;
 
-    # note we don't have proper validation for virtual transfers, so for now this error is raised from the DB and processed by BOM::Transaction->format_error
+    $c->call_ok($method, $params)->error_code_is('TransferBlockedWalletNotLinked', 'Cannot deposit to unlinked trading account');
+    $test_wallet_vr->user->link_wallet_to_trading_account({
+            wallet_id => $test_wallet_vr->loginid,
+            client_id => 'MTD' . $ACCOUNTS{'demo\p01_ts01\synthetic\svg_std_usd'}});
+
     $c->call_ok($method, $params)->has_error('fail to deposit from an empty wallet')->error_code_is('MT5DepositError')
-        ->error_message_is('Your account balance is insufficient for this transaction.', 'Deposit from empty wallet fails.');
+        ->error_message_like(qr/account has zero balance/, 'Deposit from empty wallet fails.');
 
     top_up $test_wallet_vr, USD => 180;
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
@@ -394,7 +395,6 @@ subtest 'virtual deposit' => sub {
     is $test_wallet_vr->default_account->balance + 0, 0, "Correct balance after deposited to mt5 account";
 
     $demo_account_mock->unmock_all();
-
 };
 
 subtest 'mx_deposit' => sub {
@@ -481,7 +481,8 @@ subtest 'withdrawal' => sub {
 
     $params->{args}->{to_binary} = $test_client->loginid;
     $params->{token} = $token_vr;
-    $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')->error_code_is('PermissionDenied', 'error code is PermissionDenied');
+    $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')
+        ->error_code_is('TransferBlockedClientIsVirtual', 'error code is PermissionDenied');
 
     $params->{token} = $token;
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
@@ -502,7 +503,7 @@ subtest 'withdrawal' => sub {
 
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
-        ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
+        ->error_code_is('InvalidLoginid', 'error code for mt5_withdrawal wrong login');
 
     $demo_account_mock->unmock_all();
 };
@@ -529,7 +530,7 @@ subtest 'virtual withdrawal' => sub {
 
     $params->{args}->{to_binary} = $test_client_vr->loginid;
     $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')
-        ->error_code_is('InvalidVirtualAccount', 'Withdrawal from demo MT5 to demo trading account is not allowed');
+        ->error_code_is('TransferBlockedWalletNotLinked', 'Withdrawal from demo MT5 to VRTC account is not allowed');
 
     $params->{args}->{to_binary} = $test_wallet_vr->loginid;
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
@@ -730,8 +731,8 @@ subtest 'mf_deposit' => sub {
     $has_expired_documents = undef;
     $demo_account_mock->unmock_all();
 };
-subtest 'labuan deposit' => sub {
 
+subtest 'labuan deposit' => sub {
     my $loginid = $test_client->loginid;
     $test_client->financial_assessment({data => '{}'});
     $test_client->save();
@@ -878,7 +879,9 @@ subtest 'bvi withdrawal' => sub {
             creation_stamp => "2022-09-14 07:13:52.727067",
             currency       => undef,
             loginid        => "CR10001",
-            platform       => undef,
+            platform       => 'dtrade',
+            is_virtual     => 0,
+            is_external    => 0,
             status         => undef,
         },
         MTR1001018 => {
@@ -895,6 +898,8 @@ subtest 'bvi withdrawal' => sub {
             currency       => "USD",
             loginid        => "MTR1001018",
             platform       => "mt5",
+            is_virtual     => 0,
+            is_external    => 1,
             status         => 'poa_pending',
         },
         MTR1001019 => {
@@ -911,6 +916,8 @@ subtest 'bvi withdrawal' => sub {
             currency       => "USD",
             loginid        => "MTR1001019",
             platform       => "mt5",
+            is_virtual     => 0,
+            is_external    => 1,
             status         => 'poa_pending',
         },
         MTR1001017 => {
@@ -927,6 +934,8 @@ subtest 'bvi withdrawal' => sub {
             currency       => "USD",
             loginid        => "MTR1001017",
             platform       => "mt5",
+            is_virtual     => 0,
+            is_external    => 1,
             status         => 'poa_pending',
         },
     };
@@ -963,6 +972,7 @@ subtest 'bvi withdrawal' => sub {
         });
 
     $mock_logindetails->{MTR1001018}->{status} = 'poa_pending';
+
     # pending POA, within grace period, pass.
     $c->call_ok($method, $params)->has_no_error('withdrawal - pending POA, within grace period, pass');
 
@@ -1084,7 +1094,9 @@ subtest 'vanuatu withdrawal' => sub {
             creation_stamp => "2022-09-14 07:13:52.727067",
             currency       => undef,
             loginid        => "CR10002",
-            platform       => undef,
+            platform       => 'dtrade',
+            is_virtual     => 0,
+            is_external    => 0,
             status         => undef,
         },
         MTR1001020 => {
@@ -1101,6 +1113,8 @@ subtest 'vanuatu withdrawal' => sub {
             currency       => "USD",
             loginid        => "MTR1001020",
             platform       => "mt5",
+            is_virtual     => 0,
+            is_external    => 1,
             status         => 'poa_pending',
         },
         MTR1001019 => {
@@ -1117,6 +1131,8 @@ subtest 'vanuatu withdrawal' => sub {
             currency       => "USD",
             loginid        => "MTR1001019",
             platform       => "mt5",
+            is_virtual     => 0,
+            is_external    => 1,
             status         => 'poa_pending',
         },
         MTR1001017 => {
@@ -1133,6 +1149,8 @@ subtest 'vanuatu withdrawal' => sub {
             currency       => "USD",
             loginid        => "MTR1001017",
             platform       => "mt5",
+            is_virtual     => 0,
+            is_external    => 1,
             status         => 'poa_pending',
         },
     };

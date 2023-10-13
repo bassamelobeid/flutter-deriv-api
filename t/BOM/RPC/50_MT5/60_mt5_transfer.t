@@ -511,7 +511,7 @@ subtest 'Transfers Limits' => sub {
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
 
     $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
-        ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
+        ->error_code_is('MaximumTransfers', 'Transfers limit - correct error code')
         ->error_message_like(qr/0 transfers a day/, 'Transfers limit - correct error message');
 
     # unlimit the transfers again
@@ -608,7 +608,7 @@ subtest 'Simple withdraw' => sub {
         },
     };
 
-    $c->call_ok('mt5_withdrawal', $params)->has_no_error('can withdraw even when mt5_withdrawal_locked');
+    $c->call_ok('mt5_withdrawal', $params)->has_no_error('can withdraw even when mt5_withdrawal_locked')->result;
 
     cmp_deeply(
         _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
@@ -674,15 +674,17 @@ subtest 'Transfers in between MT5 and Deriv X' => sub {
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 
-    my $params = {language => 'EN'};
-    $params->{token} = $token;
-    $params->{args}  = {
-        platform     => 'dxtrade',
-        account_type => 'real',
-        market_type  => 'all',
-        password     => $DETAILS{password}{main},    # because we saved the trading password during MT5 account creation above
-        currency     => 'USD',
-    };
+    my $params = {
+        language   => 'EN',
+        token      => $token,
+        token_type => 'oauth_token',
+        args       => {
+            platform     => 'dxtrade',
+            account_type => 'real',
+            market_type  => 'all',
+            password     => $DETAILS{password}{main},    # because we saved the trading password during MT5 account creation above
+            currency     => 'USD',
+        }};
 
     my $dx          = $c->call_ok('trading_platform_new_account', $params)->result;
     my $mt5_account = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
@@ -695,7 +697,7 @@ subtest 'Transfers in between MT5 and Deriv X' => sub {
     };
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('IncompatibleDxtradeToMt5', 'Cannot transfer from DX to MT5');
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Cannot transfer from DX to MT5');
 
     $params->{args} = {
         account_to   => $dx->{account_id},
@@ -705,7 +707,7 @@ subtest 'Transfers in between MT5 and Deriv X' => sub {
     };
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('IncompatibleMt5ToDxtrade', 'Cannot transfer from MT5 to DX');
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Cannot transfer from MT5 to DX');
 };
 
 subtest 'financial assessment requirement' => sub {
@@ -798,7 +800,7 @@ subtest 'Transfers in between MT5 and DERIVEZ' => sub {
     };
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('IncompatibleDerivezToMt5', 'Cannot transfer from Derivez to MT5');
+        ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Cannot transfer from Derivez to MT5');
 
     $params->{args} = {
         account_from => $mt5_account,
@@ -808,7 +810,7 @@ subtest 'Transfers in between MT5 and DERIVEZ' => sub {
     };
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('IncompatibleMt5ToDerivez', 'Cannot transfer from Derivez to DX');
+        ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Cannot transfer from Derivez to DX');
 };
 
 done_testing();
