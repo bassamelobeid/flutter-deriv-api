@@ -1232,6 +1232,10 @@ sub show_client_id_docs {
         $expiration = 'expiration_date' if $expiration_date;
         $expiration = 'lifetime_valid'  if $lifetime_valid;
 
+        my $issuance = 'not_applicable';
+        $issuance = 'issuance_date'  if $issue_date;
+        $issuance = 'lifetime_valid' if $lifetime_valid;
+
         my @issue_date_chunks = split(' ', $issue_date // '');
         my $input             = '';
 
@@ -1242,6 +1246,7 @@ sub show_client_id_docs {
                 expirable_doc   => $expirable_doc,
                 dateless_doc    => $dateless_doc,
                 lifetime_valid  => $lifetime_valid,
+                issuance        => $issuance,
                 expiration_date => $expiration_date,
                 expiration      => $expiration,
                 id              => $id,

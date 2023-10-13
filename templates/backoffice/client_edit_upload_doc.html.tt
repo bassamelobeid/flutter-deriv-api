@@ -35,14 +35,17 @@
         <option value="lifetime_valid">Lifetime valid</option>
         <option value="not_applicable">Not applicable</option>
       </select>
+
       <span class="expiration_input_[% n %]" name="doc_field_required_[% n %]">
       <label id="required_star_[% n %]">*</label></span>
       <input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="expiration_input_[% n %] datepick" data-lpignore="true" />
     </div>
     <div id="issue_date_div_[% n %]" style="display:none">
-      Issue date:
-      <label id="required_star_[% n %]">*</label>
-      <input type="text" size=11 name="issue_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" />
+      <select class="issuance_dropdown" name="issuance_[% n %]" onChange="issuance_changed([% n %])">
+          <option value="issuance_date">Issuance date</option>
+          <option value="lifetime_valid">Lifetime valid</option>
+      </select>      <label id="required_star_[% n %]">*</label>
+      <input type="text" size=11 name="issue_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="issue_date_[% n %] datepick" data-lpignore="true" />
       <label name="doc_field_required_[% n %]">*</label>
     </div>
   </td>
@@ -90,11 +93,33 @@ for(const side in docsides) {
 }
 
 function expiration_changed(i) {
-  const expiration = document.getElementsByName('expiration_' + i)[0].value;
+  const expiration = document.getElementsByName('expiration_' + i)[0];
+  expiration.style.display = 'inline';
+  
+  const exp_value = expiration.value;
   const elems = document.getElementsByClassName('expiration_input_' + i);
   let display;
 
-  if (expiration === 'expiration_date') {
+  if (exp_value === 'expiration_date') {
+    display = 'inline';
+  } else {
+    display = 'none';
+  }
+
+  for(let elem of elems) {
+      elem.style.display = display;
+  }
+}
+
+function issuance_changed(i) {
+  const issuance = document.getElementsByName('issuance_' + i)[0];
+  issuance.style.display = 'inline';
+
+  const issuance_value = issuance.value;
+  const elems = document.getElementsByClassName('issue_date_' + i);
+  let display;
+
+  if (issuance_value === 'issuance_date') {
     display = 'inline';
   } else {
     display = 'none';
@@ -142,6 +167,7 @@ function doc_type_changed(i){
     expiration_changed(i);
     
     if (!is_dateless_doc) {
+      issuance_changed(i);
       document.getElementById('issue_date_div_'+i).style.display = 'inline';
     }
   }
@@ -248,6 +274,7 @@ function validate_document_info() {
     let is_expirable_doc = doc_type.match(regex_expirable);
     let is_dateless_doc = doc_type.match(regex_dateless);
     let expiration = document.getElementsByName('expiration_' +i)[0].value;
+    let issuance = document.getElementsByName('issuance_' +i)[0].value;
     
     // Check if file uploaded (if not, proceed to next file)
     if(!get_value('FILE_' + i)) {
@@ -287,7 +314,7 @@ function validate_document_info() {
     }
 
     else if (is_poa_doc) {
-      if (!issue_date)
+      if (!issue_date && issuance === 'issuance_date')
         file_comments_errors += "Issue date is required.\n";
       if (issue_date)
         file_comments_errors += validate_issue_date(issue_date);
@@ -370,6 +397,13 @@ function handle_page_type_control(i, enabled_options) {
         const id = elem.name.replace('expiration_', '');
         doc_type_changed(id);
         expiration_changed(id);
+      }
+
+      const issuances = document.getElementsByClassName('issuance_dropdown');
+      for(const elem of issuances) {
+        const id = elem.name.replace('issuance_', '');
+        doc_type_changed(id);
+        issuance_changed(id);
       }
 });
 </script>

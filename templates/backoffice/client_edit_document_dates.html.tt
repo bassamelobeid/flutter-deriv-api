@@ -6,9 +6,16 @@
             <option value="lifetime_valid" [% IF expiration == 'lifetime_valid'%] selected="selected" [% END %]>Lifetime valid</option>
             <option value="not_applicable" [% IF expiration == 'not_applicable'%] selected="selected" [% END %]>Not applicable</option>
         </select>
+    [% ELSE %]
+        [% UNLESS dateless_doc %]
+            <label>Validity by:</label><br />
+            <select class="issuance_dropdown" name="issuance_[% id %]" onChange="issuance_changed([% id %])">
+                <option value="issuance_date" [% IF issuance == 'issuance_date'%] selected="selected" [% END %]>Issuance date</option>
+                <option value="lifetime_valid" [% IF issuance == 'lifetime_valid'%] selected="selected" [% END %]>Lifetime valid</option>
+            </select>
+        [% END %]
     [% END %]
 </td>
-
 <td align="left">
     [% IF expirable_doc %]
         <span class="expiration_input_[% id %]" name="doc_field_required_[% id %]">
@@ -16,8 +23,8 @@
         <input type="text" value="[% expiration_date %]" size=11 name="expiration_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="expiration_input_[% id %] datepick" data-lpignore="true" />
     [% ELSE %]
         [% UNLESS dateless_doc %]
-            <span><label id="required_star_[% id %]">Issued on: *</label><br/></span>
-            <input type="text" value="[% issue_date %]" size=11 name="issue_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true"/>
+            <span class="issue_date_[% id %]"><label id="required_star_[% id %]">Issued on: *</label><br/></span>
+            <input type="text" value="[% issue_date %]" size=11 name="issue_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="issue_date_[% id %] datepick" data-lpignore="true"/>
         [% END %]
     [% END %]
 </td>

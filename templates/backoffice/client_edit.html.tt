@@ -1058,6 +1058,10 @@ function get_issue_date(doc_id) {
     return document.getElementsByName('issue_date_' + doc_id)[0].value;
 }
 
+function get_issuance(doc_id) {
+    return document.getElementsByName('issuance_' + doc_id)[0].value;
+}
+
 function get_to_verify_files() {
     const checkboxes = document.getElementsByClassName('files_checkbox');
 
@@ -1081,21 +1085,12 @@ function get_to_verify_files() {
         for (var i=0, n=doc_array.length;i<n;i++) {
             if (doc_is_poa[i] == '1') {
                 let date = get_issue_date(doc_id[i]);
+                let issuance = get_issuance(doc_id[i]);
 
-                if (!date || date.length == 0){
-                    alert("Issue date is required.\n");
+                let validation = validate_issuance(date, issuance);
+
+                if (!validation) {
                     return false;
-                }
-                else {
-                    let issue_date = new Date(date);
-                    if(issue_date == 'Invalid Date'){
-                        alert("Invalid issue date. Please match the requested format.\n");
-                        return false;
-                    }  
-                    else if(issue_date > new Date()){
-                        alert("Issue date must be a past date.\n");
-                        return false;
-                    }
                 }
             }
         }
@@ -1104,6 +1099,26 @@ function get_to_verify_files() {
         alert('No files selected');
         return false;
     }
+}
+
+function validate_issuance(date, issuance) {
+    if ((!date || date.length == 0) && issuance === 'issuance_date'){
+        alert("Issue date is required.\n");
+        return false;
+    }
+    else if (date) {
+        let issue_date = new Date(date);
+        if(issue_date == 'Invalid Date'){
+            alert("Invalid issue date. Please match the requested format.\n");
+            return false;
+        }  
+        else if(issue_date > new Date()){
+            alert("Issue date must be a past date.\n");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function get_to_reject_files() {
@@ -1134,10 +1149,18 @@ function get_to_address_mismatch_files() {
         {
             let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
             doc_array.push(match[3]);
+            let date = get_issue_date(match[1]);
+            let issuance = get_issuance(match[1]);
+
+            let validation = validate_issuance(date, issuance);
+
+            if (!validation) {
+                return false;
+            }
         }
     }
     if (doc_array.length > 0){
-        return confirm('Are you sure you want to mark as address mismatch and verify:\n\n' + doc_array.join('\n') + '\n\nVerified documents will be taken into consideration for authentication checkups (including expiry)');
+        return confirm('Are you sure you want to mark as address mismatch and verify:\n\n' + doc_array.join('\n') + '\n\nVerified documents will be taken into consideration for authentication checkups (including issuance)');
     } else {
         alert('No files selected');
         return false;

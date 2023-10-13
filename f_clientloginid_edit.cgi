@@ -373,27 +373,22 @@ if ($input{document_list}) {
             } else {
                 $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b> did not remove <b>$file_name</b> record from db</div>";
             }
-        } elsif ($new_doc_status eq 'address mismatch' and $broker ne 'MF') {
-            if ($is_poa) {
-                $doc->address_mismatch(1);
-                $doc->save;
 
-                $full_msg .=
-                    "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been tagged as <b>$new_doc_status</b>. Once its resolved documents will be automatically verified!</div>";
-            } else {
-                $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:<b>$new_doc_status</b> only applies for poa documents</div>";
-            }
-        } else {
-            my $field_error;
+            next;
+        }
 
-            # Update other fields as well
-            foreach my $field ('issue_date', 'document_id', 'comments') {
-                my $input_key = $field . '_' . $doc_id;
+        my $issuance = $input{'issuance_' . $doc_id} // ($doc->lifetime_valid ? 'lifetime_valid' : 'issuance_date');
+        my $field_error;
 
-                if (defined $input{$input_key}) {
-                    my $to_update_value = $input{$input_key};
+        # Update other fields as well
+        foreach my $field ('issue_date', 'document_id', 'comments') {
+            my $input_key = $field . '_' . $doc_id;
 
-                    if ($field eq 'issue_date') {
+            if (defined $input{$input_key}) {
+                my $to_update_value = $input{$input_key};
+
+                if ($field eq 'issue_date') {
+                    if ($issuance eq 'issuance_date') {
                         if ($to_update_value ne (eval { Date::Utility->new($to_update_value)->date_yyyymmdd; } // '')) {
                             $full_msg .=
                                 "<div class=\"notify notify--warning\"><b>ERROR: $file_name has an invalid date format <b>$to_update_value</b>, please use yyyy-mm-dd</div>";
@@ -407,20 +402,44 @@ if ($input{document_list}) {
                             $field_error = 1;
                             next;
                         }
+                    } else {
+                        $to_update_value = undef;
                     }
-
-                    $doc->$field($to_update_value) unless $field_error;
                 }
+
+                $doc->$field($to_update_value) unless $field_error;
+            }
+        }
+
+        if ($is_poa && !$field_error) {
+            $doc->lifetime_valid($issuance eq 'lifetime_valid' ? 1 : 0);
+            $doc->save;
+        }
+
+        if ($new_doc_status eq 'address mismatch') {
+            if ($broker ne 'MF') {
+                if ($is_poa) {
+                    $doc->address_mismatch(1);
+                    $doc->save;
+
+                    $full_msg .=
+                        "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been tagged as <b>$new_doc_status</b>. Once its resolved documents will be automatically verified!</div>";
+                } else {
+                    $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:<b>$new_doc_status</b> only applies for poa documents</div>";
+                }
+
             }
 
-            $doc->status($new_doc_status) unless $field_error;
-
-            $full_msg .= (
-                $doc->save
-                ? "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>"
-                : "<div class=\"notify notify--warning\"><b>ERROR:</b> did not update <b>$file_name</b> record from db</div>"
-            ) unless $field_error;
+            next;
         }
+
+        $doc->status($new_doc_status) unless $field_error;
+
+        $full_msg .= (
+            $doc->save
+            ? "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>"
+            : "<div class=\"notify notify--warning\"><b>ERROR:</b> did not update <b>$file_name</b> record from db</div>"
+        ) unless $field_error;
     }
     print $full_msg;
     %input = ();    # stay in the same page and avoid side effects
@@ -653,14 +672,15 @@ if ($input{whattodo} eq 'uploadID') {
         my $is_expirable = any { $_ eq $doctype } @expirable_doctypes;
         my $dateless_doc = any { $_ eq $doctype } @dateless_doctypes;
 
+        my $issuance        = $cgi->param('issuance_' . $i) // '';
         my $filetoupload    = $cgi->upload('FILE_' . $i);
         my $page_type       = $cgi->param('page_type_' . $i);
-        my $issue_date      = $is_expirable  || $dateless_doc ? undef : $cgi->param('issue_date_' . $i);
+        my $issue_date      = $is_expirable  || $dateless_doc || $issuance eq 'lifetime_valid' ? undef : $cgi->param('issue_date_' . $i);
         my $expiration_date = !$is_expirable || $dateless_doc ? undef : $cgi->param('expiration_date_' . $i);
         my $document_id     = $input{'document_id_' . $i}     // '';
         my $comments        = $input{'comments_' . $i}        // '';
         my $expiration      = $cgi->param('expiration_' . $i) // '';
-        my $lifetime_valid  = $expiration eq 'lifetime_valid' ? 1 : 0;
+        my $lifetime_valid  = $is_poi ? $expiration eq 'lifetime_valid' : $issuance eq 'lifetime_valid';
         $expiration_date = undef unless $expiration eq 'expiration_date';
         next unless $filetoupload;
 
@@ -687,7 +707,7 @@ if ($input{whattodo} eq 'uploadID') {
             code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
         }
 
-        if ($is_poa and not $issue_date) {
+        if ($is_poa and not $issue_date and $issuance eq 'issuance_date') {
             print qq[<p class="notify notify--warning">Issuance date is missing for the POA document $doctype.</p>];
             code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
         }
@@ -738,7 +758,7 @@ if ($input{whattodo} eq 'uploadID') {
                         $docformat,                                                                             $expiration_date || undef,
                         $document_id,                                                                           $file_checksum,
                         $comments,                                                                              $page_type || '',
-                        $issue_date || undef, $lifetime_valid,
+                        $issue_date || undef, $lifetime_valid ? 1 : 0,
                         'bo', $docnationality
                     );
                 });
@@ -1294,9 +1314,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
         CLIENT_KEY:
         foreach my $key (keys %input) {
-            if (my ($document_field, $id) = $key =~ /^(expiration|expiration_date|issue_date|comments|document_id)_([0-9]+)$/) {
+            if (my ($document_field, $id) = $key =~ /^(expiration|expiration_date|issue_date|comments|document_id|issuance)_([0-9]+)$/) {
                 $key            = 'expiration_date_' . $id if $document_field eq 'expiration';
                 $document_field = 'expiration_date'        if $document_field eq 'expiration';
+                $key            = 'issue_date_' . $id      if $document_field eq 'issuance';
+                $document_field = 'issue_date'             if $document_field eq 'issuance';
 
                 my $val = ($document_field =~ /^(expiration_date|issue_date)$/ && $input{$key} eq '') ? 'clear' : $input{$key};
 
@@ -1304,11 +1326,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                 my ($doc) = grep { $_->id eq $id } $cli->client_authentication_document;    # Rose
                 next CLIENT_KEY unless $doc;
                 my $new_value;
+                my $issuance = $input{'issuance_' . $id} // '';
+
                 if ($document_field =~ /^(expiration_date|issue_date)$/) {
                     try {
                         $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
 
-                        if ($document_field =~ /issue_date/) {
+                        if ($document_field =~ /issue_date/ && $issuance eq 'issuance_date') {
                             if (Date::Utility->new($val)->is_before(Date::Utility->new->minus_time_interval('1y'))) {
                                 print
                                     qq{<p class="notify notify--warning">ERROR: POA issue date is too old $val, it must have been issued within the last 12 months.</p>};
@@ -1323,22 +1347,35 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
                     my $expiration = $input{'expiration_' . $id};
 
-                    unless ($expiration) {
+                    unless ($expiration || $issuance) {
                         if ($doc->lifetime_valid) {
                             $expiration = 'lifetime_valid';
+                            $issuance   = 'lifetime_valid';
                         } elsif ($doc->expiration_date) {
                             $expiration = 'expiration_date';
+                            $issuance   = 'not_applicable';
+                        } elsif ($doc->issue_date) {
+                            $expiration = 'not_applicable';
+                            $issuance   = 'issuance_date';
                         } else {
+                            $issuance   = 'not_applicable';
                             $expiration = 'not_applicable';
                         }
                     }
 
-                    my $lifetime_valid = $expiration eq 'lifetime_valid' ? 1 : 0;
+                    my $is_poi         = any { $_ eq $doc->document_type } @poi_doctypes;
+                    my $lifetime_valid = $is_poi ? $expiration eq 'lifetime_valid' : $issuance eq 'lifetime_valid';
                     $doc->lifetime_valid($lifetime_valid);
+                    $poa_updated ||= any { $_ eq $doc->document_type } $client->documents->poa_types->@*;
 
                     if ($expiration ne 'expiration_date') {
                         $doc->expiration_date(undef);
                         next CLIENT_KEY if $document_field eq 'expiration_date';
+                    }
+
+                    if ($issuance ne 'issuance_date') {
+                        $doc->issue_date(undef);
+                        next CLIENT_KEY if $document_field eq 'issue_date';
                     }
 
                 } else {
