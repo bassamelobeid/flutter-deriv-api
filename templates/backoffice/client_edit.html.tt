@@ -520,6 +520,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                     [% onfido_check_result FILTER upper %]
                 </a>
 
+                [% IF onfido_pdf_url %]<br/>
+                    &nbsp; <a href="[% onfido_pdf_url %]" target="_blank">PDF</a>
+                [% END %]
+
                 [% IF onfido_reported_properties %]
                     <table width="100%" class='collapsed hover alternate'>
                         <thead>
