@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 14;
+use Test::More tests => 15;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
@@ -16,6 +16,7 @@ use BOM::Test::Script::OnfidoMock;
 
 use BOM::User::Onfido;
 use WebService::Async::Onfido;
+use BOM::Database::UserDB;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -1138,6 +1139,76 @@ subtest 'applicant info' => sub {
         location => {country_of_residence => 'PRY'},
         },
         'Expected applicant info';
+};
+
+subtest 'PDF status' => sub {
+    my $pending = BOM::User::Onfido::get_pending_pdf_checks(0);
+    my $limit   = 10;
+
+    cmp_deeply $pending, [], 'No limit, no checks';
+
+    $pending = BOM::User::Onfido::get_pending_pdf_checks($limit);
+
+    cmp_deeply $pending,
+        [{
+            id => $check->id,
+        }
+        ],
+        'Got the check';
+
+    # add more checks
+
+    for my $i (1 .. $limit) {
+        my $obj_check = $onfido->applicant_check(
+            applicant_id => $app1->id,
+            # We don't want Onfido to start emailing people
+            suppress_form_emails => 1,
+            # Used for reporting and filtering in the web interface
+            tags => ['tag1', 'tag2'],
+            # On v3 we need to specify the array of documents
+            document_ids => [$doc1->id, $doc2->id],
+            # On v3 we need to specify the report names
+            report_names               => [qw/document facial_similarity_photo/],
+            suppress_from_email        => 0,
+            charge_applicant_for_check => 0,
+        )->get;
+
+        lives_ok { BOM::User::Onfido::store_onfido_check($app1->id, $obj_check); } 'Storing onfido check should pass';
+    }
+
+    BOM::User::Onfido::update_check_pdf_status($check->id, 'failed');
+
+    $pending = BOM::User::Onfido::get_pending_pdf_checks(100);
+
+    cmp_deeply $pending, [], 'No pending checks (status should be complete)';
+
+    # change check status to complete
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    $dbic->run(
+        fixup => sub {
+            $_->do('UPDATE users.onfido_check set status=?', undef, 'complete');
+        });
+
+    ok((List::Util::none { $check->id eq $_->{id} } $pending->@*), 'Failed check is no longer here');
+
+    $pending = BOM::User::Onfido::get_pending_pdf_checks(100);
+
+    is scalar @$pending, $limit, '10 pending PDF checks';
+
+    for my $chk ($pending->@*) {
+        --$limit;
+
+        BOM::User::Onfido::update_check_pdf_status($chk->{id}, 'completed');
+
+        my $pending_after_update =
+            BOM::User::Onfido::get_pending_pdf_checks(100);    # keep the param large to prove the number of pending documents is decreasing
+
+        ok((List::Util::none { $chk->{id} eq $_->{id} } $pending_after_update->@*), 'Completed check is no longer here');
+
+        is scalar @$pending_after_update, $limit, "$limit pending PDF checks";
+    }
 };
 
 subtest 'is face similarity check required' => sub {

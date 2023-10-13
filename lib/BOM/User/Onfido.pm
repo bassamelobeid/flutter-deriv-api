@@ -320,6 +320,66 @@ sub store_onfido_live_photo {
     return;
 }
 
+=head2 update_check_pdf_status
+
+Updates the given PDF check to the desired status.
+
+It takes the following parameters:
+
+=over 4
+
+=item * C<$id> - id of the Onfido check (this should be a UUID so string)
+
+=item * C<$pdf_status> - either `completed` or `failed`
+
+=back
+
+Returns C<undef>
+
+=cut
+
+sub update_check_pdf_status {
+    my ($id, $pdf_status) = @_;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    $dbic->run(
+        fixup => sub {
+            $_->do('SELECT users.onfido_check_pdf_status_transition(?, ?::users.onfido_pdf_status)', undef, $id, $pdf_status,);
+        });
+
+    return undef;
+}
+
+=head2 get_pending_pdf_checks
+
+Grabs pending PDF checks from the DB on a LIFO fashion.
+
+It takes the following parameters
+
+=over 4
+
+=item * C<$limit> - an integer for the LIMIT of the query
+
+=back
+
+Returns an arrayref of PDF pending Onfido check ids.
+
+=cut
+
+sub get_pending_pdf_checks {
+    my ($limit) = @_;
+
+    return [] unless $limit;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    return $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT id FROM users.get_pending_pdf_onfido_checks(?)', {Slice => {}}, $limit,);
+        });
+}
+
 =head2 store_onfido_document
 
 Stores onfido document into the DB
