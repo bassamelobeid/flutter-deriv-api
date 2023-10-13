@@ -39,10 +39,6 @@ use constant PA_ACTION_MAPPING => {
     payment_withdraw          => 'cashier_withdraw',
     doughflow_withdrawal      => 'cashier_withdraw',
     crypto_cashier_withdrawal => 'cashier_withdraw',
-    transfer_between_accounts => 'transfer_to_non_pa_sibling',
-    mt5_deposit               => 'trading_platform_deposit',
-    mt5_transfer              => 'trading_platform_deposit',
-    trading_account_deposit   => 'trading_platform_deposit',
     paymentagent_transfer     => 'transfer_to_pa',
     paymentagent_withdraw     => 'transfer_to_pa'
 };
@@ -133,23 +129,30 @@ rule 'paymentagent.action_is_allowed' => {
         my ($self, $context, $args) = @_;
 
         my $action = $args->{underlying_action} // $context->{action} or die 'Action name is required';
+
         # sometimes we get p2p.advert.create rather than p2p_advert_create
         $action =~ s/\./_/g;
-
         my $pa_client;
 
-        # we have transfer_between_accounts_part1..3 events
-        if ($action =~ qr/^transfer_between_accounts.*/) {
-            my $loginid_to = $args->{loginid_to};
+        if ($action eq 'account_transfer') {
+            if ($args->{transfer_type} eq 'internal') {
+                my $loginid_to = $args->{loginid_to};
 
-            # a PA can transfer to a sibling account, if the sibling is also a payment agent;
-            $pa_client = $context->client({loginid => $args->{loginid_from}});
-            my $client_to = $context->client({loginid => $loginid_to});
-            my $pa_to     = $client_to->get_payment_agent;
+                # a PA can transfer to a sibling account, if the sibling is also a payment agent;
+                $pa_client = $context->client({loginid => $args->{loginid_from}});
+                my $client_to = $context->client({loginid => $loginid_to});
+                my $pa_to     = $client_to->get_payment_agent;
 
-            return 1 if $pa_to and $pa_to->status eq 'authorized';
+                return 1 if $pa_to and $pa_to->status eq 'authorized';
 
-            $action = 'transfer_to_non_pa_sibling';
+                $action = 'transfer_to_non_pa_sibling';
+            } else {    # mt5, dxtrade, ctrader
+                        # transfer in from trading account is always allowed
+                return 1 if $context->user->loginid_details->{$args->{loginid_from}}->{is_external};
+
+                $pa_client = $context->client({loginid => $args->{loginid_from}});
+                $action    = 'trading';
+            }
         } elsif ($action eq 'paymentagent_transfer') {
             $pa_client = $context->client({loginid => $args->{loginid_pa}});
             my $client = $context->client({loginid => $args->{loginid_client}});
@@ -184,8 +187,6 @@ rule 'paymentagent.action_is_allowed' => {
             transfer_to_pa             => 'TransferToOtherPA',
             paymentagent_withdraw      => 'TransferToOtherPA',
             transfer_to_non_pa_sibling => 'TransferToNonPaSibling',
-            trading_platform_deposit   => 'TransferToNonPaSibling',
-            mt5_deposit                => 'TransferToNonPaSibling',
         );
 
         $self->fail($error_mapping{$service} // 'ServiceNotAllowedForPA');

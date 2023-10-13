@@ -108,7 +108,7 @@ subtest 'rule client.has_currency_set' => sub {
         {
         error_code => 'SetExistingAccountCurrency',
         rule       => $rule_name,
-        params     => $client->loginid
+        params     => [$client->loginid],
         },
         'correct error when currency is missing';
 

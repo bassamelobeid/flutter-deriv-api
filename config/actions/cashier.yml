@@ -1,75 +1,37 @@
 transfer_between_accounts:
-  description: Contains rules to be applied on real account opening
+  description: Rules to be applied for transfer_between_accounts. Note this action always runs together with account_transfer action.
   arguments: 
     - loginid
     - loginid_from
     - loginid_to
-    - account_type_from
-    - account_type_to
     - amount
     - currency
-    - token_type
-    - is_internal_transfer
   ruleset:
     - client.not_disabled
-    - transfers.account_types_are_compatible
-    - type: group
-      argument_mapping:
-        loginid: loginid_from
-        account_type: account_type_from
-        action: "'withdrawal'"
-      ruleset:
-        - type: conditional
-          on: account_type
-          rules_per_value:
-            trading: &trading
-              - cashier.is_not_locked
-              - client.no_withdrawal_locked_status
-              - client.no_withdrawal_or_trading_lock_status
-              - cashier.profile_requirements
-            wallet: *trading
-    - type: group
-      argument_mapping:
-        loginid: loginid_to
-        account_type: account_type_to
-      ruleset:
-        - type: conditional
-          on: account_type
-          rules_per_value:
-            trading: cashier.is_not_locked
-            wallet: cashier.is_not_locked
+    - type: conditional
+      on: from_is_external
+      rules_per_value:
+        0:    
+        - type: group
+          argument_mapping:
+            loginid: loginid_from
+            action: "'withdrawal'"
+          ruleset:
+            - cashier.is_not_locked
+            - client.no_withdrawal_locked_status
+            - client.no_withdrawal_or_trading_lock_status
+            - cashier.profile_requirements
+    - type: conditional
+      on: to_is_external
+      rules_per_value:
+        0:                
+        - type: group
+          argument_mapping:
+            loginid: loginid_to
+          ruleset:
+            - cashier.is_not_locked
     - currency.known_currencies_allowed
     - transfers.amount_is_valid
-    - type: conditional
-      on: is_internal_transfer
-      rules_per_value:
-        1: 
-          - transfers.real_to_virtual_not_allowed
-          - transfers.authorized_client_should_be_real
-          - transfers.same_account_not_allowed
-          - transfers.wallet_accounts_not_allowed
-          - transfers.client_loginid_client_from_loginid_mismatch
-          - currency.known_currencies_allowed
-          - transfers.same_landing_companies
-          - currency.account_currency_is_legal
-          - paymentagent.action_is_allowed
-          - type: group
-            argument_mapping:
-              loginid: loginid_from
-            ruleset:
-              - client.not_disabled
-              - client.has_currency_set
-              - payment.currency_matches_account
-          - type: group
-            argument_mapping:
-              loginid: loginid_to
-            ruleset:
-              - client.not_disabled
-              - client.no_unwelcome_status
-              - client.has_currency_set
-          - transfers.no_different_fiat_currencies
-          - transfers.crypto_exchange_rates_availability
-          - transfers.clients_are_not_transfer_blocked
 
 paymentagent_withdraw:
   description: Rules applied on payment agent withdraw
