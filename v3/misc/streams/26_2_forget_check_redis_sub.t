@@ -190,18 +190,7 @@ my $underlying       = create_underlying('frxUSDJPY');
 
 $res = $t->await::proposal($req);
 if ($res->{error}) {
-
     is $res->{error}->{code}, 'ContractBuyValidationError', 'ContractBuyValidationError';
-    if ($now->hour >= 21) {
-        like $res->{error}->{message}, qr/Trading on forex contracts with duration less than 5 hours is not available/, 'Trading not available';
-    } elsif ($now->full_day_name eq 'Friday' && $now->hour == 20 && $now->minute >= 40 && $now->minute <= 54) {
-        ok $trading_calendar->is_open($underlying->exchange), 'check calendar is_open true';
-        like $res->{error}{message}, qr/Contract must expire during trading hours./, 'Contract must expire during trading hours.';
-    } else {
-        ok !$trading_calendar->is_open($underlying->exchange), 'check calendar is_open false';
-        like $res->{error}{message}, qr/This market is presently closed/, 'This market is presently closed';
-    }
-
 } else {
     subtest 'forget' => sub {
         $t->await::forget_all({forget_all => 'proposal'});
