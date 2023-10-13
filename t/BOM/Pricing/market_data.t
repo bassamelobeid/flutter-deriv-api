@@ -94,7 +94,7 @@ subtest 'trading_times with cfd offerings' => sub {
         'name'         => 'DSI10',
         'trading_days' => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']};
 
-    cmp_deeply($result->{markets}[3]{submarkets}[10]{symbols}[0], $expected_dsi, 'Correct trading times for DSI10');
+    cmp_deeply($result->{markets}[3]{submarkets}[9]{symbols}[0],  $expected_dsi, 'Correct trading times for DSI10');
     cmp_deeply($result->{markets}[3]{submarkets}[8]{symbols}[13], $expected_dfx, 'Correct trading times for USDJPYDFX20');
 };
 
