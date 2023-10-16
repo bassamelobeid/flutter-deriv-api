@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::MockModule;
+use Test::MockObject;
 use Test::Deep;
 use BOM::User;
 
@@ -11,9 +12,10 @@ use BOM::User;
 my $user_mock = Test::MockModule->new('BOM::User');
 $user_mock->redefine(new => sub { return bless({}, 'BOM::User') });
 
-my $db_mock = Test::MockModule->new('DBIx::Connector');
 my @loginid_data;
-$db_mock->mock(run => sub { \@loginid_data });
+my $dbic_mock = Test::MockObject->new();
+$dbic_mock->mock(run => sub { \@loginid_data });
+$user_mock->redefine(dbic => $dbic_mock);
 
 my $user = BOM::User->new;
 
