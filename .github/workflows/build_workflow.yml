@@ -37,6 +37,7 @@ jobs:
       - name: unit tests
         run: make unit
   accounts:
+    needs: structure
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -61,6 +62,7 @@ jobs:
       - name: Accounts-related functionality
         run: make accounts
   security:
+    needs: structure
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -85,6 +87,7 @@ jobs:
       - name: Security handling
         run: make security
   pricing:
+    needs: structure
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -109,6 +112,7 @@ jobs:
       - name: Pricing
         run: make pricing
   misc:
+    needs: structure
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -133,6 +137,7 @@ jobs:
       - name: Uncategorised tests
         run: make misc
   p2p:
+    needs: structure
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -157,6 +162,7 @@ jobs:
       - name: Run P2P tests
         run: make p2p
   schema:
+    needs: structure
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -181,6 +187,7 @@ jobs:
       - name: Schema tests
         run: make schema
   subscriptions:
+    needs: structure
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -205,6 +212,7 @@ jobs:
       - name: Run subscription tests
         run: make subscriptions
   backends:
+    needs: structure
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
