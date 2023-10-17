@@ -73,9 +73,9 @@ fail_test_sendrecv_params 'app_list/test_send.json', 'app_list/test_receive_to_f
 test_sendrecv_params 'app_delete/test_send.json', 'app_delete/test_receive.json', $suite->get_stashed('app_register/app_register/app_id'), '1';
 test_sendrecv_params 'app_list/test_send.json',   'app_list/test_receive.json',   $suite->get_stashed('app_register/app_register/app_id');
 test_sendrecv_params 'oauth_apps/test_send.json', 'oauth_apps/test_receive.json';
-test_sendrecv        'get_limits/test_send.json', 'get_limits/test_receive_vrtc.json';
 
 # TESTS TO RETURN ERROR (VRTC)
+test_sendrecv 'get_limits/test_send.json',               'get_limits/test_receive_error.json';
 test_sendrecv 'set_settings/test_send.json',             'set_settings/test_receive_error.json';
 test_sendrecv 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive_vrt.json';
 
