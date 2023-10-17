@@ -89,6 +89,7 @@ categories:
         currency_types:
           - fiat
         broker_codes: {}
+
       derivez:
         platform: derivez
         linkable_wallet_types:
@@ -105,20 +106,6 @@ categories:
         broker_codes: {}
       dxtrade:
         platform: dxtrade
-        linkable_wallet_types:
-          - virtual
-          - doughflow
-          - p2p
-          - paymentagent_client
-        linkable_to_different_currency: 1
-        regulations:
-          - svg
-          - virtual
-        currency_types:
-          - fiat
-        broker_codes: {}
-      ctrader:
-        platform: ctrader
         linkable_wallet_types:
           - virtual
           - doughflow
@@ -160,7 +147,6 @@ categories:
             - CRW
           maltainvest:
             - MFW
-        transfers: all
         is_cashier: 1
       crypto:
         account_opening:
@@ -171,7 +157,6 @@ categories:
           - crypto_cashier
         regulations:
           - svg
-        transfers: all
         is_cashier: 1
       p2p:
         currencies:
@@ -180,13 +165,11 @@ categories:
           - svg
         groups:
           - p2p
-        transfers: deposit
       paymentagent:
         groups:
           - paymentagent
         regulations:
           - svg
-        transfers: deposit
       paymentagent_client:
         account_opening:
           - real
@@ -194,7 +177,6 @@ categories:
           - paymentagent_client
         regulations:
           - svg
-        transfers: none
       affiliate:
         account_opening:
           - real
@@ -205,7 +187,6 @@ categories:
         broker_codes:
           dsl:
             - CRA
-        transfers: none
       virtual:
         currencies:
           - USD
@@ -214,4 +195,3 @@ categories:
         broker_codes:
           virtual:
             - VRW
-        transfers: all

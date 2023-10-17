@@ -623,75 +623,50 @@ payments:
       contains:
         daily_cumulative_limit:
           isa: section
-          description: 'Daily transfer amount limits.'
+          description: 'Limits for total amount limit of internal transfers per day'
           contains:
             enable:
               isa: Num
-              description: 'Enables all limits for total amount of internal transfers per day. A limit is ignored when setting is non-postitive.'
+              description: 'Enable daily amount limit in USD - default to daily transaction and maximum'
               default: 0
               global: 1
             between_accounts:
               isa: Num
-              description: 'Daily transfer amount limit in USD between binary accounts, doughflow and crypto wallets.'
-              default: 100000
-              global: 1
-            between_wallets:
-              isa: Num
-              description: 'Daily transfer amount limit in USD between cashier wallets (doughflow, crypto) and peer payment wallets (p2p, payment agent).'
-              default: 100000
-              global: 1
-            dtrade:
-              isa: Num
-              description: 'Daily transfer amount limit in USD between DTrader (Deriv trading) accounts and wallets.'
+              description: 'Limits the amount of daily transfers in USD between accounts'
               default: 100000
               global: 1
             MT5:
               isa: Num
-              description: 'Daily transfer amount limit in USD between MT5 accounts and binary accounts or wallets.'
+              description: 'Limits the amount of daily transfers in USD between binary accounts and MT5 accounts'
               default: 200000
               global: 1
             dxtrade:
               isa: Num
-              description: 'Daily transfer amount limit in USD between Deriv X accounts and binary accounts or wallets.'
+              description: 'Limits the amount of daily transfers in USD between binary accounts and Deriv X accounts'
               default: 50000
               global: 1
             derivez:
               isa: Num
-              description: 'Daily transfer amount limit in USD between DerivEZ accounts and binary accounts or wallets.'
+              description: 'Limits the amount of daily transfers in USD between binary accounts and DerivEZ accounts - not used'
               default: -1
               global: 1
             ctrader:
               isa: Num
-              description: 'Limits the amount of daily transfers in USD between CTrader accounts and binary accounts or wallets.'
+              description: 'Limits the amount of daily transfers in USD between binary accounts and CTrader accounts - not used'
               default: -1
-              global: 1
-            virtual:
-              isa: Num
-              description: 'Limits the amount of daily transfers in USD between all virtual accounts (wallets only).'
-              default: 1000000
               global: 1
         limits:
           isa: section
-          description: 'Limits for internal transfers. Ignored if amount limit is enabled.'
+          description: 'Limits for internal transfers (default)'
           contains:
             between_accounts:
               isa: Num
-              description: 'Number of daily transfers allowed between binary accounts, doughflow and crypto wallets.'
+              description: 'Limits the numbers of daily transfers between accounts'
               default: 3
-              global: 1
-            between_wallets:
-              isa: Num
-              description: 'Number of daily transfers allowed between cashier wallets (doughflow, crypto) and peer payment wallets (p2p, payment agent).'
-              default: 10
-              global: 1
-            dtrade:
-              isa: Num
-              description: 'Number of daily transfers allowed between DTrader (Deriv trading) accounts and wallets.'
-              default: 10
               global: 1
             MT5:
               isa: Num
-              description: 'Number of daily transfers allowed between MT5 accounts and binary accounts or wallets.'
+              description: 'Limits the numbers of daily transfers between binary accounts and MT5 accounts'
               default: 6
               global: 1
             fiat_to_crypto:
@@ -711,24 +686,19 @@ payments:
               global: 1
             dxtrade:
               isa: Num
-              description: 'Number of daily transfers allowed between between Deriv X accounts and binary accounts or wallets.'
+              description: 'Limits the numbers of daily transfers between binary accounts and Deriv X accounts'
               default: 6
               global: 1
             derivez:
               isa: Num
-              description: 'Number of daily transfers allowed between between DerivEZ accounts and binary accounts or wallets.'
+              description: 'Limits the numbers of daily transfers between binary accounts and DerivEZ accounts'
               default: 10
               global: 1
             ctrader:
               isa: Num
-              description: 'Number of daily transfers allowed between CTrader accounts and binary accounts or wallets.'
+              description: 'Limits the numbers of daily transfers between binary accounts and CTrader accounts'
               default: 10
               global: 1
-            virtual:
-              isa: Num
-              description: 'Number of daily transfers allowed between all virtual accounts (wallets only).'
-              default: 1000
-              global: 1          
         exchange_rate_expiry:
           isa: section
           description: 'Exchange Rates expiry age in seconds e.g. allow conversion from BTC to USD if last known rate IS NOT OLDER THAN 1800 second'

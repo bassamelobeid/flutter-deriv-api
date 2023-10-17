@@ -129,14 +129,6 @@ Return list of supported regulations by account type
 
 has $regulations : reader;
 
-=head2 transfers
-
-Returns type of transfer supported by the account
-
-=cut
-
-has $transfers : reader;
-
 =head2 is_cashier
 
 Returns type of transfer supported by the account
@@ -311,8 +303,7 @@ BUILD {
     }
 
     $regulations = +{map { $_ => 1 } $args{regulations}->@*};
-    $transfers   = $category_name eq 'trading' ? 'all' : $args{transfers} // 'none';
-    $is_cashier  = $args{is_cashier}                                      // 0;
+    $is_cashier  = $args{is_cashier} // 0;
 
     (
         $groups, $type_broker_codes, $linkable_to_different_currency,
