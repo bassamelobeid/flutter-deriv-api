@@ -181,15 +181,9 @@ sub handle_under_age_client {
     # check if there is balance
     my $siblings     = $client->real_account_siblings_information(include_disabled => 0);
     my @have_balance = grep { $siblings->{$_}->{balance} > 0 } keys $siblings->%*;
-    my @mt5_loginids = $client->user->get_trading_platform_loginids(
-        platform        => 'mt5',
-        type_of_account => 'real'
-    );
-    my @dx_loginids = $client->user->get_trading_platform_loginids(
-        platform        => 'dxtrade',
-        type_of_account => 'real'
-    );
-    my $loginid = $client->loginid;
+    my @mt5_loginids = $client->user->get_trading_platform_loginids('mt5',      'real');
+    my @dx_loginids  = $client->user->get_trading_platform_loginids('dxtrader', 'real');
+    my $loginid      = $client->loginid;
 
     # send livechat ticket to CS only if the account won't be disabled due to
     # having balance or deriv x or mt5 accounts.

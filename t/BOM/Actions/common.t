@@ -475,9 +475,9 @@ subtest 'underage handling' => sub {
     $user_mock->mock(
         'get_trading_platform_loginids',
         sub {
-            my (undef, %args) = @_;
-            return $dxt_loginids->@* if $args{platform} eq 'dxtrade';
-            return $mt5_loginids->@* if $args{platform} eq 'mt5';
+            my (undef, $platform) = @_;
+            return $dxt_loginids->@* if $platform eq 'dxtrader';
+            return $mt5_loginids->@* if $platform eq 'mt5';
             return ();
         });
 

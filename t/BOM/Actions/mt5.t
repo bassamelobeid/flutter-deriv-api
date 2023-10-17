@@ -3023,8 +3023,8 @@ subtest 'mt5 archive restore sync' => sub {
     $args->{mt5_accounts} = ['MTR90000'];
 
     $mocked_mt5->mock('get_user', sub { Future->done({login => "MTR90000", email => 'placeholder@gmail.com'}) });
-    $mocked_user->mock('new',              sub { bless {}, 'BOM::User' });
-    $mocked_user->mock('get_mt5_loginids', ('MTR90000'));
+    $mocked_user->mock('new',             sub { bless {}, 'BOM::User' });
+    $mocked_user->mock('loginid_details', sub { {'MTR90000' => {status => undef}} });
 
     my $result = $action_handler->($args)->get;
     ok $result, 'Success mt5 archive restore sync result';
@@ -3060,7 +3060,6 @@ subtest 'sync_mt5_accounts_status' => sub {
     $client->binary_user_id($user->id);
     $client->user($user);
     $client->save;
-    my $original_details = $user->loginid_details;
 
     $args->{client_loginid} = $client->loginid;
 
@@ -3080,8 +3079,9 @@ subtest 'sync_mt5_accounts_status' => sub {
     $user_mock->mock(
         'loginid_details',
         sub {
-            my %extra = map { $_ => {$extra_loginids->{$_}->%*, loginid => $_, is_external => 1} } keys %$extra_loginids;
-            return {%extra, %$original_details};
+            my $loginid_details = $user_mock->original('loginid_details')->(@_);
+
+            return {$extra_loginids->%*, $loginid_details->%*,};
         });
 
     # mt5 demo is skipped
