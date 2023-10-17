@@ -341,7 +341,7 @@ subtest $rule_name => sub {
     ok $rule_engine->apply_rules($rule_name, %args), 'Rule applies with no MT5 account';
 
     my $mock_user = Test::MockModule->new('BOM::User');
-    $mock_user->redefine(get_mt5_loginids => sub { ('MTR1000') });
+    $mock_user->redefine(mt5_logins => sub { ('MTR1000') });
 
     is exception { $rule_engine->apply_rules($rule_name, %args) }, undef, 'Rule applies if client currency is not set yet';
 
@@ -353,7 +353,7 @@ subtest $rule_name => sub {
         },
         'Fails after setting account entry';
 
-    $mock_user->redefine(get_mt5_loginids => sub { () });
+    $mock_user->redefine(mt5_logins => sub { () });
 
     is exception { $rule_engine->apply_rules($rule_name, %args) }, undef, 'Rule applies if client only has demo account';
 
@@ -382,7 +382,7 @@ subtest $rule_name => sub {
     ok $engine->apply_rules($rule_name, %args), 'Rule applies with no MT5 account';
 
     my $mock_user = Test::MockModule->new('BOM::User');
-    $mock_user->redefine(get_dxtrade_loginids => sub { ('DXD1000') });
+    $mock_user->redefine(loginids => sub { ($client->loginid, 'DXD1000', 'DXR1001', 'MTR1000', 'MT1001', 'MTD1002') });
 
     is exception { $engine->apply_rules($rule_name, %args) }, undef, 'Rule applies if client currency is not set yet';
 
@@ -394,9 +394,9 @@ subtest $rule_name => sub {
         },
         'Fails after setting account entry';
 
-    $mock_user->redefine(get_dxtrade_loginids => sub { () });
+    $mock_user->redefine(loginids => sub { ($client->loginid, 'DXD1000', 'MTR1000', 'MT1001', 'MTD1002') });
 
-    is exception { $engine->apply_rules($rule_name, %args) }, undef, 'Rule applies if client only has no real account';
+    is exception { $engine->apply_rules($rule_name, %args) }, undef, 'Rule applies if client only has demo account';
 
     $mock_user->unmock_all;
 };

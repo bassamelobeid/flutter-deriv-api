@@ -38,7 +38,6 @@ around BUILDARGS => sub {
         client_list     => $client_list,
         siblings        => $siblings,
         action          => $constructor_args{action},
-        user            => $constructor_args{user},
     );
 };
 
@@ -63,7 +62,6 @@ sub clone {
         client_list     => $self->client_list,
         siblings        => $self->siblings,
         stop_on_failure => $self->stop_on_failure,
-        user            => $self->user,
         %override
     );
 }
@@ -106,16 +104,6 @@ The name of the current action.
 has action => (
     is      => 'ro',
     default => ''
-);
-
-=head2 user
-
-User object.
-
-=cut
-
-has user => (
-    is => 'ro',
 );
 
 =head2 _cache
@@ -224,6 +212,27 @@ sub landing_company {
     die 'Either landing_company or loginid is required' unless ($short_code || $args->{loginid});
 
     return $short_code || $self->client($args)->landing_company->short;
+}
+
+=head2 user
+
+Retrieves user object. It accepts one argument:
+
+=over 4
+
+=item C<args> event args as a hashref; expected to contain a B<user> or B<loginid> key.
+
+=back
+
+=cut
+
+sub user {
+    my ($self, $args) = @_;
+    my $user = $args->{user};
+
+    die 'Either landing_company or loginid is required' unless ($user || $args->{loginid});
+
+    return $user || $self->client($args)->user;
 }
 
 =head2 get_country

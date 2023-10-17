@@ -241,7 +241,7 @@ Returns a hashref with the `message_params` if needed.
 
 sub die_with_params {
     my ($self, $code, $args) = @_;
-    my @params;
+    my @message_params;
     my $platform = $args->{platform} // '';
 
     my $name = +{
@@ -251,9 +251,9 @@ sub die_with_params {
         ctrader => 'cTrader',
     }->{$platform};
 
-    push @params, $name if $name;
+    push @message_params, $name if $name;
 
-    $self->fail($code, @params ? (params => \@params) : (),);
+    $self->fail($code, @message_params ? (message_params => \@message_params) : (),);
 }
 
 1;

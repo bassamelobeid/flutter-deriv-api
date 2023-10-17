@@ -6,7 +6,6 @@ use Test::Fatal;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::User;
 use BOM::Rules::Engine;
 use BOM::Rules::Registry qw(register_action rule);
 use BOM::Rules::Registry::Action;
@@ -14,13 +13,6 @@ use BOM::Rules::Registry::Action;
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-
-my $user = BOM::User->create(
-    email    => $client->email,
-    password => 'x',
-);
-
-$user->add_client($client);
 
 subtest 'Context initialization' => sub {
     my $rule_engine = BOM::Rules::Engine->new(stop_on_failure => 0);
@@ -31,13 +23,6 @@ subtest 'Context initialization' => sub {
 
     $rule_engine = BOM::Rules::Engine->new(stop_on_failure => 1);
     is $rule_engine->context->stop_on_failure, 1, 'stop_on_failure = 1 is saved in the context';
-
-    $rule_engine = BOM::Rules::Engine->new(client => $client);
-    is $rule_engine->context->client({loginid => $client->loginid})->loginid, $client->loginid, 'client saved in the context';
-
-    $rule_engine = BOM::Rules::Engine->new(user => $user);
-    is $rule_engine->context->user->id, $user->id, 'user saved in the context';
-
 };
 
 subtest 'Verify an action' => sub {

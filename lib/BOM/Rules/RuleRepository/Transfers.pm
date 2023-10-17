@@ -17,12 +17,11 @@ use BOM::Rules::Registry qw(rule);
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Config::CurrencyConfig;
-use BOM::Config::AccountType::Registry;
 
 use Format::Util::Numbers qw(formatnumber financialrounding);
 use Scalar::Util          qw( looks_like_number );
 use Syntax::Keyword::Try;
-use List::Util qw/any all/;
+use List::Util qw/any/;
 use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 
@@ -30,41 +29,44 @@ rule 'transfers.currency_should_match' => {
     description => "The currency of the account given should match the currency param when defined",
     code        => sub {
         my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
 
-        # currency param is renamed to request_currency when invoking rule.
-        # only transfer_between_accounts sends the currency param, trading_platform_* do not send it.
-        my $request_currency = $args->{request_currency} // return 1;
+        # only transfer_between_accounts sends this param, trading_platform_* do not send it
+        my $currency = $args->{currency} // return 1;
 
-        $self->fail('CurrencyShouldMatch') unless $args->{amount_currency} eq $request_currency;
+        my $action = $args->{action} // '';
+        my $account_currency;
+
+        if ($action eq 'deposit') {
+            $account_currency = $client->account->currency_code;
+        } elsif ($action eq 'withdrawal') {
+            $account_currency = $args->{platform_currency};
+        } else {
+            $self->fail('InvalidAction');
+        }
+
+        $self->fail('CurrencyShouldMatch') unless ($account_currency // '') eq $currency;
 
         return 1;
     },
 };
 
-rule 'transfers.daily_count_limit' => {
+rule 'transfers.daily_limit' => {
     description => "Validates the daily transfer limits for the context client",
     code        => sub {
         my ($self, $context, $args) = @_;
+        my $client   = $context->client($args);
+        my $platform = $args->{platform} // '';
+        my $config   = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit;
+        my $daily_transfer_amount =
+            BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->$platform;
 
-        my (undef, undef, $user, $client_from, $client_to) = _get_clients_info(@_);
+        # daily_cumulative_limit is disabled if it is set to negative
+        return 1 if $config->enable && $config->$platform > 0;
 
-        my $limit_type = $user->get_transfer_limit_type(
-            %$args,
-            client_from => $client_from,
-            client_to   => $client_to
-        );
-        my $transfer_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts;
-        my $config_name     = $limit_type->{config_name};
-
-        # daily_cumulative_limit is disabled if it is <= 0
-        return 1 if $transfer_config->daily_cumulative_limit->enable && $transfer_config->daily_cumulative_limit->$config_name > 0;
-
-        my $transfer_limit = $transfer_config->limits->$config_name;
-        my $transfer_count = $user->daily_transfer_count(
-            type       => $limit_type->{type},
-            identifier => $limit_type->{identifier});
-
-        $self->fail('MaximumTransfers', params => [$transfer_limit]) unless $transfer_count < $transfer_limit;
+        my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->$platform;
+        my $user_daily_transfer_count = $client->user->daily_transfer_count($platform);
+        $self->fail('MaximumTransfers', message_params => [$daily_transfer_limit]) unless $user_daily_transfer_count < $daily_transfer_limit;
 
         return 1;
     },
@@ -74,30 +76,20 @@ rule 'transfers.daily_total_amount_limit' => {
     description => "Validates the daily total amount transfer limits for the context client",
     code        => sub {
         my ($self, $context, $args) = @_;
+        my $client            = $context->client($args);
+        my $platform          = $args->{platform} // '';
+        my $amount            = $args->{amount};
+        my $platform_currency = $args->{platform_currency} // '';
+        my $config            = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit;
 
-        my (undef, undef, $user, $client_from, $client_to) = _get_clients_info(@_);
+        return 1 unless $config->enable;
 
-        my $limit_type = $user->get_transfer_limit_type(
-            %$args,
-            client_from => $client_from,
-            client_to   => $client_to
-        );
-        my $config      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit;
-        my $config_name = $limit_type->{config_name};
+        # daily_cumulative_limit is disabled if it is set to negative
+        return 1 if $config->$platform < 0;
 
-        return 1 unless $config->enable and $config->$config_name > 0;
-
-        my ($amount, $amount_currency) = $args->@{qw(amount amount_currency)};
-
-        my $transfer_limit  = $config->$config_name;
-        my $transfer_amount = $user->daily_transfer_amount(
-            type       => $limit_type->{type},
-            identifier => $limit_type->{identifier});
-
-        if ($transfer_amount + convert_currency(abs($amount), $amount_currency, 'USD') > $transfer_limit) {
-            my $converted_limit = financialrounding('amount', $amount_currency, convert_currency($transfer_limit, 'USD', $amount_currency));
-            $self->fail('MaximumAmountTransfers', params => [$converted_limit, $amount_currency]);
-        }
+        my $user_daily_transfer_amount = $client->user->daily_transfer_amount($platform);
+        $self->fail('MaximumAmountTransfers', message_params => [$config->$platform, 'USD'])
+            unless $user_daily_transfer_amount + convert_currency(abs($amount), $platform_currency, 'USD') < $config->$platform;
 
         return 1;
     },
@@ -107,24 +99,36 @@ rule 'transfers.limits' => {
     description => "Validates the minimum and maximum limits for transfers on the given platform",
     code        => sub {
         my ($self, $context, $args) = @_;
-
-        my ($platform, $amount, $amount_currency) = $args->@{qw(platform amount amount_currency)};
+        my $client = $context->client($args);
         # TODO: better to get the brand name from arguments
         my $brand_name      = request()->brand->name;
+        my $platform        = $args->{platform} // '';
+        my $action          = $args->{action}   // '';
+        my $amount          = $args->{amount}   // '';
         my $transfer_limits = BOM::Config::CurrencyConfig::platform_transfer_limits($platform, $brand_name);
+        my $source_currency;
 
-        my $min = $transfer_limits->{$amount_currency}->{min};
-        my $max = $transfer_limits->{$amount_currency}->{max};
+        # limit currency / source currency is always the sending account
+        if ($action eq 'deposit') {
+            $source_currency = $client->account->currency_code;
+        } elsif ($action eq 'withdrawal') {
+            $source_currency = $args->{platform_currency};
+        } else {
+            $self->fail('InvalidAction');
+        }
+
+        my $min = $transfer_limits->{$source_currency}->{min};
+        my $max = $transfer_limits->{$source_currency}->{max};
 
         die $self->fail(
             'InvalidMinAmount',
-            params => [formatnumber('amount', $amount_currency, $min), $amount_currency],
-        ) if $amount < financialrounding('amount', $amount_currency, $min);
+            message_params => [formatnumber('amount', $source_currency, $min), $source_currency],
+        ) if $amount < financialrounding('amount', $source_currency, $min);
 
         $self->fail(
             'InvalidMaxAmount',
-            params => [formatnumber('amount', $amount_currency, $max), $amount_currency],
-        ) if $amount > financialrounding('amount', $amount_currency, $max);
+            message_params => [formatnumber('amount', $source_currency, $max), $source_currency],
+        ) if $amount > financialrounding('amount', $source_currency, $max);
 
         return 1;
     },
@@ -165,11 +169,21 @@ rule 'transfers.real_to_virtual_not_allowed' => {
     description => "Transfer between real and virtual accounts is not allowed",
     code        => sub {
         my ($self, $context, $args) = @_;
+        my $client_to   = $context->client({loginid => $args->{loginid_to}});
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+        $self->fail('RealToVirtualNotAllowed') unless $client_from->is_virtual == $client_to->is_virtual;
+        return 1;
+    },
+};
 
-        my ($details_from, $details_to) = _get_clients_info(@_);
-
-        $self->fail('RealToVirtualNotAllowed') unless $details_from->{is_virtual} == $details_to->{is_virtual};
-
+rule 'transfers.authorized_client_should_be_real' => {
+    description => "Transfer between real accounts is not allowed if the authorized client is virtual",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client      = $context->client($args);
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+        $self->fail('AuthorizedClientIsVirtual')
+            if ($client->is_virtual and $args->{token_type} ne 'oauth_token' and not $client_from->is_virtual);
         return 1;
     },
 };
@@ -196,6 +210,18 @@ rule 'transfers.same_account_not_allowed' => {
         my ($self, $context, $args) = @_;
 
         $self->fail('SameAccountNotAllowed') if ($args->{loginid_from} eq $args->{loginid_to});
+
+        return 1;
+    },
+};
+
+rule 'transfers.wallet_accounts_not_allowed' => {
+    description => "Transfer between wallet accounts is not allowed.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client_to   = $context->client({loginid => $args->{loginid_to}});
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+        $self->fail('WalletAccountsNotAllowed') if ($client_from->is_wallet and $client_to->is_wallet);
 
         return 1;
     },
@@ -244,14 +270,11 @@ rule 'transfers.client_loginid_client_from_loginid_mismatch' => {
     description => "Client loginid and client_from loginid are not the same unless token type is oauth or its virtual transfer",
     code        => sub {
         my ($self, $context, $args) = @_;
-
         my $client      = $context->client({loginid => $args->{loginid}});
         my $client_from = $context->client({loginid => $args->{loginid_from}});
-
         $self->fail('IncompatibleClientLoginidClientFrom')
             if ($args->{loginid} ne $args->{loginid_from})
             and ($args->{token_type} ne 'oauth_token');
-
         return 1;
     },
 };
@@ -270,108 +293,6 @@ rule 'transfers.same_landing_companies' => {
         # Transfers  between malta  and maltainvest are fine
         return 1 if ($lc_from->short =~ /^(?:malta|maltainvest)$/ and $lc_to->short =~ /^(?:malta|maltainvest)$/);
         $self->fail('IncompatibleLandingCompanies');
-    },
-};
-
-rule 'transfers.amount_is_valid' => {
-    description => "checking if amount is positive and has numeric value",
-    code        => sub {
-        my ($self, $context, $args) = @_;
-
-        $self->fail('TransferInvalidAmount') unless (looks_like_number($args->{amount}) and $args->{amount} > 0);
-
-        return 1;
-    },
-};
-
-rule 'transfers.account_type_capability' => {
-    description => 'Transfer must be supported by account type.',
-    code        => sub {
-        my ($self, $context, $args) = @_;
-
-        my ($details_from, $details_to) = _get_clients_info(@_);
-
-        return 1 unless $details_from->{is_wallet} and $details_to->{is_wallet};
-
-        $self->fail('TransferBlockedWalletWithdrawal') unless $details_from->{account_type_obj}->transfers =~ /^(all|withdrawal)$/;
-        $self->fail('TransferBlockedWalletDeposit')    unless $details_to->{account_type_obj}->transfers   =~ /^(all|deposit)$/;
-
-        return 1;
-    },
-};
-
-rule 'transfers.between_trading_accounts' => {
-    description => 'Transfers between trading accounts are not allowed.',
-    code        => sub {
-        my ($self, $context, $args) = @_;
-
-        my ($details_from, $details_to) = _get_clients_info(@_);
-
-        # binary accounts are not considered "trading" for this check
-        my $from_is_trading = ($details_from->{account_type_obj}->name eq 'standard' or $details_from->{is_external}) ? 1 : 0;
-        my $to_is_trading   = ($details_to->{account_type_obj}->name eq 'standard'   or $details_to->{is_external})   ? 1 : 0;
-
-        $self->fail('TransferBlockedTradingAccounts') if $from_is_trading and $to_is_trading;
-
-        return 1;
-    },
-};
-
-rule 'transfers.wallet_links' => {
-    description => 'Transfers to/from a linked trading account must be with the linked wallet.',
-    code        => sub {
-        my ($self, $context, $args) = @_;
-
-        my ($details_from, $details_to) = _get_clients_info(@_);
-
-        return 1 if all { $_->{is_wallet} } ($details_from, $details_to);
-
-        # If to account is linked to wallet, from account must be the wallet
-        $self->fail('TransferBlockedWalletNotLinked') if $details_to->{wallet_loginid} and $details_to->{wallet_loginid} ne $args->{loginid_from};
-
-        # If from account is linked to wallet, to account must be the wallet
-        $self->fail('TransferBlockedWalletNotLinked') if $details_from->{wallet_loginid} and $details_from->{wallet_loginid} ne $args->{loginid_to};
-
-        # If from account is a wallet, to account must be linked to it
-        $self->fail('TransferBlockedWalletNotLinked')
-            if $details_from->{is_wallet} and ($details_to->{wallet_loginid} // '') ne $args->{loginid_from};
-
-        # If to account is a wallet, from account must be linked to it
-        $self->fail('TransferBlockedWalletNotLinked') if $details_to->{is_wallet} and ($details_from->{wallet_loginid} // '') ne $args->{loginid_to};
-
-        return 1;
-    },
-};
-
-rule 'transfers.legacy_and_wallet' => {
-    description => 'Cannot transfer between a legacy (binary) account and wallet',
-    code        => sub {
-        my ($self, $context, $args) = @_;
-
-        my ($details_from, $details_to) = _get_clients_info(@_);
-
-        # if from account is legacy, to account cannot be wallet
-        $self->fail('TransferBlockedLegacy')
-            if $details_from->{account_type_obj}->name eq BOM::Config::AccountType::LEGACY_TYPE and $details_to->{is_wallet};
-
-        # if to account is legacy, from account cannot be wallet
-        $self->fail('TransferBlockedLegacy')
-            if $details_to->{account_type_obj}->name eq BOM::Config::AccountType::LEGACY_TYPE and $details_from->{is_wallet};
-
-        return 1;
-    },
-};
-
-rule 'transfers.authorized_client_is_legacy_virtual' => {
-    description => 'Authorized client cannot be a legacy binary VR account.',
-    code        => sub {
-        my ($self, $context, $args) = @_;
-
-        my $client = $context->client($args);
-
-        $self->fail('TransferBlockedClientIsVirtual') if $client->is_virtual and $client->is_legacy;
-
-        return 1;
     },
 };
 
@@ -408,43 +329,37 @@ sub _get_currency_info {
     return %currencies;
 }
 
-=head2 _get_clients_info
+rule 'transfers.account_types_are_compatible' => {
+    description => "Transfer between dxtrade and mt5 is not allowed",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
 
-Gets client data from loginid_from and loginid_to arguments.
+        $self->fail('IncompatibleDxtradeToMt5') if $args->{account_type_from} eq 'dxtrade' && $args->{account_type_to} eq 'mt5';
 
-=over 4
+        $self->fail('IncompatibleMt5ToDxtrade') if $args->{account_type_from} eq 'mt5' && $args->{account_type_to} eq 'dxtrade';
 
-=item * C<context> - the rule engine context object
+        $self->fail('IncompatibleMt5ToMt5') if $args->{account_type_from} eq 'mt5' && $args->{account_type_to} eq 'mt5';
 
-=item * C<args> - action arguments as a hash-ref that contains B<loginid_from> and B<loginid_to>
+        $self->fail('IncompatibleDxtradeToDxtrade') if $args->{account_type_from} eq 'dxtrade' && $args->{account_type_to} eq 'dxtrade';
 
-=back
+        $self->fail('IncompatibleDerivezToMt5') if $args->{account_type_from} eq 'derivez' && $args->{account_type_to} eq 'mt5';
 
-=cut
+        $self->fail('IncompatibleMt5ToDerivez') if $args->{account_type_from} eq 'mt5' && $args->{account_type_to} eq 'derivez';
 
-sub _get_clients_info {
-    my ($self, $context, $args) = @_;
+        return 1;
+    },
+};
 
-    my $user    = $context->user;
-    my $details = $user->loginid_details;
+rule 'transfers.amount_is_valid' => {
+    description => "checking if amount is positive and has numeric value",
+    code        => sub {
+        my ($self, $context, $args) = @_;
 
-    my $details_from = $details->{$args->{loginid_from}} or $self->fail('PermissionDenied');
-    my $details_to   = $details->{$args->{loginid_to}}   or $self->fail('PermissionDenied');
+        $self->fail('TransferInvalidAmount') unless (looks_like_number($args->{amount}) and $args->{amount} > 0);
 
-    my $client_from = $details_from->{is_external} ? undef : $context->client({loginid => $args->{loginid_from}});
-    my $client_to   = $details_to->{is_external}   ? undef : $context->client({loginid => $args->{loginid_to}});
-
-    $details_from->{account_type_obj} =
-          $client_from
-        ? $client_from->get_account_type
-        : BOM::Config::AccountType::Registry->account_type_by_name($details_from->{platform});
-
-    $details_to->{account_type_obj} =
-          $client_to
-        ? $client_to->get_account_type
-        : BOM::Config::AccountType::Registry->account_type_by_name($details_to->{platform});
-
-    return ($details_from, $details_to, $user, $client_from, $client_to);
-}
+        return 1;
+    },
+};
 
 1;

@@ -80,7 +80,7 @@ rule 'currency.no_real_mt5_accounts' => {
         return 1 unless exists $args->{currency};
 
         $self->fail('MT5AccountExisting')
-            if $client->account() && $client->user->get_mt5_loginids(type_of_account => 'real');
+            if $client->account() && $client->user->mt5_logins('real');
 
         return 1;
     },
@@ -95,7 +95,7 @@ rule 'currency.no_real_dxtrade_accounts' => {
         return 1 unless exists $args->{currency};
 
         $self->fail('DXTradeAccountExisting')
-            if $client->account() && $client->user->get_dxtrade_loginids(type_of_account => 'real');
+            if $client->account() && $client->user->dxtrade_loginids('real');
 
         return 1;
     },
