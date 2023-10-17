@@ -37,6 +37,7 @@ use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Services::CellxpertService;
 use BOM::RPC::v3::Services::MyAffiliates;
 use BOM::RPC::v3::VerifyEmail::Functions;
+use Data::Dumper;
 use BOM::RPC::v3::Services::MyAffiliates;
 
 use constant {

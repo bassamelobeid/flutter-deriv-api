@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Utility;
 use BOM::Platform::Context qw (localize request);
 use List::Util             qw(any);
 
@@ -94,6 +93,8 @@ my %category_message_mapping = do {
         SwitchAccount                => localize('This account does not allow MT5 trading. Please log in to the correct account.'),
         AccountDisabled              => localize("We've disabled your MT5 account. Please contact us for more information."),
         CashierLocked                => localize('Your account cashier is locked. Please contact us for more information.'),
+        MaximumTransfers             => localize('You can only perform up to [_1] transfers a day. Please try again tomorrow.'),
+        MaximumAmountTransfers       => localize('The maximum amount of transfers is [_1] [_2] per day. Please try again tomorrow.'),
         CannotGetOpenPositions       => localize('A connection error happened while we were completing your request. Please try again later.'),
         WithdrawalLocked             => localize('You cannot perform this action, as your account is withdrawal locked.'),
         TransferBetweenAccountsError => localize('Transfers between accounts are not available for your account.'),
@@ -105,19 +106,19 @@ my %category_message_mapping = do {
         MT5DepositLocked => localize('You cannot make a deposit because your MT5 account is disabled. Please contact our Customer Support team.'),
         TransferBetweenDifferentCurrencies =>
             localize('Your account currencies need to be the same. Please choose accounts with matching currencies and try again.'),
-        PasswordError        => localize('That password is incorrect. Please try again.'),
-        PasswordReset        => localize('Please reset your password to continue.'),
-        AccountTypesMismatch => localize('Transfer between real and virtual accounts is not allowed.'),
-        Deprecated           => localize('This API is deprecated.'),
-        InvalidAccountRegion => localize('Sorry, account opening is unavailable in your region.'),
-        ExpiredDocumentsMT5  => localize(
+        PasswordError         => localize('That password is incorrect. Please try again.'),
+        PasswordReset         => localize('Please reset your password to continue.'),
+        AccountTypesMismatch  => localize('Transfer between real and virtual accounts is not allowed.'),
+        InvalidVirtualAccount => localize('Virtual transfers are only possible between wallet and other account types.'),
+        Deprecated            => localize('This API is deprecated.'),
+        InvalidAccountRegion  => localize('Sorry, account opening is unavailable in your region.'),
+        ExpiredDocumentsMT5   => localize(
             'Your identity documents have expired. Visit your account profile to submit your valid documents and create your MT5 Financial STP account.'
         ),
         NewAccountPOAFailed   => localize('Failed to create account due to failed Proof of Address with status: [_1]'),
         POAVerificationFailed => localize('Proof of Address verification failed. Withdrawal operation suspended.'),
         ProofRequirementError => localize('Proof of Identity or Address requirements not met. Operation rejected.'),
         AccountShouldBeReal   => localize('Only real accounts are allowed to open [_1] real accounts'),
-        IncompatibleMt5ToMt5  => localize('Transfer between two MT5 accounts is not allowed.'),
         MT5TransferSuspension => localize('We are still processing your deposit. Please try again later'),
 
         # Deriv EZ error codes
@@ -173,11 +174,8 @@ sub format_error {
     }
 
     $options //= {};
-    my $message = $category_message_mapping{$error_code} // $options->{message} // BOM::Platform::Utility::error_map()->{$error_code}
-        // $category_message_mapping{'General'};
-
-    $options->{params} = delete $options->{message_params} if $options->{message_params};    # rule engine error
-    my @params = ref $options->{params} eq 'ARRAY' ? @{$options->{params}} : ($options->{params});
+    my $message = $category_message_mapping{$error_code} // $options->{message} // $category_message_mapping{'General'};
+    my @params  = ref $options->{params} eq 'ARRAY' ? @{$options->{params}} : ($options->{params});
     $message = localize($message, @params);
 
     $error_code = $options->{override_code} if $options->{override_code};

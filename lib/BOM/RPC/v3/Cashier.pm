@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use HTML::Entities;
-use List::Util   qw( min first any max );
+use List::Util   qw( min first any );
 use Scalar::Util qw( looks_like_number );
 use Data::UUID;
 use Path::Tiny;
@@ -64,6 +64,7 @@ use Log::Any qw($log);
 use constant {
     MAX_DESCRIPTION_LENGTH           => 250,
     HANDOFF_TOKEN_TTL                => 5 * 60,
+    TRANSFER_OVERRIDE_ERROR_CODES    => [qw(FinancialAssessmentRequired)],
     CRYPTO_CONFIG_RPC_REDIS          => "rpc::cryptocurrency::crypto_config",
     CRYPTO_ESTIMATIONS_RPC_CACHE     => "rpc::cryptocurrency::crypto_estimations",
     CRYPTO_ESTIMATIONS_RPC_CACHE_TTL => 5,
@@ -73,10 +74,7 @@ use constant {
     PA_JUSTIFICATION_PREFIX          => 'PA_WITHDRAW_JUSTIFICATION_SUBMIT::',
     PA_JUSTIFICATION_TTL             => 60 * 60 * 24,                                # 24 hours in sec
     CTRADER                          => 'ctrader',
-    TRANSFER_OVERRIDE_ERROR_CODES    => [
-        qw(FinancialAssessmentRequired TransferBlockedWalletNotLinked TransferBlockedWalletWithdrawal TransferBlockedWalletDeposit
-            TransferBlockedTradingAccounts TransferBlockedLegacy TransferBlockedClientIsVirtual RealToVirtualNotAllowed MaximumTransfers MaximumAmountTransfers
-        )]};
+};
 
 my $payment_limits = BOM::Config::payment_limits;
 
@@ -418,165 +416,124 @@ rpc get_limits => sub {
     my $params = shift;
 
     my $client = $params->{client};
-
-    my $limits     = {};
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-
-    if (!$client->is_virtual) {
-        my $landing_company = $client->landing_company->short;
-        my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
-
-        $limits->{account_balance} = formatnumber('amount', $currency, $client->get_limit_for_account_balance);
-        $limits->{payout}          = formatnumber('price',  $currency, $client->get_limit_for_payout);
-        $limits->{open_positions}  = $client->get_limit_for_open_positions;
-
-        # Returns account balance as null when unlimited account is configured and amount is zero
-        $limits->{account_balance} = undef
-            if $client->landing_company->unlimited_balance
-            && $limits->{account_balance} == 0;
-
-        my $market_specifics = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
-        for my $market (values %$market_specifics) {
-            $_->{name} = localize($_->{name}) for @$market;
-        }
-        $limits->{market_specific} = $market_specifics;
-
-        my $numdays               = $wl_config->{for_days};
-        my $numdayslimit          = $wl_config->{limit_for_days};
-        my $lifetimelimit         = $wl_config->{lifetime_limit};
-        my $withdrawal_limit_curr = $wl_config->{currency};
-
-        if ($client->fully_authenticated or $client->landing_company->skip_authentication) {
-            $numdayslimit  = $wl_config->{limit_for_days_for_authenticated};
-            $lifetimelimit = $wl_config->{lifetime_limit_for_authenticated};
-        }
-
-        $limits->{num_of_days}       = $numdays;
-        $limits->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
-        $limits->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
-
-        # Withdrawal since $numdays
-        my $payment_mapper        = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
-        my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
-            start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
-            exclude    => ['currency_conversion_transfer', 'account_transfer'],
-        });
-        $withdrawal_for_x_days = convert_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
-
-        # withdrawal since inception
-        my $withdrawal_since_inception =
-            convert_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer', 'account_transfer']}),
-            $currency, $withdrawal_limit_curr);
-
-        my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
-        if ($remainder <= 0) {
-            $remainder = 0;
-            BOM::Platform::Event::Emitter::emit('withdrawal_limit_reached', {loginid => $client->loginid});
-        }
-
-        $limits->{withdrawal_since_inception_monetary} =
-            formatnumber('price', $currency, convert_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
-        $limits->{withdrawal_for_x_days_monetary} =
-            formatnumber('price', $currency, convert_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
-        $limits->{remainder} = formatnumber('price', $currency, convert_currency($remainder, $withdrawal_limit_curr, $currency));
+    if ($client->is_virtual) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'FeatureNotAvailable',
+                message_to_client => localize('Sorry, this feature is not available.')});
     }
 
-    my $wallet_loginid = $client->user->loginid_details->{$client->loginid}{wallet_loginid};
+    my $landing_company = LandingCompany::Registry->by_broker($client->broker)->short;
+    my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
+
+    my $limit = +{
+        account_balance => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
+        payout          => formatnumber('price',  $currency, $client->get_limit_for_payout),
+        open_positions  => $client->get_limit_for_open_positions,
+    };
+
+    # Returns account balance as null when unlimited account is configured and amount is zero
+    $limit->{account_balance} = undef
+        if $client->landing_company->unlimited_balance
+        && $limit->{account_balance} == 0;
+
+    my $market_specifics = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
+    for my $limits (values %$market_specifics) {
+        for my $market (@$limits) {
+            $market->{name} = localize($market->{name});
+        }
+    }
+    $limit->{market_specific} = $market_specifics;
+
+    my $numdays               = $wl_config->{for_days};
+    my $numdayslimit          = $wl_config->{limit_for_days};
+    my $lifetimelimit         = $wl_config->{lifetime_limit};
+    my $withdrawal_limit_curr = $wl_config->{currency};
+
+    if ($client->fully_authenticated or $client->landing_company->skip_authentication) {
+        $numdayslimit  = $wl_config->{limit_for_days_for_authenticated};
+        $lifetimelimit = $wl_config->{lifetime_limit_for_authenticated};
+    }
+
+    $limit->{num_of_days}       = $numdays;
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
+    $limit->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
+
+    # Withdrawal since $numdays
+    my $payment_mapper        = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
+    my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
+        start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
+        exclude    => ['currency_conversion_transfer', 'account_transfer'],
+    });
+    $withdrawal_for_x_days = convert_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
+
+    # withdrawal since inception
+    my $withdrawal_since_inception =
+        convert_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer', 'account_transfer']}),
+        $currency, $withdrawal_limit_curr);
+
+    my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
+    if ($remainder <= 0) {
+        $remainder = 0;
+        BOM::Platform::Event::Emitter::emit('withdrawal_limit_reached', {loginid => $client->loginid});
+    }
+
+    $limit->{withdrawal_since_inception_monetary} =
+        formatnumber('price', $currency, convert_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
+    $limit->{withdrawal_for_x_days_monetary} =
+        formatnumber('price', $currency, convert_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
+    $limit->{remainder} = formatnumber('price', $currency, convert_currency($remainder, $withdrawal_limit_curr, $currency));
 
     # also add Daily Transfer Limits
-    return $limits unless $client->default_account;
-    my %limits_config;
-
-    if (!$client->is_virtual) {
-        # skip linked dtrade accounts
-        if (!$wallet_loginid) {
-            $limits_config{internal} = {
-                config => 'between_accounts',
-                type   => 'internal',
-            };
-            $limits_config{mt5} = {
-                config => 'MT5',
-                type   => 'MT5',
-            };
-            $limits_config{dxtrade} = {
-                config => 'dxtrade',
-                type   => 'dxtrade',
-            };
-            $limits_config{derivez} = {
-                config => 'derivez',
-                type   => 'derivez',
-            };
-            $limits_config{ctrader} = {
-                config => 'ctrader',
-                type   => 'ctrader',
-            };
-
-            if ($client->is_wallet) {
-                $limits_config{wallets} = {
-                    config => 'between_wallets',
-                    type   => 'wallet'
-                };
-            }
-        }
-
-        if (!$client->is_legacy) {
-            $limits_config{dtrade} = {
-                config => 'dtrade',
-                type   => 'dtrade',
-            };
-        }
-    } elsif ($client->is_wallet) {
-        $limits_config{virtual} = {
-            config => 'virtual',
-            type   => 'virtual',
+    if (defined $client->default_account) {
+        my $daily_transfer_limits = {
+            internal => {
+                config  => 'between_accounts',
+                counter => undef,
+            },
+            mt5 => {
+                config  => 'MT5',
+                counter => 'MT5',
+            },
+            dxtrade => {
+                config  => DXTRADE,
+                counter => DXTRADE,
+            },
+            derivez => {
+                config  => DERIVEZ,
+                counter => DERIVEZ,
+            },
+            ctrader => {
+                config  => CTRADER,
+                counter => CTRADER,
+            },
         };
-    }
+        my $is_daily_cumulative_limit_enabled =
+            BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
+        $limit->{daily_cumulative_amount_transfers}->{enabled} = $is_daily_cumulative_limit_enabled;
+        for my $transfer (keys $daily_transfer_limits->%*) {
+            my ($config, $counter) = @{$daily_transfer_limits->{$transfer}}{qw/config counter/};
+            my $transfers_limit   = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->$config;
+            my $transfers_counter = $client->user->daily_transfer_count($counter);
+            my $available         = $transfers_limit - $transfers_counter;
 
-    if (%limits_config) {
-        my $cumulative_limit_enabled = $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
-        $limits->{daily_cumulative_amount_transfers} = {
-            enabled => $cumulative_limit_enabled,
-        };
-        $limits->{daily_transfers} = {};
+            $limit->{daily_transfers}->{$transfer} = {
+                allowed   => $transfers_limit,
+                available => $available > 0 ? $available : 0,
+            };
 
-        for my $transfer (keys %limits_config) {
-            my ($config, $type) = $limits_config{$transfer}->@{qw/config type/};
+            my $transfers_amount_limit =
+                BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->$config // 0;
 
-            my $identifier =
-                  $type !~ /^(virtual|internal|wallet)$/ && ($client->is_wallet || $wallet_loginid)
-                ? $wallet_loginid // $client->loginid
-                : $client->user->id;
-
-            my $count_limit = $app_config->payments->transfer_between_accounts->limits->$config;
-            if ($count_limit > 0) {
-                next unless $count_limit > 0;
-                my $today_count = $client->user->daily_transfer_count(
-                    type       => $type,
-                    identifier => $identifier
-                );
-                my $available = $count_limit - $today_count;
-                $limits->{daily_transfers}->{$transfer} = {
-                    allowed   => $count_limit,
-                    available => max($available, 0),
-                };
-            }
-
-            my $amount_limit = $app_config->payments->transfer_between_accounts->daily_cumulative_limit->$config;
-            if ($amount_limit > 0) {
-                my $today_amount = $client->user->daily_transfer_amount(
-                    type       => $type,
-                    identifier => $identifier
-                );
-                my $available = $amount_limit - $today_amount;
-                $limits->{daily_cumulative_amount_transfers}->{$transfer} = {
-                    allowed   => financialrounding('amount', 'USD', $amount_limit),
-                    available => financialrounding('amount', 'USD', max($available, 0)),
-                };
-            }
+            next if $transfers_amount_limit < 0;
+            my $transfers_amount = $client->user->daily_transfer_amount($counter);
+            my $available_amount = $transfers_amount_limit - $transfers_amount;
+            $limit->{daily_cumulative_amount_transfers}->{$transfer} = {
+                allowed   => $transfers_amount_limit,
+                available => $available_amount > 0 ? $available_amount : 0,
+            };
         }
     }
-
-    return $limits;
+    return $limit;
 };
 
 rpc "paymentagent_list",
@@ -1300,77 +1257,210 @@ rpc transfer_between_accounts => sub {
     my $params = shift;
     my ($client, $source, $token) = @{$params}{qw/client source token/};
     my $token_type = $params->{token_type} // '';
+    my $lc_short   = $client->landing_company->short;
 
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
-    my $status = $client->status;
-    my $user   = $client->user;
-
+    my $status                = $client->status;
     my $transfers_blocked_err = localize("Transfers are not allowed for these accounts.");
 
     my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
+
+    # retrieve disabled accounts just in order to return relevant error messages for them
+    my $siblings = $client->get_siblings_information(include_disabled => 1);
 
     if (BOM::Config::CurrencyConfig::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    my %siblings;
-    for my $sibling ($user->get_siblings_for_transfer($client)) {
-        my $acc = $sibling->default_account;
-        $siblings{$sibling->loginid} = {
-            loginid          => $sibling->loginid,
-            currency         => $acc ? $acc->currency_code()                                        : '',
-            balance          => $acc ? formatnumber('amount', $acc->currency_code(), $acc->balance) : '0.00',
-            demo_account     => $sibling->is_virtual,
-            account_type     => $sibling->get_account_type->name,
-            account_category => $sibling->get_account_type->category->name,
-            transfers        => $sibling->is_virtual && $sibling->is_legacy ? 'none' : $sibling->get_account_type->transfers,
-        };
-    }
-
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
-        my $include_mt5 = ($args->{accounts} // '') eq 'all' && !BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all;
+        my @available_siblings_for_transfer =
+            grep { !$_->{disabled} && $_->{demo_account} == $client->is_virtual && $lc_short eq $_->{landing_company_name} } values %$siblings;
+
+        @available_siblings_for_transfer = map { $_->{account_type} = delete $_->{category}; $_ } map {
+            { $_->%{qw/loginid balance account_type currency demo_account category/} }
+        } @available_siblings_for_transfer;
+
+        if (($args->{accounts} // '') eq 'all' and not(BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all)) {
+            my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->else(sub { return Future->done(); })->get;
+            for my $mt5_acc (grep { not $_->{error} } @mt5_accounts) {
+                my $is_demo = ($mt5_acc->{account_type} eq 'demo') ? 1 : 0;
+                next unless $client->is_virtual == $is_demo;
+
+                # We only should show mt5 account, that can be deposited from current account.
+                my $mt_lc = LandingCompany::Registry->by_name($mt5_acc->{landing_company_short});
+                next unless grep { $lc_short eq $_ } $mt_lc->mt5_require_deriv_account_at->@*;
+
+                push @available_siblings_for_transfer,
+                    {
+                    loginid      => $mt5_acc->{login},
+                    balance      => $mt5_acc->{display_balance},
+                    account_type => MT5,
+                    mt5_group    => $mt5_acc->{group},
+                    currency     => $mt5_acc->{currency},
+                    demo_account => ($mt5_acc->{account_type} eq 'demo') ? 1 : 0,
+                    status       => $mt5_acc->{status},
+                    }
+                    unless any { ($mt5_acc->{status} // '') eq $_ } qw/proof_failed verification_pending/;
+            }
+        }
+
+        my $dxtrade = BOM::TradingPlatform->new(
+            platform => DXTRADE,
+            client   => $client,
+        );
+        my @dxtrade_accounts = $dxtrade->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
+
+        for my $dxtrade_account (@dxtrade_accounts) {
+            next unless $dxtrade_account->{enabled};
+            next unless $dxtrade_account->{landing_company_short} eq $lc_short;
+            push @available_siblings_for_transfer,
+                {
+                loginid      => $dxtrade_account->{account_id},
+                balance      => $dxtrade_account->{display_balance},
+                account_type => DXTRADE,
+                market_type  => $dxtrade_account->{market_type},
+                currency     => $dxtrade_account->{currency},
+                demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
+                };
+
+        }
+
+        my $derivez = BOM::TradingPlatform->new(
+            platform => DERIVEZ,
+            client   => $client,
+        );
+        my @derivez_accounts = $derivez->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
+        for my $derivez_account (grep { not $_->{error} } @derivez_accounts) {
+            next unless $derivez_account->{landing_company_short} eq $lc_short;
+            push @available_siblings_for_transfer,
+                {
+                loginid       => $derivez_account->{login},
+                balance       => $derivez_account->{display_balance},
+                account_type  => DERIVEZ,
+                derivez_group => $derivez_account->{group},
+                currency      => $derivez_account->{currency},
+                demo_account  => ($derivez_account->{account_type} eq 'demo') ? 1 : 0,
+                status        => $derivez_account->{status},
+                };
+        }
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform => CTRADER,
+            client   => $client,
+        );
+        my @ctrader_accounts = $ctrader->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
+        for my $ctrader_account (@ctrader_accounts) {
+            next unless $ctrader_account->{landing_company_short} eq $lc_short;
+            push @available_siblings_for_transfer,
+                {
+                loginid      => $ctrader_account->{account_id},
+                balance      => $ctrader_account->{display_balance},
+                account_type => CTRADER,
+                currency     => $ctrader_account->{currency},
+                demo_account => ($ctrader_account->{account_type} eq 'demo') ? 1 : 0,
+                };
+        }
 
         return {
             status   => 0,
-            accounts => _get_transferable_accounts($client, $user, \%siblings, $include_mt5),
+            accounts => \@available_siblings_for_transfer
         };
     }
 
-    my $from_details = $user->loginid_details->{$loginid_from}
-        or return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('You are not allowed to transfer from this account.')});
+    my @mt5_logins          = $client->user->get_mt5_loginids();
+    my $is_mt5_loginid_from = any { $loginid_from eq $_ } @mt5_logins;
+    my $is_mt5_loginid_to   = any { $loginid_to eq $_ } @mt5_logins;
 
-    my $to_details = $user->loginid_details->{$loginid_to}
-        or return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('You are not allowed to transfer to this account.')});
+    my %loginid_details = $client->user->loginid_details->%*;
+    my @dxtrade_loginids =
+        grep { ($loginid_details{$_}->{platform} // '') eq DXTRADE and $loginid_details{$_}->{account_type} eq 'real' } keys %loginid_details;
+    my $is_dxtrade_loginid_from = any { $loginid_from eq $_ } @dxtrade_loginids;
+    my $is_dxtrade_loginid_to   = any { $loginid_to eq $_ } @dxtrade_loginids;
 
-    my ($client_from, $client_to);
+    my @derivez_logins          = $client->user->get_derivez_loginids();
+    my $is_derivez_loginid_from = any { $loginid_from eq $_ } @derivez_logins;
+    my $is_derivez_loginid_to   = any { $loginid_to eq $_ } @derivez_logins;
+
+    my @ctrader_logins          = $client->user->get_ctrader_loginids();
+    my $is_ctrader_loginid_from = any { $loginid_from eq $_ } @ctrader_logins;
+    my $is_ctrader_loginid_to   = any { $loginid_to eq $_ } @ctrader_logins;
+
+    # create client from siblings so that we are sure that from and to loginid
+    # provided are for same user
+    my ($client_from, $client_to, $res);
+
     try {
-        $client_from = BOM::User::Client->get_client_instance($loginid_from, 'write') unless $from_details->{is_external};
-        $client_to   = BOM::User::Client->get_client_instance($loginid_to,   'write') unless $to_details->{is_external};
+        $client_from = BOM::User::Client->get_client_instance($siblings->{$loginid_from}->{loginid}, 'write')
+            if $siblings->{$loginid_from};
+        $client_to = BOM::User::Client->get_client_instance($siblings->{$loginid_to}->{loginid}, 'write')
+            if $siblings->{$loginid_to};
     } catch {
         log_exception();
-        return _transfer_between_accounts_error();
+        $res = _transfer_between_accounts_error();
+    }
+    return $res if $res;
+
+    # Both $loginid_from and $loginid_to must be either a real or a MT5 account
+    # Unfortunately demo MT5 accounts will slip through this check, but they will
+    # be caught in one of the BOM::RPC::v3::MT5::Account functions
+    my $account_type_from;
+    if ($is_mt5_loginid_from) {
+        $account_type_from = MT5;
+    } elsif ($is_dxtrade_loginid_from) {
+        $account_type_from = DXTRADE;
+    } elsif ($is_derivez_loginid_from) {
+        $account_type_from = DERIVEZ;
+    } elsif ($is_ctrader_loginid_from) {
+        $account_type_from = CTRADER;
+    } elsif ($client_from) {
+        $account_type_from = $client_from->is_wallet ? 'wallet' : 'trading';
+    } else {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("You are not allowed to transfer from this account.")});
     }
 
-    my $rule_engine = BOM::Rules::Engine->new(
-        client => [$client, $client_from // (), $client_to // ()],
-        user   => $user
-    );
+    my $account_type_to;
+    if ($is_mt5_loginid_to) {
+        $account_type_to = MT5;
+    } elsif ($is_dxtrade_loginid_to) {
+        $account_type_to = DXTRADE;
+    } elsif ($is_derivez_loginid_to) {
+        $account_type_to = DERIVEZ;
+    } elsif ($is_ctrader_loginid_to) {
+        $account_type_to = CTRADER;
+    } elsif ($client_to) {
+        $account_type_to = $client_to->is_wallet ? 'wallet' : 'trading';
+    } else {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("You are not allowed to transfer to this account.")});
+    }
+
+    my $is_internal_transfer =
+        !( $is_mt5_loginid_from
+        || $is_mt5_loginid_to
+        || $is_dxtrade_loginid_to
+        || $is_dxtrade_loginid_from
+        || $is_derivez_loginid_to
+        || $is_derivez_loginid_from
+        || $is_ctrader_loginid_to
+        || $is_ctrader_loginid_from);
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
     try {
         $rule_engine->verify_action(
             'transfer_between_accounts',
-            loginid          => $client->loginid,
-            loginid_from     => $loginid_from,
-            from_is_external => $from_details->{is_external},
-            loginid_to       => $loginid_to,
-            to_is_external   => $to_details->{is_external},
-            amount           => $amount,
-            currency         => $currency,
+            loginid              => $client->loginid,
+            loginid_from         => $loginid_from,
+            loginid_to           => $loginid_to,
+            account_type_from    => $account_type_from,
+            account_type_to      => $account_type_to,
+            amount               => $amount,
+            currency             => $currency,
+            token_type           => $token_type,
+            is_internal_transfer => $is_internal_transfer
         );
     } catch ($e) {
         if (ref $e eq 'HASH' && $e->{error_code}) {
@@ -1388,51 +1478,59 @@ rpc transfer_between_accounts => sub {
         return BOM::RPC::v3::Utility::rule_engine_error($e);
     }
 
-    $params->{user} = $user;    # for passing to RPC methods to prevent re-initialization
-
-    # MT5
-
-    if (any { $_->{platform} eq 'mt5' } ($from_details, $to_details)) {
+    # this transfer involves an MT5 account
+    if ($is_mt5_loginid_from or $is_mt5_loginid_to) {
         delete @{$params->{args}}{qw/account_from account_to/};
 
         my ($method, $binary_login, $mt5_login);
 
-        if ($to_details->{platform} eq 'mt5') {
+        if ($is_mt5_loginid_to) {
             return _transfer_between_accounts_error(localize("You can only transfer from the current authorized client's account."))
                 unless ($client->loginid eq $loginid_from)
                 or $token_type eq 'oauth_token'
-                or $client->is_virtual;
+                or $client_from->is_virtual;
+
+            return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
+                if ($siblings->{$loginid_from}->{currency} ne $currency);
 
             $method                             = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
             $params->{args}{from_binary}        = $binary_login = $loginid_from;
             $params->{args}{to_mt5}             = $mt5_login    = $loginid_to;
-            $params->{args}{currency}           = $currency;
-            $params->{args}{return_mt5_details} = 1;           # to get MT5 account holder name
-        } elsif ($from_details->{platform} eq 'mt5') {
+            $params->{args}{return_mt5_details} = 1;    # to get MT5 account holder name
+        }
+
+        if ($is_mt5_loginid_from) {
+
             return _transfer_between_accounts_error(localize("You can only transfer to the current authorized client's account."))
                 unless ($client->loginid eq $loginid_to)
-                or $token_type eq 'oauth_token'
-                or $client->is_virtual;
+                or $token_type eq 'oauth_token',
+                or $client_to->is_virtual;
 
-            $method                    = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
-            $params->{args}{to_binary} = $binary_login = $loginid_to;
-            $params->{args}{from_mt5}  = $mt5_login    = $loginid_from;
-            $params->{args}{currency}  = $currency;
+            $method                         = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
+            $params->{args}{to_binary}      = $binary_login = $loginid_to;
+            $params->{args}{from_mt5}       = $mt5_login    = $loginid_from;
+            $params->{args}{currency_check} = $currency;    # this makes mt5_withdrawal() check that MT5 account currency matches $currency
         }
 
         return $method->($params)->then(
             sub {
                 my $resp = shift;
-
                 return Future->done(_transfer_between_accounts_error($resp->{error}{message_to_client})) if ($resp->{error});
 
                 my $mt5_data = delete $resp->{mt5_data};
                 $resp->{transaction_id}      = delete $resp->{binary_transaction_id};
                 $resp->{client_to_loginid}   = $loginid_to;
-                $resp->{client_to_full_name} = $to_details->{platform} eq 'mt5' ? $mt5_data->{name} : $client->full_name;
+                $resp->{client_to_full_name} = $is_mt5_loginid_to ? $mt5_data->{name} : $client->full_name;
 
                 my $binary_client = BOM::User::Client->get_client_instance($binary_login);
-                push $resp->{accounts}->@*, {$siblings{$binary_login}->%*, balance => $binary_client->default_account->balance};
+                push @{$resp->{accounts}},
+                    {
+                    loginid      => $binary_login,
+                    balance      => $binary_client->default_account->balance,
+                    currency     => $binary_client->default_account->currency_code,
+                    account_type => $binary_client->get_account_type->category->name,
+                    demo_account => $binary_client->is_virtual,
+                    };
 
                 BOM::RPC::v3::MT5::Account::mt5_get_settings({
                         client => $client,
@@ -1440,16 +1538,14 @@ rpc transfer_between_accounts => sub {
                 )->then(
                     sub {
                         my ($setting) = @_;
-                        push $resp->{accounts}->@*,
+                        push @{$resp->{accounts}},
                             {
-                            loginid          => $mt5_login,
-                            balance          => $setting->{display_balance},
-                            currency         => $setting->{currency},
-                            account_type     => MT5,
-                            account_category => 'trading',
-                            mt5_group        => $setting->{group},
-                            demo_account     => ($setting->{group} =~ qr/demo/ ? 1 : 0),
-                            transfers        => 'all',
+                            loginid      => $mt5_login,
+                            balance      => $setting->{display_balance},
+                            currency     => $setting->{currency},
+                            account_type => MT5,
+                            mt5_group    => $setting->{group},
+                            demo_account => ($setting->{group} =~ qr/demo/ ? 1 : 0),
                             }
                             unless $setting->{error};
                         return Future->done($resp);
@@ -1463,100 +1559,96 @@ rpc transfer_between_accounts => sub {
             })->get;
     }
 
-    # DXTrade
-
-    if (any { $_->{platform} eq 'dxtrade' } ($from_details, $to_details)) {
+    if ($is_dxtrade_loginid_to or $is_dxtrade_loginid_from) {
         $params->{args}->@{qw/from_account to_account/} = delete $params->{args}->@{qw/account_from account_to/};
         $params->{args}{platform} = DXTRADE;
     }
 
-    if ($to_details->{platform} eq 'dxtrade') {
+    if ($is_dxtrade_loginid_to) {
         my $deposit = BOM::RPC::v3::Trading::deposit($params);
         return $deposit if $deposit->{error};
 
         # This endpoint schema expects synthetic or financial (not gaming)
         my $market_type = $deposit->{market_type};
         $market_type = 'synthetic' if $market_type eq 'gaming';
-        my $from_client = BOM::User::Client->get_client_instance($loginid_from);
-        $siblings{$loginid_from}->{balance} = $from_client->account->balance;
 
         return {
             status   => 1,
-            accounts => [
-                $siblings{$loginid_from},
+            accounts => [{
+                    loginid      => $loginid_from,
+                    balance      => $client_from->account->balance,
+                    currency     => $client_from->account->currency_code,
+                    account_type => $client_from->get_account_type->category->name,
+                },
                 {
-                    loginid          => $loginid_to,
-                    balance          => $deposit->{balance},
-                    currency         => $deposit->{currency},
-                    account_type     => DXTRADE,
-                    account_category => 'trading',
-                    market_type      => $market_type,
-                    transfers        => 'all',
-                    demo_account     => $to_details->{is_virtual},
+                    loginid      => $loginid_to,
+                    balance      => $deposit->{balance},
+                    currency     => $deposit->{currency},
+                    account_type => DXTRADE,
+                    market_type  => $market_type,
                 },
             ]};
     }
 
-    if ($from_details->{platform} eq 'dxtrade') {
+    if ($is_dxtrade_loginid_from) {
         my $withdrawal = BOM::RPC::v3::Trading::withdrawal($params);
         return $withdrawal if $withdrawal->{error};
 
         my $to_client = BOM::User::Client->get_client_instance($loginid_to);
-        $siblings{$loginid_to}->{balance} = $to_client->account->balance;
-
         # This endpoint schema expects synthetic or financial (not gaming)
         my $market_type = $withdrawal->{market_type};
         $market_type = 'synthetic' if $market_type eq 'gaming';
 
         return {
             status   => 1,
-            accounts => [
-                $siblings{$loginid_to},
+            accounts => [{
+                    loginid      => $loginid_to,
+                    balance      => $to_client->account->balance,
+                    currency     => $to_client->account->currency_code,
+                    account_type => $to_client->get_account_type->category->name,
+                },
                 {
-                    loginid          => $loginid_from,
-                    balance          => $withdrawal->{balance},
-                    currency         => $withdrawal->{currency},
-                    account_type     => DXTRADE,
-                    account_category => 'trading',
-                    market_type      => $market_type,
-                    transfers        => 'all',
-                    demo_account     => $from_details->{is_virtual},
+                    loginid      => $loginid_from,
+                    balance      => $withdrawal->{balance},
+                    currency     => $withdrawal->{currency},
+                    account_type => DXTRADE,
+                    market_type  => $market_type,
                 },
             ]};
     }
 
-    # DerivEZ
-
-    if (any { $_->{platform} eq 'derivez' } ($from_details, $to_details)) {
+    # this transfer involves an Derivez account
+    if ($is_derivez_loginid_from or $is_derivez_loginid_to) {
         my ($method, $binary_login, $derivez_login);
 
         my $resp = {};
-
-        if ($to_details->{platform} eq 'derivez') {
+        if ($is_derivez_loginid_to) {
             return _transfer_between_accounts_error(localize("You can only transfer from the current authorized client's account."))
                 unless ($client->loginid eq $loginid_from)
                 or $token_type eq 'oauth_token'
-                or $client->is_virtual;
+                or $client_from->is_virtual;
+
+            return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
+                if ($siblings->{$loginid_from}->{currency} ne $currency);
 
             $method                                 = \&BOM::RPC::v3::Trading::deposit;
             $params->{args}{from_account}           = $binary_login  = $loginid_from;
             $params->{args}{to_account}             = $derivez_login = $loginid_to;
             $params->{args}{platform}               = DERIVEZ;
-            $params->{args}{currency}               = $currency;
-            $params->{args}{return_derivez_details} = 1;           # to get derivez account holder name
+            $params->{args}{return_derivez_details} = 1;         # to get derivez account holder name
         }
 
-        if ($from_details->{platform} eq 'derivez') {
+        if ($is_derivez_loginid_from) {
             return _transfer_between_accounts_error(localize("You can only transfer to the current authorized client's account."))
                 unless ($client->loginid eq $loginid_to)
                 or $token_type eq 'oauth_token'
-                or $client->is_virtual;
+                or $client_to->is_virtual;
 
-            $method                       = \&BOM::RPC::v3::Trading::withdrawal;
-            $params->{args}{from_account} = $derivez_login = $loginid_from;
-            $params->{args}{to_account}   = $binary_login  = $loginid_to;
-            $params->{args}{platform}     = DERIVEZ;
-            $params->{args}{currency}     = $currency;
+            $method                         = \&BOM::RPC::v3::Trading::withdrawal;
+            $params->{args}{from_account}   = $derivez_login = $loginid_from;
+            $params->{args}{to_account}     = $binary_login  = $loginid_to;
+            $params->{args}{platform}       = DERIVEZ;
+            $params->{args}{currency_check} = $currency;    # Check that derivez account currency matches $currency
         }
 
         # Making deposit or withdrawal request
@@ -1571,21 +1663,26 @@ rpc transfer_between_accounts => sub {
         $resp->{client_to_full_name} = $client->full_name;
 
         my $binary_client = BOM::User::Client->get_client_instance($binary_login);
-        push $resp->{accounts}->@*, {$siblings{$binary_login}->%*, balance => $binary_client->default_account->balance};
+        push @{$resp->{accounts}},
+            {
+            loginid      => $binary_login,
+            balance      => $binary_client->default_account->balance,
+            currency     => $binary_client->default_account->currency_code,
+            account_type => $binary_client->get_account_type->category->name,
+            demo_account => $binary_client->is_virtual,
+            };
 
         return BOM::TradingPlatform::Helper::HelperDerivEZ::_get_settings($client, $derivez_login)->then(
             sub {
                 my ($setting) = @_;
-                push $resp->{accounts}->@*,
+                push @{$resp->{accounts}},
                     {
-                    loginid          => $derivez_login,
-                    balance          => $setting->{display_balance},
-                    currency         => $setting->{currency},
-                    account_type     => DERIVEZ,
-                    account_category => 'trading',
-                    derivez_group    => $setting->{group},
-                    demo_account     => ($setting->{group} =~ qr/demo/ ? 1 : 0),
-                    transfers        => 'all',
+                    loginid       => $derivez_login,
+                    balance       => $setting->{display_balance},
+                    currency      => $setting->{currency},
+                    account_type  => DERIVEZ,
+                    derivez_group => $setting->{group},
+                    demo_account  => ($setting->{group} =~ qr/demo/ ? 1 : 0),
                     }
                     unless $setting->{error};
                 $resp->{status} = 1;
@@ -1594,19 +1691,16 @@ rpc transfer_between_accounts => sub {
             })->get;
     }
 
-    # CTrader
+    # cTrader related - Start
 
-    if (any { $_->{platform} eq 'ctrader' } ($from_details, $to_details)) {
+    if ($is_ctrader_loginid_to or $is_ctrader_loginid_from) {
         $params->{args}->@{qw/from_account to_account/} = delete $params->{args}->@{qw/account_from account_to/};
         $params->{args}{platform} = CTRADER;
     }
 
-    if ($to_details->{platform} eq 'ctrader') {
+    if ($is_ctrader_loginid_to) {
         my $deposit = BOM::RPC::v3::Trading::deposit($params);
         return $deposit if $deposit->{error};
-
-        my $from_client = BOM::User::Client->get_client_instance($loginid_from);
-        $siblings{$loginid_from}->{balance} = $from_client->account->balance;
 
         # This endpoint schema expects synthetic or financial (not gaming)
         my $market_type = $deposit->{market_type};
@@ -1614,73 +1708,58 @@ rpc transfer_between_accounts => sub {
 
         return {
             status   => 1,
-            accounts => [
-                $siblings{$loginid_from},
+            accounts => [{
+                    loginid      => $loginid_from,
+                    balance      => $client_from->account->balance,
+                    currency     => $client_from->account->currency_code,
+                    account_type => $client_from->get_account_type->category->name,
+                },
                 {
-                    loginid          => $loginid_to,
-                    balance          => $deposit->{balance},
-                    currency         => $deposit->{currency},
-                    account_type     => CTRADER,
-                    account_category => 'trading',
-                    market_type      => $market_type,
-                    transfers        => 'all',
-                    demo_account     => $to_details->{is_virtual},
+                    loginid      => $loginid_to,
+                    balance      => $deposit->{balance},
+                    currency     => $deposit->{currency},
+                    account_type => CTRADER,
+                    market_type  => $market_type,
                 },
             ]};
     }
 
-    if ($from_details->{platform} eq 'ctrader') {
+    if ($is_ctrader_loginid_from) {
         my $withdrawal = BOM::RPC::v3::Trading::withdrawal($params);
         return $withdrawal if $withdrawal->{error};
 
         my $to_client = BOM::User::Client->get_client_instance($loginid_to);
-        $siblings{$loginid_to}->{balance} = $to_client->account->balance;
-
         # This endpoint schema expects synthetic or financial (not gaming)
         my $market_type = $withdrawal->{market_type};
         $market_type = 'synthetic' if $market_type eq 'gaming';
 
         return {
             status   => 1,
-            accounts => [
-                $siblings{$loginid_to},
+            accounts => [{
+                    loginid      => $loginid_to,
+                    balance      => $to_client->account->balance,
+                    currency     => $to_client->account->currency_code,
+                    account_type => $to_client->get_account_type->category->name,
+                },
                 {
-                    loginid          => $loginid_from,
-                    balance          => $withdrawal->{balance},
-                    currency         => $withdrawal->{currency},
-                    account_type     => CTRADER,
-                    account_category => 'trading',
-                    market_type      => $market_type,
-                    transfers        => 'all',
-                    demo_account     => $from_details->{is_virtual},
+                    loginid      => $loginid_from,
+                    balance      => $withdrawal->{balance},
+                    currency     => $withdrawal->{currency},
+                    account_type => CTRADER,
+                    market_type  => $market_type,
                 },
             ]};
     }
 
-    # Internal
+    # cTrader related - End
 
     my $err = validate_amount($amount, $currency);
     return _transfer_between_accounts_error($err) if $err;
 
-    my ($from_currency, $to_currency) = ($client_from->currency, $client_to->currency);
+    my ($from_currency, $to_currency) =
+        ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
 
-    try {
-        $rule_engine->verify_action(
-            'account_transfer',
-            transfer_type    => 'internal',
-            loginid          => $client->loginid,
-            loginid_from     => $loginid_from,
-            loginid_to       => $loginid_to,
-            amount           => $amount,
-            amount_currency  => $from_currency,
-            request_currency => $currency,
-            token_type       => $token_type,
-        );
-    } catch ($e) {
-        return BOM::RPC::v3::Utility::rule_engine_error($e);
-    }
-
-    my $res = _validate_transfer_between_accounts(
+    $res = _validate_transfer_between_accounts(
         $client,
         $client_from,
         $client_to,
@@ -1690,8 +1769,8 @@ rpc transfer_between_accounts => sub {
             from_currency => $from_currency,
             to_currency   => $to_currency,
         },
+        $token_type
     );
-
     return $res if $res;
 
     return _transfer_between_accounts_error(localize('This currency is temporarily suspended. Please select another currency to proceed.'))
@@ -1773,46 +1852,52 @@ rpc transfer_between_accounts => sub {
     }
 
     my $err_msg = "from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]";
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_from, $client_to]);
 
-    try {
-        $client_from->validate_payment(
-            currency     => $currency,
-            amount       => -1 * $amount,
-            payment_type => 'internal_transfer',
-            rule_engine  => $rule_engine,
-        );
-    } catch ($err) {
-        log_exception();
+    unless ($client_from->is_virtual) {
+        try {
+            $client_from->validate_payment(
+                currency     => $currency,
+                amount       => -1 * $amount,
+                payment_type => 'internal_transfer',
+                rule_engine  => $rule_engine,
+            );
+        } catch ($err) {
+            log_exception();
 
-        my $limit;
-        if ($err->{code} eq 'AmountExceedsBalance') {
-            my $currency = $err->{params}->[1];
-            my $balance  = $err->{params}->[2];
+            my $limit;
+            if ($err->{code} eq 'AmountExceedsBalance') {
+                my $currency = $err->{params}->[1];
+                my $balance  = $err->{params}->[2];
 
-            $limit = join ' ', $currency, $balance;
-        } elsif ($err->{code} eq 'AmountExceedsUnfrozenBalance') {
-            my $currency     = $err->{params}->[1];
-            my $balance      = $err->{params}->[2];
-            my $frozen_bonus = $err->{params}->[3];
+                $limit = join ' ', $currency, $balance;
+            } elsif ($err->{code} eq 'AmountExceedsUnfrozenBalance') {
+                my $currency     = $err->{params}->[1];
+                my $balance      = $err->{params}->[2];
+                my $frozen_bonus = $err->{params}->[3];
 
-            $limit = join ' ', $currency, $balance - $frozen_bonus;
+                $limit = join ' ', $currency, $balance - $frozen_bonus;
+            }
+
+            my $msg = (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : $err->{message_to_client};
+            return $error_audit_sub->("validate_payment failed for $loginid_from [$err]", $msg);
         }
-
-        my $msg = (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : $err->{message_to_client};
-        return $error_audit_sub->("validate_payment failed for $loginid_from [$err]", $msg);
     }
 
-    try {
-        $client_to->validate_payment(
-            currency     => $to_currency,
-            amount       => $to_amount,
-            payment_type => 'internal_transfer',
-            rule_engine  => $rule_engine,
-        );
-    } catch ($err) {
-        log_exception();
-        my $msg = $err->{message_to_client} || localize("Transfer validation failed on [_1].", $loginid_to);
-        return $error_audit_sub->("validate_payment failed for $loginid_to [$err]", $msg);
+    unless ($client_to->is_virtual) {
+        try {
+
+            $client_to->validate_payment(
+                currency     => $to_currency,
+                amount       => $to_amount,
+                payment_type => 'internal_transfer',
+                rule_engine  => $rule_engine,
+            );
+        } catch ($err) {
+            log_exception();
+            my $msg = $err->{message_to_client} || localize("Transfer validation failed on [_1].", $loginid_to);
+            return $error_audit_sub->("validate_payment failed for $loginid_to [$err]", $msg);
+        }
     }
 
     my $response;
@@ -1863,24 +1948,28 @@ rpc transfer_between_accounts => sub {
     }
     BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]", $loginid_from);
 
-    $client_from->user->daily_transfer_incr(
-        amount          => $amount,
-        amount_currency => $from_currency,
-        client_from     => $client_from,
-        client_to       => $client_to,
-    );
-
-    $siblings{$loginid_from}->{balance} = $client_from->default_account->balance;
-    $siblings{$loginid_to}->{balance}   = $client_to->default_account->balance;
+    $client_from->user->daily_transfer_incr({
+        amount   => $amount,
+        currency => $currency
+    });
 
     return {
         status              => 1,
         transaction_id      => $response->{transaction_id},
         client_to_full_name => $client_to->full_name,
         client_to_loginid   => $loginid_to,
-        accounts            => [$siblings{$loginid_from}, $siblings{$loginid_to}],
-    };
-
+        accounts            => [{
+                loginid      => $client_from->loginid,
+                balance      => $client_from->default_account->balance,
+                currency     => $client_from->default_account->currency_code,
+                account_type => $client_from->get_account_type->category->name,
+            },
+            {
+                loginid      => $client_to->loginid,
+                balance      => $client_to->default_account->balance,
+                currency     => $client_to->default_account->currency_code,
+                account_type => $client_to->get_account_type->category->name,
+            }]};
 };
 
 rpc topup_virtual => sub {
@@ -1942,8 +2031,26 @@ sub _validate_transfer_between_accounts {
         if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
         and (($from_currency_type // '') ne ($to_currency_type // ''));
 
-    # max amount is only validated when daily cumulative amount limits are disabled
-    unless (BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable) {
+    my $is_daily_cumulative_limit_enabled =
+        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
+    if ($is_daily_cumulative_limit_enabled) {
+        my $user_daily_transfer_amount = $current_client->user->daily_transfer_amount();
+        my $max_allowed_amount         = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{max};
+        return _transfer_between_accounts_error(
+            localize(
+                'The maximum amount of transfers is [_1] [_2] per day. Please try again tomorrow.',
+                formatnumber('amount', $currency, $max_allowed_amount), $currency
+            )) unless convert_currency($user_daily_transfer_amount, 'USD', $currency) + abs($amount) < $max_allowed_amount;
+
+    } else {
+
+        # check for internal transactions number limits
+        my $daily_transfer_limit = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
+        my $daily_transfer_count = $current_client->user->daily_transfer_count();
+        return _transfer_between_accounts_error(
+            localize("You can only perform up to [_1] transfers a day. Please try again tomorrow.", $daily_transfer_limit))
+            unless $daily_transfer_count < $daily_transfer_limit;
+
         my $max_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{max};
 
         return _transfer_between_accounts_error(
@@ -2003,135 +2110,6 @@ sub _validate_transfer_between_accounts {
     }
 
     return undef;
-}
-
-=head2 _get_transferable_accounts
-
-Generates the list of external accounts returned by transfer_between_accounts when no params are provided.
-
-Arguments:
-
-=over 4
-
-=item * C<client>
-
-=item * C<user> - to avoid reinstantiating via $client->user
-
-=item * C<siblings> - hashref of sibling account info
-
-=item * C<include_mt5> - mt5 accounts will be returned when true
-
-=back
-
-Returns $self
-
-=cut
-
-sub _get_transferable_accounts {
-    my ($client, $user, $siblings, $include_mt5) = @_;
-
-    my $demo_or_real = $client->is_virtual ? 'demo' : 'real';
-    my $lc_short     = $client->landing_company->short;
-    my @accounts     = values %$siblings;
-
-    # linked trading accounts can only transfer to linked wallet, VRTC can't tranfer to anything, so no need to query for further trading accounts.
-    return [sort { $a->{loginid} cmp $b->{loginid} } @accounts]
-        if ($client->get_account_type->category->name eq 'standard')
-        or ($client->is_virtual && $client->is_legacy);
-
-    if ($include_mt5) {
-        my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client, $demo_or_real)->else(sub { return Future->done(); })->get;
-
-        for my $mt5_acc (grep { not $_->{error} } @mt5_accounts) {
-
-            if ($mt5_acc->{account_type} ne 'demo') {
-                # We only should show mt5 account, that can be deposited from current account.
-                my $mt_lc = LandingCompany::Registry->by_name($mt5_acc->{landing_company_short});
-                next unless grep { $lc_short eq $_ } $mt_lc->mt5_require_deriv_account_at->@*;
-            }
-
-            push @accounts,
-                {
-                loginid          => $mt5_acc->{login},
-                balance          => $mt5_acc->{display_balance},
-                account_type     => MT5,
-                account_category => 'trading',
-                mt5_group        => $mt5_acc->{group},
-                currency         => $mt5_acc->{currency},
-                demo_account     => ($mt5_acc->{account_type} eq 'demo') ? 1 : 0,
-                status           => $mt5_acc->{status},
-                transfers        => 'all',
-                }
-                unless any { ($mt5_acc->{status} // '') eq $_ } qw/proof_failed verification_pending/;
-        }
-    }
-
-    my $dxtrade = BOM::TradingPlatform->new(
-        platform => DXTRADE,
-        client   => $client,
-        user     => $user,
-    );
-    my @dxtrade_accounts = $dxtrade->get_accounts(type => $demo_or_real)->@*;
-
-    for my $dxtrade_account (@dxtrade_accounts) {
-        next unless $dxtrade_account->{enabled};
-        next unless $dxtrade_account->{account_type} eq 'demo' or $dxtrade_account->{landing_company_short} eq $lc_short;
-        push @accounts,
-            {
-            loginid          => $dxtrade_account->{account_id},
-            balance          => $dxtrade_account->{display_balance},
-            account_type     => DXTRADE,
-            account_category => 'trading',
-            market_type      => $dxtrade_account->{market_type},
-            currency         => $dxtrade_account->{currency},
-            demo_account     => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
-            transfers        => 'all',
-            };
-
-    }
-
-    my $derivez = BOM::TradingPlatform->new(
-        platform => DERIVEZ,
-        client   => $client,
-    );
-    my @derivez_accounts = $derivez->get_accounts(type => $demo_or_real)->@*;
-    for my $derivez_account (grep { not $_->{error} } @derivez_accounts) {
-        next unless $derivez_account->{account_type} eq 'demo' or $derivez_account->{landing_company_short} eq $lc_short;
-        push @accounts,
-            {
-            loginid          => $derivez_account->{login},
-            balance          => $derivez_account->{display_balance},
-            account_type     => DERIVEZ,
-            account_category => 'trading',
-            derivez_group    => $derivez_account->{group},
-            currency         => $derivez_account->{currency},
-            demo_account     => ($derivez_account->{account_type} eq 'demo') ? 1 : 0,
-            status           => $derivez_account->{status},
-            transfers        => 'all',
-            };
-    }
-
-    my $ctrader = BOM::TradingPlatform->new(
-        platform => CTRADER,
-        client   => $client,
-        user     => $user,
-    );
-    my @ctrader_accounts = $ctrader->get_accounts(type => $demo_or_real)->@*;
-    for my $ctrader_account (@ctrader_accounts) {
-        next unless $ctrader_account->{account_type} eq 'demo' or $ctrader_account->{landing_company_short} eq $lc_short;
-        push @accounts,
-            {
-            loginid          => $ctrader_account->{account_id},
-            balance          => $ctrader_account->{display_balance},
-            account_type     => CTRADER,
-            account_category => 'trading',
-            currency         => $ctrader_account->{currency},
-            demo_account     => ($ctrader_account->{account_type} eq 'demo') ? 1 : 0,
-            transfers        => 'all',
-            };
-    }
-
-    return [sort { $a->{loginid} cmp $b->{loginid} } @accounts];
 }
 
 sub validate_amount {

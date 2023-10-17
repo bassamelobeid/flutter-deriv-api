@@ -210,14 +210,14 @@ subtest 'call params validation' => sub {
     is $result->{error}->{code},              'IncompatibleCurrencyType',       'Correct error code for invalid currency';
     is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for invalid currency code';
 
-    $params->{token_type}       = 'oauth_token';
+    $params->{token_type}       = 'api_token';
     $params->{args}->{currency} = 'EUR';
     $params->{token}            = BOM::Platform::Token::API->new->create_token($client_vr->loginid, _get_unique_display_name());
     $result                     = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->result;
     is_deeply $result->{error},
         {
-        code              => 'TransferBlockedClientIsVirtual',
-        message_to_client => 'The authorized account cannot be used to perform transfers.',
+        code              => 'AuthorizedClientIsVirtual',
+        message_to_client => 'You cannot transfer between real accounts because the authorized client is virtual.',
         },
         'Correct error for real transfer with a virtual token';
 
@@ -291,9 +291,8 @@ subtest 'validation' => sub {
     is $result->{error}->{message_to_client}, 'Account transfers are not available within same account.',
         'Correct error message if from and to are same';
 
-    $params->{token}                = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
     $params->{args}->{account_from} = $client_cr->loginid;
-    $params->{args}->{currency}     = $client_cr->currency;
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'IncompatibleLandingCompanies', 'Correct error code';
@@ -301,7 +300,6 @@ subtest 'validation' => sub {
         'Correct error message for different landing companies';
 
     $params->{args}->{account_from} = $client_mf->loginid;
-    $params->{args}->{currency}     = 'EUR';
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
@@ -310,18 +308,20 @@ subtest 'validation' => sub {
         'Correct error message for no default currency';
 
     $client_mf->set_default_account('EUR');
+
     $params->{args}->{currency} = 'BTC';
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'CurrencyShouldMatch', 'Currency does not match either account';
-    is $result->{error}->{message_to_client}, 'Currency provided is different from account currency.',
+    is $result->{error}->{code}, 'CurrencyMismatch', 'Correct error code for invalid currency for landing company';
+    is $result->{error}->{message_to_client}, 'Please ensure your trading account currency is the same as your wallet account currency.',
         'Correct error message for invalid currency for landing company';
 
     $params->{args}->{currency} = 'USD';
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code},              'CurrencyShouldMatch',                                   'Ccurrency does not match sending account';
-    is $result->{error}->{message_to_client}, 'Currency provided is different from account currency.', 'Correct error message';
+    is $result->{error}->{code}, 'CurrencyMismatch', 'Correct error code';
+    is $result->{error}->{message_to_client}, 'Please ensure your trading account currency is the same as your wallet account currency.',
+        'Correct error message';
 
     $params->{args}->{currency} = 'EUR';
 
@@ -437,22 +437,16 @@ subtest 'validation' => sub {
         'client_to_loginid'   => $cr_dummy->loginid,
         'client_to_full_name' => $cr_dummy->full_name,
         'accounts'            => bag({
-                'account_type'     => 'binary',
-                'account_category' => 'trading',
-                'loginid'          => $client_cr->loginid,
-                'balance'          => ignore(),
-                'currency'         => 'USD',
-                'transfers'        => 'all',
-                'demo_account'     => bool(0),
+                'account_type' => 'trading',
+                'loginid'      => $client_cr->loginid,
+                'balance'      => ignore(),
+                'currency'     => 'USD'
             },
             {
-                'currency'         => 'BTC',
-                'balance'          => ignore(),
-                'loginid'          => $cr_dummy->loginid,
-                'account_type'     => 'binary',
-                'account_category' => 'trading',
-                'transfers'        => 'all',
-                'demo_account'     => bool(0),
+                'currency'     => 'BTC',
+                'balance'      => ignore(),
+                'loginid'      => $cr_dummy->loginid,
+                'account_type' => 'trading'
             }
         ),
         'stash'          => ignore(),
@@ -578,22 +572,16 @@ subtest 'transfer_between_crypto_to_crypto_accounts' => sub {
             'client_to_loginid'   => $client_cr_ltc->loginid,
             'client_to_full_name' => $client_cr_ltc->full_name,
             'accounts'            => bag({
-                    'loginid'          => $client_cr_ltc->loginid,
-                    'balance'          => ignore(),
-                    'currency'         => 'LTC',
-                    'account_type'     => 'binary',
-                    'account_category' => 'trading',
-                    'demo_account'     => bool(0),
-                    'transfers'        => 'all',
+                    'account_type' => 'trading',
+                    'loginid'      => $client_cr_ltc->loginid,
+                    'balance'      => ignore(),
+                    'currency'     => 'LTC'
                 },
                 {
-                    'currency'         => 'ETH',
-                    'balance'          => ignore(),
-                    'loginid'          => $client_cr_eth->loginid,
-                    'account_type'     => 'binary',
-                    'account_category' => 'trading',
-                    'demo_account'     => bool(0),
-                    'transfers'        => 'all',
+                    'currency'     => 'ETH',
+                    'balance'      => ignore(),
+                    'loginid'      => $client_cr_eth->loginid,
+                    'account_type' => 'trading'
                 }
             ),
             'stash'          => ignore(),
@@ -640,22 +628,16 @@ subtest 'transfer_between_crypto_to_crypto_accounts' => sub {
             'client_to_loginid'   => $client_cr_usdc->loginid,
             'client_to_full_name' => $client_cr_usdc->full_name,
             'accounts'            => bag({
-                    'loginid'          => $client_cr_usdc->loginid,
-                    'balance'          => ignore(),
-                    'currency'         => 'USDC',
-                    'account_type'     => 'binary',
-                    'account_category' => 'trading',
-                    'demo_account'     => bool(0),
-                    'transfers'        => 'all',
+                    'account_type' => 'trading',
+                    'loginid'      => $client_cr_usdc->loginid,
+                    'balance'      => ignore(),
+                    'currency'     => 'USDC'
                 },
                 {
-                    'currency'         => 'BTC',
-                    'balance'          => ignore(),
-                    'loginid'          => $client_cr_btc->loginid,
-                    'account_type'     => 'binary',
-                    'account_category' => 'trading',
-                    'demo_account'     => bool(0),
-                    'transfers'        => 'all',
+                    'currency'     => 'BTC',
+                    'balance'      => ignore(),
+                    'loginid'      => $client_cr_btc->loginid,
+                    'account_type' => 'trading'
                 }
             ),
             'stash'          => ignore(),
@@ -701,22 +683,16 @@ subtest 'transfer_between_crypto_to_crypto_accounts' => sub {
             'client_to_loginid'   => $client_cr_eth->loginid,
             'client_to_full_name' => $client_cr_eth->full_name,
             'accounts'            => bag({
-                    'loginid'          => $client_cr_usdc->loginid,
-                    'balance'          => ignore(),
-                    'currency'         => 'USDC',
-                    'account_type'     => 'binary',
-                    'account_category' => 'trading',
-                    'demo_account'     => bool(0),
-                    'transfers'        => 'all',
+                    'account_type' => 'trading',
+                    'loginid'      => $client_cr_usdc->loginid,
+                    'balance'      => ignore(),
+                    'currency'     => 'USDC'
                 },
                 {
-                    'currency'         => 'ETH',
-                    'balance'          => ignore(),
-                    'loginid'          => $client_cr_eth->loginid,
-                    'account_type'     => 'binary',
-                    'account_category' => 'trading',
-                    'demo_account'     => bool(0),
-                    'transfers'        => 'all',
+                    'currency'     => 'ETH',
+                    'balance'      => ignore(),
+                    'loginid'      => $client_cr_eth->loginid,
+                    'account_type' => 'trading'
                 }
             ),
             'stash'          => ignore(),
@@ -762,22 +738,16 @@ subtest 'transfer_between_crypto_to_crypto_accounts' => sub {
             'client_to_loginid'   => $client_cr_ust->loginid,
             'client_to_full_name' => $client_cr_ust->full_name,
             'accounts'            => bag({
-                    'loginid'          => $client_cr_usdc->loginid,
-                    'balance'          => ignore(),
-                    'currency'         => 'USDC',
-                    'account_type'     => 'binary',
-                    'account_category' => 'trading',
-                    'demo_account'     => bool(0),
-                    'transfers'        => 'all',
+                    'account_type' => 'trading',
+                    'loginid'      => $client_cr_usdc->loginid,
+                    'balance'      => ignore(),
+                    'currency'     => 'USDC'
                 },
                 {
-                    'currency'         => 'UST',
-                    'balance'          => ignore(),
-                    'loginid'          => $client_cr_ust->loginid,
-                    'account_type'     => 'binary',
-                    'account_category' => 'trading',
-                    'demo_account'     => bool(0),
-                    'transfers'        => 'all',
+                    'currency'     => 'UST',
+                    'balance'      => ignore(),
+                    'loginid'      => $client_cr_ust->loginid,
+                    'account_type' => 'trading'
                 }
             ),
             'stash'          => ignore(),
@@ -937,6 +907,85 @@ subtest 'transfer_between_accounts' => sub {
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('This transaction cannot be done because your ' . $client_mlt->loginid . ' account has zero balance.',
             'Correct error message for transfering invalid amount');
+    };
+
+    subtest 'Transfer between mlt and mf' => sub {
+        $params->{args} = {};
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+        is scalar(@{$result->{accounts}}), 1, 'two accounts';
+        my ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
+        is $tmp->{balance}, "0.00", 'balance is 0';
+
+        $client_mlt->payment_free_gift(
+            currency => 'EUR',
+            amount   => 5000,
+            remark   => 'free gift',
+        );
+
+        $client_mlt->status->clear_cashier_locked;    # clear locked
+
+        $client_mf->set_authentication('ID_DOCUMENT', {status => 'pass'});
+        $client_mf->status->set('financial_risk_approval', 'system', 'Accepted approval');
+        $client_mf->tax_residence('de');
+        $client_mf->tax_identification_number('111-222-333');
+        $client_mf->save;
+
+        $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+        is scalar(@{$result->{accounts}}), 1, 'two accounts';
+        ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
+        is $tmp->{balance}, "5000.00", 'balance is 5000';
+
+        $params->{args} = {
+            account_from => $client_mlt->loginid,
+            account_to   => $client_mf->loginid,
+            currency     => "EUR",
+            amount       => 10,
+        };
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, _get_unique_display_name());
+        $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+        is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
+        is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
+
+        cmp_deeply(
+            $rpc_ct->result->{accounts},
+            bag({
+                    loginid      => $client_mf->loginid,
+                    balance      => $client_mf->default_account->balance,
+                    currency     => $client_mf->default_account->currency_code,
+                    account_type => 'trading'
+                },
+                {
+                    loginid      => $client_mlt->loginid,
+                    balance      => $client_mlt->default_account->balance,
+                    currency     => $client_mf->default_account->currency_code,
+                    account_type => 'trading'
+                }
+            ),
+            'affected accounts returned in result'
+        );
+
+        ## after withdraw, check both balance
+        $client_mlt = BOM::User::Client->new({loginid => $client_mlt->loginid});
+        $client_mf  = BOM::User::Client->new({loginid => $client_mf->loginid});
+        ok $client_mlt->default_account->balance == 4990, '-10';
+        ok $client_mf->default_account->balance == 10,    '+10';
+    };
+
+    subtest 'test limit from mlt to mf' => sub {
+        $client_mlt->payment_free_gift(
+            currency => 'EUR',
+            amount   => -2000,
+            remark   => 'free gift',
+        );
+        ok $client_mlt->default_account->balance == 2990, '-2000';
+
+        $params->{args} = {
+            account_from => $client_mlt->loginid,
+            account_to   => $client_mf->loginid,
+            currency     => "EUR",
+            amount       => 110
+        };
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error('no withdrawal limit');
     };
 };
 
@@ -1659,8 +1708,7 @@ subtest 'MT5' => sub {
     $params->{args}{mt5_account_type} = 'financial_stp';
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for financial_stp mt5_new_account');
 
-    $params->{token_type} = 'oauth_token';
-    $params->{args}       = {
+    $params->{args} = {
         account_from => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
         account_to   => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'},
         currency     => "USD",
@@ -1668,13 +1716,13 @@ subtest 'MT5' => sub {
     };
 
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
+        ->has_no_system_error->has_error->error_code_is('IncompatibleMt5ToMt5', 'MT5->MT5 transfer error code')
         ->error_message_is('Transfer between two MT5 accounts is not allowed.', 'MT5->MT5 transfer error message');
 
     $params->{args}{account_from} = 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('RealToVirtualNotAllowed', 'MT5 demo -> real account transfer error code')
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> real account transfer error code')
         ->error_message_like(qr/virtual accounts/, 'MT5 demo -> real account transfer error message');
 
     # real -> MT5
@@ -1692,7 +1740,6 @@ subtest 'MT5' => sub {
         qr/You cannot perform this action, as your account is withdrawal locked./,
         'Correct error message returned because Real BTC account is withdrawal locked.'
         );
-
     #remove withdrawal_locked
     $test_client_btc->status->clear_withdrawal_locked;
     #set cashier_locked status to make sure for Real  -> MT5 transfer is not allowed
@@ -1731,23 +1778,19 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid          => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
-                    balance          => num($DETAILS{balance}),
-                    currency         => 'USD',
-                    account_type     => 'mt5',
-                    account_category => 'trading',
-                    demo_account     => 0,
-                    mt5_group        => 'real\p01_ts01\financial\svg_std_usd',
-                    transfers        => 'all',
+                    loginid      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
+                    balance      => num($DETAILS{balance}),
+                    currency     => 'USD',
+                    account_type => 'mt5',
+                    demo_account => 0,
+                    'mt5_group'  => 'real\p01_ts01\financial\svg_std_usd',
                 },
                 {
-                    loginid          => $test_client->loginid,
-                    balance          => num(1000 - 180),
-                    currency         => 'USD',
-                    account_type     => 'binary',
-                    account_category => 'trading',
-                    demo_account     => 0,
-                    transfers        => 'all',
+                    loginid      => $test_client->loginid,
+                    balance      => num(1000 - 180),
+                    currency     => 'USD',
+                    account_type => 'trading',
+                    demo_account => 0,
                 })});
 
     cmp_ok $test_client->default_account->balance, '==', 820, 'real money account balance decreased';
@@ -1779,23 +1822,19 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid          => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
-                    balance          => num($DETAILS{balance}),
-                    currency         => 'USD',
-                    account_type     => 'mt5',
-                    demo_account     => 0,
-                    mt5_group        => 'real\p01_ts01\financial\svg_std_usd',
-                    account_category => 'trading',
-                    transfers        => 'all',
+                    loginid      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
+                    balance      => num($DETAILS{balance}),
+                    currency     => 'USD',
+                    account_type => 'mt5',
+                    demo_account => 0,
+                    'mt5_group'  => 'real\p01_ts01\financial\svg_std_usd'
                 },
                 {
-                    loginid          => $test_client->loginid,
-                    balance          => num(1000 - 30),
-                    currency         => 'USD',
-                    account_type     => 'binary',
-                    demo_account     => 0,
-                    account_category => 'trading',
-                    transfers        => 'all',
+                    loginid      => $test_client->loginid,
+                    balance      => num(1000 - 30),
+                    currency     => 'USD',
+                    account_type => 'trading',
+                    demo_account => 0,
                 })
         },
         'expected data in result'
@@ -1852,7 +1891,6 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = $test_client->loginid;
     $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
     $is_fa_complete               = 1;
-
     subtest 'transfers using an account other than authenticated client' => sub {
         $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_btc->loginid, 'test token');
 
@@ -1903,32 +1941,25 @@ subtest 'MT5' => sub {
         $params->{token_type}         = 'api_token';
 
         $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBlockedClientIsVirtual', 'virtual account -> MT5 demo transfer error code')
-            ->error_message_is('The authorized account cannot be used to perform transfers.', 'virtual account -> MT5 demo transfer error message');
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'virtual account -> MT5 demo transfer error code')
+            ->error_message_is('Virtual transfers are only possible between wallet and other account types.',
+            'virtual account -> MT5 demo transfer error message');
 
         $params->{args}{account_to}   = $test_client_vr->loginid;
         $params->{args}{account_from} = 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'};
 
         $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBlockedClientIsVirtual', 'MT5 demo -> virtual account transfer error code')
-            ->error_message_is('The authorized account cannot be used to perform transfers.', 'MT5 demo -> virtual account transfer error message');
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> virtual account transfer error code')
+            ->error_message_is('Virtual transfers are only possible between wallet and other account types.',
+            'MT5 demo -> virtual account transfer error message');
 
         # switch to demo account
-        $params->{token}              = BOM::Platform::Token::API->new->create_token($test_wallet_vr->loginid, _get_unique_display_name());
         $params->{args}{account_from} = $test_wallet_vr->loginid;
         $params->{args}{account_to}   = 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'};
 
         $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBlockedWalletNotLinked', 'unlinked account error code');
-
-        $user->link_wallet_to_trading_account({
-                wallet_id => $test_wallet_vr->loginid,
-                client_id => 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'}});
-
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'insufficient virtual balance transfer error code')
-            ->error_message_is('This transaction cannot be done because your ' . $test_wallet_vr->loginid . ' account has zero balance.',
-            'insufficient virtual balance transfer error message');
+            ->error_message_is('Your account balance is insufficient for this transaction.', 'insufficient virtual balance transfer error message');
 
         $test_wallet_vr->payment_free_gift(
             currency => 'USD',
@@ -1936,8 +1967,9 @@ subtest 'MT5' => sub {
             remark   => 'free gift',
         );
 
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         cmp_deeply(
-            $rpc_ct->call_ok('transfer_between_accounts', $params)->result,
+            $rpc_ct->result,
             {
                 status              => 1,
                 transaction_id      => ignore(),
@@ -1945,23 +1977,19 @@ subtest 'MT5' => sub {
                 client_to_loginid   => $params->{args}{account_to},
                 stash               => ignore(),
                 accounts            => bag({
-                        loginid          => 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'},
-                        balance          => num($DETAILS{balance}),
-                        currency         => 'USD',
-                        account_type     => 'mt5',
-                        demo_account     => 1,
-                        mt5_group        => 'demo\p01_ts01\financial\svg_std_usd',
-                        account_category => 'trading',
-                        transfers        => 'all',
+                        loginid      => 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'},
+                        balance      => num($DETAILS{balance}),
+                        currency     => 'USD',
+                        account_type => 'mt5',
+                        demo_account => 1,
+                        'mt5_group'  => 'demo\p01_ts01\financial\svg_std_usd'
                     },
                     {
-                        loginid          => $test_wallet_vr->loginid,
-                        balance          => num(0),
-                        currency         => 'USD',
-                        account_type     => 'virtual',
-                        demo_account     => 1,
-                        account_category => 'wallet',
-                        transfers        => 'all',
+                        loginid      => $test_wallet_vr->loginid,
+                        balance      => num(0),
+                        currency     => 'USD',
+                        account_type => 'wallet',
+                        demo_account => 1,
                     })
             },
             'expected data in result'
@@ -1980,23 +2008,19 @@ subtest 'MT5' => sub {
                 client_to_loginid   => $test_wallet_vr->loginid,
                 stash               => ignore(),
                 accounts            => bag({
-                        loginid          => 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'},
-                        balance          => num($DETAILS{balance}),
-                        currency         => 'USD',
-                        account_type     => 'mt5',
-                        demo_account     => 1,
-                        mt5_group        => 'demo\p01_ts01\financial\svg_std_usd',
-                        account_category => 'trading',
-                        transfers        => 'all',
+                        loginid      => 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'},
+                        balance      => num($DETAILS{balance}),
+                        currency     => 'USD',
+                        account_type => 'mt5',
+                        demo_account => 1,
+                        'mt5_group'  => 'demo\p01_ts01\financial\svg_std_usd'
                     },
                     {
-                        loginid          => $test_wallet_vr->loginid,
-                        balance          => num(150),
-                        currency         => 'USD',
-                        account_type     => 'virtual',
-                        demo_account     => 1,
-                        account_category => 'wallet',
-                        transfers        => 'all',
+                        loginid      => $test_wallet_vr->loginid,
+                        balance      => num(150),
+                        currency     => 'USD',
+                        account_type => 'wallet',
+                        demo_account => 1,
                     })
             },
             'expected data in result'
@@ -2007,20 +2031,69 @@ subtest 'MT5' => sub {
             $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'};
 
             $rpc_ct->call_ok('transfer_between_accounts', $params)
-                ->has_no_system_error->has_error->error_code_is('RealToVirtualNotAllowed', 'virtual walllet -> MT5 real transfer error code')
+                ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'virtual walllet -> MT5 real transfer error code')
                 ->error_message_is('Transfer between real and virtual accounts is not allowed.',
                 'virtual walllet -> MT5 real  transfer error message');
 
             $params->{args}{account_to}   = $test_wallet_vr->loginid;
             $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'};
             $rpc_ct->call_ok('transfer_between_accounts', $params)
-                ->has_no_system_error->has_error->error_code_is('RealToVirtualNotAllowed', 'MT5 real -> virtual wallet transfer error code')
+                ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 real -> virtual wallet transfer error code')
                 ->error_message_is('Transfer between real and virtual accounts is not allowed.', 'MT5 real -> virtual wallet transfer error message');
         }
 
     };
 
 };
+
+sub _get_unique_display_name {
+    my @a = ('A' .. 'Z', 'a' .. 'z');
+    return join '', map { $a[int(rand($#a))] } (1 .. 3);
+}
+
+sub _test_events_prepare {
+    undef $emit_data;
+}
+
+sub _test_events_tba {
+    my ($is_deposit_to_mt5, $client, $mt5, %optional) = @_;
+
+    my $to_currency = $optional{to_currency} // 'USD';
+    my $to_amount   = $optional{to_amount}   // '180';
+    my $from_amount = $optional{from_amount} // '180';
+    my $fees        = $optional{fees}        // 0;
+
+    my $to_account   = $is_deposit_to_mt5 ? $mt5               : $client->{loginid};
+    my $from_account = $is_deposit_to_mt5 ? $client->{loginid} : $mt5;
+    my $remark       = $is_deposit_to_mt5 ? 'Client>MT5'       : 'MT5>Client';
+
+    is $emit_data->{transfer_between_accounts}{count}, 1, "transfer_between_accounts event emitted only once";
+
+    my $response = $emit_data->{transfer_between_accounts}{last};
+
+    is_deeply(
+        $response,
+        {
+            loginid    => $client->{loginid},
+            properties => {
+                fees               => $fees,
+                from_account       => $from_account,
+                from_amount        => $from_amount,
+                from_currency      => "USD",
+                gateway_code       => "mt5_transfer",
+                source             => 1,
+                to_account         => $to_account,
+                to_amount          => $to_amount,
+                to_currency        => $to_currency,
+                is_from_account_pa => 0,
+                is_to_account_pa   => 0,
+                id                 => $response->{properties}->{id},
+                time               => $response->{properties}->{time}}
+        },
+        "transfer_between_accounts event provides data properly. ($remark)"
+    );
+
+}
 
 subtest 'offer_to_clients' => sub {
 
@@ -2395,7 +2468,7 @@ subtest 'cumulative_limits limits' => sub {
     sleep 2;
     $result =
         $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('MaximumTransfers', "Daily Transfer limit - correct error code")
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Daily Transfer limit - correct error code")
         ->error_message_like(qr/2 transfers a day/, 'Daily Transfer Limit - correct error message');
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
@@ -2410,54 +2483,6 @@ BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
 
 done_testing();
-
-sub _get_unique_display_name {
-    my @a = ('A' .. 'Z', 'a' .. 'z');
-    return join '', map { $a[int(rand($#a))] } (1 .. 3);
-}
-
-sub _test_events_prepare {
-    undef $emit_data;
-}
-
-sub _test_events_tba {
-    my ($is_deposit_to_mt5, $client, $mt5, %optional) = @_;
-
-    my $to_currency = $optional{to_currency} // 'USD';
-    my $to_amount   = $optional{to_amount}   // '180';
-    my $from_amount = $optional{from_amount} // '180';
-    my $fees        = $optional{fees}        // 0;
-
-    my $to_account   = $is_deposit_to_mt5 ? $mt5               : $client->{loginid};
-    my $from_account = $is_deposit_to_mt5 ? $client->{loginid} : $mt5;
-    my $remark       = $is_deposit_to_mt5 ? 'Client>MT5'       : 'MT5>Client';
-
-    is $emit_data->{transfer_between_accounts}{count}, 1, "transfer_between_accounts event emitted only once";
-
-    my $response = $emit_data->{transfer_between_accounts}{last};
-
-    is_deeply(
-        $response,
-        {
-            loginid    => $client->{loginid},
-            properties => {
-                fees               => $fees,
-                from_account       => $from_account,
-                from_amount        => $from_amount,
-                from_currency      => "USD",
-                gateway_code       => "mt5_transfer",
-                source             => 1,
-                to_account         => $to_account,
-                to_amount          => $to_amount,
-                to_currency        => $to_currency,
-                is_from_account_pa => 0,
-                is_to_account_pa   => 0,
-                id                 => $response->{properties}->{id},
-                time               => $response->{properties}->{time}}
-        },
-        "transfer_between_accounts event provides data properly. ($remark)"
-    );
-}
 
 sub _get_transaction_details {
     my ($client, $transaction_id) = @_;

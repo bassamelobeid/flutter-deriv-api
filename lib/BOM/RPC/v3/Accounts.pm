@@ -2954,8 +2954,7 @@ async_rpc service_token => sub {
             try {
                 my $trading_platform = BOM::TradingPlatform->new(
                     platform => 'dxtrade',
-                    client   => $client,
-                    user     => $client->user,
+                    client   => $client
                 );
 
                 push @service_futures,
@@ -2995,10 +2994,8 @@ async_rpc service_token => sub {
 
         if ($service eq 'ctrader') {
             try {
-                my $ctrader = BOM::TradingPlatform::CTrader->new(
-                    client => $client,
-                    user   => $client->user
-                );
+                my $ctrader = BOM::TradingPlatform::CTrader->new(client => $client);
+
                 push @service_futures,
                     Future->done({
                         token   => $ctrader->generate_login_token($params->{ua_fingerprint}),
@@ -3146,8 +3143,7 @@ rpc account_closure => sub {
     unless (BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all) {
         my $trading_platform = BOM::TradingPlatform->new(
             platform => 'dxtrade',
-            client   => $client,
-            user     => $user,
+            client   => $client
         );
         my $dxtrader_accounts = $trading_platform->get_accounts();
 

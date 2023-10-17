@@ -127,7 +127,7 @@ subtest 'platform deposit and withdrawal' => sub {
 
     $is_experimental_currency = 0;
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(1);
-    $client1->user->daily_transfer_incr_count('dxtrade', $client1->user->id);
+    $client1->user->daily_transfer_incr({type => 'dxtrade'});
     $c->call_ok('trading_platform_deposit', $params)->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'Daily transfer limit hit')
         ->error_message_is('You can only perform up to 1 transfers a day. Please try again tomorrow.');
 
@@ -166,7 +166,7 @@ subtest 'platform deposit and withdrawal' => sub {
     $mock_client->redefine(get_payment_agent => $mock_pa);
 
     $c->call_ok('trading_platform_deposit', $params)
-        ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot make DXTrade deposits.');
+        ->has_no_system_error->has_error->error_code_is('TransferToNonPaSibling', 'Payment agents cannot make DXTrade deposits.');
 
     $mock_client->unmock_all;
 
@@ -239,10 +239,42 @@ subtest 'transfer between accounts' => sub {
             accounts => 'all',
         }};
 
-    my $res    = $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
-    my @logins = map { $_->{loginid} } $res->{accounts}->@*;
-    cmp_deeply [@logins], bag($client1->loginid, $client2->loginid, $client_btc->loginid, $dx_real->{account_id}),
-        'all real and demo accounts returned';
+    my $res = $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
+
+    cmp_deeply(
+        $res->{accounts},
+        bag({
+                'account_type' => 'trading',
+                'balance'      => num($client1->account->balance),
+                'currency'     => $client1->currency,
+                'loginid'      => $client1->loginid,
+                'demo_account' => 0,
+            },
+            {
+                'account_type' => 'trading',
+                'balance'      => num($client2->account->balance),
+                'currency'     => $client2->currency,
+                'loginid'      => $client2->loginid,
+                'demo_account' => 0,
+            },
+            {
+                'account_type' => 'trading',
+                'balance'      => num($client_btc->account->balance),
+                'currency'     => 'BTC',
+                'loginid'      => $client_btc->loginid,
+                'demo_account' => 0,
+            },
+            {
+                'account_type' => 'dxtrade',
+                'balance'      => num(50),
+                'currency'     => $dx_real->{currency},
+                'loginid'      => $dx_real->{account_id},
+                'market_type'  => $dx_real->{market_type},
+                'demo_account' => 0,
+            },
+        ),
+        'all real and demo accounts returned'
+    );
 
     $params->{args} = {
         account_from => $client2->loginid,
@@ -269,9 +301,8 @@ subtest 'transfer between accounts' => sub {
 
         $is_experimental_currency = 0;
 
-        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
         BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(1);
-        $client1->user->daily_transfer_incr_count('dxtrade', $client1->user->id);
+        $client1->user->daily_transfer_incr({type => 'dxtrade'});
 
         $c->call_ok('transfer_between_accounts', $params)
             ->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'Daily transfer limit hit')
@@ -301,23 +332,17 @@ subtest 'transfer between accounts' => sub {
     cmp_deeply(
         $res->{accounts},
         bag({
-                'account_type'     => 'binary',
-                'balance'          => num($client1->account->balance),
-                'currency'         => $client1->currency,
-                'loginid'          => $client1->loginid,
-                'account_category' => 'trading',
-                'transfers'        => 'all',
-                'demo_account'     => 0,
+                'account_type' => 'trading',
+                'balance'      => num($client1->account->balance),
+                'currency'     => $client1->currency,
+                'loginid'      => $client1->loginid,
             },
             {
-                'account_type'     => 'dxtrade',
-                'balance'          => num(100),
-                'currency'         => $dx_real->{currency},
-                'loginid'          => $dx_real->{account_id},
-                'market_type'      => $dx_real->{market_type},
-                'transfers'        => 'all',
-                'account_category' => 'trading',
-                'demo_account'     => 0,
+                'account_type' => 'dxtrade',
+                'balance'      => num(100),
+                'currency'     => $dx_real->{currency},
+                'loginid'      => $dx_real->{account_id},
+                'market_type'  => $dx_real->{market_type},
             },
         ),
         'affected accounts returned'
@@ -331,23 +356,17 @@ subtest 'transfer between accounts' => sub {
     cmp_deeply(
         $res->{accounts},
         bag({
-                'account_type'     => 'binary',
-                'balance'          => num($client1->account->balance),
-                'currency'         => $client1->currency,
-                'loginid'          => $client1->loginid,
-                'account_category' => 'trading',
-                'transfers'        => 'all',
-                'demo_account'     => 0,
+                'account_type' => 'trading',
+                'balance'      => num($client1->account->balance),
+                'currency'     => $client1->currency,
+                'loginid'      => $client1->loginid,
             },
             {
-                'account_type'     => 'dxtrade',
-                'balance'          => num(0),
-                'currency'         => $dx_real->{currency},
-                'loginid'          => $dx_real->{account_id},
-                'market_type'      => $dx_real->{market_type},
-                'account_category' => 'trading',
-                'transfers'        => 'all',
-                'demo_account'     => 0,
+                'account_type' => 'dxtrade',
+                'balance'      => num(0),
+                'currency'     => $dx_real->{currency},
+                'loginid'      => $dx_real->{account_id},
+                'market_type'  => $dx_real->{market_type},
             },
         ),
         'affected accounts returned'
@@ -361,23 +380,17 @@ subtest 'transfer between accounts' => sub {
     cmp_deeply(
         $res->{accounts},
         bag({
-                'account_type'     => 'binary',
-                'balance'          => num(0),
-                'currency'         => $client1->currency,
-                'loginid'          => $client1->loginid,
-                'account_category' => 'trading',
-                'transfers'        => 'all',
-                'demo_account'     => 0,
+                'account_type' => 'trading',
+                'balance'      => num(0),
+                'currency'     => $client1->currency,
+                'loginid'      => $client1->loginid,
             },
             {
-                'account_type'     => 'dxtrade',
-                'balance'          => num(100),
-                'currency'         => $dx_real->{currency},
-                'loginid'          => $dx_real->{account_id},
-                'market_type'      => 'all',
-                'account_category' => 'trading',
-                'transfers'        => 'all',
-                'demo_account'     => 0,
+                'account_type' => 'dxtrade',
+                'balance'      => num(100),
+                'currency'     => $dx_real->{currency},
+                'loginid'      => $dx_real->{account_id},
+                'market_type'  => 'all',
             },
         ),
         'affected accounts returned'
@@ -393,23 +406,17 @@ subtest 'transfer between accounts' => sub {
     cmp_deeply(
         $res->{accounts},
         bag({
-                'account_type'     => 'binary',
-                'balance'          => num(0.05, 0.01),
-                'currency'         => 'BTC',
-                'loginid'          => $client_btc->loginid,
-                'account_category' => 'trading',
-                'transfers'        => 'all',
-                'demo_account'     => 0,
+                'account_type' => 'trading',
+                'balance'      => num(0.05, 0.01),
+                'currency'     => 'BTC',
+                'loginid'      => $client_btc->loginid,
             },
             {
-                'account_type'     => 'dxtrade',
-                'balance'          => num(0),
-                'currency'         => $dx_real->{currency},
-                'loginid'          => $dx_real->{account_id},
-                'market_type'      => 'all',
-                'account_category' => 'trading',
-                'transfers'        => 'all',
-                'demo_account'     => 0,
+                'account_type' => 'dxtrade',
+                'balance'      => num(0),
+                'currency'     => $dx_real->{currency},
+                'loginid'      => $dx_real->{account_id},
+                'market_type'  => 'all',
             },
         ),
         'affected accounts returned'
