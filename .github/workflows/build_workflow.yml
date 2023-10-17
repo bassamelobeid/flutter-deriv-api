@@ -33,6 +33,7 @@ jobs:
       - name: Code structure and syntax
         run: make syntax
   merlin:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -55,6 +56,7 @@ jobs:
       - name: Merlin
         run: make merlin_benchmark
   SDFX_benchmark_major:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -77,6 +79,7 @@ jobs:
       - name: SDFX benchmark major
         run: make SDFX_benchmark_major
   SDFX_benchmark_minor:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -99,6 +102,7 @@ jobs:
       - name: SDFX benchmark minor
         run: make SDFX_benchmark_minor
   SDEQ_benchmark_OTC_DJI:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -121,6 +125,7 @@ jobs:
       - name: SDEQ benchmark OTC_DJI
         run: make SDEQ_benchmark_OTC_DJI
   SDEQ_benchmark_OTC_FCHI:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -143,6 +148,7 @@ jobs:
       - name: SDEQ benchmark OTC_FCHI
         run: make SDEQ_benchmark_OTC_FCHI
   SDEQ_benchmark_SSECOMP:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -165,6 +171,7 @@ jobs:
       - name: SDEQ benchmark SSECOMP
         run: make SDEQ_benchmark_SSECOMP
   SDEQ_benchmark_OTC_FTSE:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -187,6 +194,7 @@ jobs:
       - name: SDEQ benchmark OTC_FTSE
         run: make SDEQ_benchmark_OTC_FTSE
   OVRA_benchmark:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -211,6 +219,7 @@ jobs:
           for i in $(seq 1 12); do echo -n "."; sleep 300; done &
           make OVRA_benchmark
   SDEQ_benchmark_OTC_SPC:
+    needs: syntax
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
