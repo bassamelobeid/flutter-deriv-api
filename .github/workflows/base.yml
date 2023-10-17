@@ -31,12 +31,14 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ inputs.repository }}
+      - name: Code structure and syntax
+        run: make syntax_diff
+      - name: unit tests
+        run: make unit
       - name: Core tests
         run: |
           sudo tee -a /etc/hosts < hosts.db
           cat /etc/hosts
           make test
-      - name: unit tests
-        run: make unit
-      - name: Code structure and syntax
-        run: make syntax_diff
+
+
