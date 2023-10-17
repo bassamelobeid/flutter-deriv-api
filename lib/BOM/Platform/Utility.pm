@@ -275,19 +275,6 @@ sub error_map {
             localize('You have reached the maximum withdrawal limit of [_1] [_2]. Please authenticate your account to make unlimited withdrawals.'),
         CryptoWithdrawalNotAuthenticated => localize('Please authenticate your account to proceed with withdrawals.'),
         InternalClient                   => localize('This feature is not allowed for internal clients.'),
-
-        # Account transfer
-        SameAccountNotAllowed           => localize('Account transfers are not available within same account.'),
-        RealToVirtualNotAllowed         => localize('Transfer between real and virtual accounts is not allowed.'),
-        TransferBlockedWalletNotLinked  => localize('Transfers are not allowed for these accounts.'),
-        TransferBlockedWalletWithdrawal => localize('Transfers are not allowed for these accounts.'),
-        TransferBlockedWalletDeposit    => localize('Transfers are not allowed for these accounts.'),
-        TransferBlockedTradingAccounts  => localize('Transfers are not allowed for these accounts.'),
-        TransferBlockedLegacy           => localize('Transfers are not allowed for these accounts.'),
-        TransferBlockedClientIsVirtual  => localize('The authorized account cannot be used to perform transfers.'),
-        MaximumTransfers                => localize('You can only perform up to [_1] transfers a day. Please try again tomorrow.'),
-        MaximumAmountTransfers          => localize('The maximum amount of transfers is [_1] [_2] per day. Please try again tomorrow.'),
-        CurrencyShouldMatch             => localize('Currency provided is different from account currency.'),
     };
 }
 
