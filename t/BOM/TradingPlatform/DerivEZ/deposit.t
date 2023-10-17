@@ -12,39 +12,6 @@ use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 use BOM::Config::Redis;
 
-my $redis_ex = BOM::Config::Redis::redis_exchangerates_write;
-
-$redis_ex->hmset(
-    'exchange_rates::ETH_USD',
-    offer_to_clients => 1,
-    quote            => 2000,
-    epoch            => time
-);
-
-$redis_ex->hmset(
-    'exchange_rates::EUR_USD',
-    offer_to_clients => 1,
-    quote            => 1.2,
-    epoch            => time
-);
-
-my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig');
-$mock_fees->redefine(
-    transfer_between_accounts_fees => {
-        'ETH' => {'USD' => 5},
-        'EUR' => {'USD' => 5},
-    },
-    get_platform_transfer_limit_by_brand => {
-        'minimum' => {
-            'currency' => 'USD',
-            'amount'   => 0.01
-        },
-        'maximum' => {
-            'currency' => 'USD',
-            'amount'   => 100
-        },
-    });
-
 subtest "deposit from CR account to DerivEZ" => sub {
     my %derivez_account = (
         real => {login => 'EZR80000000'},
@@ -62,11 +29,7 @@ subtest "deposit from CR account to DerivEZ" => sub {
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        user        => $user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -113,8 +76,10 @@ subtest "deposit from CR account to DerivEZ" => sub {
 
     # Preparing args
     my %params = (
-        to_account => 'EZR80000000',
-        amount     => 5,
+        from_account => 'CR10000',
+        to_account   => 'EZR80000000',
+        amount       => 5,
+        currency     => 'USD',
     );
 
     # Perform deposit
@@ -141,11 +106,7 @@ subtest "derivez demo deposit" => sub {
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        user        => $client->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $client->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -192,8 +153,10 @@ subtest "derivez demo deposit" => sub {
 
     # Preparing args
     my %params = (
-        to_account => 'EZD40100093',
-        amount     => 1000,
+        from_account => '',
+        to_account   => 'EZD40100093',
+        amount       => 1000,
+        currency     => 'USD',
     );
 
     # Perform test
@@ -216,18 +179,16 @@ subtest "cannot deposit if payment is suspended" => sub {
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        user        => $client->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $client->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
     # Preparing args
     my %params = (
-        to_account => 'EZR80000000',
-        amount     => 5,
+        from_account => 'EZR80000000',
+        to_account   => 'CR10000',
+        amount       => 5,
+        currency     => 'USD',
     );
 
     # Suspending payment
@@ -248,22 +209,20 @@ subtest "cannot deposit if derivez login is not provided" => sub {
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        user        => $client->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $client->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
     # Preparing args
     my %params = (
-        amount => 5,
+        from_account => 'CR10000',
+        to_account   => '',
+        amount       => 5,
+        currency     => 'USD',
     );
 
     # Perform test
-    cmp_deeply(exception { $derivez->deposit(%params) }, {code => 'DerivEZMissingID'}, 'cannot deposit if derivez login is missing');
-    cmp_deeply(exception { $derivez->deposit(%params, to_account => '') }, {code => 'DerivEZMissingID'}, 'cannot deposit if derivez login is empty');
+    cmp_deeply(exception { $derivez->deposit(%params) }, {code => 'DerivEZMissingID'}, 'cannot deposit if derivez login is not provided');
 };
 
 subtest "cannot deposit if derivez account does not belong to client" => sub {
@@ -274,22 +233,102 @@ subtest "cannot deposit if derivez account does not belong to client" => sub {
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        user        => $client->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $client->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
     # Preparing args
     my %params = (
-        to_account => 'EZR80000001',
-        amount     => 5,
+        from_account => 'CR10000',
+        to_account   => 'EZR80000001',
+        amount       => 5,
+        currency     => 'USD',
     );
 
     # Perform test
-    cmp_deeply(exception { $derivez->deposit(%params) }, {code => 'PermissionDenied'}, 'cannot deposit if derivez account does not belong to client');
+    cmp_deeply(
+        exception { $derivez->deposit(%params) },
+        {
+            code    => 'PermissionDenied',
+            message => 'Both accounts should belong to the authorized client.'
+        },
+        'cannot deposit if derivez account does not belong to client'
+    );
+};
+
+subtest "cannot deposit between cfd account" => sub {
+    # Since we already create CR account we can reuse it
+    my $client = BOM::User::Client->new({loginid => 'CR10000'});
+
+    # Add MT5 account
+    $client->user->add_loginid('MTR5123');
+
+    # Check for derivez TradingPlatform
+    my $derivez = BOM::TradingPlatform->new(
+        platform    => 'derivez',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client),
+    );
+    isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
+
+    # Mocking BOM::MT5::User::Async to return the corrent derivez loginid
+    my $mock_async_call = Test::MockModule->new('BOM::MT5::User::Async');
+
+    # Preparing the response data that we get from MT5
+    my $async_get_user_response = {
+        'leverage'      => 1000,
+        'country'       => 'Indonesia',
+        'phone'         => '',
+        'group'         => 'real\\p02_ts01\\all\\svg_ez_usd',
+        'email'         => 'test@deriv.com',
+        'address'       => '',
+        'zipCode'       => undef,
+        'name'          => '',
+        'rights'        => 481,
+        'state'         => '',
+        'balance'       => '0.00',
+        'phonePassword' => undef,
+        'login'         => 'EZR80000000',
+        'city'          => '',
+        'agent'         => 0,
+        'color'         => 4278190080,
+        'company'       => ''
+    };
+
+    # Mocking get_user to return the user info from MT5
+    $mock_async_call->mock('get_user', sub { return Future->done($async_get_user_response); });
+
+    # Preparing the response data that we get from MT5
+    my $get_group_response = {
+        'currency' => 'USD',
+        'group'    => 'real\\p02_ts01\\all\\svg_ez_usd',
+        'leverage' => 1,
+        'company'  => 'Deriv Limited'
+    };
+
+    # Mocking get_group to return group in from mt5
+    $mock_async_call->mock('get_group', sub { return Future->done($get_group_response); });
+
+    # Preparing args
+    my %params = (
+        from_account => 'MTR5123',
+        to_account   => 'EZR80000000',
+        amount       => 5,
+        currency     => 'USD',
+    );
+
+    # Perform test
+    cmp_deeply(
+        exception { $derivez->deposit(%params) },
+        {
+            code    => 'PermissionDenied',
+            params  => undef,
+            message => 'Transfer between cfd account is not permitted.'
+        },
+        'cannot deposit between cfd account'
+    );
+
+    $mock_async_call->unmock_all();
 };
 
 subtest "can deposit with exchange rate applied from eth to usd" => sub {
@@ -304,17 +343,13 @@ subtest "can deposit with exchange rate applied from eth to usd" => sub {
     $client->user->add_client($client_eth);
 
     # Add MT5 account
-    BOM::Test::Helper::Client::top_up($client_eth, 'ETH', 0.1);
+    BOM::Test::Helper::Client::top_up($client_eth, 'ETH', 10);
 
     # Check for derivez TradingPlatform
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client_eth,
-        user        => $client_eth->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client_eth,
-            user   => $client_eth->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client_eth),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -370,19 +405,29 @@ subtest "can deposit with exchange rate applied from eth to usd" => sub {
             return Future->done({status => 1});
         });
 
-    # Preparing args
-    my %params = (
-        to_account => 'EZR80000000',
-        amount     => 0.05,
+    # Setting redis exchange rate since this is test env
+    my $redis = BOM::Config::Redis::redis_exchangerates_write();
+    $redis->hmset(
+        'exchange_rates::ETH_USD',
+        offer_to_clients => 1,
+        quote            => '1919.99500',
+        epoch            => time
     );
 
-    # # Perform test
+    # Preparing args
+    my %params = (
+        from_account => 'CR10001',
+        to_account   => 'EZR80000000',
+        amount       => 5,
+        currency     => 'ETH',
+    );
+
+    # Perform test
     cmp_deeply(exception { $derivez->deposit(%params) }, undef, 'can deposit from derivez to CR with ETH currency');
 
-    # # Check account balance
-    is $client_eth->account->balance, '0.05000000', 'balance is correct';
-    my $expected_amount = sprintf('%.2f', (0.05 * 0.95) * 2000);
-    cmp_ok $received_amount, '==', $expected_amount, 'deposit to derivez is correct after applying exchange rate & fee';
+    # Check account balance
+    is $client_eth->account->balance, '5.00000000', 'deposit is correct';
+    is $received_amount,              '9503.98',    'deposit to derivez is correct and applying exchange rate';
 
     # Check if deposit run only once
     is $count, 1, 'deposit run only once';
@@ -399,11 +444,7 @@ subtest "amount does not meet the min requirements" => sub {
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        user        => $client->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $client->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -411,11 +452,7 @@ subtest "amount does not meet the min requirements" => sub {
     my $derivez_eth = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client_eth,
-        user        => $client_eth->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client_eth,
-            user   => $client_eth->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client_eth),
     );
     isa_ok($derivez_eth, 'BOM::TradingPlatform::DerivEZ');
 
@@ -455,29 +492,34 @@ subtest "amount does not meet the min requirements" => sub {
 
     # Preparing args for testing
     my %params = (
-        to_account => 'EZR80000000',
-        amount     => 0.001,
+        from_account => 'CR10000',
+        to_account   => 'EZR80000000',
+        amount       => 0.001,
+        currency     => 'USD',
     );
 
     # Perform test
     cmp_deeply(
         exception { $derivez->deposit(%params) },
         {
-            code   => 'InvalidMinAmount',
-            params => ['0.01', 'USD']
+            code    => 'InvalidMinAmount',
+            params  => ['0.01', 'USD'],
+            message => undef
         },
         'amount does not meet the min requirements'
     );
 
     # Setting params to eth user
-    $params{amount} = 0.00000001;
+    $params{currency}     = 'ETH';
+    $params{from_account} = 'CR10001', $params{amount} = 0.000000521;
 
     # Perform test
     cmp_deeply(
         exception { $derivez_eth->deposit(%params) },
         {
-            code   => 'InvalidMinAmount',
-            params => ['0.00000500', 'ETH']
+            code    => 'InvalidMinAmount',
+            params  => ['0.00000521', 'ETH'],
+            message => undef
         },
         'amount does not meet the min requirements (ETH)'
     );
@@ -490,18 +532,11 @@ subtest "amount exceed the max_transfer_limit requirements" => sub {
     my $client     = BOM::User::Client->new({loginid => 'CR10000'});
     my $client_eth = BOM::User::Client->new({loginid => 'CR10001'});
 
-    BOM::Test::Helper::Client::top_up($client,     'USD', 200);
-    BOM::Test::Helper::Client::top_up($client_eth, 'ETH', 0.1);
-
     # Check for derivez TradingPlatform
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        user        => $client->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $client->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -509,11 +544,7 @@ subtest "amount exceed the max_transfer_limit requirements" => sub {
     my $derivez_eth = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client_eth,
-        user        => $client_eth->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client_eth,
-            user   => $client_eth->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client_eth),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -553,31 +584,36 @@ subtest "amount exceed the max_transfer_limit requirements" => sub {
 
     # Preparing args for testing
     my %params = (
-        to_account => 'EZR80000000',
-        amount     => 101,
+        from_account => 'CR10000',
+        to_account   => 'EZR80000000',
+        amount       => 15001,
+        currency     => 'USD',
     );
 
-    #Perform test
+    # Perform test
     cmp_deeply(
         exception { $derivez->deposit(%params) },
         {
-            code   => 'InvalidMaxAmount',
-            params => ['100.00', 'USD']
+            code    => 'InvalidMaxAmount',
+            params  => ['15000.00', 'USD'],
+            message => undef
         },
-        'amount exceeds the max_transfer_limit requirements'
+        'amount exceed the max_transfer_limit requirements'
     );
 
     # Setting params to eth user
-    $params{amount} = 0.051;
+    $params{currency}     = 'ETH';
+    $params{from_account} = 'CR10001', $params{amount} = 8;
 
     # Perform test
     cmp_deeply(
         exception { $derivez_eth->deposit(%params) },
         {
-            code   => 'InvalidMaxAmount',
-            params => ['0.05000000', 'ETH']
+            code    => 'InvalidMaxAmount',
+            params  => ['7.81252035', 'ETH'],
+            message => undef
         },
-        'amount exceeds the max_transfer_limit requirements (ETH)'
+        'amount exceed the max_transfer_limit requirements (ETH)'
     );
 
     $mock_async_call->unmock_all();
@@ -591,11 +627,7 @@ subtest "amount is valid" => sub {
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        user        => $client->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $client->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -635,8 +667,10 @@ subtest "amount is valid" => sub {
 
     # Preparing args for testing
     my %params = (
-        to_account => 'EZR80000000',
-        amount     => 10.888,
+        from_account => 'CR10000',
+        to_account   => 'EZR80000000',
+        amount       => 10.888,
+        currency     => 'USD',
     );
 
     # Perform test
@@ -644,6 +678,7 @@ subtest "amount is valid" => sub {
         exception { $derivez->deposit(%params) },
         {
             code    => 'DerivEZDepositError',
+            params  => undef,
             message => 'Invalid amount. Amount provided can not have more than 2 decimal places.'
         },
         'amount is valid'
@@ -670,11 +705,7 @@ subtest "can deposit with exchange rate applied from eur to usd" => sub {
     my $derivez = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client_eur,
-        user        => $client_eur->user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client_eur,
-            user   => $client_eur->user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client_eur),
     );
     isa_ok($derivez, 'BOM::TradingPlatform::DerivEZ');
 
@@ -726,10 +757,21 @@ subtest "can deposit with exchange rate applied from eur to usd" => sub {
             return Future->done({status => 1});
         });
 
+    # Setting redis exchange rate since this is test env
+    my $redis = BOM::Config::Redis::redis_exchangerates_write();
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        offer_to_clients => 1,
+        quote            => '1.09113',
+        epoch            => time
+    );
+
     # Preparing args
     my %params = (
-        to_account => 'EZR80000000',
-        amount     => 5,
+        from_account => 'CR10002',
+        to_account   => 'EZR80000000',
+        amount       => 5,
+        currency     => 'EUR',
     );
 
     # Perform test
@@ -737,8 +779,7 @@ subtest "can deposit with exchange rate applied from eur to usd" => sub {
 
     # Check account balance
     is $client_eur->account->balance, '5.00', 'deposit is correct';
-    my $expected_amount = sprintf('%.2f', (5 * 0.95) * 1.2);
-    cmp_ok $received_amount, '==', $expected_amount, 'deposit to derivez is correct after applying exchange rate & fee';
+    is $received_amount,              '5.40', 'deposit to derivez is correct and applying exchange rate';
 
     # Check if deposit run only once
     is $count, 1, 'deposit run only once';

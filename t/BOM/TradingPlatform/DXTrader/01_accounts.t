@@ -39,22 +39,17 @@ $dxtrader_mock->mock(
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
-my $user = BOM::User->create(
+BOM::User->create(
     email    => $client->email,
     password => 'test'
-);
+)->add_client($client);
 
 $client->account('USD');
-$user->add_client($client);
 
 my $dxtrader = BOM::TradingPlatform->new(
     platform    => 'dxtrade',
     client      => $client,
-    user        => $user,
-    rule_engine => BOM::Rules::Engine->new(
-        client => $client,
-        user   => $user
-    ),
+    rule_engine => BOM::Rules::Engine->new(client => $client),
 );
 isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 
@@ -97,28 +92,28 @@ cmp_deeply(
     'created first account'
 );
 
-cmp_deeply([$user->get_trading_platform_loginids(platform => 'dxtrade')], bag(qw/DXD1000/), 'Correct loginids reported');
+cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader')], bag(qw/DXD1000/), 'Correct loginids reported');
+
+cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'demo')], bag(qw/DXD1000/), 'Correct loginids reported');
+
+cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'real')], bag(), 'Correct loginids reported');
 
 cmp_deeply(
-    [$user->get_trading_platform_loginids(platform => 'dxtrade', type_of_account => 'demo')],
-    bag(qw/DXD1000/),
-    'Correct loginids reported'
-);
-
-cmp_deeply(
-    [$user->get_trading_platform_loginids(platform => 'dxtrade', type_of_account => 'real')],
-    bag(),
-    'Correct loginids reported'
-);
-
-cmp_deeply(
-    $user->loginid_details->{$account1->{account_id}}->{attributes},
+    $client->user->loginid_details->{$account1->{account_id}},
     {
-        clearing_code => 'default',
-        client_domain => 'default',
-        login         => re('^TEST\d+$'),
-        account_code  => $account1->{account_id},
-        market_type   => 'all',
+        loginid      => $account1->{account_id},
+        platform     => 'dxtrade',
+        currency     => 'USD',
+        account_type => $account1->{account_type},
+        status       => undef,
+        attributes   => {
+            clearing_code => 'default',
+            client_domain => 'default',
+            login         => re('^TEST\d+$'),
+            account_code  => $account1->{account_id},
+            market_type   => 'all',
+        },
+        creation_stamp => re('\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d*'),
     },
     'user attributes of first account'
 );
@@ -156,34 +151,40 @@ cmp_deeply(
     'created second account'
 );
 
-cmp_deeply([$user->get_trading_platform_loginids(platform => 'dxtrade')], bag(qw/DXD1000 DXR1001/), 'Correct loginids reported');
-cmp_deeply([$user->get_dxtrade_loginids()],                               bag(qw/DXD1000 DXR1001/), 'Correct loginids reported');
+cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader')], bag(qw/DXD1000 DXR1001/), 'Correct loginids reported');
+cmp_deeply([$client->user->dxtrade_loginids()],                        bag(qw/DXD1000 DXR1001/), 'Correct loginids reported');
+
+cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'demo')], bag(qw/DXD1000/), 'Correct loginids reported');
+cmp_deeply([$client->user->dxtrade_loginids('demo')],                          bag(qw/DXD1000/), 'Correct loginids reported');
+
+cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'real')], bag(qw/DXR1001/), 'Correct loginids reported');
+cmp_deeply([$client->user->dxtrade_loginids('real')],                          bag(qw/DXR1001/), 'Correct loginids reported');
 
 cmp_deeply(
-    [$user->get_trading_platform_loginids(platform => 'dxtrade', type_of_account => 'demo')],
-    bag(qw/DXD1000/),
-    'Correct loginids reported'
-);
-cmp_deeply([$user->get_dxtrade_loginids(type_of_account => 'demo')], bag(qw/DXD1000/), 'Correct loginids reported');
-
-cmp_deeply(
-    [$user->get_trading_platform_loginids(platform => 'dxtrade', type_of_account => 'real')],
-    bag(qw/DXR1001/),
-    'Correct loginids reported'
-);
-cmp_deeply([$user->get_dxtrade_loginids(type_of_account => 'real')], bag(qw/DXR1001/), 'Correct loginids reported');
-
-cmp_deeply(
-    $user->loginid_details->{$account2->{account_id}}->{attributes},
+    $client->user->loginid_details->{$account2->{account_id}},
     {
-        login         => $account2->{login},
-        clearing_code => 'default',
-        client_domain => 'default',
-        account_code  => $account2->{account_id},
-        market_type   => 'all',
+        loginid      => $account2->{account_id},
+        platform     => 'dxtrade',
+        currency     => 'USD',
+        account_type => $account2->{account_type},
+        status       => undef,
+        attributes   => {
+            login         => $account2->{login},
+            clearing_code => 'default',
+            client_domain => 'default',
+            account_code  => $account2->{account_id},
+            market_type   => 'all',
+        },
+        creation_stamp => re('\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d*'),
     },
     'user attributes of second account'
 );
+
+$dxtrader_mock->mock(
+    'get_client_accounts',
+    sub {
+        return [{loginid => "DXD1000"}];
+    });
 
 cmp_deeply(
     exception {
@@ -251,24 +252,18 @@ subtest 'suspend user exception list' => sub {
         email       => 'tester@deriv.com'
     });
 
-    my $user = BOM::User->create(
+    BOM::User->create(
         email    => $client->email,
         password => 'test'
-    );
+    )->add_client($client);
 
     $client->account('USD');
-    $user->add_client($client);
-
     BOM::Test::Helper::Client::top_up($client, $client->currency, 10);
 
     my $dxtrader = BOM::TradingPlatform->new(
         platform    => 'dxtrade',
         client      => $client,
-        user        => $user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
 
     $dxconfig->suspend->all(1);
@@ -347,21 +342,13 @@ subtest 'Inter landing company transfer' => sub {
     my $dxtrader_cr = BOM::TradingPlatform->new(
         platform    => 'dxtrade',
         client      => $client_cr,
-        user        => $user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client_cr,
-            user   => $user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client_cr),
     );
 
     my $dxtrader_mf = BOM::TradingPlatform->new(
         platform    => 'dxtrade',
         client      => $client_mf,
-        user        => $user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client_mf,
-            user   => $user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client_mf),
     );
 
     my $account;
@@ -435,11 +422,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
     my $dxtrader_cr = BOM::TradingPlatform->new(
         platform    => 'dxtrade',
         client      => $wallet,
-        user        => $user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $wallet,
-            user   => $user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $wallet),
     );
 
     my $account = $dxtrader_cr->new_account(
@@ -481,11 +464,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
     my $dxtrader_p2p = BOM::TradingPlatform->new(
         platform    => 'dxtrade',
         client      => $p2p_wallet,
-        user        => $user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $p2p_wallet,
-            user   => $user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $p2p_wallet),
     );
 
     my $account1 = $dxtrader_p2p->new_account(
@@ -504,11 +483,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
     my $dxtrader_virtual = BOM::TradingPlatform->new(
         platform    => 'dxtrade',
         client      => $virtual_wallet,
-        user        => $user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $virtual_wallet,
-            user   => $user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $virtual_wallet),
     );
 
     $err = exception {
@@ -538,11 +513,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
     my $dxtrader_cypto = BOM::TradingPlatform->new(
         platform    => 'dxtrade',
         client      => $crypto_wallet,
-        user        => $user,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $crypto_wallet,
-            user   => $user,
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $crypto_wallet),
     );
 
     $err = exception {

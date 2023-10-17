@@ -51,8 +51,7 @@ subtest "cTrader Account Creation" => sub {
         my $user = BOM::User->create(
             email    => $client->email,
             password => 'test'
-        );
-        $user->add_client($client);
+        )->add_client($client);
         $client->set_default_account('USD');
         $client->binary_user_id($user->id);
         $client->save;
@@ -66,7 +65,6 @@ subtest "cTrader Account Creation" => sub {
         my $ctrader = BOM::TradingPlatform->new(
             platform    => 'ctrader',
             client      => $client,
-            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $client));
         isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
 
@@ -100,10 +98,6 @@ subtest "cTrader Account Creation" => sub {
             {error_code => 'CTraderExistingActiveAccount'},
             'Cannot create duplicate demo account'
         );
-
-        $response = $ctrader->get_account_info('CTD100001');
-        is $response->{account_id},   'CTD100001', 'get_account_info account id';
-        is $response->{account_type}, 'demo',      'get_account_info account id';
     };
 
     subtest "cTrader Create Account Errors" => sub {
@@ -112,8 +106,7 @@ subtest "cTrader Account Creation" => sub {
         my $user = BOM::User->create(
             email    => $client->email,
             password => 'test'
-        );
-        $user->add_client($client);
+        )->add_client($client);
         $client->set_default_account('USD');
         $client->binary_user_id($user->id);
         $client->residence('jp');
@@ -128,7 +121,6 @@ subtest "cTrader Account Creation" => sub {
         my $ctrader = BOM::TradingPlatform->new(
             platform    => 'ctrader',
             client      => $client,
-            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $client));
         isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
 
@@ -169,9 +161,9 @@ subtest "cTrader Account Creation" => sub {
         cmp_deeply(
             exception { $ctrader->new_account(%params) },
             {
-                error_code => 'TradingAccountNotAllowed',
-                rule       => 'trading_account.should_match_landing_company',
-                params     => ['cTrader']
+                error_code     => 'TradingAccountNotAllowed',
+                rule           => 'trading_account.should_match_landing_company',
+                message_params => ['cTrader']
             },
             'Cannot create cTrader for unsupported country- failed by rules'
         );

@@ -30,94 +30,151 @@ $mock_trading_platform->mock(
 
 subtest 'common' => sub {
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test@binary.com'
-    });
+    for my $action ('deposit', 'withdrawal') {
+        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $action . '+testvr@binary.com'
+        });
+        my $client_real = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => $action . '+test@binary.com'
+        });
+        # todo: wallet tests
 
-    my $user = BOM::User->create(
-        email    => $client->email,
-        password => 'test'
-    );
-    $client->account('USD');
-    BOM::Test::Helper::Client::top_up($client, $client->account->currency_code, 100);
-    $user->add_client($client);
+        my $user = BOM::User->create(
+            email    => $client_real->email,
+            password => 'test'
+        );
 
-    $user->add_loginid('DXR001', 'dxtrade', 'real', 'USD');
+        $client_vr->account('USD');
+        $client_real->account('USD');
+        $user->add_client($client_vr);
+        $user->add_client($client_real);
 
-    my $platform = BOM::TradingPlatform->new_base(
-        client      => $client,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $user
-        ));
+        my $dxtrader_vr = BOM::TradingPlatform->new_base(
+            client      => $client_vr,
+            rule_engine => BOM::Rules::Engine->new(client => $client_vr));
+        my $dxtrader_real = BOM::TradingPlatform->new_base(
+            client      => $client_real,
+            rule_engine => BOM::Rules::Engine->new(client => $client_real));
 
-    my %args = (
-        action               => 'deposit',
-        amount               => 1,
-        amount_currency      => 'USD',
-        platform_currency    => 'USD',
-        account_type         => 'real',
-        from_account         => $client->loginid,
-        to_account           => 'DXR001',
-        landing_company_from => 'svg',
-        landing_company_to   => 'svg',
-    );
+        BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
 
-    is exception { $platform->validate_transfer(%args) }, undef, 'no error initially';
+        cmp_deeply(
+            exception {
+                $dxtrader_real->validate_transfer(
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
+                );
+            },
+            {error_code => 'PlatformTransferSuspended'},
+            "payments suspended for $action"
+        );
+        BOM::Config::Runtime->instance->app_config->system->suspend->payments(0);
 
-    # make any rule from following rule actions fail to make sure that action is triggered
-    # TODO: make sure each action contains expected rules - we are missing coverage for this everywhere, this should probably be done in bom-rules
-    cmp_deeply(
-        exception { $platform->validate_transfer(%args, from_account => 'DXR001') },
-        {
-            error_code => 'SameAccountNotAllowed',
-            rule       => 'transfers.same_account_not_allowed'
-        },
-        'account_transfer rule action is triggered'
-    );
+        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(1);
+        cmp_deeply(
+            exception {
+                $dxtrader_real->validate_transfer(
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
+                )
+            },
+            {error_code => 'PlatformTransferSuspended'},
+            "transfer between accounts suspended for $action"
+        );
+        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(0);
 
-    cmp_deeply(
-        exception { $platform->validate_transfer(%args, landing_company_from => 'x') },
-        {
-            error_code => 'DifferentLandingCompanies',
-            rule       => 'transfers.landing_companies_are_the_same'
-        },
-        'trading_account_deposit rule action is triggered'
-    );
+        $client_real->status->set('transfers_blocked', 'system', 'test');
+        cmp_deeply(
+            exception {
+                $dxtrader_real->validate_transfer(
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
+                )
+            },
+            {error_code => 'PlatformTransferBlocked'},
+            "$action: client has transfers_blocked status"
+        );
+        $client_real->status->clear_transfers_blocked;
 
-    cmp_deeply(
-        exception { $platform->validate_transfer(%args, action => 'withdrawal', landing_company_from => 'x') },
-        {
-            error_code => 'DifferentLandingCompanies',
-            rule       => 'transfers.landing_companies_are_the_same'
-        },
-        'trading_account_withdrawal rule action is triggered'
-    );
+        cmp_deeply(
+            exception {
+                $dxtrader_vr->validate_transfer(
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
+                )
+            },
+            {error_code => 'PlatformTransferNoVirtual'},
+            "vr client cannot $action on real"
+        );
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
-    cmp_deeply(exception { $platform->validate_transfer(%args) }, {error_code => 'PlatformTransferSuspended'}, 'payments suspended',);
-    BOM::Config::Runtime->instance->app_config->system->suspend->payments(0);
+        cmp_deeply(
+            exception {
+                $dxtrader_vr->validate_transfer(
+                    action            => $action,
+                    amount            => 10,
+                    platform_currency => 'USD',
+                    account_type      => 'demo',
+                )
+            },
+            {error_code => 'PlatformTransferNoVirtual'},
+            "demo client cannot $action on demo"
+        );
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(1);
-    cmp_deeply(exception { $platform->validate_transfer(%args) }, {error_code => 'PlatformTransferSuspended'},
-        'transfer between accounts suspended',);
-    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(0);
+        cmp_deeply(
+            exception {
+                $dxtrader_real->validate_transfer(
+                    action            => $action,
+                    amount            => 10,
+                    platform_currency => 'USD',
+                    account_type      => 'demo'
+                )
+            },
+            {error_code => 'PlatformTransferNoVirtual'},
+            "real client cannot $action on demo"
+        );
 
-    $client->status->set('transfers_blocked', 'system', 'test');
-    cmp_deeply(exception { $platform->validate_transfer(%args) }, {error_code => 'PlatformTransferBlocked'}, 'client has transfers_blocked status',);
-    $client->status->clear_transfers_blocked;
+        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['USD', 'EUR']);
+        cmp_deeply(
+            exception {
+                $dxtrader_real->validate_transfer(
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
+                )
+            },
+            {
+                error_code     => 'PlatformTransferCurrencySuspended',
+                message_params => ['USD']
+            },
+            "$action: deriv transfer currency suspended"
+        );
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['USD', 'EUR']);
-    cmp_deeply(
-        exception { $platform->validate_transfer(%args) },
-        {
-            error_code => 'PlatformTransferCurrencySuspended',
-            params     => ['USD']
-        },
-        'transfer currency suspended',
-    );
-    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
+        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
+
+        # todo: wallet tests
+    }
+
 };
 
 subtest 'deposit' => sub {
@@ -127,42 +184,31 @@ subtest 'deposit' => sub {
         email       => 'deposit2@test.com'
     });
     $client->account('USD');
-
-    my $user = BOM::User->create(
+    BOM::User->create(
         email    => $client->email,
         password => 'test'
-    );
-
-    $user->add_client($client);
-    $user->add_loginid('DXR002', 'dxtrade', 'real', 'USD');
-
-    my $platform = BOM::TradingPlatform->new_base(
+    )->add_client($client);
+    my $dxtrader = BOM::TradingPlatform->new_base(
         client      => $client,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $user
-        ),
+        rule_engine => BOM::Rules::Engine->new(client => $client),
     );
 
     my %args = (
         action               => 'deposit',
         amount               => 10,
-        amount_currency      => 'USD',
         platform_currency    => 'USD',
         account_type         => 'real',
-        from_account         => $client->loginid,
-        to_account           => 'DXR002',
         landing_company_from => 'svg',
         landing_company_to   => 'svg',
     );
 
     cmp_deeply(
         exception {
-            $platform->validate_transfer(%args)
+            $dxtrader->validate_transfer(%args)
         },
         {
-            error_code => 'PlatformTransferError',
-            params     => [re('account has zero balance')]
+            error_code     => 'PlatformTransferError',
+            message_params => [re('account has zero balance')]
         },
         'zero balance'
     );
@@ -171,11 +217,11 @@ subtest 'deposit' => sub {
 
     cmp_deeply(
         exception {
-            $platform->validate_transfer(%args)
+            $dxtrader->validate_transfer(%args)
         },
         {
-            error_code => 'PlatformTransferError',
-            params     => [re('exceeds client balance')]
+            error_code     => 'PlatformTransferError',
+            message_params => [re('exceeds client balance')]
         },
         'insufficient balance'
     );
@@ -183,7 +229,7 @@ subtest 'deposit' => sub {
     BOM::Test::Helper::Client::top_up($client, $client->account->currency_code, 5);
 
     cmp_deeply(
-        $platform->validate_transfer(%args),
+        $dxtrader->validate_transfer(%args),
         {
             recv_amount               => num(10),
             fee_calculated_by_percent => num(0),
@@ -197,7 +243,7 @@ subtest 'deposit' => sub {
 
     cmp_deeply(
         exception {
-            $platform->validate_transfer(%args, platform_currency => 'EUR')
+            $dxtrader->validate_transfer(%args, platform_currency => 'EUR')
         },
         {error_code => 'PlatformTransferTemporarilyUnavailable'},
         'no exchange rate'
@@ -212,12 +258,12 @@ subtest 'deposit' => sub {
 
     cmp_deeply(
         exception {
-            $platform->validate_transfer(%args, platform_currency => 'EUR')
+            $dxtrader->validate_transfer(%args, platform_currency => 'EUR')
         },
         {
-            error_code => 'InvalidMinAmount',
-            params     => ['100.00', 'USD'],
-            rule       => 'transfers.limits',
+            error_code     => 'InvalidMinAmount',
+            message_params => ['100.00', 'USD'],
+            rule           => 'transfers.limits',
         },
         'Minimum limit reached'
     );
@@ -227,19 +273,19 @@ subtest 'deposit' => sub {
 
     cmp_deeply(
         exception {
-            $platform->validate_transfer(%args, platform_currency => 'EUR')
+            $dxtrader->validate_transfer(%args, platform_currency => 'EUR')
         },
         {
-            error_code => 'InvalidMaxAmount',
-            params     => ['5.00', 'USD'],
-            rule       => 'transfers.limits',
+            error_code     => 'InvalidMaxAmount',
+            message_params => ['5.00', 'USD'],
+            rule           => 'transfers.limits',
         },
         'Maximum limit reached'
     );
     $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":100}}'});
 
     cmp_deeply(
-        $platform->validate_transfer(%args, platform_currency => 'EUR'),
+        $dxtrader->validate_transfer(%args, platform_currency => 'EUR'),
         {
             recv_amount               => num(4),
             fee_calculated_by_percent => num(2),
@@ -266,29 +312,19 @@ subtest 'withdrawal' => sub {
         password => 'test'
     );
     $user->add_client($client);
-    $user->add_loginid('DXR003', 'dxtrade', 'real', 'USD');
-
-    my $platform = BOM::TradingPlatform->new_base(
+    my $dxtrader = BOM::TradingPlatform->new_base(
         client      => $client,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client,
-            user   => $user
-        ));
-
-    my %args = (
-        action               => 'withdrawal',
-        amount               => 10,
-        amount_currency      => 'USD',
-        platform_currency    => 'USD',
-        account_type         => 'real',
-        from_account         => 'DXR003',
-        to_account           => $client->loginid,
-        landing_company_from => 'svg',
-        landing_company_to   => 'svg',
-    );
+        rule_engine => BOM::Rules::Engine->new(client => $client));
 
     cmp_deeply(
-        $platform->validate_transfer(%args),
+        $dxtrader->validate_transfer(
+            action               => 'withdrawal',
+            amount               => 10,
+            platform_currency    => 'USD',
+            account_type         => 'real',
+            landing_company_from => 'svg',
+            landing_company_to   => 'svg',
+        ),
         {
             recv_amount               => num(10),
             fee_calculated_by_percent => num(0),
@@ -301,7 +337,14 @@ subtest 'withdrawal' => sub {
     );
 
     cmp_deeply(
-        $platform->validate_transfer(%args, platform_currency => 'EUR'),
+        $dxtrader->validate_transfer(
+            action               => 'withdrawal',
+            amount               => 10,
+            platform_currency    => 'EUR',
+            account_type         => 'real',
+            landing_company_from => 'svg',
+            landing_company_to   => 'svg',
+        ),
         {
             recv_amount               => num(19),
             fee_calculated_by_percent => num(0.5),
@@ -319,30 +362,37 @@ subtest 'withdrawal' => sub {
         email       => 'withdrawal@test.com'
     });
     $client_btc->account('BTC');
-    populate_exchange_rates({BTC => 10000});
     $user->add_client($client_btc);
-
-    my $platform_btc = BOM::TradingPlatform->new_base(
+    my $dxtrader_btc = BOM::TradingPlatform->new_base(
         client      => $client_btc,
-        rule_engine => BOM::Rules::Engine->new(
-            client => $client_btc,
-            user   => $user
-        ));
+        rule_engine => BOM::Rules::Engine->new(client => $client_btc));
 
-    $args{to_account} = $client_btc->loginid;
-
-    cmp_deeply(
-        exception { $platform_btc->validate_transfer(%args, amount => 101) },
+    populate_exchange_rates({BTC => 10000});
+    BOM::Test::Helper::Client::top_up($client_btc, 'BTC', 1);
+    cmp_deeply exception {
+        $dxtrader_btc->validate_transfer(
+            action            => 'withdrawal',
+            amount            => 101,
+            platform_currency => 'USD',
+            account_type      => 'real',
+        )
+    },
         {
-            error_code => 'InvalidMaxAmount',
-            params     => ['100.00', 'USD'],
-            rule       => 'transfers.limits',
+        error_code     => 'InvalidMaxAmount',
+        message_params => ['100.00', 'USD'],
+        rule           => 'transfers.limits',
         },
-        'Correct max limit for USD withdrawal from BTC account',
-    );
+        'Correct max limit for USD withdrawal from BTC account';
 
     cmp_deeply(
-        $platform_btc->validate_transfer(%args, amount => 100),
+        $dxtrader_btc->validate_transfer(
+            action               => 'withdrawal',
+            amount               => 100,
+            platform_currency    => 'USD',
+            account_type         => 'real',
+            landing_company_from => 'svg',
+            landing_company_to   => 'svg',
+        ),
         {
             fee_calculated_by_percent => '10',
             fees                      => 10,

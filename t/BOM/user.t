@@ -563,8 +563,8 @@ subtest 'clients_for_landing_company' => sub {
     );
     my @clients = $user->clients_for_landing_company('svg');
     is(scalar @clients, 2, "one cr account");
-    is_deeply([map { $_->landing_company->short } @clients], [('svg') x 2], 'lc correct');
-    cmp_deeply([map { $_->loginid } @clients], bag(qw/CR10000 CR10001/), "clients are correct");
+    is_deeply([map { $_->landing_company->short } @clients], [('svg') x 2],         'lc correct');
+    is_deeply([map { $_->loginid } @clients],                [qw/CR10000 CR10001/], "clients are correct");
 };
 
 # test load without password
@@ -840,17 +840,16 @@ subtest 'get_account_by_loginid' => sub {
     # try mt5 account
     ok $user->get_account_by_loginid('MTD2000'), 'can find mt5 demo account';
 
-    throws_ok { $user->get_account_by_loginid('MTD2001') } qr/InvalidTradingAccount/, 'invalid mt5 account';
+    throws_ok { $user->get_account_by_loginid('MTD2001') } qr/InvalidMT5Account/, 'invalid mt5 account';
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
     # try dxtrade account
-    throws_ok { $user->get_account_by_loginid('DXR2000') } qr/InvalidTradingAccount/, 'invalid dxtrade account';
+    throws_ok { $user->get_account_by_loginid('DXR2000') } qr/DXInvalidAccount/, 'invalid dxtrade account';
 
     $dxtrader = BOM::TradingPlatform->new(
         platform    => 'dxtrade',
         client      => $client_cr_new,
-        user        => $user,
         rule_engine => BOM::Rules::Engine->new(client => $client_cr_new),
     );
     isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
@@ -863,7 +862,7 @@ subtest 'get_account_by_loginid' => sub {
     );
 
     my $dxtrade_loginid = $dxtrade_account->{account_id};
-    delete $user->{loginid_details};
+    $user->add_loginid($dxtrade_loginid, 'dxtrade', 'demo', 'USD', {});
     is $user->get_account_by_loginid($dxtrade_loginid)->{account_id}, $dxtrade_loginid, 'can find dxtrade demo account';
 };
 

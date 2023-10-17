@@ -110,7 +110,7 @@ sub change_password {
 
     my $password = $args{password};
 
-    my @mt5_loginids = $self->client->user->get_mt5_loginids();
+    my @mt5_loginids = $self->client->user->get_mt5_loginids;
 
     my (@valid_logins, $res);
 
@@ -199,7 +199,7 @@ sub change_investor_password {
 
     my ($new_password, $account_id) = @args{qw/new_password account_id/};
 
-    my @mt5_loginids = $self->client->user->get_mt5_loginids();
+    my @mt5_loginids = $self->client->user->get_mt5_loginids;
     my $mt5_login    = first { $_ eq $account_id } @mt5_loginids;
 
     die +{error_code => 'MT5InvalidAccount'} unless $mt5_login;
@@ -297,7 +297,7 @@ sub get_account_info {
     my $mt5_group = BOM::User::Utility::parse_mt5_group($mt5_user->{group});
     my $currency  = uc($mt5_group->{currency});
 
-    return {
+    return Future->done({
         account_id            => $mt5_user->{login},
         account_type          => $mt5_group->{account_type},
         balance               => financialrounding('amount', $currency, $mt5_user->{balance}),
@@ -307,7 +307,7 @@ sub get_account_info {
         market_type           => $mt5_group->{market_type},
         landing_company_short => $mt5_group->{landing_company_short},
         sub_account_type      => $mt5_group->{sub_account_type},
-    };
+    });
 }
 
 =head2 available_accounts
@@ -469,11 +469,16 @@ sub mt5_accounts_lookup {
 
     my @futures;
     $account_type = $account_type ? $account_type : 'all';
-    my $wallet_loginid = $client->is_wallet ? $client->loginid : undef;
-    my @clients        = $client->user->get_mt5_loginids(
-        type_of_account => $account_type,
-        wallet_loginid  => $wallet_loginid
-    );
+
+    my @clients;
+
+    if ($client->is_wallet) {
+        my @all_linked_accounts = $client->user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid}->@*;
+
+        @clients = map { $_->{platform} eq "mt5" ? $_->{loginid} : () } @all_linked_accounts;
+    } elsif ($client->is_legacy) {
+        @clients = $client->user->get_mt5_loginids(type_of_account => $account_type);
+    }
 
     for my $login (@clients) {
         my $f = get_settings($client, $login)->then(

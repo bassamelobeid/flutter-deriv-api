@@ -8,7 +8,7 @@ use feature 'state';
 use Syntax::Keyword::Try;
 use Date::Utility;
 use Format::Util::Numbers qw(formatnumber);
-use List::Util            qw(first any all minstr uniq);
+use List::Util            qw(first any all minstr);
 use Scalar::Util          qw(blessed looks_like_number);
 use Carp                  qw(croak carp);
 use Log::Any              qw($log);
@@ -51,12 +51,6 @@ use constant DAILY_TRANSFER_COUNT_KEY_PREFIX => "USER_TRANSFERS_DAILY::";
 # Redis key prefix for counting daily user amount transfers
 use constant DAILY_TRANSFER_AMOUNT_KEY_PREFIX => "USER_TOTAL_AMOUNT_TRANSFERS_DAILY::";
 
-# used for extracting numerical portion of MT5 loginids
-use constant {
-    MT5_REGEX => qr/^MT[DR]?(?=\d+$)/,
-    EZR_REGEX => qr/^EZ[DR]?(?=\d+$)/,
-};
-
 sub dbic {
     my (undef, %params) = @_;
     #not caching this as the handle is cached at a lower level and
@@ -80,71 +74,23 @@ for my $k (@fields) {
         unless __PACKAGE__->can($k);
 }
 
-use constant BROKER_CODES => {
-    VRTC => {
-        platform => 'dtrade',
-        virtual  => 1
-    },
-    VRTJ => {
-        platform => 'dtrade',
-        virtual  => 1
-    },
-    VRCH => {
-        platform => 'dtrade',
-        virtual  => 1
-    },
-    VRTU => {
-        platform => 'dtrade',
-        virtual  => 1
-    },
-    CR  => {platform => 'dtrade'},
-    MF  => {platform => 'dtrade'},
-    MLT => {platform => 'dtrade'},
-    MX  => {platform => 'dtrade'},
-    JP  => {platform => 'dtrade'},
-    CH  => {platform => 'dtrade'},
-    AFF => {platform => 'dtrade'},
-    VRW => {
-        platform => 'dwallet',
-        virtual  => 1,
-        wallet   => 1
-    },
-    CRW => {
-        platform => 'dwallet',
-        wallet   => 1
-    },
-    CRA => {
-        platform => 'dwallet',
-        wallet   => 1
-    },
-    MFW => {
-        platform => 'dwallet',
-        wallet   => 1
-    },
-    MTD => {
-        platform => 'mt5',
-        virtual  => 1
-    },
-    MT  => {platform => 'mt5'},
-    MTR => {platform => 'mt5'},
-    DXD => {
-        platform => 'dxtrade',
-        virtual  => 1
-    },
-    DXR => {platform => 'dxtrade'},
-    EZD => {
-        platform => 'derivez',
-        virtual  => 1
-    },
-    EZR => {
-        platform => 'derivez',
-    },
-    CTD => {
-        platform => 'ctrader',
-        virtual  => 1
-    },
-    CTR => {platform => 'ctrader'},
+use constant {
+    MT5_REGEX            => qr/^MT[DR]?(?=\d+$)/,
+    MT5_REAL_REGEX       => qr/^MT[R]?(?=\d+$)/,
+    MT5_DEMO_REGEX       => qr/^MTD(?=\d+$)/,
+    VIRTUAL_REGEX        => qr/^VR(?:TC|CH)(?=\d+$)/,
+    VIRTUAL_WALLET_REGEX => qr/^VRW(?=\d+$)/,
+    DXTRADE_REGEX        => qr/^DX[DR](?=\d+$)/,
+    DXTRADE_REAL_REGEX   => qr/^DXR(?=\d+$)/,
+    DXTRADE_DEMO_REGEX   => qr/^DXD(?=\d+$)/,
+    CTRADE_REGEX         => qr/^CT[DR](?=\d+$)/,
+    CTRADE_REAL_REGEX    => qr/^CTR(?=\d+$)/,
+    CTRADE_DEMO_REGEX    => qr/^CTD(?=\d+$)/,
+    EZR_REGEX            => qr/^EZ[DR]?(?=\d+$)/,
+    EZR_REAL_REGEX       => qr/^EZ[R]?(?=\d+$)/,
+    EZR_DEMO_REGEX       => qr/^EZD(?=\d+$)/,
 };
+use constant ALL_TRADING_PLATFORMS_LOGINS => qr/${\(MT5_REGEX)}|${\(DXTRADE_REGEX)}|${\(CTRADE_REGEX)}|${\(EZR_REGEX)}/;
 
 sub create {
     my ($class, %args) = @_;
@@ -194,8 +140,7 @@ sub add_client {
     my $account_type = $client->get_account_type;
     die 'client does not have a account type' unless $account_type;
 
-    $self->add_loginid($client->loginid, $account_type->platform, undef, ($client->default_account ? $client->currency : undef),
-        undef, $link_to_wallet_loginid);
+    $self->add_loginid($client->loginid, $account_type->platform, undef, undef, undef, $link_to_wallet_loginid);
     return $self;
 }
 
@@ -230,8 +175,6 @@ sub update_loginid_status {
 
 Get all loginids linked to the user with all fields.
 
-The return is cached to avoid repeated db calls. Tests may need to delete $user->{loginid_details} to see changes.
-
 Returns hashref.
 
 =cut
@@ -239,33 +182,19 @@ Returns hashref.
 sub loginid_details {
     my $self = shift;
     return $self->{loginid_details} if $self->{loginid_details};
-
     my $loginids = $self->dbic->run(
         fixup => sub {
             return $_->selectall_arrayref(
-                'select loginid, platform, account_type, currency, attributes, status, creation_stamp, wallet_loginid from users.get_loginids(?)',
+                'select loginid, platform, account_type, currency, attributes, status, creation_stamp from users.get_loginids(?)',
                 {Slice => {}},
                 $self->{id});
         });
-
     $self->{loginid_details} = {};
+    for my $login (@$loginids) {
+        $login->{attributes} = decode_json($login->{attributes} // '{}');
 
-    for my $row (@$loginids) {
-        my $loginid = $row->{loginid};
-        ($row->{broker_code}) = $loginid =~ /(^[a-zA-Z]+)/;
-        my $broker_info = BROKER_CODES->{$row->{broker_code}};
-        $row->{platform} //= $broker_info->{platform};
-        $row->{is_virtual} = {
-            demo => 1,
-            real => 0
-        }->{$row->{account_type} // ''} // $broker_info->{virtual} ? 1 : 0;
-        $row->{is_external} = $broker_info->{platform} !~ /^(dtrade|dwallet)$/ ? 1 : 0;
-        $row->{is_wallet}   = $broker_info->{wallet}                           ? 1 : 0;
-        $row->{attributes}  = decode_json($row->{attributes} // '{}');
-
-        $self->{loginid_details}{$loginid} = $row;
+        $self->{loginid_details}{$login->{loginid}} = $login;
     }
-
     return $self->{loginid_details};
 }
 
@@ -280,6 +209,10 @@ Returns array.
 sub loginids {
     my $self = shift;
     return (sort keys $self->loginid_details->%*);
+}
+
+sub login_attributes {
+
 }
 
 =head2 create_client
@@ -333,15 +266,14 @@ sub create_wallet {
     my $lock_name = 'WALLET::CREATION' . $self->{id};
     die "User $self->{id} is trying to create 2 wallets at the same time" unless BOM::Platform::Redis::acquire_lock($lock_name, 30);
     try {
-        # Check for duplicates
-        for my $account (values $self->loginid_details->%*) {
-            next unless $account->{is_wallet};
-            next unless $account->{is_virtual} == (($args{account_type} // '') eq 'demo' ? 1 : 0);
-            my $wallet = BOM::User::Client->get_client_instance($account->{loginid}, 'replica');
-            next unless $wallet->get_account_type->name eq ($args{account_type} // '');
-            next unless $wallet->default_account;
-            next unless $wallet->account->currency_code eq ($args{currency} // '');
-            next unless $wallet->broker_code eq uc($args{broker_code}       // '');
+        #Check for dublicates
+
+        for my $client ($self->clients(include_disabled => 0)) {
+            next unless $client->is_wallet;
+            next unless ($client->account_type           // '') eq ($args{account_type}    // '');
+            next unless ($client->account->currency_code // '') eq ($args{currency}        // '');
+            next unless ($client->landing_company->short // '') eq ($args{landing_company} // '');
+
             die +{error => 'DuplicateWallet'};
         }
 
@@ -571,9 +503,7 @@ get client non-mt5 login ids
 
 sub bom_loginids {
     my $self = shift;
-
-    my %details = $self->loginid_details->%*;
-    return grep { !$details{$_}{is_external} } keys %details;
+    return grep { $_ !~ ALL_TRADING_PLATFORMS_LOGINS } $self->loginids;
 }
 
 =head2 bom_real_loginids
@@ -584,22 +514,18 @@ get non-mt5 real login ids
 
 sub bom_real_loginids {
     my $self = shift;
-
-    my %details = $self->loginid_details->%*;
-    return grep { !$details{$_}{is_external} && !$details{is_virtual} } keys %details;
+    return grep { $_ !~ ALL_TRADING_PLATFORMS_LOGINS && $_ !~ VIRTUAL_REGEX } $self->loginids;
 }
 
 =head2 bom_virtual_loginid
 
-get legacy virtual login id
+get non-mt5 virtual login id
 
 =cut
 
 sub bom_virtual_loginid {
     my $self = shift;
-
-    my %details = $self->loginid_details->%*;
-    return first { !$details{$_}{is_wallet} && $details{$_}{is_virtual} } keys %details;
+    return first { $_ =~ VIRTUAL_REGEX } $self->loginids;
 }
 
 =head2 bom_virtual_wallet_loginid
@@ -610,9 +536,7 @@ get virtual wallet login ids
 
 sub bom_virtual_wallet_loginid {
     my $self = shift;
-
-    my %details = $self->loginid_details->%*;
-    return first { $details{$_}{is_wallet} && $details{$_}{is_virtual} } keys %details;
+    return grep { $_ =~ VIRTUAL_WALLET_REGEX } $self->loginids;
 }
 
 =head2 mt5_logins
@@ -669,6 +593,32 @@ sub mt5_logins_with_group {
     }
 
     return $mt5_logins_with_group;
+}
+
+=head2 dxtrade_loginids
+
+get dxtrade loginids for the user
+
+=cut
+
+sub dxtrade_loginids {
+    my ($self, $type) = @_;
+
+    my @loginids = sort $self->get_trading_platform_loginids('dxtrader', $type);
+    return @loginids;
+}
+
+=head2 ctrade_loginids
+
+get ctrade loginids for the user
+
+=cut
+
+sub ctrade_loginids {
+    my ($self, $type) = @_;
+
+    my @loginids = sort $self->get_trading_platform_loginids('ctrader', $type);
+    return @loginids;
 }
 
 sub get_last_successful_login_history {
@@ -903,46 +853,6 @@ sub add_login_history {
     return $self;
 }
 
-=head2 get_siblings_for_transfer
-
-For a client, returns a list of of client objects allowed for transfer between accounts.
-
-=over 4
-
-=item * C<client>
-
-=back
-
-=cut
-
-sub get_siblings_for_transfer {
-    my ($self, $client) = @_;
-
-    my %loginid_details = $self->loginid_details->%*;
-    my @loginids        = grep { !$loginid_details{$_}->{is_external} } keys %loginid_details;
-    @loginids = grep { $loginid_details{$_}->{is_virtual} == $client->is_virtual } @loginids;
-
-    if ($client->is_legacy) {
-        @loginids = grep { !$loginid_details{$_}->{is_wallet} } @loginids;
-        @loginids = grep { !$loginid_details{$_}->{wallet_loginid} } @loginids;
-    } elsif ($client->is_wallet) {
-        @loginids = grep { (($loginid_details{$_}->{wallet_loginid} // '') eq $client->loginid) || $loginid_details{$_}->{is_wallet} } @loginids;
-    } elsif ($client->get_account_type->name eq 'standard') {
-        @loginids = grep { $_ eq ($loginid_details{$client->loginid}->{wallet_loginid} // '') } @loginids;
-    } else {
-        $log->warnf('Unhandled client %s passed to get_siblings_for_transfer', $client->loginid);
-    }
-
-    my @clients = map { BOM::User::Client->get_client_instance($_, 'replica') } @loginids;
-    @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
-    @clients = grep { $_->get_account_type->transfers ne 'none' } @clients;
-    @clients = grep { $_->landing_company->short eq $client->landing_company->short } @clients;
-
-    push @clients, $client unless any { $_->loginid eq $client->loginid } @clients;    # own account is always returned
-
-    return @clients;
-}
-
 ################################################################################
 # update_* functions
 # Style: if the function can update several fields, then it will be named as update_*_fields
@@ -1028,13 +938,14 @@ sub is_payment_agents_suspended_in_country {
 
 my $loginids = Reference list of all accounts associated with current client account;
 
-=over
+Filter the list of MT5 accounts to only get active accounts.
 
-=item * C<$login_id> client login id to check status
-
-=back
-
-Returns  boolean value
+Active account contains status of 'undef, poa_pending, poa_rejected, and poa_failed'.
+Other possible status includes:
+    'disabled',
+    'migrated_single_email',
+    'duplicate_account',
+    'archived'
 
 =cut
 
@@ -1066,7 +977,8 @@ sub is_active_loginid {
     return 0 unless $details;
 
     # Currently we have statuses only for mt5 and derivez accounts
-    return 1 unless $details->{platform} =~ /^(?:mt5|derivez)$/;
+    $details->{platform} //= $loginid =~ MT5_REGEX ? 'mt5' : '';
+    return 1 unless ($details->{platform} // '') =~ /^(?:mt5|derivez)$/;
 
     # Since there are no plans to add "active" to status of active account in DB, current active accounts
     # contain status of 'undef'.
@@ -1091,11 +1003,15 @@ args type_of_account; Can be value of ['all', 'demo', 'real']. Indicate which 't
 
 sub get_mt5_loginids {
     my ($self, %args) = @_;
+    $args{type_of_account}    //= 'all';
+    $args{include_all_status} //= 0;
 
-    my @loginids = sort $self->get_trading_platform_loginids(
-        platform => 'mt5',
-        %args
-    );
+    my $type = 'real';
+    $type = 'demo' if $args{type_of_account} eq 'demo';
+    $type = 'all'  if $args{type_of_account} eq 'all';
+
+    my @loginids = sort $self->get_trading_platform_loginids('mt5', $type // 'all');
+    @loginids = @{$self->filter_active_ids(\@loginids)} unless $args{include_all_status};
 
     return @loginids;
 }
@@ -1108,28 +1024,20 @@ Getting derivez accounts based on their type_of_account
 
 sub get_derivez_loginids {
     my ($self, %args) = @_;
+    $args{type_of_account}    //= 'all';
+    $args{include_all_status} //= 0;
 
-    my @loginids = sort $self->get_trading_platform_loginids(
-        platform => 'derivez',
-        %args
-    );
+    my $type = 'real';
+    $type = 'demo' if $args{type_of_account} eq 'demo';
+    $type = 'all'  if $args{type_of_account} eq 'all';
 
-    return @loginids;
-}
+    my @loginids = sort $self->get_trading_platform_loginids('derivez', $type // 'all');
 
-=head2 get_dxtrade_loginids
+    if ($args{loginid}) {
+        @loginids = grep { $_ eq $args{loginid} } @loginids;
+    }
 
-Getting dxtrade accounts based on their type_of_account
-
-=cut
-
-sub get_dxtrade_loginids {
-    my ($self, %args) = @_;
-
-    my @loginids = sort $self->get_trading_platform_loginids(
-        platform => 'dxtrade',
-        %args
-    );
+    @loginids = @{$self->filter_active_ids(\@loginids)} unless $args{include_all_status};
 
     return @loginids;
 }
@@ -1142,11 +1050,15 @@ Getting ctrader accounts based on their type_of_account
 
 sub get_ctrader_loginids {
     my ($self, %args) = @_;
+    $args{type_of_account}    //= 'all';
+    $args{include_all_status} //= 0;
 
-    my @loginids = sort $self->get_trading_platform_loginids(
-        platform => 'ctrader',
-        %args
-    );
+    my $type = 'real';
+    $type = 'demo' if $args{type_of_account} eq 'demo';
+    $type = 'all'  if $args{type_of_account} eq 'all';
+
+    my @loginids = sort $self->get_trading_platform_loginids('ctrader', $type // 'all');
+    @loginids = @{$self->filter_active_ids(\@loginids)} unless $args{include_all_status};
 
     return @loginids;
 }
@@ -1242,38 +1154,23 @@ sub logged_in_before_from_same_location {
 
 =head2 daily_transfer_incr
 
-Increments transfers per day. Taakes the following parameters:
-
-=over 4
-
-=item * C<client_from> - client instance
-
-=item * C<loginid_from> - if client_from not provided
-
-=item * C<client_to> - client instance
-
-=item * C<loginid_to> - if client_to not provided
-
-=item * C<amount> - amount transferred, can be negative
-
-=item * C<amount_currency> - currency of amount
-
-=back
+Increments transfers per day in redis depending on count or cumulative amount.
 
 =cut
 
 sub daily_transfer_incr {
-    my ($self, %args) = @_;
+    my ($self, $args) = @_;
 
-    my $limit_type = $self->get_transfer_limit_type(%args);
-    my $amount     = abs(convert_currency($args{amount}, $args{amount_currency}, 'USD'));
+    my $type     = $args->{type}     // 'internal';
+    my $currency = $args->{currency} // 'USD';
+    my $amount   = $args->{amount}   // 0;
 
     # redis name is different than dynamic settings
     # Everyone's limits will be reset to zero if setting is changed. So we should always be incrementing both keys always.
     # It's a waste of space but we have no choice until we remove the old code.
 
-    $self->daily_transfer_incr_count($limit_type->{type}, $limit_type->{identifier});
-    $self->daily_transfer_incr_amount($amount, $limit_type->{type}, $limit_type->{identifier});
+    $self->daily_transfer_incr_amount(convert_currency(abs($amount), $currency, 'USD'), $type);
+    $self->daily_transfer_incr_count($type);
 
     return;
 }
@@ -1285,12 +1182,11 @@ Increments number of transfers per day in redis.
 =cut
 
 sub daily_transfer_incr_count {
-    my ($self, $type, $identifier) = @_;
+    my ($self, $type) = @_;
 
     my $redis     = BOM::Config::Redis::redis_replicated_write();
-    my $redis_key = DAILY_TRANSFER_COUNT_KEY_PREFIX . $type . '_' . $identifier;
-    my $expiry    = Date::Utility->today->plus_time_interval('1d')->epoch - 1;     #end of day - 1 sec
-
+    my $redis_key = DAILY_TRANSFER_COUNT_KEY_PREFIX . $type . '_' . $self->id;
+    my $expiry    = Date::Utility->today->plus_time_interval("1d")->epoch - 1;    #end of day - 1 sec
     $redis->multi;
     $redis->incr($redis_key);
     $redis->expireat($redis_key, $expiry);
@@ -1301,86 +1197,24 @@ sub daily_transfer_incr_count {
 
 =head2 daily_transfer_incr_amount
 
-Increments daily transfer amount in redis.
+Increments number of transfers per day in redis.
 
 =cut
 
 sub daily_transfer_incr_amount {
-    my ($self, $amount, $type, $identifier) = @_;
+    my ($self, $amount, $type) = @_;
 
     my $redis          = BOM::Config::Redis::redis_replicated_write();
     my $redis_hash     = DAILY_TRANSFER_AMOUNT_KEY_PREFIX . Date::Utility->new->date;
-    my $redis_hash_key = $type . '_' . $identifier;
-    my $expiry         = Date::Utility->today->plus_time_interval('1d')->epoch - 1;     #end of day - 1 sec
+    my $redis_hash_key = $type . '_' . $self->id;
+    my $expiry         = Date::Utility->today->plus_time_interval("1d")->epoch - 1;     #end of day - 1 sec
 
     $redis->multi;
-    $redis->hincrbyfloat($redis_hash, $redis_hash_key, $amount);                        # amount is USD
+    $redis->hincrbyfloat($redis_hash, $redis_hash_key, $amount);
     $redis->expireat($redis_hash, $expiry);
     $redis->exec;
 
     return;
-}
-
-=head2 get_transfer_limit_type
-
-Returns a hash of information for recording or checking daily transfer limits.
-This is determined by the account types of both clients.
-
-=over 4
-
-=item * C<client_from> - client instance
-
-=item * C<loginid_from> - if client_from not provided
-
-=item * C<client_to> - client instance
-
-=item * C<loginid_to> - if client_to not provided
-
-=back
-
-=cut
-
-sub get_transfer_limit_type {
-    my ($self, %args) = @_;
-
-    $args{loginid_from} //= $args{client_from}->loginid;
-    $args{loginid_to}   //= $args{client_to}->loginid;
-    my $details         = $self->loginid_details;
-    my $details_from    = $details->{$args{loginid_from}} or return;
-    my $details_to      = $details->{$args{loginid_to}}   or return;
-    my $from_is_cashier = $args{client_from} ? $args{client_from}->get_account_type->is_cashier : -1;
-    my $to_is_cashier   = $args{client_to}   ? $args{client_to}->get_account_type->is_cashier   : -1;
-
-    my $type       = 'internal';
-    my $identifier = $self->id;
-
-    if (any { $_->{is_virtual} } ($details_from, $details_to)) {
-        $type = 'virtual';
-    } elsif ((all { $_->{is_wallet} } ($details_from, $details_to)) and any { $_ == 0 } ($from_is_cashier, $to_is_cashier)) {
-        $type = 'wallet';    # transfer from a cashier wallet to a non-cashier wallet (p2p or payment_agent)
-    } elsif (any { $_->{platform} eq 'mt5' } ($details_from, $details_to)) {
-        $type = 'MT5';       # uppercase name is used for redis keys and config
-    } elsif (any { $_->{platform} eq 'dtrade' && $_->{wallet_loginid} } ($details_from, $details_to)) {
-        $type = 'dtrade';
-    } elsif (my $acc = first { $_->{is_external} } ($details_from, $details_to)) {
-        $type = $acc->{platform};    # dxtrade/derivez/ctrade are used as is
-    }
-
-    if ($type !~ /^(virtual|internal|wallet)$/) {
-        $identifier = $details_from->{wallet_loginid} // $details_to->{wallet_loginid} // $identifier;
-    }
-
-    my $config_name = {
-        internal => 'between_accounts',
-        wallet   => 'between_wallets',
-    }->{$type} // $type;
-
-    return {
-        type        => $type,
-        identifier  => $identifier,
-        config_name => $config_name,
-    };
-
 }
 
 =head2 daily_transfer_count
@@ -1390,26 +1224,28 @@ Gets number of transfers made in the current day.
 =cut
 
 sub daily_transfer_count {
-    my ($self, %args) = @_;
+    my ($self, $type) = @_;
+    $type //= 'internal';
 
     my $redis     = BOM::Config::Redis::redis_replicated_write();
-    my $redis_key = DAILY_TRANSFER_COUNT_KEY_PREFIX . $args{type} . '_' . $args{identifier};
+    my $redis_key = DAILY_TRANSFER_COUNT_KEY_PREFIX . $type . '_' . $self->id;
 
     return $redis->get($redis_key) // 0;
 }
 
 =head2 daily_transfer_amount
 
-Gets total transfer amount made in the current day.
+Gets number of total transfers made in the current day.
 
 =cut
 
 sub daily_transfer_amount {
-    my ($self, %args) = @_;
+    my ($self, $type) = @_;
+    $type //= 'internal';
 
     my $redis          = BOM::Config::Redis::redis_replicated_write();
     my $redis_hash     = DAILY_TRANSFER_AMOUNT_KEY_PREFIX . Date::Utility->new->date;
-    my $redis_hash_key = $args{type} . '_' . $args{identifier};
+    my $redis_hash_key = $type . '_' . $self->id;
 
     return $redis->hget($redis_hash, $redis_hash_key) // 0;
 }
@@ -1785,29 +1621,33 @@ sub link_wallet_to_trading_account {
     my $account_details = $self->loginid_details->{$loginid};
     die "InvalidTradingAccount\n" unless $account_details;
 
-    my $currency;
-    if ($account_details->{is_external}) {
+    my ($is_virtual, $currency);
+    if ($loginid =~ ALL_TRADING_PLATFORMS_LOGINS) {
         # Handling trading platforms acounts
-        $currency = $account_details->{currency};
-
-        unless ($currency) {
-            # Fallsback for legacy accounts, usually mt5
-            my $platform_acc = BOM::TradingPlatform->new(
-                platform => $account_details->{platform},
+        if ($account_details->{account_type} && $account_details->{currency}) {
+            $is_virtual = $account_details->{account_type} eq 'demo' ? 1 : 0;
+            $currency   = $account_details->{currency};
+        } elsif ($loginid =~ MT5_REGEX) {
+            # Fallsback for legacy mt5 accounts
+            my $mt5_details = BOM::TradingPlatform->new(
+                platform => 'mt5',
                 client   => $self->get_default_client,
-                user     => $self,
-            )->get_account_info($loginid);
+            )->get_account_info($loginid)->get;
 
-            $currency = $platform_acc->{currency} // '';
+            $is_virtual = $mt5_details->{account_type} eq 'demo' ? 1 : 0;
+            $currency   = $mt5_details->{currency} // '';
+        } else {
+            die "Possibly corrupted data. Information is missed for account $loginid";
         }
     } else {
         # Handling internal accounts
         my $client = BOM::User::Client->get_client_instance($loginid);
-        my $acc    = $client->default_account;
+        $is_virtual = $client->is_virtual;
+        my $acc = $client->default_account;
         $currency = $acc ? $acc->currency_code : '';
     }
 
-    die "CannotLinkVirtualAndReal\n" unless $account_details->{is_virtual} == $wallet->is_virtual;
+    die "CannotLinkVirtualAndReal\n" unless $is_virtual == $wallet->is_virtual;
 
     die "CurrencyMismatch\n" unless $currency eq $wallet->currency;
 
@@ -1824,7 +1664,7 @@ sub link_wallet_to_trading_account {
 
     die "CannotChangeWallet\n" unless $result;
 
-    delete $self->@{qw(linked_wallet loginid_details)};
+    delete $self->{linked_wallet};
 
     return 1;
 }
@@ -1853,7 +1693,7 @@ sub get_wallet_by_loginid {
 
 =head2 get_account_by_loginid
 
-Gets trading account details (including balance) by loginid.
+Gets a trading account by loginid.
 
 =over 4
 
@@ -1871,19 +1711,29 @@ sub get_account_by_loginid {
     # Using `require` to import at runtime and avoid circular dependency
     require BOM::TradingPlatform;
 
-    my $details = $self->loginid_details->{$loginid};
-    die "InvalidTradingAccount\n" if !$details || $details->{is_wallet};
+    return BOM::TradingPlatform->new(
+        platform => 'mt5',
+        client   => $self->get_default_client
+        )->get_account_info($loginid)->get
+        if $loginid =~ MT5_REGEX;
 
-    if ($details->{is_external}) {
-        return BOM::TradingPlatform->new(
-            platform => $details->{platform},
-            client   => $self->get_default_client,
-            user     => $self,
-        )->get_account_info($loginid);
-    }
+    return BOM::TradingPlatform->new(
+        platform => 'dxtrade',
+        client   => $self->get_default_client
+    )->get_account_info($loginid)
+        if $loginid =~ DXTRADE_REGEX;
+
+    return BOM::TradingPlatform->new(
+        platform => 'derivez',
+        client   => $self->get_default_client
+    )->get_account_info($loginid)
+        if $loginid =~ EZR_REGEX;
+
+    #TODO: add logic for cTrader here when it's ready
 
     my $client = first { $_->loginid eq $loginid && !$_->is_wallet } $self->clients;
-    die "InvalidTradingAccount\n" unless $client;
+
+    die "InvalidTradingAccount\n" unless ($client);
 
     my $account = $client->default_account;
 
@@ -1954,21 +1804,13 @@ sub get_accounts_links {
 
 Get all the recorded loginids for the given trading platform.
 
-Takes the following named arguments:
+Takes the following arguments:
 
 =over 4
 
-=item * C<platform> - the trading platform.
+=item * C<$platform> - the trading platform.
 
-=item * C<type_of_account> - either: real|demo|all, defaults to all.
-
-=item * C<loginid> - filter by loginid.
-
-=item * C<wallet_loginid> - filter by linked wallet, if undef only unlinked accounts are returned.
-
-=item * C<include_all_status> - inactive accounts will be filtered out unless true.
-
-=item * C<wallet_loginid> - if param exists and is defined, only accounts linked to the wallet are returned. If it exists and is undefined, all unlinked accounts are returned. If it does not exist, both linked and unlinked accounts belonging to user are returned.
+=item * C<$account_type> - either: real|demo|all, defaults to all.
 
 =back
 
@@ -1977,26 +1819,35 @@ Returns a list of loginids.
 =cut
 
 sub get_trading_platform_loginids {
-    my ($self, %args) = @_;
+    my ($self, $platform, $account_type) = @_;
+    $account_type //= 'all';
 
-    my @loginids;
+    my $regex_stash = {
+        dxtrader => {
+            real => DXTRADE_REAL_REGEX,
+            demo => DXTRADE_DEMO_REGEX,
+            all  => DXTRADE_REGEX,
+        },
+        mt5 => {
+            real => MT5_REAL_REGEX,
+            demo => MT5_DEMO_REGEX,
+            all  => MT5_REGEX,
+        },
+        ctrader => {
+            real => CTRADE_REAL_REGEX,
+            demo => CTRADE_DEMO_REGEX,
+            all  => CTRADE_REGEX,
+        },
+        derivez => {
+            real => EZR_REAL_REGEX,
+            demo => EZR_DEMO_REGEX,
+            all  => EZR_REGEX,
+        },
+    };
 
-    for my $account (values $self->loginid_details->%*) {
-        next if $args{platform} ne $account->{platform};
+    my $regex = $regex_stash->{$platform}->{$account_type} or return ();
 
-        next if ($args{type_of_account} // '') eq 'real' && $account->{is_virtual};
-        next if ($args{type_of_account} // '') eq 'demo' && !$account->{is_virtual};
-
-        next if !$args{include_all_status} && !$self->is_active_loginid($account->{loginid});
-
-        next if $args{loginid} and $args{loginid} ne $account->{loginid};
-
-        next if exists $args{wallet_loginid} && ($args{wallet_loginid} // '') ne ($account->{wallet_loginid} // '');
-
-        push @loginids, $account->{loginid};
-    }
-
-    return @loginids;
+    return grep { $_ =~ qr/$regex/ } $self->loginids;
 }
 
 =head2 set_feature_flag

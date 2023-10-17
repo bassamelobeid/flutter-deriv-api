@@ -21,11 +21,12 @@ $dxconfig->enable_all_market_type->demo(0);
 $dxconfig->enable_all_market_type->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-my $user   = BOM::User->create(
+
+BOM::User->create(
     email    => $client->email,
     password => 'test'
-);
-$user->add_client($client);
+)->add_client($client);
+
 $client->account('AUD');
 BOM::Test::Helper::Client::top_up($client, $client->currency, 10);
 
@@ -42,11 +43,7 @@ populate_exchange_rates({AUD => 0.75});
 my $dxtrader = BOM::TradingPlatform->new(
     platform    => 'dxtrade',
     client      => $client,
-    user        => $user,
-    rule_engine => BOM::Rules::Engine->new(
-        client => $client,
-        user   => $user
-    ),
+    rule_engine => BOM::Rules::Engine->new(client => $client),
 );
 
 my $account = $dxtrader->new_account(
@@ -87,11 +84,7 @@ subtest 'deposits' => sub {
     my $dep;
     is(exception { $dep = $dxtrader->deposit(%params) }, undef, 'no error when demo suspended');
 
-    is $client->user->daily_transfer_count(
-        type       => 'dxtrade',
-        identifier => $user->id
-        ),
-        1, 'Daily transfer counter increased';
+    is $client->user->daily_transfer_count('dxtrade'), 1, 'Daily transfer counter increased';
 
     my $fee = 10 * 0.15;
     $dxbal = sprintf("%.2f", (10 - $fee) * 0.75);    # fee is deducted from source
@@ -195,11 +188,7 @@ subtest 'withdrawals' => sub {
         'expected result fields'
     );
 
-    is $client->user->daily_transfer_count(
-        type       => 'dxtrade',
-        identifier => $user->id
-        ),
-        2, 'Daily transfer counter increased';
+    is $client->user->daily_transfer_count('dxtrade'), 2, 'Daily transfer counter increased';
     cmp_ok $dxtrader->get_accounts->[0]->{balance}, '==', 0,         'dxtrade account balance decreased';
     cmp_ok $client->account->balance,               '==', $localbal, 'client balance increased';
 

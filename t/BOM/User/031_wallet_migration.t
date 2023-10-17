@@ -151,9 +151,8 @@ subtest 'Wallet creation' => sub {
     my $doughflow_wallet =
         eval { $migration->create_wallet(currency => 'USD', account_type => 'doughflow', landing_company => 'svg', client => $client_cr) }
         or fail('Real wallet creation should not fail');
-    note explain
 
-        is($doughflow_wallet->account->currency_code, 'USD', 'Should create a DF wallet with USD currency');
+    is($doughflow_wallet->account->currency_code, 'USD',                       'Should create a DF wallet with USD currency');
     is($doughflow_wallet->account_type,           'doughflow',                 'Should create a DF wallet with doughflow account type');
     is($doughflow_wallet->landing_company->short, 'svg',                       'Should create a DF wallet with svg landing company');
     is($doughflow_wallet->residence,              $client_virtual->residence,  'Should DF a DF wallet with the same residence as client');
@@ -578,7 +577,6 @@ subtest process_migration => sub {
         my $dxtrader = BOM::TradingPlatform->new(
             platform    => 'dxtrade',
             client      => $virtual,
-            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $virtual),
         );
 
@@ -622,7 +620,6 @@ subtest process_migration => sub {
         my $dxtrader = BOM::TradingPlatform->new(
             platform    => 'dxtrade',
             client      => $cr_usd,
-            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $cr_usd),
         );
 
@@ -943,7 +940,6 @@ subtest 'Getting migration plan' => sub {
         my $dxtrader = BOM::TradingPlatform->new(
             platform    => 'dxtrade',
             client      => $virtual,
-            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $virtual),
         );
 
@@ -1006,7 +1002,6 @@ subtest 'Getting migration plan' => sub {
         my $dxtrader = BOM::TradingPlatform->new(
             platform    => 'dxtrade',
             client      => $cr_usd,
-            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $cr_usd),
         );
 

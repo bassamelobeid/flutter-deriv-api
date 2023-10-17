@@ -19,21 +19,18 @@ $app_config->dxtrade->enable_all_market_type->demo(1);
 $app_config->dxtrade->enable_all_market_type->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
-my $user   = BOM::User->create(
+
+BOM::User->create(
     email    => $client->email,
     password => 'test'
-);
-$user->add_client($client);
+)->add_client($client);
+
 $client->account('USD');
 
 my $dxtrader = BOM::TradingPlatform->new(
     platform    => 'dxtrade',
     client      => $client,
-    user        => $user,
-    rule_engine => BOM::Rules::Engine->new(
-        client => $client,
-        $user  => $user
-    ),
+    rule_engine => BOM::Rules::Engine->new(client => $client),
 );
 
 my $account = $dxtrader->new_account(
