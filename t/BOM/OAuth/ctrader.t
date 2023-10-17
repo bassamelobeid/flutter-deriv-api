@@ -20,17 +20,15 @@ my $api_password = 'some_password';
 $api_mock->mock(get_api_passwords => sha1_hex($api_password));
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-my $user   = BOM::User->create(
+BOM::User->create(
     email    => $client->email,
     password => 'test'
-);
-$user->add_client($client);
+)->add_client($client);
 
 my @mocked_ctrader_logins = qw(CTR1);
 my $user_mock             = Test::MockModule->new('BOM::User');
 $user_mock->mock(
-    get_ctrader_loginids => sub { return @mocked_ctrader_logins },
-    loginid_details      => {CTR1 => {attributes => {ctid => 1}}},
+    ctrade_loginids => sub { return @mocked_ctrader_logins },
 );
 
 my $ctrader_mock = Test::MockModule->new('BOM::TradingPlatform::CTrader');
@@ -73,11 +71,8 @@ subtest 'onetime authorize' => sub {
         ->json_is('/error_code', 'INVALID_OTT_TOKEN');
 
     # Generate one time token
-    my $ctrader = BOM::TradingPlatform::CTrader->new(
-        client => $client,
-        user   => $user
-    );
-    my $ott = $ctrader->generate_login_token('Mozzila 5.0');
+    my $ctrader = BOM::TradingPlatform::CTrader->new(client => $client);
+    my $ott     = $ctrader->generate_login_token('Mozzila 5.0');
 
     note "Making request with valid one-time token";
     $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?crmApiToken=' . $token, json => {code => $ott})->status_is(200)->json_is('/userId', 1)
@@ -107,11 +102,8 @@ subtest 'authorize' => sub {
         ->json_is('/error_code', 'INVALID_ACCESS_TOKEN');
 
     #Acquare access token.
-    my $ctrader = BOM::TradingPlatform::CTrader->new(
-        client => $client,
-        user   => $user
-    );
-    my $ott = $ctrader->generate_login_token('Mozzila 5.0');
+    my $ctrader = BOM::TradingPlatform::CTrader->new(client => $client);
+    my $ott     = $ctrader->generate_login_token('Mozzila 5.0');
     my $access_token =
         $t->post_ok('/api/v1/ctrader/oauth2/onetime/authorize?crmApiToken=' . $token, json => {code => $ott})->tx->res->json->{accessToken};
 
