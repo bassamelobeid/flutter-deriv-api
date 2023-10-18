@@ -90,8 +90,7 @@ has close_tick => (
 sub _build_close_tick {
     my $self = shift;
 
-    return $self->sell_at_market_tick if $self->{sell_price} and $self->category->code eq 'turbos';
-    return $self->hit_tick            if ($self->category->code ne 'highlowticks');
+    return $self->hit_tick if ($self->category->code ne 'highlowticks');
 
     if ($self->hit_tick and $self->_selected_tick) {
         return $self->hit_tick->epoch < $self->_selected_tick->epoch ? $self->_selected_tick : $self->hit_tick;

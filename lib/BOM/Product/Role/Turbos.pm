@@ -13,7 +13,7 @@ use BOM::Product::Exception;
 use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Turbos;
 use BOM::Config::Quants qw(minimum_stake_limit);
-with 'BOM::Product::Role::AmericanExpiry' => {-excludes => '_build_hit_tick'};
+with 'BOM::Product::Role::AmericanExpiry' => {-excludes => ['_build_hit_tick', '_build_close_tick']};
 with 'BOM::Product::Role::SingleBarrier'  => {-excludes => '_validate_barrier'};
 
 =head2 ADDED_CURRENCY_PRECISION
@@ -464,22 +464,38 @@ override '_build_ask_price' => sub {
     return $self->_user_input_stake;
 };
 
-=head2 sell_at_market_tick
+=head2 _build_close_tick
 
-This should be close_tick but it's defined in AmericanExpiry Role
-Approximates the sold at market tick.
-Given sell price,
-we can calculate bid price at sell time and sell time - 1.
-The tick with smaller difference between bid price and sell price is the sold at market tick.
+Returns the tick at sell time. We don't store the tick information at contract sell time in the contract database.
+Due to race condition between new tick arrival and the sell action, the sell tick could be:
+- tick at sell time
+- previous tick at sell time.
+
+To fetch the correct tick, we recalculate the value of the contract at sell time. This is slightly trickier
+than other contract types because of the commission model. We only charge commission when:
+- client sell the contract back to us before the contract expiration
+- contract is sold by expiry daemon when it hits take profit
 
 =cut
 
-sub sell_at_market_tick {
+sub _build_close_tick {
     my $self = shift;
 
     my $sell_price = $self->sell_price;
-    return unless $sell_price;
 
+    # Contract is closed because of hitting take profit or barrier
+    return $self->hit_tick if $self->hit_tick;
+
+    # Close tick for tick expiry duration will be undefined because there's no option to sell back early.
+    # tick_expiry is 1 for duration tick contract by default
+    return undef if $self->tick_expiry;
+
+    # If there's no sell price, the contract is still open.
+    # close_tick should be undefined.
+    return undef unless $sell_price;
+
+    # If the contract is sold early, the close tick could either be tick at sell time or one tick before that.
+    # We do that buy recalculating the sell price
     my $tick_at_sell_time = $self->_tick_accessor->tick_at($self->sell_time,     {allow_inconsistent => 1});
     my $tick_before_that  = $self->_tick_accessor->tick_at($self->sell_time - 1, {allow_inconsistent => 1});
 
