@@ -6,7 +6,7 @@ use warnings;
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
-
+use BOM::Platform::Context qw(localize);
 use BOM::Pricing::v3::Contract;
 use BOM::Pricing::v3::MarketData;
 use BOM::Pricing::v3::Utility;
@@ -52,6 +52,7 @@ rpc send_ask => sub {
 
     my $market = BOM::RPC::v3::Utility::get_market_by_symbol($args->{args}->{symbol});
 
+    $response->{longcode}             = localize($response->{longcode});
     $response->{channel}              = $channel;
     $response->{subchannel}           = $subchannel;
     $response->{subscription_channel} = $subscription_channel;
@@ -60,9 +61,17 @@ rpc send_ask => sub {
     return $response;
 };
 
-rpc get_bid => \&BOM::Pricing::v3::Contract::get_bid;
+rpc get_bid => sub {
+    my $response = BOM::Pricing::v3::Contract::get_bid(@_);
+    $response->{longcode} = localize($response->{longcode});
+    return $response;
+};
 
-rpc get_contract_details => \&BOM::Pricing::v3::Contract::get_contract_details;
+rpc get_contract_details => sub {
+    my $response = BOM::Pricing::v3::Contract::get_contract_details(@_);
+    $response->{longcode} = localize($response->{longcode});
+    return $response;
+};
 
 rpc trading_times => \&BOM::Pricing::v3::MarketData::trading_times;
 

@@ -180,9 +180,12 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'    => '19.76',
-        'ask_price'        => '19.76',
-        'longcode'         => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
+        'display_value' => '19.76',
+        'ask_price'     => '19.76',
+        'longcode'      => [
+            "Win payout if [_1] touches [_4] through [plural,_3,%d tick,%d ticks] after [_2].",
+            ["Volatility 50 Index"], ["first tick"], [5], ["entry spot plus [_1]", 0.3054],
+        ],
         'skip_streaming'   => 0,
         'spot'             => '963.3054',
         'payout'           => '100',
@@ -209,7 +212,6 @@ subtest 'get_ask' => sub {
                 'min' => '0.35',
                 'max' => 50000
             }}};
-
     cmp_deeply($result, $expected, 'the left values are all right');
 };
 

@@ -149,9 +149,18 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'    => '51.19',
-        'ask_price'        => '51.19',
-        'longcode'         => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'display_value' => '51.19',
+        'ask_price'     => '51.19',
+        'longcode'      => [
+            "Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].",
+            ["Volatility 50 Index"],
+            ["contract start time"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 60
+            },
+            ["entry spot"],
+        ],
         'spot'             => '963.3054',
         'payout'           => '100',
         'theo_probability' => 0.499862430427529,

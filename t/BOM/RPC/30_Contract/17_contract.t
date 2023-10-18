@@ -303,9 +303,19 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'    => '203.00',
-        'ask_price'        => '203.00',
-        'longcode'         => "Win USD 100.00 times Volatility 50 Index's close minus low over the next 15 minutes.",
+        'display_value' => '203.00',
+        'ask_price'     => '203.00',
+        'longcode'      => [
+            "Win [_6] [_5] times [_1]'s close minus low over the next [_3].",
+            ["Volatility 50 Index"],
+            ["contract start time"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 900
+            },
+            [0.0001],
+            "100.00", "USD",
+        ],
         'spot'             => '963.3054',
         multiplier         => 100,
         'payout'           => '0',

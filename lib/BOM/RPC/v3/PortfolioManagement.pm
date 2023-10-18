@@ -102,20 +102,20 @@ sub __get_open_contracts {
 
 rpc sell_expired => sub {
     my $params = shift;
-
     my $client = $params->{client};
-    return _sell_expired_contracts($client, $params->{source});
+    return _sell_expired_contracts($client, $params->{source}, $params->{language});
 };
 
 sub _sell_expired_contracts {
-    my ($client, $source) = @_;
+    my ($client, $source, $language) = @_;
 
     my $response = {count => 0};
 
     try {
         my $res = BOM::Transaction::sell_expired_contracts({
-            client => $client,
-            source => $source,
+            client   => $client,
+            source   => $source,
+            language => $language
         });
         $response->{count} = $res->{number_of_sold_bets} if ($res and exists $res->{number_of_sold_bets});
     } catch {
@@ -168,6 +168,7 @@ rpc proposal_open_contract => sub {
 
     for my $poc_parameters (values %$poc_parameters_all) {
         my $res = BOM::Pricing::v3::Contract::get_bid($poc_parameters);
+        $res->{longcode} = localize($res->{longcode});
         $response->{$poc_parameters->{contract_id}} = $res;
 
         if (defined $contract_id && defined $res->{error}) {

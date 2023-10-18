@@ -268,9 +268,22 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value' => '6.37',
         'ask_price'     => '6.37',
-        'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
-        'spot'     => '963.3054',
-        'payout'   => '10',
+        'longcode'      => [
+            "Win payout if [_1] after [_3] is strictly higher than it was at either entry or [_5].",
+            ["Volatility 50 Index"],
+            ["contract start time"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 900
+            },
+            ["entry spot"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 450
+            },
+        ],
+        'spot'             => '963.3054',
+        'payout'           => '10',
         skip_streaming     => 1,
         'date_expiry'      => ignore(),
         'contract_details' => {
@@ -295,7 +308,6 @@ subtest 'get_ask' => sub {
                 'min' => '0.35',
                 'max' => 50000
             }}};
-
     cmp_deeply($result, $expected, 'the left values are all right');
 };
 
