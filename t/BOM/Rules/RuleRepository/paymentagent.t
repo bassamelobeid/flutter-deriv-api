@@ -260,12 +260,12 @@ subtest $rule_name => sub {
 
     for my $action_name (
         qw/p2p cashier_withdraw withdraw buy p2p_advert_create p2p_order_create p2p_advertiser_create
-        p2p.advert.create p2p_order.create p2p.advertiser.create transfer_to_pa paymentagent_transfer doughflow_withdrawal/
+        p2p_advert_create p2p_order_create p2p_advertiser_create transfer_to_pa paymentagent_transfer doughflow_withdrawal/
         )
     {
         $args{underlying_action} = $action_name;
 
-        my $service_name = BOM::Rules::RuleRepository::Paymentagent::PA_ACTION_MAPPING->{$action_name =~ s/\./_/rg} // $action_name;
+        my $service_name = BOM::Rules::RuleRepository::Paymentagent::PA_ACTION_MAPPING->{$action_name} // $action_name;
 
         $pa->status(undef);
         $pa->save();

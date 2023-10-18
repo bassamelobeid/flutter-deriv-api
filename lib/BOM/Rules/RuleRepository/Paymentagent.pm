@@ -133,8 +133,6 @@ rule 'paymentagent.action_is_allowed' => {
         my ($self, $context, $args) = @_;
 
         my $action = $args->{underlying_action} // $context->{action} or die 'Action name is required';
-        # sometimes we get p2p.advert.create rather than p2p_advert_create
-        $action =~ s/\./_/g;
 
         my $pa_client;
 
