@@ -169,8 +169,8 @@ subtest 'Creating new buy order' => sub {
             loginid          => $client->loginid,
             first_name       => $client->first_name,
             last_name        => $client->last_name,
-            is_online        => 0,
-            last_online_time => undef,
+            is_online        => 1,
+            last_online_time => $client->p2p_advertiser_info->{last_online_time},
         },
         advertiser_details => {
             id               => $advertiser->p2p_advertiser_info->{id},
@@ -178,8 +178,8 @@ subtest 'Creating new buy order' => sub {
             loginid          => $advertiser->loginid,
             first_name       => $advertiser->first_name,
             last_name        => $advertiser->last_name,
-            is_online        => 0,
-            last_online_time => undef,
+            is_online        => 1,
+            last_online_time => $advertiser->p2p_advertiser_info->{last_online_time},
         },
         dispute_details => {
             dispute_reason   => undef,

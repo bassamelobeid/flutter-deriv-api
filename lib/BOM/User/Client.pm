@@ -2637,6 +2637,8 @@ sub p2p_advertiser_create {
         $self->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
     }
 
+    BOM::Config::Redis->redis_p2p_write->zadd(P2P_USERS_ONLINE_KEY, 'NX', time, join('::', $self->loginid, $self->residence));
+
     $self->_p2p_convert_advertiser_limits($advertiser);
     my $details = $self->_advertiser_details($advertiser);
 

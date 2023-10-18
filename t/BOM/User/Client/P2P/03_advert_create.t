@@ -131,8 +131,8 @@ subtest 'advertiser Registration' => sub {
         recommended_average   => undef,
         recommended_count     => undef,
         blocked_by_count      => 0,
-        is_online             => 0,
-        last_online_time      => undef,
+        is_online             => 1,
+        last_online_time      => num(time, 2),
         %params
     };
 
@@ -440,8 +440,8 @@ subtest 'Creating advert' => sub {
             rating_count           => 0,
             recommended_average    => undef,
             recommended_count      => undef,
-            is_online              => 0,
-            last_online_time       => undef,
+            is_online              => 1,
+            last_online_time       => num(time, 2),
         },
         is_visible             => bool(1),
         active_orders          => 0,
