@@ -273,7 +273,7 @@ sub run {
                     $redis_pricer->srem($pricer_args, $subchannel);
                 }
             }
-            stats_histogram('pricer_daemon.subscribers_per_proposal', $total_subscribers, {tags => $self->tags});
+            stats_histogram('pricer_daemon.subscribers_per_proposal', $total_subscribers // 0, {tags => $self->tags});
         }
 
         $tv_now = [Time::HiRes::gettimeofday];
