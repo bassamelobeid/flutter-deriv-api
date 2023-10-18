@@ -79,10 +79,15 @@ return an arrayref of result or error string.
 
 =cut
 
-method get_providers ($base_redirect_url) {
-
-    my $path   = "/providers?base_redirect_url=$base_redirect_url";
+method get_providers ($base_redirect_url, $app_id = undef) {
     my $method = "GET";
+    my $path   = "/providers";
+
+    if ($app_id) {
+        $path .= "/$app_id";
+    }
+
+    $path .= "?base_redirect_url=$base_redirect_url";
 
     my $result = $self->api_call($method, $path);
 
@@ -110,12 +115,15 @@ returns the user email and provider data
 
 =cut
 
-method retrieve_user_info {
-    my $base_redirect_url = shift;
-    my $params            = shift;
-
-    my $path   = "/exchange?base_redirect_url=$base_redirect_url";
+method retrieve_user_info ($base_redirect_url, $params) {
     my $method = "POST";
+    my $path   = "/exchange";
+
+    if ($params->{app_id}) {
+        $path .= "/$params->{app_id}";
+    }
+
+    $path .= "?base_redirect_url=$base_redirect_url";
 
     my $response = $self->api_call($method, $path, $params);
 
@@ -132,6 +140,7 @@ method retrieve_user_info {
     }
 
     die "Response does not contain expected result";
+
 }
 
 1;

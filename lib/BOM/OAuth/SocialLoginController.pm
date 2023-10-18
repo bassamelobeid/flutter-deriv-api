@@ -14,6 +14,7 @@ use BOM::OAuth::Common;
 use constant OK_STATUS_CODE => 200;
 use BOM::OAuth::SocialLoginClient;
 use Locale::Codes::Country qw( code2country );
+use BOM::Config;
 
 =head2 redirect_to_auth_page
 
@@ -318,6 +319,27 @@ sub callback {
     }
 }
 
+=head2 app_callback
+
+Handle app_id callback (mobile flow).
+
+=cut
+
+sub app_callback {
+    my $c                 = shift;
+    my $provider_response = $c->req->params->to_hash;
+    my $app_id            = $c->stash('app_id');
+
+    return $c->_bad_request('the request was missing app_id') unless $app_id;
+    my $oauth_model = BOM::Database::Model::OAuth->new;
+    my $app         = $oauth_model->verify_app($app_id);
+    return $c->_bad_request('the request was missing valid app_id') unless $app;
+
+    my @params = ($provider_response->%*);
+    return BOM::OAuth::Common::redirect_to($c, $app->{redirect_uri}, \@params);
+
+}
+
 =head2 _retrieve_user_info
 
 retrieve user information from exchange social login call
@@ -359,6 +381,63 @@ sub _extract_exchange_params {
         provider_name => $provider_response->{provider} // ''
     };
     return $exchange_params;
+}
+
+=head2 _use_oneall_mobile
+
+determine which service will be used by mobile app, social-login or oneAll based on feature flag;
+
+=cut
+
+sub _use_oneall_mobile {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update;
+    return $app_config->social_login->use_oneall_mobile;
+}
+
+=head2 get_providers
+
+fetch providers from  social login service
+
+=cut
+
+sub get_providers {
+    my $c         = shift;
+    my $providers = [];
+    # No need to make the request if we are using oneall.
+    if (_use_oneall_mobile) {
+        return $c->render(
+            json   => {data => $providers},
+            status => 200,
+        );
+    }
+
+    try {
+        my $config  = BOM::Config::service_social_login();
+        my $service = BOM::OAuth::SocialLoginClient->new(
+            host => $config->{social_login}->{host},
+            port => $config->{social_login}->{port});
+
+        my $current_domain = Mojo::URL->new($c->req->url->to_abs)->host;
+        my $providers      = $service->get_providers(social_login_callback_base($current_domain), $c->stash('app_id'));
+        if (scalar @$providers) {
+            return $c->render(
+                json   => {data => $providers},
+                status => 200,
+            );
+        }
+    } catch ($e) {
+        $log->errorf($c->_to_error_message($e, "[REST]"));
+    }
+
+    # Return internal server error
+    return $c->render(
+        json => {
+            error_code => 'SERVER_ERROR',
+            message    => 'An error occurred while processing the get_providers request'
+        },
+        status => 500,
+    );
 }
 
 =head2 _to_error_message

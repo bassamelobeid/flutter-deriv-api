@@ -123,6 +123,17 @@ $emitter_mock->mock(
 my $challenge;
 my $expire;
 
+#Mock BOM::Config
+my $mock_config = Test::MockModule->new('BOM::Config');
+$mock_config->mock(
+    service_social_login => sub {
+        return {
+            social_login => {
+                port => 'dummy',
+                host => 'dummy'
+            }};
+    });
+
 subtest 'verify' => sub {
     my $url = '/api/v1/verify';
 
@@ -536,6 +547,18 @@ subtest 'login' => sub {
             };
         });
 
+    # Mocking SLS Data
+    my $sls_hit;
+    my @sls_params;
+    my $mocked_sls = Test::MockModule->new('BOM::OAuth::SocialLoginClient');
+    $mocked_sls->mock(
+        new                => sub { bless +{}, 'BOM::OAuth::SocialLoginClient' },
+        retrieve_user_info => sub {
+            @sls_params = @_;
+            $sls_hit    = 1;
+            return {email => $social_user_email};
+        });
+
     subtest 'Login via social' => sub {
         my $login_type = 'social';
 
@@ -656,6 +679,113 @@ subtest 'login' => sub {
         ok !$redis->get('ONE::ALL::TEMP::true'), 'OneAll response cache is deleted after successful login';
     };
 
+    subtest 'Login via social_login' => sub {
+        my $login_type = 'social_login';
+
+        note "Missed connection token";
+        $post->(
+            $login_url,
+            {
+                app_id => $app_id,
+                type   => $login_type
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'MISSED_CONNECTION_TOKEN');
+
+        note "Successful social login without ONE TIME PASSWORD";
+        $social_user->update_totp_fields(is_totp_enabled => 0);
+        $post->(
+            $login_url,
+            {
+                app_id         => $app_id,
+                type           => $login_type,
+                state          => 'state',
+                nonce          => 'nonce',
+                code           => 'code',
+                callback_state => 'state',
+                code_verifier  => 'code_verifier',
+                provider       => 'facebook'
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', 'login');
+        ok $sls_hit, 'Social Login API was hit';
+        like $sls_params[1], qr{127.0.0.1}, 'domain captured';
+        # Updating social_user to is_totp_enabled
+        $sls_hit    = 0;
+        @sls_params = ();
+        $social_user->update_totp_fields(is_totp_enabled => 1);
+        note "Missing ONE TIME PASSWORD";
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                one_time_password => '',
+                state             => 'state',
+                nonce             => 'nonce',
+                code              => 'code',
+                callback_state    => 'state',
+                code_verifier     => 'code_verifier',
+                provider          => 'facebook'
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'MISSING_ONE_TIME_PASSWORD');
+        ok $sls_hit,                                         'Social Login API was hit';
+        ok $redis->get('SOCIAL::LOGIN::TEMP::state'),        'Social Login response is cached';
+        ok $redis->ttl('SOCIAL::LOGIN::TEMP::state') <= 600, 'Social Login cache expiration is 600 seconds';
+
+        note "Wrong ONE TIME PASSWORD";
+        $redis->del('oauth::failure_count_by_user::' . $social_user->id);
+        $redis->del('oauth::failure_count_by_ip::127.0.0.1');
+        $sls_hit = 0;
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                one_time_password => 'XyZxYz',
+                state             => 'state',
+                nonce             => 'nonce',
+                code              => 'code',
+                callback_state    => 'state',
+                code_verifier     => 'code_verifier',
+                provider          => 'facebook'
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
+        is $redis->get('oauth::failure_count_by_user::' . $social_user->id), 1, 'Failure counter by user is incremented';
+        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'),             1, 'Failure counter by ip is incremented';
+
+        ok !$sls_hit,                                        'Social Login API was skipped';
+        ok $redis->get('SOCIAL::LOGIN::TEMP::state'),        'Social Login response is still cached';
+        ok $redis->ttl('SOCIAL::LOGIN::TEMP::state') <= 600, 'Social Login cache expiration is 600 seconds (or less)';
+
+        note "Successful social login with ONE TIME PASSWORD";
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                one_time_password => $totp_value,
+                state             => 'state',
+                nonce             => 'nonce',
+                code              => 'code',
+                callback_state    => 'state',
+                code_verifier     => 'code_verifier',
+                provider          => 'facebook'
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', 'login');
+
+        ok !$sls_hit,                                  'Social Login API was skipped';
+        ok !$redis->get('SOCIAL::LOGIN::TEMP::state'), 'Social Login response cache is deleted after successful login';
+    };
+
     subtest 'New social signup' => sub {
         $social_user_email = 'newguy@test.com';
         $events            = {};
@@ -666,6 +796,30 @@ subtest 'login' => sub {
                 app_id           => $app_id,
                 type             => 'social',
                 connection_token => 'true',
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(200)->json_has('/tokens')->json_is('/social_type', 'signup');
+
+        is $events->{signup}->{properties}->{type},    'trading', 'track args type=trading';
+        is $events->{signup}->{properties}->{subtype}, 'virtual', 'track args subtype=virtual';
+    };
+
+    subtest 'New social_login signup' => sub {
+        $social_user_email = 'newguy_social_login@test.com';
+        $events            = {};
+
+        $post->(
+            $login_url,
+            {
+                app_id         => $app_id,
+                type           => 'social_login',
+                state          => 'state',
+                nonce          => 'nonce',
+                code           => 'code',
+                callback_state => 'state',
+                code_verifier  => 'code_verifier',
+                provider       => 'facebook'
             },
             {
                 Authorization => "Bearer $jwt_token",
@@ -1328,6 +1482,18 @@ subtest 'account reactivation' => sub {
             ->json_has('/details/financial', 'Reason for closure is financial');
 
     };
+};
+
+subtest 'login error message builder' => sub {
+    my $error = {
+        code            => "NO_AUTH",
+        additional_info => 'additional info'
+    };
+    my $res = BOM::OAuth::RestAPI::build_login_error_message($error, 'login_type', 'request_details');
+    like $res, qr/$error->{code}/,            'code is there';
+    like $res, qr/$error->{additional_info}/, 'additional info is there';
+    like $res, qr/login_type/,                'login_type is there';
+    like $res, qr/request_details/,           'request_details is there';
 };
 
 $api_mock->unmock_all;

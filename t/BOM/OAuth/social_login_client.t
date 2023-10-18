@@ -5,8 +5,12 @@ use Test::Exception;
 use Test::MockModule;
 use JSON::MaybeUTF8 qw(:v1);
 use BOM::OAuth::SocialLoginClient;
+use BOM::OAuth::SocialLoginController;
 
 my $mock_http = Test::MockModule->new('HTTP::Tiny');
+my $use_oneall_mobile;
+my $mock_oauth = Test::MockModule->new('BOM::OAuth::O');
+$mock_oauth->mock('_use_oneall_mobile' => sub { return $use_oneall_mobile; });
 my $response;
 my $code = 200;
 my @params;
@@ -19,6 +23,9 @@ $mock_http->mock(
         };
     });
 
+#mock SocialLoginClient
+my $mock_slc = Test::MockModule->new('BOM::OAuth::SocialLoginController');
+
 subtest 'Social login client providers' => sub {
 
     my $sls = BOM::OAuth::SocialLoginClient->new(
@@ -30,6 +37,10 @@ subtest 'Social login client providers' => sub {
     my $providers = $sls->get_providers('qa.dev');
     like $params[2], qr/qa.dev/, 'request contains base redirect url';
     is_deeply $providers, [{name => 'google'}], 'providers list returned';
+
+    $providers = $sls->get_providers('qa.dev', 123);
+    is_deeply $providers, [{name => 'google'}], 'providers list returned';
+    is $params[2], 'http://dummy:dymmy/social-login/providers/123?base_redirect_url=qa.dev', 'url is correct for app_id';
 
     $response  = {message => 'error'};
     $code      = 500;
@@ -44,7 +55,7 @@ subtest 'Social login client providers' => sub {
 subtest 'Social login client exchange' => sub {
 
     my $sls = BOM::OAuth::SocialLoginClient->new(
-        port => 'dymmy',
+        port => 'dummy',
         host => 'dummy'
     );
 
@@ -65,16 +76,49 @@ subtest 'Social login client exchange' => sub {
                 state => "dummy"
             },
         }};
-    my $provider_response = $sls->retrieve_user_info('qa.dev');
-    like $params[2], qr/qa.dev/, 'request contains base redirect url';
+
+    my $exchange_params;
+    my $provider_response = $sls->retrieve_user_info('qa.dev', $exchange_params);
     is_deeply $provider_response, $response->{data}, 'correct response';
+    like $params[2], qr/qa.dev/, 'request contains base redirect url';
+
+    my $test_app_id = 123;
+    $exchange_params   = {app_id => $test_app_id};
+    $provider_response = $sls->retrieve_user_info('qa.dev', $exchange_params);
+    is_deeply $provider_response, $response->{data}, 'correct response';
+    is $params[2], "http://dummy:dummy/social-login/exchange/$test_app_id?base_redirect_url=qa.dev",
+        'url is correct for app_id and base_redirect_url';
 
     $code              = 400;
     $response          = {error => "error"};
-    $provider_response = $sls->retrieve_user_info('qa.dev');
-    is_deeply $provider_response, $response, 'return the error object in case of 400';
+    $provider_response = $sls->retrieve_user_info('qa.dev', $exchange_params);
+    is_deeply $provider_response, $response, 'return the error objecr in case of 400';
+};
+
+subtest 'Social Login Provider Bridge Endpoint Test' => sub {
+    my $provider_response;
+    $use_oneall_mobile = 0;
+    $response          = $mock_slc->mock(
+        get_providers => sub {
+            return [{name => "google"}];
+        });
+    my $c = {_use_oneall_mobile => $use_oneall_mobile};
+    $provider_response = BOM::OAuth::SocialLoginController::get_providers($c);
+    ok(ref $provider_response eq 'ARRAY' && scalar @$provider_response > 0, 'Non-empty array returned for use_oneall_mobile = 0');
+    is_deeply $provider_response, [{name => 'google'}], 'providers list returned';
+
+    $use_oneall_mobile = 1;
+    $response          = $mock_slc->mock(
+        get_providers => sub {
+            return [];
+        });
+    $c->{_use_oneall_mobile} = $use_oneall_mobile;
+    $provider_response = BOM::OAuth::SocialLoginController::get_providers($c);
+    ok(ref $provider_response eq 'ARRAY' && scalar @$provider_response == 0, 'Empty array returned for use_oneall_mobile = 1');
+    is_deeply $provider_response, [], 'providers list returned an empty array';
 };
 
 done_testing();
 
 1;
+

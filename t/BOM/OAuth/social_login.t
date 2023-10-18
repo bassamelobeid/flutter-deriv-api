@@ -15,6 +15,7 @@ use Data::Dumper;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static     qw(get_message_mapping);
 use Locale::Codes::Country qw( code2country );
+use BOM::OAuth::SocialLoginController;
 
 ## init
 my $app_id = do {
@@ -42,6 +43,10 @@ $mocked_cookie_session->mock(
 my $mock_oauth = Test::MockModule->new('BOM::OAuth::O');
 my $use_oneall;
 $mock_oauth->mock('_oneall_ff_web' => sub { return $use_oneall; });
+
+my $use_oneall_mobile;
+my $mock_social_controller = Test::MockModule->new('BOM::OAuth::SocialLoginController');
+$mock_social_controller->mock(_use_oneall_mobile => sub { return $use_oneall_mobile; });
 
 #mock SocialLoginClient
 my $mock_sls = Test::MockModule->new('BOM::OAuth::SocialLoginClient');
@@ -354,6 +359,13 @@ subtest 'redirect scenaions' => sub {
     $mock_helper->unmock_all;
 };
 
+subtest 'app_id redirect (mobile)' => sub {
+    my $test_data = get_test_data(app_id => $app_id);
+    my $res       = $t->get_ok("/social-login/callback/app/$app_id?code=$test_data->{code}&state=$test_data->{state}");
+    $res->status_is(302)->header_like('location' => qr{example\.com\/})->header_like('location' => qr{$test_data->{code}})
+        ->header_like('location' => qr{$test_data->{state}});
+};
+
 subtest 'invalid response from social login service' => sub {
     $use_oneall = 0;
     my $test_data   = get_test_data(app_id => $app_id);
@@ -393,6 +405,35 @@ subtest 'invalid response from social login service' => sub {
     is $sessions_hash->{social_error}, localize(get_message_mapping()->{NO_AUTHENTICATION}), 'correct social error for NO_AUTHENTICATION';
 };
 
+subtest 'Social Login Provider Bridge Endpoint Test via route redirection' => sub {
+    my @params;
+    my $data = [{
+            auth_url       => "dummy.com",
+            name           => "google",
+            nonce          => 'nonce',
+            code_challenge => 'code_challenge',
+            code_verifier  => 'code_verifier'
+        }];
+    $mock_sls->mock(
+        get_providers => sub {
+            @params = @_;
+            return $data;
+        });
+
+    $use_oneall_mobile = 1;
+    $t->get_ok("/api/v1/social-login/providers/$app_id")->status_is(200)->json_is({data => []});
+
+    $use_oneall_mobile = 0;
+    $t->get_ok("/api/v1/social-login/providers/$app_id")->status_is(200)->json_is({data => $data});
+    is $params[2], $app_id, 'Correct query param for app_id';
+    $mock_sls->unmock('get_providers');
+    $mock_sls->mock(
+        get_providers => sub {
+            die "Error";
+        });
+    $t->get_ok("/api/v1/social-login/providers/$app_id")->status_is(500)->json_has('/error_code', 'SERVER_ERROR');
+};
+
 subtest 'multi domain support' => sub {
     $use_oneall = 0;
     my (@sls_providers_params, @sls_user_info_params);
@@ -408,6 +449,9 @@ subtest 'multi domain support' => sub {
 
     $t->get_ok("/social-login/callback/provider?code=123&state=123");
     like $sls_user_info_params[1], qr{127.0.0.1}, 'base url is correct in user info request';
+
+    $t->get_ok("/api/v1/social-login/providers/$app_id");
+    like $sls_providers_params[1], qr{127.0.0.1}, 'base url is correct in providers api request';
 };
 
 #Helper functions

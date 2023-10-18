@@ -138,7 +138,7 @@ Return an array of valid login types
 =cut
 
 sub get_valid_login_types {
-    return qw( system social );
+    return qw( system social social_login);
 }
 
 1;

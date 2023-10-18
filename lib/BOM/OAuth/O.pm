@@ -544,6 +544,18 @@ sub _use_oneall_web {
     return $use_oneall;
 }
 
+=head2 _use_oneall_mobile
+
+determine which service will be used by mobile app, social-login or oneAll based on feature flag;
+
+=cut
+
+sub _use_oneall_mobile {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update;
+    return $app_config->social_login->use_oneall_mobile;
+}
+
 sub _get_client {
     my $c = shift;
 

@@ -70,6 +70,7 @@ sub startup {
     my $r = $app->routes;
     $r->any('/authorize')->to('O#authorize');
     $r->any('/oneall/callback')->to('OneAll#callback');
+    $r->any('/social-login/callback/app/:app_id'   => [id => qr/\d+/])->to('SocialLoginController#app_callback');
     $r->any('/social-login/callback/:sls_provider' => [id => qr/\w+/])->to('SocialLoginController#callback');
     $r->any('session/:service/sso')->to('SingleSignOn#authorize');
     $r->any('session/:service/authorize')->to('SingleSignOn#create');
@@ -79,6 +80,8 @@ sub startup {
     $r->post('/api/v1/login')->to('RestAPI#login');
     $r->post('/api/v1/pta_login')->to('RestAPI#pta_login');
 
+    #Bridge endpoint for mobile to fetch providers (social login service)
+    $r->get('/api/v1/social-login/providers/:app_id')->to('SocialLoginController#get_providers');
     $r->get('/api/v1/pta_login/:one_time_token')->to('RestAPI#one_time_token');
 
     # microservices rest api authentication using oauth/api token

@@ -27,6 +27,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Syntax::Keyword::Try;
 use Text::Trim;
 use WWW::OneAll;
+use BOM::OAuth::Helper qw(request_details_string social_login_callback_base);
 
 use BOM::User::TOTP;
 use BOM::User::Client;
@@ -37,6 +38,8 @@ use BOM::Database::Model::UserConnect;
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Common;
 use BOM::OAuth::Static qw( get_api_errors_mapping get_valid_login_types );
+use BOM::OAuth::SocialLogin::RestHandler;
+use BOM::OAuth::SocialLoginClient;
 use BOM::Platform::Token::API;
 
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
@@ -306,6 +309,7 @@ sub login {
 
         $login = $c->$method($app, $brand_name);
     } catch ($e) {
+        $log->warnf(build_login_error_message($e, $login_type, request_details_string($c->req, $c->stash('request'))));
         return $c->_make_error($e->{code}, $e->{status});
     }
 
@@ -828,6 +832,50 @@ sub _perform_social_login {
     return $result;
 }
 
+=head2 _perform_social_login_login
+
+Tries to validate user's login request via provided third-party identifiers and token.
+
+Returns an array of associated clients
+
+=cut
+
+sub _perform_social_login_login {
+    my ($c, $app, $brand_name) = @_;
+
+    my $config  = BOM::Config::service_social_login();
+    my $service = BOM::OAuth::SocialLoginClient->new(
+        host => $config->{social_login}->{host},
+        port => $config->{social_login}->{port});
+
+    my $rest_handler = BOM::OAuth::SocialLogin::RestHandler->new(
+        redis           => BOM::Config::Redis::redis_auth_write,
+        user_connect_db => BOM::Database::Model::UserConnect->new,
+        sls_service     => $service
+    );
+
+    my $payload = $c->req->json;
+    $payload->{domain} = social_login_callback_base(Mojo::URL->new($c->req->url->to_abs)->host);
+
+    my $login_attempt = $rest_handler->get_cached_login_attempt($payload->{state});
+    unless ($login_attempt) {
+        $login_attempt = $rest_handler->perform_social_login($payload, $app, $brand_name, $c->stash('request')->country_code);
+        $rest_handler->cache_login_attempt($payload->{state}, $login_attempt);
+    }
+    my $result = BOM::OAuth::Common::validate_login({
+        c              => $c,
+        app            => $app,
+        social_user_id => $login_attempt->{user_id},
+        device_id      => $c->req->param('device_id'),
+    });
+    _verify_otp($c, $result->{user}, defang($payload->{one_time_password}));
+
+    $rest_handler->clear_cache($payload->{state});
+    $result->{social_type} = $login_attempt->{social_type};
+
+    return $result;
+}
+
 =head2 _perform_refresh_token_login
 
 Tries to validate user's login request via provided refresh token.
@@ -1095,6 +1143,32 @@ sub _make_login_error {
     ];
 
     return BOM::OAuth::Common::redirect_to($c, LOGIN_URI, $redirect_params);
+}
+
+=head2 build_login_error_message
+
+Returns a string represents login exception.
+Will append the request details. 
+
+=over 4
+
+=item * C<error> - hashref - The error object.
+
+=item * C<login_type> - string - The login type.
+
+=item * C<request_details> - string - represents the request details.
+
+=back
+
+=cut
+
+sub build_login_error_message {
+    my ($error, $login_type, $request_details) = @_;
+
+    my $result = "[REST] $login_type login exception";
+    $result = join(" - ", $result, ($error->{code} // 'UNKNOWN'), ($error->{additional_info} // ()));
+
+    return "$result while processing $request_details";
 }
 
 1;

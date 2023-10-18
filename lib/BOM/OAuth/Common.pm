@@ -53,6 +53,7 @@ sub validate_login {
 
     my $c                     = delete $login_details->{c};
     my $oneall_user_id        = delete $login_details->{oneall_user_id};
+    my $social_user_id        = delete $login_details->{social_user_id};
     my $refresh_token_user_id = delete $login_details->{user_id};
     my $refresh_token         = delete $login_details->{refresh_token};
     my $app                   = delete $login_details->{app};
@@ -74,6 +75,11 @@ sub validate_login {
         return $err_var->("INVALID_USER") unless $user;
 
         $password = '**SOCIAL-LOGIN-ONEALL**';
+    } elsif ($social_user_id) {
+        $user = BOM::User->new(id => $social_user_id);
+        return $err_var->("INVALID_USER") unless $user;
+
+        $password = '**SOCIAL-LOGIN**';
     } else {
         return $err_var->("INVALID_EMAIL")    unless ($email and Email::Valid->address($email));
         return $err_var->("INVALID_PASSWORD") unless $password;
@@ -103,8 +109,8 @@ sub validate_login {
     my $result = $user->login(
         password               => $password,
         environment            => $env,
-        is_refresh_token_login => $refresh_token  ? 1 : 0,
-        is_social_login        => $oneall_user_id ? 1 : 0,
+        is_refresh_token_login => $refresh_token                       ? 1 : 0,
+        is_social_login        => ($oneall_user_id || $social_user_id) ? 1 : 0,
         app_id                 => $app_id,
         device_id              => $device_id,
     );
@@ -577,6 +583,23 @@ sub is_login_suspended {
     return 1 if ($loginid and grep { $loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins});
 
     return 0;
+}
+
+=head2 get_oneall_like_provider_data
+
+#To integrate with oneall, we need to have $provider_data object with uid
+#So we'll rely on 'sls_email' as uid for social login.
+
+=cut
+
+sub get_oneall_like_provider_data {
+    my ($email, $provider) = @_;
+    return {
+        user => {
+            identity => {
+                provider              => $provider,
+                provider_identity_uid => "sls_$email"
+            }}};
 }
 
 1;
