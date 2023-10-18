@@ -12,8 +12,8 @@
     [% FOREACH data IN existing_config %]
     <tr align="center" id="[% data.symbol %]-accumulator_config">
         <td>[% data.symbol %]</td>
-        <td><input type="text" name="max_open_positions" value="[% data.max_open_positions %]" data-lpignore="true" size="5"/></td>
-        <td><input type="text" name="max_daily_volume" value="[% data.max_daily_volume %]" data-lpignore="true" size="5"/></td>
+        <td><input type="number" name="max_open_positions" value="[% data.max_open_positions %]" data-lpignore="true" size="5"/></td>
+        <td><input type="number" name="max_daily_volume" value="[% data.max_daily_volume %]" data-lpignore="true" size="5"/></td>
         <td><input type="text" name="max_aggregate_open_stake" value="[% data.max_aggregate_open_stake %]" data-lpignore="true" size="35"/></td>
         <td><button onClick="SaveAccumulatorLimits('[% data.symbol %]')" type="button" class="btn btn--primary">Save</button></td>
         <td class="accumulator_config_result"></td>

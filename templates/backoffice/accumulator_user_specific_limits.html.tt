@@ -7,19 +7,19 @@
     </tr>
     <tr>
         <td>Maximum Open Positions: </td>
-        <td><input type="text" name="max_open_positions"></input></td>
+        <td><input type="number" name="max_open_positions"></input></td>
     </tr>
     <tr>
         <td>Maximum Daily Volume: </td>
-        <td><input type="text" name="max_daily_volume"></input></td>
+        <td><input type="number" name="max_daily_volume"></input></td>
     </tr>
     <tr>
         <td>Maximum Daily PnL: </td>
-        <td><input type="text" name="max_daily_pnl"></input></td>
+        <td><input type="number" name="max_daily_pnl"></input></td>
     </tr>
     <tr>
         <td>Maximum Stake Per Trade: </td>
-        <td><input type="text" name="max_stake_per_trade"></input></td>
+        <td><input type="number" name="max_stake_per_trade"></input></td>
     </tr>
     <tr>
         <td><input type="button" class="btn btn--primary" onClick="SaveAccumulatoraUserSpecificLimits()" value="Update User Specific Limits"></td>

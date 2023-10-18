@@ -23,6 +23,7 @@ use YAML::XS                          qw(LoadFile);
 use List::Util                        qw(none uniq);
 use Finance::Underlying;
 use Finance::Underlying::Market::Registry;
+use ExchangeRates::CurrencyConverter qw(in_usd);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
@@ -45,11 +46,13 @@ if ($r->param('save_accumulator_config')) {
         return;
     }
     try {
-        my $symbol             = $r->param('symbol') // die 'symbol is undef';
-        my $tick_size_barrier  = LoadFile('/home/git/regentmarkets/bom-config/share/default_tick_size_barrier_accumulator.yml');
-        my $growth_rate        = decode_json_utf8($r->param('growth_rate'));
-        my $max_duration       = decode_json_utf8($r->param('max_duration'));
-        my @unique_growth_rate = uniq @$growth_rate;
+        my $accumulator_hard_limits = get_accumulator_hard_limits();
+        my $symbol                  = $r->param('symbol') // die 'symbol is undef';
+        my $tick_size_barrier       = LoadFile('/home/git/regentmarkets/bom-config/share/default_tick_size_barrier_accumulator.yml');
+        my $growth_rate             = decode_json_utf8($r->param('growth_rate'));
+        my $max_duration            = decode_json_utf8($r->param('max_duration'));
+        my $max_payout              = decode_json_utf8($r->param('max_payout'));
+        my @unique_growth_rate      = uniq @$growth_rate;
         #checking if there exists tick size barrier for each growth rate
         foreach my $gr (@unique_growth_rate) {
             unless (exists($tick_size_barrier->{$symbol}{"growth_rate_" . $gr})) {
@@ -70,8 +73,13 @@ if ($r->param('save_accumulator_config')) {
             }
         }
 
+        # for max duration
+        validate_growth_rate_cap($max_duration, $accumulator_hard_limits->{max_duration}, "duration");
+        validate_payout($max_payout, $accumulator_hard_limits->{payout_per_trade}{min_value},
+            $accumulator_hard_limits->{payout_per_trade}{max_value});
+
         my $per_symbol_config = {
-            max_payout        => decode_json_utf8($r->param('max_payout')),
+            max_payout        => $max_payout,
             max_duration      => $max_duration,
             growth_start_step => $r->param('growth_start_step'),
             growth_rate       => \@unique_growth_rate
@@ -97,14 +105,16 @@ if ($r->param('save_accumulator_per_symbol_limits')) {
         return;
     }
     try {
-        my $symbol             = $r->param('symbol') // die 'symbol is undef';
-        my $max_open_positions = $r->param('max_open_positions');
-        my $max_daily_volume   = $r->param('max_daily_volume');
+        my $accumulator_hard_limits  = get_accumulator_hard_limits();
+        my $symbol                   = $r->param('symbol') // die 'symbol is undef';
+        my $max_open_positions       = $r->param('max_open_positions');
+        my $max_daily_volume         = $r->param('max_daily_volume');
+        my $max_aggregate_open_stake = decode_json_utf8($r->param('max_aggregate_open_stake'));
 
-        die "Max Open Positions must be a number" unless looks_like_number($max_open_positions);
-        die "Max Open Positions must be a positive value" if $max_open_positions < 0;
-        die "Max Dialy Volume must be a number" unless looks_like_number($max_daily_volume);
-        die "Max Daily Volume must be a positive value" if $max_daily_volume < 0;
+        validate_max_open_positions($max_open_positions, $accumulator_hard_limits->{max_open_positions}{max_value});
+        validate_max_daily_volume($max_daily_volume);
+        # for max aggregate open stake
+        validate_growth_rate_cap($max_aggregate_open_stake, $accumulator_hard_limits->{max_aggregate_open_stake}, "aggregate");
 
         my $per_symbol_limits = {
             max_open_positions       => $r->param('max_open_positions'),
@@ -136,18 +146,15 @@ if ($r->param('save_accumulator_user_specific_limits')) {
         $max_daily_volume    = $r->param('max_daily_volume');
         $max_daily_pnl       = $r->param('max_daily_pnl');
         $max_stake_per_trade = $r->param('max_stake_per_trade');
+        my $accumulator_hard_limits = get_accumulator_hard_limits();
 
-        die 'Loginid should be defined' unless $loginid;
-        die 'Max open positions should be a number and bigger than 0'
-            if $max_open_positions and (!looks_like_number($max_open_positions) or $max_open_positions <= 0);
-        die 'Max daily volume should be a number and bigger than 0'
-            if $max_daily_volume and (!looks_like_number($max_daily_volume) or $max_daily_volume <= 0);
-        die 'Max daily pnl should be a number and bigger than 0' if $max_daily_pnl and (!looks_like_number($max_daily_pnl) or $max_daily_pnl <= 0);
-        die 'Max stake per trade should be a number and bigger than 0'
-            if $max_stake_per_trade and (!looks_like_number($max_stake_per_trade) or $max_stake_per_trade <= 0);
+        die "Loginid should be defined.\n" unless $loginid;
+        die "Max daily pnl should be a number and bigger than 0.\n" if $max_daily_pnl and (!looks_like_number($max_daily_pnl) or $max_daily_pnl <= 0);
+        validate_max_open_positions($max_open_positions, $accumulator_hard_limits->{max_open_positions}{max_value});
+        validate_max_daily_volume($max_daily_volume);
 
         unless ($max_open_positions or $max_daily_volume or $max_daily_pnl or $max_stake_per_trade) {
-            die 'At least one limit field should be specified.';
+            die "At least one limit field should be specified.\n";
         }
 
         my $client;
@@ -158,6 +165,12 @@ if ($r->param('save_accumulator_user_specific_limits')) {
         }
 
         die "invalid loginid " . $loginid unless $client;
+
+        validate_max_stake_per_trade(
+            $max_stake_per_trade,
+            $accumulator_hard_limits->{stake_per_trade}{min_value},
+            $accumulator_hard_limits->{stake_per_trade}{max_value});
+
         my $user_specific_limits = $qc->get_user_specific_limits    // {};
         my $client_limits        = $user_specific_limits->{clients} // {};
 
@@ -186,7 +199,8 @@ if ($r->param('save_accumulator_user_specific_limits')) {
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeAccumulatorConfig", $limit);
         $output = {success => 1};
     } catch ($e) {
-        $output = {error => "$e"};
+        my ($message) = $e =~ /(.*)\sat\s\// ? $1 : $e;
+        $output = {error => "$message"};
     }
 
     print encode_json_utf8($output);
@@ -387,4 +401,153 @@ if ($r->param('delete_accumulator_market_or_underlying_risk_profile')) {
     }
 
     print encode_json_utf8($output);
+}
+
+=head2 validate_max_open_positions
+
+Validation for max daily volumn and check if its a number and positive value.
+
+=over 4
+
+=item - $max_open_positions, scalar value to update max open positions.
+
+=item - $max_open_positions_cap, max open positions allowed at a time. 
+
+=back
+
+=cut
+
+sub validate_max_open_positions {
+    my ($max_open_positions, $max_open_positions_cap) = @_;
+
+    die "Max Open Positions must be $max_open_positions_cap." unless $max_open_positions == $max_open_positions_cap;
+}
+
+=head2 validate_max_daily_volume
+
+Validation for max daily volumn and check if its a number and positive value.
+
+=over 4
+
+=item - $max_daily_volume, scalar value to updated max daily volumn. 
+
+=back
+
+Returns error if certain condition does not meet.
+
+=cut
+
+sub validate_max_daily_volume {
+    my ($max_daily_volume) = @_;
+    die "Max Daily Volume must be a number.\n" unless looks_like_number($max_daily_volume);
+    die "Max Daily Volume must be a positive value.\n" if $max_daily_volume < 0;
+}
+
+=head2 validate_max_stake_per_trade
+
+validate max stake per trade
+
+=over 4
+
+=item - $max_stake_per_trade, scalar value for stake_per_trade update. 
+
+=item - $currency, client currency. 
+
+=item - $min_stake_per_trade_cap, minimum stake_per_trade cap.
+
+=item - $max_stake_per_trade_cap, maximum stake_per_trade cap.
+
+=back
+
+Returns error if new applied limit does not lie in between minimum and maximum cap.
+
+=cut
+
+sub validate_max_stake_per_trade {
+    my ($max_stake_per_trade, $min_stake_per_trade_cap, $max_stake_per_trade_cap) = @_;
+    if (   !$max_stake_per_trade
+        || !looks_like_number($max_stake_per_trade)
+        || $max_stake_per_trade < $min_stake_per_trade_cap
+        || $max_stake_per_trade > $max_stake_per_trade_cap)
+    {
+        die "Stake per trade should be between $min_stake_per_trade_cap and $max_stake_per_trade_cap usd.\n";
+    }
+}
+
+=head2 validate_growth_rate_cap
+
+Description:  Perform validations based on accumulator hard limits.  
+Takes the following arguments.
+
+=over 4
+
+=item - $growth_rate, hash ref containing new limits . 
+
+=item - $growth_rate_cap, hash ref containing hard limits.
+
+=item - $type, string value should contain aggregate/duration.
+
+=back
+
+Returns error if certain condition does not meet.
+
+=cut
+
+sub validate_growth_rate_cap {
+    my ($growth_rate, $growth_rate_cap, $type) = @_;
+
+    foreach my $key (keys %{$growth_rate_cap}) {
+        my $growth_rate_value     = $growth_rate->{$key};
+        my $growth_rate_value_cap = $growth_rate_cap->{$key};
+
+        die "Max $type for $key should be betweeen 1 and  $growth_rate_value_cap."
+            if $growth_rate_value > $growth_rate_value_cap || $growth_rate_value < 1;
+    }
+}
+
+=head2 validate_payout
+
+Description:  Perform validations based on accumulator hard limits.  
+Takes the following arguments.
+
+=over 4
+
+=item - $payout, hash ref containing payouts for symbol. 
+
+=item - $min_payout_cap, min payout cap for symbol.
+
+=item - $max_payout_cap, maximum payout cap for symbol.
+
+=back
+
+Returns error if certain condition does not meet.
+
+=cut
+
+sub validate_payout {
+    my ($payout, $min_payout_cap, $max_payout_cap) = @_;
+
+    foreach my $key (keys %{$payout}) {
+        my $payout_value    = $payout->{$key};
+        my $exchange_amount = in_usd($payout_value, $key);
+
+        if (   !$payout_value
+            || !looks_like_number($payout_value)
+            || $exchange_amount < $min_payout_cap
+            || $exchange_amount > $max_payout_cap)
+        {
+            die "Payout per trade for $key should be between $min_payout_cap and $max_payout_cap usd. Current Exchange Amount: $exchange_amount usd.";
+        }
+    }
+}
+
+=head2 get_accumulator_hard_limits
+
+Returns the hard limits imposed on symbol or clients for an accumulator. 
+These limits are part of the Risk Management tool. 
+
+=cut
+
+sub get_accumulator_hard_limits {
+    return LoadFile("/home/git/regentmarkets/bom-config/share/accumulator_hard_limits.yml");
 }
