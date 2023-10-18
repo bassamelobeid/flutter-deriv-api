@@ -550,7 +550,7 @@ SQL
     my $onfido_check = get_onfido_check_latest($client);
     my $onfido_pdf_url;
 
-    if ($onfido_check->{status} eq 'complete' && $onfido_check->{pdf_status} eq 'completed') {
+    if (($onfido_check->{status} // '') eq 'complete' && ($onfido_check->{pdf_status} // '') eq 'completed') {
         my $onfido_s3_client =
             BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth_onfido});
         $onfido_pdf_url = $onfido_s3_client->get_s3_url($onfido_check->{id} . '.pdf');
@@ -1317,7 +1317,7 @@ sub get_onfido_check_latest {
             return $sth->fetchrow_hashref;
         });
 
-    return $latest_check_result;
+    return $latest_check_result // {};
 }
 
 sub client_statement_summary {
