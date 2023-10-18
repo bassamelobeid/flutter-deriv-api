@@ -3,9 +3,7 @@ package BOM::Pricing::PriceDaemon;
 use strict;
 use warnings;
 
-use Exporter qw(import);
-our @EXPORT_OK = qw(get_local_language);
-
+use Exporter                   qw(import);
 use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_count stats_timing/;
 use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
@@ -19,9 +17,8 @@ use Finance::Underlying;
 use Finance::Contract::Longcode qw(
     shortcode_to_parameters
 );
-
-use BOM::MarketData qw(create_underlying);
-use BOM::Platform::Context;
+use BOM::Platform::Context qw (localize request);
+use BOM::MarketData        qw(create_underlying);
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Pricing::v3::Contract;
@@ -210,15 +207,6 @@ sub run {
         my $response;
         try {
             # Possible transient failure/dupe spot time
-            my $pricer_args      = $key->[1];
-            my $pricer_data_type = $redis_pricer->type($pricer_args);
-            my $language         = '';
-            if ($pricer_data_type eq 'set') {
-                my $pricer_value = $redis_pricer->smembers($pricer_args);
-                $language = get_local_language($pricer_value);
-            }
-
-            $params->{language} = $language // 'EN';
             $response = $self->process_job($redis_pricer, $next, $params) // next LOOP;
         } catch ($e) {
             $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $e, $params);
@@ -233,6 +221,12 @@ sub run {
 
         # proposal-open-contract
         if ($params->{contract_id}) {
+            my $language = $params->{language} // 'EN';
+            my $r        = BOM::Platform::Context::Request->new({language => $language});
+            request($r);
+            if ($response->{longcode}) {
+                $response->{longcode} = localize($response->{longcode});
+            }
             # On websocket the client is subscribing to proposal open contract with "CONTRACT_PRICE::<landing_company>::<account_id>::<contract_id>" as the key
             my $redis_channel     = join '::', ('CONTRACT_PRICE', $params->{landing_company}, $params->{account_id}, $params->{contract_id});
             my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
@@ -250,12 +244,18 @@ sub run {
             # on websocket, multiple clients are subscribed to $pricer_args::$subchannel
             my $pricer_args = $rkey;
             my $subchannels = $redis_pricer->smembers($pricer_args);
-
             # we adjust and publish the price for each of them
             for my $subchannel (@$subchannels) {
+                my $language = get_local_language($subchannel) // 'EN';
+                my $r        = BOM::Platform::Context::Request->new({language => $language});
+                request($r);
                 my $redis_channel       = $pricer_args . "::" . $subchannel;
                 my $contract_parameters = $self->_deserialize_contract_parameters($subchannel);
                 my $adjusted_response   = $response;
+
+                if ($response->{longcode}) {
+                    $adjusted_response->{longcode} = localize($response->{longcode});
+                }
                 # for non-binary where we expect theo_price to be present
                 if (defined $response->{theo_price}) {
                     $adjusted_response = BOM::Pricing::v3::Utility::non_binary_price_adjustment($contract_parameters, {%$response});
@@ -426,7 +426,7 @@ Returns the language code of a client.
 
 sub get_local_language {
     my $args         = shift;
-    my $last_element = @{$args} ? (split(',', $args->[0]))[-1] : undef;
+    my $last_element = (split(',', $args))[-1];
     return $last_element;
 }
 

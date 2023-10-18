@@ -169,9 +169,18 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'    => '51.19',
-        'ask_price'        => '51.19',
-        'longcode'         => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'display_value' => '51.19',
+        'ask_price'     => '51.19',
+        'longcode'      => [
+            "Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].",
+            ["Volatility 50 Index"],
+            ["contract start time"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 60
+            },
+            ["entry spot"],
+        ],
         'spot'             => '963.3054',
         'payout'           => '100',
         'theo_probability' => 0.499862430427529,
@@ -279,9 +288,19 @@ subtest 'send_ask LBFLOATCALL' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'    => '203.00',
-        'ask_price'        => '203.00',
-        'longcode'         => "Win USD 100.00 times Volatility 50 Index's close minus low over the next 15 minutes.",
+        'display_value' => '203.00',
+        'ask_price'     => '203.00',
+        'longcode'      => [
+            "Win [_6] [_5] times [_1]'s close minus low over the next [_3].",
+            ["Volatility 50 Index"],
+            ["contract start time"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 900
+            },
+            [0.0001],
+            "100.00", "USD",
+        ],
         'spot'             => '963.3054',
         'multiplier'       => 100,
         'payout'           => '0',
@@ -323,7 +342,20 @@ subtest 'send_ask RESETCALL' => sub {
     my $expected = {
         'display_value' => '6.37',
         'ask_price'     => '6.37',
-        'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
+        'longcode'      => [
+            "Win payout if [_1] after [_3] is strictly higher than it was at either entry or [_5].",
+            ["Volatility 50 Index"],
+            ["contract start time"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 900
+            },
+            ["entry spot"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 450
+            },
+        ],
 
         'spot'             => '963.3054',
         'payout'           => '10',
@@ -334,7 +366,6 @@ subtest 'send_ask RESETCALL' => sub {
         'rpc_time'            => ignore(),
         'date_expiry'         => ignore(),
         'contract_parameters' => ignore()};
-
     cmp_deeply($result, $expected, 'the left values are all right');
 };
 
@@ -358,9 +389,19 @@ subtest 'send_ask EXPIRYRANGE' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'    => '0.50',
-        'ask_price'        => '0.50',
-        'longcode'         => "Win payout if Volatility 50 Index ends strictly between 963.3000 to 963.3090 at 15 minutes after contract start time.",
+        'display_value' => '0.50',
+        'ask_price'     => '0.50',
+        'longcode'      => [
+            "Win payout if [_1] ends strictly between [_5] to [_4] at [_3] after [_2].",
+            ["Volatility 50 Index"],
+            ["contract start time"],
+            {
+                class => "Time::Duration::Concise::Localize",
+                value => 900
+            },
+            "963.3090",
+            "963.3000",
+        ],
         'spot'             => '963.3054',
         'payout'           => '20',
         'theo_probability' => '0.00139540603914123',
@@ -400,9 +441,12 @@ subtest 'send_ask ONETOUCH' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'    => '19.76',
-        'ask_price'        => '19.76',
-        'longcode'         => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
+        'display_value' => '19.76',
+        'ask_price'     => '19.76',
+        'longcode'      => [
+            "Win payout if [_1] touches [_4] through [plural,_3,%d tick,%d ticks] after [_2].",
+            ["Volatility 50 Index"], ["first tick"], [5], ["entry spot plus [_1]", 0.3054],
+        ],
         'skip_streaming'   => 0,
         'spot'             => '963.3054',
         'payout'           => '100',
@@ -430,7 +474,6 @@ subtest 'send_ask ONETOUCH' => sub {
                 'min' => '0.35',
                 'max' => 50000
             }}};
-
     cmp_deeply($result, $expected, 'the left values are all right');
 };
 
@@ -479,7 +522,7 @@ subtest 'send_ask MULTUP' => sub {
         'date_start'          => ignore(),
         'multiplier'          => 10,
         'ask_price'           => '100.00',
-        'longcode'            => 'Win 10% of your stake for every 1% rise in Volatility 100 Index.',
+        'longcode'            => ["Win [_5]% of your stake for every 1% rise in [_1].", ["Volatility 100 Index"], [], ignore(), [0.01], 10, "USD",],
         'skip_basis_override' => 1,
         'skip_streaming'      => 0,
         'spot'                => '65258.19',
@@ -490,7 +533,6 @@ subtest 'send_ask MULTUP' => sub {
         'contract_parameters' => ignore(),
         'limit_order'         => ignore(),
     };
-
     cmp_deeply($result, $expected, 'get_ask MULTUP right');
 };
 

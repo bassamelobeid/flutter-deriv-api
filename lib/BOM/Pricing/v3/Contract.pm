@@ -166,14 +166,14 @@ sub _get_ask {
                 my $longcode =
                     eval { $contract->longcode } || '';    # if we can't get the longcode that's fine, we still want to return the original error
                 $response->{contract_parameters} = $contract_parameters;
-                $response->{longcode}            = $longcode ? localize($longcode) : '';
+                $response->{longcode}            = $longcode;
             }
         } else {
             # We think this contract is valid to buy
             my $ask_price = formatnumber('price', $contract->currency, $contract->ask_price);
 
             $response = {
-                longcode            => localize($contract->longcode),
+                longcode            => $contract->longcode,
                 payout              => $contract->payout,
                 ask_price           => $ask_price,
                 display_value       => $ask_price,
@@ -606,7 +606,7 @@ sub get_contract_details {
     }
 
     $response = {
-        longcode     => localize($contract->longcode),
+        longcode     => $contract->longcode,
         symbol       => $contract->underlying->symbol,
         display_name => $contract->underlying->display_name,
         date_expiry  => $contract->date_expiry->epoch
@@ -818,7 +818,7 @@ sub _build_bid_response {
         date_expiry         => 0 + $contract->date_expiry->epoch,
         date_settlement     => 0 + $contract->date_settlement->epoch,
         currency            => $contract->currency,
-        longcode            => localize($contract->longcode),
+        longcode            => $contract->longcode,
         shortcode           => $contract->shortcode,
         contract_type       => $contract->code,
         bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),

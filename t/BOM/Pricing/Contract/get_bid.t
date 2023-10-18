@@ -81,12 +81,26 @@ my $expected = {
     'is_settleable'              => 0,
     'is_valid_to_cancel'         => 1,
     'is_valid_to_sell'           => 1,
-    'longcode'   => 'Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.',
+    'longcode'                   => [
+        "Win payout if [_1] after [_3] is strictly higher than it was at either entry or [_5].",
+        ["Volatility 50 Index"],
+        ["contract start time"],
+        {
+            class => "Time::Duration::Concise::Localize",
+            value => 900
+        },
+        ["entry spot"],
+        {
+            class => "Time::Duration::Concise::Localize",
+            value => 450
+        },
+    ],
     'payout'     => 10,
     'shortcode'  => ignore(),
     'status'     => 'sold',
     'underlying' => 'R_50'
 };
+
 $result = BOM::Pricing::v3::Contract::_build_bid_response($params);
 cmp_deeply($result, $expected, 'build_bid_response matches');
 

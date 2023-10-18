@@ -1,7 +1,6 @@
 use Test::Most;
 use Test::MockModule;
-use Test::MockTime::HiRes qw(set_absolute_time);
-use BOM::Pricing::PriceDaemon;
+use Test::MockTime::HiRes                   qw(set_absolute_time);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 set_absolute_time('2022-09-21T10:00:00Z');
@@ -116,18 +115,18 @@ subtest 'process_job' => sub {
         'is_sold'                    => 0,
         'is_valid_to_cancel'         => 0,
         'is_valid_to_sell'           => 0,
-        'longcode'                   => 'Win payout if the last digit of Volatility 10 Index is 7 after 5 ticks.',
-        'payout'                     => '18.18',
-        'price_daemon_cmd'           => 'bid',
-        'rpc_time'                   => ignore(),
-        'shortcode'                  => ignore(),
-        'status'                     => 'open',
-        'tick_count'                 => '5',
-        'tick_stream'                => [],
-        'underlying'                 => 'R_10',
-        'validation_error'           => ignore(),
-        'validation_error_code'      => ignore()};
-
+        'longcode'                   =>
+            ["Win payout if the last digit of [_1] is [_4] after [plural,_3,%d tick,%d ticks].", ["Volatility 10 Index"], ["first tick"], [5], 7,],
+        'payout'                => '18.18',
+        'price_daemon_cmd'      => 'bid',
+        'rpc_time'              => ignore(),
+        'shortcode'             => ignore(),
+        'status'                => 'open',
+        'tick_count'            => '5',
+        'tick_stream'           => [],
+        'underlying'            => 'R_10',
+        'validation_error'      => ignore(),
+        'validation_error_code' => ignore()};
     cmp_deeply($result, $expected, 'process_job result matches');
 
 };
@@ -232,7 +231,7 @@ subtest 'run' => sub {
 
 subtest 'country code' => sub {
 
-    my $subchannel = ["v1,AUD,200,stake,0,0.025,0.012,0.03,,,,100,EN"];
+    my $subchannel = "v1,AUD,200,stake,0,0.025,0.012,0.03,,,,100,EN";
     my $expected   = "EN";
 
     my $actual = BOM::Pricing::PriceDaemon::get_local_language($subchannel);

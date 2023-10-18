@@ -6,6 +6,7 @@ local $SIG{__WARN__} = sub {
     # capture the warn for test
     my $msg = shift;
 };
+
 my $mock_contract = Test::MockModule->new('BOM::Pricing::v3::Contract');
 
 my $params = {
@@ -22,10 +23,10 @@ my $expected = {
     'barrier'      => undef,
     'date_expiry'  => 1619506203,
     'display_name' => 'Volatility 50 Index',
-    'longcode'     => 'Win payout if tick 1 of Volatility 50 Index is the highest among all 5 ticks.',
-    'symbol'       => 'R_50'
+    'longcode'     =>
+        ["Win payout if tick [_5] of [_1] is the highest among all [_3] ticks.", ["Volatility 50 Index"], ["first tick"], [5], [0.0001], 1,],
+    'symbol' => 'R_50'
 };
-
 cmp_deeply($result, $expected, 'get_contract_details');
 
 $mock_contract->mock(
