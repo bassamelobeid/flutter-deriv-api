@@ -148,17 +148,14 @@ subtest 'create advertiser' => sub {
     is $advertiser->{chat_user_id}, 'dummy', 'chat user id';    # from mocked sendbird
     is $advertiser->{chat_token},   'dummy', 'chat token';
     ok $advertiser->{cancels_remaining} > 0, 'cancellations remaining';
-    is $advertiser->{last_online_time}, undef, 'since advertiser just created, there is no record for his last online time';
-    is $advertiser->{is_online},        0,     'since advertiser just created, he is considered not online yet';
+    like $advertiser->{last_online_time}, qr/^\d+$/, 'online time';
+    ok $advertiser->{is_online}, 'advertiser is online';
 
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     test_schema('p2p_advertiser_info', $resp);
 
-    ok $resp->{p2p_advertiser_info}->{last_online_time}, 'subsequent P2P calls from advertiser will record his online time';
-    is $resp->{p2p_advertiser_info}->{is_online}, 1, 'subsequent P2P calls shows advertiser is online';
+    ok abs($resp->{p2p_advertiser_info}{last_online_time} - delete $advertiser->{last_online_time}) < 2, 'online time';
 
-    $advertiser->{last_online_time} = ignore();
-    $advertiser->{is_online}        = ignore();
     cmp_deeply($resp->{p2p_advertiser_info}, superhashof($advertiser), 'advertiser info is correct');
 
     $resp = $t->await::p2p_advertiser_create({

@@ -142,43 +142,12 @@ subtest 'trade partners' => sub {
         delete $adv->{created_time};
     }
 
-    is scalar $resp->{p2p_advertiser_list}->{list}->@*, 2, '2 listing';
+    my $online_time = time();
 
+    is scalar $resp->{p2p_advertiser_list}->{list}->@*, 2, '2 listing';
     cmp_bag(
         $resp->{p2p_advertiser_list}->{list},
         [{
-                advert_rates               => undef,
-                basic_verification         => 0,
-                buy_completion_rate        => undef,
-                buy_orders_amount          => '0.00',
-                buy_orders_count           => 0,
-                buy_time_avg               => undef,
-                cancel_time_avg            => undef,
-                default_advert_description => '',
-                full_verification          => 0,
-                id                         => 3,
-                is_approved                => 1,
-                is_blocked                 => 1,
-                is_favourite               => 0,
-                is_listed                  => 1,
-                is_online                  => 0,
-                is_recommended             => 0,
-                last_online_time           => undef,
-                name                       => 'test advertiser 3',
-                partner_count              => 0,
-                rating_average             => undef,
-                rating_count               => 0,
-                release_time_avg           => undef,
-                recommended_average        => undef,
-                recommended_count          => undef,
-                sell_completion_rate       => undef,
-                sell_orders_amount         => '0.00',
-                sell_orders_count          => 0,
-                total_completion_rate      => undef,
-                total_orders_count         => 0,
-                total_turnover             => '0.00'
-            },
-            {
                 advert_rates               => undef,
                 basic_verification         => 1,
                 buy_completion_rate        => undef,
@@ -194,17 +163,49 @@ subtest 'trade partners' => sub {
                 is_blocked                 => 0,
                 is_favourite               => 1,
                 is_listed                  => 1,
-                is_online                  => 0,
+                is_online                  => 1,
                 is_recommended             => 0,
                 last_name                  => 'pItT',
-                last_online_time           => undef,
+                last_online_time           => num($online_time, 3),
                 name                       => 'test advertiser 2',
                 partner_count              => 0,
                 rating_average             => undef,
                 rating_count               => 0,
-                release_time_avg           => undef,
                 recommended_average        => undef,
                 recommended_count          => undef,
+                release_time_avg           => undef,
+                sell_completion_rate       => undef,
+                sell_orders_amount         => '0.00',
+                sell_orders_count          => 0,
+                total_completion_rate      => undef,
+                total_orders_count         => 0,
+                total_turnover             => '0.00'
+            },
+            {
+                advert_rates               => undef,
+                basic_verification         => 0,
+                buy_completion_rate        => undef,
+                buy_orders_amount          => '0.00',
+                buy_orders_count           => 0,
+                buy_time_avg               => undef,
+                cancel_time_avg            => undef,
+                default_advert_description => '',
+                full_verification          => 0,
+                id                         => 3,
+                is_approved                => 1,
+                is_blocked                 => 1,
+                is_favourite               => 0,
+                is_listed                  => 1,
+                is_online                  => 1,
+                is_recommended             => 0,
+                last_online_time           => num($online_time, 3),
+                name                       => 'test advertiser 3',
+                partner_count              => 0,
+                rating_average             => undef,
+                rating_count               => 0,
+                recommended_average        => undef,
+                recommended_count          => undef,
+                release_time_avg           => undef,
                 sell_completion_rate       => undef,
                 sell_orders_amount         => '0.00',
                 sell_orders_count          => 0,
@@ -213,7 +214,7 @@ subtest 'trade partners' => sub {
                 total_turnover             => '0.00'
             }]);
 
-    #negativ offset
+    #negative offset
     $resp = $t->await::p2p_advertiser_list({
         p2p_advertiser_list => 1,
         trade_partners      => 1,
