@@ -272,9 +272,10 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
                 loginid           => $client->loginid,
                 underlying_action => $method
             );
+
             # skip _check_client_access for p2p_settings because it is not a client based settings
             # only check needed for p2p_settings is RestrictedCountry which is done in Client.pm
-            if (not($method eq 'p2p_settings' || $method eq 'p2p.settings')) {
+            if ($method ne 'p2p_settings') {
                 _check_client_access($client, $app_config);
                 BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, ($client->loginid . "::" . $client->residence))
                     if $client->_p2p_advertiser_cached;
@@ -315,7 +316,7 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
                 chomp($err_code = $exception);
             }
 
-            my $p2p_prefix = $method =~ tr/_/./;
+            my $p2p_prefix = $method =~ s/_/./rg;
 
             if (my $message = $ERROR_MAP{$err_code}) {
                 stats_inc($p2p_prefix . '.error', {tags => ['error_code:' . $err_code]});
