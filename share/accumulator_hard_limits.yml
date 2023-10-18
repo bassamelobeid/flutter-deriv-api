@@ -1,0 +1,21 @@
+payout_per_trade:
+  min_value: 10
+  max_value: 20000
+stake_per_trade:
+  min_value: 1
+  max_value: 5000
+max_open_positions:
+  max_value: 1
+max_duration:
+  #max duration unit is seconds.
+  growth_rate_0.01: 460
+  growth_rate_0.02: 230
+  growth_rate_0.03: 150
+  growth_rate_0.04: 110
+  growth_rate_0.05: 90
+max_aggregate_open_stake:
+  growth_rate_0.01: 10870 
+  growth_rate_0.02: 11272 
+  growth_rate_0.03: 11685 
+  growth_rate_0.04: 12109 
+  growth_rate_0.05: 12545
