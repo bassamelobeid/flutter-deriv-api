@@ -96,7 +96,11 @@ sub register {
             return $c->stash->{country_code} if $c->stash->{country_code};
 
             my $client_country =
-                lc($allowed_app_countries{$c->req->headers->header('X-Client-Country') // ''} || $c->req->headers->header('CF-IPCOUNTRY') || 'aq');
+                lc(    $allowed_app_countries{$c->req->headers->header('X-Client-Country') // ''}
+                    || $c->req->headers->header('CF-IPCOUNTRY')
+                    || $c->req->headers->header('CloudFront-Viewer-Country')
+                    || 'aq');
+
             # Note: xx means there is no country data
             $client_country = 'aq' if ($client_country eq 'xx');
 
