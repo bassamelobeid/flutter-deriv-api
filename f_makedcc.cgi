@@ -19,6 +19,7 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
 use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
+use Syntax::Keyword::Try;
 
 my $staff = BOM::Backoffice::Auth0::get_staffname();
 
@@ -103,9 +104,13 @@ if ($input->{'dcctype'} eq 'file_content') {
             . " $ENV{'REMOTE_ADDR'} REMINDER="
             . $input->{'reminder'});
 } else {
-    $code = BOM::DualControl->new({
-            staff           => $staff,
-            transactiontype => $input->{'transtype'}})->payment_control_code($input->{'clientloginid'}, $input->{'currency'}, $input->{'amount'});
+    try {
+        $code = BOM::DualControl->new({
+                staff           => $staff,
+                transactiontype => $input->{'transtype'}})->payment_control_code($input->{'clientloginid'}, $input->{'currency'}, $input->{'amount'});
+    } catch ($e) {
+        code_exit_BO("ERROR : $e");
+    }
 
     $message =
           "The dual control code created by $staff for an amount of "

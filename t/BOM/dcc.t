@@ -1,5 +1,6 @@
 use BOM::DualControl;
 use Test::More;
+use Test::Exception;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -45,6 +46,17 @@ subtest 'Batch payment DCC' => sub {
         })->validate_batch_payment_control_code($dcc1, [1, 2, 4]);
 
     ok $error, 'Fail in case dataset is changed';
+};
+
+subtest 'payment method DCC' => sub {
+    dies_ok {
+        BOM::DualControl->new({
+                staff           => 'gaurav',
+                transactiontype => 'deposit'
+            }
+        )->payment_control_code('VRTC90000000', 'USD', 500)
+    }
+    'Should die if client is virtual';
 };
 
 subtest 'Batch Anonymization DCC' => sub {

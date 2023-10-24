@@ -37,7 +37,7 @@ my $self_post = request()->url_for('backoffice/f_change_affiliates_token.cgi');
 # let the client-check offer a chance to retry.
 BrokerPresentation("AFFILIATE TOKEN DCC");
 # Not available for Virtual Accounts
-if (($loginid =~ BOM::User->VIRTUAL_REGEX) || ($loginid =~ BOM::User->MT5_REGEX)) {
+if (($loginid =~ BOM::User::Client->VIRTUAL_REGEX) || ($loginid =~ BOM::User::Client->MT5_REGEX)) {
     code_exit_BO("We're sorry but the Affiliate Token is not available for this type of Accounts.", 'CHANGE Client AFFILIATE TOKEN DCC');
 }
 

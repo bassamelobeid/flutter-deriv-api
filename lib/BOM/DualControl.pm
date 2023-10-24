@@ -26,6 +26,7 @@ use Digest::SHA qw(sha256_hex);
 use List::Util  qw(any);
 
 use ExchangeRates::CurrencyConverter qw(in_usd);
+use BOM::User;
 
 use BOM::Config;
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
@@ -89,6 +90,8 @@ Generates payment DCC
 
 sub payment_control_code {
     my ($self, $loginid, $currency, $amount) = @_;
+
+    die "Invalid Virtual Client LoginID used\n" if $loginid =~ BOM::User::Client->VIRTUAL_REGEX;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $loginid, $currency, $amount, $self->_environment));
