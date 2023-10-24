@@ -36,7 +36,7 @@ my %skip_category = (
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/reset_config.yml');
-my @underlying_symbols = ('R_100');
+my @underlying_symbols = ('R_100', '1HZ100V');
 my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_obj      = LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg);
@@ -54,57 +54,68 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     foreach my $contract_category (qw(reset)) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
-        my @duration = map { $_ * 86400 } (7, 14);
+        my @duration = map { $_ * 60 } (1, 120);
         foreach my $duration (@duration) {
             my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
                 underlying => $ul,
                 for_date   => $now
             });
-            my $vol = $volsurface->get_volatility({
-                market => "ATM",
-                from   => $volsurface->recorded_date,
-                to     => $volsurface->recorded_date->plus_time_interval($duration),
-            });
-            my @barriers = @{
-                Test::BOM::UnitTestPrice::get_barrier_range({
-                        type       => ($category_obj->two_barriers ? 'double' : 'single'),
-                        underlying => $ul,
-                        duration   => $duration,
-                        spot       => $spot,
-                        volatility => $vol,
-                    })};
 
-            #we only price ATM contracts for financial instruments with flat vol-surface
-            @barriers = ({barrier => 'S0P'}) if (($ul->symbol eq 'frxBROUSD' or $ul->symbol eq 'WLDEUR') and $ul->market->name ne 'synthetic_index');
+            SKIP: {
+                skip 'Skipping this setup because we do not have ATM RESET contracts now', 1 if 1;
 
-            foreach my $barrier (@barriers) {
-                my %equal = (
-                    CALLE        => 1,
-                    PUTE         => 1,
-                    EXPIRYMISSE  => 1,
-                    EXPIRYRANGEE => 1,
-                );
-                foreach my $contract_type (grep { !$equal{$_} } $offerings_obj->query({contract_category => $contract_category}, ['contract_type'])) {
-                    my $args = {
-                        bet_type     => $contract_type,
-                        underlying   => $ul,
-                        date_start   => $now,
-                        date_pricing => $now,
-                        duration     => $duration . 's',
-                        currency     => $payout_currency,
-                        payout       => 1000,
-                        barrier      => 'S0P',
-                    };
+                my $vol = $volsurface->get_volatility({
+                    market => "ATM",
+                    from   => $volsurface->recorded_date,
+                    to     => $volsurface->recorded_date->plus_time_interval($duration),
+                });
 
-                    my $c = produce_contract($args);
-                    isa_ok $c->pricing_engine_name, 'Pricing::Engine::Reset';
+                my @barriers = @{
+                    Test::BOM::UnitTestPrice::get_barrier_range({
+                            type       => ($category_obj->two_barriers ? 'double' : 'single'),
+                            underlying => $ul,
+                            duration   => $duration,
+                            spot       => $spot,
+                            volatility => $vol,
+                        })};
 
-                    my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch, $c->barrier->as_absolute);
-                    my $code  = join '_', @codes;
+                # We only price ATM contracts for financial instruments with flat vol-surface
+                @barriers = ({barrier => 'S0P'})
+                    if (($ul->symbol eq 'frxBROUSD' or $ul->symbol eq 'WLDEUR') and $ul->market->name ne 'synthetic_index');
 
-                    is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}), 'theo price matches [' . $code . ']';
-                    $expectation->{$code} = $c->theo_price;
+                foreach my $barrier (@barriers) {
+
                 }
+            }
+
+            my %equal = (
+                CALLE        => 1,
+                PUTE         => 1,
+                EXPIRYMISSE  => 1,
+                EXPIRYRANGEE => 1,
+            );
+
+            foreach my $contract_type (grep { !$equal{$_} } $offerings_obj->query({contract_category => $contract_category}, ['contract_type'])) {
+                my $args = {
+                    bet_type     => $contract_type,
+                    underlying   => $ul,
+                    date_start   => $now,
+                    date_pricing => $now,
+                    duration     => $duration . 's',
+                    currency     => $payout_currency,
+                    payout       => 1000,
+                    barrier      => 'S0P',
+                };
+
+                my $c = produce_contract($args);
+                isa_ok $c->pricing_engine_name, 'Pricing::Engine::Reset';
+
+                my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch, $c->barrier->as_absolute);
+                my $code  = join '_', @codes;
+
+                is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}), 'theo price matches [' . $code . ']';
+                $expectation->{$code} = $c->theo_price;
+
             }
         }
     }

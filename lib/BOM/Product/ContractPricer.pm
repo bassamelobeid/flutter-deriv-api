@@ -8,6 +8,7 @@ use Math::Util::CalculatedValue::Validatable;
 use List::Util            qw(max);
 use List::MoreUtils       qw(none all);
 use Format::Util::Numbers qw/financialrounding/;
+use POSIX                 qw(floor);
 
 use BOM::Config::Quants qw(get_exchangerates_limit);
 use Price::Calculator;
@@ -231,10 +232,14 @@ sub _build_reset_time {
 # we need to be precise, thus using entry_tick epoch made things much simpler because
 # basically it is the mid between entry_tick and expiry.
 sub _build_reset_time_in_years {
-    my $self = shift;
+    my $self                        = shift;
+    my $generation_interval_seconds = $self->underlying->generation_interval->seconds;
+    $generation_interval_seconds = 1 unless $generation_interval_seconds;
 
-    my $reset_time_in_years = ($self->date_expiry->epoch - $self->date_start->epoch) * 0.5;
-    $reset_time_in_years = $reset_time_in_years / (365 * 24 * 60 * 60);
+    my $reset_tick          = floor(($self->date_expiry->epoch - $self->date_start->epoch) * 0.5 / $generation_interval_seconds);
+    my $reset_time          = $reset_tick * $generation_interval_seconds;
+    my $reset_time_in_years = $reset_time / (365 * 24 * 60 * 60);
+
     return $reset_time_in_years;
 }
 
