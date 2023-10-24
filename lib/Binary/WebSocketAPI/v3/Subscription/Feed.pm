@@ -155,33 +155,33 @@ sub handle_message {
     if ($type eq 'tick') {
         $msg_type = $type;
         $result   = {
-            id     => $self->uuid,
-            symbol => $symbol,
+            id     => "" . $self->uuid,
+            symbol => "" . $symbol,
             epoch  => 0 + $epoch,
-            quote  => $payload->{quote},
-            bid    => $payload->{bid},
-            ask    => $payload->{ask},
+            quote  => 0 + $payload->{quote},
+            bid    => 0 + $payload->{bid},
+            ask    => 0 + $payload->{ask},
         };
 
     } else {
         $msg_type = 'ohlc';
         my ($open, $high, $low, $close) = _parse_ohlc_data_for_type($payload->{ohlc}, $type);
         $result = {
-            id        => $self->uuid,
-            epoch     => $epoch,
+            id        => "" . $self->uuid,
+            epoch     => 0 + $epoch,
             open_time => ($type and looks_like_number($type))
             ? $epoch - $epoch % $type
             : $epoch - $epoch % 60,    #defining default granularity
-            symbol      => $symbol,
-            granularity => $type,
-            open        => $open,
-            high        => $high,
-            low         => $low,
-            close       => $close,
+            symbol      => "" . $symbol,
+            granularity => 0 + $type,
+            open        => "" . $open,
+            high        => "" . $high,
+            low         => "" . $low,
+            close       => "" . $close,
         };
 
     }
-    $result->{pip_size} = $pip_size;
+    $result->{pip_size} = 0 + $pip_size;
     if ($cache_only) {
         $cache->{$epoch} = $result;
     } else {

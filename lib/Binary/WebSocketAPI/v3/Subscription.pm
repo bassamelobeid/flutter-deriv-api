@@ -21,7 +21,7 @@ use curry::weak;
 
 use JSON::MaybeUTF8 qw(:v1);
 use Binary::WebSocketAPI::v3::SubscriptionManager;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Time::HiRes;
 use Scalar::Util qw(blessed weaken);
 use Log::Any     qw($log);
@@ -114,7 +114,7 @@ sub process {
         return undef unless $data;
         my $message = $self->handle_message($data);
         my $delay   = 1000 * Time::HiRes::tv_interval($tv);
-        stats_timing('bom_websocket_api.v_3.subscription.handling.timing', $delay, {tags => ['stats_tag:' . $self->stats_tag]});
+        stats_timing('bom_websocket_api.v_3.subscription.handling.timing', $delay, {tags => [$self->stats_tag]});
         return $message;
     } catch ($e) {
         $log->errorf("Failure processing Redis subscription message: %s from original message %s, module %s, channel %s",

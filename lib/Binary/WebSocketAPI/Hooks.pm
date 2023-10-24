@@ -554,7 +554,16 @@ sub output_validation {
     local $log->context->{args}         = $args;
     local $log->context->{api_response} = $api_response;
 
+    my %skip_validation = (
+        tick => 1,
+        ohlc => 1,
+    );
+
     if ($api_response->{msg_type}) {
+        # don't validate tick and ohlc as we are doing
+        # coercion on the response for performance improvements
+        return if $skip_validation{$api_response->{msg_type}};
+
         my $schema = _load_schema($api_response->{msg_type});
         my $error  = _validate_schema_error($schema, $api_response);
         return unless $error;
