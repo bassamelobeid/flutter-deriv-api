@@ -127,9 +127,6 @@ subtest 'uploaded by IDV' => sub {
     $client = BOM::User::Client->new({loginid => $client->loginid});
     my $uploaded = $client->documents->uploaded;
 
-    use Data::Dumper;
-    print Dumper($uploaded);
-
     cmp_deeply $uploaded,
         +{
         proof_of_identity => {
