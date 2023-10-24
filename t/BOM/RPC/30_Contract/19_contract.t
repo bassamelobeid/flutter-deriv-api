@@ -269,18 +269,18 @@ subtest 'get_ask' => sub {
         'display_value' => '6.37',
         'ask_price'     => '6.37',
         'longcode'      => [
-            "Win payout if [_1] after [_3] is strictly higher than it was at either entry or [_5].",
-            ["Volatility 50 Index"],
-            ["contract start time"],
+            'Win payout if [_1] after [_3] is strictly higher than it was at either entry or [_5].',
+            ['Volatility 50 Index'],
+            ['contract start time'],
             {
-                class => "Time::Duration::Concise::Localize",
-                value => 900
+                'class' => 'Time::Duration::Concise::Localize',
+                'value' => 900
             },
-            ["entry spot"],
+            ['entry spot'],
             {
-                class => "Time::Duration::Concise::Localize",
-                value => 450
-            },
+                'value' => '450',
+                'class' => 'Time::Duration::Concise::Localize'
+            }
         ],
         'spot'             => '963.3054',
         'payout'           => '10',
@@ -308,6 +308,7 @@ subtest 'get_ask' => sub {
                 'min' => '0.35',
                 'max' => 50000
             }}};
+
     cmp_deeply($result, $expected, 'the left values are all right');
 };
 
