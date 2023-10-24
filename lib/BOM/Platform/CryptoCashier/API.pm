@@ -75,7 +75,15 @@ Gets api configuration.
 
 sub config {
     my $self = shift;
-    return $self->{config} //= BOM::Config::crypto_api();
+    $self->{config} //= BOM::Config::crypto_api();
+
+    # We must remove switching the host once the crypto api docker service is running stable
+    my $revert_host = BOM::Config::CurrencyConfig::get_revert_host_address();
+    return $self->{config} if (!$revert_host);
+
+    my %clone_config = %{$self->{config}};
+    $clone_config{host} = $revert_host;
+    return \%clone_config;
 }
 
 =head2 create_url

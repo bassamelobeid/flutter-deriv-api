@@ -5,6 +5,7 @@ use warnings;
 no indirect;
 
 use BOM::Platform::CryptoCashier::API;
+use BOM::Config;
 
 use HTTP::Response;
 use HTTP::Request;
@@ -12,9 +13,10 @@ use HTTP::Request;
 use Test::More;
 use Test::MockModule;
 
-my $mock_dd         = Test::MockModule->new('DataDog::DogStatsd::Helper');
-my $mock_crypto_api = Test::MockModule->new('BOM::Platform::CryptoCashier::API');
-my $mock_user_agent = Test::MockModule->new('LWP::UserAgent');
+my $mock_dd              = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my $mock_crypto_api      = Test::MockModule->new('BOM::Platform::CryptoCashier::API');
+my $mock_user_agent      = Test::MockModule->new('LWP::UserAgent');
+my $mock_currency_config = Test::MockModule->new('BOM::Config::CurrencyConfig');
 
 subtest "_request" => sub {
 
@@ -135,6 +137,31 @@ subtest "_request" => sub {
         $mock_crypto_api->unmock_all();
         $mock_dd->unmock_all();
     }
+};
+
+# This test needs to be removed while we clean up handling the switching of crypto api host through backoffice.
+subtest "config" => sub {
+    my $crypto_service = BOM::Platform::CryptoCashier::API->new({});
+    my $revert_adddress;
+    $mock_currency_config->mock(
+        get_revert_host_address => sub {
+            return $revert_adddress;
+        });
+
+    $revert_adddress = "";
+    my $config = $crypto_service->config;
+    is $config->{host}, 'http://localhost', 'Correct host when revert address is empty string';
+    is $config->{port}, 5055,               'Correct port when revert address is empty string';
+
+    $revert_adddress = 'https://crypto-cashier-api.deriv.com';
+    $config          = $crypto_service->config;
+    is $config->{host}, $revert_adddress, 'Correct host when revert address is set';
+    is $config->{port}, 5055,             'Correct port when revert address is set';
+
+    $revert_adddress = "";
+    $config          = $crypto_service->config;
+    is $config->{host}, 'http://localhost', 'Correct host when revert address is set back to empty string';
+    is $config->{port}, 5055,               'Correct port when revert address is set back to empty string';
 };
 
 sub setup_dd_mock {
