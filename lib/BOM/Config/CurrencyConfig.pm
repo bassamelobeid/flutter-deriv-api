@@ -807,4 +807,25 @@ sub get_crypto_payout_auto_update_global_status {
     return 0;
 }
 
+=head2 get_revert_host_address
+
+Get the crypto api host to revert.
+
+This is a temporary setting added to switch the crypto cashier api host and needs to be removed once
+the cryptocurrency_api.yml configuration has been updated from chef.
+
+=over 4
+
+=item * C<$action> - required - Action to check  - possible values {approve, reject, approve_dry_run, reject_dry_run}
+
+=back
+
+Returns a string. By default this settings from backoffice returns an empty string
+
+=cut
+
+sub get_revert_host_address {
+    return app_config()->payments->crypto->crypto_api->host;
+}
+
 1;

@@ -599,6 +599,15 @@ payments:
               isa: json_string
               description: "Stable payment methods config for client withdrawal"
               default: '{"skrill" : "Skrill", "neteller" : "Neteller", "perfectm" : "Perfect Money", "fasapay" : "FasaPay", "paysafe" : "PaySafe", "sticpay" : "SticPay", "webmoney" : "Webmoney", "airtm" : "AirTM", "paylivre" : "Paylivre", "nganluong" : "NganLuong", "astropay" : "Astropay", "onlinenaira" : "Onlinenaira", "directa24s" : "Directa24", "zingpay" : "ZingPay", "pix" : "PIX", "payrtransfer" : "PayRTransfer", "advcash" : "Advcash", "upi" : "UPI", "beyonicmt" : "BeyonicMT", "imps" : "IMPS", "btc" : "BTCCOP", "ltc" : "BTCCOP", "eth" : "BTCCOP", "bch" : "BTCCOP", "solidpaywave" : "SolidPayWave", "verve" : "Verve", "help2pay" : "Help2pay", "p2p" : "Deriv P2P", "payment_agent_transfer" : "Payment Agent"}'
+              global: 1
+        crypto_api:
+          description: "Temporary settings to switch crypto api host"
+          isa: section
+          contains:
+            host:
+              description: "Cryptocurrency api host"
+              isa: Str
+              default: ""
               global: 1  
         stablecoin:
           description: "Crypto stablecoins limits"
