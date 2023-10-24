@@ -18,9 +18,9 @@ sub rose_db {
         type     => 'write',
         driver   => 'Pg',
         database => "authdb$db_postfix",
-        port     => 6432,
+        port     => $ENV{BOMDB_PORT} || 6432,
         username => 'write',
-        host     => '/var/run/postgresql',
+        host     => $ENV{BOMDB_HOST} || '/var/run/postgresql',
         password => '',
         %overrides,
     );
