@@ -669,9 +669,9 @@ sub _validation_methods {
 
     my @validation_methods =
         qw(_validate_offerings _validate_input_parameters _validate_start_and_expiry_date _validate_feed _validate_rollover_blackout);
-    push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
-    push @validation_methods, '_validate_price'           unless $self->skips_price_validation;
-    push @validation_methods, '_validate_volsurface'      unless $self->underlying->volatility_surface_type eq 'flat';
+    push @validation_methods, qw(_validate_trading_times)  unless $self->underlying->always_available;
+    push @validation_methods, '_validate_price_non_binary' unless $self->skips_price_validation;
+    push @validation_methods, '_validate_volsurface'       unless $self->underlying->volatility_surface_type eq 'flat';
 
     # add turbos specific validations
     push @validation_methods, qw(_validate_barrier_choice _validate_stake validate_take_profit) unless $self->for_sale;
@@ -754,45 +754,6 @@ sub _validate_barrier_choice {
         },
     };
 }
-
-override _validate_price => sub {
-    my $self = shift;
-
-    my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
-    my $ask_price     = $self->ask_price;
-
-    if (not $ask_price or $ask_price == 0) {
-        return {
-            message           => 'Stake can not be zero .',
-            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
-            details           => {
-                field           => 'amount',
-                min_stake       => $self->min_stake,
-                max_stake       => $self->max_stake,
-                barrier_choices => $self->strike_price_choices
-            },
-        };
-    }
-
-    # we need to allow decimal places till allowed precision for currency
-    # adding 1 so that if its more thant allowed precision then it will
-    # send back error
-    my $currency = $self->currency;
-    my $prec_num = Format::Util::Numbers::get_precision_config()->{price}->{$currency} // 0;
-
-    my $re_num = 1 + $prec_num;
-
-    my $ask_price_as_string = "" . $ask_price;    # Just to be sure we're dealing with a string.
-    $ask_price_as_string =~ s/[\.0]+$//;          # Strip trailing zeroes and decimal points to be more friendly.
-
-    return {
-        error_code    => 'stake_too_many_places',
-        error_details => [$prec_num, $ask_price],
-    } if ($ask_price_as_string =~ /\.[0-9]{$re_num,}/);
-
-    # not validating payout max as turbos doesn't have a payout until expiry
-    return undef;
-};
 
 =head2 require_price_adjustment
 

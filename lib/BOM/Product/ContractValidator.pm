@@ -9,6 +9,7 @@ use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period NY1700_roll
 use DataDog::DogStatsd::Helper          qw/stats_timing/;
 use Time::HiRes                         ();
 use List::Util                          qw(any first uniq);
+use Scalar::Util::Numeric               qw(isint);
 
 use LandingCompany::Registry;
 
@@ -434,6 +435,52 @@ sub _validate_price {
         }->{$res->{error_code}}->($details);
     }
     return $res;
+}
+
+=head2 _validate_price_non_binary
+
+This subroutine is used for checking price validation of non-binary contracts.
+
+=cut
+
+sub _validate_price_non_binary {
+    my $self = shift;
+
+    my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+    my $ask_price     = $self->ask_price;
+
+    if (not $ask_price or $ask_price == 0) {
+        return {
+            message           => 'Stake can not be zero .',
+            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+        };
+    }
+
+    my $currency = $self->currency;
+    my $prec_num = Format::Util::Numbers::get_precision_config()->{price}->{$currency} // 0;
+    $ask_price = $ask_price * 10**$prec_num;
+
+    unless (isint($ask_price)) {
+        return {
+            message           => 'Stake amount has too many decimal places.',
+            message_to_client => [$ERROR_MAPPING->{IncorrectStakeDecimals}, $prec_num],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+        };
+    }
+
+    # not validating payout max as turbos / vanilla doesn't have a payout until expiry
+    return undef;
 }
 
 sub _validate_barrier_type {
