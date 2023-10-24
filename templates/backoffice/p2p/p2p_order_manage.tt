@@ -42,6 +42,10 @@
             <td>Client advertiser name</td>
             <td>[% order.client_name %]</td>
         </tr>
+        <tr>
+            <td>Client country</td>
+            <td>[% order.client_country %] [% request.country_emoji(order.client_country) | none %]</td>
+        </tr>        
         [% IF order.advertiser_review_time.defined %]
         <tr>
             <td>Client review</td>
@@ -66,6 +70,10 @@
             <td>[% order.advertiser_name %]</td>
         </tr>
         <tr>
+            <td>Advertiser country</td>
+            <td>[% order.advertiser_country %] [% request.country_emoji(order.advertiser_country) | none %]</td>
+        </tr>         
+        <tr>
             <td>Advertiser confirmed</td>
             <td><b>[% order.advertiser_confirmed %]</b></td>
         </tr>
@@ -80,7 +88,7 @@
             <td>[% order.account_currency %] [% order.amount_display %]</td>
         </tr>
         <tr>
-            <td>Payment due</td>
+            <td>Local Amount</td>
             <td>[% order.local_currency %] [% order.price_display %]
             (rate: [% order.rate %])
             [% IF order.advert_rate_type == 'float' %]

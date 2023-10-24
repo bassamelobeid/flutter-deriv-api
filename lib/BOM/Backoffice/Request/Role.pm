@@ -61,6 +61,23 @@ sub url_for {
     return $url;
 }
 
+=head2 country_emoji
+
+Returns html to show a country flag emoji for a 2 letter country code.
+
+=cut
+
+sub country_emoji {
+    my ($self, $code) = @_;
+
+    # flag emoji consists of 2 'regional indicators' stuck together.
+    # regional indicator is lower case letter code + 127365
+    my $emoji   = join '', map { '&#' . (ord(lc $_) + 127365) . ';' } split //, $code;
+    my $country = $self->brand->countries_instance->countries_list->{lc $code};
+    my $name    = $country ? $country->{name} : 'unknown country';
+    return "<span title=\"$name\">$emoji</span>";
+}
+
 sub _SetEnvironment {
     if (
         not $ENV{'REMOTE_ADDR'}

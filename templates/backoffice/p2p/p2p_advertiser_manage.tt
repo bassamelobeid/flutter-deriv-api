@@ -182,7 +182,7 @@
         </tr>
         <tr>
             <td>Residence</td>
-            <td>[% advertiser.residence %]</td>
+            <td>[% advertiser.residence %] [% request.country_emoji(advertiser.residence) | none %]</td>
         </tr>
         <tr>
             <td>Online</td>

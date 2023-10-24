@@ -70,7 +70,7 @@
         <tr>
             <td><a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => result.id }) %]">[% result.id %]</a></td>
             <td><a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => result.loginid }) %]">[% result.loginid %]</a></td>
-            <td>[% countries.item(result.residence) %]</td>
+            <td>[% countries.item(result.residence) %] [% request.country_emoji(result.residence) | none %]</td>
             <td>[% IF result.is_approved %]&#9989;[% ELSE %]&#10060;[% END %]</td>
             <td>[% IF result.is_enabled %]&#9989;[% ELSE %]&#10060;[% END %]</td>
             <td>[% result.nickname %]</td>

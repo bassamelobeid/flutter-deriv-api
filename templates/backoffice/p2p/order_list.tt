@@ -8,6 +8,8 @@
             <input type="number" name="advert_id" min="1" value="[% input.advert_id %]" data-lpignore="true" />
             <label>Client Login ID:</label>
             <input type="text" name="loginID" size="15" value="[% input.loginID %]" pattern="^[A-Za-z]+[0-9]+$" oninvalid="setCustomValidity('Please enter a valid loginid.')" oninput="setCustomValidity('')" data-lpignore="true" />
+        </div>
+        <div class="row">
             <label>Order Status:</label>
             <select name="status">
                 <option value="">All</option>
@@ -15,11 +17,24 @@
                     <option value="[% status %]" [% input.status == status ? 'selected' : '' %]>[% status %]</option>
                 [% END %]
             </select>
+            <label>Country:</label>
+            <select name="country">
+                <option value="">&#x1f30f; All</option>
+                [% FOREACH country IN countries.keys.sort %]
+                    <option value="[% country %]" [% input.country == country ? 'selected' : '' %]>[% request.country_emoji(country) | none %] [% country %] - [% countries.$country.name %]</option>
+                [% END %]
+            </select>
+            <label>Sorting:</label>
+            <select name="sort_ord">
+                <option value="desc">Newest first</option>
+                <option value="asc" [% input.sort_ord == 'asc' ? 'selected' : '' %]>Oldest first</option>
+            </select>            
             <input type="submit" class="btn btn--primary" value="Show">
             <a class="btn btn--secondary" href="[% request.url_for('backoffice/p2p_order_list.cgi') %]">Reset filters</a>
         </div>
     </form>
 [% END %]
+
 [% WRAPPER layout title='P2P Orders' %]
 <table class="small border">
     <thead><tr><th>Status</th><th>Description</th><th>Funds location</th><tr/></thead>
@@ -42,41 +57,41 @@
 <table class="border hover alternate">
     <thead><tr>
         <th>Order ID</th>
-        <th>Created by</th>
-        <th>Created at</th>
-        <th>Advert ID</th>
-        <th>Advertiser</th>
-        <th>Expire at</th>
         <th>Type</th>
-        <th>Buyer</th>
-        <th>Seller</th>
+        <th>Order Amount</th>
         <th>Status</th>
-        <th>Amount</th>
-        <th>Currency</th>
+        <th>Advertiser</th>
+        <th>Client</th>
+        <th>Created at</th>
+        <th>Expire time</th>
+        <th>Local currency</th>
         <th>Rate</th>
         <th>Local Amount</th>
-        <th>Local Currency</th>
+        <th>Advert ID</th>
         <th>Block Trade</th>
     </tr></thead>
     <tbody>
     [% FOREACH order IN orders %]
         <tr>
-            <td><a class="link" style="display:block;width:100%;" href="[% request.url_for('backoffice/p2p_order_manage.cgi', {order_id => order.id}) %]">[% order.id %]</a></td>
-            <td><a class="link" style="display:block;width:100%;" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', {loginID => order.client_loginid}) %]">[% order.client_loginid %]</a></td>
-            <td>[% order.created_time %]</td>
-            <td>[% order.advert_id %]</td>
-            <td><a class="link" style="display:block;width:100%;" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', {loginID => order.advertiser_loginid}) %]">[% order.advertiser_loginid %]</a></td>
-            <td [% order.is_expired ? 'class="error"' : 'class="success"' %]>[% order.expire_time %]</td>
-            <td>[% order.type %]</td>
-            <td>[% order.type == 'buy' ? order.client_loginid : order.advertiser_loginid %]</td>
-            <td>[% order.type == 'buy' ? order.advertiser_loginid : order.client_loginid %]</td>
+             <td><a class="link" href="[% request.url_for('backoffice/p2p_order_manage.cgi', {order_id => order.id}) %]">[% order.id %]</a></td>
+            <td>[% order.order_type %]</td>
+            <td>[% order.amount %] [% order.account_currency %]</td>
             <td>[% order.status %]</td>
-            <td>[% order.amount %]</td>
-            <td>[% order.account_currency %]</td>
+            <td>
+                <a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', {loginID => order.advertiser_loginid}) %]">[% order.advertiser_loginid %]</a>
+                (<b>[% order.order_type == 'buy' ? 'Seller' : 'Buyer' %]</b>, country: [% order.advertiser_country %] [% request.country_emoji(order.advertiser_country) | none %])
+            </td>
+            <td>
+                <a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', {loginID => order.client_loginid}) %]">[% order.client_loginid %]</a>
+                (<b>[% order.order_type == 'buy' ? 'Buyer' : 'Seller' %]</b>, country: [% order.client_country %] [% request.country_emoji(order.client_country) | none %])
+            </td>
+            <td>[% order.created_time %]</td>
+            <td><span [% order.is_expired ? 'class="error"' : 'class="success"' | none %]>[% order.expire_time %]</td>
+            <td>[% order.local_currency %]</td>
             <td>[% order.rate %]</td>
             <td>[% order.price_display %]</td>
-            <td>[% order.local_currency %]</td>
-            <td>[% IF order.advert_block_trade %]&#9989;[% ELSE %]&#10060;[% END %]</td>
+            <td>[% order.advert_id %]</td>
+            <td>[% IF order.advert_block_trade %]&#9989;[% ELSE %]-[% END %]</td>
         </tr>
     [% END %]
     </tbody>
@@ -89,12 +104,12 @@
 <tr>
 [% IF input.page != 1 %]
 <td>
-<a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', {page => input.page - 1, order_id => input.order_id, status => input.status, loginID => input.loginID}) %]">Prev</a>
+<a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', {page => input.page - 1, order_id => input.order_id, status => input.status, loginID => input.loginID, sort_ord => input.sort_ord}) %]">Prev</a>
 </td>
 [% END %]
 [% IF orders.size >= input.limit %]
 <td>
-<a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', {page => input.page + 1, order_id => input.order_id, status => input.status, loginID => input.loginID}) %]">Next</a>
+<a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', {page => input.page + 1, order_id => input.order_id, status => input.status, loginID => input.loginID, sort_ord => input.sort_ord}) %]">Next</a>
 </td>
 [% END %]
 </tr>

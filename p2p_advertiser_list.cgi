@@ -7,7 +7,6 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::Sysinit      ();
-use Data::Dumper;
 BOM::Backoffice::Sysinit::init();
 
 use BOM::Database::ClientDB;
