@@ -181,7 +181,7 @@ sub handle_message {
         };
 
     }
-    $result->{pip_size} = 0 + $pip_size;
+    $result->{pip_size} = 0 + $pip_size if $pip_size;
     if ($cache_only) {
         $cache->{$epoch} = $result;
     } else {
