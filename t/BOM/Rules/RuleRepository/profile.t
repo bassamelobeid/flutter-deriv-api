@@ -27,6 +27,18 @@ $user->add_client($client_vr);
 my $rule_engine    = BOM::Rules::Engine->new(client => $client_cr);
 my $rule_engine_vr = BOM::Rules::Engine->new(client => $client_vr);
 
+my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
+my $user_mf = BOM::User->create(
+    email    => 'tin_check@deriv.com',
+    password => 'TEST PASS',
+);
+$user_mf->add_client($client_mf);
+
+my $rule_engine_mf = BOM::Rules::Engine->new(client => $client_mf);
+
 subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
     my $rule_name = 'profile.date_of_birth_complies_minimum_age';
     my $minimum_age;
@@ -367,6 +379,42 @@ subtest $rule_name => sub {
     my $args = {loginid => $client_cr->loginid};
 
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rule applies with empty tax info';
+
+    my @invalid_tins = (
+        'approved000',  'approved 000',  'approved000',  'approved000',  'Approved 000',  'Approved000',
+        'Approved000',  'approved 0000', 'approved0000', 'Approved0000', 'approved00000', 'Approved00000',
+        'Approved0001', 'approved001',   'Aproov0000',   'aprooved000',  'Aprooved000',   'aprove0000',
+        'Aprove0000',   'aproved000',    'Aproved000',   'aproved00000', 'aproved000000', 'aproved00000000',
+        'approve000',   'Approve000',    'Approve0000',  'approved00',   'approved000',   'approved000',
+        'Approved 000', 'Approved000',   'approved0000', 'Approved0000', 'Approved00000', 'aprooved000',
+        'Aprooved000',  'aprove0000',    'aproved000',   'aproved0000',  'aproved00000',  'approvvedd000 0',
+        '000approved000'
+    );
+    for my $tin (@invalid_tins) {
+        my $args = {
+            loginid                   => $client_mf->loginid,
+            tax_identification_number => $tin,
+            tax_residence             => 'tax_res'
+        };
+        $client_mf->tax_identification_number($tin);
+        is_deeply exception { $rule_engine_mf->apply_rules($rule_name, %$args) },
+            {
+            error_code => 'TINDetailInvalid',
+            rule       => $rule_name
+            },
+            "Rule fails with TINDetailInvalid error for invalid TIN: $tin";
+    }
+
+    my @valid_tins = ('APOREQD4234', 'aropved1241', '12414apved00', 'PRO21311', 'AVEPRD0000', 'APRED14314', 'APRO58ED188VED');
+    for my $tin (@valid_tins) {
+        my $args = {
+            loginid                   => $client_mf->loginid,
+            tax_identification_number => $tin,
+            tax_residence             => 'tax_res'
+        };
+        $client_mf->tax_identification_number($tin);
+        lives_ok { $rule_engine_mf->apply_rules($rule_name, %$args) } "Rule applies with valid TIN: $tin";
+    }
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(
