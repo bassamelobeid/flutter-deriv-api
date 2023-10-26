@@ -387,8 +387,9 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.limits.ctrader
                 payments.transfer_between_accounts.limits.derivez
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat
-                payments.transfer_between_accounts.exchange_rate_expiry.crypto
-                payments.transfer_between_accounts.exchange_rate_expiry.fiat_holidays
+                payments.transfer_between_accounts.exchange_rate_expiry.fiat_weekend_holidays
+                payments.transfer_between_accounts.exchange_rate_expiry.crypto_stable
+                payments.transfer_between_accounts.exchange_rate_expiry.crypto_non_stable
                 payments.transfer_between_accounts.minimum.default
                 payments.transfer_between_accounts.minimum.MT5
                 payments.transfer_between_accounts.minimum.dxtrade
