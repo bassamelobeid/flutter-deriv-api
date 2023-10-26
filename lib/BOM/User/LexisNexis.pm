@@ -27,7 +27,7 @@ use BOM::Database::UserDB;
 
 use constant STATUS => ["requested", "accepted", "rejected", "undetermined", "open", "false positive", "positive match", "potential match"];
 use constant SCREENING_REASON =>
-    ('Social Responsibility', 'Payment Agent', 'MT5 Labuan', 'MT5 BVI', 'MT5 Vanuatu', 'Matainvest', 'Affiliate', 'Others');
+    ('Social Responsibility', 'Payment Agent', 'MT5 Labuan', 'MT5 BVI', 'MT5 Vanuatu', 'Matainvest', 'Affiliate', 'API Developer', 'Others');
 
 =head2 new
 
