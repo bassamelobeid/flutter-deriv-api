@@ -564,7 +564,7 @@ sub transfer_between_accounts_fees {
 =head2 rate_expiry
 
 Gets exchange rates quote expiry time for a currency pair.
-For fiat currencies, if the FOREX exchange is currently closed, the "fiat_holidays"
+For fiat currencies, if the FOREX exchange is currently closed, the "fiat_weekend_holidays"
 app config setting will be used. Otherwise "fiat" is used.
 "crypto" is used for crypto currencies.
 In the case of different currency types, the shortest expiry time is returned.
@@ -583,15 +583,23 @@ Returns the allowed age for exchange rate quote in seconds.
 
 sub rate_expiry {
     my @args   = @_;
-    my @types  = map { LandingCompany::Registry::get_currency_type($_) } @args;
-    my %config = map { $_ => app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.' . $_) } qw( fiat fiat_holidays crypto );
+    my $config = app_config();
+    my @expiries;
 
-    my $reader   = BOM::Config::Chronicle::get_chronicle_reader;
-    my $calendar = Quant::Framework->new->trading_calendar($reader);
-    my $exchange = Finance::Exchange->create_exchange('FOREX');
-    my $fiat_key = $calendar->is_open($exchange) ? 'fiat' : 'fiat_holidays';
+    for my $currency (@args) {
+        my $currency_definition = LandingCompany::Registry::get_currency_definition($currency);
+        if ($currency_definition->{type} eq 'fiat') {
+            my $reader   = BOM::Config::Chronicle::get_chronicle_reader;
+            my $calendar = Quant::Framework->new->trading_calendar($reader);
+            my $exchange = Finance::Exchange->create_exchange('FOREX');
+            my $fiat_key = $calendar->is_open($exchange) ? 'fiat' : 'fiat_weekend_holidays';
+            push @expiries, $config->get('payments.transfer_between_accounts.exchange_rate_expiry.' . $fiat_key);
+        } else {
+            my $type = $currency_definition->{stable} ? 'crypto_stable' : 'crypto_non_stable';
+            push @expiries, $config->get('payments.transfer_between_accounts.exchange_rate_expiry.' . $type);
+        }
 
-    my @expiries = map { $config{$_ eq 'fiat' ? $fiat_key : $_} } @types;
+    }
     return min(@expiries);
 }
 

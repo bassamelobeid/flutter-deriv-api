@@ -717,15 +717,20 @@ payments:
               default: 86400 # 1 day
               description: 'Expiry age for transfer between Fiat-Fiat.'
               global: 1
-            fiat_holidays:
+            fiat_weekend_holidays:
               isa: Num
               default: 259200 # 3 days
-              description: 'Expiry age for transfer between Fiat-Fiat when the market is closed.'
+              description: 'Expiry age for transfer between Fiat-Fiat when the market is closed on weekends.'
               global: 1
-            crypto:
+            crypto_stable:
               isa: Num
               default: 3600 # 1 hour
-              description: 'Expiry age for transfer between Crypto-Fiat and Crypto-Crypto'
+              description: 'Expiry age for transfer between Crypto-Fiat and Crypto-Crypto where the crypto being traded is a stablecoin'
+              global: 1
+            crypto_non_stable:
+              isa: Num
+              default: 3600 # 1 hour
+              description: 'Expiry age for transfer between Crypto-Fiat and Crypto-Crypto where the crypto being traded is not a stablecoin'
               global: 1
         fees:
           isa: section

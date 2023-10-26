@@ -512,9 +512,10 @@ subtest 'transfer_between_accounts_fees' => sub {
 subtest 'exchange_rate_expiry' => sub {
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
-        'payments.transfer_between_accounts.exchange_rate_expiry.fiat'          => 200,
-        'payments.transfer_between_accounts.exchange_rate_expiry.fiat_holidays' => 300,
-        'payments.transfer_between_accounts.exchange_rate_expiry.crypto'        => 100,
+        'payments.transfer_between_accounts.exchange_rate_expiry.fiat'                  => 200,
+        'payments.transfer_between_accounts.exchange_rate_expiry.fiat_weekend_holidays' => 300,
+        'payments.transfer_between_accounts.exchange_rate_expiry.crypto_stable'         => 100,
+        'payments.transfer_between_accounts.exchange_rate_expiry.crypto_non_stable'     => 50,
     });
 
     my $mock_calendar = Test::MockModule->new('Finance::Calendar');
@@ -523,9 +524,15 @@ subtest 'exchange_rate_expiry' => sub {
             return 1;
         });
 
-    is(BOM::Config::CurrencyConfig::rate_expiry('USD', 'EUR'), 200, 'should return fiat expiry if both currencies are fiat');
-    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'ETH'), 100, 'should return crypto expiry if both currencies are crypto');
-    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'USD'), 100, 'should return crypto expiry if crypto expiry is less than fiat expiry');
+    is(BOM::Config::CurrencyConfig::rate_expiry('USD',  'EUR'), 200, 'should return fiat expiry if both currencies are fiat');
+    is(BOM::Config::CurrencyConfig::rate_expiry('TUSD', 'USD'),
+        100, 'should return crypto_stable expiry if crypto_stable expiry is less than fiat expiry');
+    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'ETH'), 50, 'should return crypto_non_stable expiry if both are crypto_non_stable');
+    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'USD'),
+        50, 'should return crypto_non_stable expiry if crypto_non_stable expiry is less than fiat expiry');
+    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'TUSD'),
+        50, 'should return crypto_non_stable expiry crypto_non_stable expiry is less than crypto_stable expiry');
+    is(BOM::Config::CurrencyConfig::rate_expiry('TUSD', 'USDC'), 100, 'should return crypto_stable expiry if both are crypto_stable');
 
     $app_config->set({'payments.transfer_between_accounts.exchange_rate_expiry.fiat' => 5});
     is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'USD'), 5, 'should return fiat expiry if fiat expiry is less than crypto expiry');
