@@ -420,13 +420,13 @@
       },
       "id" : {
          "type" : "string",
-         "pattern" : "^br$"
+         "pattern" : "^id$"
       },
       "minimum_age" : {
          "type" : "integer"
       },
       "name" : {
-         "pattern" : "^Brazil$",
+         "pattern" : "^Indonesia$",
          "type" : "string"
       },
       "virtual_company" : {

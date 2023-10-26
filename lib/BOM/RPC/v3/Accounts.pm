@@ -2110,6 +2110,10 @@ rpc set_settings => sub {
     my $tax_residence             = $args->{'tax_residence'}             // $current_client->tax_residence             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // $current_client->tax_identification_number // '';
     my $employment_status         = $args->{'employment_status'};
+
+    #flag to check if the rule request is coming from this sub or not
+    $args->{is_set_settings} = 1;
+
     # Residence is used in validating other fields like address_state
     $args->{residence} ||= $current_client->residence;
     unless ($current_client->is_virtual) {

@@ -660,6 +660,7 @@ sub error_map {
         TaxInformationCleared => localize('Tax information cannot be removed once it has been set.'),
         TINDetailsMandatory   =>
             localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
+        TINDetailInvalid              => localize('The provided Tax Identification Number is invalid. Please try again.'),
         ProfessionalNotAllowed        => localize('Professional status is not applicable to your account.'),
         ProfessionalAlreadySubmitted  => localize('You already requested professional status.'),
         IncompleteFinancialAssessment => localize("The financial assessment is not complete"),
