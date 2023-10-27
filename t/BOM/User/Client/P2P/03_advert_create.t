@@ -31,6 +31,7 @@ $config->escrow([]);
 $config->cancellation_barring->count(3);
 $config->cancellation_barring->period(24);
 $config->payment_methods_enabled(1);
+$config->order_timeout(3600);
 
 my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -449,6 +450,7 @@ subtest 'Creating advert' => sub {
         effective_rate         => num($params{rate}),
         effective_rate_display => num($params{rate}),
         rate_type              => $params{rate_type},
+        order_expiry_period    => num(3600),
         block_trade            => 0,
     };
 
@@ -465,19 +467,20 @@ subtest 'Creating advert' => sub {
     cmp_deeply(
         $emitted_events->{p2p_advert_created},
         [{
-                loginid          => $advertiser->loginid,
-                created_time     => Date::Utility->new($advert->{created_time})->datetime_yyyymmdd_hhmmss,
-                advert_id        => $advert->{id},
-                type             => $params{type},
-                rate_type        => $params{rate_type},
-                account_currency => $params{account_currency},
-                local_currency   => uc($params{local_currency}),
-                country          => $advertiser->residence,
-                amount           => num($params{amount}),
-                rate             => num($params{rate}),
-                min_order_amount => num($params{min_order_amount}),
-                max_order_amount => num($params{max_order_amount}),
-                is_visible       => bool(1),
+                loginid             => $advertiser->loginid,
+                created_time        => Date::Utility->new($advert->{created_time})->datetime_yyyymmdd_hhmmss,
+                advert_id           => $advert->{id},
+                type                => $params{type},
+                rate_type           => $params{rate_type},
+                account_currency    => $params{account_currency},
+                local_currency      => uc($params{local_currency}),
+                country             => $advertiser->residence,
+                amount              => num($params{amount}),
+                rate                => num($params{rate}),
+                min_order_amount    => num($params{min_order_amount}),
+                max_order_amount    => num($params{max_order_amount}),
+                is_visible          => bool(1),
+                order_expiry_period => $expected_advert->{order_expiry_period},
             }
         ],
         'p2p_advert_created event fired'
@@ -986,7 +989,7 @@ subtest 'is_visible flag and subscription event' => sub {
     $advertiser_id = $client3->p2p_advertiser_info->{id};
 
     $client3->db->dbic->dbh->do(
-        "INSERT INTO p2p.p2p_country_trade_band (country, trade_band, currency, max_daily_buy, max_daily_sell, min_balance) 
+        "INSERT INTO p2p.p2p_country_trade_band (country, trade_band, currency, max_daily_buy, max_daily_sell, min_balance)
         VALUES ('zw','low','USD',100,100,11), ('zw','medium','USD',100,100,NULL)"
     );
 
@@ -1121,6 +1124,35 @@ subtest 'rate check' => sub {
     );
 
     BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Creating advert with custom order_expiry_period values' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    for my $order_expiry_period (900, 1800, 2700, 3600, 5400, 7200) {
+        my ($advert, $order);
+        cmp_deeply(
+            exception {
+                (undef, $advert) = BOM::Test::Helper::P2P::create_advert(order_expiry_period => $order_expiry_period);
+            },
+            undef,
+            "create advert successfully"
+        );
+        undef $emitted_events;
+        is $advert->{order_expiry_period}, $order_expiry_period, 'expected order_expiry_period for ad';
+        (undef, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+        is $order->{expiry_time}, ($order->{created_time} + $advert->{order_expiry_period}), "order expiry epoch reflected correctly";
+    }
+
+    cmp_deeply(
+        exception {
+            BOM::Test::Helper::P2P::create_advert(order_expiry_period => $_)
+        },
+        {error_code => 'InvalidOrderExpiryPeriod'},
+        'invalid order expiry time error captured correctly'
+    ) foreach (100, 200.15, "900.00", "abc");
+
+    BOM::Test::Helper::P2P::reset_escrow();
+
 };
 
 done_testing();

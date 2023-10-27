@@ -248,7 +248,7 @@ sub p2p_on_advert_view {
     # client specific fields will be stored in redis as field/loginid. advertiser_ fields are ones that are within advertiser_details in the ad structure.
     my %fields = (
         common => [
-            qw(payment_method payment_method_names is_active local_currency rate min_order_amount_limit max_order_amount_limit rate_offset effective_rate)
+            qw(order_expiry_period payment_method payment_method_names is_active local_currency rate min_order_amount_limit max_order_amount_limit rate_offset effective_rate)
         ],
         client            => [qw(is_visible payment_info contact_info active_orders amount remaining_amount min_order_amount max_order_amount)],
         advertiser_common => [qw(total_completion_rate rating_average recommended_average)],

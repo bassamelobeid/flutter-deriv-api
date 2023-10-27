@@ -2514,6 +2514,8 @@ use constant {
         final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
     },
 
+    P2P_ORDER_EXPIRE_OPTIONS => {map { $_ => 1 } qw(900 1800 2700 3600 5400 7200)},
+
     P2P_DB_ERR_MAP => {
         PP001 => "AdvertNotFound",
         PP002 => "OrderMaximumExceeded",
@@ -2924,6 +2926,11 @@ sub p2p_advert_create {
         if trim($param{payment_method})
         and (($param{payment_method_ids} and $param{payment_method_ids}->@*) or ($param{payment_method_names} and $param{payment_method_names}->@*));
 
+    if (defined($param{order_expiry_period})) {
+        if ($param{order_expiry_period} !~ /^[0-9]+$/ || !P2P_ORDER_EXPIRE_OPTIONS->{$param{order_expiry_period}}) {
+            die +{error_code => 'InvalidOrderExpiryPeriod'};
+        }
+    }
     $param{country}          = $self->residence;
     $param{account_currency} = $self->currency;
     ($param{local_currency} //= $self->local_currency) or die +{error_code => 'NoLocalCurrency'};
@@ -2941,10 +2948,10 @@ sub p2p_advert_create {
     my ($id) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 @param{
-                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids payment_method_names rate_type block_trade/
+                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids payment_method_names rate_type block_trade order_expiry_period/
                 });
         });
 
@@ -2966,19 +2973,20 @@ sub p2p_advert_create {
 
     BOM::Platform::Event::Emitter::emit(
         p2p_advert_created => {
-            loginid          => $self->loginid,
-            created_time     => Date::Utility->new($response->{created_time})->db_timestamp,
-            advert_id        => $response->{id},
-            type             => $response->{type},
-            account_currency => $response->{account_currency},
-            local_currency   => $response->{local_currency},
-            country          => $response->{country},
-            amount           => $response->{amount_display},
-            rate             => $response->{rate_display},
-            rate_type        => $response->{rate_type},
-            min_order_amount => $response->{min_order_amount_display},
-            max_order_amount => $response->{max_order_amount_display},
-            is_visible       => $response->{is_visible},
+            loginid             => $self->loginid,
+            created_time        => Date::Utility->new($response->{created_time})->db_timestamp,
+            advert_id           => $response->{id},
+            type                => $response->{type},
+            account_currency    => $response->{account_currency},
+            local_currency      => $response->{local_currency},
+            country             => $response->{country},
+            amount              => $response->{amount_display},
+            rate                => $response->{rate_display},
+            rate_type           => $response->{rate_type},
+            min_order_amount    => $response->{min_order_amount_display},
+            max_order_amount    => $response->{max_order_amount_display},
+            is_visible          => $response->{is_visible},
+            order_expiry_period => $response->{order_expiry_period},
         });
 
     # this is an inverted stat - worse rate = higher score
@@ -3120,6 +3128,12 @@ sub p2p_advert_update {
     die +{error_code => 'AdvertNotFound'} unless $advert;
     die +{error_code => 'PermissionDenied'} if $advert->{advertiser_loginid} ne $self->loginid;
 
+    if (defined($param{order_expiry_period})) {
+        if ($param{order_expiry_period} !~ /^[0-9]+$/ || !P2P_ORDER_EXPIRE_OPTIONS->{$param{order_expiry_period}}) {
+            die +{error_code => 'InvalidOrderExpiryPeriod'};
+        }
+    }
+
     $advert->{remaining_amount} = delete $advert->{remaining};    # named differently in api vs db function
 
     my %changed_fields = map { (exists $advert->{$_} and ($advert->{$_} // '') ne $param{$_}) ? ($_ => 1) : () } keys %param;
@@ -3156,10 +3170,10 @@ sub p2p_advert_update {
         fixup => sub {
             my $dbh = shift;
             return $dbh->selectrow_hashref(
-                'SELECT * FROM p2p.advert_update_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_update_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $id,
                 @param{
-                    qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount rate min_order_amount max_order_amount rate_type/
+                    qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount rate min_order_amount max_order_amount rate_type order_expiry_period/
                 });
         });
     $self->_p2p_db_error_handler($updated_advert);
@@ -3199,8 +3213,8 @@ This will move funds from advertiser to escrow.
 sub p2p_order_create {
     my ($self, %param) = @_;
 
-    my ($advert_id, $amount, $expiry, $payment_info, $contact_info, $source, $rule_engine) =
-        @param{qw/advert_id amount expiry payment_info contact_info source rule_engine/};
+    my ($advert_id, $amount, $payment_info, $contact_info, $source, $rule_engine) =
+        @param{qw/advert_id amount payment_info contact_info source rule_engine/};
 
     die 'Rule engine object is missing' unless $rule_engine;
 
@@ -3211,8 +3225,7 @@ sub p2p_order_create {
     my $bar_error = $self->_p2p_get_advertiser_bar_error($client_info);
     die $bar_error if $bar_error;
 
-    my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
-    $expiry //= $p2p_config->order_timeout;
+    my $p2p_config               = BOM::Config::Runtime->instance->app_config->payments->p2p;
     my $limit_per_day_per_client = $p2p_config->limits->count_per_day_per_client;
 
     my ($day_order_count) = $self->db->dbic->run(
@@ -3371,6 +3384,7 @@ sub p2p_order_create {
     my $fiat_deposit_restricted_countries = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_countries;
     my $fiat_deposit_restricted_lookback  = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_lookback;
     my $market_rate                       = p2p_exchange_rate($advert->{local_currency})->{quote};
+    my $expiry                            = $advert->{order_expiry_period} //= $p2p_config->order_timeout;
 
     my $order = $self->db->dbic->run(
         fixup => sub {
@@ -5229,8 +5243,9 @@ sub _advert_details {
     my ($self, $list, $amount) = @_;
     my (@results, $payment_method_defs);
 
-    my $redis    = BOM::Config::Redis->redis_p2p();
-    my $start_ts = Date::Utility->new->minus_time_interval('720h')->epoch;    # for 30 day completed order count
+    my $redis      = BOM::Config::Redis->redis_p2p();
+    my $start_ts   = Date::Utility->new->minus_time_interval('720h')->epoch;      # for 30 day completed order count
+    my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 
     for my $advert (@$list) {
 
@@ -5255,6 +5270,7 @@ sub _advert_details {
             : p2p_rate_rounding($advert->{rate}, display => 1),
             effective_rate                 => p2p_rate_rounding($advert->{effective_rate}),
             effective_rate_display         => p2p_rate_rounding($advert->{effective_rate}, display => 1),
+            order_expiry_period            => $advert->{order_expiry_period} // $p2p_config->order_timeout,
             min_order_amount_limit         => $advert->{min_order_amount},
             min_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
             max_order_amount_limit         => $advert->{max_order_amount_actual},

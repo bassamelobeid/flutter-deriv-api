@@ -21,6 +21,7 @@ populate_exchange_rates();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->escrow([]);
+$config->order_timeout(3600);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -54,7 +55,6 @@ subtest 'Creating new buy order' => sub {
         $non_advertiser->p2p_order_create(
             advert_id    => $advert_info->{id},
             amount       => $order_amount,
-            expiry       => 7200,
             payment_info => 'blah',
             contact_info => 'blah',
             rule_engine  => $rule_engine,
@@ -67,7 +67,6 @@ subtest 'Creating new buy order' => sub {
         $non_advertiser->p2p_order_create(
             advert_id    => $advert_info->{id},
             amount       => $order_amount,
-            expiry       => 7200,
             payment_info => 'blah',
             contact_info => 'blah',
             rule_engine  => $rule_engine,
@@ -84,7 +83,6 @@ subtest 'Creating new buy order' => sub {
         $client->p2p_order_create(
             advert_id    => $advert_info->{id},
             amount       => $order_amount,
-            expiry       => 7200,
             payment_info => 'blah',
             contact_info => 'blah',
             rule_engine  => $rule_engine,
@@ -97,7 +95,6 @@ subtest 'Creating new buy order' => sub {
     my $new_order = $client->p2p_order_create(
         advert_id   => $advert_info->{id},
         amount      => $order_amount,
-        expiry      => 7200,
         subscribe   => 1,
         rule_engine => $rule_engine,
     );
@@ -233,7 +230,6 @@ subtest 'Creating two orders from two clients' => sub {
     my $order_data1 = $client1->p2p_order_create(
         advert_id   => $advert_info->{id},
         amount      => 50,
-        expiry      => 7200,
         rule_engine => $rule_engine,
     );
 
@@ -248,7 +244,6 @@ subtest 'Creating two orders from two clients' => sub {
     my $order_data2 = $client2->p2p_order_create(
         advert_id   => $advert_info->{id},
         amount      => 50,
-        expiry      => 7200,
         rule_engine => $rule_engine,
     );
 
@@ -284,7 +279,6 @@ subtest 'Creating two orders from one client for two adverts' => sub {
     my $order_data1 = $client->p2p_order_create(
         advert_id   => $advert_info_1->{id},
         amount      => 50,
-        expiry      => 7200,
         rule_engine => $rule_engine,
     );
 
@@ -299,7 +293,6 @@ subtest 'Creating two orders from one client for two adverts' => sub {
     my $order_data2 = $client->p2p_order_create(
         advert_id   => $advert_info_2->{id},
         amount      => 50,
-        expiry      => 7200,
         rule_engine => $rule_engine,
     );
 
@@ -331,7 +324,6 @@ subtest 'Creating two new orders from one client for one advert' => sub {
     my $order_data = $client->p2p_order_create(
         advert_id   => $advert_info->{id},
         amount      => 50,
-        expiry      => 7200,
         rule_engine => $rule_engine,
     );
 
@@ -347,7 +339,6 @@ subtest 'Creating two new orders from one client for one advert' => sub {
         $client->p2p_order_create(
             advert_id   => $advert_info->{id},
             amount      => 50,
-            expiry      => 7200,
             rule_engine => $rule_engine,
         );
     };
@@ -372,7 +363,6 @@ subtest 'Creating order for advertiser own order' => sub {
         $advertiser->p2p_order_create(
             advert_id   => $advert_info->{id},
             amount      => 100,
-            expiry      => 7200,
             rule_engine => $rule_engine,
         );
     };
@@ -402,7 +392,6 @@ subtest 'Creating order below minimum amount' => sub {
         $client->p2p_order_create(
             advert_id   => $advert_info->{id},
             amount      => 1,
-            expiry      => 7200,
             rule_engine => $rule_engine,
         );
     };
@@ -436,7 +425,6 @@ subtest 'Creating order outside min-max range' => sub {
         $client->p2p_order_create(
             advert_id   => $advert_info->{id},
             amount      => $min_amount - 1,
-            expiry      => 7200,
             rule_engine => $rule_engine,
         );
     };
@@ -447,7 +435,6 @@ subtest 'Creating order outside min-max range' => sub {
         $client->p2p_order_create(
             advert_id   => $advert_info->{id},
             amount      => $max_amount + 1,
-            expiry      => 7200,
             rule_engine => $rule_engine,
         );
     };
@@ -478,7 +465,6 @@ subtest 'Creating order without escrow' => sub {
         $client->p2p_order_create(
             advert_id   => $advert_info->{id},
             amount      => $amount,
-            expiry      => 7200,
             rule_engine => $rule_engine,
         );
     };
@@ -511,7 +497,6 @@ subtest 'Buyer tries to place an order for an advert with a different currency' 
         $client->p2p_order_create(
             advert_id   => $advert_info->{id},
             amount      => $amount,
-            expiry      => 7200,
             description => $description,
             rule_engine => $rule_engine,
         );
@@ -543,7 +528,6 @@ subtest 'Buy adverts' => sub {
     my %params = (
         advert_id    => $advert_info->{id},
         amount       => $order_amount,
-        expiry       => 7200,
         payment_info => 'order pay info',
         contact_info => 'order contact info',
         rule_engine  => $rule_engine,

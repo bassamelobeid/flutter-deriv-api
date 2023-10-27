@@ -276,6 +276,42 @@ subtest 'updating all advert fields' => sub {
     );
 };
 
+subtest 'Updating order_expiry_period of advert' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(order_expiry_period => 1800);
+    is $advert->{order_expiry_period}, 1800, 'expected order_expiry_period for ad';
+
+    my (undef, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    is $order->{expiry_time}, ($order->{created_time} + $advert->{order_expiry_period}), "order expiry epoch reflected correctly";
+    my $initial_expiry_time = $order->{expiry_time};
+
+    @emitted_events = ();
+    is $advertiser->p2p_advert_update(
+        id                  => $advert->{id},
+        order_expiry_period => 900
+    )->{order_expiry_period}, 900, 'order_expiry_period updated correctly';
+
+    is $order->{expiry_time}, $initial_expiry_time, "existing order expiry epoch unchanged due to change in advert's order_expiry_period";
+
+    cmp_deeply(
+        \@emitted_events,
+        [['p2p_adverts_updated', {advertiser_id => $advert->{advertiser_details}{id}}]],
+        'p2p_adverts_updated event emitted due to update of order_expiry_period'
+    );
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_update(
+                id                  => $advert->{id},
+                order_expiry_period => 200
+            );
+        },
+        {error_code => 'InvalidOrderExpiryPeriod'},
+        'invalid order expiry time error captured correctly'
+    );
+    BOM::Test::Helper::P2P::create_escrow();
+};
+
 subtest 'updating advert fields that will be reflected in orders' => sub {
 
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(

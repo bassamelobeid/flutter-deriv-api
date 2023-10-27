@@ -15,6 +15,7 @@ my $rule_engine = BOM::Rules::Engine->new();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->escrow([]);
+$config->order_timeout(3600);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -47,7 +48,6 @@ my $client = BOM::Test::Helper::P2P::create_advertiser(
 my $new_order = $client->p2p_order_create(
     advert_id   => $advert_info->{id},
     amount      => 20,
-    expiry      => 7200,
     rule_engine => $rule_engine,
 );
 push @created_orders, $new_order;
@@ -60,7 +60,6 @@ my $second_client = BOM::Test::Helper::P2P::create_advertiser(
 my $new_order2 = $second_client->p2p_order_create(
     advert_id   => $advert_info->{id},
     amount      => 20,
-    expiry      => 7200,
     rule_engine => $rule_engine,
 );
 push @created_orders, $new_order2;
@@ -73,7 +72,6 @@ my $third_client = BOM::Test::Helper::P2P::create_advertiser(
 my $new_order3 = $third_client->p2p_order_create(
     advert_id   => $advert_info->{id},
     amount      => 20,
-    expiry      => 7200,
     rule_engine => $rule_engine,
 );
 push @created_orders, $new_order3;
@@ -86,7 +84,6 @@ my $fourth_client = BOM::Test::Helper::P2P::create_advertiser(
 my $new_order4 = $fourth_client->p2p_order_create(
     advert_id   => $advert_info->{id},
     amount      => 20,
-    expiry      => 7200,
     rule_engine => $rule_engine,
 );
 push @created_orders, $new_order4;
@@ -150,7 +147,6 @@ subtest 'dispute statuses' => sub {
         my $new_orderN = $nth_client->p2p_order_create(
             advert_id   => $advert_info->{id},
             amount      => 10,
-            expiry      => 7200,
             rule_engine => $rule_engine,
         );
         BOM::Test::Helper::P2P::set_order_status($nth_client, $new_orderN->{id}, $dispute_status);

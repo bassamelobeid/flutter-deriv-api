@@ -25,6 +25,7 @@ my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->escrow([]);
 $config->transaction_verification_countries([]);
 $config->transaction_verification_countries_all(0);
+$config->order_timeout(3600);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -526,7 +527,6 @@ subtest 'Returning dispute fields' => sub {
     my $new_order    = $client->p2p_order_create(
         advert_id   => $advert_info->{id},
         amount      => $order_amount,
-        expiry      => 7200,
         rule_engine => $rule_engine,
     );
 
