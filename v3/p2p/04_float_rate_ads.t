@@ -47,6 +47,7 @@ $app_config->set({'payments.p2p.available'                => 1});
 $app_config->set({'payments.p2p.restricted_countries'     => []});
 $app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
 $app_config->set({'payments.p2p.escrow'                   => [$client_escrow->loginid]});
+$app_config->set({'payments.p2p.order_timeout'            => 3600});
 
 $app_config->set({
         'payments.p2p.country_advert_config' => encode_json_utf8({

@@ -37,6 +37,7 @@ $app_config->set({
 $app_config->set({'payments.p2p.payment_methods_enabled'                => 1});
 $app_config->set({'payments.p2p.transaction_verification_countries'     => []});
 $app_config->set({'payments.p2p.transaction_verification_countries_all' => 0});
+$app_config->set({'payments.p2p.order_timeout'                          => 3600});
 
 my $t = build_wsapi_test();
 

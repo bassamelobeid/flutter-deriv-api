@@ -20,9 +20,10 @@ my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 my $json = JSON::MaybeXS->new;
 
-$app_config->set({'system.suspend.p2p'     => 0});
-$app_config->set({'payments.p2p.enabled'   => 1});
-$app_config->set({'payments.p2p.available' => 1});
+$app_config->set({'system.suspend.p2p'         => 0});
+$app_config->set({'payments.p2p.enabled'       => 1});
+$app_config->set({'payments.p2p.available'     => 1});
+$app_config->set({'payments.p2p.order_timeout' => 3600});
 
 my $t = build_wsapi_test();
 

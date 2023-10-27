@@ -31,6 +31,7 @@ $app_config->set({'payments.p2p.limits.maximum_order'                   => 10});
 $app_config->set({'payments.p2p.archive_ads_days'                       => 10});
 $app_config->set({'payments.p2p.transaction_verification_countries'     => []});
 $app_config->set({'payments.p2p.transaction_verification_countries_all' => 0});
+$app_config->set({'payments.p2p.order_timeout'                          => 3600});
 
 my $t = build_wsapi_test();
 
@@ -298,10 +299,11 @@ subtest 'create advert (sell)' => sub {
         'max amount';
     ok $advert->{price} == $advert_params{rate} && $advert->{price_display} == $advert_params{rate}, 'price';
     ok $advert->{rate} == $advert_params{rate}  && $advert->{rate_display} == $advert_params{rate},  'rate';
-    is $advert->{type},          $advert_params{type},         'type';
-    is $advert->{payment_info},  $advert_params{payment_info}, 'payment_info';
-    is $advert->{contact_info},  $advert_params{contact_info}, 'contact_info';
-    is $advert->{active_orders}, 0,                            'active_orders';
+    is $advert->{type},                $advert_params{type},         'type';
+    is $advert->{payment_info},        $advert_params{payment_info}, 'payment_info';
+    is $advert->{contact_info},        $advert_params{contact_info}, 'contact_info';
+    is $advert->{active_orders},       0,                            'active_orders';
+    is $advert->{order_expiry_period}, 3600,                         'order_expiry_period';
 
     BOM::User::Script::P2PDailyMaintenance->new->run;
     $advert->{days_until_archive} = 10;                            # not returned for new ad
@@ -559,15 +561,16 @@ subtest 'p2p_advert_update' => sub {
     test_schema('p2p_advert_update', $resp, 'empty update');
 
     my %updates = (
-        is_active        => 0,
-        contact_info     => 'call me',
-        description      => 'great ad',
-        local_currency   => 'ABC',
-        max_order_amount => 1,
-        min_order_amount => 0.1,
-        payment_info     => 'pay fast',
-        rate             => 0.5,
-        remaining_amount => 10,
+        is_active           => 0,
+        contact_info        => 'call me',
+        description         => 'great ad',
+        local_currency      => 'ABC',
+        max_order_amount    => 1,
+        min_order_amount    => 0.1,
+        payment_info        => 'pay fast',
+        rate                => 0.5,
+        remaining_amount    => 10,
+        order_expiry_period => 3600,
     );
 
     $resp = $t->await::p2p_advert_update({
