@@ -103,7 +103,6 @@ sub create_order {
 
     my $advert_id = $param{advert_id} || croak 'advert_id is required';
     my $amount    = $param{amount}  // 100;
-    my $expiry    = $param{expiry}  // 7200;
     my $balance   = $param{balance} // $param{amount};
     my $client    = $param{client}  // create_advertiser(
         balance        => $balance,
@@ -118,7 +117,6 @@ sub create_order {
     my $order = $client->p2p_order_create(
         advert_id    => $advert_id,
         amount       => $amount,
-        expiry       => $expiry,
         payment_info => $param{payment_info},
         contact_info => $param{contact_info},
         rule_engine  => $rule_engine,
