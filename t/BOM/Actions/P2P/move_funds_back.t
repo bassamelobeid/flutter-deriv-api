@@ -262,6 +262,7 @@ subtest 'segment tracking' => sub {
     # Check whether the track_events are called
     is scalar @track_event_args, 2, 'Two track_event fired';
 
+    $order = $client->p2p_order_info(id => $order->{id});
     my @expected_track_event_args = ({
             event      => 'p2p_order_timeout_refund',
             client     => isa('BOM::User::Client'),
@@ -279,6 +280,7 @@ subtest 'segment tracking' => sub {
                 seller_nickname  => $order->{advertiser_details}->{name} // '',
                 amount           => $order->{amount},
                 order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                order_expire_at  => Time::Moment->from_epoch(Date::Utility->new($order->{expiry_time})->epoch)->to_string,
             }
         },
         {
@@ -297,6 +299,7 @@ subtest 'segment tracking' => sub {
                 seller_nickname  => $order->{advertiser_details}->{name} // '',
                 amount           => $order->{amount},
                 order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                order_expire_at  => Time::Moment->from_epoch(Date::Utility->new($order->{expiry_time})->epoch)->to_string,
             }});
 
     cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]), 'Track event params are looking good for buyer';

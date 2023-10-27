@@ -79,10 +79,10 @@ my %EVENT_PROPERTIES = (
     email_subscription      => [qw(unsubscribed)],
     p2p_advertiser_approved => [],
     p2p_order_created       => [
-        qw(user_role order_type  order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
+        qw(user_role order_type  order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate order_expire_at)
     ],
     p2p_order_buyer_has_paid => [
-        qw(user_role order_type order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
+        qw(user_role order_type order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate order_expire_at)
     ],
     p2p_order_seller_has_released => [
         qw(user_role order_type order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
@@ -134,8 +134,9 @@ my %EVENT_PROPERTIES = (
     crypto_withdrawal_cancelled_email => [qw(loginid amount currency reference_no live_chat_url title)],
     crypto_withdrawal_reverted_email  => [qw(loginid email amount currency reference_no live_chat_url title)],
 
-    p2p_advert_created =>
-        [qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible)],
+    p2p_advert_created => [
+        qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible order_expiry_period)
+    ],
     p2p_advertiser_cancel_at_fault    => [qw(order_id cancels_remaining)],
     p2p_advertiser_temp_banned        => [qw(order_id limit block_end_date block_end_time)],
     request_change_email              => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
@@ -1041,6 +1042,7 @@ sub _p2p_properties {
         seller_user_id   => $parties->{seller}->{binary_user_id},
         seller_nickname  => $parties->{seller_nickname} // '',
         order_created_at => Time::Moment->from_epoch($order->{created_time})->to_string,
+        order_expire_at  => Time::Moment->from_epoch($order->{expiry_time})->to_string,
     };
 }
 

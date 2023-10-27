@@ -236,6 +236,7 @@ subtest 'Dispute resolution' => sub {
                         dispute_reason   => $order->{dispute_details}->{dispute_reason},
                         disputer         => $disputer,
                         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                        order_expire_at  => Time::Moment->from_epoch(Date::Utility->new($order->{expiry_time})->epoch)->to_string,
                     }};
 
                 my $seller_properties = {
@@ -256,6 +257,7 @@ subtest 'Dispute resolution' => sub {
                         dispute_reason   => $order->{dispute_details}->{dispute_reason},
                         disputer         => $disputer,
                         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                        order_expire_at  => Time::Moment->from_epoch(Date::Utility->new($order->{expiry_time})->epoch)->to_string,
                     }};
 
                 if ($type ne 'buy') {
