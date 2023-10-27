@@ -1224,6 +1224,32 @@ subtest 'vanuatu withdrawal' => sub {
     $bom_user_mock->unmock('loginid_details');
 };
 
+subtest 'cannot deposit if status is migrated_without_position' => sub {
+    my $client = BOM::User::Client->new({loginid => 'CR10000'});
+    $client->user->update_loginid_status('MTR41000001', 'migrated_without_position');
+    my $token = $m->create_token($client->loginid, 'test token');
+
+    my $method = "mt5_deposit";
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_binary => $client->loginid,
+            to_mt5      => 'MTR41000001',
+            amount      => 10,
+        },
+    };
+
+    $c->call_ok($method, $params)
+        ->has_error('You cannot make a deposit because your MT5 account is disabled. Please contact our Customer Support team.')
+        ->error_code_is('MT5DepositLocked');
+
+    $client->user->update_loginid_status('MTR41000001', 'migrated_with_position');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
+
+    $client->user->update_loginid_status('MTR41000001', undef);
+};
+
 $documents_mock->unmock_all;
 
 # reset

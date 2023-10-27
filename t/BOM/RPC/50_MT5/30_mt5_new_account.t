@@ -1689,4 +1689,127 @@ subtest 'VRTC client cannot create real MT5 account' => sub {
     $c->call_ok($method, $client_params)->has_error->error_code_is('AccountShouldBeReal');
 };
 
+subtest 'migration proccess' => sub {
+    my $mock_mt5_rpc = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $mock_client  = Test::MockModule->new('BOM::User::Client');
+    my $mock_mt5     = Test::MockModule->new('BOM::MT5::User::Async');
+
+    my $mt5_login_number = 1000;
+    $mock_mt5->mock('create_user', sub { return Future->done({login => "MTR" . ($mt5_login_number++)}); });
+
+    $mock_client->mock(fully_authenticated => sub { return 1 });
+
+    my $mt5_svg_migration_requested_params;
+    $mock_emitter->mock(
+        'emit',
+        sub {
+            my ($event, $data) = @_;
+            $mt5_svg_migration_requested_params = $data if $event eq 'mt5_svg_migration_requested';
+            return 1;
+        });
+
+    my $test_client = create_client('CR');
+    my $new_email   = 'topside+' . $details{email};
+    $test_client->email($new_email);
+    $test_client->set_default_account('USD');
+    $test_client->binary_user_id(1001);
+    $test_client->save;
+
+    my $password = 's3kr1t_p4ssw0rD';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $user     = BOM::User->create(
+        email    => $new_email,
+        password => $hash_pwd,
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($test_client);
+    my %basic_details = (
+        place_of_birth            => "af",
+        tax_residence             => "af",
+        tax_identification_number => "1122334455",
+        account_opening_reason    => "testing"
+    );
+
+    $test_client->$_($basic_details{$_}) for keys %basic_details;
+    $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $test_client->save;
+
+    my $auth_token = BOM::Platform::Token::API->new->create_token($test_client->loginid, 'test token');
+    my $params     = {
+        token => $auth_token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'af',
+            email            => $new_email,
+            name             => 'cat',
+            mainPassword     => $details{password}{main},
+            leverage         => 100,
+            mt5_account_type => 'financial',
+            company          => 'bvi',
+            migrate          => 1
+        }};
+
+    # No SVG account
+    $c->call_ok('mt5_new_account', $params)->has_error->error_code_is('MT5AccountMigrationSuspended', 'Account for migration not found.');
+
+    my @mt5_logins = ({
+            login    => 'MTR100001',
+            group    => 'real\\p01_ts01\\synthetic\\svg_std_usd',
+            balance  => 1000,
+            currency => 'USD',
+            status   => 'migrated'
+        },
+        {
+            login    => 'MTR100002',
+            group    => 'demo\\p01_ts01\\financial\\svg_std_usd',
+            balance  => 1000,
+            currency => 'USD',
+        },
+        {
+            login    => 'MTR100003',
+            group    => 'demo\\p01_ts01\\synthetic\\svg_std_usd',
+            balance  => 1000,
+            currency => 'USD',
+        });
+    $mock_mt5_rpc->mock(
+        get_mt5_logins => sub {
+            return Future->done(@mt5_logins);
+        });
+
+    # Need real SVG financial account, but have only svg synthetic
+    $c->call_ok('mt5_new_account', $params)->has_error->error_code_is('MT5AccountMigrationSuspended', 'Account for migration not found.');
+
+    push @mt5_logins,
+        {
+        login    => 'MTR100004',
+        group    => 'real\\p01_ts01\\financial\\svg_std_usd',
+        balance  => 1000,
+        currency => 'USD',
+        };
+
+    $c->call_ok('mt5_new_account', $params)->has_no_error->has_no_system_error->result;
+    is $mt5_svg_migration_requested_params->{client_loginid}, $test_client->loginid, 'client_loginid is correct';
+    is $mt5_svg_migration_requested_params->{market_type},    'financial',           'market_type is financial';
+    is $mt5_svg_migration_requested_params->{jurisdiction},   'bvi',                 'jurisdiction is bvi';
+    $mt5_svg_migration_requested_params = {};
+
+    # Already migrated financial svg account
+    $params->{args}->{company}      = 'vanuatu';
+    $params->{args}->{account_type} = 'gaming';
+    delete $params->{args}->{mt5_account_type};
+    $c->call_ok('mt5_new_account', $params)->has_error->error_code_is('MT5AccountMigrationSuspended', 'The account is already migrated.');
+
+    delete $mt5_logins[0]->{status};
+    $mt5_logins[0]->{open_order_position_status} = 0;
+    $c->call_ok('mt5_new_account', $params)->has_no_error->has_no_system_error->result;
+    is $mt5_svg_migration_requested_params->{client_loginid}, $test_client->loginid, 'client_loginid is correct';
+    is $mt5_svg_migration_requested_params->{market_type},    'synthetic',           'market_type is gaming';
+    is $mt5_svg_migration_requested_params->{jurisdiction},   'vanuatu',             'jurisdiction is vanuatu';
+
+    $mock_emitter->unmock_all;
+    $mock_client->unmock_all;
+    $mock_mt5_rpc->unmock_all;
+};
+
 done_testing();

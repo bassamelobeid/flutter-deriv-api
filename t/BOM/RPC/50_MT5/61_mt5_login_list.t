@@ -251,8 +251,6 @@ subtest 'mt5 svg migration: idv based jurisdiction selection' => sub {
 
         my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
         is $login_list->[0]->{eligible_to_migrate}, undef, 'skipping for IB account';
-
-        $mock_async_call->unmock_all;
     };
 
     subtest 'skipping for mt5 account under -lim sub-account category' => sub {
@@ -274,7 +272,6 @@ subtest 'mt5 svg migration: idv based jurisdiction selection' => sub {
 
         my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
         is $login_list->[0]->{eligible_to_migrate}, undef, 'skipping for mt5 account under -lim sub-account category';
-        $mock_async_call->unmock_all;
     };
 
     subtest 'skipping for mt5 account under -sf sub-account category' => sub {
@@ -296,8 +293,9 @@ subtest 'mt5 svg migration: idv based jurisdiction selection' => sub {
 
         my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
         is $login_list->[0]->{eligible_to_migrate}, undef, 'skipping for mt5 account under -sf sub-account category';
-        $mock_async_call->unmock_all;
     };
+
+    $mock_async_call->unmock_all;
 
     subtest 'skipping for client that already have bvi account' => sub {
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
@@ -339,6 +337,7 @@ subtest 'mt5 svg migration: idv based jurisdiction selection' => sub {
         $client_mock->unmock_all;
     };
 
+    $mock_async_call->unmock_all;
     $client_mock->unmock_all;
 };
 
@@ -456,6 +455,7 @@ subtest 'mt5 svg migration: onfido based jurisdiction selection' => sub {
     };
 
     $client_mock->unmock_all;
+    $mock_async_call->unmock_all;
 };
 
 subtest 'mt5 svg migration: manual poi based jurisdiction selection' => sub {
@@ -474,6 +474,7 @@ subtest 'mt5 svg migration: manual poi based jurisdiction selection' => sub {
             return Date::Utility->new($best_issue_date) if $best_issue_date;
             return undef;
         });
+
     my $params = {
         language => 'EN',
         token    => $token,
@@ -553,6 +554,7 @@ subtest 'mt5 svg migration: manual poi based jurisdiction selection' => sub {
     };
 
     $client_mock->unmock_all;
+    $mock_async_call->unmock_all;
 };
 
 done_testing();

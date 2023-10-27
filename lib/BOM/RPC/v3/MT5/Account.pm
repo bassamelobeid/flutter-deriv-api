@@ -168,7 +168,6 @@ async_rpc "mt5_login_list",
                     delete $mt5_account->{eligible_to_migrate} if any { $_->{group} && $_->{group} =~ $group_regex } @logins;
                 }
             }
-
             return Future->done(\@logins);
         });
     };
@@ -252,6 +251,8 @@ Takes the following parameter:
 
 =item * C<params> string to represent account type (gaming|demo|financial) or default to undefined.
 
+=item * C<params> array reference of additional fields to be fetched from MT5. Example: ['comment']
+
 =back
 
 Returns a Future holding list of MT5 account information or a failed future with error information
@@ -285,6 +286,8 @@ Takes the following parameter:
 
 =item * C<params> string to represent account type (gaming|demo|financial) or default to undefined.
 
+=item * C<params> array reference of additional fields to be fetched from MT5. Example: ['comment']
+
 =back
 
 Returns a Future holding list of MT5 account information (or undef) or a failed future with error information
@@ -306,6 +309,7 @@ sub mt5_accounts_lookup {
         "Could not connect to 'localhost:80': Connection refused"        => 1,
         "Timed out while waiting for socket to become ready for reading" => 1
     );
+    $additional_fields //= [];
 
     my @mt5_login_list;
     if ($client->is_wallet) {
@@ -705,6 +709,7 @@ async_rpc "mt5_new_account",
     my $user_input_trade_server = delete $args->{server};
     my $landing_company_short   = delete $args->{company};
     my $sub_account_category    = delete $args->{sub_account_category} // 'standard';
+    my $migration_request       = delete $args->{migrate};
 
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^all|demo|gaming|financial$/);
@@ -1009,13 +1014,16 @@ async_rpc "mt5_new_account",
         $args->{rights} = $args->{rights} | USER_RIGHT_TRADE_DISABLED unless $account_type eq 'demo';
     }
 
-    return get_mt5_logins($client, $account_type)->then(
+    my $additional_fields_for_migration = $migration_request ? ['comment'] : [];
+    return get_mt5_logins($client, $account_type eq 'demo' ? 'demo' : 'real', $additional_fields_for_migration)->then(
         sub {
             my (@logins) = @_;
 
             my %existing_groups;
             my $trade_server_error;
-            my $has_hr_account = undef;
+            my $has_hr_account         = undef;
+            my $svg_account_to_migrate = undef;
+
             foreach my $mt5_account (@logins) {
                 if ($mt5_account->{error} and $mt5_account->{error}{code} eq 'MT5AccountInaccessible') {
                     $trade_server_error = $mt5_account->{error};
@@ -1025,6 +1033,17 @@ async_rpc "mt5_new_account",
                 $existing_groups{$mt5_account->{group}} = $mt5_account->{login} if $mt5_account->{group};
 
                 $has_hr_account = 1 if lc($mt5_account->{group}) =~ /synthetic/ and lc($mt5_account->{group}) =~ /(\-hr|highrisk)/;
+
+                # Check for account that can be migrated
+                $svg_account_to_migrate = $mt5_account
+                    if (
+                        $migration_request
+                    and lc($mt5_account->{group}) =~ /svg/
+                    and not(lc($mt5_account->{group}) =~ /demo/)
+                    and not(defined $mt5_account->{sub_account_category} and lc($mt5_account->{sub_account_category}) =~ m/(swap_free)/)
+                    and (  ($account_type eq 'gaming' and lc($mt5_account->{group}) =~ /synthetic/)
+                        or ($account_type eq 'financial' and lc($mt5_account->{group}) =~ /financial/)));
+
             }
 
             if ($trade_server_error) {
@@ -1093,6 +1112,33 @@ async_rpc "mt5_new_account",
                     $args->{leverage} = $group_details->{leverage};
                     $args->{currency} = $group_details->{currency};
 
+                    if ($migration_request) {
+
+                        return create_error_future('MT5AccountMigrationSuspended', {params => 'Can\'t migrate to a demo account.'})
+                            if ($account_type eq 'demo');
+
+                        return create_error_future('MT5AccountMigrationSuspended', {params => 'Account for migration not found.'})
+                            unless defined $svg_account_to_migrate;
+
+                        return create_error_future('MT5AccountMigrationSuspended', {params => 'The account is already migrated.'})
+                            if (defined $svg_account_to_migrate->{status} and $svg_account_to_migrate->{status} =~ /^migrated/);
+
+                        return create_error_future('MT5AccountMigrationSuspended', {params => 'Can\'t migrate an IB account.'})
+                            if _is_mt5_ib(\@logins);
+
+                        my $block_migration = BOM::Platform::Event::Emitter::block_account_migration({
+                            account_type   => ($account_type eq 'financial' ? 'FINANCIAL' : 'SYNTHETIC'),
+                            binary_user_id => $client->user_id
+                        });
+
+                        return create_error_future('MT5AccountMigrationSuspended', {params => 'The MT5 account is currently being migrated.'})
+                            unless $block_migration;
+
+                        return create_error_future('MT5AccountMigrationSuspended',
+                            {params => 'An error occurred while migrating your account, please try again.'})
+                            if $block_migration == -1;
+                    }
+
                     return BOM::MT5::User::Async::create_user($args);
                 }
             )->then(
@@ -1133,6 +1179,15 @@ async_rpc "mt5_new_account",
                             cs_email         => $brand->emails('support'),
                             language         => $params->{language},
                         });
+
+                    BOM::Platform::Event::Emitter::emit(
+                        'mt5_svg_migration_requested',
+                        {
+                            client_loginid => $client->loginid,
+                            market_type    => $market_type,
+                            jurisdiction   => $landing_company_short,
+                            logins         => \@logins,
+                        }) if ($migration_request);
 
                     if ($client->myaffiliates_token and $account_type ne 'demo') {
 
@@ -1336,6 +1391,8 @@ Takes the following (named) parameters as inputs:
 
 =item * A hash reference under the key C<args> that contains the MT5 login id
 under C<login> key.
+
+=item * A hash reference under the key C<args> that contains array reference of additional fields to be fetched from MT5. Example: ['comment'] under C<additional_fields> key
 
 =back
 
@@ -2190,6 +2247,10 @@ sub _mt5_validate_and_get_amount {
                     override_code => $error_code,
                     params        => $mt5_loginid
                 }) if (ref $setting eq 'HASH' && $setting->{error});
+
+            # Disable migrated_without_position to deposit
+            my $mt5_account_status = $authorized_client->user->loginid_details->{$mt5_loginid}->{status} // '';
+            return create_error_future('MT5DepositLocked') if $mt5_account_status eq 'migrated_without_position' and $transfer_type eq 'deposit';
 
             my $action             = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
             my $action_counterpart = ($error_code =~ /Withdrawal/) ? 'deposit'    : 'withdraw';

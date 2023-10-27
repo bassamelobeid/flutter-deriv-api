@@ -85,6 +85,7 @@ my %category_message_mapping = do {
         MT5NotAllowed                => localize('MT5 [_1] account is not available in your country yet.'),
         MT5SwapFreeNotAllowed        => localize('MT5 swap-free [_1] account is not available in your country yet.'),
         MT5CreateUserError           => localize('An error occured while creating your account. Please check your information and try again.'),
+        MT5AccountMigrationSuspended => localize('Failed to migrate account. [_1]'),
         InvalidLoginid               => localize("We can't find this login ID in our database. Please check the details and try again."),
         NoManagerAccountWithdraw     => localize('Withdrawals from MT5 manager accounts is not possible. Please choose another payment method.'),
         AuthenticateAccount          => localize("Please authenticate your [_1] account to proceed with the fund transfer."),
