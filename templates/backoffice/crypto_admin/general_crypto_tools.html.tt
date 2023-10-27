@@ -5,11 +5,22 @@
                 <label for="gt_crypto_reconciliation_tools_list">Reconciliation Tool:</label>
             </td>
             <td>
-                <select name="gt_reconciliation_action" id="gt_crypto_reconciliation_tools_list">
+                <select name="gt_reconciliation_action" id="gt_crypto_reconciliation_tools_list" onchange="this.form.submit()">
+                    <option disabled selected value>--- select an option ---</option>
                     [% FOR tool IN tool_options %]
                         <option value="[% tool %]"[% IF tool_selected == tool %] selected="selected"[% END %]>[% tool %]</option>
                     [% END %]
                 </select>
+            </td>
+        </tr>
+    [% IF tool_selected != '' and tool_selected == 'Deactivate deposit address' %]
+    </table>
+    <br />
+    <table> 
+        <hr>
+        <tr>
+            <td>
+                <label for="gt_crypto_tool_title"><b>[% tool_selected %]</b></label>
             </td>
         </tr>
         <tr>
@@ -25,10 +36,45 @@
             </td>
         </tr>
         <tr>
+            <td>
+                <label for="gt_crypto_address_list">Address:</label>
+            </td>
+            <td>
+                <textarea name="gt_address" id="gt_crypto_address_list" rows="4" cols="50">[% addresses %]</textarea>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td style="color:grey;">
+                (comma separated or each in one line)
+            </td>
+        </tr>
+        <tr>
             <td></td>
             <td>
-                <button type="submit" class="btn btn--primary" name='req_type' value="gt_get_reconciliation_txn">Show</button>
+                <button type="submit" class="btn btn--primary" name='req_type' value="gt_get_reconciliation_txn">List addresses</button>
             </td>
         </tr>
     </table>
+    [% ELSE %]
+        <tr>
+            <td>
+                <label for="gt_crypto_currencies_list">Currency:</label>
+            </td>
+            <td>
+                <select name="gt_currency" id="gt_crypto_currencies_list">
+                    [% FOR crypto IN currency_options.sort %]
+                        <option value="[% crypto %]"[% IF currency_selected == crypto %] selected="selected"[% END %]>[% crypto %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <button [% IF tool_selected == '' %] disabled [% END %] type="submit" class="btn btn--primary" name='req_type' value="gt_get_reconciliation_txn">Show</button>
+            </td>
+        </tr>
+    </table>
+    [% END %]
 </form>

@@ -23,9 +23,10 @@ use Data::Dump 'pp';
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-use constant REVERT_ERROR_TXN_RECORD => "CRYPTO::ERROR::TXN::ID::";
-use constant BUMP_TXN_RECORD         => "CRYPTO::BUMP::TXN::ID::";
-use constant SENT_ERROR_TXN_RECORD   => "CRYPTO::SENT::ERROR::TXN::HASH::";
+use constant REVERT_ERROR_TXN_RECORD           => "CRYPTO::ERROR::TXN::ID::";
+use constant DEACTIVATE_DEPOSIT_ADDRESS_RECORD => "CRYPTO::DEACTIVATE::TXN::ID::";
+use constant BUMP_TXN_RECORD                   => "CRYPTO::BUMP::TXN::ID::";
+use constant SENT_ERROR_TXN_RECORD             => "CRYPTO::SENT::ERROR::TXN::HASH::";
 
 # Check if a staff is logged in
 BOM::Backoffice::Auth0::get_staff();
@@ -74,11 +75,87 @@ my $controller_url    = request()->url_for('backoffice/crypto_admin.cgi') . '#re
 our $template_currency_mapper = {
     LTC => 'BTC',
 };
+my $addresses       = $input{gt_address} // '';
+my @addresses_array = split(/[,\s]+/, $addresses);
+my $request_type;
+my $req_type   = $input{req_type} =~ /^gt_/ ? $input{req_type} : 'not_general_req' if $input{req_type};
+my $gt_actions = {
+    'deposit_new' => {
+        display_name => 'Deactivate deposit address',
+        actions      => {
+            gt_deactivate_deposit_txn => {
+                action      => 'deposit/update_bulk',
+                request_id  => 'deactivate_deposit_address',
+                update_type => 'deactivate',
+            },
+            gt_get_reconciliation_txn => {
+                action             => 'transaction/get_list',
+                approver_redis_key => DEACTIVATE_DEPOSIT_ADDRESS_RECORD,
+                request_body       => {
+                    type          => 'deposit_new',
+                    currency_code => $currency_selected,
+                    addresses     => \@addresses_array,
+                },
+                request_id       => 'get_new_deposit_addressses',
+                transaction_type => 'deposit_new',
+            },
+        }
+    },
+    'deposit_error' => {
+        display_name => 'Resolve failed deposit payment',
+        actions      => {
+            gt_get_reconciliation_txn => {
+                action             => 'transaction/get_list',
+                approver_redis_key => REVERT_ERROR_TXN_RECORD,
+                request_body       => {
+                    type          => 'deposit_error',
+                    currency_code => $currency_selected,
+                },
+                request_id       => 'get_error_transactions',
+                transaction_type => 'deposit_error',
+            },
+            gt_revert_processing_txn => {
+                action      => 'deposit/update_bulk',
+                request_id  => 'revert_txn_status',
+                update_type => 'process',
+            },
+        }
+    },
+    'withdrawal_error' => {
+        display_name => 'Resolve failed withdrawal payment',
+        actions      => {
+            gt_get_reconciliation_txn => {
+                action             => 'transaction/get_list',
+                approver_redis_key => REVERT_ERROR_TXN_RECORD,
+                request_body       => {
+                    type          => 'withdrawal_error',
+                    currency_code => $currency_selected,
+                },
+                request_id       => 'get_error_transactions',
+                transaction_type => 'withdrawal_error',
+            },
+            gt_revert_processing_txn => {
+                action      => 'withdrawal/update_bulk',
+                request_id  => 'revert_txn_status',
+                update_type => 'process',
+            },
+            gt_update_error_txn_sent => {
+                action     => 'withdrawal/update_bulk',
+                request_id => 'update_sent_error_txns',
+            },
+        }
+    },
+};
+my @tool_options;
+
+for my $key (keys %$gt_actions) {
+    push @tool_options, $gt_actions->{$key}{'display_name'};
+}
+@tool_options = sort @tool_options;
+
 my $tool_selected =
-      defined $input{txn_type}
-    ? $input{txn_type} eq 'deposit'
-        ? 'Resolve failed deposit payment'
-        : 'Resolve failed withdrawal payment'
+    defined $input{txn_type}
+    ? $gt_actions->{$input{txn_type}}{display_name}
     : $input{gt_reconciliation_action};
 
 my $tt = BOM::Backoffice::Request::template;
@@ -118,40 +195,24 @@ sub _is_erc20 {
     return 0;
 }
 
-my $request_type;
-my $req_type;
-$req_type = $input{req_type} =~ /^gt_/ ? $input{req_type} : 'not_general_req' if $input{req_type};
-
-my $gt_actions = {
-    'Resolve failed deposit payment' => {
-        action            => 'deposit/update_bulk',
-        request_body_type => 'deposit_error',
-        transaction_type  => 'deposit',
-    },
-    'Resolve failed withdrawal payment' => {
-        action            => 'withdrawal/update_bulk',
-        request_body_type => 'withdrawal_error',
-        transaction_type  => 'withdrawal',
-    },
-};
-
-my @tool_options = sort keys %$gt_actions;
-
 $request_type->{gt_get_reconciliation_txn} = sub {
-    my $request_id = 'get_error_transactions';
+    my $txn_type;
+
+    for my $key (keys %$gt_actions) {
+        $txn_type = $key and last if ($gt_actions->{$key}{'display_name'} eq $tool_selected);
+    }
+
+    my ($request_id, $request_action, $request_body, $transaction_type, $approver_redis_key) =
+        @{$gt_actions->{$txn_type}{actions}{gt_get_reconciliation_txn}}{qw/ request_id action request_body transaction_type approver_redis_key /};
 
     push @batch_requests,
         {
         id     => $request_id,
-        action => 'transaction/get_list',
-        body   => {
-            type          => $gt_actions->{$tool_selected}->{request_body_type},
-            currency_code => $input{gt_currency},
-        },
+        action => $request_action,
+        body   => $request_body,
         };
     return sub {
         my ($response_bodies) = @_;
-
         my $error = _error_handler($response_bodies, $request_id);
 
         if ($error) {
@@ -159,7 +220,7 @@ $request_type->{gt_get_reconciliation_txn} = sub {
                 'backoffice/crypto_admin/error_transactions.html.tt',
                 {
                     controller_url => $controller_url,
-                    currency       => $input{gt_currency},
+                    currency       => $currency_selected,
                     error          => $error->{error},
                 }) || die $tt->error();
             return;
@@ -169,7 +230,7 @@ $request_type->{gt_get_reconciliation_txn} = sub {
         my $redis_read         = BOM::Config::Redis::redis_replicated_read();
 
         foreach my $txn_record (keys %$error_transactions) {
-            my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_record);
+            my $approver = $redis_read->get($approver_redis_key . $txn_record);
             $error_transactions->{$txn_record}->{approved_by} = $approver;
         }
 
@@ -177,21 +238,27 @@ $request_type->{gt_get_reconciliation_txn} = sub {
             'backoffice/crypto_admin/error_transactions.html.tt',
             {
                 controller_url     => $controller_url,
-                currency           => $input{gt_currency},
+                currency           => $currency_selected,
                 error_transactions => $error_transactions,
-                transaction_type   => $gt_actions->{$tool_selected}->{transaction_type},
+                transaction_type   => $transaction_type,
             }) || die $tt->error();
     }
 };
 
 $request_type->{gt_revert_processing_txn} = sub {
+    my $txn_type;
+
+    for my $key (keys %$gt_actions) {
+        $txn_type = $key and last if ($gt_actions->{$key}{'display_name'} eq $tool_selected);
+    }
+
+    my ($request_id, $request_action, $update_type) =
+        @{$gt_actions->{$txn_type}{actions}{gt_revert_processing_txn}}{qw/ request_id action update_type /};
+
     if ($input{txn_checkbox} && $staff) {
-        my $redis_read = BOM::Config::Redis::redis_replicated_read();
-
-        my @txn_to_process = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
-
-        my %h_txn_to_process = map { $_ => $redis_read->get(REVERT_ERROR_TXN_RECORD . $_) } @txn_to_process;
-
+        my $redis_read            = BOM::Config::Redis::redis_replicated_read();
+        my @txn_to_process        = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
+        my %h_txn_to_process      = map { $_ => $redis_read->get(REVERT_ERROR_TXN_RECORD . $_) } @txn_to_process;
         my $txid_approver_mapping = [];
 
         #preparing txn list already approved by other staff to send it to db for approval.
@@ -208,11 +275,11 @@ $request_type->{gt_revert_processing_txn} = sub {
         if (scalar $txid_approver_mapping->@*) {
             push @batch_requests,
                 {
-                id     => 'revert_txn_status',
-                action => $gt_actions->{$tool_selected}->{action},
+                id     => $request_id,
+                action => $request_action,
                 body   => {
-                    currency_code    => $input{gt_currency},
-                    update_type      => 'process',
+                    currency_code    => $currency_selected,
+                    update_type      => $update_type,
                     staff_name       => $staff,
                     transaction_list => $txid_approver_mapping,
                 },
@@ -224,20 +291,18 @@ $request_type->{gt_revert_processing_txn} = sub {
         code_exit_BO("ERROR: Missing variable staff name. Please check!") unless $staff;
 
         my ($response_bodies) = @_;
-        my $req_type = "revert_txn_status";
-        if (exists $response_bodies->{$req_type}{error}) {
+
+        if (exists $response_bodies->{$request_id}{error}) {
             my $error = "";
-            $error .= $response_bodies->{$req_type}{error}{message} . "\n" if exists $response_bodies->{$req_type}{error}{message};
-            $error .= $response_bodies->{$req_type}{error}{details} . "\n" if exists $response_bodies->{$req_type}{error}{details};
+            $error .= $response_bodies->{$request_id}{error}{message} . "\n" if exists $response_bodies->{$request_id}{error}{message};
+            $error .= $response_bodies->{$request_id}{error}{details} . "\n" if exists $response_bodies->{$request_id}{error}{details};
             code_exit_BO("<p class='error'>$error</p>");
         }
 
         my $redis_write = BOM::Config::Redis::redis_replicated_write();
         my $redis_read  = BOM::Config::Redis::redis_replicated_read();
         my %messages;
-
-        my @txn_to_process = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
-
+        my @txn_to_process   = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
         my %h_txn_to_process = map { $_ => $redis_read->get(REVERT_ERROR_TXN_RECORD . $_) } @txn_to_process;
 
         #gather txn already approved by caller previously or first time
@@ -260,7 +325,6 @@ $request_type->{gt_revert_processing_txn} = sub {
 
         #approving the list of txn if already aproved previously by other users
         if (scalar $txid_sent_for_revert->@* && $response_bodies->{revert_txn_status}{transaction_list}) {
-
             my $reverted_trxns = $response_bodies->{revert_txn_status}{transaction_list};
 
             for ($reverted_trxns->@*) {
@@ -288,7 +352,127 @@ $request_type->{gt_revert_processing_txn} = sub {
 
 };
 
+$request_type->{gt_deactivate_deposit_txn} = sub {
+    my $txn_type;
+
+    for my $key (keys %$gt_actions) {
+        $txn_type = $key and last if ($gt_actions->{$key}{'display_name'} eq $tool_selected);
+    }
+
+    my ($request_id, $request_action, $update_type) =
+        @{$gt_actions->{$txn_type}{actions}{gt_deactivate_deposit_txn}}{qw/ request_id action update_type /};
+
+    if ($input{txn_checkbox} && $staff) {
+        my $redis_read            = BOM::Config::Redis::redis_replicated_read();
+        my @txn_to_process        = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
+        my %h_txn_to_process      = map { $_ => $redis_read->get(DEACTIVATE_DEPOSIT_ADDRESS_RECORD . $_) } @txn_to_process;
+        my $txid_approver_mapping = [];
+
+        #preparing txn list already approved by other staff to send it to db for approval.
+        #making array of hash like {id=>123, approver => "approverName"}
+        for (grep { $h_txn_to_process{$_} && $h_txn_to_process{$_} ne $staff } @txn_to_process) {
+            push @{$txid_approver_mapping},
+                {
+                id       => $_ . "",
+                approver => $h_txn_to_process{$_},
+                };
+        }
+
+        #approving the list of txn if already approved previously by other users
+        if (scalar $txid_approver_mapping->@*) {
+            push @batch_requests,
+                {
+                id     => $request_id,
+                action => $request_action,
+                body   => {
+                    currency_code    => $currency_selected,
+                    update_type      => $update_type,
+                    staff_name       => $staff,
+                    transaction_list => $txid_approver_mapping,
+                },
+                };
+        }
+    }
+    return sub {
+        code_exit_BO("No transaction selected")                           unless $input{txn_checkbox};
+        code_exit_BO("ERROR: Missing variable staff name. Please check!") unless $staff;
+
+        my ($response_bodies) = @_;
+        if (exists $response_bodies->{$request_id}{error}) {
+            my $error = "";
+            $error .= $response_bodies->{$request_id}{error}{message} . "\n" if exists $response_bodies->{$request_id}{error}{message};
+            $error .= $response_bodies->{$request_id}{error}{details} . "\n" if exists $response_bodies->{$request_id}{error}{details};
+            code_exit_BO("<p class='error'>$error</p>");
+        }
+
+        my $redis_write = BOM::Config::Redis::redis_replicated_write();
+        my $redis_read  = BOM::Config::Redis::redis_replicated_read();
+        my %messages;
+        my @txn_to_process   = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
+        my %h_txn_to_process = map { $_ => $redis_read->get(DEACTIVATE_DEPOSIT_ADDRESS_RECORD . $_) } @txn_to_process;
+
+        #gather txn already approved by caller previously or first time
+        for (sort { $a <=> $b } @txn_to_process) {
+            if (!$h_txn_to_process{$_}) {
+                push @{
+                    $messages{
+                        "<p class='success'>Following deposit address/addresses has been successfully deactivated. Needs one more approval.<br />%s</p>"
+                    }
+                    },
+                    $_;
+                $redis_write->setex(DEACTIVATE_DEPOSIT_ADDRESS_RECORD . $_, 3600, $staff);
+            } elsif ($h_txn_to_process{$_} && $h_txn_to_process{$_} eq $staff) {
+                push @{$messages{"<p class='error'>The following deposit address/addresses have previously been approved by you.<br />%s</p>"}}, $_;
+                $redis_write->setex(DEACTIVATE_DEPOSIT_ADDRESS_RECORD . $_, 3600, $staff);
+            }
+        }
+
+        my $txid_sent_for_deactivate = [];
+
+        for (grep { $h_txn_to_process{$_} && $h_txn_to_process{$_} ne $staff } @txn_to_process) {
+            push @{$txid_sent_for_deactivate}, {id => $_};
+        }
+
+        #approving the list of txn if already aproved previously by other users
+        if (scalar $txid_sent_for_deactivate->@* && $response_bodies->{deactivate_deposit_address}{transaction_list}) {
+
+            my $deactivated_trxns = $response_bodies->{deactivate_deposit_address}{transaction_list};
+
+            for ($deactivated_trxns->@*) {
+                push @{$messages{"<p class='success'>Following deposit address/addresses has been successfully deactivated.<br />%s</p>"}}, $_->{id};
+                $redis_write->del(DEACTIVATE_DEPOSIT_ADDRESS_RECORD . $_->{id});
+            }
+
+            if (scalar $deactivated_trxns->@* == 0
+                || (scalar $deactivated_trxns->@* && scalar $txid_sent_for_deactivate->@* != scalar $deactivated_trxns->@*))
+            {
+                my %to_delete   = map { $_->{id} => 1 } $deactivated_trxns->@*;
+                my @failed_txns = map { $_->{id} } grep { !$to_delete{$_->{id}} } $txid_sent_for_deactivate->@*;
+                push @{
+                    $messages{
+                              "<p class='error'>The deactivation of following deposit address/addresses failed. Error: "
+                            . "Another transaction with same address is still being processed, "
+                            . "please wait for the pending transaction to be completed before trying to deactivate it<br />%s</p>"
+                    }
+                    },
+                    join ",", sort { $a <=> $b } @failed_txns;
+            }
+        }
+        print sprintf($_, join ', ', $messages{$_}->@*) for sort { $b =~ /success/ } keys %messages;
+    }
+
+};
+
 $request_type->{gt_update_error_txn_sent} = sub {
+    my $txn_type;
+
+    for my $key (keys %$gt_actions) {
+        $txn_type = $key and last if ($gt_actions->{$key}{'display_name'} eq $tool_selected);
+    }
+
+    my ($request_id, $request_action) =
+        @{$gt_actions->{$txn_type}{actions}{gt_update_error_txn_sent}}{qw/ request_id action /};
+
     if ($input{txn_checkbox} && $input{txn_hash} && $staff) {
         my $redis_read        = BOM::Config::Redis::redis_replicated_read();
         my $previous_approver = $redis_read->get(SENT_ERROR_TXN_RECORD . $input{txn_hash});
@@ -298,10 +482,10 @@ $request_type->{gt_update_error_txn_sent} = sub {
         if ($previous_approver && $staff ne $previous_approver && @txn_to_process) {
             push @batch_requests,
                 {
-                id     => 'update_sent_error_txns',
-                action => $gt_actions->{$tool_selected}->{action},
+                id     => $request_id,
+                action => $request_action,
                 body   => {
-                    currency_code    => $input{gt_currency},
+                    currency_code    => $currency_selected,
                     update_type      => 'sent',
                     staff_name       => $staff,
                     approver         => $previous_approver,
@@ -325,14 +509,14 @@ $request_type->{gt_update_error_txn_sent} = sub {
         if ($previous_approver && $staff ne $previous_approver) {
             my ($response_bodies) = @_;
             my $req_type = "update_sent_error_txns";
-            if (exists $response_bodies->{$req_type}{error}) {
+            if (exists $response_bodies->{$request_id}{error}) {
                 my $error = "";
-                $error .= $response_bodies->{$req_type}{error}{message} . "\n" if exists $response_bodies->{$req_type}{error}{message};
-                $error .= $response_bodies->{$req_type}{error}{details} . "\n" if exists $response_bodies->{$req_type}{error}{details};
+                $error .= $response_bodies->{$request_id}{error}{message} . "\n" if exists $response_bodies->{$request_id}{error}{message};
+                $error .= $response_bodies->{$request_id}{error}{details} . "\n" if exists $response_bodies->{$request_id}{error}{details};
                 code_exit_BO("<p class='error'>$error</p>");
             }
 
-            my $updated_ids = $response_bodies->{$req_type}{transaction_list};
+            my $updated_ids = $response_bodies->{$request_id}{transaction_list};
             if ($updated_ids && scalar @{$updated_ids}) {
                 my $ids = (join ',', sort $updated_ids->@*) . ' => ' . $txn_hash;
                 print sprintf("<p class='success'>Following transaction(s) has been successfully updated.<br />%s</p>", $ids);
@@ -356,6 +540,7 @@ $request_type->{gt_update_error_txn_sent} = sub {
 
 $request_type->{not_general_req} = sub {
     my $template_details;
+
     $template_details->{req_type} = $input{req_type};
     $template_details->{currency} = $currency_selected;
 
@@ -1054,7 +1239,7 @@ $tt->process(
 
 if (%input && $input{req_type}) {
     my $req_type  = $input{req_type};
-    my $req_title = $input{req_title} || $req_type;
+    my $req_title = (defined $tool_selected and $tool_selected =~ m/deactivate/i) ? "NEW DEPOSIT TRANSACTIONS" : ($input{req_title} || $req_type);
 
     print '<a name="results"></a>';
     Bar("$currency_selected Results: $req_title");
