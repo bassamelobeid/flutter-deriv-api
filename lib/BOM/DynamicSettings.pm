@@ -15,7 +15,7 @@ use Format::Util::Numbers qw/formatnumber/;
 use Array::Utils          qw(:all);
 use Date::Utility;
 use Scalar::Util;
-use List::Util qw(any max);
+use List::Util qw(any max none);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
@@ -52,6 +52,8 @@ use constant AUTHORISATIONS => {
     terms_and_conditions => ['T&C'],
     internal_transfer    => ['PaymentInternalTransfer'],
 };
+
+use constant P2P_ORDER_EXPIRE_OPTIONS => [900, 1800, 2700, 3600, 5400, 7200];
 
 sub _textify_obj {
     my $type  = shift;
@@ -650,6 +652,7 @@ sub get_extra_validation {
         'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.dxtrade'          => \&_validate_positive_number,
         'payments.transfer_between_accounts.maximum.default'         => \&_validate_positive_number,
+        'payments.p2p.order_timeout'                                 => \&_validate_order_expiry_period,
         'payments.transfer_between_accounts.maximum.MT5'             => \&_validate_transfer_trading_platform,
         'payments.transfer_between_accounts.maximum.dxtrade'         => \&_validate_transfer_trading_platform,
         'payments.payment_limits'                                    => \&_validate_payment_min_by_staff,
@@ -708,6 +711,20 @@ sub _validate_positive_number {
     my $input_data = shift;
     die "Invalid numerical value $input_data"    unless Scalar::Util::looks_like_number($input_data);
     die "$input_data is less than or equal to 0" unless $input_data > 0;
+    return;
+}
+
+=head2 _validate_order_expiry_period
+
+Check if order expiry period is valid.
+
+=cut
+
+sub _validate_order_expiry_period {
+    my $input_data = shift;
+    _validate_positive_number($input_data);
+    die 'InvalidOrderExpiryPeriod'
+        if none { $input_data == $_ } P2P_ORDER_EXPIRE_OPTIONS->@*;
     return;
 }
 
