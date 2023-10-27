@@ -6,6 +6,7 @@ use Test::More;
 use Test::Fatal;
 use Test::MockTime qw(:all);
 use Time::Moment;
+use Clone 'clone';
 
 use Log::Any::Test;
 use Log::Any                                   qw($log);
@@ -20,6 +21,9 @@ use BOM::Platform::Context qw(localize request);
 use BOM::Event::Process;
 use BOM::Test::Email   qw(mailbox_clear mailbox_search);
 use BOM::User::Utility qw(parse_mt5_group);
+
+use constant USER_RIGHT_ENABLED        => 0x0000000000000001;
+use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
@@ -82,6 +86,7 @@ my $mocked_user_client         = Test::MockModule->new('BOM::User::Client');
 my $mocked_rule_engine         = Test::MockModule->new('BOM::Rules::Engine');
 my $mocked_mt5_events          = Test::MockModule->new('BOM::Event::Actions::MT5');
 my $mocked_user_client_account = Test::MockModule->new('BOM::User::Client::Account');
+my $mocked_mt5_async           = Test::MockModule->new('BOM::MT5::User::Async');
 
 subtest 'test unrecoverable error' => sub {
     $mocked_mt5->mock('get_user', sub { Future->done({error => 'Not found'}) });
@@ -3485,6 +3490,492 @@ subtest 'mt5_deposit_retry function' => sub {
     like($result->failure, qr/Do not need to try demo deposit/, 'Demo deposit test');
 
     $log->info("End testing mt5_deposit_retry function");
+};
+
+subtest 'mt5_svg_migration_requested' => sub {
+    $mocked_user->unmock_all;
+    $mocked_user_client->unmock_all;
+    $mocked_mt5->unmock_all;
+
+    my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @datadog_args;
+    $mocked_datadog->mock('stats_event', sub { @datadog_args = @_ });
+
+    my $update_user_call_params;
+    $mocked_mt5->mock('update_user', sub { $update_user_call_params = shift; return Future->done(1); });
+
+    $mocked_emitter->mock(
+        'emit',
+        sub {
+            push @emitter_args, @_;
+            return 1;
+        });
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'svg_migrade_active_trade@gmail.com',
+    });
+
+    my $user = BOM::User->create(
+        email          => $test_client->email,
+        password       => "testpassword",
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
+    $user->add_loginid('MTR10000', 'mt5', 'real', 'USD', {});
+    $user->add_loginid('MTR10001', 'mt5', 'real', 'USD', {});
+
+    my $sample_mt5_account = {
+        account_type          => "real",
+        balance               => "0.00",
+        comment               => "",
+        country               => "id",
+        currency              => "USD",
+        display_balance       => "0.00",
+        email                 => "dummy\@gmail.com",
+        group                 => "real\\p01_ts01\\financial\\svg_std-hr_usd",
+        landing_company_short => "svg",
+        leverage              => 1000,
+        login                 => "MTR1000000",
+        market_type           => "financial",
+        name                  => "dummy name",
+        status                => undef,
+        sub_account_category  => "",
+        sub_account_type      => "financial",
+        comment               => '',
+        active                => 1
+    };
+
+    my $sample_mt5_group = {
+        financial_svg      => 'real\\p01_ts01\\financial\\svg_std_usd',
+        financial_bvi      => 'real\\p01_ts01\\financial\\bvi_std_usd',
+        financial_vanuatu  => 'real\\p01_ts01\\financial\\vanuatu_std_usd',
+        synthetic_svg      => 'real\\p01_ts01\\synthetic\\svg_std_usd',
+        synthetic_bvi      => 'real\\p01_ts01\\synthetic\\bvi_std_usd',
+        synthetic_vanuatu  => 'real\\p01_ts01\\synthetic\\vanuatu_std_usd',
+        swap_free_svg      => 'real\p01_ts01\all\svg_std-sf_usd',
+        financial_lim_svg  => 'real\\p01_ts01\\financial\\svg_lim_usd',
+        financial_svg_demo => 'demo\\p01_ts01\\financial\\svg_std_usd',
+    };
+
+    $mocked_user->mock('update_loginid_status', sub { return 1; });
+    $mocked_mt5_async->mock('get_open_orders_count',    sub { return Future->done({total => 0}); });
+    $mocked_mt5_async->mock('get_open_positions_count', sub { return Future->done({total => 0}); });
+
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_svg_migration_requested};
+    my $action_get     = sub { $action_handler->(shift)->get->get };
+
+    subtest 'Params check error' => sub {
+        my $args = {
+            client_loginid => 'CR123',
+        };
+        like exception { $action_get->($args); }, qr/No client found/, 'correct exception when incorrect client_loginid provided';
+
+        $args->{client_loginid} = $test_client->loginid;
+        like exception { $action_get->($args); }, qr/Need to provide market_type argument/, 'correct exception when merket_type not provided';
+
+        $args->{client_loginid} = $test_client->loginid;
+        $args->{market_type}    = 'financial';
+        like exception { $action_get->($args); }, qr/Need to provide jurisdiction argument/, 'correct exception when jurisdiction not provided';
+    };
+
+    subtest 'No account migrated with just bvi/vanuatu with no svg' => sub {
+        @emitter_args = ();
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+        $bvi_financial->{market_type} = 'financial';
+
+        my $vanuatu_financial = clone $sample_mt5_account;
+        $vanuatu_financial->{group}       = $sample_mt5_group->{financial_vanuatu};
+        $vanuatu_financial->{market_type} = 'financial';
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $vanuatu_financial]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args, [], 'Correct absence of color change emission';
+    };
+
+    subtest 'No account migrated with just demo svg' => sub {
+
+        my $svg_financial_demo = clone $sample_mt5_account;
+        $svg_financial_demo->{group}        = $sample_mt5_group->{financial_svg_demo};
+        $svg_financial_demo->{account_type} = 'demo';
+        $svg_financial_demo->{market_type}  = 'financial';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+        $bvi_financial->{market_type} = 'financial';
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_demo]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args, [], 'Correct absence of color change emission';
+    };
+
+    subtest 'Real account migrated (without open order or position)' => sub {
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $svg_financial_demo = clone $sample_mt5_account;
+        $svg_financial_demo->{login}        = 'MTR1000001';
+        $svg_financial_demo->{group}        = $sample_mt5_group->{financial_svg_demo};
+        $svg_financial_demo->{market_type}  = 'financial';
+        $svg_financial_demo->{account_type} = 'demo';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_demo, $svg_financial_real]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args, [], 'Correct absence of color change emission';
+
+        @emitter_args = ();
+    };
+
+    subtest 'Only real account migrated when demo svg exist (with open order or position)' => sub {
+
+        $mocked_mt5_async->mock('get_open_orders_count', sub { return Future->done({total => 1}); });
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $svg_financial_demo = clone $sample_mt5_account;
+        $svg_financial_demo->{login}        = 'MTR1000001';
+        $svg_financial_demo->{group}        = $sample_mt5_group->{financial_svg_demo};
+        $svg_financial_demo->{account_type} = 'demo';
+        $svg_financial_demo->{market_type}  = 'financial';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_demo, $svg_financial_real]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args,
+            [
+            'mt5_change_color',
+            {
+                loginid => 'MTR1000000',
+                color   => 0
+            }
+            ],
+            'Correct color change emission (BLACK)';
+
+        @emitter_args = ();
+    };
+
+    subtest 'No real synthetic svg account migrated when event triggered with market type financial (with open order or position)' => sub {
+
+        $mocked_mt5_async->mock('get_open_orders_count', sub { return Future->done({total => 1}); });
+
+        my $svg_synthetic_real = clone $sample_mt5_account;
+        $svg_synthetic_real->{group}        = $sample_mt5_group->{synthetic_svg};
+        $svg_synthetic_real->{account_type} = 'real';
+        $svg_synthetic_real->{market_type}  = 'synthetic';
+
+        my $svg_financial_demo = clone $sample_mt5_account;
+        $svg_financial_demo->{login}        = 'MTR1000001';
+        $svg_financial_demo->{group}        = $sample_mt5_group->{financial_svg_demo};
+        $svg_financial_demo->{account_type} = 'demo';
+        $svg_financial_demo->{market_type}  = 'financial';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_demo, $svg_synthetic_real]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args, [], 'Correct absence of color change emission';
+    };
+
+    subtest 'Only real financial account migrated when swap free financial exist (with open_order_position_status)' => sub {
+
+        $mocked_mt5_async->mock('get_open_orders_count', sub { return Future->done({total => 1}); });
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $svg_financial_swap_free = clone $sample_mt5_account;
+        $svg_financial_swap_free->{login}                = 'MTR1000001';
+        $svg_financial_swap_free->{group}                = $sample_mt5_group->{swap_free_svg};
+        $svg_financial_swap_free->{account_type}         = 'real';
+        $svg_financial_swap_free->{market_type}          = 'financial';
+        $svg_financial_swap_free->{sub_account_category} = 'swap_free';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_swap_free, $svg_financial_real]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args,
+            [
+            'mt5_change_color',
+            {
+                loginid => 'MTR1000000',
+                color   => 0
+            }
+            ],
+            'Correct color change emission (BLACK)';
+
+        @emitter_args = ();
+    };
+
+    subtest 'No real financial account migrated when lim financial exist (with open_order_position_status)' => sub {
+
+        $mocked_mt5_async->mock('get_open_orders_count', sub { return Future->done({total => 1}); });
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $svg_financial_lim = clone $sample_mt5_account;
+        $svg_financial_lim->{login}        = 'MTR1000001';
+        $svg_financial_lim->{group}        = $sample_mt5_group->{financial_lim_svg};
+        $svg_financial_lim->{account_type} = 'real';
+        $svg_financial_lim->{market_type}  = 'financial';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_lim, $svg_financial_real]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args, [], 'Correct absence of color change emission';
+        is_deeply \@datadog_args, ['MT5AccountMigrationSkipped', 'Aborted migration for CR10004 on financial/bvi', {alert_type => 'warning'}],
+            'Correct warning';
+    };
+
+    subtest 'No real financial account migrated when IB MT5 exist (with open_order_position_status)' => sub {
+
+        $mocked_mt5_async->mock('get_open_orders_count', sub { return Future->done({total => 1}); });
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $svg_financial_ib = clone $sample_mt5_account;
+        $svg_financial_ib->{login}        = 'MTR1000001';
+        $svg_financial_ib->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_ib->{account_type} = 'real';
+        $svg_financial_ib->{market_type}  = 'financial';
+        $svg_financial_ib->{comment}      = 'IB';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_ib, $svg_financial_real]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args, [], 'Correct absence of color change emission';
+        is_deeply \@datadog_args, ['MT5AccountMigrationSkipped', 'Aborted migration for CR10004 on financial/bvi', {alert_type => 'warning'}],
+            'Correct warning';
+    };
+
+    subtest 'Duplicate financial account migrated when comment is undefined (with open_order_position_status)' => sub {
+
+        $mocked_mt5_async->mock('get_open_orders_count', sub { return Future->done({total => 1}); });
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $duplicate_svg_financial_real = clone $svg_financial_real;
+        $duplicate_svg_financial_real->{login} = 'MTR1000003';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_real, $duplicate_svg_financial_real]};
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args,
+            [
+            'mt5_change_color',
+            {
+                loginid => 'MTR1000000',
+                color   => 0
+            },
+            'mt5_change_color',
+            {
+                loginid => 'MTR1000003',
+                color   => 0
+            }
+            ],
+            'Correct color change emmissions';
+
+        @emitter_args = ();
+    };
+
+    subtest 'No real financial account migrated when comment is undefined (with open_order_position_status)' => sub {
+
+        $mocked_mt5_async->mock('get_open_orders_count', sub { return Future->done({total => 1}); });
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $svg_financial_ib = clone $sample_mt5_account;
+        $svg_financial_ib->{login}        = 'MTR1000001';
+        $svg_financial_ib->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_ib->{account_type} = 'real';
+        $svg_financial_ib->{market_type}  = 'financial';
+        delete $svg_financial_ib->{comment};
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_ib, $svg_financial_real]};
+
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args, [], 'Correct absence of color change emission';
+    };
+
+    $mocked_user->unmock_all;
+
+    subtest 'mt5_svg_migration_requested bom rpc integration test' => sub {
+
+        $mocked_user->mock('update_loginid_status', sub { return 1; });
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        $mocked_mt5_async->mock('get_open_orders_count',    sub { return Future->done({total => 0}); });
+        $mocked_mt5_async->mock('get_open_positions_count', sub { return Future->done({total => 1}); });
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_real]};
+
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args,
+            [
+            'mt5_change_color',
+            {
+                loginid => 'MTR1000000',
+                color   => 0
+            }
+            ],
+            'Correct color change emission (BLACK)';
+        is $update_user_call_params->{login},  'MTR1000000',                                   'Correct loginid passed to update_user';
+        is $update_user_call_params->{rights}, USER_RIGHT_TRADE_DISABLED | USER_RIGHT_ENABLED, 'Correct rights passed to update_user';
+
+        $update_user_call_params = undef;
+        @emitter_args            = ();
+    };
+
+    subtest 'mt5_svg_migration_requested bom rpc integration test' => sub {
+
+        $mocked_user->mock('update_loginid_status', sub { return 1; });
+
+        my $svg_financial_real = clone $sample_mt5_account;
+        $svg_financial_real->{group}        = $sample_mt5_group->{financial_svg};
+        $svg_financial_real->{account_type} = 'real';
+        $svg_financial_real->{market_type}  = 'financial';
+
+        my $bvi_financial = clone $sample_mt5_account;
+        $bvi_financial->{login}       = 'MTR1000002';
+        $bvi_financial->{market_type} = 'financial';
+        $bvi_financial->{group}       = $sample_mt5_group->{financial_bvi};
+
+        $mocked_mt5_async->mock('get_open_orders_count',    sub { return Future->done({total => 0}); });
+        $mocked_mt5_async->mock('get_open_positions_count', sub { return Future->done({total => 0}); });
+
+        my $args = {
+            client_loginid => $test_client->loginid,
+            market_type    => 'financial',
+            jurisdiction   => 'bvi',
+            logins         => [$bvi_financial, $svg_financial_real]};
+
+        my $result = $action_get->($args);
+
+        is_deeply \@emitter_args, [], 'Correct absence of color change emission';
+        @emitter_args = ();
+    };
+
+    $mocked_user->unmock_all;
+    $mocked_mt5_async->unmock_all;
+    $mocked_emitter->unmock_all;
 };
 
 done_testing();

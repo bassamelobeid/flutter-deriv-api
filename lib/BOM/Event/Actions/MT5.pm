@@ -33,7 +33,7 @@ use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use JSON::MaybeXS   qw(decode_json);
 use DataDog::DogStatsd::Helper;
 use Syntax::Keyword::Try;
-use Future::Utils qw(fmap_void);
+use Future::Utils qw(fmap_void try_repeat);
 use Time::Moment;
 use WebService::MyAffiliates;
 use Scalar::Util;
@@ -55,6 +55,7 @@ use constant SECONDS_IN_DAY            => 86400;
 use constant USER_RIGHT_ENABLED        => 0x0000000000000001;
 use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 use constant COLOR_RED                 => 255;
+use constant COLOR_BLACK               => 0;
 use constant COLOR_NONE                => -1;
 
 =head2 sync_info
@@ -291,7 +292,7 @@ async sub mt5_change_color {
     my $color   = $args->{color};
 
     die 'Loginid is required' unless $loginid;
-    die 'Color is required'   unless $color;
+    die 'Color is required'   unless defined $color;
 
     my $user_detail;
 
@@ -2131,6 +2132,117 @@ async sub _remove_temporary_account_lock {
     }
 
     return undef;
+}
+
+=head2 mt5_svg_migration_requested
+
+Placeholder
+
+=over 4
+
+=item * C<client_loginid> - Client loginid
+
+=item * C<market_type> - Market type (financial|synthetic)
+
+=item * C<jurisdiction> - Jurisdiction (bvi|vanuatu)
+
+=back
+
+=cut
+
+async sub mt5_svg_migration_requested {
+    my $args = shift;
+    my ($client_loginid, $market_type, $jurisdiction, $logins) = @{$args}{qw/client_loginid market_type jurisdiction logins/};
+    my $client = BOM::User::Client->new({loginid => $client_loginid});
+
+    die 'No client found'                       unless $client;
+    die 'Need to provide market_type argument'  unless $market_type;
+    die 'Need to provide jurisdiction argument' unless $jurisdiction;
+    die 'Need to provide logins argument'       unless defined $logins;
+
+    @$logins = grep { not $_->{error} } @$logins;
+
+    # Skip swap free and no migration at all for lim and ib type account
+    my @accounts_to_migrate;
+    my $abort_migrate_flag = 0;
+    foreach my $mt5_account (@$logins) {
+        next unless $mt5_account->{account_type} eq 'real';
+        next unless $mt5_account->{market_type} eq $market_type;
+        next unless $mt5_account->{group} =~ m/svg/;
+        next if $mt5_account->{sub_account_category} =~ m/(swap_free)/;
+
+        if (not defined $mt5_account->{comment} or $mt5_account->{group} =~ m/(lim)/ or $mt5_account->{comment} =~ m/(IB)/) {
+            $abort_migrate_flag = 1;
+            DataDog::DogStatsd::Helper::stats_event(
+                'MT5AccountMigrationSkipped',
+                "Aborted migration for $client_loginid on $market_type/$jurisdiction",
+                {alert_type => 'warning'});
+            last;
+        }
+
+        push @accounts_to_migrate, $mt5_account;
+    }
+
+    unless ($abort_migrate_flag) {
+        foreach my $mt5_account (@accounts_to_migrate) {
+
+            try {
+
+                my $has_open_order_position = 0;
+
+                # Get the number of open orders
+                my $number_open_order = await BOM::MT5::User::Async::get_open_orders_count($mt5_account->{login});
+                $has_open_order_position = 1 if (ref $number_open_order eq 'HASH' && $number_open_order->{total} > 0);
+
+                # Check if there are no open orders
+                unless ($has_open_order_position) {
+                    # Get the number of open positions
+                    my $number_open_position = await BOM::MT5::User::Async::get_open_positions_count($mt5_account->{login});
+                    $has_open_order_position = 1 if (ref $number_open_position eq 'HASH' && $number_open_position->{total} > 0);
+                }
+
+                unless ($has_open_order_position) {
+                    my $retry = 5;
+                    await try_repeat {
+                        BOM::MT5::User::Async::update_user({
+                            login  => $mt5_account->{login},
+                            rights => USER_RIGHT_TRADE_DISABLED | USER_RIGHT_ENABLED
+                        });
+
+                    }
+                    until => sub {
+                        my $f = shift;
+                        return $f if $f->is_done;
+                        return 1 unless $retry--;
+                        return 0;
+                    };
+
+                    $client->user->update_loginid_status($mt5_account->{login}, 'migrated_without_position');
+                } else {
+                    BOM::Platform::Event::Emitter::emit(
+                        'mt5_change_color',
+                        {
+                            loginid => $mt5_account->{login},
+                            color   => COLOR_BLACK,
+                        });
+
+                    $client->user->update_loginid_status($mt5_account->{login}, 'migrated_with_position');
+                }
+
+                DataDog::DogStatsd::Helper::stats_inc('mt5.account.migration',
+                    {tags => ['market_type:' . $market_type, 'jurisdiction:' . $jurisdiction]});
+
+            } catch ($e) {
+                DataDog::DogStatsd::Helper::stats_event(
+                    'MT5AccountMigrationFailed',
+                    "Failed to migrate $client_loginid on $market_type/$jurisdiction",
+                    {alert_type => 'error'});
+            }
+        }
+    }
+
+    return Future->done(1);
+
 }
 
 1;
