@@ -14,6 +14,7 @@ use Format::Util::Numbers      qw(financialrounding formatnumber);
 use Log::Any                   qw($log);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use YAML::XS;
+use Data::Dumper;
 
 use BOM::User::Client;
 use BOM::Platform::Event::Emitter;
@@ -218,11 +219,12 @@ Called when an unexpcted cTrader API error occurs. Dies with generic error code 
 
 sub handle_api_error {
     my ($self, $resp, $error_code, %args) = @_;
-
     $args{password} = '<hidden>'                            if $args{password};
-    $resp           = [$resp->@{qw/content reason status/}] if ref $resp;
+    $resp           = [$resp->@{qw/content reason status/}] if ref $resp eq 'HASH';
     stats_inc('ctrader.rpc_service.api_call_fail', {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
-    $log->warnf('ctrader call failed for %s: %s, call args: %s', $self->client->loginid, $resp, \%args);
+    my $error_message = sprintf('ctrader call failed for %s: %s, call args: %s', $self->client->loginid, Dumper($resp), Dumper(\%args));
+    $error_message =~ s/[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+/*****/g;
+    $log->warnf('%s', $error_message);
     die +{error_code => $error_code // 'CTraderGeneral'};
 }
 

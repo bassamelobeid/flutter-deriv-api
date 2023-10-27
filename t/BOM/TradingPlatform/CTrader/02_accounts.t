@@ -7,6 +7,9 @@ use Test::More;
 use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
+use Test::Exception;
+use Log::Any::Test;
+use Log::Any qw($log);
 
 use BOM::Rules::Engine;
 use BOM::TradingPlatform;
@@ -270,7 +273,68 @@ subtest "cTrader Available Account" => sub {
     };
 };
 
-#Unsupported Country adhoc test
-#Group to group id adhoc test
+subtest "Error Email Filtering Test" => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $client->email('ctradererrorfilter@test.com');
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+    $client->set_default_account('USD');
+    $client->binary_user_id($user->id);
+    $client->save;
+
+    my $ctrader = BOM::TradingPlatform->new(
+        platform    => 'ctrader',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client));
+    isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
+
+    my $resp = [{
+            error => {
+                description => "sample description john.doe\@example.com.au",
+                errorCode   => "CH_EMAIL_ALREADY_EXISTS"
+            }
+        },
+        "Bad Request",
+        "400"
+    ];
+
+    my %args = (
+        server  => 'demo',
+        method  => 'test_method',
+        payload => {
+                  email => "ww\@ww"
+                . " john.doe!#$%&’*+-/=?^_`{|}~test\@example.com"
+                . " john.doe!#$%&’*+-/=?^_`{|}~test\@example123.com321"
+                . " dsadanonymous.fm\@my.sub.my-secret-organisation.org"
+                . " simple\@example.com"
+                . " very.common\@example.com"
+                . " abc\@example.co.uk"
+                . " disposable.style.email.with+symbol\@example.com"
+                . " other.email-with-hyphen\@example.com"
+                . " fully-qualified-domain\@example.com"
+                . " user.name+tag+sorting\@example.com"
+                . " example-indeed\@strange-example.com"
+                . " example-indeed\@strange-example.inininini"
+                . " everything123.!#$%&’*+/=?^_`{|}~-\@test.com"
+                . " 1234567890123456789012345678901234567890123456789012345678901234+x\@example.com @"
+        });
+
+    dies_ok { $ctrader->handle_api_error($resp, 'CTraderGeneral', %args) } 'handle_api_error method throws an exception';
+    my $exception = $@;
+    is($exception->{error_code}, 'CTraderGeneral', 'Exception has the expected error code');
+
+    my $expected_msg_description = qq('description' => 'sample description *****');
+    my $expected_msg_email       = qq('email' => 'ww\@ww ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** @');
+
+    my $msgs = $log->msgs;
+    is($msgs->[0]->{level},    'warning',                       'Log message has the expected level');
+    is($msgs->[0]->{category}, 'BOM::TradingPlatform::CTrader', 'Log message has the expected category');
+    my $expected_msg_regex_description = quotemeta $expected_msg_description;
+    my $expected_msg_regex_email       = quotemeta $expected_msg_email;
+    like($msgs->[0]->{message}, qr/$expected_msg_regex_description/, 'Log message contains the expected error message');
+    like($msgs->[0]->{message}, qr/$expected_msg_regex_email/,       'Log message contains the expected error message');
+};
 
 done_testing();
