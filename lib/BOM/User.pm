@@ -984,7 +984,9 @@ sub is_active_loginid {
     # contain status of 'undef'.
     return 1 unless $details->{status};
 
-    return 1 if any { $details->{status} eq $_ } qw/poa_outdated poa_pending poa_rejected poa_failed proof_failed verification_pending/;
+    return 1
+        if any { $details->{status} eq $_ }
+        qw/poa_outdated poa_pending poa_rejected poa_failed proof_failed verification_pending migrated_with_position migrated_without_position/;
 
     return 0;
 }
