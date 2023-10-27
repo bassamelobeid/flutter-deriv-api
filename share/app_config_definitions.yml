@@ -355,7 +355,7 @@ payments:
           description: 'Number of seconds to order expiry after creation time'
           isa: Int
           global: 1
-          default: 7200
+          default: 3600
         refund_timeout:
           description: 'Number of days to wait before refunding a timed-out order automatically'
           isa: Num
