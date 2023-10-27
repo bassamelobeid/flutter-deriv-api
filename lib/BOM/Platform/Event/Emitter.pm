@@ -280,4 +280,52 @@ sub block_transfer_temporarily {
     }
 }
 
+=head2 block_account_migration
+
+Blocks account migration temporarily at the client level.
+
+=head3 Parameters
+
+=over 4
+
+=item * C<$binary_user_id> - The User ID of the client.
+
+=item * C<$account_type> - The account type of the client.
+
+=back
+
+=head3 Returns
+
+C<1> if the account migration blocking was successful, C<0> if the lock already exists, and C<-1> if an error occurred.
+
+=cut
+
+sub block_account_migration {
+
+    my $params = shift;
+    my ($binary_user_id, $account_type) = ($params->{binary_user_id}, $params->{account_type});
+    if (not(defined $binary_user_id and defined $account_type)) {
+        $log->errorf("Failed to block account migration for client with undefined User ID or account type");
+        return -1;
+    }
+
+    try {
+        my $yaml_config = BOM::Config::redis_mt5_user_config()->{write};
+        my $mt5_redis   = RedisDB->new(
+            uri  => "redis://" . $yaml_config->{host} . ":" . $yaml_config->{port},
+            auth => $yaml_config->{password},
+        );
+
+        my $migration_key = $account_type . '_MIGRATION_IN_PROGRESS::' . $binary_user_id;
+        return 0 if $mt5_redis->execute('get', $migration_key);
+
+        $mt5_redis->execute('set', $migration_key, 1, 'EX', 180);
+        return 1;
+
+    } catch ($e) {
+        $log->errorf("Failed to block %s account migration for client with User ID: %s", $account_type, $binary_user_id);
+        return -1;
+    }
+}
+
 1;
