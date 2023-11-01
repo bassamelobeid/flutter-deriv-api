@@ -9,8 +9,6 @@ use Test::Exception;
 use Test::Warnings;
 use ExpiryQueue;
 
-use Data::Dumper;
-
 use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -162,7 +160,7 @@ my $args = {
     currency     => 'USD',
     amount_type  => 'stake',
     amount       => 100,
-    barrier      => '10123.519',
+    barrier      => '-15.456',
 };
 
 lives_ok {
@@ -199,10 +197,7 @@ subtest 'buy turbos options', sub {
             purchase_date => $contract->date_start,
         });
 
-        #TODO: For now we skip tnx validation because turbos options contract type is not yet
-        #implemented into our offerings.
-        my %options = (skip_validation => 1);
-        my $error   = $txn->buy(%options);
+        my $error = $txn->buy;
         ok !$error, 'buy without error';
 
         subtest 'transaction report', sub {
@@ -264,7 +259,7 @@ subtest 'buy turbos options', sub {
             is $chld->{financial_market_bet_id},    $fmb->{id},       'financial_market_bet_id';
             is $chld->{'take_profit_order_amount'}, undef,            'take_profit_order_amount is undef';
             is $chld->{'take_profit_order_date'},   undef,            'take_profit_order_date is undef';
-            is $chld->{'ask_spread'},               3.58288479980734, 'ask_spread is charged for buy';
+            is $chld->{'ask_spread'},               3.58378101651172, 'ask_spread is charged for buy';
             is $chld->{'bid_spread'},               undef,            'bid_spread is undef';
         };
 
@@ -277,8 +272,7 @@ subtest 'sell a bet', sub {
         $args->{date_pricing} = $args->{date_start}->epoch + 1;
         my $contract = produce_contract($args);
 
-        my %options = (skip_validation => 1);
-        my $txn     = BOM::Transaction->new({
+        my $txn = BOM::Transaction->new({
             purchase_date => $contract->date_start->epoch + 1,
             client        => $cl,
             contract      => $contract,
@@ -286,7 +280,7 @@ subtest 'sell a bet', sub {
             price         => $contract->bid_price,
             source        => 23,
         });
-        my $error = $txn->sell(%options);
+        my $error = $txn->sell;
         is $error, undef, 'no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
@@ -341,8 +335,8 @@ subtest 'sell a bet', sub {
         is $chld->{financial_market_bet_id},    $fmb->{id},       'financial_market_bet_id';
         is $chld->{'take_profit_order_amount'}, undef,            'take_profit_order_amount is undef';
         is $chld->{'take_profit_order_date'},   undef,            'take_profit_order_date is undef';
-        is $chld->{'ask_spread'},               3.58288479980734, 'ask_spread is charged for buy';
-        is $chld->{'bid_spread'},               3.58318517049356, 'bid_spread is charged for sell';
+        is $chld->{'ask_spread'},               3.58378101651172, 'ask_spread is charged for buy';
+        is $chld->{'bid_spread'},               3.58408146233216, 'bid_spread is charged for sell';
     };
 
 };
