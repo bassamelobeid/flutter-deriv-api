@@ -49,6 +49,8 @@ async sub run {
             {
                 check_url => '/v3.4/checks/' . $check->{id},
             });
+
+        await $loop->delay_future(after => 30);
     }
 
     # db cleanup
