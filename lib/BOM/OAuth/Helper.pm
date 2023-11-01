@@ -6,7 +6,7 @@ use MIME::Base64 qw(encode_base64 decode_base64);
 use JSON::MaybeXS;    #Using `JSON::MaybeXS` to maintain order of the result string.
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(request_details_string exception_string social_login_callback_base);
+our @EXPORT_OK = qw(request_details_string exception_string social_login_callback_base strip_array_values);
 
 =head2 extract_brand_from_params
 
@@ -66,7 +66,8 @@ sub setup_social_login {
         $links->{$provider_name}   = $url;
         $session->{$provider_name} = $provider;
     }
-    $session->{"query_params"} = $c->req->params->to_hash;
+
+    $session->{"query_params"} = strip_array_values($c->req->params->to_hash);
 
     set_social_login_cookie($c, $session);
     $c->stash('social_login_links' => $links);
@@ -173,6 +174,38 @@ generates the social login callback base url for the given domain.
 sub social_login_callback_base {
     my $domain = shift;
     return "https://$domain/oauth2/social-login/callback";
+}
+
+=head2 strip_array_values
+
+strip out the values in a hash that are arrays and return a hash with the same keys and the last value of the array.
+If the array is empty, the value will be an empty string.
+If the value is not an array, it will be returned as is.
+
+=over 4
+
+=item * C<hash> a hashref that we need to strip its values.
+
+=back 
+
+=cut
+
+sub strip_array_values {
+    my $hash = shift;
+
+    if (ref $hash ne 'HASH') {
+        return $hash;
+    }
+
+    my $res = {};
+    foreach my $key (keys $hash->%*) {
+        if (ref $hash->{$key} eq 'ARRAY') {
+            $res->{$key} = scalar $hash->{$key}->@* ? $hash->{$key}->[-1] : '';
+            next;
+        }
+        $res->{$key} = $hash->{$key};
+    }
+    return $res;
 }
 
 1;
