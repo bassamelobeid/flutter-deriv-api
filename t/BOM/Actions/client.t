@@ -42,6 +42,13 @@ use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
 use BOM::Test::Helper::P2P;
 use BOM::Platform::Utility;
 
+my $get_file_mock = Test::MockModule->new('BOM::Event::Actions::Client');
+$get_file_mock->mock(
+    '_get_document_s3',
+    sub {
+        return Future->done('the good stuff');
+    });
+
 my $mocked_s3client = Test::MockModule->new('BOM::Platform::S3Client');
 $mocked_s3client->mock(upload => sub { return Future->done(1) });
 
@@ -192,6 +199,10 @@ sub start_document_upload {
 
 my ($applicant, $applicant_id, $loop, $onfido);
 subtest 'upload document' => sub {
+    my $document_content = 'it is a proffaddress document';
+    my $mocked_action    = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mocked_action->mock('_get_document_s3', sub { return Future->done($document_content) });
+
     $loop = IO::Async::Loop->new;
 
     subtest 'upload POA documents' => sub {
@@ -207,10 +218,6 @@ subtest 'upload document' => sub {
             ping => sub {
                 $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
             });
-
-        my $mocked_action    = Test::MockModule->new('BOM::Event::Actions::Client');
-        my $document_content = 'it is a proffaddress document';
-        $mocked_action->mock('_get_document_s3', sub { return Future->done($document_content) });
 
         mailbox_clear();
 
@@ -541,14 +548,13 @@ subtest 'upload document' => sub {
         };
 
         subtest 'Unsupported country' => sub {
-            my $events_mock = Test::MockModule->new('BOM::Event::Actions::Client');
             my $upload_onfido_docs;
 
-            $events_mock->mock(
+            $mocked_action->mock(
                 '_upload_onfido_documents',
                 sub {
                     $upload_onfido_docs = 1;
-                    return $events_mock->original('_upload_onfido_documents')->(@_);
+                    return $mocked_action->original('_upload_onfido_documents')->(@_);
                 });
 
             my $current_residence      = $test_client->residence;
@@ -617,7 +623,7 @@ subtest 'upload document' => sub {
             $test_client->residence($current_residence);
             $test_client->save;
 
-            $events_mock->unmock_all;
+            $mocked_action->unmock('_upload_onfido_documents');
         };
 
         subtest 'password reset' => sub {
@@ -691,10 +697,6 @@ subtest 'upload document' => sub {
         $test_client->copy_status_to_siblings('allow_poi_resubmission', 'test');
         ok $test_sibling->status->_get('allow_poi_resubmission'), 'POI flag propagated to siblings';
 
-        my $mocked_action    = Test::MockModule->new('BOM::Event::Actions::Client');
-        my $document_content = 'it is a passport document';
-        $mocked_action->mock('_get_document_s3', sub { return Future->done($document_content) });
-
         mailbox_clear();
 
         BOM::Event::Actions::Client::document_upload({
@@ -726,6 +728,15 @@ subtest 'upload document' => sub {
 
         my $doc = $onfido->document_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
         ok($doc, "there is a document");
+        my $content1;
+        lives_ok {
+            $content1 = $onfido->download_document(
+                applicant_id => $applicant_id,
+                document_id  => $doc->id
+            )->get
+        }
+        'download doc ok';
+        is $content1, $document_content, 'content is right';
 
         # Redis key for resubmission flag
         $test_client->status->set('allow_poi_resubmission', 'test', 'test');
@@ -3406,6 +3417,12 @@ subtest 'set financial assessment segment' => sub {
     is $returned_args{event}, 'set_financial_assessment', 'track event name is set correctly';
 };
 
+$get_file_mock->mock(
+    '_get_document_s3',
+    sub {
+        return Future->done('the good stuff');
+    });
+
 subtest 'segment document upload' => sub {
 
     my $req = BOM::Platform::Context::Request->new(
@@ -3780,7 +3797,7 @@ subtest 'onfido resubmission' => sub {
         undef @emit_args;
     };
 
-    $mock_client->unmock_all;
+    $mock_client->unmock('_check_applicant');
     $mock_onfido->unmock_all;
     $mock_redis->unmock_all;
     $dog_mock->unmock_all;
@@ -3814,6 +3831,12 @@ subtest 'card deposits' => sub {
     $test_client->status->clear_personal_details_locked;
     $test_client->save;
 };
+
+$get_file_mock->mock(
+    '_get_document_s3',
+    sub {
+        return Future->done('the good stuff');
+    });
 
 subtest 'POI flag removal' => sub {
 
@@ -5451,7 +5474,7 @@ subtest 'Onfido DOB checks' => sub {
             staff_name         => 'system',
             reason             => 'Onfido - client is underage',
             },
-            'Expected disabled status';
+            'Expected disabled status (vrtc)';
 
         cmp_deeply $test_client->status->disabled,
             +{
@@ -5997,6 +6020,208 @@ subtest 'Onfido DOB checks' => sub {
         };
     };
 
+    $mocked_report->unmock_all();
+    $mocked_onfido->unmock_all();
+    $mocked_emitter->unmock_all();
+};
+
+subtest 'Onfido Name Mismatch' => sub {
+    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @metrics;
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            push @metrics, @_ if scalar @_ == 2;
+            push @metrics, @_, undef if scalar @_ == 1;
+
+            return 1;
+        });
+    my $mocked_actions = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mocked_actions->mock(
+        '_restore_request',
+        sub {
+            return Future->done(1);
+        });
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+
+    request($req);
+    my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions      = {};
+    $mocked_emitter->mock(
+        'emit',
+        sub {
+            my $args = {@_};
+
+            $emissions = {$emissions->%*, $args->%*};
+
+            return undef;
+        });
+
+    my $brand  = request->brand;
+    my $params = {
+        language => uc($test_client->user->preferred_language // request->language // 'en'),
+    };
+    my $trading_platform_loginids = {};
+    my $underage_result;
+    my $reported_dob;
+    my $report_result;
+    my $reported_first_name;
+    my $reported_last_name;
+
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+    $mocked_onfido->mock(
+        'get_all_onfido_reports',
+        sub {
+            my $reports = +{
+                test => {
+                    api_name   => 'document',
+                    properties => encode_json_utf8({
+                            date_of_birth => $reported_dob,
+                            first_name    => $reported_first_name,
+                            last_name     => $reported_last_name,
+                        }
+                    ),
+                },
+            };
+
+            return $reports;
+        });
+
+    my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+    $mocked_report->mock(
+        'new' => sub {
+            my $self = shift, my %data = @_;
+            $data{result}                                                                     = $report_result;
+            $data{properties}->{date_of_birth}                                                = $reported_dob;
+            $data{properties}->{first_name}                                                   = $reported_first_name;
+            $data{properties}->{last_name}                                                    = $reported_last_name;
+            $data{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result} = $underage_result;
+            $mocked_report->original('new')->($self, %data);
+        });
+
+    subtest 'name mismatch' => sub {
+        $underage_result = 'clear';
+        $reported_dob    = '1989-10-11';
+        $report_result   = 'clear';
+        $emissions       = {};
+        $test_client->date_of_birth('1989-10-11');
+        $test_client->save;
+        $reported_first_name = 'Sonic el';
+        $reported_last_name  = 'the Hedgehog';
+
+        $vrtc_client->status->clear_disabled();
+        $vrtc_client->status->_build_all();
+        $test_client->status->clear_disabled();
+        $test_client->status->clear_age_verification();
+        $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->clear_poi_dob_mismatch();
+        $test_client->status->_build_all();
+        mailbox_clear();
+
+        lives_ok {
+            @metrics = ();
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+            cmp_deeply + {@metrics},
+                +{
+                'onfido.api.hit'                                => undef,
+                'event.onfido.client_verification.dispatch'     => undef,
+                'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch']},
+                'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch']},
+                'event.onfido.client_verification.success'      => undef,
+                },
+                'Expected dd metrics';
+        }
+        'the event made it alive!';
+
+        ok !$emissions->{underage_account_closed}, 'underage_account_closed event was not emitted';
+
+        ok !$vrtc_client->status->disabled,         'Not disabled';
+        ok !$test_client->status->disabled,         'Not disabled';
+        ok !$test_client->status->age_verification, 'Not age verified';
+        ok $test_client->status->poi_name_mismatch, 'POI name mismatch status set';
+
+        subtest 'check cache - fixing the name mismatch' => sub {
+            my $ryu_data = {
+                document_list => [
+                    WebService::Async::Onfido::Document->new(
+                        id              => 'aaa',
+                        file_type       => 'png',
+                        type            => 'passport',
+                        issuing_country => 'BRA',
+                    ),
+                    WebService::Async::Onfido::Document->new(
+                        id              => 'bbb',
+                        file_type       => 'png',
+                        type            => 'passport',
+                        issuing_country => 'BRA',
+                    ),
+                ],
+            };
+
+            my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+            $onfido_mocker->mock(
+                'get_document_details',
+                sub {
+                    my (undef, %args) = @_;
+                    my $document_id = $args{document_id};
+                    my $doc_hash    = +{map { ($_->id => $_) } $ryu_data->{document_list}->@*};
+
+                    return Future->done($doc_hash->{$document_id});
+                });
+
+            my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+            $mocked_report->mock(
+                'documents',
+                sub {
+                    return $ryu_data->{document_list};
+                });
+
+            $test_client->first_name('Sonic');
+            $test_client->last_name('Hedgehog');
+            $test_client->save;
+            $test_client->status->_build_all();
+            my ($doc) = $test_client->find_client_authentication_document();
+
+            my $redis = $services->redis_events_write();
+            $redis->set(BOM::Event::Actions::Client::ONFIDO_DOCUMENT_ID_PREFIX . 'bbb', $doc->id)->get;
+
+            lives_ok {
+                @metrics = ();
+                BOM::Event::Actions::Client::client_verification({
+                        check_url => $check_href,
+                    })->get;
+                cmp_deeply + {@metrics},
+                    +{
+                    'onfido.api.hit'                            => undef,
+                    'event.onfido.client_verification.dispatch' => undef,
+                    'event.onfido.client_verification.result'   => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:age_verified']},
+                    'event.onfido.client_verification.success'  => undef,
+                    },
+                    'Expected dd metrics';
+
+                my $documents_status = +{map { ($_->id => $_->status) } $test_client->find_client_authentication_document()};
+
+                is $documents_status->{$doc->id}, 'verified', 'documents are verified as well';
+            }
+            'the event made it alive!';
+
+            $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+            is $test_client->first_name, 'Sonic El',     'expected first name';
+            is $test_client->last_name,  'The Hedgehog', 'expected last name';
+
+            $onfido_mocker->unmock_all();
+            $mocked_report->unmock_all();
+        };
+    };
+
+    $mocked_actions->unmock('_restore_request');
     $mocked_report->unmock_all();
     $mocked_onfido->unmock_all();
     $mocked_emitter->unmock_all();

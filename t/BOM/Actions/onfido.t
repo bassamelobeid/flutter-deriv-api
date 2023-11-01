@@ -459,8 +459,173 @@ subtest 'Check POI Rules' => sub {
         }
     }
 
-    subtest 'Virtual account should get stopped out' => sub {
+    subtest 'Name update based on the onfido report' => sub {
 
+        $test_client_mock->mock(
+            'latest_poi_by',
+            sub {
+                return ('onfido');
+            });
+
+        $onfido_mock->mock(
+            'get_consider_reasons',
+            sub {
+                return ['data_comparison.first_name', 'data_comparison.last_name'];
+            });
+
+        for (qw/consider clear suspect/) {
+            $check_result = $_;
+
+            for (qw/consider clear suspect/) {
+                $result = $_;
+
+                $test_client->first_name('elon');
+                $test_client->last_name('musk');
+                $test_client->save;
+
+                $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
+                $last_name     = 'wrong name';
+                $first_name    = 'wrong';
+                $date_of_birth = '1990-01-05';
+
+                ok !$action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successful event execution';
+
+                ok $test_client->status->poi_name_mismatch, 'POI name mismatch is forced';
+                ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch is forced';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+                is $test_client->first_name, 'elon', 'first name not updated';
+                is $test_client->last_name,  'musk', 'last name not updated';
+
+                #Case with name mismatch not set with DOB mismatch set.
+
+                $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
+                $first_name    = 'ELON REEVE';
+                $last_name     = 'MUSK';
+                $date_of_birth = '1990-01-05';
+
+                ok !$action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+
+                ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
+                ok $test_client->status->poi_dob_mismatch,   'POI dob mismatch is set';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+                is $test_client->first_name, 'elon', 'first name not updated';
+                is $test_client->last_name,  'musk', 'last name not updated';
+
+                #Case with first name undef
+
+                $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
+                $first_name    = undef;
+                $last_name     = 'MUSK';
+                $date_of_birth = '1990-01-02';
+
+                ok !$action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+
+                ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
+                ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch not set';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+                is $test_client->first_name, 'elon', 'first name not updated';
+                is $test_client->last_name,  'musk', 'last name not updated';
+
+                #Case with last name undef
+
+                $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
+                $first_name    = 'ELON REEVE';
+                $last_name     = undef;
+                $date_of_birth = '1990-01-02';
+
+                ok !$action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+
+                ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
+                ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch not set';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+                is $test_client->first_name, 'elon', 'first name not updated';
+                is $test_client->last_name,  'musk', 'last name not updated';
+
+                #Case with name mismatch not set and DOB mismatch not set.
+
+                $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
+                $first_name    = 'ELON REEVE';
+                $last_name     = 'MUSK';
+                $date_of_birth = '1990-01-02';
+
+                ok !$action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+
+                ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
+                ok !$test_client->status->poi_dob_mismatch,  'POI dob mismatch not set';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+                if ($result eq 'clear' && $check_result eq 'clear') {
+
+                    is $test_client->first_name, 'Elon Reeve', 'first name updated';
+                    is $test_client->last_name,  'musk',       'last name not updated because of no differences';
+
+                } else {
+                    is $test_client->first_name, 'elon', 'first name not updated';
+                    is $test_client->last_name,  'musk', 'last name not updated';
+                }
+                $test_client->status->clear_age_verification;
+
+                $test_client->first_name('elon');
+                $test_client->last_name('musk');
+                $test_client->save;
+
+                $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
+                $first_name    = 'ELON REEVE';
+                $last_name     = 'MUSK LAST NAME';
+                $date_of_birth = '1990-01-02';
+
+                ok !$action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+
+                ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
+                ok !$test_client->status->poi_dob_mismatch,  'POI dob mismatch not set';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+                if ($result eq 'clear' && $check_result eq 'clear') {
+
+                    is $test_client->first_name, 'Elon Reeve',     'first name updated';
+                    is $test_client->last_name,  'Musk Last Name', 'last name updated';
+
+                } else {
+                    is $test_client->first_name, 'elon', 'first name not updated';
+                    is $test_client->last_name,  'musk', 'last name not updated';
+                }
+                $test_client->status->clear_age_verification;
+                $test_client->status->clear_poi_name_mismatch;
+                $test_client->status->clear_poi_dob_mismatch;
+
+            }
+        }
+    };
+
+    subtest 'Virtual account should get stopped out' => sub {
         my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
         my @metrics;
         $dog_mock->mock(
@@ -470,6 +635,11 @@ subtest 'Check POI Rules' => sub {
                 push @metrics, @_, undef if scalar @_ == 1;
 
                 return 1;
+            });
+        $test_client_mock->mock(
+            'latest_poi_by',
+            sub {
+                return ('manual');
             });
 
         ok !$action_handler->({
@@ -482,6 +652,34 @@ subtest 'Check POI Rules' => sub {
             'events.poi_check_rules.is_virtual' => undef,
             ],
             'Expected dd metric';
+
+        $dog_mock->unmock_all;
+    };
+
+    subtest 'Manial verified account should get stopped out' => sub {
+        my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+        my @metrics;
+        $dog_mock->mock(
+            'stats_inc',
+            sub {
+                push @metrics, @_ if scalar @_ == 2;
+                push @metrics, @_, undef if scalar @_ == 1;
+
+                return 1;
+            });
+
+        ok !$action_handler->({
+                loginid  => $test_client->loginid,
+                check_id => 'TEST'
+            })->get, 'Handled exception in event execution';
+
+        cmp_deeply [@metrics],
+            [
+            'events.poi_check_rules.latest_is_manual' => undef,
+            ],
+            'Expected dd metric';
+
+        $dog_mock->unmock_all;
     };
 
     $onfido_mock->unmock_all;

@@ -261,6 +261,14 @@ subtest 'onfido check completed' => sub {
     # services to the loop
     $loop->add(my $services = BOM::Event::Services->new);
 
+    my $emit_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my @emissions = [];
+    $emit_mock->mock(
+        'emit',
+        sub {
+            push @emissions, +{@_};
+        });
+
     # mocks
     my $config_mock = Test::MockModule->new('BOM::Config');
     my $s3_config   = {};
@@ -322,23 +330,33 @@ subtest 'onfido check completed' => sub {
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{onfido_check_completed};
 
     subtest 'no check id' => sub {
+        my $redis = $services->redis_events_write();
+        $redis->connect->get;
+        $redis->set('ONFIDO::PDF::LOCK', 0)->get;
         $log->clear();
         @updated_checks = ();
         @dog_bag        = ();
+        @emissions      = ();
         $exception      = exception { $handler->($args)->get };
 
         cmp_deeply [@updated_checks], [], 'empty check updates';
         cmp_deeply [@dog_bag],        [], 'empty dog bag';
+        cmp_deeply [@emissions],      [], 'no emissions';
 
         $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok $exception =~ /No Onfido Check provided/, 'Expected exception';
     };
 
     subtest 'inexistent check id' => sub {
+        my $redis = $services->redis_events_write();
+        $redis->connect->get;
+        $redis->set('ONFIDO::PDF::LOCK', 0)->get;
         $log->clear();
         @updated_checks = ();
         @dog_bag        = ();
+        @emissions      = ();
 
         $onfido_future    = Future->fail('404', http => HTTP::Response->new(404, 'Not Found'));
         $args->{check_id} = 'bad-id';
@@ -348,16 +366,22 @@ subtest 'onfido check completed' => sub {
         cmp_deeply [@dog_bag],
             ['event.onfido.pdf.dispatch', 'event.onfido.pdf.download_error', 'event.onfido.pdf.finish_with_error' => re('\d+(\.\d+)?')],
             'expected dog calls';
+        cmp_deeply [@emissions], [], 'no emissions';
 
         $log->contains_ok(qr/Onfido http exception with code 404/, 'expected log entry');
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok !$exception, 'No exception thrown';
     };
 
     subtest 'Onfido API status 500' => sub {
+        my $redis = $services->redis_events_write();
+        $redis->connect->get;
+        $redis->set('ONFIDO::PDF::LOCK', 0)->get;
         $log->clear();
         @updated_checks = ();
         @dog_bag        = ();
+        @emissions      = ();
 
         $onfido_future    = Future->fail('500', http => HTTP::Response->new(500, 'Internal Server Error'));
         $args->{check_id} = 'good-id';
@@ -367,15 +391,21 @@ subtest 'onfido check completed' => sub {
         cmp_deeply [@dog_bag],
             ['event.onfido.pdf.dispatch', 'event.onfido.pdf.download_error', 'event.onfido.pdf.finish_with_error' => re('\d+(\.\d+)?')],
             'expected dog calls';
+        cmp_deeply [@emissions], [], 'no emissions';
 
         $log->contains_ok(qr/Onfido http exception with code 500/, 'expected log entry');
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok !$exception, 'No exception thrown';
     };
 
     subtest 'Onfido API status 429' => sub {
+        my $redis = $services->redis_events_write();
+        $redis->connect->get;
+        $redis->set('ONFIDO::PDF::LOCK', 0)->get;
         $log->clear();
         @updated_checks = ();
+        @emissions      = ();
         @dog_bag        = ();
 
         $onfido_future    = Future->fail('429', http => HTTP::Response->new(429, 'Too Many Requests'));
@@ -386,15 +416,21 @@ subtest 'onfido check completed' => sub {
         cmp_deeply [@dog_bag],
             ['event.onfido.pdf.dispatch', 'event.onfido.pdf.download_error', 'event.onfido.pdf.finish_with_error' => re('\d+(\.\d+)?')],
             'expected dog calls';
+        cmp_deeply [@emissions], [], 'no emissions';
 
         $log->contains_ok(qr/Onfido http exception with code 429/, 'expected log entry');
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok !$exception, 'No exception thrown';
     };
 
     subtest 's3 upload failure (no keys)' => sub {
+        my $redis = $services->redis_events_write();
+        $redis->connect->get;
+        $redis->set('ONFIDO::PDF::LOCK', 0)->get;
         $log->clear();
         @updated_checks = ();
+        @emissions      = ();
         @dog_bag        = ();
         $s3_config      = {
             aws_access_key_id     => undef,
@@ -409,15 +445,21 @@ subtest 'onfido check completed' => sub {
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag], ['event.onfido.pdf.dispatch', 'event.onfido.pdf.s3_error', 'event.onfido.pdf.finish_with_error' => re('\d+(\.\d+)?')],
             'expected dog calls';
+        cmp_deeply [@emissions], [], 'no emissions';
 
         $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok !$exception, 'No exception thrown';
     };
 
     subtest 's3 upload failure' => sub {
+        my $redis = $services->redis_events_write();
+        $redis->connect->get;
+        $redis->set('ONFIDO::PDF::LOCK', 0)->get;
         $log->clear();
         @updated_checks = ();
+        @emissions      = ();
         @dog_bag        = ();
         $s3_config      = {
             aws_access_key_id     => 'test',
@@ -434,6 +476,8 @@ subtest 'onfido check completed' => sub {
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag], ['event.onfido.pdf.dispatch', 'event.onfido.pdf.s3_error', 'event.onfido.pdf.finish_with_error' => re('\d+(\.\d+)?')],
             'expected dog calls';
+        cmp_deeply [@emissions], [], 'no emissions';
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
 
@@ -441,9 +485,13 @@ subtest 'onfido check completed' => sub {
     };
 
     subtest 's3 upload success' => sub {
+        my $redis = $services->redis_events_write();
+        $redis->connect->get;
+        $redis->set('ONFIDO::PDF::LOCK', 0)->get;
         $log->clear();
         @updated_checks = ();
         @dog_bag        = ();
+        @emissions      = ();
         $s3_config      = {
             aws_access_key_id     => 'test',
             aws_secret_access_key => 'test',
@@ -458,6 +506,8 @@ subtest 'onfido check completed' => sub {
 
         cmp_deeply [@updated_checks], ['good-id'                                              => 'completed'],       'completed checks';
         cmp_deeply [@dog_bag],        ['event.onfido.pdf.dispatch', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')], 'expected dog calls';
+        cmp_deeply [@emissions],      [], 'no emissions';
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
 
@@ -468,9 +518,11 @@ subtest 'onfido check completed' => sub {
         my $redis = $services->redis_events_write();
         $redis->connect->get;
         $redis->set('SOME-RANDOM-KEY', 100)->get;
+        $redis->del('ONFIDO::PDF::LOCK')->get;
 
         $log->clear();
         @updated_checks = ();
+        @emissions      = ();
         @dog_bag        = ();
         $s3_config      = {
             aws_access_key_id     => 'test',
@@ -488,9 +540,11 @@ subtest 'onfido check completed' => sub {
 
         cmp_deeply [@updated_checks], ['good-id'                                              => 'completed'],       'completed checks';
         cmp_deeply [@dog_bag],        ['event.onfido.pdf.dispatch', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')], 'expected dog calls';
+        cmp_deeply [@emissions],      [], 'no emissions';
 
         $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
         is $redis->get('SOME-RANDOM-KEY')->get, 99, 'queue decreased by 1';
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok !$exception, 'No exception thrown';
     };
@@ -499,10 +553,12 @@ subtest 'onfido check completed' => sub {
         my $redis = $services->redis_events_write();
         $redis->connect->get;
         $redis->set('SOME-RANDOM-KEY', 0)->get;
+        $redis->del('ONFIDO::PDF::LOCK')->get;
 
         $log->clear();
         @updated_checks = ();
         @dog_bag        = ();
+        @emissions      = ();
         $s3_config      = {
             aws_access_key_id     => 'test',
             aws_secret_access_key => 'test',
@@ -521,9 +577,11 @@ subtest 'onfido check completed' => sub {
         cmp_deeply [@dog_bag],
             ['event.onfido.pdf.dispatch', 'event.onfido.pdf.queue_size_underflow', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')],
             'expected dog calls';
+        cmp_deeply [@emissions], [], 'no emissions';
 
         $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
         is $redis->get('SOME-RANDOM-KEY')->get, 0, 'queue set to 0';
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok !$exception, 'No exception thrown';
     };
@@ -532,9 +590,11 @@ subtest 'onfido check completed' => sub {
         my $redis = $services->redis_events_write();
         $redis->connect->get;
         $redis->set('SOME-RANDOM-KEY', -1)->get;
+        $redis->del('ONFIDO::PDF::LOCK')->get;
 
         $log->clear();
         @updated_checks = ();
+        @emissions      = ();
         @dog_bag        = ();
         $s3_config      = {
             aws_access_key_id     => 'test',
@@ -554,9 +614,11 @@ subtest 'onfido check completed' => sub {
         cmp_deeply [@dog_bag],
             ['event.onfido.pdf.dispatch', 'event.onfido.pdf.queue_size_underflow', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')],
             'expected dog calls';
+        cmp_deeply [@emissions], [], 'no emissions';
 
         $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
         is $redis->get('SOME-RANDOM-KEY')->get, 0, 'queue set to 0';
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok !$exception, 'No exception thrown';
     };
@@ -565,9 +627,11 @@ subtest 'onfido check completed' => sub {
         my $redis = $services->redis_events_write();
         $redis->connect->get;
         $redis->del('SOME-RANDOM-KEY')->get;
+        $redis->del('ONFIDO::PDF::LOCK')->get;
 
         $log->clear();
         @updated_checks = ();
+        @emissions      = ();
         @dog_bag        = ();
         $s3_config      = {
             aws_access_key_id     => 'test',
@@ -587,11 +651,84 @@ subtest 'onfido check completed' => sub {
         cmp_deeply [@dog_bag],
             ['event.onfido.pdf.dispatch', 'event.onfido.pdf.queue_size_underflow', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')],
             'expected dog calls';
+        cmp_deeply [@emissions], [], 'no emissions';
 
         $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
         is $redis->get('SOME-RANDOM-KEY')->get, 0, 'queue set to 0';
+        ok !$redis->get('ONFIDO::PDF::LOCK')->get, 'lock is 0';
 
         ok !$exception, 'No exception thrown';
+    };
+
+    subtest 'redis lock' => sub {
+        my $redis = $services->redis_events_write();
+        $redis->connect->get;
+        $redis->set('SOME-RANDOM-KEY',   1)->get;
+        $redis->set('ONFIDO::PDF::LOCK', 1)->get;
+
+        my $redis_mock = Test::MockModule->new(ref($redis));
+        my @redis_set;
+        $redis_mock->mock(
+            'set',
+            sub {
+                my (undef, @set) = @_;
+
+                push @redis_set, [@set];
+
+                return $redis_mock->original('set')->(@_);
+            });
+
+        $log->clear();
+        @updated_checks = ();
+        @emissions      = ();
+        @dog_bag        = ();
+        $s3_config      = {
+            aws_access_key_id     => 'test',
+            aws_secret_access_key => 'test',
+            aws_bucket            => 'test',
+        };
+
+        $onfido_future = Future->done('PDF');
+        $s3_future     = Future->done('test.pdf');
+
+        $args->{check_id}       = 'good-id';
+        $args->{queue_size_key} = 'SOME-RANDOM-KEY';
+
+        $exception = exception { $handler->($args)->get };
+
+        cmp_deeply [@updated_checks], [],                                                     'no completed checks';
+        cmp_deeply [@dog_bag],        ['event.onfido.pdf.dispatch', 'event.onfido.pdf.busy'], 'expected dog calls';
+        cmp_deeply [@emissions],      [],                                                     'no emissions';
+
+        $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
+        is $redis->get('SOME-RANDOM-KEY')->get,   1, 'queue stuck at 1';
+        is $redis->get('ONFIDO::PDF::LOCK')->get, 1, 'lock stuck at 1';
+        cmp_deeply [@redis_set], [[qw/ONFIDO::PDF::LOCK 1 EX 300 NX/]], 'expected redis set call';
+
+        ok !$exception, 'No exception thrown';
+
+        subtest 'unaffected without a queue size key' => sub {
+            $redis->set('ONFIDO::PDF::LOCK', 1)->get;
+            $log->clear();
+            @updated_checks = ();
+            @emissions      = ();
+            @dog_bag        = ();
+            @redis_set      = ();
+
+            delete $args->{queue_size_key};
+            $exception = exception { $handler->($args)->get };
+
+            cmp_deeply [@updated_checks], ['good-id'                                              => 'completed'],       'completed checks';
+            cmp_deeply [@dog_bag],        ['event.onfido.pdf.dispatch', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')], 'expected dog calls';
+            cmp_deeply [@emissions],      [], 'no emissions';
+
+            $log->does_not_contain_ok(qr/Onfido http exception/, 'no HTTP exception logged');
+            is $redis->get('SOME-RANDOM-KEY')->get,   1, 'queue unaffected';
+            is $redis->get('ONFIDO::PDF::LOCK')->get, 1, 'lock unaffected';
+            cmp_deeply [@redis_set], [], 'expected redis set call';
+        };
+
+        $redis_mock->unmock_all;
     };
 
     $config_mock->unmock_all;

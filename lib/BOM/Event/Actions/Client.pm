@@ -99,6 +99,8 @@ use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
 use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX    => 'ONFIDO::IS_A_RESUBMISSION::ID::';
 use constant ONFIDO_PDF_CHECK_ENQUEUED              => 'ONFIDO::PDF::CHECK::ENQUEUED::';
+use constant ONFIDO_PDF_LOCK                        => 'ONFIDO::PDF::LOCK';
+use constant ONFIDO_PDF_LOCK_TTL                    => 300;
 use constant ONFIDO_PDF_CHECK_TTL                   => 5400;
 
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
@@ -900,9 +902,11 @@ async sub client_verification {
                         # we first check if facial similarity is clear for LCs with the required flag active, currently just for MF
                         if ($selfie_result eq 'clear' || !$client->is_face_similarity_required) {
                             await check_onfido_rules({
-                                loginid      => $client->loginid,
-                                check_id     => $check_id,
-                                datadog_tags => \@common_datadog_tags,
+                                loginid       => $client->loginid,
+                                check_id      => $check_id,
+                                datadog_tags  => \@common_datadog_tags,
+                                check_result  => $check->result,
+                                report_result => $document_report->result,
                             });
 
                             $client->{status} = undef;
@@ -1239,17 +1243,20 @@ async sub check_idv_rules {
     my @required_data   = grep { defined $_ } @{$report_decoded}{@required_fields};
     return 1 unless scalar @required_fields == scalar @required_data;
 
-    $idv_document_check->{report} = $report_decoded;
-    my $messages = eval { decode_json_text($idv_document->{status_messages} // '[]') } // [];
-    my $provider = $idv_document_check->{provider};
+    my $response_body = eval { decode_json_text($idv_document_check->{response}  // '{}') } // {};
+    my $request_body  = eval { decode_json_text($idv_document_check->{request}   // '{}') } // {};
+    my $messages      = eval { decode_json_text($idv_document->{status_messages} // '[]') } // [];
+    my $provider      = $idv_document_check->{provider};
 
     if ($report_decoded) {
         await BOM::Event::Actions::Client::IdentityVerification::idv_mismatch_lookback({
             client        => $client,
             messages      => $messages,
             document      => $idv_document,
-            response_hash => $idv_document_check,
+            report        => $report_decoded,
             provider      => $provider,
+            response_body => $response_body,
+            request_body  => $request_body,
         });
 
         if ($client->status->age_verification) {
@@ -1287,6 +1294,10 @@ Takes the following named parameters:
 =item * C<check_id> - the id of the onfido check (optional, if not given will try to get the last one from db).
 
 =item * C<datadog_tags> - (optional) tags to send send along the DD metrics.
+
+=item * C<check_result> - (optional) highest priority check result.
+
+=item * C<report_result> - (optional) highest priority report result.
 
 =back
 
@@ -1326,8 +1337,8 @@ async sub check_onfido_rules {
                 client          => $client,
                 stop_on_failure => 0
             );
-            my $report_result = $report->{result} // '';
-            my $check_result  = $check->{result}  // '';
+            my $report_result = $args->{report_result} // $report->{result} // '';
+            my $check_result  = $args->{check_result}  // $check->{result}  // '';
 
             # get the current rejected reasons and drop the name mismatches if any.
             my @bad_reasons = qw(data_comparison.first_name data_comparison.last_name data_comparison.date_of_birth);
@@ -1338,7 +1349,14 @@ async sub check_onfido_rules {
                 loginid => $client->loginid,
                 report  => $report,
             );
+
             unless ($rules_result->has_failure) {
+                if ($report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0) {
+                    unless (BOM::User::Onfido::update_full_name_from_reported_properties($client)) {
+                        DataDog::DogStatsd::Helper::stats_inc('event.onfido.update_full_name.failure', {tags => $tags});
+                    }
+                }
+
                 my $poi_name_mismatch = $client->status->poi_name_mismatch;
 
                 $client->propagate_clear_status('poi_name_mismatch');
@@ -4378,10 +4396,14 @@ async sub onfido_check_completed {
     try {
         # queue size control
         if ($queue_size_key) {
-
             my $redis = _redis_events_write();
 
             await $redis->connect;
+
+            # adding a lock to avoid many concurrent downloads
+            my $acquired_lock = await $redis->set(ONFIDO_PDF_LOCK, 1, 'EX', ONFIDO_PDF_LOCK_TTL, 'NX');
+
+            return DataDog::DogStatsd::Helper::stats_inc('event.onfido.pdf.busy') unless $acquired_lock;
 
             my $current_size = await $redis->get($queue_size_key);
 
@@ -4439,6 +4461,15 @@ async sub onfido_check_completed {
 
         # report timing
         DataDog::DogStatsd::Helper::stats_timing('event.onfido.pdf.finish_with_error', Time::HiRes::time - $start_time);
+    }
+
+    # clear lock
+    if ($queue_size_key) {
+        my $redis = _redis_events_write();
+
+        await $redis->connect;
+
+        await $redis->del(ONFIDO_PDF_LOCK);
     }
 }
 

@@ -18,6 +18,19 @@ $loop->add(my $services = BOM::Event::Services->new);
 
 my $redis = $services->redis_events_write();
 
+my @delays;
+
+my $loop_mock = Test::MockModule->new(ref($loop));
+$loop_mock->mock(
+    'delay_future',
+    sub {
+        my (undef, %args) = @_;
+
+        push @delays, +{%args};
+
+        return Future->done;
+    });
+
 subtest 'batch size' => sub {
     my $checks_per_hour = +BOM::Event::Script::OnfidoPDF::CHECKS_PER_HOUR;
 
@@ -35,7 +48,7 @@ subtest 'batch size' => sub {
         if ($checks_per_hour - $i < 0) {
             is($current, 0, 'cannot drop under 0');
 
-            $log->contains_ok(qr/Onfido PDF downloader:queue size is = 1270, skipping cronjob run/, 'skipping cronjob run, too many messages');
+            $log->contains_ok(qr/Onfido PDF downloader:queue size is = \d+, skipping cronjob run/, 'skipping cronjob run, too many messages');
             last;
         }
 
@@ -95,11 +108,13 @@ subtest 'run it' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
+        @delays         = ();
         #cleanup log
         $log->clear;
         # run it
         BOM::Event::Script::OnfidoPDF->run->get;
 
+        cmp_deeply [@delays],         [], 'no delays';
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag],
             [
@@ -107,7 +122,7 @@ subtest 'run it' => sub {
             ],
             'Expected dog calls';
         cmp_deeply [@emissions], [], 'No emissions';
-        $log->contains_ok(qr/Onfido PDF downloader:queue size is = 1270, skipping cronjob run/, 'No log registered');
+        $log->contains_ok(qr/Onfido PDF downloader:queue size is = 310, skipping cronjob run/, 'Skipping log');
 
         # reset back
         $redis->del(+BOM::Event::Script::OnfidoPDF::ONFIDO_PDF_QUEUE_SIZE)->get;
@@ -121,11 +136,13 @@ subtest 'run it' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
+        @delays         = ();
         #cleanup log
         $log->clear;
         # run it
         BOM::Event::Script::OnfidoPDF->run->get;
 
+        cmp_deeply [@delays],         [], 'no delays';
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag],
             [
@@ -144,12 +161,14 @@ subtest 'run it' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
+        @delays         = ();
         #cleanup log
         $log->clear;
         # run it
         BOM::Event::Script::OnfidoPDF->run->get;
 
-        cmp_deeply [@updated_checks], [], 'no updated checks';
+        cmp_deeply [@delays],         [map { +{after => 10} } (1 .. 10)], '10 delays';
+        cmp_deeply [@updated_checks], [],                                 'no updated checks';
         cmp_deeply [@dog_bag],
             [
             'event.onfido.pdf.batch_size' => +BOM::Event::Script::OnfidoPDF::CHECKS_PER_HOUR,
@@ -180,11 +199,13 @@ subtest 'run it' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
+        @delays         = ();
         #cleanup log
         $log->clear;
         # run it
         BOM::Event::Script::OnfidoPDF->run->get;
 
+        cmp_deeply [@delays],         [], 'no delays';
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag],
             [
@@ -210,12 +231,14 @@ subtest 'run it' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
+        @delays         = ();
         #cleanup log
         $log->clear;
         # run it
         BOM::Event::Script::OnfidoPDF->run->get;
 
-        cmp_deeply [@updated_checks], [], 'no updated checks';
+        cmp_deeply [@delays],         [map { +{after => 10} } (1 .. 5)], '10 delays';
+        cmp_deeply [@updated_checks], [],                                'no updated checks';
         cmp_deeply [@dog_bag],
             [
             'event.onfido.pdf.batch_size' => +BOM::Event::Script::OnfidoPDF::CHECKS_PER_HOUR - 10,
@@ -249,12 +272,14 @@ subtest 'run it' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
+        @delays         = ();
         #cleanup log
         $log->clear;
         # run it
         BOM::Event::Script::OnfidoPDF->run->get;
 
-        cmp_deeply [@updated_checks], [], 'no updated checks';
+        cmp_deeply [@delays],         [map { +{after => 10} } (1 .. 10)], '10 delays';
+        cmp_deeply [@updated_checks], [],                                 'no updated checks';
         cmp_deeply [@dog_bag],
             [
             'event.onfido.pdf.batch_size' => +BOM::Event::Script::OnfidoPDF::CHECKS_PER_HOUR - 15,
@@ -287,12 +312,14 @@ subtest 'run it' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
+        @delays         = ();
         #cleanup log
         $log->clear;
         # run it
         BOM::Event::Script::OnfidoPDF->run->get;
 
-        cmp_deeply [@updated_checks], [], 'no updated checks';
+        cmp_deeply [@delays],         [map { +{after => 10} } (1 .. 10)], '10 delays';
+        cmp_deeply [@updated_checks], [],                                 'no updated checks';
         cmp_deeply [@dog_bag],
             [
             'event.onfido.pdf.batch_size' => +BOM::Event::Script::OnfidoPDF::CHECKS_PER_HOUR - 25,
@@ -325,11 +352,13 @@ subtest 'run it' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
+        @delays         = ();
         #cleanup log
         $log->clear;
         # run it
         BOM::Event::Script::OnfidoPDF->run->get;
 
+        cmp_deeply [@delays],         [],                                                                'no delays';
         cmp_deeply [@updated_checks], [map { ($_, 'failed') } map { $_ % 2 ? "t$_" : "b$_" } (1 .. 10)], 'expected update check calls';
         cmp_deeply [@dog_bag],
             [
@@ -349,5 +378,7 @@ subtest 'run it' => sub {
         is $redis->get(+BOM::Event::Script::OnfidoPDF::ONFIDO_PDF_QUEUE_SIZE)->get, 35, 'Expected queue size';
     };
 };
+
+$loop_mock->unmock_all;
 
 done_testing();

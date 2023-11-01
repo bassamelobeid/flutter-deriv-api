@@ -26,7 +26,7 @@ use constant ONFIDO_PDF_CHECK_HITS     => 'ONFIDO::PDF::CHECK::HITS::';
 use constant ONFIDO_PDF_QUEUE_SIZE     => 'ONFIDO::PDF::QUEUE::SIZE';
 use constant ONFIDO_PDF_HITS_TTL       => 259200;
 use constant ONFIDO_PDF_CHECK_TTL      => 5400;
-use constant CHECKS_PER_HOUR           => 1260;
+use constant CHECKS_PER_HOUR           => 300;
 use constant MAX_HITS_PER_CHECK        => 3;
 
 # Declare here the services we'll be using.
@@ -90,10 +90,6 @@ async sub run {
 
         DataDog::DogStatsd::Helper::stats_inc('event.onfido.pdf.emit');
 
-        # unfortunately our events service has no scheduler available
-        # would be splendind to distribute the messages evenly across the 1hour timespan
-        # best we can do is to enqueue all of these and let the 21 worker do their thing.
-
         BOM::Platform::Event::Emitter::emit(
             'onfido_check_completed',
             {
@@ -102,6 +98,11 @@ async sub run {
             });
 
         await $redis->incr(ONFIDO_PDF_QUEUE_SIZE);
+
+        # unfortunately our events service has no scheduler available
+        # so we would want to delay the loop to distribute the emissions
+
+        await $loop->delay_future(after => 10);
     }
 
     return undef;
@@ -134,8 +135,9 @@ async sub get_batch_size {
     #
     # We would like to process ~1 PDF per minute per worker.
     # Since the cronjob will hit hourly there is a 60 * 21 = 1260 base limit, per cronjob hit.
+    # However Onfido cannot cope with this, we will decrease it to 500
     #
-    # At this rate we would process ~900k records in ~30 days.
+    # At this rate we would process ~900k records in ~60 days.
 
     my $limit = CHECKS_PER_HOUR - $queue_size;
 
