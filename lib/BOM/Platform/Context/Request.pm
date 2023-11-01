@@ -87,7 +87,7 @@ sub _build_brand_name {
     my $self = shift;
 
     if (my $brand = $self->param('brand')) {
-        return $brand->[0] if (ref($brand) eq 'ARRAY');
+        return $brand->[-1] if (ref($brand) eq 'ARRAY');
         return $brand;
     }
 
