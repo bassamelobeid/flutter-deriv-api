@@ -601,6 +601,170 @@ subtest 'Account closure DXTrader' => sub {
     ok($test_client->status->disabled, 'Account disabled');
 };
 
+subtest 'Account closure cTrader' => sub {
+    my $ctconfig       = BOM::Config::Runtime->instance->app_config->system->ctrader;
+    my $mocked_ctrader = Test::MockModule->new('BOM::TradingPlatform::CTrader');
+    my $mock_apidata   = {
+        ctid_create                 => {userId => 1001},
+        ctid_getuserid              => {userId => 1001},
+        ctradermanager_getgrouplist => [{name => 'ctrader_all_svg_std_usd', groupId => 1}],
+        trader_create               => {
+            login                 => 100001,
+            groupName             => 'ctrader_all_svg_std_usd',
+            registrationTimestamp => 123456,
+            depositCurrency       => 'USD',
+            balance               => 0,
+            moneyDigits           => 2
+        },
+        trader_get => {
+            balance         => 10,
+            depositCurrency => 'USD'
+        },
+        tradermanager_gettraderlightlist => [{traderId => 1001, login => 100001}],
+        ctid_linktrader                  => {ctidTraderAccountId => 1001},
+        tradermanager_deposit            => {balanceHistoryId    => 1},
+        tradermanager_withdraw           => {balanceHistoryId    => 2}};
+
+    my %ctrader_mock = (
+        call_api => sub {
+            $mocked_ctrader->mock(
+                'call_api',
+                shift // sub {
+                    my ($self, %payload) = @_;
+
+                    return $mock_apidata->{$payload{method}};
+                });
+        },
+    );
+
+    $ctrader_mock{call_api}->();
+
+    my $password    = 'cTTest0909099';
+    my $hash_pwd    = BOM::User::Password::hashpw($password);
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
+    my $email = $test_client->email;
+    $test_client->save;
+
+    my $test_loginid = $test_client->loginid;
+    my $user         = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd,
+    );
+    $user->add_client($test_client);
+    my $token = $m->create_token($test_loginid, 'test token');
+    $test_client->binary_user_id($user->id);
+    $test_client->set_default_account('USD');
+    $test_client->save;
+
+    my $amount = '10.00';
+
+    BOM::Test::Helper::Client::top_up($test_client, $test_client->currency, $amount);
+
+    my %params = (
+        account_type => "demo",
+        market_type  => "all",
+        platform     => "ctrader"
+    );
+
+    my $expected_response = {
+        'landing_company_short' => 'svg',
+        'balance'               => '0.00',
+        'market_type'           => 'all',
+        'display_balance'       => '0.00',
+        'currency'              => 'USD',
+        'login'                 => '100001',
+        'account_id'            => 'CTD100001',
+        'account_type'          => 'demo',
+        'platform'              => 'ctrader',
+    };
+
+    my $ctrader = BOM::TradingPlatform->new(
+        platform    => 'ctrader',
+        client      => $test_client,
+        rule_engine => BOM::Rules::Engine->new(client => $test_client));
+
+    my $response = $ctrader->new_account(%params);
+
+    cmp_deeply($response, $expected_response, 'Created cTrader demo account');
+
+    $ctrader->demo_top_up({
+            amount       => $amount,
+            currency     => 'USD',
+            from_account => $test_client->loginid,
+            to_account   => $expected_response->{account_id}});
+
+    $response = $ctrader->get_accounts(type => 'demo');
+
+    is($response->[0]->{balance}, $amount, "cTrader demo account now has balance");
+
+    $params{account_type}              = 'real';
+    $expected_response->{account_id}   = 'CTR100001';
+    $expected_response->{account_type} = 'real';
+
+    $response = $ctrader->new_account(%params);
+
+    cmp_deeply($response, $expected_response, 'Created cTrader demo account');
+
+    my $real_account_id = $expected_response->{account_id};
+
+    $response = $ctrader->deposit(
+        amount       => $amount,
+        currency     => 'USD',
+        from_account => $test_client->loginid,
+        to_account   => $real_account_id
+    );
+
+    is($response->{balance}, $amount, 'Successfully deposited funds to cTrader');
+
+    my $params = {
+        token => $token,
+        args  => {reason => 'Financial concerns'}};
+
+    my $account_closure = $c->tcall('account_closure', $params);
+
+    cmp_deeply $account_closure,
+        {
+        error => {
+            message_to_client =>
+                "Please close open positions and withdraw all funds from your $real_account_id account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.",
+            details => {
+                balance => {
+                    $real_account_id => {
+                        'currency' => 'USD',
+                        'balance'  => '10.00'
+                    }}
+            },
+            code => 'AccountHasPendingConditions'
+        }
+        },
+        'Cannot close account with dxtrader balance > 0';
+
+    $mock_apidata->{trader_get} = {
+        balance         => 0,
+        depositCurrency => 'USD'
+    };
+
+    $ctrader_mock{call_api}->();
+
+    $response = $ctrader->withdraw(
+        amount       => $amount,
+        currency     => 'USD',
+        to_account   => $test_client->loginid,
+        from_account => $real_account_id,
+    );
+
+    is($response->{balance}, '0.00', 'Successfully withdrew funds from cTrader');
+
+    BOM::Test::Helper::Client::top_up($test_client, $test_client->currency, -10);
+
+    delete $test_client->{status}->{disabled};
+
+    $account_closure = $c->tcall('account_closure', $params);
+    ok $account_closure->{status}, 'Account closure status 1';
+    ok($test_client->status->disabled, 'Account disabled');
+};
+
 # reset
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);

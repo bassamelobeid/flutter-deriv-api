@@ -3162,6 +3162,24 @@ rpc account_closure => sub {
         }
     }
 
+    # cTrader check balances
+    unless (BOM::Config::Runtime->instance->app_config->system->ctrader->suspend->all) {
+        my $trading_platform = BOM::TradingPlatform->new(
+            platform => 'ctrader',
+            client   => $client
+        );
+        my $ctrader_accounts = $trading_platform->get_accounts();
+
+        foreach my $ctrader_account (grep { $_->{account_type} eq 'real' } $ctrader_accounts->@*) {
+            if ($ctrader_account->{balance} > 0) {
+                $accounts_with_balance{$ctrader_account->{account_id}} = {
+                    balance  => formatnumber('amount', $ctrader_account->{currency}, $ctrader_account->{balance}),
+                    currency => $ctrader_account->{currency},
+                };
+            }
+        }
+    }
+
     if (%accounts_with_positions || %accounts_with_balance || %accounts_with_pending_df) {
         my @accounts_to_fix = uniq(keys %accounts_with_balance, keys %accounts_with_positions, keys %accounts_with_pending_df);
         return BOM::RPC::v3::Utility::create_error({
