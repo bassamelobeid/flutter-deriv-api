@@ -181,6 +181,56 @@ subtest 'take_profit' => sub {
 
         delete $args->{limit_order};
     };
+
+    subtest 'unset take profit with proper hit tick parameters' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [1763.00, $epoch,     $symbol],
+            [1764.00, $epoch + 1, $symbol],    # this would have hit the barrier with 0 take profit
+            [1762.00, $epoch + 2, $symbol],
+            [1761.00, $epoch + 3, $symbol],
+        );
+        $args->{limit_order} = {
+            take_profit => {
+                order_amount => undef,
+                order_date   => $now->epoch,
+            }};
+        $args->{date_pricing} = $now->epoch + 30;
+        $c = produce_contract($args);
+        ok $c->take_profit,            'take profit is defined';
+        ok !$c->take_profit->{amount}, 'take profit amount is undef';
+        ok !$c->is_expired,            'not expired';
+    };
+
+    subtest 'take profit lookup date' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [1763.00, $epoch,     $symbol],
+            [1772.00, $epoch + 1, $symbol],    # this would have hit the barrier with 10 take profit
+            [1762.00, $epoch + 2, $symbol],
+            [1761.00, $epoch + 3, $symbol],
+        );
+        $args->{limit_order} = {
+            take_profit => {
+                order_amount => 10,
+                order_date   => $epoch,
+            }};
+        $args->{date_pricing} = $now->epoch + 30;
+        $c = produce_contract($args);
+        ok $c->take_profit, 'take profit is defined';
+        is $c->take_profit->{amount},     10,               'take profit amount is 10';
+        is $c->take_profit_barrier_value, 1771.14070582724, 'take profit barrier value is 1771.14070582724';
+        ok $c->is_expired, 'expired when take profit is set at ' . $epoch;
+
+        $args->{limit_order} = {
+            take_profit => {
+                order_amount => 10,
+                order_date   => $epoch + 2,
+            }};
+        $c = produce_contract($args);
+        ok $c->take_profit, 'take profit is defined';
+        is $c->take_profit->{amount},     10,               'take profit amount is 10';
+        is $c->take_profit_barrier_value, 1771.14070582724, 'take profit barrier value is 1771.14070582724';
+        ok !$c->is_expired, 'not expired when take profit is set at ' . $c->take_profit->{date}->epoch;
+    };
 };
 
 subtest 'expired and not breached barrier' => sub {
@@ -192,6 +242,7 @@ subtest 'expired and not breached barrier' => sub {
         [1390.00, $epoch + 121, $symbol],
     );
 
+    delete $args->{limit_order};
     $args->{duration}     = '2m';
     $args->{date_pricing} = $now;
 

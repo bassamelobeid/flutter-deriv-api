@@ -210,4 +210,136 @@ subtest 'entry and exit tick' => sub {
     'losing the contract';
 };
 
+my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Turbosshort');
+$mocked_contract->mock('strike_price_choices', sub { return ['+73.00', '+85.00', '+100.00'] }, '_max_allowable_take_profit',
+    sub { return '1000.00' });
+
+subtest 'take_profit' => sub {
+    $args->{date_pricing} = $now;
+    $args->{barrier}      = '+73.00';
+
+    my $c = produce_contract($args);
+    is $c->take_profit, undef, 'take_profit is undef';
+
+    subtest 'mininum allowed amount' => sub {
+        $args->{limit_order} = {
+            take_profit => '0',
+        };
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'take profit too low', 'message - take profit too low';
+        is $c->primary_validation_error->message_to_client->[0], 'Please enter a take profit amount that\'s higher than [_1].',
+            'message - Please enter a take profit amount that\'s higher than [_1].';
+        is $c->primary_validation_error->message_to_client->[1], '0.00';
+    };
+
+    subtest 'maximum allowed amount' => sub {
+        $args->{limit_order} = {
+            take_profit => '1000000',
+        };
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'take profit too high', 'message - take profit too low';
+        is $c->primary_validation_error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].',
+            'message - Please enter a take profit amount that\'s higher than [_1].';
+        is $c->primary_validation_error->message_to_client->[1], '1000.00';
+    };
+
+    subtest 'validate amount as decimal' => sub {
+        $args->{limit_order} = {
+            take_profit => '10.451',
+        };
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message,                'too many decimal places';
+        is $c->primary_validation_error->message_to_client->[0], 'Only [_1] decimal places allowed.', 'Only [_1] decimal places allowed.';
+        is $c->primary_validation_error->message_to_client->[1], '2';
+    };
+
+    subtest 'pricing_new' => sub {
+        $args->{limit_order} = {
+            take_profit => '26.97',
+        };
+        $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy';
+        is $c->take_profit->{amount},      '26.97';
+        is $c->take_profit->{date}->epoch, $c->date_pricing->epoch;
+
+        $args->{limit_order} = {
+            take_profit => '50',
+        };
+        $c = produce_contract($args);
+        is $c->take_profit->{amount},      '50';
+        is $c->take_profit->{date}->epoch, $c->date_pricing->epoch;
+    };
+
+    subtest 'non-pricing new' => sub {
+        delete $args->{date_pricing};
+
+        $args->{limit_order} = {
+            take_profit => {
+                order_amount => 5.11,
+                order_date   => $now->epoch,
+            }};
+        $c = produce_contract($args);
+        ok !$c->pricing_new, 'non pricing_new';
+        is $c->take_profit->{amount},      '5.11';
+        is $c->take_profit->{date}->epoch, $now->epoch;
+
+        delete $args->{limit_order};
+    };
+
+    subtest 'unset take profit with proper hit tick parameters' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [1763.00, $epoch,     $symbol],
+            [1764.00, $epoch + 1, $symbol],
+            [1762.00, $epoch + 2, $symbol],
+            [1761.00, $epoch + 3, $symbol],    # this would have hit the barrier with 0 take profit
+        );
+        $args->{limit_order} = {
+            take_profit => {
+                order_amount => undef,
+                order_date   => $now->epoch,
+            }};
+        $args->{date_pricing} = $now->epoch + 30;
+        delete $args->{duration};
+        $args->{date_expiry} = $now->epoch + 120;
+        $c = produce_contract($args);
+        ok $c->take_profit,            'take profit is defined';
+        ok !$c->take_profit->{amount}, 'take profit amount is undef';
+        ok !$c->is_expired,            'not expired';
+    };
+
+    subtest 'take profit lookup date' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [1763.00, $epoch,     $symbol],
+            [1725.00, $epoch + 1, $symbol],    # this would have hit the barrier with 10 take profit
+            [1762.00, $epoch + 2, $symbol],
+            [1761.00, $epoch + 3, $symbol],
+        );
+        $args->{limit_order} = {
+            take_profit => {
+                order_amount => 10,
+                order_date   => $epoch,
+            }};
+        $args->{date_pricing} = $now->epoch + 30;
+        $c = produce_contract($args);
+        ok $c->take_profit, 'take profit is defined';
+        is $c->take_profit->{amount},     10,               'take profit amount is 10';
+        is $c->take_profit_barrier_value, 1726.32577607076, 'take profit barrier value is 1726.32577607076';
+        ok $c->is_expired, 'expired when take profit is set at ' . $epoch;
+
+        $args->{limit_order} = {
+            take_profit => {
+                order_amount => 10,
+                order_date   => $epoch + 2,
+            }};
+        $c = produce_contract($args);
+        ok $c->take_profit, 'take profit is defined';
+        is $c->take_profit->{amount},     10,               'take profit amount is 10';
+        is $c->take_profit_barrier_value, 1726.32577607076, 'take profit barrier value is 1726.32577607076';
+        ok !$c->is_expired, 'not expired when take profit is set at ' . $c->take_profit->{date}->epoch;
+    };
+};
+
 done_testing();

@@ -128,20 +128,14 @@ sub _contract_price {
 
 =head2 _hit_conditions_barrier
 
-get the barrier details to get the breaching tick
+returns barrier details to get the breaching tick
 
 =cut
 
 sub _hit_conditions_barrier {
     my $self = shift;
 
-    my %barriers = (lower => $self->barrier->as_absolute);
-
-    if (defined $self->take_profit) {
-        $barriers{higher} = $self->underlying->pipsized_value($self->take_profit_barrier_value);
-    }
-
-    return %barriers;
+    return lower => $self->barrier->as_absolute;
 }
 
 =head2 take_profit_side

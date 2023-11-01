@@ -614,7 +614,11 @@ override _build_tick_stream => sub {
 
 =head2 _build_hit_tick
 
-initializing hit_tick attribute
+Turbos expires worthless if barrier is breached.
+
+If take profit is defined, turbos expires with profit when take profit value is breached.
+
+Returns a tick that breached either of the contract conditions, else returns undef.
 
 =cut
 
@@ -622,6 +626,19 @@ sub _build_hit_tick {
     my $self = shift;
 
     return undef unless $self->entry_tick;
+    return $self->_hit_barrier     if $self->_hit_barrier;
+    return $self->_hit_take_profit if $self->_hit_take_profit;
+    return undef;
+}
+
+=head2 _hit_barrier
+
+Returns the tick if barrier is breached, else returns undef.
+
+=cut
+
+sub _hit_barrier {
+    my $self = shift;
 
     # date_start + 1 applies for all expiry type (tick, intraday & multi-day). Basically the first tick
     # that comes into play is the tick after the contract start time, not at the contract start time.
@@ -634,6 +651,30 @@ sub _build_hit_tick {
     );
 
     return $self->_tick_accessor->breaching_tick(%hit_conditions);
+}
+
+=head2 _hit_take_profit
+
+Returns the tick if take profit is breached, else returns undef.
+
+=cut
+
+sub _hit_take_profit {
+    my $self = shift;
+
+    if (defined $self->take_profit and $self->take_profit->{amount}) {
+        my $start_time     = Date::Utility->new($self->take_profit->{date})->epoch + 1;
+        my $end_time       = max($start_time, min($self->date_pricing->epoch, $self->date_expiry->epoch));
+        my %hit_conditions = (
+            start_time              => $start_time,
+            end_time                => $end_time,
+            $self->take_profit_side => $self->underlying->pipsized_value($self->take_profit_barrier_value),
+        );
+
+        return $self->_tick_accessor->breaching_tick(%hit_conditions);
+    }
+
+    return undef;
 }
 
 =head2 ticks_to_expiry

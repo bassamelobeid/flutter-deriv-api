@@ -135,13 +135,7 @@ get the barrier details to get the breaching tick
 sub _hit_conditions_barrier {
     my $self = shift;
 
-    my %barriers = (higher => $self->barrier->as_absolute);
-
-    if (defined $self->take_profit) {
-        $barriers{lower} = $self->underlying->pipsized_value($self->take_profit_barrier_value);
-    }
-
-    return %barriers;
+    return higher => $self->barrier->as_absolute;
 }
 
 =head2 take_profit_side
