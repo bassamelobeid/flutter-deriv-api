@@ -2108,6 +2108,15 @@ system:
                       isa: Bool
                       default: 0
                       global: 1
+        sync_user_with_mt5:
+          description: "Configuration for sync user with mt5 process"
+          isa: section
+          contains:
+            mt5_limit:
+              description: "The maximum binary user ids that the script can process for dmt5 accounts"
+              isa: Num
+              default: 10000
+              global: 1
     dxtrade:
       description: "Configuration for DXTrade"
       isa: section
