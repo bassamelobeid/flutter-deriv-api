@@ -59,7 +59,8 @@ sub from_mojo {
     $args->{domain_name} = $request->url->to_abs->host;
 
     my ($custom_header_country) = $request->headers->header('X-Client-Country') || '' =~ m/^([a-z]{2})$/i;
-    my $client_country = lc($custom_header_country || $request->headers->header('CF-IPCOUNTRY') || 'aq');
+    my $client_country =
+        lc($custom_header_country || $request->headers->header('CF-IPCOUNTRY') || $request->headers->header('CloudFront-Viewer-Country') || 'aq');
     $client_country = 'aq' if ($client_country eq 'xx');
     $args->{country_code} = $client_country;
 

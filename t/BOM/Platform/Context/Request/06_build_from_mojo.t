@@ -78,6 +78,8 @@ subtest 'client IP address' => sub {
             my ($self, $hdr) = @_;
             $headers{$hdr};
         });
+    $obj->mock(url    => sub { Mojo::URL->new('https://www.binary.com/') });
+    $obj->mock(method => sub { 'GET' });
     $obj->set_always(env     => \%headers);
     $obj->set_always(headers => $hdr);
 
@@ -111,6 +113,29 @@ subtest 'client IP address' => sub {
             is($code->($obj), $ip, "set $ip via CF-Connecting-IP, it overrides X-Forwarded-For");
         }
     }
+
+    ok($code = BOM::Platform::Context::Request::Builders->can('from_mojo'), 'have our _remote_ip sub');
+
+    for my $country (qw(my ru)) {
+        {
+            local $headers{'CF-IPCOUNTRY'} = $country;
+            is($code->({mojo_request => $obj})->country_code, $country, "set country via CF-IPCOUNTRY");
+        }
+        {
+            local $headers{'CloudFront-Viewer-Country'} = $country;
+            is($code->({mojo_request => $obj})->country_code, $country, "set country via CloudFront-Viewer-Country");
+        }
+
+        {
+            local $headers{'CloudFront-Viewer-Country'} = 'xx';
+            is($code->({mojo_request => $obj})->country_code, 'aq', "set country via CloudFront-Viewer-Country");
+        }
+        {
+            local $headers{'CF-IPCOUNTRY'} = 'xx';
+            is($code->({mojo_request => $obj})->country_code, 'aq', "set country via CloudFront-Viewer-Country");
+        }
+    }
+
     done_testing;
 };
 
