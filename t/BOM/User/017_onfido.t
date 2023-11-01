@@ -848,6 +848,95 @@ subtest 'get consider reasons' => sub {
             $check      = $test->{check};
             cmp_deeply(BOM::User::Onfido::reported_properties($test_client), $test->{reported}, 'Expected reported properties seen');
         }
+        $onfido_mock->unmock_all;
+    };
+
+    subtest 'update full name based on Onfido reported properties' => sub {
+        my $check;
+        my $properties;
+        my $reported;
+
+        $onfido_mock->mock(
+            'get_latest_onfido_check',
+            sub {
+                return $check;
+            });
+
+        $onfido_mock->mock(
+            'get_all_onfido_reports',
+            sub {
+                return {
+                    DOC => {
+                        result     => 'clear',
+                        api_name   => 'document',
+                        properties => encode_json_utf8($properties),
+                    }};
+            });
+
+        $test_client->first_name('Elian');
+        $test_client->last_name('Valenzuela');
+
+        $check = {
+            id => 'test',
+        };
+
+        #case when the properties are missing
+
+        $properties = {
+            first_name => '',
+            last_name  => '',
+        };
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 0, 'Missing properties in passed args';
+
+        #case when the first name and last name are different
+
+        $properties = {
+            first_name => 'ELIAN ANGEL',
+            last_name  => 'VALENZUELA TURRO',
+        };
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 1,                  'executed successfully';
+        is $test_client->first_name,                                                   'Elian Angel',      'first name updated';
+        is $test_client->last_name,                                                    'Valenzuela Turro', 'last name updated';
+
+        #case when the first name and last name are inverted
+
+        $test_client->first_name('valenzuela');
+        $test_client->last_name('elian angel');
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 1,                  'executed successfully';
+        is $test_client->first_name,                                                   'Elian Angel',      'first name updated';
+        is $test_client->last_name,                                                    'Valenzuela Turro', 'last name updated';
+
+        #case when first name is equal but last name is not
+
+        $test_client->first_name('elian angel');
+        $test_client->last_name('valen');
+
+        $properties = {
+            first_name => 'ELIAN ANGEL',
+            last_name  => 'VALENZUELA TURRO',
+        };
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 1,                  'executed successfully';
+        is $test_client->first_name,                                                   'elian angel',      'first name not updated';
+        is $test_client->last_name,                                                    'Valenzuela Turro', 'last name updated';
+
+        #case when last name is equal but first name is not
+
+        $test_client->first_name('angel');
+        $test_client->last_name('valenzuela turro');
+
+        $properties = {
+            first_name => 'ELIAN ANGEL',
+            last_name  => 'VALENZUELA TURRO',
+        };
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 1,                  'executed successfully';
+        is $test_client->first_name,                                                   'Elian Angel',      'first name updated';
+        is $test_client->last_name,                                                    'valenzuela turro', 'last name not updated';
+
     };
 
     subtest 'Get our own rules reasons (Name Mismatch)' => sub {

@@ -827,12 +827,50 @@ sub reported_properties {
     return +{map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } $fields->@*};
 }
 
+=head2 update_full_name_from_reported_properties
+
+Compares the client document's detected properties, from the last Onfido check,
+with the client's first name and last name and updates this data if there are any differences.
+
+=over 4
+
+=item * C<$client> - the L<BOM::User::Client> instance.
+
+=back
+
+Returns 1 on success or 0 if first name or last name is missing on reported properties.
+
+=cut
+
+sub update_full_name_from_reported_properties {
+    my ($client) = @_;
+    my $properties = reported_properties($client);
+
+    return 0 unless $properties->{first_name} && $properties->{last_name};
+
+    my $first_name_client = lc($client->first_name);
+    my $last_name_client  = lc($client->last_name);
+    my $first_name_report = lc($properties->{first_name});
+    my $last_name_report  = lc($properties->{last_name});
+
+    if ($first_name_client ne $first_name_report) {
+        $client->first_name(join(" ", map { ucfirst($_) } split(/\s+/, $first_name_report)));
+    }
+
+    if ($last_name_client ne $last_name_report) {
+        $client->last_name(join(" ", map { ucfirst($_) } split(/\s+/, $last_name_report)));
+    }
+    $client->save;
+
+    return 1;
+}
+
 =head2 ready_for_authentication
 
 Fires the infamous event to perform the applicant check request.
 
 This function will also take care of counter increasing and everything
-the the frontend may need to properly render the POI page.
+the frontend may need to properly render the POI page.
 
 It takes:
 
