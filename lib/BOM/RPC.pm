@@ -194,14 +194,7 @@ sub wrap_rpc_sub {
 
                 my $error_msg = "Exception when handling $method" . (defined $params->{client} ? " for $params->{client}." : '.');
 
-                if (   $ENV{LOG_DETAILED_EXCEPTION}
-                    or exists $params->{logging}{all}
-                    or exists $params->{logging}{method}{$method}
-                    or exists $params->{logging}{loginid}{$params->{token_details}{loginid} // ''}
-                    or exists $params->{logging}{app_id}{$params->{source} // ''})
-                {
-                    $error_msg .= " $error";
-                }
+                $error_msg .= " $error";
                 warn $error_msg;
 
                 log_exception(sprintf('%s::%s', $def->caller, $def->name));
