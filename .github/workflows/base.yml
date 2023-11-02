@@ -5,8 +5,14 @@ on:
     inputs:
       repository:
         description: 'Repository name for running tests'
-        required: true
-        type: string 
+        required: false
+        default: regentmarkets/bom-backoffice
+        type: string
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
@@ -14,7 +20,7 @@ jobs:
   core_unit_syntax_diff:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
