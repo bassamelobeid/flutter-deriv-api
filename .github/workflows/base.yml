@@ -5,8 +5,14 @@ on:
     inputs:
       repository:
         description: 'Repository name for running tests'
-        required: true
-        type: string  
+        required: false
+        default: regentmarkets/bom-rpc
+        type: string
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
@@ -15,7 +21,7 @@ jobs:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -39,7 +45,7 @@ jobs:
   syntax_diff_unit: 
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -67,7 +73,7 @@ jobs:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -94,7 +100,7 @@ jobs:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
