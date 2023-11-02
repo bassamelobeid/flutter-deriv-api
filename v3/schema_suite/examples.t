@@ -20,12 +20,8 @@ subtest 'Examples match the send schema' => sub {
     for my $call_name (path($SCHEMA_DIR)->children) {
         my $send_schema = path("$call_name/send.json")->slurp_utf8;
         my $validator   = JSON::Validator->new()->schema($json->decode($send_schema));
+        $validator->schema->coerce('booleans,numbers,strings');
 
-        $validator->coerce(
-            booleans => 1,
-            numbers  => 1,
-            strings  => 1
-        );
         my $example = path("$call_name/example.json")->slurp_utf8;
         my $request = $json->decode($example);
         my @error   = $validator->validate($request);

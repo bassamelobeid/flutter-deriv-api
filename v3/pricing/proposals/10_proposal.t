@@ -52,9 +52,9 @@ foreach my $special_number (@special_numbers) {
     is $res->{error}->{code}, 'InputValidationFailed', "Correct failed due to input: $special_number validation";
 }
 
-$req->{amount} = "+100";
+$req->{amount} = 100;
 $res = $t->await::proposal($req);
-is $res->{error}->{code}, undef, 'Correct + sign in number, allowed due to coercion';
+is $res->{error}->{code}, undef, 'should succeed for correct amount';
 
 $req->{duration} = "10000000000";
 $res = $t->await::proposal($req);

@@ -82,13 +82,8 @@ foreach my $f (grep { -d } glob "$v/*") {
         kill TERM => $pid;
     }
     $str = path("$f/receive.json")->slurp_utf8;
-    my $validator = JSON::Validator->new($json->decode($str));
-    $validator->schema($json->decode($str));
-    $validator->coerce(
-        booleans => 1,
-        numbers  => 1,
-        strings  => 1
-    );
+    my $validator = JSON::Validator->new()->schema($json->decode($str));
+    $validator->schema->coerce('booleans,numbers,strings');
     my @result = $validator->validate($json->decode(Encode::decode_utf8($t->message->[1])));
     ok !@result, "$f response is valid";
     if (@result) { print " - $_\n" foreach @result; print Dumper($json->decode($t->message->[1])) }

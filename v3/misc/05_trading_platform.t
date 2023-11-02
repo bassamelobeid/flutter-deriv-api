@@ -197,6 +197,7 @@ subtest 'transfers' => sub {
         currency                  => 'USD',
     });
 
+    diag $res unless $res->{accounts};
     cmp_deeply(
         $res->{accounts},
         bag({
