@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 use strict;
 use warnings;
 
@@ -24,11 +24,13 @@ Queue monitoring script.
 =head1 SYNOPSIS
 
     perl queue_monitor.pl [--server rpc] [--redis redis://...]  [--stream general] [--stream multiple_stream...]
-    
+
 =cut
 
-use constant XRANGE_BATCH_LIMIT       => 200;
-use constant REDIS_CONNECTION_TIMEOUT => 5;
+use constant XRANGE_BATCH_LIMIT         => 200;
+use constant REDIS_CONNECTION_TIMEOUT   => 5;
+use constant MONITOR_FAILURE_TTL        => 1800;
+use constant MONITOR_FAILURE_KEY_PREFIX => 'MONITOR_FAILURE_';
 
 my %REDIS_SERVER_DEFAULT = (
     events => {
@@ -52,12 +54,16 @@ die "Invalid Redis server" unless any { $server eq $_ } keys %REDIS_SERVER_DEFAU
 my $redis_config = BOM::Config::Redis::redis_config($server, 'read');
 $redis_uri //= $redis_config->{uri};
 
+my $redis_write_config = BOM::Config::Redis::redis_config($server, 'write');
+my $redis_write_uri    = $redis_write_config->{uri};
+
 $streams          //= [$REDIS_SERVER_DEFAULT{$server}->{DEFAULT_STREAM}] or die "DEFAULT_STREAM is missing.";
 my $METRIC_PREFIX //= $REDIS_SERVER_DEFAULT{$server}->{METRIC_PREFIX}    or die "METRIC_PREFIX is missing.";
 
 $log->info("Start running $server" . "_queue_monitor");
 my $loop = IO::Async::Loop->new;
-$loop->add(my $redis = Net::Async::Redis->new(uri => $redis_uri, auth => $redis_config->{password}));
+$loop->add(my $redis       = Net::Async::Redis->new(uri => $redis_uri,       auth => $redis_config->{password}));
+$loop->add(my $redis_write = Net::Async::Redis->new(uri => $redis_write_uri, auth => $redis_write_config->{password}));
 
 =head2 compare_id
 
@@ -145,8 +151,22 @@ async sub group_metrics {
 
     my $redis_response;
     try {
+        # Only retry a failed stream once the TTL time has passed
+        return if await $redis->get(MONITOR_FAILURE_KEY_PREFIX . $stream);
+
         ($redis_response) = await $redis->xinfo(GROUPS => $stream);
     } catch ($e) {
+        # Key has not yet been created, this is mostly for QA since
+        # some services may not be started
+        if ($e =~ /no such key/) {
+            await $redis_write->set(
+                MONITOR_FAILURE_KEY_PREFIX . $stream => 1,
+                EX                                   => MONITOR_FAILURE_TTL
+            );
+            $log->warnf("Stream $stream key has not yet been stored in the redis instance, the related service may not be running");
+            return;
+        }
+
         die "stream: $stream, error: $e";
     }
 
