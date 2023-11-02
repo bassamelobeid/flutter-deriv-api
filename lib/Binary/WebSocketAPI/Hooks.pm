@@ -797,16 +797,11 @@ Returns an HashRef on error or undef if no error
 
 sub _validate_schema_error {
     my ($schema, $args) = @_;
-    my $validator = JSON::Validator->new();
-    my @errors;
+    my $validator = JSON::Validator->new()->schema($schema);
     # This statement will coerce items like "1" into a integer this allows for better compatibility with the existing schema
-    $validator->coerce(
-        booleans => 1,
-        numbers  => 1,
-        strings  => 1
-    );
+    $validator->schema->coerce('booleans,numbers,strings');
 
-    @errors = $validator->schema($schema)->validate($args);
+    my @errors = $validator->validate($args);
     return undef unless scalar(@errors);    #passed Version 4 Check
 
     my (%details, @general);
