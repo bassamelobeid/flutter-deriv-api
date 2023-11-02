@@ -237,6 +237,9 @@ rpc trading_platform_new_account => sub {
             rule_engine => BOM::Rules::Engine->new(client => $client),
         );
 
+        # Deiv-Ez termination process has been initiated
+        die +{code => 'DerivEZUnavailable'} if $params->{args}{platform} eq 'derivez';
+
         my $account = $platform->new_account($params->{args}->%*);
 
         BOM::Platform::Event::Emitter::emit(

@@ -136,6 +136,7 @@ my %category_message_mapping = do {
         DerivEZInvalidLandingCompany  => localize('This Deriv EZ account has an invalid Landing Company.'),
         DerivEZMissingID              => localize('Your Deriv EZ login ID is missing. Please check the details and try again.'),
         DerivEZInvalidAccountCurrency => localize('Invalid Deriv EZ account currency. Please check the details and try again.'),
+        DerivEZUnavailable            => localize("Deriv EZ platform is not available."),
         TradingPlatformInvalidAccount => localize("This [_1] account is not available for your account."),
     );
 };

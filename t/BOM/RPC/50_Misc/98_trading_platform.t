@@ -728,4 +728,31 @@ subtest 'trading_platform_available_accounts' => sub {
     $mock_config->unmock_all;
 };
 
+subtest 'disable derivez account creation api call' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', residence => 'id'});
+
+    BOM::User->create(
+        email    => 'derivez_account_disable@test.com',
+        password => 'test'
+    )->add_client($client);
+    $client->account('USD');
+
+    $c->call_ok('trading_platform_new_account', {})->has_no_system_error->has_error->error_code_is('InvalidToken', 'must be logged in');
+
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            platform    => 'derivez',
+            company     => 'svg',
+            currency    => 'USD',
+            market_type => 'all'
+        }};
+
+    my $result = $c->call_ok('trading_platform_new_account', $params)
+        ->has_no_system_error->has_error->error_code_is('DerivEZUnavailable', 'derivez new account disable');
+};
+
 done_testing();
