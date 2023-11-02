@@ -5,8 +5,14 @@ on:
     inputs:
       repository:
         description: 'Repository name for running tests'
-        required: true
+        required: false
+        default: regentmarkets/binary-websocket-api
         type: string 
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
@@ -14,7 +20,7 @@ jobs:
   structure:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -40,7 +46,7 @@ jobs:
   accounts:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -64,7 +70,7 @@ jobs:
   security:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -88,7 +94,7 @@ jobs:
   pricing:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -112,7 +118,7 @@ jobs:
   misc:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -136,7 +142,7 @@ jobs:
   p2p:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -160,7 +166,7 @@ jobs:
   schema:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -184,7 +190,7 @@ jobs:
   subscriptions:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -208,7 +214,7 @@ jobs:
   backends:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -233,7 +239,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
