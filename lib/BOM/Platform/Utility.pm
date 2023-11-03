@@ -573,7 +573,7 @@ sub status_op_processor {
     $status_checked = [$status_checked] unless ref($status_checked);
     my $client_status_type = $args->{untrusted_action_type};
     my $reason             = $args->{reason};
-    my $clerk              = $args->{clerk} // BOM::Backoffice::Auth0::get_staffname();
+    my $clerk              = $args->{clerk};
     my $status_map         = {
         disabledlogins            => 'disabled',
         lockcashierlogins         => 'cashier_locked',
