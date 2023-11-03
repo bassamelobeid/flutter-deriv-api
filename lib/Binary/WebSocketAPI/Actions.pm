@@ -725,6 +725,7 @@ sub actions_config {
             }
         ],
         ['wallet_migration'],
+        ['trading_platform_leverage'],
     ];
 }
 
