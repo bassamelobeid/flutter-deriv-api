@@ -33,7 +33,7 @@ BrokerPresentation("COMPLIANCE DASHBOARD");
 my $now = Date::Utility->new;
 
 my ($thresholds, $jurisdiction_rating, $npj_countries_list);
-my $thresholds_readonly = not BOM::Backoffice::Auth0::has_authorisation(['IT']);
+my $thresholds_readonly = not BOM::Backoffice::Auth::has_authorisation(['IT']);
 my $compliance_config   = BOM::Config::Compliance->new;
 
 my $what_to_do  = request()->param('whattodo') // '';
@@ -41,7 +41,7 @@ my $action_name = request()->param('action')   // '';
 
 use Log::Any qw($log);
 
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $staff = BOM::Backoffice::Auth::get_staffname();
 
 if ($what_to_do eq "NPJ") {
 
@@ -178,7 +178,7 @@ if (!$thresholds_readonly && $what_to_do =~ qr/^save_thresholds_(\w+)_(\w+)$/) {
 sub _generate_dcc_code {
     my ($data) = shift;
 
-    my $staff = BOM::Backoffice::Auth0::get_staffname();
+    my $staff = BOM::Backoffice::Auth::get_staffname();
 
     my $code = BOM::DualControl->new({
             staff           => $staff,
@@ -208,7 +208,7 @@ sub _validate_dcc_code {
 
     my ($code, $data) = @_;
 
-    my $staff = BOM::Backoffice::Auth0::get_staffname();
+    my $staff = BOM::Backoffice::Auth::get_staffname();
 
     if ($code eq "") {
         print "<p class=\"error\">Error: DCC can not be empty </p>";

@@ -30,7 +30,7 @@ PrintContentType();
 BrokerPresentation('I.V. DATABASE');
 my $broker = request()->broker_code;
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 my $disabled       = $disabled_write ? "disabled title='no write access' class='btn btn--disabled'" : "class='btn btn--primary'";
 
 Bar("Update volatilities");

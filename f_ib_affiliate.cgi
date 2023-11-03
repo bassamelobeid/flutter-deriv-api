@@ -24,9 +24,9 @@ BOM::Backoffice::Sysinit::init();
 
 my $input = request()->params;
 
-my $clerk = BOM::Backoffice::Auth0::get_staffname() // '';
+my $clerk = BOM::Backoffice::Auth::get_staffname() // '';
 
-code_exit_BO('ACCESS DENIED: This page only for Marketing Team') unless BOM::Backoffice::Auth0::has_authorisation(['Marketing']);
+code_exit_BO('ACCESS DENIED: This page only for Marketing Team') unless BOM::Backoffice::Auth::has_authorisation(['Marketing']);
 
 PrintContentType();
 

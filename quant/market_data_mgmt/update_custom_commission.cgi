@@ -9,11 +9,11 @@ use lib  qw(/home/git/regentmarkets/bom-backoffice);
 use JSON::MaybeXS;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::QuantsAuditLog;
 BOM::Backoffice::Sysinit::init();
 my $json  = JSON::MaybeXS->new;
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $staff = BOM::Backoffice::Auth::get_staffname();
 
 my $args = {
     staff             => $staff,

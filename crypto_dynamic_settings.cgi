@@ -4,7 +4,7 @@ package main;
 use strict;
 use warnings;
 
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::Utility      qw(master_live_server_error);
@@ -44,7 +44,7 @@ if ($action && $action eq 'update_settings') {
             body   => {
                 revision   => $revision,
                 settings   => $settings,
-                staff_name => BOM::Backoffice::Auth0::get_staffname(),
+                staff_name => BOM::Backoffice::Auth::get_staffname(),
             },
         );
     }

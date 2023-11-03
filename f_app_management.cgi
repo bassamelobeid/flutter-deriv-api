@@ -9,7 +9,7 @@ use f_brokerincludeall;
 use BOM::Config;
 use BOM::Config::Runtime;
 use Format::Util::Strings qw( set_selected_item );
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use LandingCompany;
 use Mojo::Redis2;
@@ -103,7 +103,7 @@ sub get_blocked_app_operation_domain {
 }
 
 # Check if a staff is logged in
-BOM::Backoffice::Auth0::get_staff();
+BOM::Backoffice::Auth::get_staff();
 
 my $action = request()->param('action');
 if ($action and $action eq 'BLOCK APP') {
@@ -141,7 +141,7 @@ if ($action and $action eq 'BLOCK APP') {
 }
 
 # deactivate app
-if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
     Bar(
         'Deactivate app',
         {
@@ -158,7 +158,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 }
 
 # activate app
-if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
     Bar(
         'Activate app',
         {
@@ -175,7 +175,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 }
 
 # block app using certain operation domain
-if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
     Bar(
         'Block apps',
         {

@@ -29,7 +29,7 @@ my $q = CGI->new;
 
 my $input                   = request()->params;
 my $broker_code             = $input->{client_type} // 'CR';
-my $clerk                   = BOM::Backoffice::Auth0::get_staffname();
+my $clerk                   = BOM::Backoffice::Auth::get_staffname();
 my $client_db               = BOM::Database::ClientDB->new({broker_code => $broker_code})->db->dbic->dbh;
 my $show_success_message    = 0;
 my $number_of_rows          = 0;

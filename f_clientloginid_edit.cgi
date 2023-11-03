@@ -273,7 +273,7 @@ if (defined $input{run_idv_check}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
-my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
+my $is_compliance = BOM::Backoffice::Auth::has_authorisation(['Compliance']);
 
 if (defined $input{request_risk_screen}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo; This feature is for real accounts only.<a/></p>])
@@ -527,7 +527,7 @@ if ($input{resubmit_proof_of_ownership}) {
     }
 }
 
-if (BOM::Backoffice::Auth0::has_authorisation(['AntiFraud', 'CS'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['AntiFraud', 'CS'])) {
     # access granted
     my $poo_requests = {};
 
@@ -937,12 +937,12 @@ if ($input{whattodo} eq 'save_edd_status') {
                 }
 
             } elsif (any { $_ eq $edd_status } qw(in_progress pending)) {
-                $client_to_update->status->setnx('unwelcome', BOM::Backoffice::Auth0::get_staffname(), $unwelcome_reason);
+                $client_to_update->status->setnx('unwelcome', BOM::Backoffice::Auth::get_staffname(), $unwelcome_reason);
                 if ($client_to_update->status->reason('disabled') eq $disabled_reason) {
                     $client_to_update->status->clear_disabled();
                 }
             } elsif (any { $_ eq $edd_status } qw(failed)) {
-                $client_to_update->status->setnx('disabled', BOM::Backoffice::Auth0::get_staffname(), $disabled_reason);
+                $client_to_update->status->setnx('disabled', BOM::Backoffice::Auth::get_staffname(), $disabled_reason);
                 if ($client_to_update->status->reason('unwelcome') eq $unwelcome_reason) {
                     $client_to_update->status->clear_unwelcome();
                 }
@@ -1125,7 +1125,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
     # client promo_code related fields
     if (exists $input{promo_code}) {
-        if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+        if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
 
             if (my $promo_code = uc $input{promo_code}) {
                 my $encoded_promo_code = encode_entities($promo_code);
@@ -1405,7 +1405,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                 $cli->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
                     if ($input{$key} ne $secret_answer);
 
-            } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth0::has_authorisation(['Compliance'])) {
+            } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth::has_authorisation(['Compliance'])) {
                 $cli->aml_risk_classification($input{$key});
                 _update_mt5_status($client);
             } elsif ($key eq 'mifir_id'
@@ -1557,7 +1557,7 @@ if (@client_comments) {
             comments  => [@client_comments],
             loginid   => $client->loginid,
             csrf      => BOM::Backoffice::Form::get_csrf_token(),
-            is_hidden => BOM::Backoffice::Auth0::has_authorisation(['CS']),
+            is_hidden => BOM::Backoffice::Auth::has_authorisation(['CS']),
         });
     print qq~<br><a class="link" href="$comments_url">Add a new comment / View full list</a>~;
 }
@@ -1623,7 +1623,7 @@ print "<p><a id='self-exclusion' class=\"btn btn--primary\" href=\""
     }) . "\">Configure self-exclusion settings</a> <strong>for $encoded_loginid</strong></p>";
 
 # show restricted-access fields of regulated landing company clients (accessible for compliance staff only)
-if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']) and $client->landing_company->is_eu) {
+if (BOM::Backoffice::Auth::has_authorisation(['Compliance']) and $client->landing_company->is_eu) {
     print '<a id="self-exclusion_restricted" class="btn btn--primary" href="'
         . request()->url_for(
         'backoffice/f_setting_selfexclusion_restricted.cgi',

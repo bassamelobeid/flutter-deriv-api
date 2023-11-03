@@ -9,7 +9,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::Sysinit      ();
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 BOM::Backoffice::Sysinit::init();
 
 use Scalar::Util             qw(looks_like_number);
@@ -26,15 +26,15 @@ PrintContentType();
 
 BrokerPresentation('PAYMENTS DYNAMIC SETTINGS');
 
-my $clerk      = BOM::Backoffice::Auth0::get_staffname();
+my $clerk      = BOM::Backoffice::Auth::get_staffname();
 my %input      = request()->params->%*;
 my $app_config = BOM::Config::Runtime->instance->app_config;
 my $error;
 my $message;
 my $payment_limits;
 my $roles = {
-    payments   => BOM::Backoffice::Auth0::has_authorisation(['Payments']),
-    anti_fraud => BOM::Backoffice::Auth0::has_authorisation(['AntiFraud']),
+    payments   => BOM::Backoffice::Auth::has_authorisation(['Payments']),
+    anti_fraud => BOM::Backoffice::Auth::has_authorisation(['AntiFraud']),
 };
 
 code_exit_BO('<p class="error"><b>Access denied</b></p>')

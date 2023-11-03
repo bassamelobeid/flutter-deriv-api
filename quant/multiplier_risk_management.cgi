@@ -44,7 +44,7 @@ foreach my $landing_company (keys %{$lc_yml}) {
     push @landing_companies_short, $lc_yml->{$landing_company}->{"short"};
 }
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 BOM::Backoffice::Request::template()->process(
     'backoffice/multiplier_profile_definitions.html.tt',
     {

@@ -15,7 +15,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Bloomberg::FileDownloader;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsAuditLog;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -24,7 +24,7 @@ BrokerPresentation('BBDL UPLOAD');
 my $cgi      = CGI->new;
 my $filename = $cgi->param('filename');
 my $content  = $cgi->param('bbdl_file_content');
-my $staff    = BOM::Backoffice::Auth0::get_staffname();
+my $staff    = BOM::Backoffice::Auth::get_staffname();
 
 my $title = 'Upload a file to BBDL';
 

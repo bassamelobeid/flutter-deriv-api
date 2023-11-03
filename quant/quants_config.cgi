@@ -33,7 +33,7 @@ my $args_content;
 PrintContentType();
 BrokerPresentation('Quants Risk Management Tool');
 
-my $staff  = BOM::Backoffice::Auth0::get_staffname();
+my $staff  = BOM::Backoffice::Auth::get_staffname();
 my $r      = request();
 my $broker = $r->broker_code;
 
@@ -46,7 +46,7 @@ my $quants_config    = BOM::Database::QuantsConfig->new();
 my $supported_config = $quants_config->supported_config_type;
 my @config_status    = BOM::Backoffice::QuantsConfigHelper::get_global_config_status();
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
 Bar('Quants Config Switch');
 

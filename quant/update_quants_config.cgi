@@ -8,7 +8,7 @@ use warnings;
 use Date::Utility;
 use JSON::MaybeXS;
 use f_brokerincludeall;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
@@ -23,7 +23,7 @@ use Storable                          qw(dclone);
 
 BOM::Backoffice::Sysinit::init();
 my $json       = JSON::MaybeXS->new;
-my $staff      = BOM::Backoffice::Auth0::get_staffname();
+my $staff      = BOM::Backoffice::Auth::get_staffname();
 my $app_config = BOM::Config::Runtime->instance->app_config;
 
 if (request()->param('save_limit')) {
@@ -156,7 +156,7 @@ sub _format_email_for_config_value_change {
     my %args       = @_;
     my $limit_type = $args{limit_type} =~ s/_/ /gr =~ s/\b(\w)/\U$1/gr;
 
-    my $staff    = BOM::Backoffice::Auth0::get_staffname();
+    my $staff    = BOM::Backoffice::Auth::get_staffname();
     my $datetime = Date::Utility->new->datetime;
 
     my $message = "\
@@ -173,7 +173,7 @@ sub _format_email_for_config_value_change {
 sub _format_email_for_config_switch {
     my %args = @_;
 
-    my $staff    = BOM::Backoffice::Auth0::get_staffname();
+    my $staff    = BOM::Backoffice::Auth::get_staffname();
     my $datetime = Date::Utility->new->datetime;
     my $status   = $args{limit_status} ? "On" : "Off";
     my $limit    = $args{limit_type} =~ s/\_/ /gr =~ s/\b(\w)/\U$1/gr;
@@ -212,7 +212,7 @@ sub _format_email_for_limit {
         }
     }
 
-    my $staff = BOM::Backoffice::Auth0::get_staffname();
+    my $staff = BOM::Backoffice::Auth::get_staffname();
     # cleanup args
     for my $key (keys %args) {
         $args{$key} = !$args{$key} || $args{$key} eq 'default' ? '-' : $args{$key};

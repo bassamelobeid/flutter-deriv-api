@@ -13,7 +13,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('RESCIND FREE GIFTS');
 
-my $clerk  = BOM::Backoffice::Auth0::get_staffname();
+my $clerk  = BOM::Backoffice::Auth::get_staffname();
 my $broker = request()->broker_code;
 
 my $inactivedays = request()->param('inactivedays');

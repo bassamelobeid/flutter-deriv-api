@@ -90,7 +90,7 @@ sub handle_request {
     my ($client, $action, $status_code) = @_;
 
     if ($action eq 'copy') {
-        my $updated_client_loginids = $client->copy_status_to_siblings($status_code, BOM::Backoffice::Auth0::get_staffname());
+        my $updated_client_loginids = $client->copy_status_to_siblings($status_code, BOM::Backoffice::Auth::get_staffname());
 
         my @notifications = map {
             my $sibling = $_;

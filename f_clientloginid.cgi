@@ -19,7 +19,7 @@ PrintContentType();
 BrokerPresentation("CLIENT LOGINID ADMIN");
 
 my $broker = request()->broker_code;
-my $clerk  = BOM::Backoffice::Auth0::get_staffname();
+my $clerk  = BOM::Backoffice::Auth::get_staffname();
 
 if ($broker eq 'FOG') {
     $broker = request()->broker_code;
@@ -126,7 +126,7 @@ BOM::Backoffice::Request::template()->process(
         edit_url                => request()->url_for('backoffice/bulk_aml_risk.cgi'),
         loginids                => request()->param('risk_loginids') // '',
         aml_risk_levels         => [get_aml_risk_classicications()],
-        disabled                => not BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
+        disabled                => not BOM::Backoffice::Auth::has_authorisation(['Compliance']),
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 # Monitor client lists
@@ -170,7 +170,7 @@ print qq~
 print '<input type="submit" class="btn btn--primary" value="Submit">';
 print "</form>";
 
-if (BOM::Backoffice::Auth0::has_authorisation(['CS', 'Compliance', 'CostControl', 'IDV'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['CS', 'Compliance', 'CostControl', 'IDV'])) {
     Bar("IDV DASHBOARD");
 
     my $filter_data = BOM::Backoffice::IdentityVerification::get_filter_data();

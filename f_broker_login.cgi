@@ -10,7 +10,7 @@ use Finance::Underlying::Market::Registry;
 use f_brokerincludeall;
 use BOM::Config;
 use BOM::Config::Runtime;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::CommissionTool;
 use LandingCompany::Registry;
@@ -19,7 +19,7 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 # Check if a staff is logged in
-my $staff = BOM::Backoffice::Auth0::get_staff();
+my $staff = BOM::Backoffice::Auth::get_staff();
 PrintContentType();
 
 my $broker = request()->broker_code;
@@ -73,7 +73,7 @@ my $pa_brokerselection = 'Broker code : '
     );
 
 # TRANSACTION REPORTS
-if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -90,7 +90,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
 }
 
 # ACCOUNTING REPORTS
-if (BOM::Backoffice::Auth0::has_authorisation(['AccountsLimited', 'AccountsAdmin'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['AccountsLimited', 'AccountsAdmin'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -107,7 +107,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['AccountsLimited', 'AccountsAdmin
 }
 
 # MANUAL input OF DEPOSITS & WITHDRAWALS
-if (BOM::Backoffice::Auth0::has_authorisation(['Payments', 'AccountsLimited', 'AccountsAdmin'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Payments', 'AccountsLimited', 'AccountsAdmin'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -124,7 +124,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Payments', 'AccountsLimited', 'A
 }
 
 # CLIENT DETAILS RECORDS
-if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {
     print qq~
         <div class="card">
             <div class="card__label toggle">
@@ -151,7 +151,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
         </div>~;
 }
 
-if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {
     # INVESTIGATIVE TOOLS
     print qq~
     <div class="card">
@@ -176,7 +176,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
 }
 
 # App management
-if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -190,7 +190,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 }
 
 # MARKETING
-if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -207,21 +207,21 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 }
 
 # PAYMENT AGENTS
-if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'Compliance'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['IT', 'Compliance'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
             Payment Agents
         </div>
         <div class="card__content grid2col border">~;
-    if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
+    if (BOM::Backoffice::Auth::has_authorisation(['IT'])) {
         print qq~
             <div class="card__content">
                 <h3>Dynamic settings</h3>
                 <a href="payment_agents_dynamic_settings.cgi" class="btn btn--primary">Go to Payment Agents dynamic settings</a>
             </div>~;
     }
-    if (BOM::Backoffice::Auth0::has_authorisation(['Compliance'])) {
+    if (BOM::Backoffice::Auth::has_authorisation(['Compliance'])) {
         print qq~
             <div class="card__content">
                 <h3>Tier management</h3>
@@ -247,7 +247,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'Compliance'])) {
 }
 
 # P2P
-if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud', 'PaymentsAdmin'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud', 'PaymentsAdmin'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -255,7 +255,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin'
         </div>~;
 
     # order pages
-    if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud'])) {
+    if (BOM::Backoffice::Auth::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud'])) {
         print qq~
             <div class="card__content grid2col border">
                 <div class="card__content">
@@ -292,7 +292,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin'
         </div>~;
 
     # settings pages
-    if (BOM::Backoffice::Auth0::has_authorisation(['P2PAdmin', 'AntiFraud'])) {
+    if (BOM::Backoffice::Auth::has_authorisation(['P2PAdmin', 'AntiFraud'])) {
         print qq~
             <div class="card__content">
                 <h3>Band configuration</h3>
@@ -321,7 +321,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin'
     print '</div></div>';
 }
 
-if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Quants'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -429,7 +429,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
     </div>~;
 }
 
-if (BOM::Backoffice::Auth0::has_authorisation(['Quants', 'Compliance'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Quants', 'Compliance'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -445,7 +445,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants', 'Compliance'])) {
 }
 
 # Payment Methods
-if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'PaymentsAdmin'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['IT', 'PaymentsAdmin'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -467,7 +467,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'PaymentsAdmin'])) {
 }
 
 # WEBSITE CUSTOMIZATION
-if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'PaymentInternalTransfer'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['IT', 'PaymentInternalTransfer'])) {
 
     my $group_select = create_dropdown(
         name          => 'group',
@@ -498,7 +498,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'PaymentInternalTransfer'])
                 </form>
             </div>
         ~;
-    if (BOM::Backoffice::Auth0::has_authorisation(['PaymentInternalTransfer'])) {
+    if (BOM::Backoffice::Auth::has_authorisation(['PaymentInternalTransfer'])) {
         print qq~
             <div class="card__content">
                 <h3>Internal Transfer Settings</h3>
@@ -514,7 +514,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'PaymentInternalTransfer'])
 }
 
 # WEBSITE STATUS
-if (BOM::Backoffice::Auth0::has_authorisation(['CSWrite'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['CSWrite'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">

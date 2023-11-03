@@ -40,11 +40,11 @@ my $broker_db = BOM::Database::ClientDB->new({
 # reassign this via the function just before display.
 my $expired_unsold = current_unsaleable($broker_db);
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
 if (request()->param('perform_actions')) {
     try {
-        my $staff_name = BOM::Backoffice::Auth0::get_staffname();
+        my $staff_name = BOM::Backoffice::Auth::get_staffname();
         die 'Do not know who you are; cannot proceed' unless $staff_name;
         die "permission denied: no write access" if $disabled_write;
         foreach my $todo (grep { /^fmb_/ } (keys %{request()->params})) {

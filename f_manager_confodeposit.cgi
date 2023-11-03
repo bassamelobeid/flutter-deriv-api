@@ -97,7 +97,7 @@ my $encoded_toLoginID = encode_entities($toLoginID);
 
 my $is_internal_payment = any { $payment_type eq $_ } qw( bank_money_transfer external_cashier );
 
-my $clerk = BOM::Backoffice::Auth0::get_staffname();
+my $clerk = BOM::Backoffice::Auth::get_staffname();
 
 unless ($curr =~ /^[a-zA-Z0-9]{2,20}$/ && LandingCompany::Registry::get_currency_type($curr)) {
     code_exit_BO('Invalid currency, please check: ' . encode_entities($curr));

@@ -146,7 +146,7 @@ if (my $updated_addresses = request()->param('updated_addresses')) {
         action => 'address/set_blocked_bulk',
         body   => {
             address_list => [@address_list],
-            staff_name   => BOM::Backoffice::Auth0::get_staffname(),
+            staff_name   => BOM::Backoffice::Auth::get_staffname(),
         },
     };
 }

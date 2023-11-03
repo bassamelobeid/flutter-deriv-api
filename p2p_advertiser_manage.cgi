@@ -46,8 +46,8 @@ my $db = BOM::Database::ClientDB->new({
         operation   => 'write'
     })->db->dbic;
 
-$output{can_set_band}     = BOM::Backoffice::Auth0::has_authorisation(['P2PAdmin', 'AntiFraud']);
-$output{can_edit_general} = $output{can_set_band} || BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite']);
+$output{can_set_band}     = BOM::Backoffice::Auth::has_authorisation(['P2PAdmin', 'AntiFraud']);
+$output{can_edit_general} = $output{can_set_band} || BOM::Backoffice::Auth::has_authorisation(['P2PRead', 'P2PWrite']);
 
 if ($input{create}) {
     try {

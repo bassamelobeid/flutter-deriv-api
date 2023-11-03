@@ -10,7 +10,7 @@ use BOM::Backoffice::Sysinit      ();
 BOM::Backoffice::Sysinit::init();
 
 use BOM::Backoffice::Utility qw(master_live_server_error);
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::DynamicSettings;
 use BOM::Config::Runtime;
 use BOM::Config::P2P;
@@ -58,7 +58,7 @@ if (my $currency = $params{save}) {
     } elsif (looks_like_number($params{manual_quote})) {
         $currency_config->{$currency}->{manual_quote}       = $params{manual_quote};
         $currency_config->{$currency}->{manual_quote_epoch} = time;
-        $currency_config->{$currency}->{manual_quote_staff} = BOM::Backoffice::Auth0::get_staffname();
+        $currency_config->{$currency}->{manual_quote_staff} = BOM::Backoffice::Auth::get_staffname();
         $currency_settings_changed                          = 1;
     }
 

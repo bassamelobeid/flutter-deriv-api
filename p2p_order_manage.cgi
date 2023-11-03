@@ -57,7 +57,7 @@ $chat_page = 1
 
 Bar('P2P Order details/management');
 
-my $can_dispute = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite', 'P2PAdmin', 'AntiFraud']);
+my $can_dispute = BOM::Backoffice::Auth::has_authorisation(['P2PWrite', 'P2PAdmin', 'AntiFraud']);
 
 if ($input{action}) {
     try {
@@ -67,7 +67,7 @@ if ($input{action}) {
             id     => $input{order_id},
             action => $input{action},
             fraud  => $input{fraud},
-            staff  => BOM::Backoffice::Auth0::get_staffname(),
+            staff  => BOM::Backoffice::Auth::get_staffname(),
         );
         die "DB error $res->{error} occurred. Please try again and contact backend if it keeps happening." if $res->{error};
     } catch ($e) {

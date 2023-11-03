@@ -30,7 +30,7 @@ my ($section, $name) = split(/\./, $setting);
 my $groups = $authorisations->{$section} // [];
 
 code_exit_BO('<p class="error"><b>Access denied</b></p>')
-    unless $name && scalar @$groups && BOM::Backoffice::Auth0::has_authorisation($groups);
+    unless $name && scalar @$groups && BOM::Backoffice::Auth::has_authorisation($groups);
 
 my $type = BOM::Config::Runtime->instance->app_config->get_data_type($setting);
 

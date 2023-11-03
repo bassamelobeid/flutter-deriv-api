@@ -17,7 +17,7 @@ BOM::Backoffice::Sysinit::init();
 my $result;
 my $cgi           = CGI->new;
 my $input         = request()->params;
-my $staff         = BOM::Backoffice::Auth0::get_staffname();
+my $staff         = BOM::Backoffice::Auth::get_staffname();
 my $bulk_auth_btn = $input->{bulk_auth_btn} // '';
 
 my $poi_reason             = $input->{poi_reason};

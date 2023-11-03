@@ -16,7 +16,7 @@ use BOM::Backoffice::Request qw(request);
 use Mojo::URL;
 use BOM::JavascriptConfig;
 use BOM::Backoffice::Sysinit ();
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::CGI::SettingWebsiteStatus;
 use BOM::Backoffice::Sysinit;
 

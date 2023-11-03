@@ -64,7 +64,7 @@ unless (@affiliates) {
     $is_affiliate = 0;
 }
 
-my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
+my $is_compliance = BOM::Backoffice::Auth::has_authorisation(['Compliance']);
 
 if (exists $input{affiliate_reason_for_reputation} && $is_compliance) {
     try {
@@ -77,7 +77,7 @@ if (exists $input{affiliate_reason_for_reputation} && $is_compliance) {
         );
 
         if ($input{status_for_reputation} eq "Failed") {
-            $client->status->setnx('disabled', BOM::Backoffice::Auth0::get_staffname(), 'Account should be disable due to Failed Repuation check.');
+            $client->status->setnx('disabled', BOM::Backoffice::Auth::get_staffname(), 'Account should be disable due to Failed Repuation check.');
             $is_affiliate = 0;
         } else {
             $client->status->_clear('disabled');

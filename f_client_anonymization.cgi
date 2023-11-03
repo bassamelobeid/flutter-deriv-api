@@ -34,7 +34,7 @@ print "<a href='"
     . " candidates pending) </a>";
 
 my $input            = request()->params;
-my $clerk            = BOM::Backoffice::Auth0::get_staffname();
+my $clerk            = BOM::Backoffice::Auth::get_staffname();
 my $cgi              = CGI->new;
 my $transaction_type = $input->{transtype} // '';
 Bar("MAKE DUAL CONTROL CODE");

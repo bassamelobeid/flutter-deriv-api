@@ -22,7 +22,6 @@ my $allowed_naked_packages = {
     'BOM::RiskReporting::Base'                           => 11,
     'BOM::RiskReporting::MarkedToModel'                  => 7,
     'BOM::RiskReporting::Dashboard'                      => 17,
-    'BOM::Backoffice::Auth0'                             => 2,
     'BOM::Backoffice::QuantsAuditLog'                    => 1,
     'BOM::Backoffice::QuantsAuditEmail'                  => 1,
     'BOM::Backoffice::Form'                              => 5,

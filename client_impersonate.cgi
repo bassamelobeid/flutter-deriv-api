@@ -6,7 +6,7 @@ use warnings;
 use HTML::Entities;
 
 use f_brokerincludeall;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Database::Model::OAuth;
 use BOM::User::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType http_redirect );
@@ -32,7 +32,7 @@ sub print_title {
     BrokerPresentation($title);
 }
 
-$clerk = BOM::Backoffice::Auth0::get_staffname();
+$clerk = BOM::Backoffice::Auth::get_staffname();
 
 my $encoded_login = encode_entities($loginid);
 

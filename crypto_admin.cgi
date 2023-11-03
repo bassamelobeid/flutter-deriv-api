@@ -9,7 +9,7 @@ use open qw[ :encoding(UTF-8) ];
 use f_brokerincludeall;
 use BOM::Config;
 use BOM::Config::Runtime;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request;
 use Syntax::Keyword::Try;
@@ -29,12 +29,12 @@ use constant BUMP_TXN_RECORD                   => "CRYPTO::BUMP::TXN::ID::";
 use constant SENT_ERROR_TXN_RECORD             => "CRYPTO::SENT::ERROR::TXN::HASH::";
 
 # Check if a staff is logged in
-BOM::Backoffice::Auth0::get_staff();
+BOM::Backoffice::Auth::get_staff();
 my %input = %{request()->params};
 PrintContentType();
 
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::get_staffname();
+my $staff  = BOM::Backoffice::Auth::get_staffname();
 
 BrokerPresentation('CRYPTO TOOL PAGE');
 
@@ -563,7 +563,7 @@ sub _get_function_map {
     my $confirmations     = length $input->{confirmations}   ? int($input->{confirmations}) : undef;
     my $limit             = length $input->{limit}           ? int($input->{limit})         : undef;
     my $max_fee_per_gas   = length $input->{max_fee_per_gas} ? $input->{max_fee_per_gas}    : 0;
-    my $staff             = BOM::Backoffice::Auth0::get_staffname();
+    my $staff             = BOM::Backoffice::Auth::get_staffname();
     my $currency_selected = $input->{currency} // $input->{gt_currency} // 'BTC';
     my $currency_code     = $currency;
 

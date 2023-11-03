@@ -17,7 +17,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Vanilla Risk Management Tool');
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
 my $limit_defs = BOM::Config::quants()->{risk_profile};
 delete $limit_defs->{no_business};    # no_business should be set in product management tool

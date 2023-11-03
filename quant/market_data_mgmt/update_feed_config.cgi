@@ -9,7 +9,7 @@ use lib  qw(/home/git/regentmarkets/bom-backoffice);
 use JSON::MaybeUTF8          qw(:v1);
 use Scalar::Util             qw(looks_like_number);
 use BOM::Backoffice::Sysinit ();
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Backoffice::Request qw(request);
 use Syntax::Keyword::Try;
@@ -19,10 +19,10 @@ use Log::Any                                  qw($log);
 use BOM::Backoffice::Quant::FeedConfiguration qw(save_drift_switch_spread);
 
 BOM::Backoffice::Sysinit::init();
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $staff = BOM::Backoffice::Auth::get_staffname();
 my $r     = request();
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
 if ($r->param('save_feed_drift_switch_spread_configuration')) {
 

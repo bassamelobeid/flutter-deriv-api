@@ -11,7 +11,7 @@ use Text::Trim  qw(trim);
 BOM::Backoffice::Sysinit::init();
 use constant MAX_FILE_SIZE => 1024 * 1600;
 my $input = request()->params;
-my $clerk = BOM::Backoffice::Auth0::get_staffname();
+my $clerk = BOM::Backoffice::Auth::get_staffname();
 PrintContentType();
 my $cgi = CGI->new;
 Bar("Make dual control code");

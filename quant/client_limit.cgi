@@ -29,7 +29,7 @@ my $json       = JSON::MaybeXS->new(
 );
 
 my $http_req       = request();
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
 my $custom_client_limits = $json->decode($app_config->get('quants.custom_client_profiles'));
 

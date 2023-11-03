@@ -20,8 +20,6 @@ sub bo_js_files_for {
         push @js_files, 'bbdl.js' if /f_bet_iv/;
         push @js_files, 'risk_dashboard.js', 'external/jbpivot.min.js', 'external/raphael-min.js', 'external/jquery.sparkline.min.js'
             if /risk_dashboard/;
-        push @js_files, 'external/Duo-Web-v2.min.js'
-            if /second_step_auth/;
         push @js_files, 'external/select2.min.js' if /promocode_edit/;
         push @js_files, 'external/jstree/jquery.jstree.js', 'pricing_details.js',
             'external/highcharts/highstock.js', 'external/highcharts/export-csv.js', 'external/highcharts/highstock-exporting.js',
