@@ -2197,15 +2197,6 @@ system:
                 isa: ArrayRef
                 global: 1
                 default: []
-    backoffice:
-      description: "Configuration for backoffice system"
-      isa: section
-      contains:
-        disable_auth0_login:
-          description: "Disable Auth0 login, switch to cloudflared/okta"
-          isa: Bool
-          default: 0
-          global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section
