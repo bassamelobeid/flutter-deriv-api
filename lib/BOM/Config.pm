@@ -932,4 +932,17 @@ sub thinkific_config {
     return $config;
 }
 
+=head2 dynamic_leverage_config
+
+    BOM::Config::dynamic_leverage_config()
+
+Config for dynamic leverage for trading platform
+
+=cut
+
+sub dynamic_leverage_config {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/cfd/leverage/metatrader/default.yml');
+    return $config;
+}
+
 1;
