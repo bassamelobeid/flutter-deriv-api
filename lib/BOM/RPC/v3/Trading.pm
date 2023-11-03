@@ -7,6 +7,8 @@ no indirect;
 use Future;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
+use List::Util qw(first none any);
+
 use BOM::TradingPlatform;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email   qw (send_email);
@@ -20,7 +22,7 @@ use BOM::RPC::v3::MT5::Account;
 use BOM::User;
 use BOM::User::Password;
 use BOM::Product::Listing;
-use List::Util qw(first none any);
+use BOM::Config;
 
 requires_auth('trading', 'wallet');
 
@@ -919,5 +921,22 @@ sub get_dxtrade_server_list {
 
     return Future->done(\@servers);
 }
+
+=head2 trading_platform_leverage
+
+Returns dynamic leverage details data for the platform, defaults to mt5
+
+=over 4
+
+=item * platform - a string to represent trading platform. (E.g. mt5)
+
+=back
+
+=cut
+
+rpc trading_platform_leverage => auth => [],
+    sub {
+    return {leverage => BOM::Config::dynamic_leverage_config()};
+    };
 
 1;
