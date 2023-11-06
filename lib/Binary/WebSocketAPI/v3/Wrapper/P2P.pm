@@ -32,6 +32,14 @@ sub subscribe_orders {
         return $c->new_error($msg_type, $rpc_response->{error}{code}, $rpc_response->{error}{message_to_client});
     }
 
+    my $loginid = $c->stash('loginid');
+    my $broker  = $c->stash('broker');
+
+    if ($args->{loginid}) {
+        $loginid = $args->{loginid};
+        $broker  = $c->stash('account_tokens')->{$loginid}{broker};
+    }
+
     my $subscription_info = delete $rpc_response->{subscription_info};    # needed for subscription, not part of response
     my $result            = {
         msg_type  => $msg_type,
@@ -39,7 +47,7 @@ sub subscribe_orders {
         defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
     };
 
-    return $result unless $args->{subscribe} and $c->stash('loginid') and $c->stash('broker');
+    return $result unless $args->{subscribe} and $loginid and $broker;
 
     my $order_id =
           $msg_type eq 'p2p_order_info'   ? $args->{id}
@@ -49,8 +57,8 @@ sub subscribe_orders {
     my $sub = Binary::WebSocketAPI::v3::Subscription::P2P::Order->new(
         c       => $c,
         args    => $args,
-        loginid => $c->stash('loginid'),
-        broker  => $c->stash('broker'),
+        loginid => $loginid,
+        broker  => $broker,
         %$subscription_info
     );
 
@@ -80,18 +88,20 @@ sub subscribe_advertisers {
 
     my $advertiser_loginid = delete $rpc_response->{client_loginid};    # needed for subscription, not part of response
 
+    my $loginid = $args->{loginid} // $c->stash('loginid');
+
     my $result = {
         msg_type  => $msg_type,
         $msg_type => $rpc_response,
         defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
     };
 
-    return $result unless $args->{subscribe} and $c->stash('loginid') and $advertiser_loginid;
+    return $result unless $args->{subscribe} and $loginid and $advertiser_loginid;
 
     my $sub = Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser->new(
         c                  => $c,
         args               => $args,
-        loginid            => $c->stash('loginid'),
+        loginid            => $loginid,
         advertiser_loginid => $advertiser_loginid,
     );
 
@@ -130,13 +140,15 @@ sub subscribe_adverts {
         defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
     };
 
-    return $result unless $args->{subscribe} and $c->stash('loginid');
+    my $loginid = $args->{loginid} // $c->stash('loginid');
+
+    return $result unless $args->{subscribe} and $loginid;
     my $advert_id = $args->{id};
 
     my $sub = Binary::WebSocketAPI::v3::Subscription::P2P::Advert->new(
         c             => $c,
         args          => $args,
-        loginid       => $c->stash('loginid'),
+        loginid       => $loginid,
         account_id    => $account_id,
         advert_id     => $advert_id,
         advertiser_id => $advertiser_id,

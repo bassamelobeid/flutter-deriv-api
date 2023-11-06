@@ -27,17 +27,17 @@ sub actions_config {
         [
             'logout',
             {
-                stash_params => [qw/ token token_type email client_ip user_agent /],
+                stash_params => [qw/ token account_tokens token_type email client_ip user_agent /],
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
                 category     => 'account',
             },
         ],
         ['trading_times'],
         ['economic_calendar'],
-        ['trading_durations', {stash_params => [qw/ token /]}],
-        ['asset_index',       {stash_params => [qw/ token /]}],
-        ['contracts_for',     {stash_params => [qw/ token /]}],
-        ['active_symbols',    {stash_params => [qw/ token /]}],
+        ['trading_durations', {stash_params => [qw/ token account_tokens /]}],
+        ['asset_index',       {stash_params => [qw/ token account_tokens /]}],
+        ['contracts_for',     {stash_params => [qw/ token account_tokens /]}],
+        ['active_symbols',    {stash_params => [qw/ token account_tokens /]}],
 
         ['exchange_rates', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::exchange_rates}],
         [
@@ -66,7 +66,7 @@ sub actions_config {
         ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
-        ['crypto_config',  {stash_params       => [qw/ token /]}],
+        ['crypto_config',  {stash_params       => [qw/ token account_tokens /]}],
         [
             'crypto_estimations',
             {
@@ -76,7 +76,7 @@ sub actions_config {
         ],
         ['residence_list'],
         ['states_list'],
-        ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
+        ['payout_currencies', {stash_params => [qw/ token account_tokens landing_company_name /]}],
         ['landing_company'],
         ['landing_company_details'],
         [
@@ -229,21 +229,21 @@ sub actions_config {
         [
             'verify_email',
             {
-                stash_params => [qw/ server_name token /],
+                stash_params => [qw/ server_name token account_tokens /],
                 category     => 'account',
             }
         ],
         [
             'verify_email_cellxpert',
             {
-                stash_params => [qw/ server_name token /],
+                stash_params => [qw/ server_name token account_tokens /],
                 category     => 'account',
             }
         ],
         [
             'new_account_virtual',
             {
-                stash_params => [qw/ token server_name client_ip user_agent /],
+                stash_params => [qw/ token account_tokens server_name client_ip user_agent /],
                 category     => 'account',
             }
         ],
@@ -362,11 +362,11 @@ sub actions_config {
         [
             'paymentagent_list',
             {
-                stash_params => [qw/ token /],
+                stash_params => [qw/ token account_tokens /],
                 category     => 'payment',
             }
         ],
-        ['payment_methods', {stash_params => [qw/ token /]}],
+        ['payment_methods', {stash_params => [qw/ token account_tokens /]}],
         [
             'paymentagent_withdraw',
             {
@@ -443,14 +443,14 @@ sub actions_config {
         [
             'affiliate_add_person',
             {
-                stash_params => [qw/ token server_name client_ip user_agent /],
+                stash_params => [qw/ token account_tokens server_name client_ip user_agent /],
                 category     => 'account',
             }
         ],
         [
             'affiliate_add_company',
             {
-                stash_params => [qw/ token server_name client_ip user_agent /],
+                stash_params => [qw/ token account_tokens server_name client_ip user_agent /],
                 category     => 'account',
             }
         ],
@@ -505,7 +505,7 @@ sub actions_config {
         [
             'document_upload',
             {
-                stash_params    => [qw/ token /],
+                stash_params    => [qw/ token account_tokens /],
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_info,
                 category        => 'account',
             }
@@ -720,7 +720,7 @@ sub actions_config {
         [
             'affiliate_register_person',
             {
-                stash_params => [qw/ server_name token /],
+                stash_params => [qw/ server_name token account_tokens /],
                 category     => 'account',
             }
         ],

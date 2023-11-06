@@ -388,7 +388,7 @@ sub before_forward {
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.
     # None are much helpful in a well prepared DDoS.
-    my $is_real  = $c->stash('loginid') && !$c->stash('is_virtual');
+    my $is_real  = _get_is_real($c, $args);
     my $category = $req_storage->{name};
 
     return reached_limit_check($c, $category, $is_real)->then(
@@ -412,7 +412,7 @@ sub before_forward {
                 }
             }
 
-            my $loginid = $c->stash('loginid');
+            my $loginid = $args->{loginid} // $c->stash('loginid');
             if ($send_schema->{auth_required} and not $loginid) {
                 return Future->fail($c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.')));
             }
@@ -425,7 +425,7 @@ sub before_forward {
             }
 
             if ($loginid) {
-                my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
+                my $account_type = _get_is_real($c, $args) ? 'real' : 'virtual';
                 DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
                     {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
             }
@@ -452,6 +452,35 @@ sub before_forward {
 
             return Future->fail($err_resp);
         });
+}
+
+=head2 _get_is_real
+
+Description:  Check if this is a real user request or not.
+
+Returns a Boolean 1 if real user or 0 if not.
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=item * C<$args> - hashref - request arguments
+
+=back
+
+=cut
+
+sub _get_is_real {
+    my ($c, $args) = @_;
+
+    my $is_virtual = !$c->stash('is_virtual');
+
+    if ($args->{loginid}) {
+        my $account_tokens = $c->stash('account_tokens');
+        $is_virtual = $account_tokens->{$args->{loginid}}{is_virtual};
+    }
+
+    return !$is_virtual;
 }
 
 =head2 _check_auth

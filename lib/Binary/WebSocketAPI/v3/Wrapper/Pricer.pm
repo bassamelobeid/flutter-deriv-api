@@ -48,6 +48,7 @@ sub proposal {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
+
     $c->call_rpc({
             schema_receive    => $req_storage->{schema_receive},
             schema_receive_v3 => $req_storage->{schema_receive_v3},
@@ -57,6 +58,7 @@ sub proposal {
             category          => $req_storage->{category},
             call_params       => {
                 token                 => $c->stash('token'),
+                account_tokens        => $c->stash('account_tokens'),
                 language              => $c->stash('language'),
                 app_markup_percentage => $c->stash('app_markup_percentage'),
                 landing_company       => $c->landing_company_name,
@@ -150,6 +152,8 @@ sub proposal_open_contract {
 sub _process_proposal_open_contract_response {
     my ($c, $response, $req_storage, $uuid) = @_;
 
+    my $args = $req_storage->{args};
+
     foreach my $contract (values %$response) {
         if (exists $contract->{error}) {
             my $error =
@@ -158,7 +162,8 @@ sub _process_proposal_open_contract_response {
         } elsif (not exists $contract->{shortcode}) {
             my %copy_req = %$req_storage;
             delete @copy_req{qw(in_validator out_validator)};
-            $copy_req{loginid} = $c->stash('loginid') if $c->stash('loginid');
+            my $loginid = $args->{loginid} // $c->stash('loginid');
+            $copy_req{loginid} = $loginid if $loginid;
             warn "undef shortcode. req_storage is: " . $json->encode(\%copy_req);
             warn "undef shortcode. response is: " . $json->encode($contract);
             my $error =

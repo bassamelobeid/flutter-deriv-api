@@ -15,6 +15,7 @@ use Term::ANSIColor qw(colored);
 use Text::Diff;
 use Tie::IxHash;
 use constant BASE_PATH => 'config/v3/';
+use Storable qw(dclone);
 
 GetOptions(
     fix => \(my $should_fix = 0),
@@ -46,7 +47,7 @@ subtest 'json structure' => sub {
 
 =head2 general formatting and order
 
-This mainly tests to make sure the schemas are correct in terms of:
+This main test is to make sure the schemas are correct in terms of:
 (Displays a diff in case of error)
 
 - Formatting:
@@ -65,7 +66,9 @@ This mainly tests to make sure the schemas are correct in terms of:
 
 =cut
 
-my $order = {
+my $order;
+
+my $order_general = {
     other => {
         '$schema'            => 1,
         title                => 2,
@@ -89,12 +92,16 @@ my $order = {
     },
     properties => {
         subscription => 101,
-        passthrough  => 102,
-        echo_req     => 103,
-        msg_type     => 104,
-        req_id       => 105,
+        passthrough  => 103,
+        echo_req     => 104,
+        msg_type     => 105,
+        req_id       => 106,
     },
 };
+
+# loginid order only applies to send schema
+my $order_send = dclone($order_general);
+$order_send->{properties}{loginid} = 102;
 
 sub sort_elements {
     my ($ref, $parent) = @_;
@@ -146,6 +153,8 @@ subtest 'general formatting and order' => sub {
     }
 
     for my $schema (@json_schemas) {
+        $order = $schema->{json_type} eq 'send' ? $order_send : $order_general;
+
         $order->{other}{$schema->{method_name}} = $order->{properties}{$schema->{method_name}} = 0;    # Always put the main action at the beginning
 
         my $sorted = $json->encode(sort_elements($schema->{json}));

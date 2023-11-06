@@ -15,7 +15,7 @@ sub logout_success {
 
     Binary::WebSocketAPI::v3::Wrapper::System::forget_after_logout($c);
 
-    @stash{qw/ loginid email token token_type account_id currency landing_company_name/} = ();
+    @stash{qw/ loginid email token account_tokens token_type account_id currency landing_company_name/} = ();
     $c->stash(%stash);
     return;
 }
@@ -24,6 +24,7 @@ sub login_success {
     my ($c, $rpc_response) = @_;
 
     local $log->context->{rpc_response} = $rpc_response;
+
     $log->error("landing_company_name in rpc_response is undef after login")
         unless $rpc_response->{landing_company_name} and $rpc_response->{stash}{landing_company_name};
     # rpc response is not yet populated into stash

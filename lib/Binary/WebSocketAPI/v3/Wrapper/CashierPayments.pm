@@ -56,7 +56,7 @@ sub subscribe_cashier_payments {
     my $sub              = Binary::WebSocketAPI::v3::Subscription::CashierPayments->new(
         c                => $c,
         args             => $args,
-        loginid          => $c->stash('loginid'),
+        loginid          => $args->{loginid} // $c->stash('loginid'),
         transaction_type => $transaction_type,
     );
 

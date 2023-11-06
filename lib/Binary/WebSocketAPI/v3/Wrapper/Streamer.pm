@@ -435,6 +435,7 @@ sub exchange_rates {
             msg_type    => $type,
             call_params => {
                 token           => $c->stash('token'),
+                account_tokens  => $c->stash('account_tokens'),
                 base_currency   => $req_storage->{args}{base_currency},
                 target_currency => $req_storage->{args}{target_currency},
             },
@@ -495,11 +496,12 @@ sub trading_platform_asset_listing {
             method      => $type,
             msg_type    => $type,
             call_params => {
-                token    => $c->stash('token'),
-                language => $c->stash('language'),
-                platform => $req_storage->{args}{platform},
-                region   => $req_storage->{args}{region},
-                type     => $req_storage->{args}{type},
+                token          => $c->stash('token'),
+                account_tokens => $c->stash('account_tokens'),
+                language       => $c->stash('language'),
+                platform       => $req_storage->{args}{platform},
+                region         => $req_storage->{args}{region},
+                type           => $req_storage->{args}{type},
             },
             success => sub {
                 my ($c, $api_response, $req_storage) = @_;
@@ -562,8 +564,9 @@ sub crypto_estimations {
             msg_type    => $type,
             category    => $req_storage->{category},
             call_params => {
-                token         => $c->stash('token'),
-                currency_code => $req_storage->{args}{currency_code},
+                token          => $c->stash('token'),
+                account_tokens => $c->stash('account_tokens'),
+                currency_code  => $req_storage->{args}{currency_code},
             },
             success => sub {
                 my ($c, $api_response, $req_storage) = @_;
