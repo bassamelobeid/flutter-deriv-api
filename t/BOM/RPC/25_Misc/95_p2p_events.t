@@ -83,7 +83,7 @@ subtest 'p2p order create and confirm' => sub {
         $result,
         {
             id     => $order->{id},
-            status => 'buyer-confirmed'
+            status => 'buyer-confirmed',
         },
         'order is successfully confirmed'
     );
@@ -113,7 +113,7 @@ subtest 'p2p order create and confirm' => sub {
         $result,
         {
             id     => $order->{id},
-            status => 'completed'
+            status => 'completed',
         },
         'order is successfully completed'
     );
@@ -206,7 +206,8 @@ subtest 'p2p order create and cancel' => sub {
         $result,
         {
             id     => $order->{id},
-            status => 'cancelled'
+            status => 'cancelled',
+
         },
         'order is successfully cancelled'
     );

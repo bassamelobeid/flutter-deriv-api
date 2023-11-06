@@ -282,11 +282,9 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
                     if $client->_p2p_advertiser_cached;
             }
 
-            my $acc = $client->default_account;
-
             return $code->(
                 client      => $client,
-                account     => $acc,
+                account     => $client->default_account,
                 app_config  => $app_config,
                 params      => $params,
                 rule_engine => $rule_engine,
@@ -638,7 +636,7 @@ p2p_rpc p2p_advert_update => sub {
 
 =head2 p2p_order_create
 
-Creates a new order for an advert.
+Creates a new order for an advert. 
 
 =cut
 

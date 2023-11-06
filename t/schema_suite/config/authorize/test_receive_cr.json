@@ -78,6 +78,9 @@
                      1
                   ]
                },
+               "broker" : {
+                   "type": "string"
+               },
                "loginid" : {
                   "description" : "The account id of specified account.",
                   "type" : "string"

@@ -108,6 +108,9 @@
                      1
                   ]
                },
+               "broker" : {
+                   "type" : "string"
+               },
                "currency" : {
                   "description" : "Currency of specified account.",
                   "type" : "string"

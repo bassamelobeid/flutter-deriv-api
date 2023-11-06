@@ -57,6 +57,7 @@ $user->add_client($test_client);
 $user->add_client($self_excluded_client);
 $user->add_client($test_client_disabled);
 $user->add_client($test_client_duplicated);
+
 $test_client->load;
 
 my $oauth = BOM::Database::Model::OAuth->new;
@@ -87,6 +88,7 @@ my $user_mx = BOM::User->create(
     email    => $email_mx,
     password => '1234',
 );
+
 $user_mx->add_client($test_client_mx);
 $test_client_mx->load;
 my ($token_mx) = $oauth->store_access_token_only(1, $test_client_mx->loginid);
@@ -107,6 +109,7 @@ $test_client_mx_2->load;
 my ($token_mx_2) = $oauth->store_access_token_only(1, $test_client_mx_2->loginid);
 
 my $method = 'authorize';
+
 subtest $method => sub {
     my $params = {
         language => 'EN',
@@ -133,6 +136,13 @@ subtest $method => sub {
             'landing_company_name'     => $landing_company,
             'is_virtual'               => '0',
             'broker'                   => 'CR',
+            'account_tokens'           => {
+                $test_client->loginid => {
+                    token      => $token,
+                    is_virtual => $test_client->is_virtual,
+                    broker     => $test_client->broker
+                }
+            },
         },
         'currency'                      => '',
         'local_currencies'              => {IDR => {fractional_digits => 2}},
@@ -182,7 +192,7 @@ subtest $method => sub {
                 'account_category'     => 'trading',
                 'linked_to'            => [],
                 'created_at'           => '1623023999',
-            },
+            }
             # Duplicated client must  not be returned
         ]    # no wallet is linked
     };
@@ -224,9 +234,6 @@ subtest $method => sub {
     is(scalar(@{$history_records}), 0, 'no login history record is created when we authorize using oauth token');
 
     delete $params->{args};
-
-    $params->{token} = $token_vr;
-    is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
 
     my $res = BOM::RPC::v3::Accounts::api_token({
             client => $test_client,
@@ -281,11 +288,12 @@ subtest $method => sub {
 
         BOM::Config::Runtime->instance->app_config->system->suspend->access_token_sharing(0);
         my ($unofficial_app_token1) = $oauth->store_access_token_only($app1->{app_id}, $test_client->loginid);
-        $params->{token}                          = $unofficial_app_token1;
-        $params->{source}                         = $app2->{app_id};
-        $expected_result->{stash}->{valid_source} = $app2->{app_id};
-        $expected_result->{stash}->{source_type}  = 'unofficial';
-        $expected_result->{stash}->{token}        = $unofficial_app_token1;
+        $params->{token}                                                          = $unofficial_app_token1;
+        $params->{source}                                                         = $app2->{app_id};
+        $expected_result->{stash}->{valid_source}                                 = $app2->{app_id};
+        $expected_result->{stash}->{source_type}                                  = 'unofficial';
+        $expected_result->{stash}->{token}                                        = $unofficial_app_token1;
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token} = $unofficial_app_token1;
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'Third party app can share oAuth token while flag is off');
 
         BOM::Config::Runtime->instance->app_config->system->suspend->access_token_sharing(1);
@@ -300,16 +308,19 @@ subtest $method => sub {
         $c->call_ok($method, $params)->has_error->error_message_is("Token is not valid for current app ID.",
             "Third party app oAuth token can't be used by another third party app");
 
-        $params->{source}                         = $app2->{app_id};
-        $expected_result->{stash}->{valid_source} = $app2->{app_id};
-        $expected_result->{stash}->{token}        = $unofficial_app_token2;
+        $params->{source}                                                         = $app2->{app_id};
+        $expected_result->{stash}->{valid_source}                                 = $app2->{app_id};
+        $expected_result->{stash}->{token}                                        = $unofficial_app_token2;
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token} = $unofficial_app_token2;
         $c->call_ok($method, $params)
             ->has_no_error->result_is_deeply($expected_result, 'Third party app can only be authorize by oAuth token created');
 
-        $params->{source}                         = $official_app_ids[1];
-        $params->{token}                          = $official_app_token;
-        $expected_result->{stash}->{valid_source} = $official_app_ids[1];
-        $expected_result->{stash}->{token}        = $official_app_token;
+        $params->{source}                                                         = $official_app_ids[1];
+        $params->{token}                                                          = $official_app_token;
+        $expected_result->{stash}->{valid_source}                                 = $official_app_ids[1];
+        $expected_result->{stash}->{token}                                        = $official_app_token;
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token} = $official_app_token;
+
         $c->call_ok($method, $params)
             ->has_no_error->result_is_deeply($expected_result, 'Third party app can only be authorize by oAuth token created');
 
@@ -344,6 +355,8 @@ subtest $method => sub {
         # call authorize
         $params->{token} = $token_vr;
 
+        is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
+
         my $expected_result = {
             'stash' => {
                 app_markup_percentage      => 0,
@@ -361,6 +374,13 @@ subtest $method => sub {
                 'landing_company_name'     => 'virtual',
                 'is_virtual'               => '1',
                 'broker'                   => 'VRTC',
+                'account_tokens'           => {
+                    $test_client_vr->loginid => {
+                        token      => $token_vr,
+                        is_virtual => $test_client_vr->is_virtual,
+                        broker     => $test_client_vr->broker
+                    }
+                },
             },
             'currency'                      => 'USD',
             'local_currencies'              => {IDR => {fractional_digits => 2}},
@@ -458,6 +478,13 @@ subtest $method => sub {
                 'landing_company_name'     => 'virtual',
                 'is_virtual'               => '1',
                 'broker'                   => 'VRW',
+                'account_tokens'           => {
+                    $vr_wallet->loginid => {
+                        token      => $token_wallet,
+                        is_virtual => $vr_wallet->is_virtual,
+                        broker     => $vr_wallet->broker
+                    }
+                },
             },
             'currency'                      => 'USD',
             'local_currencies'              => {IDR => {fractional_digits => 2}},

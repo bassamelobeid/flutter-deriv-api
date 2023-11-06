@@ -10,7 +10,6 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::RPC'                              => 1,
     'BOM::RPC::Registry'                    => 2,
     'BOM::RPC::Transport::Redis'            => 1,
     'BOM::RPC::Feed::Reader'                => 5,
@@ -33,7 +32,7 @@ my $allowed_naked_packages = {
     'BOM::RPC::v3::TickStreamer'            => 3,
     'BOM::RPC::v3::Debug'                   => 0,
     'BOM::RPC::v3::DocumentUpload'          => 6,
-    'BOM::RPC::v3::Authorize'               => 2,
+    'BOM::RPC::v3::Authorize'               => 1,
     'BOM::RPC::v3::App'                     => 2,
     'BOM::RPC::v3::MT5::Account'            => 16,
     'BOM::RPC::v3::CopyTrading::Statistics' => 1,
