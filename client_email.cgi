@@ -34,7 +34,7 @@ BrokerPresentation("Client's Email Details");
 
 my $title = "View / Edit Client's Email";
 
-my $clerk = BOM::Backoffice::Auth0::get_staffname();
+my $clerk = BOM::Backoffice::Auth::get_staffname();
 my $now   = Date::Utility->new;
 
 my %input         = %{request()->params};

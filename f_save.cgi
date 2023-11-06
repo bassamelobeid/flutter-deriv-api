@@ -29,7 +29,7 @@ use BOM::Backoffice::Sysinit      ();
 use BOM::User::AuditLog;
 use BOM::Backoffice::Utility qw( master_live_server_error);
 BOM::Backoffice::Sysinit::init();
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::QuantsAuditLog;
 use Log::Any qw($log);
 
@@ -56,7 +56,7 @@ if ($ok == 0) {
 master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
 my $broker = request()->broker_code;
-my $clerk  = BOM::Backoffice::Auth0::get_staffname();
+my $clerk  = BOM::Backoffice::Auth::get_staffname();
 
 $text =~ s/\r\n/\n/g;
 $text =~ s/\n\r/\n/g;

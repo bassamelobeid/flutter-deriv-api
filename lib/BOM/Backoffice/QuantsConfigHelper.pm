@@ -14,7 +14,7 @@ use Finance::Contract::Category;
 use Syntax::Keyword::Try;
 use YAML::XS   qw(LoadFile);
 use List::Util qw(uniq);
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::QuantsAuditLog;
 use Time::Duration::Concise;
 use Scalar::Util qw(looks_like_number);

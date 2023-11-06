@@ -21,7 +21,7 @@ use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 use Syntax::Keyword::Try;
 
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $staff = BOM::Backoffice::Auth::get_staffname();
 
 my $title = 'Make dual control code';
 

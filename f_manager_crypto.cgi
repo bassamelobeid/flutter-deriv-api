@@ -23,7 +23,7 @@ use LandingCompany::Registry;
 use Brands;
 
 use f_brokerincludeall;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::Sysinit      ();
@@ -72,7 +72,7 @@ PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::get_staffname();
+my $staff  = BOM::Backoffice::Auth::get_staffname();
 
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.

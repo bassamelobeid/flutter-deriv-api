@@ -19,7 +19,7 @@ BOM::Backoffice::Sysinit::init();
 
 my $cgi   = CGI->new;
 my $input = request()->params;
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $staff = BOM::Backoffice::Auth::get_staffname();
 my @info_for_output;
 
 my (

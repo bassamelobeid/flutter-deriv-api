@@ -17,7 +17,7 @@ my $r = request();
 
 BrokerPresentation("Callputspread Barrier Multiplier");
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 BOM::Backoffice::Request::template()->process(
     'backoffice/callputspread_barrier_multiplier/index.html.tt',
     {

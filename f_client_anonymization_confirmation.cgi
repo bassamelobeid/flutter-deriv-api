@@ -40,7 +40,7 @@ if (defined $confirmation_index) {
                 "SELECT * FROM users.set_anonymization_confirmation_status(?,?,?,?)",
                 {Slice => {}},
                 $user_id + 0,
-                $status, $reason, BOM::Backoffice::Auth0::get_staffname());
+                $status, $reason, BOM::Backoffice::Auth::get_staffname());
         }) if defined($user_id) && $status;
 }
 

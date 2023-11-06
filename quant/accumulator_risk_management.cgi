@@ -19,7 +19,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Accumulator Risk Management Tool');
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
 Bar("Accumulator Risk Profile Definitions");
 BOM::Backoffice::Request::template()->process('backoffice/accumulator_profile_definitions.html.tt', {%{_get_risk_profile_definition()},})

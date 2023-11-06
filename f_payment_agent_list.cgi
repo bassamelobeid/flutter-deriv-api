@@ -13,7 +13,7 @@ use BOM::Database::ClientDB;
 use BOM::User::Client;
 use BOM::Rules::Engine;
 use LandingCompany::Registry;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Platform::Event::Emitter;
 
 BOM::Backoffice::Sysinit::init();
@@ -23,7 +23,7 @@ use constant PA_PAGE_LIMIT => 50;
 
 my %params     = request()->params->%*;
 my $app_config = BOM::Config::Runtime->instance->app_config;
-my %output     = (can_edit => BOM::Backoffice::Auth0::has_authorisation(['Compliance']));
+my %output     = (can_edit => BOM::Backoffice::Auth::has_authorisation(['Compliance']));
 
 if (request()->http_method eq 'POST') {
 

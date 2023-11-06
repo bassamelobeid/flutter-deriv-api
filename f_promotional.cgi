@@ -238,7 +238,7 @@ if (my $bulk_upload = $input{bulk_promo_upload}) {
     }
 }
 
-my $clerk = BOM::Backoffice::Auth0::get_staffname() // '';
+my $clerk = BOM::Backoffice::Auth::get_staffname() // '';
 
 print
     '<l><li>Applies bonus codes to clients if the code is valid and the client does not have a promo code.</li><li>CSV format, comma separated</li><li>No header</li><li>2 columns: client id, bonus code</li></l>'

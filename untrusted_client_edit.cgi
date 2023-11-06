@@ -27,7 +27,7 @@ PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 
 my $broker = request()->broker_code;
-my $clerk  = BOM::Backoffice::Auth0::get_staffname();
+my $clerk  = BOM::Backoffice::Auth::get_staffname();
 
 my $clientID           = uc(request()->param('login_id') // '');
 my $action             = request()->param('untrusted_action');

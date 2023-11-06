@@ -39,7 +39,7 @@ PrintContentType();
 BrokerPresentation('Product Management');
 
 my $args_content;
-my $staff         = BOM::Backoffice::Auth0::get_staffname();
+my $staff         = BOM::Backoffice::Auth::get_staffname();
 my $r             = request();
 my $limit_profile = BOM::Config::quants()->{risk_profile};
 my $app_config    = BOM::Config::Runtime->instance->app_config;
@@ -57,7 +57,7 @@ my %allowed_multiple = (
 my $current_config           = $app_config->get(['quants.custom_client_profiles', 'quants.custom_product_profiles']);
 my $current_client_profiles  = $json->decode($current_config->{'quants.custom_client_profiles'});
 my $current_product_profiles = $json->decode($current_config->{'quants.custom_product_profiles'});
-my $disabled_write           = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write           = not BOM::Backoffice::Auth::has_quants_write_access();
 
 if ($r->param('update_limit')) {
 

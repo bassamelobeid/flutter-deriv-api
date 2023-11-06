@@ -18,7 +18,7 @@ use BOM::User::Client;
 use CGI;
 use Log::Any qw($log);
 
-my $clerk = BOM::Backoffice::Auth0::get_staffname();
+my $clerk = BOM::Backoffice::Auth::get_staffname();
 my ($code, $client_email, $client);
 my $cgi   = CGI->new;
 my $title = 'Make dual control code';

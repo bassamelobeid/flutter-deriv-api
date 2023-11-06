@@ -18,7 +18,7 @@ my $loginID         = uc(request()->param('loginID'));
 my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
 BrokerPresentation('Quant Query', '', '');
-my $staff = BOM::Backoffice::Auth0::get_staff();
+my $staff = BOM::Backoffice::Auth::get_staff();
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
     code_exit_BO("Error : wrong loginID ($encoded_loginID).");

@@ -13,14 +13,14 @@ BOM::Backoffice::Sysinit::init();
 use BOM::Config::Chronicle;
 use Date::Utility;
 use Quant::Framework::Calendar;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::QuantsAuditLog;
 use Syntax::Keyword::Try;
 
 PrintContentType();
 BrokerPresentation("Upload Calendar");
 
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $staff = BOM::Backoffice::Auth::get_staffname();
 use BOM::Backoffice::Request qw(request);
 
 my %input = %{request()->params};

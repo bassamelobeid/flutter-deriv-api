@@ -16,7 +16,7 @@ BrokerPresentation('BACKOFFICE ACCOUNTS');
 
 my $broker           = request()->broker_code;
 my $encoded_broker   = encode_entities($broker);
-my $clerk            = BOM::Backoffice::Auth0::get_staffname();
+my $clerk            = BOM::Backoffice::Auth::get_staffname();
 my $currency_options = get_currency_options();
 
 if (length($broker) < 2) {
@@ -29,7 +29,7 @@ my $today = Date::Utility->new->date_ddmmmyy;
 
 my $tt = BOM::Backoffice::Request::template;
 
-if (BOM::Backoffice::Auth0::has_authorisation(['Payments', 'AccountsAdmin', 'AccountsLimited'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Payments', 'AccountsAdmin', 'AccountsLimited'])) {
 
     Bar("Quick check of a client account");
 
@@ -66,7 +66,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Payments', 'AccountsAdmin', 'Acc
 
     $tt->process('backoffice/account/manager_batch_doughflow.tt') || die $tt->error();
 
-    unless (BOM::Backoffice::Auth0::has_authorisation(['AccountsLimited'])) {
+    unless (BOM::Backoffice::Auth::has_authorisation(['AccountsLimited'])) {
         Bar("Make Dual Control Code");
         print "<p>To comply with ISO17799 requirements, deposits/withdrawals to client accounts require 2 staff members to authorise.
 One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when inputting the transaction.</p>";
@@ -93,7 +93,7 @@ One staff member needs to generate a 'Dual Control Code' that is then used by th
 
 }
 
-if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Payments'])) {
 
     Bar("Make Dual Control Code (MT5 Auto Transfer)");
     print "<p>To comply with ISO17799 requirements, deposits/withdrawals to client accounts require 2 staff members to authorise.

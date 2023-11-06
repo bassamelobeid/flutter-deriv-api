@@ -23,7 +23,7 @@ my $DCcode                 = delete $params{DCcode};
 my $override_status        = delete $params{skip_validation};
 my $custom_transfer_amount = delete $params{custom_transfer_amount};
 my $skip_archive           = delete $params{skip_archive};
-my $staff                  = BOM::Backoffice::Auth0::get_staffname();
+my $staff                  = BOM::Backoffice::Auth::get_staffname();
 
 unless (@mt5_accounts) {
     print 'No MT5 Accounts Found! <br>';

@@ -9,7 +9,7 @@ use lib  qw(/home/git/regentmarkets/bom-backoffice);
 use JSON::MaybeUTF8          qw(:v1);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
@@ -26,10 +26,10 @@ use Log::Any                          qw($log);
 use BOM::Backoffice::MultiplierRiskManagementTool;
 
 BOM::Backoffice::Sysinit::init();
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $staff = BOM::Backoffice::Auth::get_staffname();
 my $r     = request();
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
 if ($r->param('save_multiplier_config')) {
     my $qc = BOM::Config::QuantsConfig->new(

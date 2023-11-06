@@ -351,7 +351,7 @@ sub allow_uplift_self_exclusion {
 
 # If exclude_until date has not expired and client is under Deriv (Europe) Limited, Deriv (MX) Ltd,
 # or Deriv Investments (Europe) Limited, then only Compliance team can amend or remove the exclude_until date
-    return 1 if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']));
+    return 1 if (BOM::Backoffice::Auth::has_authorisation(['Compliance']));
 
     # Default value (no uplifting allowed)
     return 0;
@@ -493,7 +493,7 @@ SQL
     }
 
     # MARKETING SECTION
-    my $promo_code_access = BOM::Backoffice::Auth0::has_authorisation(['Marketing']);
+    my $promo_code_access = BOM::Backoffice::Auth::has_authorisation(['Marketing']);
 
     my $self_exclusion_enabled = $client->self_exclusion ? 'yes' : '';
 
@@ -697,7 +697,7 @@ SQL
         });
     my $proof_of_ownership_list = $client->proof_of_ownership->list();
 
-    my $poo_access = BOM::Backoffice::Auth0::has_authorisation(['AntiFraud', 'CS']);
+    my $poo_access = BOM::Backoffice::Auth::has_authorisation(['AntiFraud', 'CS']);
     my ($latest_poi_by) = $client->latest_poi_by({only_verified => 1});
 
     # checking if the client tax_residence(country) and landing company are part NPJ (TIN not required) so TAX IDENTIFICATION NUMBER will show NPJ country
@@ -770,7 +770,7 @@ SQL
         poinc_resubmission_count                     => $poinc_resubmission_count,
         text_validation_info                         => client_text_field_validation_info($client, secret_answer => $secret_answer),
         aml_risk_levels                              => [get_aml_risk_classicications()],
-        is_staff_compliance                          => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
+        is_staff_compliance                          => BOM::Backoffice::Auth::has_authorisation(['Compliance']),
         onfido_resubmission_counter                  => $onfido_resubmission_counter // 0,
         account_opening_reasons                      => ACCOUNT_OPENING_REASONS,
         poi_reasons                                  => \@poi_reasons_tpl,
@@ -785,7 +785,7 @@ SQL
         login_locked_until                           => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
         too_many_attempts                            => $too_many_attempts,
         screening_reasons                            => [BOM::User::LexisNexis::SCREENING_REASON],
-        is_compliance                                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
+        is_compliance                                => BOM::Backoffice::Auth::has_authorisation(['Compliance']),
         risk_disclaimer_updated_at                   => $risk_disclaimer_resubmission_updated_at,
         risk_disclaimer_updated_by                   => $risk_disclaimer_resubmission_updated_by,
         payment_methods                              => $doughflow_mapper->get_poo_required_methods(),
@@ -1867,7 +1867,7 @@ sub get_client_details {
     }
 
     if ($client->loginid =~ /^MF/
-        and !BOM::Backoffice::Auth0::has_authorisation([qw/CSRegulated IT Compliance Payments Marketing-EU/]))
+        and !BOM::Backoffice::Auth::has_authorisation([qw/CSRegulated IT Compliance Payments Marketing-EU/]))
     {
         print "<p class='notify notify--danger'>ERROR: You cannot view this client's profile. </p>";
         code_exit_BO(
@@ -1897,7 +1897,7 @@ sub get_client_details {
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
     my $encoded_broker  = encode_entities($broker);
-    my $clerk           = BOM::Backoffice::Auth0::get_staffname();
+    my $clerk           = BOM::Backoffice::Auth::get_staffname();
 
     my $affiliate_mt5_accounts_db = $user->dbic->run(
         fixup => sub {
@@ -2768,7 +2768,7 @@ an unauthorized update/write operation
 =cut
 
 sub write_operation_error {
-    return "You are not authorized to update client details" if (request()->http_method eq 'POST' and not BOM::Backoffice::Auth0::has_write_access());
+    return "You are not authorized to update client details" if (request()->http_method eq 'POST' and not BOM::Backoffice::Auth::has_write_access());
 
     return undef;
 }

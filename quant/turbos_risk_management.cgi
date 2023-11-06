@@ -17,7 +17,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Turbos Risk Management Tool');
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
 Bar("Risk Profile Definitions");
 BOM::Backoffice::Request::template()->process('backoffice/turbos_profile_definitions.html.tt', {%{_get_turbos_risk_profile_definition()}},)

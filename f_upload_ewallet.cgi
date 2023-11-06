@@ -15,9 +15,9 @@ use BOM::Backoffice::Sysinit      ();
 BOM::Backoffice::Sysinit::init();
 
 use Date::Utility;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $staff = BOM::Backoffice::Auth::get_staffname();
 use BOM::Backoffice::Request qw(request);
 
 my %input = %{request()->params};

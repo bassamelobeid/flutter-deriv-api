@@ -23,10 +23,10 @@ use BOM::Backoffice::Utility;
 use Date::Utility;
 use BOM::Backoffice::Request qw(request);
 use Quant::Framework::CorrelationMatrix;
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::QuantsAuditLog;
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::get_staffname();
+my $staff  = BOM::Backoffice::Auth::get_staffname();
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 

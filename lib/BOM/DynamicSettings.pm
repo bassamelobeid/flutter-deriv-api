@@ -22,7 +22,7 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
 use BOM::Backoffice::Request qw(request);
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use Brands;
 
 =head1 NAME
@@ -94,7 +94,7 @@ sub save_settings {
     if ($submitted) {
         my $app_config = BOM::Config::Runtime->instance->app_config;
         # pass in the writer before setting any config
-        $app_config->chronicle_writer(BOM::Config::Chronicle::get_audited_chronicle_writer(BOM::Backoffice::Auth0::get_staffname()));
+        $app_config->chronicle_writer(BOM::Config::Chronicle::get_audited_chronicle_writer(BOM::Backoffice::Auth::get_staffname()));
 
         my $setting_revision   = $app_config->global_revision();
         my $submitted_revision = $settings->{'revision'};
@@ -170,7 +170,7 @@ sub save_settings {
 
                     }
 
-                    my $staff = BOM::Backoffice::Auth0::get_staffname();
+                    my $staff = BOM::Backoffice::Auth::get_staffname();
                     BOM::Backoffice::QuantsAuditLog::log($staff, "updatedynamicsettingpage", $log_content);
                     $app_config->set($values_to_set);
                     $message .= '<p class="notify center">Saved global settings to environment.</p>';
@@ -338,7 +338,6 @@ sub get_settings_by_group {
                 system.ctrader.suspend.deposits
                 system.ctrader.suspend.withdrawals
                 system.ctrader.suspend.user_exceptions
-                system.backoffice.disable_auth0_login
             )
         ],
         quant => [qw(
@@ -883,7 +882,7 @@ sub send_email_notification {
           ($for =~ /quants\.contract_types\.suspend_(?:buy|trades)/) ? 'Contract_type'
         : ($for =~ /quants\.markets\.suspend_(?:buy|trades)/)        ? 'Market'
         :                                                              'Underlying';
-    my $staff   = BOM::Backoffice::Auth0::get_staffname();
+    my $staff   = BOM::Backoffice::Auth::get_staffname();
     my @message = "$enable_disable the following offering:";
     push @message, "$disable_type: " . join(",", @different);
     push @message, "By $staff on " . Date::Utility->new->datetime;

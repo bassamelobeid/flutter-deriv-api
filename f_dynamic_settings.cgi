@@ -33,7 +33,7 @@ if (request()->param('page') eq 'global') {
         code_exit_BO("The group '$group_to_display' not found.");
     }
 
-    if ($authorisations->{$group_to_display} && BOM::Backoffice::Auth0::has_authorisation($authorisations->{$group_to_display})) {
+    if ($authorisations->{$group_to_display} && BOM::Backoffice::Auth::has_authorisation($authorisations->{$group_to_display})) {
         push @{$settings_list}, @{BOM::DynamicSettings::get_settings_by_group($group_to_display)};
     } else {
         code_exit_BO('Access restricted.');

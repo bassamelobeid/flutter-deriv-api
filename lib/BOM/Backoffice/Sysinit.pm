@@ -11,7 +11,7 @@ use Plack::App::CGIBin::Streaming;
 use Time::HiRes ();
 use Log::Any    qw($log);
 
-use BOM::Backoffice::Auth0;
+use BOM::Backoffice::Auth;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -31,10 +31,9 @@ A module manages the requests and the permissions of the pages.
 =cut
 
 my $permissions = {
-    'f_broker_login.cgi'   => ['ALL'],
-    'login.cgi'            => ['ALL'],
-    'logout.cgi'           => ['ALL'],
-    'second_step_auth.cgi' => ['ALL'],
+    'f_broker_login.cgi' => ['ALL'],
+    'login.cgi'          => ['ALL'],
+    'logout.cgi'         => ['ALL'],
 
     'batch_payments.cgi'             => ['Payments', 'AccountsLimited', 'AccountsAdmin'],
     'f_makedcc.cgi'                  => ['Payments', 'AccountsAdmin'],
@@ -233,7 +232,7 @@ sub init {
                 alarm 0;
             });
 
-        my $staff = BOM::Backoffice::Auth0::check_staff();
+        my $staff = BOM::Backoffice::Auth::check_staff();
         @ENV{qw(AUDIT_STAFF_NAME AUDIT_STAFF_IP)} = ('unauthenticated', request()->client_ip);    ## no critic (RequireLocalizedPunctuationVars)
         $ENV{AUDIT_STAFF_NAME} = $staff->{nickname} if $staff;                                    ## no critic (RequireLocalizedPunctuationVars)
 
@@ -285,7 +284,7 @@ sub log_bo_access {
     }
     $l //= '(no parameters)';
     my $staffname = 'unauthenticated';
-    my $staff     = BOM::Backoffice::Auth0::check_staff();
+    my $staff     = BOM::Backoffice::Auth::check_staff();
     $staffname = $staff->{nickname} if $staff;
     my $s = $0;
     $s =~ s{^\Q/home/website/www}{};
@@ -303,7 +302,7 @@ sub log_bo_access {
 sub _show_error_and_exit {
     my $error   = shift;
     my $timenow = Date::Utility->new->datetime;
-    my $staff   = BOM::Backoffice::Auth0::check_staff();
+    my $staff   = BOM::Backoffice::Auth::check_staff();
     $log->warn("_show_error_and_exit: $error (IP: " . request()->client_ip . '), user: ' . ($staff ? $staff->{nickname} : '-'));
     # this can be duplicated for ALARM message, but not an issue
     PrintContentType();
@@ -331,7 +330,7 @@ sub authorise {
     # don't allow access to unknown scripts
     return 0 unless defined $permissions->{$script};
     return 1 if any { $_ eq 'ALL' } @{$permissions->{$script}};
-    return BOM::Backoffice::Auth0::has_authorisation($permissions->{$script});
+    return BOM::Backoffice::Auth::has_authorisation($permissions->{$script});
 }
 
 1;

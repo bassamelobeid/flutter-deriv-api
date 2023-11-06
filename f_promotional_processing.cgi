@@ -106,7 +106,7 @@ sub process_bonus_claim {
 
     $amount //= 0;
     my $json  = JSON::MaybeXS->new();
-    my $clerk = BOM::Backoffice::Auth0::get_staffname();
+    my $clerk = BOM::Backoffice::Auth::get_staffname();
     my $brand = request()->brand;
 
     my $tac_url     = $brand->tnc_approval_url({language => uc($client->user->preferred_language)}) . '?anchor=free-bonus#legal-binary';

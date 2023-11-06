@@ -61,7 +61,7 @@ if ($action && request()->http_method eq 'POST') {
     try {
         $result = $action->(
             client => $client,
-            clerk  => BOM::Backoffice::Auth0::get_staffname(),
+            clerk  => BOM::Backoffice::Auth::get_staffname(),
             input  => $input,
         );
     } catch ($err) {
@@ -74,7 +74,7 @@ if ($action && request()->http_method eq 'POST') {
 
                 $result = $action->(
                     client => $client,
-                    clerk  => BOM::Backoffice::Auth0::get_staffname(),
+                    clerk  => BOM::Backoffice::Auth::get_staffname(),
                     input  => $input,
                 );
             }
