@@ -712,6 +712,12 @@ sub actions_config {
             }
         ],
         [
+            'available_accounts',
+            {
+                category => 'account',
+            }
+        ],
+        [
             'get_available_accounts_to_transfer',
             {
                 category => 'account',
