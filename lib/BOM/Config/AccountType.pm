@@ -137,6 +137,14 @@ Returns type of transfer supported by the account
 
 has $is_cashier : reader = 0;
 
+=head2 is_enabled
+
+Returns status of the account type
+
+=cut
+
+has $is_enabled : reader = 0;
+
 =head1 METHODS
 
 =head2 supports_service
@@ -304,7 +312,7 @@ BUILD {
 
     $regulations = +{map { $_ => 1 } $args{regulations}->@*};
     $is_cashier  = $args{is_cashier} // 0;
-
+    $is_enabled  = $args{is_enabled} // 0;
     (
         $groups, $type_broker_codes, $linkable_to_different_currency,
         $linkable_wallet_types, $currency_types, $currencies, $currencies_by_landing_company,
@@ -343,6 +351,18 @@ method get_single_broker_code ($landing_company) {
     die "Multiple broker codes found in account type $name for $landing_company" if scalar(@$broker_codes) > 1;
 
     return $broker_codes->[0];
+}
+
+=head2 is_account_type_enabled
+
+Predicate checks that regulation is supported by account type
+
+Returns 1 if account type is enabled, otherwise 0
+
+=cut
+
+method is_account_type_enabled {
+    return $self->is_enabled ? 1 : 0;
 }
 
 =head2 is_regulation_supported

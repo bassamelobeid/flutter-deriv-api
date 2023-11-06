@@ -314,14 +314,6 @@ subtest 'Method is_regulation_supported' => sub {
     is $p2p->is_regulation_supported('svg'), 1, 'It should return false if account type supports regulation';
 };
 
-subtest 'Method is_regulation_supported' => sub {
-    my $p2p = BOM::Config::AccountType::Registry->account_type_by_name('p2p');
-
-    is $p2p->is_regulation_supported('maltainvest'), 0, 'It should return false if account type doesnt support regulation';
-
-    is $p2p->is_regulation_supported('svg'), 1, 'It should return false if account type supports regulation';
-};
-
 subtest 'Method is_supported for p2p' => sub {
     my $brand = Brands->new();
 
@@ -406,6 +398,28 @@ subtest 'Method get_details' => sub {
         linkable_to_different_currency => 1
         },
         'It should return correct structure for trading account';
+};
+
+subtest 'Method is_account_type_enabled' => sub {
+    my $paymentagent = BOM::Config::AccountType::Registry->account_type_by_name('paymentagent');
+
+    is $paymentagent->is_account_type_enabled, 0, 'It should return false because this account type is disabled';
+
+    my $paymentagent_client = BOM::Config::AccountType::Registry->account_type_by_name('paymentagent_client');
+
+    is $paymentagent_client->is_account_type_enabled, 0, 'It should return false because this account type is disabled';
+
+    my $p2p = BOM::Config::AccountType::Registry->account_type_by_name('p2p');
+
+    is $p2p->is_account_type_enabled, 0, 'It should return false because this account type is disabled';
+
+    my $crypto = BOM::Config::AccountType::Registry->account_type_by_name('crypto');
+
+    is $crypto->is_account_type_enabled, 1, 'It should return true if because this account type is enabled';
+
+    my $doughflow = BOM::Config::AccountType::Registry->account_type_by_name('doughflow');
+
+    is $doughflow->is_account_type_enabled, 1, 'It should return true if because this account type is enabled';
 };
 
 done_testing;

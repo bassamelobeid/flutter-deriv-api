@@ -148,6 +148,7 @@ categories:
           maltainvest:
             - MFW
         is_cashier: 1
+        is_enabled: 1
       crypto:
         account_opening:
           - real
@@ -158,6 +159,7 @@ categories:
         regulations:
           - svg
         is_cashier: 1
+        is_enabled: 1
       p2p:
         currencies:
           - USD
@@ -165,11 +167,13 @@ categories:
           - svg
         groups:
           - p2p
+        is_enabled: 0
       paymentagent:
         groups:
           - paymentagent
         regulations:
           - svg
+        is_enabled: 0
       paymentagent_client:
         account_opening:
           - real
@@ -177,6 +181,7 @@ categories:
           - paymentagent_client
         regulations:
           - svg
+        is_enabled: 0
       affiliate:
         account_opening:
           - real
@@ -187,6 +192,7 @@ categories:
         broker_codes:
           dsl:
             - CRA
+        is_enabled: 0
       virtual:
         currencies:
           - USD
@@ -195,3 +201,4 @@ categories:
         broker_codes:
           virtual:
             - VRW
+        is_enabled: 0
