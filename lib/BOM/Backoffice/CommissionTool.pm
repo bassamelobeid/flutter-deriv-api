@@ -40,7 +40,7 @@ sub get_commission_by_provider {
     my %symbols_map = $config->@*;
     my $by_market;
     foreach my $data (sort { $a->[2] cmp $b->[2] } $commissions->@*) {
-        my ($account_type, $type, $symbol, $rate) = $data->@*;
+        my ($account_type, $type, $symbol, $rate, $contract_size) = $data->@*;
         my $symbol_config = decode_json($symbols_map{$symbol} // '{}');
         if (not %$symbol_config) {
             warn "missing symbol configuration for $symbol, from provider $provider";
@@ -48,10 +48,11 @@ sub get_commission_by_provider {
         }
         push @{$by_market->{$symbol_config->{type}}},
             {
-            symbol       => $symbol,
-            account_type => $account_type,
-            type         => $type,
-            rate         => $rate,
+            symbol        => $symbol,
+            account_type  => $account_type,
+            type          => $type,
+            rate          => $rate,
+            contract_size => $contract_size,
             };
     }
 
@@ -68,7 +69,9 @@ Saves commission rate into commission DB
 =item + C<$args{provider}> - Affiliate provider (E.g. myaffiliate)
 =item + C<$args{account_type}> - account grouping (E.g. standard or stp)
 =item + C<$args{commission_type}> - type of commission scheme (E.g. volume or spread)
-=item + C<$args{commission_rate}> - commision to be charged
+=item + C<$args{commission_rate}> - commission to be charged
+=item + C<$args{contract_size}> - contract size
+
 
 =back
 
@@ -94,6 +97,7 @@ sub save_commission {
     my $db     = BOM::Database::CommissionDB::rose_db();
     my @success;
     my @fail;
+
     foreach my $symbol (@symbols) {
         try {
             $db->dbic->run(
@@ -113,6 +117,67 @@ sub save_commission {
 
     if (@fail) {
         $output = {error => sprintf("Failed to save [%s]", (join ', ', @fail))};
+    }
+
+    return $output;
+}
+
+=head2 delete_commission
+
+Delete commission rate in commission DB
+
+=over 4
+
+=item + C<$args{symbol}> - underlying symbol (E.g. frxUSDJPY)
+=item + C<$args{provider}> - Affiliate provider (E.g. myaffiliate)
+=item + C<$args{account_type}> - account grouping (E.g. standard or stp)
+=item + C<$args{commission_type}> - type of commission scheme (E.g. volume or spread)
+
+
+=back
+
+=cut
+
+sub delete_commission {
+    my $args = shift;
+
+    return {error => 'symbol is required'}          unless $args->{symbol};
+    return {error => 'provider is required'}        unless $args->{provider};
+    return {error => 'account_type is required'}    unless $args->{account_type};
+    return {error => 'commission_type is required'} unless $args->{commission_type};
+
+    # remove whitetespace at the beginning or end of symbol
+    $args->{symbol} =~ s/^\s+//g;
+    $args->{symbol} =~ s/\s+$//g;
+    my @symbols = split ',', $args->{symbol};
+
+    my $output = {success => 1};
+    my $db     = BOM::Database::CommissionDB::rose_db();
+    my @success;
+    my @fail;
+    foreach my $symbol (@symbols) {
+        try {
+            $db->dbic->run(
+                ping => sub {
+                    $_->do(
+                        q{
+                SELECT *
+                FROM affiliate.delete_commission_rate(?,?,?,?)
+            },
+                        undef,
+                        $args->{provider},
+                        $args->{account_type},
+                        $args->{commission_type},
+                        $symbol
+                    );
+                });
+            push @success, $symbol;
+        } catch ($e) {
+            push @fail, $symbol;
+        }
+    }
+    if (@fail) {
+        $output = {error => sprintf("Failed to delete [%s]", (join ', ', @fail))};
     }
 
     return $output;

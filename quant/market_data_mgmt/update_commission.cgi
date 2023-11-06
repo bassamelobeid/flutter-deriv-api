@@ -37,6 +37,16 @@ if ($r->param('save_cfds_commission')) {
     print encode_json_utf8($output);
 }
 
+if ($r->param('delete_cfds_commission')) {
+    my $output = BOM::Backoffice::CommissionTool::delete_commission({
+        provider        => $r->param('provider'),
+        symbol          => $r->param('symbol'),
+        account_type    => $r->param('account_type'),
+        commission_type => $r->param('commission_type'),
+    });
+    print encode_json_utf8($output);
+}
+
 if ($r->param('save_affiliate_payment')) {
     my $output = BOM::Backoffice::CommissionTool::save_affiliate_payment_details({
         provider        => $r->param('provider'),

@@ -39,9 +39,19 @@ BOM::Backoffice::Request::template()->process(
         commission => $commission_by_market,
         markets    => [sort { $a cmp $b } keys %$commission_by_market]}) || die BOM::Backoffice::Request::template()->error;
 
-Bar("Update Commssion");
+Bar("Create/Update Commission");
 BOM::Backoffice::Request::template()->process(
     'backoffice/commission_update.html.tt',
+    {
+        upload_url      => request()->url_for('backoffice/quant/market_data_mgmt/update_commission.cgi'),
+        commission_type => BOM::Backoffice::CommissionTool::get_enum_type('affiliate.commission_type'),
+        account_type    => BOM::Backoffice::CommissionTool::get_enum_type('transaction.account_type'),
+        provider        => $provider,
+    }) || die BOM::Backoffice::Request::template()->error;
+
+Bar("Delete Commission");
+BOM::Backoffice::Request::template()->process(
+    'backoffice/commission_delete.html.tt',
     {
         upload_url      => request()->url_for('backoffice/quant/market_data_mgmt/update_commission.cgi'),
         commission_type => BOM::Backoffice::CommissionTool::get_enum_type('affiliate.commission_type'),

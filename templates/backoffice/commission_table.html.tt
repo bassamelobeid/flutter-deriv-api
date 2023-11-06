@@ -5,6 +5,7 @@
             <th>Account Type</th>
             <th>Commission Type</th>
             <th>Commission Rate</th>
+            <th>Contract Size</th>            
         </tr>
         [% FOREACH row IN data %]
             <tr>
@@ -12,6 +13,7 @@
                 <td>$row.account_type</td>
                 <td>$row.type</td>
                 <td>$row.rate</td>
+                <td>$row.contract_size</td>                
             </tr>
         [% END %]
     </tbody>
