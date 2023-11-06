@@ -1962,10 +1962,27 @@ Returns a hashref of the users' updated reputation status
 sub update_reputation_status {
     my ($self, %args) = @_;
 
+    my $query = 'SELECT users.update_affiliate_reputation(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+
+    my @params = (
+        $self->{id},
+        @args{
+            qw/reputation_check
+                reputation_check_status
+                reputation_check_type
+                social_media_check
+                company_owned
+                criminal_record
+                civil_case_record
+                fraud_scam
+                start_date
+                last_review_date
+                reference/
+        });
+
     return $self->dbic->run(
         fixup => sub {
-            $_->do('SELECT users.update_affiliate_reputation(?, ?, ?, ?, ?, ?)',
-                undef, $self->{id}, @args{qw/reputation_status check_reason start_date last_review_date comment/});
+            $_->do($query, undef, @params);
         });
 }
 
