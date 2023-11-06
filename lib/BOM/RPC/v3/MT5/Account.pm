@@ -2854,9 +2854,10 @@ sub _eligible_to_migrate {
     my ($client, $mt5_account) = @_;
     my $sub_account_category  = $mt5_account->{sub_account_category};
     my $landing_company_short = $mt5_account->{landing_company_short};
+    my $group                 = $mt5_account->{group};
 
     # Step 1: Check eligibility based on sub-account category and landing company
-    if ($sub_account_category =~ /^(swap_free|swap_free_high_risk)$/ || $landing_company_short ne 'svg') {
+    if ($sub_account_category =~ /^(swap_free|swap_free_high_risk)$/ || $landing_company_short ne 'svg' || $group =~ /demo/) {
         return;    # Not eligible
     }
 

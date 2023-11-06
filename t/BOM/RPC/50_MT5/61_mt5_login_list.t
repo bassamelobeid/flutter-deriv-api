@@ -557,4 +557,46 @@ subtest 'mt5 svg migration: manual poi based jurisdiction selection' => sub {
     $mock_async_call->unmock_all;
 };
 
+subtest 'skip eligible to migrate flag for demo account' => sub {
+    # Since we already create CR account we can reuse it
+    my $client      = BOM::User::Client->new({loginid => 'CR10000'});
+    my $m           = BOM::Platform::Token::API->new;
+    my $token       = $m->create_token($client->loginid, 'test token');
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $method      = 'mt5_login_list';
+    my $params      = {
+        language => 'EN',
+        token    => $token,
+        args     => {},
+    };
+
+    $client_mock->mock('get_idv_status', sub { return 'verified' });
+    $client_mock->mock('get_poa_status', sub { return 'pending' });
+
+    $client->status->setnx('age_verification', 'Test', 'Test Case');
+    ok $client->status->age_verification, "Age verified by other sources";
+
+    my $demo_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'demo',
+            email            => 'demo_' . $DETAILS{email},
+            name             => $DETAILS{name},
+            mainPassword     => $DETAILS{password}{main},
+            leverage         => 100,
+            company          => 'svg',
+            mt5_account_type => 'financial',
+        },
+    };
+    my $result = $c->call_ok('mt5_new_account', $demo_params)->has_no_error('demo account successfully created')->result;
+    is $result->{account_type}, 'demo', 'demo account creation';
+
+    my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+    my ($demo_account) = grep { $_->{'group'} && $_->{'group'} =~ /demo/ } @$login_list;
+    is $demo_account->{eligible_to_migrate}, undef, 'skipping for client that already bvi have account';
+
+    $client_mock->unmock_all;
+};
+
 done_testing();
