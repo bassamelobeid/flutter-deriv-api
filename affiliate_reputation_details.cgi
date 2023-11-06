@@ -66,18 +66,24 @@ unless (@affiliates) {
 
 my $is_compliance = BOM::Backoffice::Auth::has_authorisation(['Compliance']);
 
-if (exists $input{affiliate_reason_for_reputation} && $is_compliance) {
+if (exists $input{reputation_check} && $is_compliance) {
     try {
         $user->update_reputation_status(
-            reputation_status => $input{status_for_reputation}           // '',
-            check_reason      => $input{affiliate_reason_for_reputation} // '',
-            start_date        => $input{start_date}                      // '',
-            last_review_date  => $input{last_review_date}                // '',
-            comment           => $input{affiliate_notes}                 // ''
+            reputation_check        => $input{reputation_check}        // '',
+            reputation_check_status => $input{reputation_check_status} // '',
+            reputation_check_type   => $input{reputation_check_type}   // '',
+            social_media_check      => $input{social_media_check}      // '',
+            company_owned           => $input{company_owned}           // '',
+            criminal_record         => $input{criminal_record}         // '',
+            civil_case_record       => $input{civil_case_record}       // '',
+            fraud_scam              => $input{fraud_scam}              // '',
+            start_date              => $input{start_date}              // '',
+            last_review_date        => $input{last_review_date}        // '',
+            reference               => $input{reference}               // ''
         );
 
-        if ($input{status_for_reputation} eq "Failed") {
-            $client->status->setnx('disabled', BOM::Backoffice::Auth::get_staffname(), 'Account should be disable due to Failed Repuation check.');
+        if ($input{reputation_check_status} eq "Failed") {
+            $client->status->setnx('disabled', BOM::Backoffice::Auth0::get_staffname(), 'Account should be disable due to Failed Repuation check.');
             $is_affiliate = 0;
         } else {
             $client->status->_clear('disabled');
@@ -85,7 +91,7 @@ if (exists $input{affiliate_reason_for_reputation} && $is_compliance) {
         }
         print "<p class=\"notify\">Successfully updated for client: $loginid</p>";
     } catch ($e) {
-        print "<p class=\"notify notify--warning\">Failed to update Reputation status of affiliate: $loginid</p>";
+        print "<p class=\"notify notify--warning\">Failed to update Reputation status of affiliate: $loginid => $e</p>";
     }
 }
 
@@ -100,12 +106,18 @@ $start_date       = Date::Utility->new($start_date)->date       if $start_date;
 $last_review_date = Date::Utility->new($last_review_date)->date if $last_review_date;
 
 my $template_params = {
-    user_affiliate_reputation_status => $user_reputation_status->{reputation_status} // '',
-    user_affiliate_check_reason      => $user_reputation_status->{check_reason}      // '',
-    user_affiliate_start_date        => $start_date                                  // '',
-    user_affiliate_last_review_date  => $last_review_date                            // '',
-    user_affiliate_comment           => $user_reputation_status->{comment}           // '',
-    is_compliance                    => $is_compliance                               // '',
+    reputation_check        => $user_reputation_status->{reputation_check}        // '',
+    reputation_check_status => $user_reputation_status->{reputation_check_status} // '',
+    reputation_check_type   => $user_reputation_status->{reputation_check_type}   // '',
+    social_media_check      => $user_reputation_status->{social_media_check}      // '',
+    company_owned           => $user_reputation_status->{company_owned}           // '',
+    criminal_record         => $user_reputation_status->{criminal_record}         // '',
+    civil_case_record       => $user_reputation_status->{civil_case_record}       // '',
+    fraud_scam              => $user_reputation_status->{fraud_scam}              // '',
+    start_date              => $start_date                                        // '',
+    last_review_date        => $last_review_date                                  // '',
+    reference               => $user_reputation_status->{reference}               // '',
+    is_compliance           => $is_compliance                                     // '',
 };
 
 print q{

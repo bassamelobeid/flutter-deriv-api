@@ -260,7 +260,7 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
         },
         {
             link => 'affiliate_reputation_details',
-            text => 'Affiliate Reputation'
+            text => 'Reputation Check Summary'
         }];
 
     my $misc_tools_list = [{
