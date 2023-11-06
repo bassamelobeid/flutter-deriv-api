@@ -21,7 +21,6 @@ use Digest::SHA     qw( hmac_sha256_hex );
 use Text::Trim      qw( trim );
 use JSON::MaybeUTF8 qw( decode_json_utf8 encode_json_utf8);
 use URI;
-use List::Util qw(any);
 
 use BOM::User::Client;
 use BOM::User::FinancialAssessment
@@ -3760,4 +3759,84 @@ rpc "unsubscribe_email",
     };
 
     };
+
+rpc available_accounts => sub {
+    my ($args, $client) = shift->@{qw(args client)};
+    my $country            = $client->residence;
+    my $landing_company    = $args->{company} // $client->landing_company->short;
+    my $brand              = request()->brand;
+    my $countries_instance = $brand->countries_instance;
+
+    # check if residence is allowed
+    if ($countries_instance->restricted_country($country)) {
+        return {error => {code => 'RestrictedCountry'}};
+    }
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    # create a Multidimensional hash of client using account_type, landing_company_name, and currency
+    my $user = $client->user;
+    my @user_clients;
+
+    foreach my $loginid (sort $user->bom_real_loginids) {
+        my $cl = BOM::User::Client->get_client_instance($loginid, 'replica');
+        next unless $cl;
+        push @user_clients, $cl;
+    }
+    my $client_hash = {};
+
+    # no accounts with no currency set
+    @user_clients = grep { $_->default_account } @user_clients;
+
+    for my $c (@user_clients) {
+        my $currency = $c->currency;
+
+        # Only one wallet with fiat currency is allowed
+        $currency = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? 'fiat' : $currency;
+        my $landing_company_name = $c->landing_company->short;
+        my $account_type         = $c->get_account_type->name;
+        $client_hash->{$account_type}->{$landing_company_name}->{$currency} = 1;
+    }
+
+    my $syntehtic_company = $countries_instance->gaming_company_for_country($country);
+    my $financial_company = $countries_instance->financial_company_for_country($country);
+    my @companies         = uniq grep { defined $_ } ($syntehtic_company, $financial_company);
+
+    my %result = (wallets => []);
+
+    for my $landing_company (sort @companies) {
+
+        my $wallet_types =
+            BOM::Config::AccountType::Registry->category_by_name('wallet')->get_account_types_for_regulation($landing_company, $country, $brand);
+        for my $type (sort { $a->name cmp $b->name } $wallet_types->@*) {
+
+            # check if account type is enabled
+            next unless $type->is_account_type_enabled;
+
+            my $account_type = $type->name;
+
+            # get available currencies for landing company
+            my $curencies = $type->get_details($landing_company)->{currencies};
+            for my $cur (sort $curencies->@*) {
+
+                my $currency_to_check = LandingCompany::Registry::get_currency_type($cur) eq 'fiat' ? 'fiat' : $cur;
+
+                # not used yet due to accounty_type restriction but preperation for later stage
+                next if ($account_type eq 'p2p' && grep { $_ ne lc($cur) } $app_config->payments->p2p->available_for_currencies->@*);
+
+                # check if client already has this account
+                # we compare this to the hash we created client_hash
+                next if $client_hash->{$account_type}->{$landing_company}->{$currency_to_check};
+
+                push $result{wallets}->@*,
+                    {
+                    landing_company => $landing_company,
+                    account_type    => $account_type,
+                    currency        => $cur
+                    };
+            }
+        }
+    }
+
+    return \%result;
+};
 1;
