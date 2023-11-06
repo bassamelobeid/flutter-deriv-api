@@ -811,6 +811,8 @@ subtest 'gb account' => sub {
         residence      => 'gb'
     });
 
+    $user->add_client($vr_client);
+
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t->await::authorize({authorize => $token});
 

@@ -465,6 +465,8 @@ subtest 'trading_platform_available_accounts' => sub {
         broker_code => 'CR',
         residence   => 'my'
     });
+    $user->add_client($client);
+
     $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
 
     $t->await::authorize({authorize => $token});

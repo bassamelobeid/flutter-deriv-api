@@ -11,7 +11,7 @@ use BOM::Test::Helper                          qw(test_schema build_wsapi_test);
 use BOM::Test::Helper::Utility                 qw(random_email_address);
 use BOM::Test::Helper::Client                  qw(create_client);
 
-use BOM::Platform::Token::API;
+use BOM::Database::Model::OAuth;
 use BOM::User;
 use BOM::User::Password;
 
@@ -20,8 +20,8 @@ use lib "$Bin/../lib";
 
 use await;
 
-my $t = build_wsapi_test({language => 'EN'});
-my $m = BOM::Platform::Token::API->new;
+my $t     = build_wsapi_test({language => 'EN'});
+my $oauth = BOM::Database::Model::OAuth->new;
 
 my $email = random_email_address;
 my $user  = BOM::User->create(
@@ -29,19 +29,31 @@ my $user  = BOM::User->create(
     password       => BOM::User::Password::hashpw('jskjd8292922'),
     email_verified => 1,
 );
-my $client = create_client(
+my $client1 = create_client(
     'CR', undef,
     {
         email          => $email,
         residence      => 'id',
         place_of_birth => 'id'
     });
-$client->set_default_account('BTC');
-$user->add_client($client);
-my $client_token = $m->create_token($client->loginid, 'test token', ['read', 'payments']);
+$client1->set_default_account('BTC');
+$user->add_client($client1);
 
-subtest 'Crypto cashier calls' => sub {
-    $t->await::authorize({authorize => $client_token});
+my ($client1_token) = $oauth->store_access_token_only(1, $client1->loginid);
+
+my $client2 = create_client(
+    'CR', undef,
+    {
+        email          => $email,
+        residence      => 'id',
+        place_of_birth => 'id'
+    });
+$client2->set_default_account('BTC');
+$user->add_client($client2);
+my ($client2_token) = $oauth->store_access_token_only(1, $client2->loginid);
+
+subtest 'Crypto cashier calls with multiple tokens' => sub {
+    $t->await::authorize({authorize => $client1_token, tokens => [$client2_token]});
 
     my $rpc_response    = {};
     my $mocked_response = Test::MockObject->new();
@@ -63,6 +75,7 @@ subtest 'Crypto cashier calls' => sub {
     };
     my $ws_response = $t->await::cashier({
         cashier  => 'deposit',
+        loginid  => $client2->loginid,
         provider => 'crypto',
         type     => 'api',
     });
@@ -77,6 +90,7 @@ subtest 'Crypto cashier calls' => sub {
     };
     $ws_response = $t->await::cashier({
         cashier  => 'withdraw',
+        loginid  => $client2->loginid,
         provider => 'crypto',
         type     => 'api',
         address  => 'sample_withdrawal_address',
@@ -96,6 +110,7 @@ subtest 'Crypto cashier calls' => sub {
     };
     $ws_response = $t->await::cashier({
         cashier  => 'withdraw',
+        loginid  => $client2->loginid,
         provider => 'crypto',
         type     => 'api',
         address  => 'sample_withdrawal_address',
@@ -110,6 +125,7 @@ subtest 'Crypto cashier calls' => sub {
     };
     $ws_response = $t->await::cashier_withdrawal_cancel({
         cashier_withdrawal_cancel => 1,
+        loginid                   => $client2->loginid,
         id                        => 123,
     });
     test_schema(cashier_withdrawal_cancel => $ws_response);
@@ -143,76 +159,13 @@ subtest 'Crypto cashier calls' => sub {
     };
     $ws_response = $t->await::cashier_payments({
         cashier_payments => 1,
+        loginid          => $client2->loginid,
+        subscribe        => 1,
         provider         => 'crypto',
         transaction_type => 'all',
     });
     test_schema(cashier_payments => $ws_response);
     cmp_deeply $ws_response->{cashier_payments}, $rpc_response, 'Expected response for cashier_payments received';
-};
-
-subtest 'crypto_config call' => sub {
-
-    my $rpc_response    = {};
-    my $mocked_response = Test::MockObject->new();
-    $mocked_response->mock('is_error', sub { 0 });
-    $mocked_response->mock('result',   sub { $rpc_response });
-    {
-        no warnings qw(redefine once);    ## no critic (ProhibitNoWarnings)
-
-        *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
-            return $mocked_response;
-        }
-    }
-
-    $rpc_response = {
-        currencies_config => {
-            BTC   => {minimum_withdrawal => 0.00059166},
-            ETH   => {minimum_withdrawal => 0.01030783},
-            tUSDT => {
-                minimum_withdrawal => 100,
-                minimum_deposit    => 1
-            }
-
-        },
-    };
-    my $ws_response = $t->await::crypto_config({
-        crypto_config => '1',
-    });
-
-    test_schema(crypto_config => $ws_response);
-    cmp_deeply $ws_response->{crypto_config}, $rpc_response, 'Expected response for crypto_config received';
-
-};
-
-subtest 'crypto_estimations call' => sub {
-
-    my $rpc_response = {
-        "BTC" => {
-            "withdrawal_fee" => {
-                "value"       => 0.0001,
-                "unique_id"   => "c84a793b-8a87-7999-ce10-9b22f7ceead3",
-                "expiry_time" => 1689305114,
-            }}};
-
-    my $mocked_response = Test::MockObject->new();
-    $mocked_response->mock('is_error', sub { 0 });
-    $mocked_response->mock('result',   sub { $rpc_response });
-    {
-        no warnings qw(redefine once);    ## no critic (ProhibitNoWarnings)
-
-        *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
-            return $mocked_response;
-        }
-    }
-
-    my $ws_response = $t->await::crypto_estimations({
-        crypto_estimations => '1',
-        currency_code      => 'BTC',
-    });
-
-    test_schema(crypto_estimations => $ws_response);
-    cmp_deeply $ws_response->{crypto_estimations}, $rpc_response, 'Expected response for crypto_estimations received';
-
 };
 
 $t->finish_ok;

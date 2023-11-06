@@ -358,11 +358,11 @@ subtest 'Onfido status with pending flag' => sub {
     $client->binary_user_id($user->id);
     $client->save;
 
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
-    $t->await::authorize({authorize => $token});
-
     $user->add_client($client);
     $client->binary_user_id($user->id);
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+    $t->await::authorize({authorize => $token});
 
     my $pending_key = +BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $user->id;
     my $redis       = BOM::Config::Redis::redis_events();
