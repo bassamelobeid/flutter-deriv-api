@@ -9,7 +9,7 @@ use Convert::Base32;
 use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
-use BOM::RPC::v3::Utility qw(log_exception);
+use BOM::RPC::v3::Annotations qw(annotate_db_calls);
 use BOM::RPC::v3::Accounts;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Token::API;
@@ -616,7 +616,14 @@ sub _get_client_local_currencies {
     return \%local_currencies;
 }
 
-rpc logout => sub {
+=head2 logout
+handles the user logout
+=cut   
+
+rpc logout => annotate_db_calls(
+    read  => ['authdb', 'clientdb'],
+    write => ['userdb']
+) => sub {
     my $params = shift;
 
     if (my $email = $params->{email}) {
