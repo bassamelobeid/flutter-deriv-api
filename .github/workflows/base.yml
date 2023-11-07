@@ -3,9 +3,15 @@ run-name: Repository tests
 on:
   workflow_call:
     inputs:
+      debianci_image:
+        description: 'Docker image where the jobs should be run'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
       repository:
         description: 'Repository name for running tests'
-        required: true
+        required: false
+        default: regentmarkets/bom-myaffiliates
         type: string 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
@@ -15,6 +21,7 @@ jobs:
     uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
     secrets: inherit
     with:
+      debianci_image: ${{ inputs.debianci_image }}
       repository: ${{ inputs.repository }}
 
 
