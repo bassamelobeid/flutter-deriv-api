@@ -7,7 +7,7 @@ no indirect;
 
 use Future::AsyncAwait;
 use IO::Async::Loop;
-
+use Syntax::Keyword::Try;
 use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(:v1);
 use Getopt::Long;
@@ -29,16 +29,30 @@ GetOptions(
     'max_connection=s'    => \$max_connection,
 );
 
-my $loop = IO::Async::Loop->new;
+while (1) {
+    my $loop;
+    try {
+        $loop = IO::Async::Loop->new;
 
-my $live_pricing = BOM::MT5::Script::LivePricing->new(
-    mt5_redis_config  => $mt5_redis_config_file,
-    feed_redis_config => $feed_redis_config_file,
-    mt5_config        => $mt5_config_file,
-    firebase_config   => $firebase_config,
-    max_connection    => $max_connection,
-);
+        my $live_pricing = BOM::MT5::Script::LivePricing->new(
+            mt5_redis_config  => $mt5_redis_config_file,
+            feed_redis_config => $feed_redis_config_file,
+            mt5_config        => $mt5_config_file,
+            firebase_config   => $firebase_config,
+            max_connection    => $max_connection,
+        );
 
-$loop->add($live_pricing);
+        $loop->add($live_pricing);
 
-$live_pricing->run->get();
+        $live_pricing->run->get();
+
+        $loop->remove($live_pricing);
+    } catch ($e) {
+        $log->errorf('Error occurred in mt5_live_pricing script %s', $e);
+
+    } finally {
+        $log->debug("Retrying in 5 seconds");
+        $loop->delay_future(after => 5)->get;
+
+    }
+}

@@ -133,7 +133,7 @@ sub new {
 
 =head2 run
 
-Runs the asset listing script
+Runs the live pricing script
 
 =over 4
 
@@ -150,7 +150,7 @@ async sub run {
 
     $log->debug("Running live pricing");
 
-    my @futures = ($self->update_price, $self->subscribe_for_tick, $self->reload_config,);
+    my @futures = ($self->timer, $self->update_price, $self->subscribe_for_tick, $self->reload_config,);
 
     await Future->wait_any(@futures);
 }
@@ -166,24 +166,22 @@ async sub subscribe_for_tick {
 
     my $feed_redis = $self->{feed_redis};
 
-    await $feed_redis->connect->then(
-        sub {
-            $feed_redis->psubscribe('MT5::*');
-        }
-    )->then(
-        sub {
-            my ($sub) = @_;
-            my $source = $sub->events->map('payload')->decode('json');
-            $source->each(
-                sub {
-                    my $tick = shift;
+    try {
+        await $feed_redis->connected;
+        my $subscription = await $feed_redis->psubscribe('MT5::*');
+        await $subscription->events->map('payload')->decode('UTF-8')->decode('json')->map(
+            async sub {
+                my $tick = shift;
+                try {
                     $self->process_tick($tick)->retain;
-                });
-            $source->completed->on_fail(
-                sub {
-                    $log->debug("fail to process");
-                });
-        });
+                } catch ($error) {
+                    $log->warnf("fail to process. Tick: %s | Error: %s", $tick, $error);
+                }
+            })->resolve->completed;
+    } catch ($e) {
+        $log->errorf("Error in subscribe_for_tick: $e");
+    }
+
 }
 
 =head2 process_tick
@@ -374,40 +372,48 @@ Initialise instrument configuration from MT5 settings.
 async sub initialise_config {
     my $self = shift;
 
-    try {
-        # This will need to be configuration in the backoffice
-        my $live_pricing = BOM::Config::Runtime->instance->app_config->quants->live_pricing_config;
-        my $config;
-        my $available_region;
-        foreach my $region (qw(eu row)) {
-            $log->debugf("initialising config for region: %s", $region);
-            my $symbols_config = decode_json_utf8($live_pricing->$region->symbols // '[]');
-            unless ($symbols_config->@*) {
-                $log->debugf("Undefined symbols config for region: %s", $region);
-                next;
-            }
+    my $retry_delay = 10;    # Delay in seconds between retries
 
-            foreach my $c ($symbols_config->@*) {
-                my $mt5_group           = $c->{group};
-                my $group_symbol_config = await $self->_get_group_symbol_config($mt5_group);
-                foreach my $symbol_config ($c->{symbols}->@*) {
-                    my $symbol = $symbol_config->{symbol};
-                    unless (defined $group_symbol_config->{$symbol}) {
-                        $log->debugf("group symbol config not found for group %s and %s", $mt5_group, $symbol);
-                        next;
+    while (1) {
+        try {
+            # This will need to be configuration in the backoffice
+            my $live_pricing = BOM::Config::Runtime->instance->app_config->quants->live_pricing_config;
+            my $config;
+            my $available_region;
+            foreach my $region (qw(eu row)) {
+                $log->debugf("initializing config for region: %s", $region);
+                my $symbols_config = decode_json_utf8($live_pricing->$region->symbols // '[]');
+                unless ($symbols_config->@*) {
+                    $log->debugf("Undefined symbols config for region: %s", $region);
+                    next;
+                }
+
+                foreach my $c ($symbols_config->@*) {
+                    my $mt5_group           = $c->{group};
+                    my $group_symbol_config = await $self->_get_group_symbol_config($mt5_group);
+                    foreach my $symbol_config ($c->{symbols}->@*) {
+                        my $symbol = $symbol_config->{symbol};
+                        unless (defined $group_symbol_config->{$symbol}) {
+                            $log->debugf("group symbol config not found for group %s and %s", $mt5_group, $symbol);
+                            next;
+                        }
+                        $config->{$region}{$symbol} //= {$group_symbol_config->{$symbol}->%*, $symbol_config->%*};
+                        push $available_region->{$symbol}->@*, $region;
                     }
-                    $config->{$region}{$symbol} //= {$group_symbol_config->{$symbol}->%*, $symbol_config->%*};
-                    push $available_region->{$symbol}->@*, $region;
                 }
             }
-        }
 
-        # init previous ticks
-        $self->{_previous_tick} = {};
-        $self->{_config}        = $config;
-        $self->{_symbol_region} = $available_region;
-    } catch ($e) {
-        $log->warnf("failed to load config. Error: %s", pp($e));
+            # init previous ticks
+            $self->{_previous_tick} = {};
+            $self->{_config}        = $config;
+            $self->{_symbol_region} = $available_region;
+
+            # If the configuration initialization is successful, break out of the loop
+            last;
+        } catch ($e) {
+            $log->errorf("Failed to load config. Error: %s. Retrying configuration initialization in %d seconds.", pp($e), $retry_delay);
+            await $self->loop->delay_future(after => $retry_delay);
+        }
     }
 
     return;
@@ -526,7 +532,31 @@ sub _add_to_loop {
     $self->{feed_redis} = $feed_redis;
     $self->add_child($feed_redis);
 
-    return;
+}
+
+=head2 timer
+
+Asynchronous Timer for Redis Connection Management
+
+=cut
+
+async sub timer {
+
+    my $self       = shift;
+    my $feed_redis = $self->{feed_redis};
+
+    my $is_infinite_loop = 1;
+
+    while ($is_infinite_loop) {
+
+        try {
+            await $self->loop->delay_future(after => 3);
+            await $feed_redis->connected;
+        } catch ($e) {
+            $log->errorf("Error occured while establishing redis connection: %s", $e->message);
+            $is_infinite_loop = 0;
+        }
+    }
 }
 
 =head2 ua
