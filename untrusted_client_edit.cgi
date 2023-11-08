@@ -246,7 +246,8 @@ foreach my $login_id (@login_ids) {
             status_op             => $operation,
             status_checked        => $status_checked,
             untrusted_action_type => $client_status_type,
-            reason                => $reason
+            reason                => $reason,
+            clerk                 => $clerk,
         });
     # once db operation is done, set back db_operation to replica
     $client->set_db($old_db) if 'write' ne $old_db;
