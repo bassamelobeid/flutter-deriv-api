@@ -494,6 +494,14 @@ sub _build_close_tick {
     # close_tick should be undefined.
     return undef unless $sell_price;
 
+    my $exit_tick = $self->exit_tick;
+
+    # Contract - right at the date_expiry and contract is not sold yet
+    return $exit_tick if $exit_tick and not $self->is_sold;
+
+    # Contract that is sold at expiry time
+    return $exit_tick if ($self->sell_time >= $self->date_expiry->epoch);
+
     # If the contract is sold early, the close tick could either be tick at sell time or one tick before that.
     # We do that buy recalculating the sell price
     my $tick_at_sell_time = $self->_tick_accessor->tick_at($self->sell_time,     {allow_inconsistent => 1});
