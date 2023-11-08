@@ -231,7 +231,8 @@ test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receiv
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'stake', '5',
     'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_multiplier.json', 'MULTUP', 'R_100', 'stake', '10',
-    'Win 10% of your stake for every 1% rise in Volatility 100 Index.', '100.00', '100', '65258.19', 'Stop out', '58765.24', '', '';
+    'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+    '100.00', '100', '65258.19', 'Stop out', '58765.24', '', '';
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
     '10',
     'something', '1', 'InputValidationFailed', 'Input validation failed: limit_order';
@@ -243,7 +244,9 @@ test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal
     'stop_loss', '-1', 'ContractBuyValidationError', "Please enter a stop loss amount that\'s higher than 0.10.";
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100',
     'stake',     '10',
-    'stop_loss', '1', 'Win 10% of your stake for every 1% rise in Volatility 100 Index.', '100.00', '100', '65258.19', 'Stop out', '58765.24',
+    'stop_loss', '1',
+    'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+    '100.00', '100', '65258.19', 'Stop out', '58765.24',
     'Stop loss', '65225.80';
 
 # multiplier
@@ -254,7 +257,8 @@ test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receiv
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'stake', '5',
     'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_multiplier.json', 'MULTUP', 'R_100', 'stake', '10',
-    'Win 10% of your stake for every 1% rise in Volatility 100 Index.', '100.00', '100', '65258.19', 'Stop out', '58765.24', '', '';
+    'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+    '100.00', '100', '65258.19', 'Stop out', '58765.24', '', '';
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
     '10',
     'something', '1', 'InputValidationFailed', 'Input validation failed: limit_order';
@@ -266,7 +270,9 @@ test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal
     'stop_loss', '0.1', 'ContractBuyValidationError', "Invalid stop loss. Stop loss must be higher than commission";
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100',
     'stake',     '10',
-    'stop_loss', '1', 'Win 10% of your stake for every 1% rise in Volatility 100 Index.', '100.00', '100', '65258.19', 'Stop out', '58765.24',
+    'stop_loss', '1',
+    'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+    '100.00', '100', '65258.19', 'Stop out', '58765.24',
     'Stop loss', '65225.80';
 
 #subscription
