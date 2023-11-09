@@ -187,7 +187,7 @@ sub check_availability {
         if (BOM::Config::CurrencyConfig::is_payment_suspended());
 
     _add_error_by_code($errors, 'VirtualAccount')
-        if $client->is_virtual;
+        if $client->is_virtual && $client->is_legacy;
 
     return $errors if $errors->{error};
 
