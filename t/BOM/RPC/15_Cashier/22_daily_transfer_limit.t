@@ -144,7 +144,7 @@ subtest 'transfer between accounts' => sub {
     $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('second transfer ok');
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'error code for exceeded limit')
+        ->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'error code for exceeded limit')
         ->error_message_like(qr/You can only perform up to 2 transfers a day/, 'error message for exceeded limit');
 
     $params = {
@@ -158,7 +158,7 @@ subtest 'transfer between accounts' => sub {
     };
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+        ->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'limit applies to different account of same user')
         ->error_message_like(qr/You can only perform up to 2 transfers a day/, 'error message');
 
     $app_config->payments->transfer_between_accounts->limits->between_accounts(3);
@@ -227,7 +227,7 @@ subtest 'mt5' => sub {
         };
 
         $c->call_ok('mt5_deposit', $params)
-            ->has_no_system_error->has_error->error_code_is('MT5DepositError', 'limit applies to different account of same user')
+            ->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'limit applies to different account of same user')
             ->error_message_like(qr/You can only perform up to 2 transfers a day/, 'error message');
 
         $app_config->payments->transfer_between_accounts->limits->MT5(3);
@@ -272,7 +272,7 @@ subtest 'mt5' => sub {
         };
 
         $c->call_ok('mt5_deposit', $params)
-            ->has_no_system_error->has_error->error_code_is('MT5DepositError', 'limit applies to different account of same user')
+            ->has_no_system_error->has_error->error_code_is('MaximumAmountTransfers', 'limit applies to different account of same user')
             ->error_message_like(qr/The maximum amount of transfers is/, 'per day. Please try again tomorrow.');
 
         $app_config->set({
@@ -319,7 +319,7 @@ subtest 'mt5' => sub {
         };
 
         $c->call_ok('mt5_withdrawal', $params)
-            ->has_no_system_error->has_error->error_code_is('MT5WithdrawalError', 'limit applies to different account of same user')
+            ->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'limit applies to different account of same user')
             ->error_message_like(qr/You can only perform up to 2 transfers a day/, 'error message');
 
         $app_config->payments->transfer_between_accounts->limits->MT5(3);
@@ -361,7 +361,7 @@ subtest 'mt5' => sub {
         };
 
         $c->call_ok('mt5_withdrawal', $params)
-            ->has_no_system_error->has_error->error_code_is('MT5WithdrawalError', 'limit applies to different account of same user')
+            ->has_no_system_error->has_error->error_code_is('MaximumAmountTransfers', 'limit applies to different account of same user')
             ->error_message_like(qr/The maximum amount of transfers is/, 'per day. Please try again tomorrow.');
 
         $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(500);
@@ -411,7 +411,7 @@ subtest 'mt5' => sub {
         };
 
         $c->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+            ->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'limit applies to different account of same user')
             ->error_message_like(qr/You can only perform up to 2 transfers a day/, 'error message');
 
         $app_config->payments->transfer_between_accounts->limits->MT5(3);
@@ -456,7 +456,7 @@ subtest 'mt5' => sub {
         };
 
         $c->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+            ->has_no_system_error->has_error->error_code_is('MaximumAmountTransfers', 'limit applies to different account of same user')
             ->error_message_like(qr/The maximum amount of transfers is/, 'per day. Please try again tomorrow.');
         $app_config->set({
             'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
@@ -504,7 +504,7 @@ subtest 'mt5' => sub {
         };
 
         $c->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+            ->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'limit applies to different account of same user')
             ->error_message_like(qr/You can only perform up to 2 transfers a day/, 'error message');
 
         $app_config->payments->transfer_between_accounts->limits->MT5(3);
@@ -549,7 +549,7 @@ subtest 'mt5' => sub {
         };
 
         $c->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+            ->has_no_system_error->has_error->error_code_is('MaximumAmountTransfers', 'limit applies to different account of same user')
             ->error_message_like(qr/The maximum amount of transfers is/, 'per day. Please try again tomorrow.');
 
         $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(1000);
@@ -596,7 +596,7 @@ subtest 'transfer between accounts with daily_cumulative_limit enabled' => sub {
     $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('second transfer ok');
 
     my $res = $c->call_ok('transfer_between_accounts', $params);
-    $res->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'error code for exceeded limit')
+    $res->has_no_system_error->has_error->error_code_is('MaximumAmountTransfers', 'error code for exceeded limit')
         ->error_message_like(qr/The maximum amount of transfers is /, 'per day. Please try again tomorrow.');
 
     $params = {
@@ -610,7 +610,7 @@ subtest 'transfer between accounts with daily_cumulative_limit enabled' => sub {
     };
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+        ->has_no_system_error->has_error->error_code_is('MaximumAmountTransfers', 'limit applies to different account of same user')
         ->error_message_like(qr/The maximum amount of transfers is /, 'per day. Please try again tomorrow.');
 
     $app_config->payments->transfer_between_accounts->limits->between_accounts(30);

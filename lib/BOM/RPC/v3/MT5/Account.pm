@@ -239,17 +239,19 @@ sub get_mt5_server_list {
 
 =head2 get_mt5_logins
 
-$mt5_logins = get_mt5_logins($client)
+$mt5_logins = get_mt5_logins(client => $client)
 
 Takes Client object and fetch all its available and active MT5 accounts
 
-Takes the following parameter:
+Takes the following named parameters:
 
 =over 4
 
-=item * C<params> hashref that contains a C<BOM::User::Client>
+=item * C<client> hashref that contains a C<BOM::User::Client>
 
-=item * C<params> string to represent account type (gaming|demo|financial) or default to undefined.
+=item * C<type_of_account> real|demo|all, defaults to all
+
+=item * C<additional_fields>
 
 =item * C<params> array reference of additional fields to be fetched from MT5. Example: ['comment']
 
@@ -278,13 +280,15 @@ $mt5_logins = mt5_accounts_lookup($client)
 Takes Client object and tries to fetch MT5 account information for each loginid
 If loginid-related account does not exist on MT5, undef will be attached to the list
 
-Takes the following parameter:
+Takes the following parameters:
 
 =over 4
 
-=item * C<params> hashref that contains a C<BOM::User::Client>
+=item * C<client> hashref that contains a C<BOM::User::Client>
 
-=item * C<params> string to represent account type (gaming|demo|financial) or default to undefined.
+=item * C<type_of_account> real|demo|all, defaults to all
+
+=item * C<additional_fields>
 
 =item * C<params> array reference of additional fields to be fetched from MT5. Example: ['comment']
 
@@ -311,16 +315,11 @@ sub mt5_accounts_lookup {
     );
     $additional_fields //= [];
 
-    my @mt5_login_list;
-    if ($client->is_wallet) {
-        my @all_linked_accounts = ($client->user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid} // [])->@*;
-        @mt5_login_list = map { $_->{platform} eq "mt5" ? $_->{loginid} : () } @all_linked_accounts;
-    } elsif ($client->is_legacy) {
-        @mt5_login_list = $client->user->get_mt5_loginids(type_of_account => $account_type);
-    }
-
     my @futures;
-    for my $login (@mt5_login_list) {
+
+    my $wallet_loginid = $client->is_wallet ? $client->loginid : undef;
+    for my $login ($client->user->get_mt5_loginids(type_of_account => $account_type, wallet_loginid => $wallet_loginid)) {
+
         my $f = mt5_get_settings({
                 client => $client,
                 args   => {
@@ -1361,12 +1360,13 @@ sub _is_financial_assessment_complete {
 }
 
 sub _check_logins {
-    my ($client, $logins) = @_;
-    my $user = $client->user;
-    foreach my $login (@{$logins}) {
-        return unless (any { $login eq $_ } ($user->loginids));
-    }
-    return 1;
+    my ($user, @logins) = @_;
+    my %loginid_details = $user->loginid_details->%*;
+
+    return create_error_future('InvalidLoginid') if any { !$loginid_details{$_} } @logins;
+    return undef unless @logins > 1;
+    return create_error_future('IncompatibleMt5ToMt5') if all { $loginid_details{$_}->{platform} eq 'mt5' } @logins;
+    return undef;
 }
 
 =head2 mt5_get_settings
@@ -1449,7 +1449,8 @@ async_rpc "mt5_get_settings",
     my $additional_fields = $args->{additional_fields} // [];
 
     # MT5 login not belongs to user
-    return create_error_future('permission') unless _check_logins($client, [$login]);
+    my $err = _check_logins($client->user, $login);
+    return $err if $err;
 
     if (BOM::MT5::User::Async::is_suspended('', {login => $login})) {
         my $account_type  = BOM::MT5::User::Async::get_account_type($login);
@@ -1648,7 +1649,8 @@ async_rpc "mt5_password_check",
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return create_error_future('permission') unless _check_logins($client, [$login]);
+    my $err = _check_logins($client->user, $login);
+    return $err if $err;
 
     return BOM::MT5::User::Async::password_check({
             login    => $args->{login},
@@ -1868,9 +1870,10 @@ async_rpc "mt5_deposit",
     my $params = shift;
 
     my ($client, $args, $source) = @{$params}{qw/client args source/};
-    my ($fm_loginid, $to_mt5, $amount, $return_mt5_details) =
-        @{$args}{qw/from_binary to_mt5 amount return_mt5_details/};
+    my ($fm_loginid, $to_mt5, $amount, $return_mt5_details, $request_currency) =
+        @{$args}{qw/from_binary to_mt5 amount return_mt5_details currency/};    # currency is renamed to request_currency
 
+    my $user       = $params->{user} // $client->user;                          # reuse user object when called from transfer_between_accounts
     my $error_code = 'MT5DepositError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
@@ -1881,7 +1884,7 @@ async_rpc "mt5_deposit",
     my $transfer_blocked = BOM::Platform::Event::Emitter::is_transfer_blocked($to_mt5);
     return create_error_future('MT5TransferSuspension') if $transfer_blocked;
 
-    return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code, 'deposit')->then(
+    return _mt5_validate_and_get_amount($client, $user, $fm_loginid, $to_mt5, $amount, $error_code, 'deposit', $request_currency)->then(
         sub {
             my ($response) = @_;
 
@@ -1921,25 +1924,23 @@ async_rpc "mt5_deposit",
 
             # From the point of view of our system, we're withdrawing
             # money to deposit into MT5
-            if (!$fm_client->is_virtual) {
 
-                my $rule_engine = BOM::Rules::Engine->new(client => $fm_client);
+            my $rule_engine = BOM::Rules::Engine->new(client => $fm_client);
 
-                try {
-                    $fm_client->validate_payment(
-                        currency     => $fm_client->default_account->currency_code(),
-                        amount       => -1 * $amount,
-                        payment_type => 'mt5_transfer',
-                        rule_engine  => $rule_engine,
-                    );
-                } catch ($e) {
-                    return create_error_future(
-                        $error_code,
-                        {
-                            message => $e->{message_to_client},
-                        });
-                };
-            }
+            try {
+                $fm_client->validate_payment(
+                    currency     => $fm_client->default_account->currency_code(),
+                    amount       => -1 * $amount,
+                    payment_type => 'mt5_transfer',
+                    rule_engine  => $rule_engine,
+                );
+            } catch ($e) {
+                return create_error_future(
+                    $error_code,
+                    {
+                        message => $e->{message_to_client},
+                    });
+            };
 
             my $fees              = $response->{fees};
             my $fees_currency     = $response->{fees_currency};
@@ -1976,6 +1977,13 @@ async_rpc "mt5_deposit",
                 );
 
                 _record_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
+
+                $user->daily_transfer_incr(
+                    amount          => $amount,
+                    amount_currency => $fm_client->currency,
+                    loginid_from    => $fm_loginid,
+                    loginid_to      => $to_mt5,
+                );
 
                 BOM::Platform::Event::Emitter::emit(
                     'transfer_between_accounts',
@@ -2080,16 +2088,23 @@ async_rpc "mt5_withdrawal",
     my $params = shift;
 
     my ($client, $args, $source) = @{$params}{qw/client args source/};
-    my ($fm_mt5, $to_loginid, $amount, $currency_check) =
-        @{$args}{qw/from_mt5 to_binary amount currency_check/};
+    my ($fm_mt5, $to_loginid, $amount, $request_currency) =
+        @{$args}{qw/from_mt5 to_binary amount currency/};    # currency is renamed to request_currency
 
+    my $user       = $params->{user} // $client->user;             # reuse user object when called from transfer_between_accounts
     my $error_code = 'MT5WithdrawalError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
-    my $to_client = BOM::User::Client->get_client_instance($to_loginid, 'write');
+    my $to_client;
+    try {
+        $to_client = BOM::User::Client->get_client_instance($to_loginid, 'write');
+    } catch {
+        # could not create client for some reason
+    }
+    return create_error_future('PermissionDenied', {message => 'You are not allowed to transfer to this account.'}) unless $to_client;
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
@@ -2115,7 +2130,7 @@ async_rpc "mt5_withdrawal",
         }
     }
 
-    return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, 'withdrawal', $currency_check)->then(
+    return _mt5_validate_and_get_amount($client, $user, $to_loginid, $fm_mt5, $amount, $error_code, 'withdrawal', $request_currency)->then(
         sub {
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
@@ -2173,6 +2188,13 @@ async_rpc "mt5_withdrawal",
 
                         _record_mt5_transfer($to_client->db->dbic, $txn->payment_id, $amount, $fm_mt5, $mt5_currency_code);
 
+                        $user->daily_transfer_incr(
+                            amount          => $amount,
+                            amount_currency => $mt5_currency_code,
+                            loginid_from    => $fm_mt5,
+                            loginid_to      => $to_loginid,
+                        );
+
                         BOM::Platform::Event::Emitter::emit(
                             'transfer_between_accounts',
                             {
@@ -2215,7 +2237,7 @@ async_rpc "mt5_withdrawal",
     };
 
 sub _mt5_validate_and_get_amount {
-    my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code, $transfer_type, $currency_check) = @_;
+    my ($authorized_client, $user, $loginid, $mt5_loginid, $amount, $error_code, $transfer_type, $request_currency) = @_;
     my $brand_name = request()->brand->name;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -2235,12 +2257,26 @@ sub _mt5_validate_and_get_amount {
     my @loginids_list = ($mt5_loginid);
     push @loginids_list, $loginid if $loginid;
 
-    return create_error_future('PermissionDenied', {message => 'Both accounts should belong to the authorized client.'})
-        unless _check_logins($authorized_client, \@loginids_list);
+    my $err = _check_logins($user, @loginids_list);
+    return $err if $err;
+
+    my ($action, $action_counterpart, $from_loginid, $to_loginid);
+    if ($error_code =~ /Withdrawal/) {
+        $action             = 'withdrawal';
+        $action_counterpart = 'deposit';
+        $from_loginid       = $mt5_loginid;
+        $to_loginid         = $loginid;
+    } else {
+        $action             = 'deposit';
+        $action_counterpart = 'withdrawal';
+        $from_loginid       = $loginid;
+        $to_loginid         = $mt5_loginid;
+    }
 
     return _get_user_with_group($mt5_loginid)->then(
         sub {
             my ($setting) = @_;
+
             return create_error_future(
                 'NoAccountDetails',
                 {
@@ -2279,8 +2315,6 @@ sub _mt5_validate_and_get_amount {
                 if ($action eq 'withdrawal' and $setting->{status}->{withdrawal_locked});
 
             my $mt5_currency = $setting->{currency};
-            return create_error_future('CurrencyConflict', {override_code => $error_code})
-                if $currency_check && $currency_check ne $mt5_currency;
 
             # Check if it's called for virtual top up
             # If yes, then no need to validate client
@@ -2306,7 +2340,6 @@ sub _mt5_validate_and_get_amount {
             my $client;
             try {
                 $client = BOM::User::Client->get_client_instance($loginid, 'replica');
-
             } catch {
                 log_exception();
                 return create_error_future(
@@ -2317,10 +2350,27 @@ sub _mt5_validate_and_get_amount {
                     });
             }
 
-            # Transfer between real and demo accounts is not permitted
-            return create_error_future('AccountTypesMismatch') if $client->is_virtual xor ($account_type eq 'demo');
-            # Transfer between virtual trading and virtual mt5 is not permitted
-            return create_error_future('InvalidVirtualAccount') if $client->is_virtual and not $client->is_wallet;
+            my $rule_engine = BOM::Rules::Engine->new(
+                client => [$authorized_client, $client],
+                user   => $user
+            );
+
+            try {
+                $rule_engine->verify_action(
+                    'account_transfer',
+                    transfer_type     => 'mt5',
+                    loginid           => $authorized_client->loginid,
+                    loginid_from      => $from_loginid,
+                    loginid_to        => $to_loginid,
+                    amount            => $amount,
+                    amount_currency   => $action eq 'withdrawal' ? $mt5_currency : $client->currency,
+                    platform_currency => $mt5_currency,
+                    request_currency  => $request_currency,
+                );
+            } catch ($e) {
+
+                return create_error_future($e->{error_code}, {params => $e->{params}});
+            }
 
             # Validate the binary client
             my ($err, $params) = _validate_client($client, $mt5_lc);
@@ -2486,7 +2536,6 @@ sub _mt5_validate_and_get_amount {
             return create_error_future($error_code, {message => $err}) if $err;
 
             my $min = $mt5_transfer_limits->{$source_currency}->{min};
-
             return create_error_future(
                 'InvalidMinAmount',
                 {
@@ -2494,20 +2543,7 @@ sub _mt5_validate_and_get_amount {
                     params        => [formatnumber('amount', $source_currency, $min), $source_currency]}
             ) if $amount < financialrounding('amount', $source_currency, $min);
 
-            my $is_daily_cumulative_limit_enabled =
-                BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
-            if ($is_daily_cumulative_limit_enabled) {
-                # max amounts are saved in USD
-                my $max                        = $mt5_transfer_limits->{$source_currency}->{max};
-                my $user_daily_transfer_amount = $authorized_client->user->daily_transfer_amount('MT5');
-                return create_error_future(
-                    'MaximumAmountTransfers',
-                    {
-                        override_code => $error_code,
-                        params        => [formatnumber('amount', $source_currency, $max), $source_currency]})
-                    if convert_currency($user_daily_transfer_amount, 'USD', $source_currency) + abs($amount) >
-                    financialrounding('amount', $source_currency, $max);
-            } else {
+            unless (BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable) {
                 my $max = $mt5_transfer_limits->{$source_currency}->{max};
                 return create_error_future(
                     'InvalidMaxAmount',
@@ -2517,22 +2553,19 @@ sub _mt5_validate_and_get_amount {
                 ) if $amount > financialrounding('amount', $source_currency, $max);
             }
 
-            unless ($client->is_virtual and _is_account_demo($mt5_group)) {
-                my $rule_engine = BOM::Rules::Engine->new(client => $client);
-                my $validation  = BOM::Platform::Client::CashierValidation::validate(
-                    loginid           => $loginid,
-                    action            => $action_counterpart,
-                    is_internal       => 0,
-                    underlying_action => ($action eq 'deposit' ? 'mt5_transfer' : 'mt5_withdraw'),
-                    rule_engine       => $rule_engine
-                );
+            my $validation = BOM::Platform::Client::CashierValidation::validate(
+                loginid           => $loginid,
+                action            => $action_counterpart,
+                is_internal       => 0,
+                underlying_action => ($action eq 'deposit' ? 'mt5_transfer' : 'mt5_withdraw'),
+                rule_engine       => $rule_engine
+            );
 
-                return create_error_future(
-                    $error_code,
-                    {
-                        message       => $validation->{error}{message_to_client},
-                        original_code => $validation->{error}{code}}) if exists $validation->{error};
-            }
+            return create_error_future(
+                $error_code,
+                {
+                    message       => $validation->{error}{message_to_client},
+                    original_code => $validation->{error}{code}}) if exists $validation->{error};
 
             return Future->done({
                 mt5_amount              => $mt5_amount,
@@ -2667,18 +2700,6 @@ sub _validate_client {
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
 
     return ('SetExistingAccountCurrency', $loginid) unless $client_currency;
-
-    my $is_daily_cumulative_limit_enabled =
-        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
-
-    #total limits is being handled in maximum limits
-    if (!$is_daily_cumulative_limit_enabled) {
-        my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
-        my $user_daily_transfer_count = $client_obj->user->daily_transfer_count('MT5');
-
-        return ('MaximumTransfers', $daily_transfer_limit)
-            unless $user_daily_transfer_count < $daily_transfer_limit;
-    }
 
     return undef;
 }

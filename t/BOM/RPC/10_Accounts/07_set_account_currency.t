@@ -102,7 +102,7 @@ subtest 'Can change fiat -> fiat before first deposit' => sub {
 
 subtest 'Currency locks if a real MT5 account is opened' => sub {
     my $mocked_user = Test::MockModule->new(ref($client->user));
-    $mocked_user->mock('mt5_logins', sub { return 'MT0001' });
+    $mocked_user->redefine('get_mt5_loginids', sub { return 'MT0001' });
 
     subtest 'Changing currency on account with with real MT5 account should fail' => sub {
         $params->{currency} = 'EUR';
@@ -116,7 +116,7 @@ subtest 'Currency locks if a real MT5 account is opened' => sub {
 
 subtest 'Currency locks if a real Deriv X account is opened' => sub {
     my $mocked_user = Test::MockModule->new(ref($client->user));
-    $mocked_user->mock('dxtrade_loginids', sub { return 'DXR0001' });
+    $mocked_user->redefine('get_dxtrade_loginids', sub { return 'DXR0001' });
 
     subtest 'Changing currency on account with real Deriv X account should fail' => sub {
         $params->{currency} = 'EUR';

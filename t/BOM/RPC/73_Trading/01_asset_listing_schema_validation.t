@@ -23,8 +23,8 @@ subtest 'trading_platform_asset_listing follows output schema' => sub {
         });
 
     my $resp = BOM::RPC::v3::Trading::trading_platform_asset_listing({args => {platform => 'mt5'}});
+
     is(scalar($resp->{mt5}{assets}->@*), 1, 'invalid number of objects returned');
-    print($resp->{mt5}{assets}->@*);
 
     my %asset = $resp->{mt5}{assets}->[0]->%*;
     is(scalar(keys %asset), 8, 'invalid number of fields in object returned');

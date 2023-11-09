@@ -170,12 +170,14 @@ subtest 'dxtrader accounts' => sub {
     my $acc2 = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error('create 2nd account')->result;
 
     my $tba_acc = {
-        account_type => 'dxtrade',
-        balance      => $acc2->{balance},
-        currency     => $acc2->{currency},
-        demo_account => 0,
-        loginid      => $acc2->{account_id},
-        market_type  => $acc2->{market_type},
+        balance          => $acc2->{balance},
+        currency         => $acc2->{currency},
+        demo_account     => 0,
+        loginid          => $acc2->{account_id},
+        market_type      => 'all',
+        account_type     => 'dxtrade',
+        account_category => 'trading',
+        transfers        => 'all',
     };
 
     cmp_deeply(

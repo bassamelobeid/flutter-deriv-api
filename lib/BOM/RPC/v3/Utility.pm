@@ -703,7 +703,6 @@ sub error_map {
         IncompatibleMt5ToDxtrade     => localize('You are not allowed to transfer to this account.'),
         IncompatibleDerivezToMt5     => localize('You are not allowed to transfer to this account.'),
         IncompatibleMt5ToDerivez     => localize('You are not allowed to transfer to this account.'),
-        IncompatibleMt5ToMt5         => localize('Transfer between two MT5 accounts is not allowed.'),
         IncompatibleDxtradeToDxtrade => localize('Transfer between two Deriv X accounts is not allowed.'),
         CashierLocked                => localize('Your account cashier is locked. Please contact us for more information.'),
         WithdrawalLockedStatus       => localize('You cannot perform this action, as your account is withdrawal locked.'),
@@ -715,9 +714,6 @@ sub error_map {
         TransferBlocked              => localize("Transfers are not allowed for these accounts."),
         TransferInvalidAmount        => localize("Please provide valid amount."),
 
-        RealToVirtualNotAllowed             => localize('Transfer between real and virtual accounts is not allowed.'),
-        AuthorizedClientIsVirtual           => localize('You cannot transfer between real accounts because the authorized client is virtual.'),
-        SameAccountNotAllowed               => localize('Account transfers are not available within same account.'),
         WalletAccountsNotAllowed            => localize('Transfer between wallet accounts is not allowed.'),
         IncompatibleClientLoginidClientFrom => localize("You can only transfer from the current authorized client's account."),
         IncompatibleCurrencyType            => localize('Please provide valid currency.'),
@@ -1087,6 +1083,7 @@ sub rule_engine_error {
     # TODO: we've got to ultimately create a rule engine error class and check here if the error is it's instance.
 
     die $error unless (ref $error and ($error->{code} // $error->{error_code}));
+
     my $error_code = $error->{error_code} // $error->{code};
 
     my $message;
