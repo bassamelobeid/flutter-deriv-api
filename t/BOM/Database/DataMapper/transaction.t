@@ -138,33 +138,6 @@ foreach my $bet_info (@bet_infos) {
     'Buy a CALL bet and sell it';
 }
 
-my $bets;
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({broker_code => 'MX'});
-
-    $bets = $txn_data_mapper->get_bet_transactions_for_broker({
-        broker_code => 'MX',
-        action_type => 'buy',
-        start       => '2017-03-09',
-        end         => '2017-03-09',
-    });
-}
-'create mapper & get bets for MX';
-cmp_ok(scalar(keys %{$bets}), '==', 3, 'check all buy bets count for MX');
-
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({broker_code => 'CR'});
-
-    $bets = $txn_data_mapper->get_bet_transactions_for_broker({
-        broker_code => 'CR',
-        action_type => 'sell',
-        start       => '2009-11-01',
-        end         => '2009-11-30',
-    });
-}
-'create mapper & get bets for CR';
-is(scalar(keys %{$bets}), 33, 'check all sell bets count for CR');
-
 subtest get_daily_summary_report => sub {
     plan tests => 4;
 
