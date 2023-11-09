@@ -57,6 +57,7 @@ categories:
           - svg
           - maltainvest 
           - virtual
+        transfers: all
       binary:
         platform: dtrade
         linkable_wallet_types: *all_wallets_for_trading
@@ -73,7 +74,8 @@ categories:
           - paymentagent
           - paymentagent_client
           - p2p
-          - affiliate 
+          - affiliate
+        transfers: all
       mt5:
         platform: mt5
         linkable_wallet_types:
@@ -89,7 +91,7 @@ categories:
         currency_types:
           - fiat
         broker_codes: {}
-
+        transfers: all
       derivez:
         platform: derivez
         linkable_wallet_types:
@@ -104,6 +106,7 @@ categories:
         currency_types:
           - fiat
         broker_codes: {}
+        transfers: all
       dxtrade:
         platform: dxtrade
         linkable_wallet_types:
@@ -118,6 +121,22 @@ categories:
         currency_types:
           - fiat
         broker_codes: {}
+        transfers: all
+      ctrader:
+        platform: ctrader
+        linkable_wallet_types:
+          - virtual
+          - doughflow
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 1
+        regulations:
+          - svg
+          - virtual
+        currency_types:
+          - fiat
+        broker_codes: {}
+        transfers: all
   wallet:
     broker_codes:
       svg:
@@ -147,6 +166,7 @@ categories:
             - CRW
           maltainvest:
             - MFW
+        transfers: all
         is_cashier: 1
         is_enabled: 1
       crypto:
@@ -158,6 +178,7 @@ categories:
           - crypto_cashier
         regulations:
           - svg
+        transfers: all
         is_cashier: 1
         is_enabled: 1
       p2p:
@@ -167,12 +188,14 @@ categories:
           - svg
         groups:
           - p2p
+        transfers: deposit
         is_enabled: 0
       paymentagent:
         groups:
           - paymentagent
         regulations:
           - svg
+        transfers: deposit
         is_enabled: 0
       paymentagent_client:
         account_opening:
@@ -181,6 +204,7 @@ categories:
           - paymentagent_client
         regulations:
           - svg
+        transfers: none
         is_enabled: 0
       affiliate:
         account_opening:
@@ -192,6 +216,7 @@ categories:
         broker_codes:
           dsl:
             - CRA
+        transfers: none
         is_enabled: 0
       virtual:
         currencies:
@@ -201,4 +226,5 @@ categories:
         broker_codes:
           virtual:
             - VRW
+        transfers: all
         is_enabled: 0

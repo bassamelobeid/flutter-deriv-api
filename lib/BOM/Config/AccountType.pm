@@ -129,6 +129,14 @@ Return list of supported regulations by account type
 
 has $regulations : reader;
 
+=head2 transfers
+
+Returns type of transfer supported by the account
+
+=cut
+
+has $transfers : reader;
+
 =head2 is_cashier
 
 Returns type of transfer supported by the account
@@ -314,14 +322,14 @@ BUILD {
     $is_cashier  = $args{is_cashier} // 0;
     $is_enabled  = $args{is_enabled} // 0;
     (
-        $groups, $type_broker_codes, $linkable_to_different_currency,
-        $linkable_wallet_types, $currency_types, $currencies, $currencies_by_landing_company,
-        $type_platform,
+        $groups,                        $type_broker_codes, $linkable_to_different_currency,
+        $linkable_wallet_types,         $currency_types,    $currencies,
+        $currencies_by_landing_company, $type_platform,     $transfers
         )
         = @args{
         qw/groups broker_codes
             linkable_to_different_currency linkable_wallet_types currency_types
-            currencies currencies_by_landing_company platform/
+            currencies currencies_by_landing_company platform transfers/
         };
 }
 
