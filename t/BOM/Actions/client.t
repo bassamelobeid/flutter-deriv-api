@@ -5398,8 +5398,8 @@ subtest 'Onfido DOB checks' => sub {
     $mocked_user->mock(
         'get_trading_platform_loginids',
         sub {
-            my (undef, $platform, $account_type) = @_;
-            my $loginids = $trading_platform_loginids->{$platform}->{$account_type} // [];
+            my (undef, %args) = @_;
+            my $loginids = $trading_platform_loginids->{$args{platform}}->{$args{type_of_account}} // [];
             return $loginids->@*;
         });
 
@@ -5688,7 +5688,7 @@ subtest 'Onfido DOB checks' => sub {
         subtest 'it has a dxtrader real account' => sub {
             $emissions                 = {};
             $trading_platform_loginids = {
-                dxtrader => {
+                dxtrade => {
                     real => [qw/DXR9009/],
                     demo => [qw/DXD90000/],
                 },
@@ -5734,7 +5734,7 @@ subtest 'Onfido DOB checks' => sub {
 
         subtest 'it has a dxtrader demo account' => sub {
             $trading_platform_loginids = {
-                dxtrader => {
+                dxtrade => {
                     demo => [qw/DXD9009/],
                 },
             };
