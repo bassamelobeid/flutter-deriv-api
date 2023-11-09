@@ -42,7 +42,7 @@ rule 'client.has_currency_set' => {
 
         $currency_code = $account->currency_code if $account;
 
-        $self->fail('SetExistingAccountCurrency', params => $args->{loginid}) unless $currency_code;
+        $self->fail('SetExistingAccountCurrency', params => [$args->{loginid}]) unless $currency_code;
 
         return 1;
     },

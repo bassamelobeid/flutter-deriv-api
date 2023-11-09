@@ -226,7 +226,10 @@ subtest $rule_name => sub {
 
 $rule_name = 'paymentagent.action_is_allowed';
 subtest $rule_name => sub {
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $pa_client]);
+    my $rule_engine = BOM::Rules::Engine->new(
+        client => [$client, $pa_client],
+        user   => $user
+    );
     $pa_client->account('USD');
 
     my $mock_pa  = Test::MockModule->new('BOM::User::Client::PaymentAgent');
@@ -254,8 +257,6 @@ subtest $rule_name => sub {
     my %error_mapping = (
         transfer_to_pa             => 'TransferToOtherPA',
         transfer_to_non_pa_sibling => 'TransferToNonPaSibling',
-        trading_platform_deposit   => 'TransferToNonPaSibling',
-        mt5_deposit                => 'TransferToNonPaSibling',
     );
 
     for my $action_name (
@@ -289,13 +290,35 @@ subtest $rule_name => sub {
         $services = {};
     }
 
-    $args{underlying_action} = 'transfer_between_accounts';
-    $args{loginid_from}      = $pa_client->loginid;
-    $args{loginid_to}        = $client->loginid;
+    delete $args{underlying_action};
+    $args{rule_engine_context} = {action => 'account_transfer'};
+    $args{transfer_type}       = 'internal';
+    $args{loginid_from}        = $pa_client->loginid;
+    $args{loginid_to}          = $client->loginid;
     ok exception { $rule_engine->apply_rules($rule_name, %args) }, 'transfer_between_accounts to non-PA sibling is blocked';
 
     $args{loginid_to} = $pa_client->loginid;
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } "transfer_between_accounts is allowed to a PA sibling";
+
+    for my $type ('mt5', 'dxtrade') {
+        $args{transfer_type} = $type;
+        $services = {};
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'ServiceNotAllowedForPA',
+                rule       => $rule_name,
+            },
+            "$type transfer blocked when tier has trading permission",
+        );
+
+        $services = {trading => 1};
+        is exception { $rule_engine->apply_rules($rule_name, %args) }, undef, "$type transfer allowed when tier has trading permission";
+    }
+
+    $services = {};
+    delete $args{rule_engine_context};
 
     $args{underlying_action} = 'paymentagent_transfer';
     $args{loginid_client}    = $pa_client->loginid;

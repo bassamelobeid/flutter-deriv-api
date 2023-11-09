@@ -12,337 +12,356 @@ use Format::Util::Numbers qw/formatnumber/;
 use BOM::Config::Chronicle;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
-my $redis = BOM::Config::Redis::redis_exchangerates_write();
+
+my $redis      = BOM::Config::Redis::redis_exchangerates_write();
+my $app_config = BOM::Config::Runtime->instance->app_config;
+
 subtest 'rule transfers.currency_should_match' => sub {
     my $rule_name = 'transfers.currency_should_match';
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    my $user = BOM::User->create(
-        email    => 'test+cr@test.deriv',
-        password => 'TRADING PASS',
-    );
-    $user->add_client($client);
-    $client->account('GBP');
+    my $rule_engine = BOM::Rules::Engine->new;
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    my $params      = {
-        loginid           => $client->loginid,
-        platform_currency => 'USD',
-        action            => 'relax'
-    };
-
-    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when no currency passed';
-
-    $params->{currency} = 'USD';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-        {
-        error_code => 'InvalidAction',
-        rule       => $rule_name
-        },
-        'invalid action reported';
-
-    $params->{action} = 'deposit';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+    is_deeply exception { $rule_engine->apply_rules($rule_name, amount_currency => 'USD', request_currency => 'IDR') },
         {
         error_code => 'CurrencyShouldMatch',
         rule       => $rule_name
         },
         'expected error when currency mismatch';
 
-    $params->{currency} = 'GBP';
-    ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
+    ok $rule_engine->apply_rules(
+        $rule_name,
+        amount_currency  => 'USD',
+        request_currency => 'USD'
+        ),
+        'Pass when currencies match';
 
-    $params->{action} = 'withdrawal';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+    ok $rule_engine->apply_rules(
+        $rule_name,
+        amount_currency  => 'USD',
+        request_currency => undef
+        ),
+        'Pass with undef request_currency';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, amount_currency => 'USD', request_currency => '') },
         {
         error_code => 'CurrencyShouldMatch',
         rule       => $rule_name
         },
-        'expected error when currency mismatch';
-
-    $params->{currency} = 'USD';
-    ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
+        'expected error when empty request_currency';
 };
 
-subtest 'rule transfers.daily_limit' => sub {
-    my $rule_name = 'transfers.daily_limit';
+subtest 'transfers.daily_count_limit' => sub {
+    my $rule_name = 'transfers.daily_count_limit';
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
+        broker_code => 'CR',
     });
     my $user = BOM::User->create(
         email    => 'test+daily@test.deriv',
         password => 'TRADING PASS',
     );
-    $user->add_client($client);
     $client->account('USD');
+    $user->add_client($client);
+    $user->add_loginid('DXR001', 'dxtrade', 'real', 'USD');
+    $user->add_loginid('EZR001', 'derivez', 'real', 'USD');
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    my $params      = {
-        loginid  => $client->loginid,
-        platform => 'dxtrade'
-    };
+    my $rule_engine = BOM::Rules::Engine->new(
+        client => $client,
+        user   => $user
+    );
 
-    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(1);
-    $client->user->daily_transfer_incr({type => 'dxtrade'});
+    my %args = (
+        loginid_from    => $client->loginid,
+        loginid_to      => 'DXR001',
+        amount          => 10,
+        amount_currency => 'USD'
+    );
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+    $app_config->payments->transfer_between_accounts->limits->dxtrade(1);
+    $app_config->payments->transfer_between_accounts->limits->derivez(1);
+
+    $user->daily_transfer_incr(%args);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code     => 'MaximumTransfers',
-        message_params => [1],
-        rule           => $rule_name
+        error_code => 'MaximumTransfers',
+        params     => [1],
+        rule       => $rule_name
         },
         'expected error when limit is hit';
 
-    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(100);
-    ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
+    $app_config->payments->transfer_between_accounts->limits->dxtrade(100);
+    ok $rule_engine->apply_rules($rule_name, %args), 'The test passes';
 
-    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+    ok $rule_engine->apply_rules($rule_name, %args), 'The rule is by-passed using when total limits enabled';
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
 
-    ok $rule_engine->apply_rules($rule_name, %$params), 'The rule is by-passed using when total limits enabled';
-
-    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->derivez(0);
-    $params->{platform} = 'derivez';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-        {
-        error_code     => 'MaximumTransfers',
-        message_params => [0],
-        rule           => $rule_name
-        },
-        'expected error when limit is hit - total limits not applied on derivez';
+    $args{loginid_to} = 'EZR001';
+    is exception { $rule_engine->apply_rules($rule_name, %args) }, undef, 'derivez passes';
 };
 
 subtest 'rule transfers.daily_total_amount_limit' => sub {
     my $rule_name = 'transfers.daily_total_amount_limit';
 
-    my $client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
     });
-    my $client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
+
     my $user = BOM::User->create(
         email    => 'test+daily_amount@test.deriv',
         password => 'TRADING PASS',
     );
-    $user->add_client($client_2);
-    $user->add_client($client_1);
-    $client_1->account('USD');
-    $client_2->account('EUR');
-    my $rule_engine_1 = BOM::Rules::Engine->new(client => $client_1);
-    my $rule_engine_2 = BOM::Rules::Engine->new(client => $client_2);
-    my $params        = {
-        loginid           => $client_1->loginid,
-        platform          => 'derivez',
-        amount            => 500,
-        platform_currency => 'USD'
-    };
+    $client->account('USD');
+    $user->add_client($client);
+    $user->add_loginid('DXR002', 'dxtrade', 'real', 'USD');
+    $user->add_loginid('EZR002', 'derivez', 'real', 'USD');
+    my $rule_engine = BOM::Rules::Engine->new(
+        client => $client,
+        user   => $user
+    );
 
-    ok $rule_engine_1->apply_rules($rule_name, %$params), 'The test by-passed for derivez USD';
+    $app_config->payments->transfer_between_accounts->limits->dxtrade(10);
+    $app_config->payments->transfer_between_accounts->limits->derivez(10);
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->dxtrade(10);
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->derivez(10);
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
 
-    $params->{platform} = 'dxtrade';
-
-    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
-    ok $rule_engine_1->apply_rules($rule_name, %$params), 'The test by-passed if total limit is disabled';
-
-    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
-    my $user_daily_transfer_amount =
-        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->dxtrade(1000);
-
-    ok $rule_engine_1->apply_rules($rule_name, %$params), 'The test passed';
-    $client_1->user->daily_transfer_incr({
-        type   => 'dxtrade',
-        amount => 500
-    });
-    $params->{amount} = 1000;
-    is_deeply exception { $rule_engine_1->apply_rules($rule_name, %$params) },
-        {
-        error_code     => 'MaximumAmountTransfers',
-        message_params => [$user_daily_transfer_amount, 'USD'],
-        rule           => $rule_name
-        },
-        'expected error when limit is hit';
-    $user_daily_transfer_amount =
-        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->dxtrade(2000);
-    $params = {
-        loginid           => $client_2->loginid,
-        platform          => 'dxtrade',
-        amount            => 500,
-        platform_currency => 'EUR'
-    };
     $redis->hmset(
         'exchange_rates::USD_EUR',
         quote => 0.5,
         epoch => time
     );
-    ok $rule_engine_2->apply_rules($rule_name, %$params), 'The test by-passed for derivez EUR';
 
-    $client_2->user->daily_transfer_incr({
-        type   => 'dxtrade',
-        amount => 500
-    });
-    $params->{amount} = 1000;
-    is_deeply exception { $rule_engine_2->apply_rules($rule_name, %$params) },
+    my %args = (
+        loginid_from => $client->loginid,
+        loginid_to   => 'DXR002'
+    );
+    $user->daily_transfer_incr(
+        %args,
+        amount          => 5,
+        amount_currency => 'USD'
+    );
+
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 5,   amount_currency => 'USD') }, undef, 'can transfer up to limit';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 2.5, amount_currency => 'EUR') }, undef, 'can transfer EUR up to limit';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args, amount => 6, amount_currency => 'USD') },
         {
-        error_code     => 'MaximumAmountTransfers',
-        message_params => [$user_daily_transfer_amount, 'USD'],
-        rule           => $rule_name
+        error_code => 'MaximumAmountTransfers',
+        params     => ['10.00', 'USD'],
+        rule       => $rule_name
         },
         'expected error when limit is hit';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args, amount => 3, amount_currency => 'EUR') },
+        {
+        error_code => 'MaximumAmountTransfers',
+        params     => ['5.00', 'EUR'],
+        rule       => $rule_name
+        },
+        'expected error when limit is hit with EUR';
+
+    $args{loginid_to} = 'EZR002';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 10, amount_currency => 'USD') }, undef, 'DerivEZ can transfer up to limit';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 5, amount_currency => 'EUR') }, undef,
+        'DerivEZ can transfer EUR up to limit';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args, amount => 10.01, amount_currency => 'USD') },
+        {
+        error_code => 'MaximumAmountTransfers',
+        params     => ['10.00', 'USD'],
+        rule       => $rule_name
+        },
+        'DerivEZ expected error when limit is hit';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args, amount => 5.01, amount_currency => 'EUR') },
+        {
+        error_code => 'MaximumAmountTransfers',
+        params     => ['5.00', 'EUR'],
+        rule       => $rule_name
+        },
+        'DerivEZ expected error when limit is hit with EUR';
+
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
+
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 100, amount_currency => 'USD') }, undef,
+        'DerivEZ can transfer over limit when cumulative limit disabled';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 50, amount_currency => 'EUR') }, undef,
+        'DerivEZ can transfer over limit when cumulative limit disabled';
+
+    $args{loginid_to} = 'DXR002';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 100, amount_currency => 'USD') }, undef,
+        'DerivX can transfer over limit when cumulative limit disabled';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 50, amount_currency => 'EUR') }, undef,
+        'DerivEZ can transfer over limit when cumulative limit disabled';
+
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->dxtrade(0);
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->derivez(0);
+
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 100, amount_currency => 'USD') }, undef,
+        'DerivX can transfer over limit when cumulative limit is zero';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 50, amount_currency => 'EUR') }, undef,
+        'DerivX can transfer over limit when cumulative limit is zero';
+
+    $args{loginid_to} = 'EZR002';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 100, amount_currency => 'USD') }, undef,
+        'DerivEZ can transfer over limit when cumulative limit is zero';
+    is exception { $rule_engine->apply_rules($rule_name, %args, amount => 50, amount_currency => 'EUR') }, undef,
+        'DerivEZ can transfer over limit when cumulative limit is zero';
 };
 
 subtest 'rule transfers.limits' => sub {
     my $rule_name = 'transfers.limits';
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    my $user = BOM::User->create(
-        email    => 'test+limits@test.deriv',
-        password => 'TRADING PASS',
+    $redis->hmset(
+        'exchange_rates::USD_BTC',
+        quote => 1 / 40000,
+        epoch => time
     );
-    $user->add_client($client);
-    $client->account('USD');
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    my $params      = {
-        loginid           => $client->loginid,
-        platform          => 'dxtrade',
-        platform_currency => 'USD',
+    my $rule_engine = BOM::Rules::Engine->new();
+    my $app_config  = BOM::Config::Runtime->instance->app_config();
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    subtest 'USD limits' => sub {
+        $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":10}}'});
+        $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":100}}'});
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, platform => 'dxtrade', amount => 9.90, amount_currency => 'USD') },
+            {
+            error_code => 'InvalidMinAmount',
+            params     => [formatnumber('amount', 'USD', 10.00), 'USD'],
+            rule       => $rule_name
+            },
+            'expected error when USD amount is less than minimum';
+
+        ok $rule_engine->apply_rules(
+            $rule_name,
+            platform        => 'dxtrade',
+            amount          => 10.00,
+            amount_currency => 'USD'
+            ),
+            'exact USD minimum passes';
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, platform => 'dxtrade', amount => 100.01, amount_currency => 'USD') },
+            {
+            error_code => 'InvalidMaxAmount',
+            params     => [formatnumber('amount', 'USD', 100), 'USD'],
+            rule       => $rule_name
+            },
+            'expected error when USD amount is larger than maximum';
+
+        ok $rule_engine->apply_rules(
+            $rule_name,
+            platform        => 'dxtrade',
+            amount          => 100.00,
+            amount_currency => 'USD'
+            ),
+            'exact USD maximum passes';
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, platform => 'dxtrade', amount => 0.00024, amount_currency => 'BTC') },
+            {
+            error_code => 'InvalidMinAmount',
+            params     => [formatnumber('amount', 'BTC', 0.00025), 'BTC'],
+            rule       => $rule_name
+            },
+            'expected error when BTC amount is less than minimum';
+
+        ok $rule_engine->apply_rules(
+            $rule_name,
+            platform        => 'dxtrade',
+            amount          => 0.00025,
+            amount_currency => 'BTC'
+            ),
+            'exact BTC minimum passes';
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, platform => 'dxtrade', amount => 0.00251, amount_currency => 'BTC') },
+            {
+            error_code => 'InvalidMaxAmount',
+            params     => [formatnumber('amount', 'BTC', 0.0025), 'BTC'],
+            rule       => $rule_name
+            },
+            'expected error when BTC amount is larger than maximum';
+
+        ok $rule_engine->apply_rules(
+            $rule_name,
+            platform        => 'dxtrade',
+            amount          => 0.0025,
+            amount_currency => 'BTC'
+            ),
+            'exact BTC maximum passes';
     };
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-        {
-        error_code => 'InvalidAction',
-        rule       => $rule_name
-        },
-        'expected error when no action given';
+    subtest 'BTC limits' => sub {
+        # 50-500 USD
+        $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"BTC","amount":0.00125}}'});
+        $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"BTC","amount":0.0125}}'});
 
-    $params->{action} = 'walk the dog';
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-        {
-        error_code => 'InvalidAction',
-        rule       => $rule_name
-        },
-        'expected error when invalid action given';
-
-    subtest 'Deposit' => sub {
-        $params->{action} = 'deposit';
-
-        my $app_config = BOM::Config::Runtime->instance->app_config();
-        $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
-        $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":10}}'});
-
-        $params->{amount} = 1;
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, platform => 'dxtrade', amount => 49.99, amount_currency => 'USD') },
             {
-            error_code     => 'InvalidMinAmount',
-            message_params => [formatnumber('amount', 'USD', 10), 'USD'],
-            rule           => $rule_name
+            error_code => 'InvalidMinAmount',
+            params     => [formatnumber('amount', 'USD', 50), 'USD'],
+            rule       => $rule_name
             },
-            'expected error when amount is less than minimum';
+            'expected error when USD amount is less than minimum';
 
-        $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":1}}'});
-        $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":20}}'});
+        ok $rule_engine->apply_rules(
+            $rule_name,
+            platform        => 'dxtrade',
+            amount          => 50.00,
+            amount_currency => 'USD'
+            ),
+            'exact USD minimum passes';
 
-        $params->{amount} = 30;
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, platform => 'dxtrade', amount => 500.01, amount_currency => 'USD') },
             {
-            error_code     => 'InvalidMaxAmount',
-            message_params => [formatnumber('amount', 'USD', 20), 'USD'],
-            rule           => $rule_name
+            error_code => 'InvalidMaxAmount',
+            params     => [formatnumber('amount', 'USD', 500), 'USD'],
+            rule       => $rule_name
             },
-            'expected error when amount is larger than maximum';
+            'expected error whe USD amount is larger than maximum';
 
-        $params->{amount} = 20;
-        $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":20}}'});
-        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
+        ok $rule_engine->apply_rules(
+            $rule_name,
+            platform        => 'dxtrade',
+            amount          => 500.00,
+            amount_currency => 'USD'
+            ),
+            'exact USD maximum passes';
 
-        subtest 'Crypto' => sub {
-            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'CR',
-            });
-            $user->add_client($client);
-            $client->account('BTC');
-            $client->save;
-
-            $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-            $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"BTC","amount":0.01}}'});
-            $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"BTC","amount":1}}'});
-            $params->{amount}  = 0.0099;
-            $params->{loginid} = $client->loginid;
-
-            is_deeply exception { $rule_engine->apply_rules($rule_name, %$params); },
-                {
-                error_code     => 'InvalidMinAmount',
-                message_params => [formatnumber('amount', 'BTC', 0.01), 'BTC'],
-                rule           => $rule_name
-                },
-                'min limit hit';
-
-            $params->{amount} = 2;
-            is_deeply exception { $rule_engine->apply_rules($rule_name, %$params); },
-                {
-                error_code     => 'InvalidMaxAmount',
-                message_params => [formatnumber('amount', 'BTC', 1), 'BTC'],
-                rule           => $rule_name
-                },
-                'max limit hit';
-
-            $params->{amount} = 0.02;
-            ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
-        };
-    };
-
-    subtest 'Withdrawal' => sub {
-        $params->{action} = 'withdrawal';
-
-        my $app_config = BOM::Config::Runtime->instance->app_config();
-        $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
-        $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":10}}'});
-
-        $params->{amount} = 1;
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, platform => 'dxtrade', amount => 0.00124, amount_currency => 'BTC') },
             {
-            error_code     => 'InvalidMinAmount',
-            message_params => [formatnumber('amount', 'USD', 10), 'USD'],
-            rule           => $rule_name
+            error_code => 'InvalidMinAmount',
+            params     => [formatnumber('amount', 'BTC', 0.00125), 'BTC'],
+            rule       => $rule_name
             },
-            'expected error when amount is less than minimum';
+            'expected error when BTC amount is less than minimum';
 
-        $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":1}}'});
-        $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":20}}'});
+        ok $rule_engine->apply_rules(
+            $rule_name,
+            platform        => 'dxtrade',
+            amount          => 0.00125,
+            amount_currency => 'BTC'
+            ),
+            'exact BTC minimum passes';
 
-        $params->{amount} = 30;
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, platform => 'dxtrade', amount => 0.01251, amount_currency => 'BTC') },
             {
-            error_code     => 'InvalidMaxAmount',
-            message_params => [formatnumber('amount', 'USD', 20), 'USD'],
-            rule           => $rule_name
+            error_code => 'InvalidMaxAmount',
+            params     => [formatnumber('amount', 'BTC', 0.0125), 'BTC'],
+            rule       => $rule_name
             },
-            'expected error when amount is larger than maximum';
+            'expected error when BTC amount is larger than maximum';
 
-        $params->{amount} = 20;
-        $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":20}}'});
-        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
-
-        subtest 'Crypto' => sub {
-            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'CR',
-            });
-            $user->add_client($client);
-            $client->account('BTC');
-
-            $rule_engine = BOM::Rules::Engine->new(client => $client);
-            $params->{loginid} = $client->loginid;
-
-            $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":20}}'});
-            ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
-        };
+        ok $rule_engine->apply_rules(
+            $rule_name,
+            platform        => 'dxtrade',
+            amount          => 0.0125,
+            amount_currency => 'BTC'
+            ),
+            'exact BTC maximum passes';
     };
 };
 
@@ -459,7 +478,10 @@ subtest 'rule transfers.real_to_virtual_not_allowed' => sub {
         loginid_to   => $client_to->loginid,
         loginid_from => $client_from->loginid,
     };
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $client_from]);
+    my $rule_engine = BOM::Rules::Engine->new(
+        client => [$client_to, $client_from],
+        user   => $user
+    );
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
         {
         error_code => 'RealToVirtualNotAllowed',
@@ -473,8 +495,11 @@ subtest 'rule transfers.real_to_virtual_not_allowed' => sub {
     $user->add_client($client_to_1);
     $client_to_1->account('USD');
 
-    $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $client_to_1]);
-    $params      = {
+    $rule_engine = BOM::Rules::Engine->new(
+        client => [$client_to, $client_to_1],
+        user   => $user
+    );
+    $params = {
         loginid      => $client_to->loginid,
         loginid_to   => $client_to->loginid,
         loginid_from => $client_to_1->loginid,
@@ -483,58 +508,28 @@ subtest 'rule transfers.real_to_virtual_not_allowed' => sub {
     ok $rule_engine->apply_rules($rule_name, %$params), 'no error when both are virtual';
 };
 
-subtest 'rule transfers.authorized_client_should_be_real' => sub {
-    my $rule_name = 'transfers.authorized_client_should_be_real';
+subtest 'rule transfers.authorized_client_is_legacy_virtual' => sub {
+    my $rule_name = 'transfers.authorized_client_is_legacy_virtual';
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $user = BOM::User->create(
-        email    => 'test+real+real@test.deriv',
-        password => 'TRADING PASS',
-    );
-    $user->add_client($client);
-    $client->account('USD');
+    my %clients;
+    $clients{vrtc}     = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
+    $clients{vrtc_std} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC', account_type => 'standard'});
+    $clients{cr}       = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $clients{crw}      = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW', account_type => 'doughflow'});
+    $clients{cr_std}   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR',  account_type => 'standard'});
 
-    my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $user->add_client($client_from);
-    $client_from->account('BTC');
-    my $params = {
-        loginid      => $client->loginid,
-        loginid_from => $client_from->loginid,
-        token_type   => 'oauth_token'
-    };
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from]);
-
-    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when both are real';
-
-    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from]);
-
-    $params = {
-        loginid      => $client->loginid,
-        loginid_from => $client_from->loginid,
-        token_type   => 'not_oauth_token'
-    };
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+    my $rule_engine = BOM::Rules::Engine->new(client => $clients{vrtc});
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $clients{vrtc}->loginid) },
         {
-        error_code => 'AuthorizedClientIsVirtual',
+        error_code => 'TransferBlockedClientIsVirtual',
         rule       => $rule_name
         },
-        'token type is not equal to oauth_token';
+        'VRTC fails';
 
-    $params = {
-        loginid      => $client->loginid,
-        loginid_from => $client_from->loginid,
-        token_type   => 'oauth_token'
-    };
-
-    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when not authorized';
+    for my $c (qw(vrtc_std cr crw cr_std)) {
+        my $rule_engine = BOM::Rules::Engine->new(client => $clients{$c});
+        is exception { $rule_engine->apply_rules($rule_name, loginid => $clients{$c}->loginid) }, undef, "$c passes";
+    }
 };
 
 subtest 'rule transfers.same_account_not_allowed' => sub {
@@ -575,44 +570,6 @@ subtest 'rule transfers.same_account_not_allowed' => sub {
         loginid_from => $client->loginid,
     };
     ok $rule_engine->apply_rules($rule_name, %$params), 'no error when they are different';
-};
-
-subtest 'rule transfers.wallet_accounts_not_allowed' => sub {
-    my $rule_name = 'transfers.wallet_accounts_not_allowed';
-    my $user      = BOM::User->create(
-        email    => 'wallet_not_allowed@test.deriv',
-        password => 'TRADING PASS',
-    );
-    my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CRW',
-            email       => 'wallet_not_allowed@test.deriv',
-
-    });
-    $user->add_client($wallet);
-
-    my $params = {
-        loginid_to   => $wallet->loginid,
-        loginid_from => $wallet->loginid,
-    };
-    my $rule_engine = BOM::Rules::Engine->new(client => [$wallet]);
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-        {
-        error_code => 'WalletAccountsNotAllowed',
-        rule       => $rule_name
-        },
-        'Transfer between wallet accounts is not allowed';
-
-    my $client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $user->add_client($client_1);
-    $rule_engine = BOM::Rules::Engine->new(client => [$wallet, $client_1]);
-    $params      = {
-        loginid_to   => $client_1->loginid,
-        loginid_from => $wallet->loginid,
-    };
-    ok $rule_engine->apply_rules($rule_name, %$params), 'transfer bewteen account and wallet is allowed';
 };
 
 subtest 'rule transfers.client_loginid_client_from_loginid_mismatch' => sub {
@@ -931,114 +888,6 @@ subtest $rule_name => sub {
                 $test_case->{message};
         }
     }
-};
-
-subtest 'rule transfers.account_types_are_compatible' => sub {
-
-    my $email  = 'test+2@test.deriv';
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-    my $user = BOM::User->create(
-        email    => $email,
-        password => 'TRADING PASS',
-    );
-    $user->add_client($client);
-    $client->account('USD');
-
-    my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-    $user->add_client($client_from);
-    $client_from->account('USD');
-
-    my $client_to = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-    $user->add_client($client_to);
-    $client_to->account('USD');
-
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
-    my %args        = (
-        loginid           => $client->loginid,
-        account_type_from => 'dxtrade',
-        account_type_to   => 'mt5',
-    );
-    my $rule_name = 'transfers.account_types_are_compatible';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'IncompatibleDxtradeToMt5',
-        rule       => $rule_name
-        },
-        'Expected error when client_from is dxtrade and client_to is mt5';
-
-    %args = (
-        loginid           => $client->loginid,
-        account_type_from => 'mt5',
-        account_type_to   => 'dxtrade',
-    );
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'IncompatibleMt5ToDxtrade',
-        rule       => $rule_name
-        },
-        'Expected error when client_from is mt5 and client_to is dxtrade';
-
-    %args = (
-        loginid           => $client->loginid,
-        account_type_from => 'mt5',
-        account_type_to   => 'mt5',
-    );
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'IncompatibleMt5ToMt5',
-        rule       => $rule_name
-        },
-        'Expected error when client_from is mt5 and client_to is mt5';
-
-    %args = (
-        loginid           => $client->loginid,
-        account_type_from => 'dxtrade',
-        account_type_to   => 'dxtrade',
-    );
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'IncompatibleDxtradeToDxtrade',
-        rule       => $rule_name
-        },
-        'Expected error when client_from is dxtrade and client_to is dxtrade';
-
-    %args = (
-        loginid           => $client->loginid,
-        account_type_from => 'derivez',
-        account_type_to   => 'mt5',
-    );
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'IncompatibleDerivezToMt5',
-        rule       => $rule_name
-        },
-        'Expected error when client_from is derivez and client_to is mt5';
-
-    %args = (
-        loginid           => $client->loginid,
-        account_type_from => 'mt5',
-        account_type_to   => 'derivez',
-    );
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'IncompatibleMt5ToDerivez',
-        rule       => $rule_name
-        },
-        'Expected error when client_from is mt5 and client_to is derivez';
 };
 
 done_testing();

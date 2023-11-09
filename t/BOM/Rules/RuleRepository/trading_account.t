@@ -35,9 +35,9 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['Deriv X'],
+            rule       => $rule_name
             },
             'Australia not allowed';
 
@@ -50,9 +50,9 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'RealAccountMissing',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
+            error_code => 'RealAccountMissing',
+            params     => ['Deriv X'],
+            rule       => $rule_name
             },
             'Real account missing';
 
@@ -71,9 +71,9 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['Deriv X'],
+            rule       => $rule_name
             },
             'Japan cannot open financial demo';
 
@@ -84,9 +84,9 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
         $params->{market_type} = 'all';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['Deriv X'],
+            rule       => $rule_name
             },
             'Japan cannot open financial real';
 
@@ -119,9 +119,9 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['Deriv X'],
+            rule       => $rule_name
             },
             'not available for MX';
 
@@ -136,9 +136,9 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['Deriv X'],
+            rule       => $rule_name
             },
             'not available for MF';
     };
@@ -169,9 +169,9 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['Deriv X'],
+            rule       => $rule_name
             },
             'not available for MLT';
 
@@ -187,9 +187,9 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
         $rule_engine = BOM::Rules::Engine->new(client => $client);
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params, loginid => $client->loginid) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['Deriv X'],
+            rule       => $rule_name
             },
             'not available for MF';
     };
@@ -222,9 +222,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['cTrader'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['cTrader'],
+            rule       => $rule_name
             },
             'Australia not allowed';
 
@@ -237,9 +237,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'RealAccountMissing',
-            message_params => ['cTrader'],
-            rule           => $rule_name
+            error_code => 'RealAccountMissing',
+            params     => ['cTrader'],
+            rule       => $rule_name
             },
             'Real account missing';
 
@@ -258,9 +258,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['cTrader'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['cTrader'],
+            rule       => $rule_name
             },
             'Japan cannot open financial demo';
 
@@ -271,9 +271,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
         $params->{market_type} = 'all';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['cTrader'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['cTrader'],
+            rule       => $rule_name
             },
             'Japan cannot open financial real';
 
@@ -306,9 +306,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['cTrader'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['cTrader'],
+            rule       => $rule_name
             },
             'not available for MX';
 
@@ -323,9 +323,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['cTrader'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['cTrader'],
+            rule       => $rule_name
             },
             'not available for MF';
     };
@@ -356,9 +356,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['cTrader'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['cTrader'],
+            rule       => $rule_name
             },
             'not available for MLT';
 
@@ -374,9 +374,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
         $rule_engine = BOM::Rules::Engine->new(client => $client);
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params, loginid => $client->loginid) },
             {
-            error_code     => 'TradingAccountNotAllowed',
-            message_params => ['cTrader'],
-            rule           => $rule_name
+            error_code => 'TradingAccountNotAllowed',
+            params     => ['cTrader'],
+            rule       => $rule_name
             },
             'not available for MF';
     };
@@ -498,9 +498,9 @@ subtest 'rule trading_account.should_complete_financial_assessment' => sub {
     $fa_complete = 0;
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
         {
-        error_code     => 'FinancialAssessmentMandatory',
-        message_params => ['Deriv X'],
-        rule           => $rule_name
+        error_code => 'FinancialAssessmentMandatory',
+        params     => ['Deriv X'],
+        rule       => $rule_name
         },
         'Financial Assesment mandatory';
 
@@ -609,9 +609,9 @@ subtest 'rule trading_account.should_provide_tax_details' => sub {
         } else {
             is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
                 {
-                error_code     => 'TINDetailsMandatory',
-                message_params => ['Deriv X'],
-                rule           => $rule_name
+                error_code => 'TINDetailsMandatory',
+                params     => ['Deriv X'],
+                rule       => $rule_name
                 },
                 'Tax details are mandatory';
         }
@@ -632,9 +632,9 @@ subtest 'rule trading_account.client_should_be_real' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $vrtc->loginid, platform => 'dxtrade') },
         {
-        error_code     => 'AccountShouldBeReal',
-        message_params => ['Deriv X'],
-        rule           => $rule_name
+        error_code => 'AccountShouldBeReal',
+        params     => ['Deriv X'],
+        rule       => $rule_name
         },
         'expected error when passing virtual account';
 
@@ -719,9 +719,9 @@ subtest 'rule trading_account.allowed_currency' => sub {
     };
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code     => 'TradingAccountCurrencyNotAllowed',
-        message_params => ['Deriv X'],
-        rule           => $rule_name
+        error_code => 'TradingAccountCurrencyNotAllowed',
+        params     => ['Deriv X'],
+        rule       => $rule_name
         },
         'EUR is not allowed';
 
@@ -732,9 +732,9 @@ subtest 'rule trading_account.allowed_currency' => sub {
     };
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code     => 'TradingAccountCurrencyNotAllowed',
-        message_params => ['Deriv X'],
-        rule           => $rule_name
+        error_code => 'TradingAccountCurrencyNotAllowed',
+        params     => ['Deriv X'],
+        rule       => $rule_name
         },
         'USD is not allowed (vrtc account)';
 

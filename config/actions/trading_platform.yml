@@ -19,15 +19,13 @@ new_trading_account:
           - trading_account.should_provide_tax_details
         demo:
           - trading_account.client_should_be_legacy_or_virtual_wallet
+          
 trading_account_deposit:
   description: Contains rules to be applied on deposit to trading platform accounts
   ruleset:
-    - paymentagent.action_is_allowed
     - transfers.experimental_currency_email_whitelisted
     - transfers.currency_should_match
-    - transfers.daily_limit
     - transfers.limits
-    - transfers.daily_total_amount_limit
     - type: conditional
       on: account_type
       rules_per_value:
@@ -41,9 +39,7 @@ trading_account_withdrawal:
   ruleset:
     - transfers.experimental_currency_email_whitelisted
     - transfers.currency_should_match
-    - transfers.daily_limit
     - transfers.limits
-    - transfers.daily_total_amount_limit
     - type: conditional
       on: account_type
       rules_per_value:
