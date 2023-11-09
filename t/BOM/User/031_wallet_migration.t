@@ -577,6 +577,7 @@ subtest process_migration => sub {
         my $dxtrader = BOM::TradingPlatform->new(
             platform    => 'dxtrade',
             client      => $virtual,
+            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $virtual),
         );
 
@@ -620,6 +621,7 @@ subtest process_migration => sub {
         my $dxtrader = BOM::TradingPlatform->new(
             platform    => 'dxtrade',
             client      => $cr_usd,
+            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $cr_usd),
         );
 
@@ -940,6 +942,7 @@ subtest 'Getting migration plan' => sub {
         my $dxtrader = BOM::TradingPlatform->new(
             platform    => 'dxtrade',
             client      => $virtual,
+            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $virtual),
         );
 
@@ -1002,6 +1005,7 @@ subtest 'Getting migration plan' => sub {
         my $dxtrader = BOM::TradingPlatform->new(
             platform    => 'dxtrade',
             client      => $cr_usd,
+            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $cr_usd),
         );
 

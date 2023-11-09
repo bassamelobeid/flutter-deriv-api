@@ -6,14 +6,14 @@ no indirect;
 
 use BOM::Rules::Engine;
 use BOM::MT5::User::Async;
+use Format::Util::Numbers qw(formatnumber financialrounding);
 use Syntax::Keyword::Try;
-use Format::Util::Numbers      qw/financialrounding formatnumber/;
 use Log::Any                   qw($log);
-use List::Util                 qw(any first);
 use DataDog::DogStatsd::Helper qw/stats_inc/;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw (localize request);
 use BOM::User::Client;
+use BOM::User::Utility;
 use LandingCompany::Registry;
 use BOM::TradingPlatform::Helper::HelperDerivEZ qw(
     new_account_trading_rights
@@ -67,12 +67,25 @@ Exposes DerivEZ API through our trading platform interface.
 
 Creates and returns a new L<BOM::TradingPlatform::DerivEZ> instance.
 
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<client> (required). Client instance. Must be the client who will perform any operation on the account.
+
+=item * C<rule_engine>. Rule engine instance. Requried for any operation that uses rule engine.
+
+=item * C<user> User instance. Required for any operation that directly/indirectly calls user->loginid_details.
+
+=back
+
 =cut
 
 sub new {
     my ($class, %args) = @_;
     return bless {
         client      => $args{client},
+        user        => $args{user},
         rule_engine => $args{rule_engine}}, $class;
 }
 
@@ -162,8 +175,8 @@ sub new_account {
 
     # Innitialize params
     my $client_info       = $client->get_mt5_details();
-    my $main_password     = generate_password($client->user->{password});
-    my $investor_password = generate_password($client->user->{password});
+    my $main_password     = generate_password($user->{password});
+    my $investor_password = generate_password($user->{password});
     my $rights            = new_account_trading_rights();
     my $group             = derivez_group({
         residence             => $client->residence,
@@ -418,7 +431,6 @@ sub get_accounts {
 
     my $args = {
         platform => $platform,
-        from_account => $from_deriv_account,
         to_account => $to_derivez_account,
         amount => $amount,
         currency => $currency
@@ -427,7 +439,8 @@ sub get_accounts {
     my $platform = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        rule_engine => BOM::Rules::Engine->new(client => $client),
+        user        => $user,
+        rule_engine => BOM::Rules::Engine->new(client => $client, user => $user),
     );
 
     my $account = $platform->deposit($args);
@@ -438,19 +451,21 @@ sub deposit {
     my ($self, %args) = @_;
 
     # Params/args from FE
-    my $fm_loginid = delete $args{from_account};
     my $to_derivez = delete $args{to_account};
     my $amount     = delete $args{amount};
 
     # Optional Params
     my $source                 = delete $args{source};
     my $return_derivez_details = delete $args{return_derivez_details};
+    my $request_currency       = delete $args{currency};
 
     # Build client and user object
-    my $client = $self->client;
+    my $client     = $self->client;
+    my $user       = $self->user;
+    my $fm_loginid = $client->loginid;
 
     my $error_code = 'DerivEZDepositError';
-    my $response   = derivez_validate_and_get_amount($client, $fm_loginid, $to_derivez, $amount, $error_code);
+    my $response   = derivez_validate_and_get_amount($client, $user, $to_derivez, $amount, $error_code, $request_currency, $self->rule_engine);
 
     # Parameters
     my $account_type              = $response->{account_type};
@@ -490,11 +505,8 @@ sub deposit {
         $account_type = $response->{account_type};
     }
 
-    # Populate required variables
-    my $fm_client = BOM::User::Client->get_client_instance($fm_loginid, 'write');
-    my $balance   = $fm_client->default_account->balance;
-
     # Checks if balance is exceeded
+    my $balance = $client->default_account->balance;
     die +{
         code    => $error_code,
         message => localize("The maximum amount you may transfer is: [_1].", $balance)}
@@ -503,16 +515,14 @@ sub deposit {
 
     # From the point of view of our system, we're withdrawing
     # money to deposit into MT5
-    unless ($fm_client->is_virtual) {
-
-        my $rule_engine = BOM::Rules::Engine->new(client => $fm_client);
+    unless ($client->is_virtual && $client->is_legacy) {
 
         try {
-            $fm_client->validate_payment(
-                currency     => $fm_client->default_account->currency_code(),
+            $client->validate_payment(
+                currency     => $client->default_account->currency_code(),
                 amount       => -1 * $amount,
                 payment_type => 'mt5_transfer',
-                rule_engine  => $rule_engine,
+                rule_engine  => $self->rule_engine,
             );
         } catch ($e) {
             die +{
@@ -549,27 +559,28 @@ sub deposit {
         );
 
         # Daily transfer limit increment
-        $self->client->user->daily_transfer_incr({
-            type     => 'derivez',
-            amount   => $amount,
-            currency => $fm_client->currency
-        });
+        $user->daily_transfer_incr(
+            amount          => $amount,
+            amount_currency => $client->currency,
+            loginid_from    => $fm_loginid,
+            loginid_to      => $to_derivez,
+        );
 
         # We are recording derivez in mt5_transfer table
-        record_derivez_transfer_to_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{derivez_amount},
+        record_derivez_transfer_to_mt5_transfer($client->db->dbic, $txn->payment_id, -$response->{derivez_amount},
             $to_derivez, $response->{derivez_currency_code});
 
         # Tracking transfer for data manipulation purposes
         BOM::Platform::Event::Emitter::emit(
             'transfer_between_accounts',
             {
-                loginid    => $fm_client->loginid,
+                loginid    => $fm_loginid,
                 properties => {
                     from_account       => $fm_loginid,
-                    is_from_account_pa => 0 + !!($fm_client->is_pa_and_authenticated),
+                    is_from_account_pa => 0 + !!($client->is_pa_and_authenticated),
                     to_account         => $to_derivez,
-                    is_to_account_pa   => 0 + !!($fm_client->is_pa_and_authenticated),
-                    from_currency      => $fm_client->currency,
+                    is_to_account_pa   => 0 + !!($client->is_pa_and_authenticated),
+                    from_currency      => $client->currency,
                     to_currency        => $derivez_currency_code,
                     from_amount        => $amount,
                     to_amount          => $response->{derivez_amount},
@@ -615,17 +626,17 @@ sub deposit {
 =head2 withdraw
 
     my $args = {
-        platform => $platform,
+        platform     => $platform,
         from_account => $to_derivez_account,
-        to_account => $from_deriv_account,
-        amount => $amount,
-        currency => $currency
+        amount       => $amount,
+        currency     => $currency
     }
 
     my $platform = BOM::TradingPlatform->new(
         platform    => 'derivez',
         client      => $client,
-        rule_engine => BOM::Rules::Engine->new(client => $client),
+        user        => $user,
+        rule_engine => BOM::Rules::Engine->new(client => $client, user => $user),
     );
 
     my $account = $platform->withdraw($args);
@@ -637,24 +648,22 @@ sub withdraw {
 
     # Params/args from FE
     my $from_derivez = delete $args{from_account};
-    my $to_loginid   = delete $args{to_account};
     my $amount       = delete $args{amount};
 
     # Optional Params
     my $source         = delete $args{source};
     my $currency_check = delete $args{currency_check};
 
-    # Build client and user object
-    my $client = $self->client;
-
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    my $client     = $self->client;
+    my $user       = $self->user;
+    my $to_loginid = $client->loginid;
 
     try {
-        $rule_engine->verify_action(
+        $self->rule_engine->verify_action(
             'mt5_jurisdiction_validation',
-            loginid         => $client->loginid,
+            loginid         => $to_loginid,
             mt5_id          => $from_derivez,
-            loginid_details => $client->user->loginid_details,
+            loginid_details => $user->loginid_details,
         );
     } catch ($e) {
         BOM::Platform::Event::Emitter::emit(
@@ -671,7 +680,7 @@ sub withdraw {
     }
 
     my $error_code = 'DerivEZWithdrawalError';
-    my $response   = derivez_validate_and_get_amount($client, $to_loginid, $from_derivez, $amount, $error_code, $currency_check);
+    my $response   = derivez_validate_and_get_amount($client, $user, $from_derivez, $amount, $error_code, $currency_check, $self->rule_engine);
 
     # Parameters
     my $account_type              = $response->{account_type};
@@ -685,9 +694,6 @@ sub withdraw {
     my $min_fee                   = $response->{min_fee};
     my $derivez_login_id          = $from_derivez =~ s/${\BOM::User->EZR_REGEX}//r;
     my $comment                   = "Transfer from DerivEZ account $account_type $derivez_login_id to $to_loginid.";
-
-    # Populate required variables
-    my $to_client = BOM::User::Client->get_client_instance($to_loginid, 'write');
 
     # transaction metadata for statement remarks
     my %txn_details = (
@@ -720,27 +726,28 @@ sub withdraw {
         );
 
         # Daily transfer limit increment
-        $self->client->user->daily_transfer_incr({
-            type     => 'derivez',
-            amount   => $amount,
-            currency => $derivez_currency_code
-        });
+        $user->daily_transfer_incr(
+            amount          => $amount,
+            amount_currency => $derivez_currency_code,
+            loginid_from    => $from_derivez,
+            loginid_to      => $to_loginid,
+        );
 
         # We are recording derivez in mt5_transfer table
-        record_derivez_transfer_to_mt5_transfer($to_client->db->dbic, $txn->payment_id, $amount, $from_derivez, $derivez_currency_code);
+        record_derivez_transfer_to_mt5_transfer($client->db->dbic, $txn->payment_id, $amount, $from_derivez, $derivez_currency_code);
 
         # Tracking transfer for data manipulation purposes
         BOM::Platform::Event::Emitter::emit(
             'transfer_between_accounts',
             {
-                loginid    => $to_client->loginid,
+                loginid    => $to_loginid,
                 properties => {
                     from_account       => $from_derivez,
-                    is_from_account_pa => 0 + !!($to_client->is_pa_and_authenticated),
+                    is_from_account_pa => 0 + !!($client->is_pa_and_authenticated),
                     to_account         => $to_loginid,
-                    is_to_account_pa   => 0 + !!($to_client->is_pa_and_authenticated),
+                    is_to_account_pa   => 0 + !!($client->is_pa_and_authenticated),
                     from_currency      => $derivez_currency_code,
-                    to_currency        => $to_client->currency,
+                    to_currency        => $client->currency,
                     from_amount        => abs $amount,
                     to_amount          => $derivez_amount,
                     source             => $source,

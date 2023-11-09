@@ -74,9 +74,7 @@ Creates and returns a new L<BOM::TradingPlatform::CTrader> instance.
 
 sub new {
     my ($class, %args) = @_;
-    return bless +{
-        client      => $args{client},
-        rule_engine => $args{rule_engine}}, $class;
+    return bless {%args{qw(client user rule_engine)}}, $class;
 }
 
 =head2 active_servers
@@ -130,7 +128,7 @@ sub generate_login_token {
 
     croak 'user_agent is mandatory argument' unless defined $user_agent;
 
-    my ($login) = $self->{client}->user->ctrade_loginids;
+    my ($login) = $self->user->get_ctrader_loginids;
 
     die "No cTrader accounts found for " . $self->{client}->loginid unless $login;
 
@@ -142,7 +140,7 @@ sub generate_login_token {
     my $one_time_token_params = +{
         ctid           => $ctid_userid,
         ua_fingerprint => $user_agent,
-        user_id        => $self->{client}->user->id,
+        user_id        => $self->user->id,
     };
 
     # 3 attempts just in case of collisions. Normally should be done from first attempt.
@@ -202,12 +200,25 @@ sub decode_login_token {
 
 Returns ctrader account info from deriv db.
 
+Takes the following named parameters:
+
+=over 4
+
+=item * C<ignore_wallet_links> if true, any wallet links will be ignored.
+
+=back
+
 =cut
 
 sub local_accounts {
-    my ($self)        = @_;
-    my $login_details = $self->client->user->loginid_details;
+    my ($self, %args) = @_;
+
+    my $login_details = $self->user->loginid_details;
     my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID && !$_->{status} } values %$login_details;
+    @accounts =
+        grep { $_->{wallet_loginid} ? $self->client->is_wallet && $self->client->loginid eq $_->{wallet_loginid} : !$self->client->is_wallet }
+        @accounts
+        unless $args{ignore_wallet_links};
     return @accounts;
 }
 
@@ -260,7 +271,7 @@ sub deposit {
     my $deposit_suspend = BOM::Config::Runtime->instance->app_config->system->ctrader->suspend->deposits;
     die +{error_code => 'CTraderDepositSuspended'} if $deposit_suspend and $account->{account_type} eq 'real';
 
-    return $self->demo_top_up($account) if $account->{account_type} eq 'demo';
+    return $self->demo_top_up($account) if $account->{account_type} eq 'demo' && !$account->{wallet_loginid};
 
     # Sequence:
     # 1. Validation
@@ -270,12 +281,16 @@ sub deposit {
     my $tx_amounts = $self->validate_transfer(
         action               => 'deposit',
         amount               => $args{amount},
+        amount_currency      => $self->client->currency,
         platform_currency    => $account->{currency},
+        request_currency     => $args{currency},                                                  # param is renamed here
         account_type         => $account->{account_type},
         currency             => $args{currency},
         payment_type         => 'ctrader_transfer',
         landing_company_from => $self->client->landing_company->short,
         landing_company_to   => $self->account_details_lite($account)->{landing_company_short},
+        from_account         => $self->client->loginid,
+        to_account           => $args{to_account},
     );
 
     my %txn_details = (
@@ -304,10 +319,12 @@ sub deposit {
             payment_child => $child_table_ctrader_transfer,
         );
 
-        $self->client->user->daily_transfer_incr({
-                type     => PLATFORM_ID,
-                amount   => $args{amount},
-                currency => $account->{currency}});
+        $self->user->daily_transfer_incr(
+            amount          => $args{amount},
+            amount_currency => $self->client->currency,
+            loginid_from    => $self->client->loginid,
+            loginid_to      => $args{to_account},
+        );
 
     } catch {
         die +{error_code => 'CTraderDepositFailed'};
@@ -345,7 +362,7 @@ sub deposit {
     }
 
     my $account_details = {
-        local_account   => $self->client->user->loginid_details->{$args{to_account}},
+        local_account   => $self->user->loginid_details->{$args{to_account}},
         ctrader_account => $trader_details
     };
 
@@ -395,11 +412,15 @@ sub withdraw {
     my $tx_amounts = $self->validate_transfer(
         action               => 'withdrawal',
         amount               => $args{amount},
+        amount_currency      => $account->{currency},
         platform_currency    => $account->{currency},
+        request_currency     => $args{currency},                                                  # param is renamed here
         account_type         => $account->{account_type},
         currency             => $args{currency},
         landing_company_from => $self->account_details_lite($account)->{landing_company_short},
         landing_company_to   => $self->client->landing_company->short,
+        from_account         => $args{from_account},
+        to_account           => $self->client->loginid,
     );
 
     my %call_args = (
@@ -445,10 +466,12 @@ sub withdraw {
             payment_child => $child_table_ctrader_transfer,
         );
 
-        $self->client->user->daily_transfer_incr({
-                type     => PLATFORM_ID,
-                amount   => $args{amount},
-                currency => $account->{currency}});
+        $self->user->daily_transfer_incr(
+            amount          => $args{amount},
+            amount_currency => $account->{currency},
+            loginid_from    => $args{from_account},
+            loginid_to      => $self->client->loginid,
+        );
 
     } catch {
         die +{error_code => 'CTraderWithdrawalIncomplete'};
@@ -468,7 +491,7 @@ sub withdraw {
     }
 
     my $account_details = {
-        local_account   => $self->client->user->loginid_details->{$args{from_account}},
+        local_account   => $self->user->loginid_details->{$args{from_account}},
         ctrader_account => $trader_details
     };
 
@@ -580,7 +603,7 @@ sub new_account {
 
     my ($account_type, $market_type, $currency, $dry_run, $landing_company_short) = @{\%args}{qw/account_type market_type currency dry_run company/};
     my $client      = $self->client;
-    my $user        = $client->user;
+    my $user        = $self->user;
     my $server      = $account_type;
     my $environment = $account_type eq 'real' ? 'live' : 'demo';
 
@@ -635,6 +658,7 @@ sub new_account {
         method  => 'trader_create',
         payload => $new_trader_params
     );
+
     die +{error_code => 'CTraderAccountCreateFailed'} unless $trader_account->{login};
 
     my $group_id = group_to_groupid($trader_account->{groupName}, $available_group);
@@ -675,7 +699,6 @@ sub new_account {
 
         $ctid_userid = $ctid->{userId};
         die +{error_code => 'CTIDGetFailed'} unless $ctid_userid;
-
         $self->_add_ctid_userid($ctid_userid);
     }
 
@@ -708,7 +731,7 @@ sub new_account {
         BOM::Platform::Event::Emitter::emit(
             'cms_add_affiliate_client',
             {
-                binary_user_id => $self->client->binary_user_id,
+                binary_user_id => $self->user->id,
                 token          => $token,
                 loginid        => $account_id,
                 platform       => PLATFORM_ID
@@ -719,7 +742,7 @@ sub new_account {
         'ctrader_account_created',
         {
             loginid        => $self->client->loginid,
-            binary_user_id => $self->client->binary_user_id,
+            binary_user_id => $self->user->id,
             ctid_userid    => $ctid_userid,
             account_type   => $account_type
         });
@@ -749,7 +772,7 @@ Takes the following arguments as named parameters:
 sub get_accounts {
     my ($self, %args) = @_;
 
-    my @local_accounts = $self->local_accounts or return [];
+    my @local_accounts = $self->local_accounts(%args) or return [];
 
     my @result;
     for my $local_account (@local_accounts) {
@@ -763,6 +786,7 @@ sub get_accounts {
         } catch {
             next;
         }
+
         my $account = {
             local_account   => $local_account,
             ctrader_account => $ct_account
@@ -771,6 +795,25 @@ sub get_accounts {
     }
 
     return \@result;
+}
+
+=head2 get_account_info
+
+The CTrader implementation of getting an account info.
+
+=cut
+
+sub get_account_info {
+    my ($self, $loginid) = @_;
+
+    # ignore_wallet_links means this call can return any account belong to user, regardles of wallet links
+    my @accounts = $self->get_accounts(ignore_wallet_links => 1)->@*;
+
+    my $account = first { $_->{account_id} eq $loginid } @accounts;
+
+    die "CTraderInvalidAccount\n" unless ($account);
+
+    return $account;
 }
 
 =head2 available_accounts
@@ -861,9 +904,9 @@ Gets ctid's userid by binary_user_id
 sub get_ctid_userid {
     my ($self) = @_;
 
-    my ($user_id) = $self->client->user->dbic->run(
+    my ($user_id) = $self->user->dbic->run(
         fixup => sub {
-            $_->selectrow_array("SELECT ctid_user_id FROM ctrader.get_ctrader_userid(?)", undef, $self->client->binary_user_id);
+            $_->selectrow_array("SELECT ctid_user_id FROM ctrader.get_ctrader_userid(?)", undef, $self->user->id);
         });
 
     return $user_id;
@@ -879,9 +922,9 @@ sub _add_ctid_userid {
     my ($self, $ctid_userid) = @_;
 
     try {
-        return $self->client->user->dbic->run(
+        return $self->user->dbic->run(
             fixup => sub {
-                $_->do('SELECT FROM ctrader.add_ctrader_userid(?, ?)', undef, $self->client->binary_user_id, $ctid_userid);
+                $_->do('SELECT FROM ctrader.add_ctrader_userid(?, ?)', undef, $self->user->id, $ctid_userid);
             });
     } catch ($e) {
         return {error => 'ErrorAddingCtidUserId'};

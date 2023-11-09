@@ -36,7 +36,7 @@ Returns whether this client instance is a virtual account.
 sub is_virtual {
     my $self = shift;
 
-    return $self->get_account_type->name eq 'virtual';
+    return $self->get_account_type->name eq 'virtual' ? 1 : 0;
 }
 
 =head2 is_wallet

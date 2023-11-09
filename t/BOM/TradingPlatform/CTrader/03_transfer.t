@@ -81,7 +81,8 @@ $client->email('ctradertransfer@test.com');
 my $user = BOM::User->create(
     email    => $client->email,
     password => 'test'
-)->add_client($client);
+);
+$user->add_client($client);
 $client->set_default_account('AUD');
 $client->binary_user_id($user->id);
 $client->save;
@@ -91,7 +92,11 @@ BOM::Test::Helper::Client::top_up($client, $client->currency, 100);
 my $ctrader = BOM::TradingPlatform->new(
     platform    => 'ctrader',
     client      => $client,
-    rule_engine => BOM::Rules::Engine->new(client => $client));
+    user        => $user,
+    rule_engine => BOM::Rules::Engine->new(
+        client => $client,
+        user   => $user
+    ));
 
 my $account = $ctrader->new_account(
     account_type => "real",
@@ -134,7 +139,11 @@ subtest 'deposits' => sub {
     my $dep;
     is(exception { $dep = $ctrader->deposit(%params) }, undef, 'no error when demo suspended');
 
-    is $client->user->daily_transfer_count('ctrader'), 1, 'Daily transfer counter increased';
+    is $client->user->daily_transfer_count(
+        type       => 'ctrader',
+        identifier => $user->id
+        ),
+        1, 'Daily transfer counter increased';
 
     my $fee = 10 * 0.15;
     $ctbalance = sprintf("%.2f", (10 - $fee) * 0.75);
@@ -244,7 +253,12 @@ subtest 'withdrawal' => sub {
         'expected result fields'
     );
 
-    is $client->user->daily_transfer_count('ctrader'), 2, 'Daily transfer counter increased';
+    is $client->user->daily_transfer_count(
+        type       => 'ctrader',
+        identifier => $user->id
+        ),
+        2, 'Daily transfer counter increased';
+
     cmp_ok $ctrader->get_accounts->[0]->{balance}, '==', 0,              'ctrader account balance decreased';
     cmp_ok $client->account->balance,              '==', 90 + $localbal, 'client balance increased';
 

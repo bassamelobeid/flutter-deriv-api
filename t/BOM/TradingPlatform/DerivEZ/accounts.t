@@ -624,9 +624,9 @@ subtest "cannot create user when user do not have CR account" => sub {
     cmp_deeply(
         exception { $derivez->new_account(%params) },
         {
-            error_code     => 'AccountShouldBeReal',
-            rule           => 'trading_account.client_should_be_real',
-            message_params => ['DerivEZ']
+            error_code => 'AccountShouldBeReal',
+            rule       => 'trading_account.client_should_be_real',
+            params     => ['DerivEZ']
         },
         'cannot create user when user do not have CR account'
     );

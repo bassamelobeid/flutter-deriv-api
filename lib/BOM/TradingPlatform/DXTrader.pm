@@ -94,13 +94,23 @@ use constant DEFAULT_CATEGORIES => ({
 
 Creates and returns a new L<BOM::TradingPlatform::DXTrader> instance.
 
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<client> (required). Client instance. Must be the client who will perform any operation on the account.
+
+=item * C<rule_engine>. Rule engine instance. Requried for any operation that uses rule engine.
+
+=item * C<user> User instance. Required for any operation that directly/indirectly calls user->loginid_details.
+
+=back
+
 =cut
 
 sub new {
     my ($class, %args) = @_;
-    return bless {
-        client      => $args{client},
-        rule_engine => $args{rule_engine}}, $class;
+    return bless {%args{qw(client user rule_engine)}}, $class;
 }
 
 =head2 active_servers
@@ -126,7 +136,7 @@ Returns all servers used by existing dxtrade accounts.
 
 sub account_servers {
     my ($self) = @_;
-    my @servers = uniq(map { $_->{account_type} } $self->local_accounts);
+    my @servers = uniq(map { $_->{account_type} } $self->local_accounts(ignore_wallet_links => 1));
     return @servers;
 }
 
@@ -168,29 +178,26 @@ sub check_trading_category {
 
 Returns dxtrade account info from our db.
 
+Takes the following named parameters:
+
+=over 4
+
+=item * C<ignore_wallet_links> if true, any wallet links will be ignored.
+
+=back
+
 =cut
 
 sub local_accounts {
-    my ($self) = @_;
-    my $client = $self->client;
+    my ($self, %args) = @_;
 
-    if ($client->is_wallet) {
-        my $user          = $client->user;
-        my $login_details = $user->loginid_details;
-
-        my @all_linked_accounts = ($user->get_accounts_links(+{wallet_loginid => $client->loginid})->{$client->loginid} // [])->@*;
-
-        my @login_list = sort map { $_->{platform} eq "dxtrade" ? $_->{loginid} : () } @all_linked_accounts;
-
-        return map { $login_details->{$_} } @login_list;
-    } elsif ($client->is_legacy) {
-        my $login_details = $client->user->loginid_details;
-        my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID && !$_->{status} } values %$login_details;
-        return @accounts;
-    }
-
-    # return nothing for other accounts types
-    return ();
+    my %loginid_details = $self->user->loginid_details->%*;
+    my @accounts        = sort grep { ($_->{platform} // '') eq PLATFORM_ID && !$_->{status} } values %loginid_details;
+    @accounts =
+        grep { $_->{wallet_loginid} ? $self->client->is_wallet && $self->client->loginid eq $_->{wallet_loginid} : !$self->client->is_wallet }
+        @accounts
+        unless $args{ignore_wallet_links};
+    return @accounts;
 }
 
 =head1 RPC methods
@@ -221,14 +228,15 @@ sub new_account {
     # Currency validated by rules engine, if not given take it from LC default
     $args{currency} //= $self->get_new_account_currency();
     $args{platform} //= $self->name;
+    $args{wallet_loginid} = $self->client->is_wallet ? $self->client->loginid : undef;
 
     $self->rule_engine->verify_action('new_trading_account', %args, loginid => $self->client->loginid);
 
     my $server = $args{account_type};    # account_type means a different thing for dxtrade
 
     die +{
-        error_code     => 'DXInvalidMarketType',
-        message_params => [$server]}
+        error_code => 'DXInvalidMarketType',
+        params     => [$server]}
         unless $self->is_valid_market_type($server, $args{market_type});
 
     my $account_type     = $args{account_type} eq 'real' ? 'LIVE' : 'DEMO';
@@ -239,11 +247,8 @@ sub new_account {
 
     my $dxclient = $self->dxclient_get($server) || $self->dxclient_create($server, $password);
 
-    my $user = $self->client->user;
-
     my ($account, $err) = $self->find_account({
         dxclient     => $dxclient,
-        user         => $user,
         currency     => $currency,
         account_type => $account_type,
         market_type  => $args{market_type},
@@ -251,11 +256,10 @@ sub new_account {
 
     if ($account && $err && $err eq 'ORPHAN_ACCOUNT') {
         return $self->save_account({
-            user         => $user,
             dxclient     => $dxclient,
             account      => $account,
             market_type  => $args{market_type},
-            account_type => $account_type,
+            account_type => $args{account_type},
             account_id   => $account->{account_code},
         });
     } elsif ($account) {
@@ -266,7 +270,7 @@ sub new_account {
         die "Unxpected output of find_account funtion <$err> for client " . $self->client->loginid;
     }
 
-    my ($seq_num) = $user->dbic->run(
+    my ($seq_num) = $self->user->dbic->run(
         ping => sub {
             $_->selectrow_array("SELECT nextval('users.devexperts_account_id')");
         });
@@ -311,7 +315,6 @@ sub new_account {
     $account = $account_resp->{content};
 
     return $self->save_account({
-        user         => $user,
         dxclient     => $dxclient,
         account      => $account,
         market_type  => $args{market_type},
@@ -329,8 +332,7 @@ If account has affiliate token it'll emit event to link this account latter
 
 sub save_account {
     my ($self, $args) = @_;
-    my ($dxclient, $account, $market_type, $account_type, $account_id, $user) =
-        $args->@{qw(dxclient account market_type account_type account_id user)};
+    my ($dxclient, $account, $market_type, $account_type, $account_id) = $args->@{qw(dxclient account market_type account_type account_id)};
 
     my %attributes = (
         login         => $dxclient->{login},
@@ -342,7 +344,7 @@ sub save_account {
 
     my $wallet = $self->client->is_wallet ? $self->client->loginid : undef;
 
-    $user->add_loginid($account_id, PLATFORM_ID, $account_type, $account->{currency}, \%attributes, $wallet);
+    $self->user->add_loginid($account_id, PLATFORM_ID, $account_type, $account->{currency}, \%attributes, $wallet);
 
     # If client has affiliate token, link the client to the affiliate.
     if (my $token = $self->client->myaffiliates_token and $account_type ne 'demo') {
@@ -373,10 +375,10 @@ if wallet argument is provided, it'll look only for accounts connected to the sa
 sub find_account {
     my ($self, $args) = @_;
 
-    my ($user, $dxclient, $currency, $account_type, $market_type) = $args->@{qw(user dxclient currency account_type market_type)};
+    my ($dxclient, $currency, $account_type, $market_type) = $args->@{qw(dxclient currency account_type market_type)};
 
     my $accounts_links;
-    my $loginid_details = $user->loginid_details;
+    my $loginid_details = $self->user->loginid_details;
 
     my $wallet = $self->client->is_wallet ? $self->client->loginid : undef;
 
@@ -400,7 +402,7 @@ sub find_account {
 
         # New wallet flow
         if ($wallet) {
-            $accounts_links //= $user->get_accounts_links;
+            $accounts_links //= $self->user->get_accounts_links;
 
             die "Inconsistent data: Orphant trading account" unless $accounts_links->{$account_id};
 
@@ -412,23 +414,6 @@ sub find_account {
     }
 
     return undef, 'NOT_FOUND';
-}
-
-=head2 get_client_accounts
-
-Gets all accounts of a client
-
-=cut
-
-sub get_client_accounts {
-    my ($self) = @_;
-
-    my ($result) = $self->client->user->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref("SELECT loginid FROM users.get_loginids(?)", {Slice => {}}, $self->client->binary_user_id);
-        });
-
-    return $result;
 }
 
 =head2 is_valid_market_type
@@ -480,7 +465,7 @@ Takes the following arguments as named parameters:
 sub get_accounts {
     my ($self, %args) = @_;
 
-    my @local_accounts  = $self->local_accounts or return [];
+    my @local_accounts  = $self->local_accounts(%args) or return [];
     my @account_servers = $self->account_servers;
 
     my @accounts;
@@ -501,6 +486,7 @@ sub get_accounts {
         my $account;
         $account->{account_id} = $local_account->{loginid};
         $account->{login}      = $local_account->{attributes}{login};
+
         if (my $dxaccount = first { $_->{account_code} eq $local_account->{attributes}{account_code} } @accounts) {
             $account->{enabled} = 1;
             $account = {%$account, %$dxaccount};
@@ -541,7 +527,7 @@ sub change_password {
     if ($self->local_accounts) {
         $self->server_check($self->account_servers);
     } else {
-        $self->client->user->update_dx_trading_password($password);
+        $self->user->update_dx_trading_password($password);
         return undef;
     }
 
@@ -577,7 +563,7 @@ sub change_password {
     }
 
     if ($pwd_changed) {
-        $self->client->user->update_dx_trading_password($password);
+        $self->user->update_dx_trading_password($password);
     }
 
     return ($pwd_changed ? {successful_logins => [$self->dxtrade_login]} : undef);
@@ -593,9 +579,9 @@ Takes the following arguments as named parameters:
 
 =item * C<amount> in deriv account currency.
 
-=item * C<to_account>. Our dxtrade account id.
+=item * C<currency> amount currency.
 
-=item * C<from_account>. Source account to deposit towards to_account.
+=item * C<to_account>. Our dxtrade account id.
 
 =back
 
@@ -609,8 +595,8 @@ sub deposit {
     my $account = first { $_->{loginid} eq $args{to_account} } $self->local_accounts
         or die +{error_code => 'DXInvalidAccount'};
 
-    return $self->demo_top_up($account) if $account->{account_type} eq 'demo';
-    $self->server_check('real');    # try to avoid debiting deriv if server is not available
+    return $self->demo_top_up($account) if $account->{is_virtual} && !$account->{wallet_loginid};
+    $self->server_check($account->{account_type});    # try to avoid debiting deriv if server is not available
 
     # Sequence:
     # 1. Validation
@@ -620,12 +606,15 @@ sub deposit {
     my $tx_amounts = $self->validate_transfer(
         action               => 'deposit',
         amount               => $args{amount},
+        amount_currency      => $self->client->currency,
         platform_currency    => $account->{currency},
+        request_currency     => $args{currency},                                             # param is renamed here
         account_type         => $account->{account_type},
-        currency             => $args{currency},
         payment_type         => 'dxtrade_transfer',
         landing_company_from => $self->client->landing_company->short,
         landing_company_to   => $self->account_details($account)->{landing_company_short},
+        from_account         => $self->client->loginid,
+        to_account           => $args{to_account},
     );
 
     my %txn_details = (
@@ -650,10 +639,12 @@ sub deposit {
 
         $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
 
-        $self->client->user->daily_transfer_incr({
-                type     => PLATFORM_ID,
-                amount   => $args{amount},
-                currency => $account->{currency}});
+        $self->user->daily_transfer_incr(
+            amount          => $args{amount},
+            amount_currency => $self->client->currency,
+            loginid_from    => $self->client->loginid,
+            loginid_to      => $args{to_account},
+        );
     } catch {
         die +{error_code => 'DXDepositFailed'};
     }
@@ -664,11 +655,10 @@ sub deposit {
             method        => 'account_deposit',
             account_code  => $account->{attributes}{account_code},
             clearing_code => $account->{attributes}{clearing_code},
-            id            => $self->unique_id,                        # must be unique for deposits on this login
+            id            => $self->unique_id,                                      # must be unique for deposits on this login
             amount        => $tx_amounts->{recv_amount},
             currency      => $account->{currency},
-            defined($args{from_account}) ? (description => $args{from_account} . '#' . $txn->transaction_id) : (),
-
+            description   => $self->client->loginid . '#' . $txn->transaction_id,
         );
     } catch {
         die +{error_code => 'DXDepositIncomplete'};
@@ -703,11 +693,9 @@ Takes the following arguments as named parameters:
 
 =over 4
 
-=item * C<amount> in dxtrad account currency.
+=item * C<amount> in dxtrade account currency.
 
 =item * C<from_account>. Our dxtrade account id.
-
-=item * C<to_account>. Target account to deposit towards after withdraw from from_account.
 
 =back
 
@@ -731,11 +719,14 @@ sub withdraw {
     my $tx_amounts = $self->validate_transfer(
         action               => 'withdrawal',
         amount               => $args{amount},
+        amount_currency      => $account->{currency},
         platform_currency    => $account->{currency},
+        request_currency     => $args{currency},                                             # param is renamed here
         account_type         => $account->{account_type},
-        currency             => $args{currency},
         landing_company_from => $self->account_details($account)->{landing_company_short},
         landing_company_to   => $self->client->landing_company->short,
+        from_account         => $args{from_account},
+        to_account           => $self->client->loginid,
     );
 
     my %call_args = (
@@ -743,10 +734,10 @@ sub withdraw {
         method        => 'account_withdrawal',
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
-        id            => $self->unique_id,                        # must be unique for withdrawals on this login
+        id            => $self->unique_id,                                     # must be unique for withdrawals on this login
         amount        => $args{amount},
         currency      => $account->{currency},
-        defined($args{to_account}) ? (description => $args{from_account} . '_' . $args{to_account}) : (),
+        description   => $args{from_account} . '_' . $self->client->loginid,
     );
 
     my $resp = $self->call_api(%call_args, quiet => 1);
@@ -782,10 +773,12 @@ sub withdraw {
 
         $self->insert_payment_details($txn->payment_id, $args{from_account}, $args{amount} * -1);
 
-        $self->client->user->daily_transfer_incr({
-                type     => PLATFORM_ID,
-                amount   => $args{amount},
-                currency => $account->{currency}});
+        $self->user->daily_transfer_incr(
+            amount          => $args{amount},
+            amount_currency => $account->{currency},
+            loginid_from    => $args{from_account},
+            loginid_to      => $self->client->loginid,
+        );
     } catch {
         die +{error_code => 'DXWithdrawalIncomplete'};
     }
@@ -828,8 +821,8 @@ sub demo_top_up {
     );
 
     die +{
-        error_code     => 'DXDemoTopupBalance',
-        message_params => [formatnumber('amount', 'USD', DEMO_TOPUP_MINIMUM_BALANCE), 'USD']}
+        error_code => 'DXDemoTopupBalance',
+        params     => [formatnumber('amount', 'USD', DEMO_TOPUP_MINIMUM_BALANCE), 'USD']}
         unless $check->{content}{balance} <= DEMO_TOPUP_MINIMUM_BALANCE;
 
     try {
@@ -911,7 +904,8 @@ The DXTrader implementation of getting an account info.
 sub get_account_info {
     my ($self, $loginid) = @_;
 
-    my @accounts = @{$self->get_accounts};
+    # ignore_wallet_links means this call can return any DX account belong to user, regardles of wallet links
+    my @accounts = $self->get_accounts(ignore_wallet_links => 1)->@*;
 
     my $account = first { $_->{account_id} eq $loginid } @accounts;
 
@@ -1117,9 +1111,9 @@ sub dxtrade_login {
 
     if ($self->config->{real_account_ids}) {
         my $prefix = $self->config->{real_account_ids_login_prefix} // '';
-        return $prefix . $self->client->user->id;
+        return $prefix . $self->user->id;
     } else {
-        my $account = first { ($_->{platform} // '') eq PLATFORM_ID } values $self->client->user->loginid_details->%*;
+        my $account = first { ($_->{platform} // '') eq PLATFORM_ID } values $self->user->loginid_details->%*;
         return $account->{attributes}{login} if $account;
         return sha1_hex($$ . time . rand);
     }
