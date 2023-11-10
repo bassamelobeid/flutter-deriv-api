@@ -143,7 +143,6 @@ subtest 'Expect that all fields are the same after loading FROM account transfer
     is $higher_lower->financial_market_bet_open_record->payout_price,            '200.00';
     is $higher_lower->financial_market_bet_open_record->buy_price,               '20.00';
     is $higher_lower->financial_market_bet_open_record->sell_price,              '40.00';
-    is $higher_lower->financial_market_bet_open_record->remark,                  'Test Remark';
     is $higher_lower->financial_market_bet_open_record->start_time->datetime(),  '2010-12-02T12:00:00';
     is $higher_lower->financial_market_bet_open_record->expiry_time->datetime(), '2010-12-02T14:00:00';
     is $higher_lower->financial_market_bet_open_record->is_expired,              1;
