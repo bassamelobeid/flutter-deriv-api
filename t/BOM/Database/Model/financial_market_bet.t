@@ -121,7 +121,6 @@ is_deeply([
         $financial_market_bet->financial_market_bet_record->payout_price,
         $financial_market_bet->financial_market_bet_record->buy_price,
         $financial_market_bet->financial_market_bet_record->sell_price,
-        $financial_market_bet->financial_market_bet_record->remark,
         $financial_market_bet->financial_market_bet_record->start_time->epoch,
         $financial_market_bet->financial_market_bet_record->expiry_time->epoch,
         $financial_market_bet->financial_market_bet_record->is_expired,
@@ -131,7 +130,7 @@ is_deeply([
         $financial_market_bet->financial_market_bet_record->short_code,
     ],
     [
-        $account->id, 'frxUSDJPY', '200.00', '20.00', '40.00', 'Test Remark', '1291291200', '1291298400', 1, 1, 'higher_lower_bet', 'CALL',
+        $account->id, 'frxUSDJPY', '200.00', '20.00', '40.00', '1291291200', '1291298400', 1, 1, 'higher_lower_bet', 'CALL',
         'CALL_IXIC_20_8_MAR_05_22_MAR_05_2089_0',
     ],
     'correct data read back'
