@@ -324,8 +324,8 @@ my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
 
 subtest 'get_sold_bets_of_account' => sub {
     my $data = $fmb_dm->get_sold_bets_of_account();
-    is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
-    is $data->[0]{account_id},        $account->id,  'account_id';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',  'underlying_symbol';
+    is $data->[0]{account_id},        $account->id, 'account_id';
 };
 
 subtest 'get_fmb_by_id' => sub {
@@ -349,8 +349,8 @@ subtest 'get_fmb_by_id' => sub {
 
 subtest 'get_sold' => sub {
     my $data = $fmb_dm->get_sold();
-    is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
-    is $data->[0]{account_id},        $account->id,  'account_id';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',  'underlying_symbol';
+    is $data->[0]{account_id},        $account->id, 'account_id';
 };
 
 subtest 'get_sold_contracts' => sub {
@@ -372,16 +372,16 @@ subtest 'get_contract_details_with_transaction_ids' => sub {
 
 subtest 'get_contract_by_account_id_transaction_id' => sub {
     my $data = $fmb_dm->get_contract_by_account_id_transaction_id($account->id, $transaction_id);
-    is $data->[0]{account_id},        $account->id,  'account_id';
-    is $data->[0]{id},                $contract_id,  'contract_id';
-    is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
+    is $data->[0]{account_id},        $account->id, 'account_id';
+    is $data->[0]{id},                $contract_id, 'contract_id';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',  'underlying_symbol';
 };
 
 subtest 'get_contract_by_account_id_contract_id' => sub {
     my $data = $fmb_dm->get_contract_by_account_id_contract_id($account->id, $contract_id);
-    is $data->[0]{account_id},        $account->id,  'account_id';
-    is $data->[0]{id},                $contract_id,  'contract_id';
-    is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
+    is $data->[0]{account_id},        $account->id, 'account_id';
+    is $data->[0]{id},                $contract_id, 'contract_id';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',  'underlying_symbol';
 };
 
 done_testing;
