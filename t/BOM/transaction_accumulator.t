@@ -463,7 +463,7 @@ subtest 'sell a bet with take profit', sub {
         };
 
         subtest 'fmb row', sub {
-            plan tests => 19;
+            plan tests => 18;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,            'account_id';
             is $fmb->{bet_class},     'accumulator',           'bet_class';
