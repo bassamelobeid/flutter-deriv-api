@@ -414,7 +414,9 @@ sub _get_cashier_url {
     return $url;
 }
 
-rpc get_limits => sub {
+rpc 'get_limits',
+    readonly => 1,
+    sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -457,7 +459,10 @@ rpc get_limits => sub {
         $limits->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
         # Withdrawal since $numdays
-        my $payment_mapper        = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
+        my $payment_mapper = BOM::Database::DataMapper::Payment->new({
+            client_loginid => $client->loginid,
+            operation      => 'replica'
+        });
         my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
             start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
             exclude    => ['currency_conversion_transfer', 'account_transfer'],
@@ -578,7 +583,7 @@ rpc get_limits => sub {
     }
 
     return $limits;
-};
+    };
 
 rpc "paymentagent_list",
     auth => [],    # unauthenticated
@@ -2230,7 +2235,8 @@ rpc 'cashier_payments', sub {
 };
 
 rpc 'crypto_config',
-    auth => [],    # unauthenticated
+    auth     => [],    # unauthenticated
+    readonly => 1,
     sub {
     my $params = shift;
 
