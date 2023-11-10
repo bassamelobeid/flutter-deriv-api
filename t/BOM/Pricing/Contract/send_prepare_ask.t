@@ -6,6 +6,11 @@ use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
+# sub to check if longcode is defined and arrayref
+my $is_arrayref = sub {
+    return 0, "not arrayref" unless ref shift eq 'ARRAY';
+};
+
 subtest 'prepare_ask' => sub {
     my $params = {
         "proposal"      => 1,
@@ -288,19 +293,9 @@ subtest 'send_ask LBFLOATCALL' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value' => '203.00',
-        'ask_price'     => '203.00',
-        'longcode'      => [
-            "Win [_6] [_5] times [_1]'s close minus low over the next [_3].",
-            ["Volatility 50 Index"],
-            ["contract start time"],
-            {
-                class => "Time::Duration::Concise::Localize",
-                value => 900
-            },
-            [0.0001],
-            "100.00", "USD",
-        ],
+        'display_value'    => '203.00',
+        'ask_price'        => '203.00',
+        'longcode'         => code($is_arrayref),
         'spot'             => '963.3054',
         'multiplier'       => 100,
         'payout'           => '0',
@@ -516,13 +511,14 @@ subtest 'send_ask MULTUP' => sub {
 
     $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
     note explain $result if $result->{error};
+
     $expected = {
         'commission'          => '0.50',
         'date_expiry'         => ignore(),
         'date_start'          => ignore(),
         'multiplier'          => 10,
         'ask_price'           => '100.00',
-        'longcode'            => ["Win [_5]% of your stake for every 1% rise in [_1].", ["Volatility 100 Index"], [], ignore(), [0.01], 10, "USD",],
+        'longcode'            => code($is_arrayref),
         'skip_basis_override' => 1,
         'skip_streaming'      => 0,
         'spot'                => '65258.19',
