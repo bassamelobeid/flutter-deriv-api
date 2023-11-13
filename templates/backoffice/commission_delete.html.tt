@@ -1,5 +1,4 @@
-<form id='commission_update'>
-<p> Please check the 'Existing Rates' tab above before updating 'Commission rate' or 'Contract Size' and specify accordingly</p>
+<form id='commission_delete'>
     <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr>
@@ -28,16 +27,8 @@
             </td>
         </tr>
         <tr>
-            <td>Commission rate: </td>
-            <td><input type="text" name="commission_rate"></input></td>
-        </tr>
-        <tr>
-            <td>Contract size: </td>
-            <td><input type="text" name="contract_size"></input></td>
-        </tr>
-        <tr>
-            <td><input type="button" class="btn btn--primary" onClick="SaveCFDsCommission()" value="Submit"></td>
-            <td class="save_cfds_affiliate_commission"></td>
+            <td><input type="button" class="btn btn--primary" onClick="DeleteCFDsCommission()" value="Delete Commission"></td>
+            <td class="delete_cfds_affiliate_commission"></td>
         </tr>
     </table>
 </form>
@@ -47,28 +38,29 @@
 var upload_url = "[% upload_url | none %]";
 var provider = "[% provider | none %]";
 
-function SaveCFDsCommission(){
+function DeleteCFDsCommission(){
 
-    var el = \$('#commission_update');
+    var el = \$('#commission_delete');
 
-    var result = el.find('.save_cfds_affiliate_commission');
+    var result = el.find('.delete_cfds_affiliate_commission');
     var symbol = el.find('input[name="symbol"]').val();
     var account_type = el.find('select[name="account_type"]').val();
     var commission_type = el.find('select[name="commission_type"]').val();
-    var commission_rate = el.find('input[name="commission_rate"]').val();
-    var contract_size = el.find('input[name="contract_size"]').val();
+
+    var delete_comm = confirm("Are you sure to delete the commission?");
+    if (!delete_comm) {
+            return;
+    }
     
     result.text('processing ...').css('color', 'black');
 
     \$.ajax({
         url: upload_url,
         data: {
-            save_cfds_commission: 1,
+            delete_cfds_commission: 1,
             symbol: symbol,
             account_type: account_type,
             commission_type: commission_type,
-            commission_rate: commission_rate,
-            contract_size: contract_size,
             provider: provider
         },
         success: function(data) {
@@ -76,7 +68,7 @@ function SaveCFDsCommission(){
             if (config.error) {
                 result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('Saved').css('color', 'var(--color-green)');
+                result.text('Deleted').css('color', 'var(--color-green)');
             }
         }
     });

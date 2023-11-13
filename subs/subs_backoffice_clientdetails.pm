@@ -1891,9 +1891,11 @@ sub get_client_details {
         type_of_account    => 'all',
         include_all_status => 1
     );
-    my @dx_logins       = sort $user->get_trading_platform_loginids('dxtrader');
-    my @derivez_logins  = sort $user->get_trading_platform_loginids('derivez');
-    my @ctrader_logins  = sort $user->get_trading_platform_loginids('ctrader');
+
+    my @dx_logins      = sort $user->get_dxtrade_loginids;
+    my @derivez_logins = sort $user->get_derivez_loginids;
+    my @ctrader_logins = sort $user->get_ctrader_loginids;
+
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
     my $encoded_broker  = encode_entities($broker);
@@ -1984,10 +1986,10 @@ sub loginids {
             };
     }
 
-    my @platforms = ('dxtrader', 'derivez', 'ctrader');
+    my @platforms = ('dxtrade', 'derivez', 'ctrader');
 
     foreach my $platform (@platforms) {
-        foreach my $lid ($user->get_trading_platform_loginids($platform)) {
+        foreach my $lid ($user->get_trading_platform_loginids(platform => $platform)) {
             my $currency;
             my $market_type;
             my $account_type;
@@ -2008,7 +2010,7 @@ sub loginids {
                 currency     => $currency     // 'missing currency',
             );
 
-            if ($platform eq 'dxtrader') {
+            if ($platform eq 'dxtrade') {
                 push @dx_logins,
                     +{
                     %common_params,

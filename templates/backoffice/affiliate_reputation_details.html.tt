@@ -2,76 +2,195 @@
     <form method="post">
         <table border="0" width="100%" id="client_edit" onload="init_text_validations()">
         <tr>
-                <td class="label" style="vertical-align:middle">CHECK REASON</td>
-                <td>:
-                    <select id='affiliate_reason_for_reputation' name='affiliate_reason_for_reputation' required="required">
-                        <option value=""></option>
-                        <option value="Conference" [% IF user_affiliate_check_reason == "Conference" %] selected [% END %]> Conference </option>
-                        <option value="Seminar" [% IF user_affiliate_check_reason == "Seminar" %] selected [% END %]> Seminar </option>
-                        <option value="Reputation check" [% IF user_affiliate_check_reason == "Reputation check" %] selected [% END %]>  Reputation check </option>
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td class="label" style="vertical-align:middle">REPUTATION STATUS</td>
-                <td>: <select id='status_for_reputation' name='status_for_reputation' required="required" >
+            <td class="label" style="vertical-align:middle">REPUTATION CHECK</td>
+            <td>:
+                <select id='reputation_check' name='reputation_check' required="required">
                     <option value=""></option>
-                    <option value="Not Performed" [% IF user_affiliate_reputation_status == "Not Performed" %] selected [% END %]> Not Performed </option>
-                    <option value="Pending" [% IF user_affiliate_reputation_status == "Pending" %] selected [% END %]> Pending </option>
-                    <option value="Failed" [% IF user_affiliate_reputation_status == "Failed" %] selected [% END %]> Failed </option>
-                    <option value="Completed" [% IF user_affiliate_reputation_status == "Completed" %] selected [% END %]> Completed </option>
-                </select></td>
-            </tr>
-            <tr>
-                <td class="label" style="vertical-align:middle">START DATE</td>
-                <td>: <input required="required" name="start_date" data-lpignore="true" type="text" size="10" value="[% user_affiliate_start_date %]"pattern="\d{4}-\d{2}-\d{2}" class="datepick"></td>
-            </tr>
-            <tr>
-                <td class="label" style="vertical-align:middle">LAST REVIEW DATE</td>
-                <td>: <input required="required" name="last_review_date" data-lpignore="true" type="text" size="10" value="[% user_affiliate_last_review_date %]" pattern="\d{4}-\d{2}-\d{2}" class="datepick"></td>
-            </tr>
-            <tr>
-                <td class="label" style="vertical-align:middle" data-lpignore="true">NOTES</td>
-                <td>
-                    <textarea id="affiliate_notes" placeholder="Enter New comment here..." name="affiliate_notes" rows="8" cols="80" maxlength="1000" minlength="1">[% user_affiliate_comment %]</textarea>
-                </td>
-            </tr>
-            <tr>
-                <td class="label"></td>
-                <td>
-                    <button type="submit" name="rep_submit" value="1" class="btn btn--primary">Update client</button>
-                </td>
-            </tr>
+                    <option value="Payment Agent" [% IF reputation_check == "Payment Agent" %] selected [% END %]> Payment Agent </option>
+                    <option value="Affiliate/IB" [% IF reputation_check == "Affiliate/IB" %] selected [% END %]> Affiliate/IB </option>
+                    <option value="App Developer" [% IF reputation_check == "App Developer" %] selected [% END %]> App Developer </option>
+                    <option value="Guest" [% IF reputation_check == "Guest" %] selected [% END %]> Guest </option>
+                    <option value="Prospect" [% IF reputation_check == "Prospect" %] selected [% END %]> Prospect </option>
+                    <option value="Representative of affiliate" [% IF reputation_check == "Representative of affiliate" %] selected [% END %]> Representative of affiliate </option>
+                    <option value="Affiliate network" [% IF reputation_check == "Affiliate network" %] selected [% END %]> Affiliate network </option>
+
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">REPUTATION CHECK STATUS</td>
+            <td>: <select id='reputation_check_status' name='reputation_check_status' required="required" >
+                <option value=""></option>
+                <option value="Contacted" [% IF reputation_check_status == "Contacted" %] selected [% END %]> Contacted </option>
+                <option value="Passed" [% IF reputation_check_status == "Passed" %] selected [% END %]> Passed </option>
+                <option value="Failed" [% IF reputation_check_status == "Failed" %] selected [% END %]> Failed </option>
+                <option value="Pending" [% IF reputation_check_status == "Pending" %] selected [% END %]> Pending </option>
+                <option value="In progress" [% IF reputation_check_status == "In progress" %] selected [% END %]> In progress </option>
+            </select></td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">REPUTATION CHECK TYPE</td>
+            <td>:
+                <select id='reputation_check_type' name='reputation_check_type' required="required">
+                    <option value=""></option>
+                    <option value="Conference" [% IF reputation_check_type == "Conference" %] selected [% END %]> Conference </option>
+                    <option value="Seminar" [% IF reputation_check_type == "Seminar" %] selected [% END %]> Seminar </option>
+                    <option value="Earnings" [% IF reputation_check_type == "Earnings" %] selected [% END %]>  Earnings </option>
+                    <option value="Premium PA" [% IF reputation_check_type == "Premium PA" %] selected [% END %]>  Premium PA </option>
+                    <option value="Monitoring" [% IF reputation_check_type == "Monitoring" %] selected [% END %]>  Monitoring </option>
+                </select>
+            </td>
+        </tr>
+        
+        <tr>
+            <td class="label" style="vertical-align:middle">START DATE</td>
+            <td>: <input required="required" name="start_date" data-lpignore="true" type="text" size="10" value="[% start_date %]"pattern="\d{4}-\d{2}-\d{2}" class="datepick"></td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">LAST REVIEW DATE</td>
+            <td>: <input required="required" name="last_review_date" data-lpignore="true" type="text" size="10" value="[% last_review_date %]" pattern="\d{4}-\d{2}-\d{2}" class="datepick"></td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle" data-lpignore="true">References</td>
+            <td>
+                <textarea id="affiliate_notes" placeholder="Enter New comment here..." name="reference" rows="8" cols="80" maxlength="1000" minlength="1">[% reference %]</textarea>
+            </td>
+        </tr>
+        
+        <tr>
+            <td class="label" style="vertical-align:middle"><h3 style="text-decoration: underline;">Summary of checks:</h3></td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">Social media</td>
+            <td>:
+                <select id='social_media_check' name='social_media_check' required="required">
+                    <option value=""></option>
+                    <option value="Pass" [% IF social_media_check == "Pass" %] selected [% END %]> Pass </option>
+                    <option value="Fail" [% IF social_media_check == "Fail" %] selected [% END %]> Fail </option>
+                    <option value="N/A" [% IF social_media_check == "N/A" %] selected [% END %]>  N/A </option>
+                </select>
+            </td>
+        </tr>
+
+        <tr>
+            <td class="label" style="vertical-align:middle">Company(s) owned</td>
+            <td>:
+                <select id='company_owned' name='company_owned' required="required">
+                    <option value=""></option>
+                    <option value="Pass" [% IF company_owned == "Pass" %] selected [% END %]> Pass </option>
+                    <option value="Fail" [% IF company_owned == "Fail" %] selected [% END %]> Fail </option>
+                    <option value="N/A" [% IF company_owned == "N/A" %] selected [% END %]>  N/A </option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">Criminal Record</td>
+            <td>:
+                <select id='criminal_record' name='criminal_record' required="required">
+                    <option value=""></option>
+                    <option value="Positive Match" [% IF criminal_record == "Positive Match" %] selected [% END %]> Positive Match </option>
+                    <option value="False Match" [% IF criminal_record == "False Match" %] selected [% END %]> False Match </option>
+                    <option value="No Match" [% IF criminal_record == "No Match" %] selected [% END %]>  No Match </option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">Civil case record</td>
+            <td>:
+                <select id='civil_case_record' name='civil_case_record' required="required">
+                    <option value=""></option>
+                    <option value="Positive Match" [% IF civil_case_record == "Positive Match" %] selected [% END %]> Positive Match </option>
+                    <option value="False Match" [% IF civil_case_record == "False Match" %] selected [% END %]> False Match </option>
+                    <option value="No Match" [% IF civil_case_record == "No Match" %] selected [% END %]>  No Match </option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">Fraud/Scam</td>
+            <td>:
+                <select id='fraud_scam' name='fraud_scam' required="required">
+                    <option value=""></option>
+                    <option value="Positive Match" [% IF fraud_scam == "Positive Match" %] selected [% END %]> Positive Match </option>
+                    <option value="False Match" [% IF fraud_scam == "False Match" %] selected [% END %]> False Match </option>
+                    <option value="No Match" [% IF fraud_scam == "No Match" %] selected [% END %]>  No Match </option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="label"></td>
+            <td>
+                <button type="submit" name="rep_submit" value="1" class="btn btn--primary">Update client</button>
+            </td>
         </tr>
         </table>
     </form>
 [% ELSE %]
     <table border="0" width="100%" id="client_edit" onload="init_text_validations()">
         <tr>
-            <td class="label" style="vertical-align:middle">CHECK REASON</td>
+            <td class="label" style="vertical-align:middle">REPUTATION CHECK</td>
             <td>:
-                [% user_affiliate_check_reason %]
+                [% reputation_check %]
             </td>
         </tr>
         <tr>
-            <td class="label" style="vertical-align:middle">REPUTATION STATUS</td>
-            <td>: [% user_affiliate_reputation_status %]
+            <td class="label" style="vertical-align:middle">REPUTATION CHECK STATUS</td>
+            <td>:
+                [% reputation_check_status %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">REPUTATION CHECK TYPE</td>
+            <td>: [% reputation_check_type %]
             </td>
         </tr>
         <tr>
             <td class="label" style="vertical-align:middle">START DATE</td>
-            <td>: [% user_affiliate_start_date %] </td>
+            <td>: [% start_date %] </td>
         </tr>
-            <tr>
-                <td class="label" style="vertical-align:middle">LAST REVIEW DATE</td>
-                <td>: [% user_affiliate_last_review_date %] </td>
-            </tr>
-            <tr>
-                <td class="label" style="vertical-align:middle" data-lpignore="true">NOTES:</td>
-                <td>
-                    [% user_affiliate_comment %]
-                </td>
-            </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">LAST REVIEW DATE</td>
+            <td>: [% last_review_date %] </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle" data-lpignore="true">REFRENCES</td>
+            <td>:
+                [% reference %]
+            </td>
+        </tr>
+
+        <tr>
+            <td class="label" style="vertical-align:middle" data-lpignore="true">SOCIAL MEDIA CHECK</td>
+            <td>:
+                [% social_media_check %]
+            </td>
+        </tr>
+
+        <tr>
+            <td class="label" style="vertical-align:middle" data-lpignore="true">COMPANY OWNED</td>
+            <td>:
+                [% company_owned %]
+            </td>
+        </tr>
+
+        <tr>
+            <td class="label" style="vertical-align:middle" data-lpignore="true">CRIMINAL RECORD</td>
+            <td>:
+                [% criminal_record %]
+            </td>
+        </tr>
+
+        <tr>
+            <td class="label" style="vertical-align:middle" data-lpignore="true">CIVIL CASE RECORD</td>
+            <td>:
+                [% civil_case_record %]
+            </td>
+        </tr>
+
+        <tr>
+            <td class="label" style="vertical-align:middle" data-lpignore="true">FRAUD SCAM</td>
+            <td>:
+                [% fraud_scam %]
+            </td>
         </tr>
     </table>
 [% END %]
