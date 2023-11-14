@@ -75,7 +75,7 @@ subtest 'multiplier - send_ask' => sub {
 
     my $expected = {
         'longcode' =>
-            'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
         'spot'                => '100.00',
         'date_start'          => ignore(),
         'date_expiry'         => ignore(),
@@ -129,7 +129,7 @@ subtest 'multiplier - send_ask' => sub {
 
     $expected = {
         'longcode' =>
-            'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
         'spot'                => '100.00',
         'date_start'          => ignore(),
         'date_expiry'         => ignore(),
@@ -191,7 +191,7 @@ subtest 'multiplier - send_ask' => sub {
 
     $expected = {
         'longcode' =>
-            'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
         'spot'                => '100.00',
         'date_start'          => ignore(),
         'date_expiry'         => ignore(),
@@ -323,7 +323,7 @@ subtest 'multiplier - get_bid' => sub {
         'shortcode'                => ignore(),
         'contract_id'              => '470',
         'longcode'                 =>
-            'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
         'is_valid_to_sell'         => 1,
         'is_valid_to_cancel'       => 0,
         'entry_spot_display_value' => '100.00',
@@ -404,7 +404,7 @@ subtest 'multiplier - get_bid' => sub {
         'shortcode'                => ignore(),
         'contract_id'              => '470',
         'longcode'                 =>
-            'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
         'is_valid_to_sell'         => 0,
         'is_valid_to_cancel'       => 1,
         'entry_spot_display_value' => '100.00',
