@@ -17,7 +17,7 @@
       "proposal" : {
          "properties" : {
             "longcode" : {
-               "pattern" : "If you select \"Up\", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
+               "pattern" : "^[_5]$",
                "type" : "string"
             },
             "spot_time" : {

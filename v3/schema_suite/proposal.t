@@ -231,7 +231,7 @@ test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receiv
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'stake', '5',
     'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_multiplier.json', 'MULTUP', 'R_100', 'stake', '10',
-    'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+    "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
     '100.00', '100', '65258.19', 'Stop out', '58765.24', '', '';
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
     '10',
@@ -245,7 +245,7 @@ test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100',
     'stake',     '10',
     'stop_loss', '1',
-    'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+    "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
     '100.00', '100', '65258.19', 'Stop out', '58765.24',
     'Stop loss', '65225.80';
 
@@ -257,7 +257,7 @@ test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receiv
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'stake', '5',
     'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_multiplier.json', 'MULTUP', 'R_100', 'stake', '10',
-    'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+    "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
     '100.00', '100', '65258.19', 'Stop out', '58765.24', '', '';
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
     '10',
@@ -271,7 +271,7 @@ test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100',
     'stake',     '10',
     'stop_loss', '1',
-    'If you select "Up", your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.',
+    "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
     '100.00', '100', '65258.19', 'Stop out', '58765.24',
     'Stop loss', '65225.80';
 
