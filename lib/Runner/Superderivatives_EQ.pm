@@ -122,6 +122,9 @@ sub price_superderivatives_bets_locally {
             epoch      => $bet_args->{date_start},
         );
 
+        # skip currency validation to avoid invalid payout currency.
+        $bet_args->{skip_currency_validation} = 1;
+
         my $bet = produce_contract($bet_args);
 
         my $base_prob =

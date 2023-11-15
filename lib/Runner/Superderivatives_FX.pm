@@ -47,7 +47,6 @@ sub run_dataset {
     } else {
         @files = qw(SD_EURUSD SD_USDJPY SD_GBPJPY SD_USDCHF SD_GBPAUD SD_USDSEK SD_GBPPLN);
     }
-    my $result_all;
 
     my $csv_title =
         "ID,underlying,bet_type,spot,barrier,barrier2,duration(days),date_start,date_expiry,BOM_pricing_args_iv,SD_mid,BOM_mid,mid_diff,arbitrage_check_base";
@@ -135,10 +134,13 @@ sub get_bet_results {
             volsurface                => $raw_surface,
             payout                    => $payout,
             currency                  => $currency,
-            date_pricing              => $date_start,
+            date_pricing              => $date_pricing,
             current_spot              => $spot,
             uses_empirical_volatility => 0,
         };
+
+        # skip currency validation to avoid invalid payout currency.
+        $bet_args->{skip_currency_validation} = 1;
 
         if ($record->{barrier2}) {
             $bet_args->{high_barrier} = $record->{barrier};
@@ -164,8 +166,6 @@ sub get_bet_results {
 
         my $bom_mid =
             $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability->amount;
-        my $bom_bs =
-            $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability->amount;
 
         my $sd_mid   = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');

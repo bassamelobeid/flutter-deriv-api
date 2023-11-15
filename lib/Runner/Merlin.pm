@@ -102,6 +102,8 @@ sub _calculate_results {
             epoch      => $bet_args->{date_start}->epoch,
         );
 
+        # skip currency validation to avoid invalid payout currency.
+        $bet_args->{skip_currency_validation} = 1;
         my $bet           = produce_contract($bet_args);
         my $bet_type      = $bet->code;
         my $base_or_num   = ($record->{numeraire} eq $record->{currency}) ? 'NUM' : 'BASE';
