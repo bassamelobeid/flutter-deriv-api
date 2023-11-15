@@ -69,6 +69,7 @@ sub BUILD {
     $self->_parameters(\%copy);
 
     my $skip_contract_input_validation = $self->_parameters->{skip_contract_input_validation} || 0;
+    my $skip_currency_validation       = $self->_parameters->{skip_currency_validation}       || 0;
 
     $self->_validate_contract_type unless $skip_contract_input_validation;
     $self->_initialize_contract_type;
@@ -83,6 +84,10 @@ sub BUILD {
             $self->_validate_stake_min_max;
             $self->_validate_multiplier;
             $self->_validate_limit_order;
+        }
+
+        unless ($skip_currency_validation) {
+            $self->_validate_currency;
         }
 
         $self->_initialize_barrier();
@@ -702,6 +707,26 @@ sub _get_callputspread_barrier_range {
     }
 
     return;
+}
+
+=head2 _validate_currency
+
+Throws an error if the currency is not valid.
+
+=cut
+
+sub _validate_currency {
+    my $self = shift;
+
+    my %all_currencies = map { $_ => 1 } LandingCompany::Registry::all_currencies();
+
+    unless ($all_currencies{$self->_parameters->{currency}}) {
+
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidPayoutCurrency',
+            details    => {field => 'currency'},
+        );
+    }
 }
 
 no Moose;

@@ -30,7 +30,7 @@ my $args = {
     date_pricing => $now,
     duration     => '1h',
     payout       => 10,
-    currency     => 'JPY',
+    currency     => 'USD',
 };
 
 my $mock_intraday = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');

@@ -249,7 +249,7 @@ test_with_feed([
             underlying   => 'frxUSDJPY',
             market       => 'forex',
             payout       => 1000,
-            currency     => 'JPY',
+            currency     => 'USD',
             barrier      => 'S0P',
         };
 
@@ -293,7 +293,7 @@ test_with_feed([
             underlying   => 'frxUSDJPY',
             market       => 'forex',
             payout       => 1000,
-            currency     => 'JPY',
+            currency     => 'USD',
             barrier      => 'S0P',
         };
 
@@ -420,7 +420,7 @@ test_with_feed([
             date_pricing => Date::Utility->new('2008-03-20T17:00:00Z'),
             underlying   => 'frxUSDJPY',
             payout       => 1000,
-            currency     => 'JPY',
+            currency     => 'USD',
             barrier      => 'S0P',
         };
 
@@ -472,7 +472,7 @@ test_with_feed([
             underlying  => 'frxUSDJPY',
             payout      => 1000,
             barrier     => 108.22,
-            currency    => 'JPY',    # Price in domestic currency 'JPY', with 'USD' as underlying
+            currency    => 'USD',
         };
 
         my $bet = produce_contract($bet_params);
@@ -683,7 +683,7 @@ test_with_feed([
             underlying  => 'frxUSDJPY',
             payout      => 1000,
             barrier     => 108,
-            currency    => 'JPY',
+            currency    => 'USD',
         };
 
         my $bet = produce_contract($bet_params);
@@ -854,7 +854,7 @@ test_with_feed(
             payout       => 1000,
             high_barrier => 106.50,                                                             # in range
             low_barrier  => 104.70,                                                             # in range
-            currency     => 'JPY',    # Price in domestic currency 'JPY', with 'USD' as underlying
+            currency     => 'USD',
         };
 
         my $bet = produce_contract($bet_params);
@@ -977,7 +977,7 @@ test_with_feed(
             payout       => 1000,
             high_barrier => 112.0,
             low_barrier  => 106.0,
-            currency     => 'JPY',
+            currency     => 'USD',
         };
 
         my $bet = produce_contract($bet_params);
@@ -1115,7 +1115,7 @@ test_with_feed([
             payout       => 1000,
             high_barrier => 110.0,
             low_barrier  => 106.0,
-            currency     => 'JPY',
+            currency     => 'USD',
         };
 
         my $bet = produce_contract($bet_params);
@@ -1330,7 +1330,7 @@ test_with_feed([
             payout       => 1000,
             high_barrier => 110.0,
             low_barrier  => 106.0,
-            currency     => 'JPY',
+            currency     => 'USD',
         };
 
         my $bet = produce_contract($bet_params);

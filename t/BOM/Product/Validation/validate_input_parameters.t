@@ -296,10 +296,11 @@ subtest 'invalid payout currency' => sub {
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid multi-day ATM contract with relative barrier.';
     $bet_params->{currency} = 'BDT';
-    $c = produce_contract($bet_params);
-    my $error = exception { $c->is_valid_to_buy };
-    is $error->message_to_client->[0], 'Invalid payout currency', 'message_to_client - Invalid payout currency';
-    is $error->details->{field},       'currency',                'error details is correct';
+    my $error;
+    eval { $c = produce_contract($bet_params); };
+    $error = $@ if $@;
+    is $error->error_code,       'InvalidPayoutCurrency', 'message_to_client - Invalid payout currency';
+    is $error->details->{field}, 'currency',              'error details is correct';
 };
 
 subtest 'stable crypto as payout currency' => sub {

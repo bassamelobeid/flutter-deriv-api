@@ -282,14 +282,6 @@ sub _validate_offerings {
         }
     }
 
-    # available payout currency
-    unless ($all_currencies{$self->currency}) {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidPayoutCurrency',
-            details    => {field => 'currency'},
-        );
-    }
-
     # NOTE: this check only validates the contract-specific risk profile.
     # There may also be a client specific one which is validated in B:P::Transaction
     # no_business should disable buying but not sell back existing positions
