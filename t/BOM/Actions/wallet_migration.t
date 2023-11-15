@@ -26,9 +26,12 @@ subtest wallet_migration_started => sub {
 
     $user->add_client($client_virtual);
 
-    BOM::Event::Actions::Wallets::wallet_migration_started({user_id => $user->id});
+    BOM::Event::Actions::Wallets::wallet_migration_started({user_id => $user->id, app_id => 1});
 
-    my $migration = BOM::User::WalletMigration->new(user => $user);
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1
+    );
 
     is($migration->state, 'migrated', 'Migration in done');
 

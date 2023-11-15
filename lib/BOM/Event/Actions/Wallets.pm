@@ -31,7 +31,9 @@ sub wallet_migration_started {
     my $params = shift;
 
     my $user      = BOM::User->new(id => $params->{user_id});
-    my $migration = BOM::User::WalletMigration->new(user => $user);
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => $params->{app_id});
 
     $migration->process();
 
