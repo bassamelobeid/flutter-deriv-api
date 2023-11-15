@@ -292,11 +292,11 @@ initializing duration
 sub _build_duration {
     my $self = shift;
 
-    my $duration = min($self->tickcount_for($self->max_payout), $self->max_duration);
+    my $duration = min($self->ticks_for_payout($self->max_payout, 1), $self->max_duration);
 
     #if take_profit is defined, it affects the contract duration.
     if ($self->target_payout) {
-        $duration = min($duration, $self->tickcount_for($self->target_payout));
+        $duration = min($duration, $self->ticks_for_payout($self->target_payout));
     }
 
     return $duration . 't';
@@ -671,7 +671,7 @@ override '_build_ticks_for_tick_expiry' => sub {
         #sometimes a contract is sold at time t, but since tick for that second is not recieved yet we use
         #previous tick to sell it. in that case tick at sell_time shouldn't be included here
         if ($self->is_sold and $self->sell_price > 0) {
-            my $tick_count_till_sell = $self->tickcount_for($self->sell_price);
+            my $tick_count_till_sell = $self->ticks_for_payout($self->sell_price);
             return [@ticks[0 .. $tick_count_till_sell - 1]];
         }
     } else {
@@ -898,23 +898,50 @@ sub _validation_methods {
     return \@validation_methods;
 }
 
-=head2 tickcount_for 
+=head2 ticks_for_payout 
 
-number of ticks needed for the contract to reach a payout
+method returns the number of ticks needed for the contract to reach the given payout
 
-payout = stake * (1 + growth_rate) ^ tickCount
-=> tickCount = log(payout/stake) / log(1 + growth_rate);
+Accepts the following positional arguments:
+
+=over 4
+
+=item * C<payout> the desired payout
+
+=item * C<not_exceeding> if it is set to true, then the method returns maximum
+number of ticks for which payout does not exceed the desired payout, if it is
+false or not set, then the method returns minimum number of ticks for which the
+payout is at least the desired payout.
+
+=back
+
+Method throws BOM::Product::Exception if the number of ticks is below 1.
 
 =cut 
 
-sub tickcount_for {
-    my ($self, $payout) = @_;
+sub ticks_for_payout {
+    my ($self, $payout, $not_exceeding) = @_;
 
-    my $effective_ticks = ceil(log($payout / $self->_user_input_stake) / log(1 + $self->growth_rate));
-    #calculate the exact tick considering growth_start_step
+    # payout = stake * (1 + growth_rate) ^ tickCount
+    # => tickCount = log(payout/stake) / log(1 + growth_rate);
+    my $effective_ticks = log($payout / $self->_user_input_stake) / log(1 + $self->growth_rate);
+    # calculate the exact tick considering growth_start_step
     my $tickcount = $effective_ticks + $self->growth_start_step;
-    #due to calculation precision there is chance that $effective_ticks will be one unit larger than the actual value
-    return $self->calculate_payout($tickcount - 1) >= $payout ? $tickcount - 1 : $tickcount;
+    # due to calculation precision there is chance that $effective_ticks will be one unit larger than the actual value
+    if ($not_exceeding) {
+        $tickcount = floor($tickcount);
+        $tickcount++ if $self->calculate_payout($tickcount + 1) <= $payout;
+    } else {
+        $tickcount = ceil($tickcount);
+        $tickcount-- if $self->calculate_payout($tickcount - 1) >= $payout;
+    }
+    if ($tickcount < 1) {
+        BOM::Product::Exception->throw(
+            error_code => 'TradingDurationNotAllowed',
+            details    => {field => 'payout'},
+        );
+    }
+    return $tickcount;
 }
 
 =head2 target_payout
@@ -977,7 +1004,7 @@ sub _build_close_tick {
 
     # this is sell at market, the contract could be sold on tick at sell_time or the previous tick
     # we use the sell_price to find that exact tick here.
-    my $tickcount         = $self->tickcount_for($self->sell_price);
+    my $tickcount         = $self->ticks_for_payout($self->sell_price);
     my @ticks_since_start = @{$self->ticks_for_tick_expiry};
     return $ticks_since_start[$tickcount - 1];
 }

@@ -372,16 +372,20 @@ subtest 'take_profit' => sub {
     };
 };
 
-subtest 'tickcount_for' => sub {
+subtest 'ticks_for_payout' => sub {
     $args->{amount} = 100;
     my $c = produce_contract($args);
 
-    is $c->tickcount_for(99.01),  0,   'the payout will be 99.01 at the start';
-    is $c->tickcount_for(102.01), 3,   'the payout will reach 102 on tick 25';
-    is $c->tickcount_for(150),    42,  'the payout will reach 150 on tick 42';
-    is $c->tickcount_for(150.38), 42,  'the payout will reach 150 on tick 42';
-    is $c->tickcount_for(105.11), 7,   'the payout will reach  105.11 on tick 7';
-    is $c->tickcount_for(275.92), 103, 'the payout will reach  275.92 on tick 103';
+    dies_ok { $c->ticks_for_payout(99.99, 1) } 'the payout will exceed 100 at the start';
+    is $c->ticks_for_payout(100.00),    1, 'the payout will reach 100 on tick 1';
+    is $c->ticks_for_payout(100.00, 1), 1, 'the payout will not exceed 100 on tick 1';
+    is $c->ticks_for_payout(102.01),    3, 'the payout will reach 102 on tick 25';
+    my $p7 = $c->calculate_payout(7);
+    my $p8 = $c->calculate_payout(8);
+    is $c->ticks_for_payout(0.5 * ($p7 + $p8)),    8, 'got ceiled tick count';
+    is $c->ticks_for_payout(0.5 * ($p7 + $p8), 1), 7, 'got floored tick count';
+    is $c->ticks_for_payout($p8),                  8, 'exact ceiled tick count as expected';
+    is $c->ticks_for_payout($p8, 1),               8, 'exact floored tick count as expected';
 };
 
 subtest 'sell contract at entry tick' => sub {
