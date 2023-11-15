@@ -81,8 +81,19 @@ subtest 'Constructor: new' => sub {
     $err = exception { BOM::User::WalletMigration->new(user_id => 12345) };
     like($err, qr/Required parameter 'user' is missing/, 'Should throw exception if user id is invalid');
 
-    my $migration = BOM::User::WalletMigration->new(user => $user);
+    $err = exception { my $migration = BOM::User::WalletMigration->new(user => $user) };
+    like($err, qr/Required parameter 'app_id' is missing/, 'Should throw exception if app id is missed');
 
+    $err = exception { my $migration = BOM::User::WalletMigration->new(user => $user, app_id => 'INVALID_APP_ID') };
+    like($err, qr/Required parameter 'app_id' is missing/, 'Should throw exception if app id is invalid');
+
+    $err = exception { my $migration = BOM::User::WalletMigration->new(user => $user, app_id => 0) };
+    like($err, qr/Required parameter 'app_id' is missing/, 'Should throw exception if app id is invalid');
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
     isa_ok($migration, 'BOM::User::WalletMigration', 'Should return an instance of BOM::User::WalletMigration');
 };
 
@@ -90,7 +101,14 @@ subtest 'State check' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
     my ($user, $client_virtual) = create_user();
 
-    my $migration = BOM::User::WalletMigration->new(user => $user);
+    my $migration_mock = Test::MockModule->new('BOM::User::WalletMigration');
+    my $is_eligible    = 0;
+    $migration_mock->mock(is_eligible => sub { $is_eligible });
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
 
     is($migration->state, 'ineligible', 'Should return new state if no action was performed');
 
@@ -98,32 +116,52 @@ subtest 'State check' => sub {
 
     is($err->{error_code}, 'UserIsNotEligibleForMigration', 'Should throw exception if client is not eligible for migration');
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
-
+    $is_eligible = 1;
     is($migration->state, 'eligible', 'Should return new state if no action was performed');
 
-    $migration->start();
+    eval { $migration->start() };
 
     is($migration->state, 'in_progress', 'Should return new state if no action was performed');
 
     $migration->process();
 
-    $migration = BOM::User::WalletMigration->new(user => BOM::User->new(id => $user->id));
+    $migration = BOM::User::WalletMigration->new(
+        user   => BOM::User->new(id => $user->id),
+        app_id => 1,
+    );
 
     is($migration->state, 'migrated', 'Should return new state if no action was performed');
 };
 
 subtest 'Eligibility check' => sub {
-    # TODO: This is place holder for future tests when we'll start adding logic to this method
     BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 
     my ($user) = create_user();
 
-    my $migration = BOM::User::WalletMigration->new(user => $user);
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
 
     ok(!$migration->is_eligible, 'Should return false if client is not eligible for migration');
 
     BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+
+    my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $cr_usd->set_default_account('USD');
+    $user->add_client($cr_usd);
+
+    my $countries_mock = Test::MockModule->new('Brands::Countries');
+    $countries_mock->mock(
+        wallet_companies_for_country => sub {
+            (undef, undef, my $type) = @_;
+            my %mock_data = (
+                virtual => [qw(virtual)],
+                real    => [qw(svg)],
+            );
+
+            return $mock_data{$type} // [];
+        });
 
     ok($migration->is_eligible, 'Should return true if client is eligible for migration');
 };
@@ -131,7 +169,10 @@ subtest 'Eligibility check' => sub {
 subtest 'Wallet creation' => sub {
     my ($user, $client_virtual) = create_user();
 
-    my $migration = BOM::User::WalletMigration->new(user => $user);
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
 
     my $virtual_wallet =
         eval { $migration->create_wallet(currency => 'USD', account_type => 'virtual', landing_company => 'virtual', client => $client_virtual) }
@@ -172,7 +213,10 @@ subtest 'Wallet creation' => sub {
 subtest 'Get existing wallets' => sub {
     my ($user, $client_virtual) = create_user();
 
-    my $migration = BOM::User::WalletMigration->new(user => $user);
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
 
     my $virtual_wallet =
         eval { $migration->create_wallet(currency => 'USD', account_type => 'virtual', landing_company => 'virtual', client => $client_virtual) }
@@ -303,7 +347,10 @@ subtest parse_loginid => sub {
 subtest wallet_params_for => sub {
     my ($user) = create_user();
 
-    my $migration = BOM::User::WalletMigration->new(user => $user);
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
 
     # External trading platforms
     my $real_result = +{
@@ -454,7 +501,10 @@ subtest process_migration => sub {
     subtest 'Virtual account migration' => sub {
         my ($user, $virtual) = create_user();
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $error = exception {
             $migration->process();
@@ -472,7 +522,10 @@ subtest process_migration => sub {
     subtest 'Internal accounts Real money + Virtual' => sub {
         my ($user, $virtual) = create_user();
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
         $cr_usd->set_default_account('USD');
@@ -517,7 +570,10 @@ subtest process_migration => sub {
 
         $user->add_loginid($mt5_login, 'mt5', 'demo', 'USD', +{}, undef);
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $error = exception {
             $migration->process();
@@ -549,7 +605,10 @@ subtest process_migration => sub {
         $cr_usd->set_default_account('USD');
         $user->add_client($cr_usd);
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $error = exception {
             $migration->process();
@@ -589,7 +648,10 @@ subtest process_migration => sub {
         );
         my $dxtrade_id = $dxtrader->new_account(%params)->{account_id};
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $error = exception {
             $migration->process();
@@ -634,7 +696,10 @@ subtest process_migration => sub {
 
         my $dxtrade_id = $dxtrader->new_account(%params)->{account_id};
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $error = exception {
             $migration->process();
@@ -662,7 +727,10 @@ subtest process_migration => sub {
 
         $user->add_loginid($derivez_login, 'derivez', 'demo', 'USD', +{}, undef);
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $error = exception {
             $migration->process();
@@ -694,7 +762,10 @@ subtest process_migration => sub {
         $cr_usd->set_default_account('USD');
         $user->add_client($cr_usd);
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $error = exception {
             $migration->process();
@@ -716,7 +787,10 @@ subtest 'Getting migration plan' => sub {
     subtest 'Virtual account' => sub {
         my ($user, $virtual) = create_user();
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $plan = $migration->plan();
 
@@ -746,7 +820,10 @@ subtest 'Getting migration plan' => sub {
     subtest 'Internal accounts Real money + Virtual' => sub {
         my ($user, $virtual) = create_user();
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
 
         my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
         $cr_usd->set_default_account('USD');
@@ -819,8 +896,11 @@ subtest 'Getting migration plan' => sub {
             })->get()->{login};
         $user->add_loginid($mt5_login, 'mt5', 'demo', 'USD', +{}, undef);
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
-        my $plan      = $migration->plan();
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+        my $plan = $migration->plan();
 
         cmp_deeply(
             $plan,
@@ -869,8 +949,11 @@ subtest 'Getting migration plan' => sub {
             })->get()->{login};
         $user->add_loginid($mt5_login, 'mt5', 'real', 'USD', +{}, undef);
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
-        my $plan      = $migration->plan();
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+        my $plan = $migration->plan();
 
         cmp_deeply(
             $plan,
@@ -954,8 +1037,11 @@ subtest 'Getting migration plan' => sub {
         );
         my $dxtrade_id = $dxtrader->new_account(%params)->{account_id};
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
-        my $plan      = $migration->plan();
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+        my $plan = $migration->plan();
 
         cmp_deeply(
             $plan,
@@ -1018,8 +1104,11 @@ subtest 'Getting migration plan' => sub {
 
         my $dxtrade_id = $dxtrader->new_account(%params)->{account_id};
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
-        my $plan      = $migration->plan();
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+        my $plan = $migration->plan();
 
         cmp_deeply(
             $plan,
@@ -1091,8 +1180,11 @@ subtest 'Getting migration plan' => sub {
 
         $user->add_loginid($derivez_id, 'derivez', 'demo', 'USD', +{}, undef);
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
-        my $plan      = $migration->plan();
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+        my $plan = $migration->plan();
 
         cmp_deeply(
             $plan,
@@ -1143,8 +1235,11 @@ subtest 'Getting migration plan' => sub {
         $cr_btc->set_default_account('BTC');
         $user->add_client($cr_btc);
 
-        my $migration = BOM::User::WalletMigration->new(user => $user);
-        my $plan      = $migration->plan();
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+        my $plan = $migration->plan();
 
         cmp_deeply(
             $plan,

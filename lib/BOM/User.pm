@@ -1972,6 +1972,49 @@ sub get_accounts_links {
     return \%grouped_result;
 }
 
+=head2 migrate_loginid
+
+Migrates a trading account to wallet flow by populating information in users.loginid table 
+and linking trading account to the wallet account.
+
+=over 4
+
+=item * C<$args> - hashref with the following keys:
+
+=over 4
+
+=item * C<loginid> - trading account loginid
+
+=item * C<platform> - trading platform
+
+=item * C<account_type> - trading account type
+
+=item * C<wallet_loginid> - wallet account loginid
+
+=back
+
+=back
+
+Returns 1 on success, throws exception on error
+
+=cut
+
+sub migrate_loginid {
+    my ($self, $args) = @_;
+
+    $args->{$_} || croak "Missing $_" for qw(loginid platform account_type wallet_loginid);
+
+    my ($res) = $self->dbic->run(
+        fixup => sub {
+            return $_->selectrow_array('select users.migrate_loginid(?,?,?,?,?)',
+                undef, $self->{id}, $args->@{qw(loginid platform account_type wallet_loginid)});
+        });
+
+    croak "Unable to link $args->{loginid} to $args->{wallet_loginid}" unless $res;
+
+    return 1;
+}
+
 =head2 get_trading_platform_loginids
 
 Get all the recorded loginids for the given trading platform.

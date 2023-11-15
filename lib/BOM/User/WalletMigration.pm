@@ -20,12 +20,16 @@ use BOM::User;
 use BOM::User::Wallet;
 use BOM::User::Client;
 
-use Carp qw(croak);
+use Carp       qw(croak);
+use List::Util qw(any);
 
 use constant {
-    MIGRATION_KEY_PREFIX        => 'WALLET::MIGRATION::IN_PROGRESS::',
-    MIGRATION_TIMEOUT           => 30 * 60,                              # 30 min
-    SUPPORTED_TRADING_PLATFORMS => +{
+    MIGRATION_KEY_PREFIX          => 'WALLET::MIGRATION::IN_PROGRESS::',
+    ELIGIBLE_CACHE_KEY_PREFIX     => 'WALLET::MIGRATION::ELIGIBLE::',
+    ELIGIBLE_CACHE_TTL            => 60 * 60 * 24,                         # 1 day
+    MIGRATION_TIMEOUT             => 30 * 60,                              # 30 min
+    ELIGIBILITY_THRESHOLD_IN_DAYS => 90,                                   # 90 days
+    SUPPORTED_TRADING_PLATFORMS   => +{
         mt5     => 1,
         dxtrade => 1,
         derivez => 1,
@@ -42,7 +46,7 @@ BOM::User::WalletMigration - Wallet migration class.
 
     use BOM::User::WalletMigration;
 
-    my $migration = BOM::User::WalletMigration->new(user_id => 12345);
+    my $migration = BOM::User::WalletMigration->new(user => $user, app_id => 1);
 
     $migration->state();
 
@@ -64,6 +68,8 @@ Arguments:
 
 =item * C<user>: The user object for which the wallet migration is being performed.
 
+=item * C<app_id>: app_id from which the migration was initiated.
+
 =back
 
 Returns a new instance of the class.
@@ -71,12 +77,20 @@ Returns a new instance of the class.
 =cut
 
 has $user;
+has $app_id;
 
 BUILD(%args) {
 
     croak "Required parameter 'user' is missing" unless $args{user};
 
     $user = $args{user};
+
+    croak "Required parameter 'app_id' is missing"
+        unless $args{app_id}
+        && $args{app_id} =~ /^\d+$/
+        && $args{app_id} > 0;
+
+    $app_id = $args{app_id};
 }
 
 =head2 redis
@@ -105,7 +119,7 @@ Returns the state of the migration.
 
 =cut
 
-method state {
+method state (%args) {
     return 'in_progress' if $self->redis->get(MIGRATION_KEY_PREFIX . $user->id);
 
     # TODO: here we need to check if user finished migration
@@ -115,7 +129,7 @@ method state {
 
     return 'failed' if keys $self->existing_wallets->%*;
 
-    return 'eligible' if $self->is_eligible;
+    return 'eligible' if $self->is_eligible(%args);
 
     return 'ineligible';
 }
@@ -147,7 +161,7 @@ Thrown if the user is not eligible for migration.
 =cut
 
 method start {
-    my $state = $self->state;
+    my $state = $self->state(no_cache => 1);
 
     die {error_code => 'MigrationAlreadyInProgress'} if $state eq 'in_progress';
     die {error_code => 'MigrationAlreadyFinished'}   if $state eq 'migrated';
@@ -161,7 +175,12 @@ method start {
 
     die {error_code => 'MigrationAlreadyInProgress'} unless $is_success;
 
-    BOM::Platform::Event::Emitter::emit('wallet_migration_started', {user_id => $user->id});
+    BOM::Platform::Event::Emitter::emit(
+        'wallet_migration_started',
+        {
+            user_id => $user->id,
+            app_id  => $app_id,
+        });
 
     return 1;
 
@@ -212,14 +231,14 @@ method process {
     my $existing_wallets = $self->existing_wallets;
 
     for my $loginid (@account_to_upgrade) {
-        my $platform      = parse_loginid($loginid)->{platform};
+        my $account_info  = parse_loginid($loginid);
         my $wallet_params = $self->wallet_params_for($loginid);
 
         my ($lc, $type, $currency) = $wallet_params->@{qw(landing_company account_type currency)};
 
         my $wallet_to_link = $existing_wallets->{$lc}{$type}{$currency};
 
-        if (!$wallet_to_link && $platform ne 'dtrade') {
+        if (!$wallet_to_link && $account_info->{platform} ne 'dtrade') {
             # technically we should not have this case in initial phase
             # because all eligible accounts should have fiat account
             # but we'll need to handle it in second phase
@@ -239,12 +258,11 @@ method process {
             $wallet_params->{client}->save;
         }
 
-        #TODO we need to have db fucntion for migration
-        # this function should be able to link wallet to account
-        # and also should be able update meta data of account in user.loginid table
-        $user->link_wallet_to_trading_account({
-            client_id => $loginid,
-            wallet_id => $wallet_to_link->loginid,
+        $user->migrate_loginid({
+            loginid        => $loginid,
+            wallet_loginid => $wallet_to_link->loginid,
+            platform       => $account_info->{platform},
+            account_type   => $account_info->{type},
         });
     }
 
@@ -387,10 +405,8 @@ method create_wallet (%args) {
     my $account_type = $args{account_type};
     my $lc           = $args{landing_company};
 
-    # TODO: Shall we take source from request?
-
     my @fields_to_copy = qw(citizen salutation first_name last_name date_of_birth residence
-        address_line_1 address_line_2 address_city address_state address_postcode source
+        address_line_1 address_line_2 address_city address_state address_postcode
         phone secret_question secret_answer tax_residence tax_identification_number
         account_opening_reason place_of_birth tax_residence tax_identification_number
         non_pep_declaration_time myaffiliates_token client_password
@@ -411,6 +427,7 @@ method create_wallet (%args) {
         myaffiliates_token_registered => 0,
         latest_environment            => '',
         currency                      => $args{currency},
+        source                        => $app_id,
     );
 
     $details{$_} = $client->$_ for @fields_to_copy;
@@ -435,8 +452,6 @@ method create_wallet (%args) {
         die +{error_code => "InternalServerError"};
     }
 
-    # Invalidating loginid details cache. during virtual account creation we recreate user object and it's leading to this problem
-    # TODO: Shall we fix it inside BOM::Platform::Account::Virtual::create_account? to reuse user object if it's provided.
     delete $user->{loginid_details};
 
     return $result->{client};
@@ -478,24 +493,169 @@ The C<is_eligible> method checks if the user is eligible for wallet migration ba
 Returns a boolean value indicating whether the user is eligible for wallet migration. 
 A return value of 1 indicates eligibility, while 0 indicates ineligibility.
 
-IMPLEMENTATION NOTES
-
-The implementation of the eligibility checks is pending and will be implemented separately.
-
 =cut
 
-method is_eligible {
+method is_eligible (%args) {
     # Check if wallet feature is enabled
     return 0 if BOM::Config::Runtime->instance->app_config->system->suspend->wallets;
 
-    #TODO: What to check here?
-    # 1. all accounts should have selected curency
-    # 2. the user must have vrtc account in place
-    # 3. the user must have fiat trading account
-    # 4. must have USD fiat account for first phase
-    # 5. only CR countries for first phase.
+    unless ($args{no_cache}) {
+        my $cached_result = $self->redis->get(ELIGIBLE_CACHE_KEY_PREFIX . $user->id);
 
-    # This will be implemented in separate card
+        return $cached_result if defined $cached_result;
+    }
+
+    my $is_eligible = ($self->check_eligibility_for_user && $self->check_eligibility_for_real_dtrade_accounts) ? 1 : 0;
+
+    $self->redis_rw->set(ELIGIBLE_CACHE_KEY_PREFIX . $user->id, $is_eligible, EX => ELIGIBLE_CACHE_TTL);
+
+    return $is_eligible;
+}
+
+=head2 check_eligibility_for_user
+
+The C<check_eligibility_for_user> method checks if the user is eligible for wallet migration.
+
+Returns a boolean value indicating whether the user is eligible for wallet migration.
+
+=cut
+
+method check_eligibility_for_user () {
+    my $loginid_details = $user->loginid_details;
+
+    my @accounts = map {
+        my $acc = parse_loginid($_);
+        $acc->{loginid} = $_;
+        $acc
+    } keys $loginid_details->%*;
+
+    # Start with checks on user level to minimize number of db calls
+    # and fail fast based on information which we already have
+
+    # clients without virtual account are not eligible for now
+    return 0 unless any { $_->{platform} eq 'dtrade' && $_->{type} eq 'demo' } @accounts;
+
+    my @real_dtrade_accounts = grep { $_->{platform} eq 'dtrade' && $_->{type} eq 'real' } @accounts;
+
+    return 0 unless @real_dtrade_accounts;
+
+    # MF client out of scope for now
+    return 0 if any { $_->{platform} eq 'dtrade' && $_->{loginid} =~ /^MF/ } @real_dtrade_accounts;
+
+    return 1;
+}
+
+=head2 check_eligibility_for_real_dtrade_accounts
+
+The C<check_eligibility_for_real_dtrade_accounts> method checks if the user's dtrade accounts eligible for wallet migration.
+
+Returns a boolean value indicating whether the user has eligible accounts for wallet migration.
+
+=cut
+
+method check_eligibility_for_real_dtrade_accounts () {
+    my ($has_eligible_country, $has_eligible_usd_account);
+
+    for my $loginid ($user->bom_real_loginids) {
+        my $client = BOM::User::Client->get_client_instance($loginid);
+
+        return 0 unless $client->landing_company->short eq 'svg';
+
+        next if $client->is_wallet;
+
+        unless ($has_eligible_country) {
+            my $country = $client->residence;
+            return 0 unless $country;
+
+            return 0 unless $self->check_eligibility_for_country($country);
+
+            $has_eligible_country = 1;
+        }
+
+        my $acc = $client->default_account;
+
+        # If client has currency selected
+        return 0 unless $acc;
+
+        return 0 if $client->payment_agent;
+
+        my ($pa_net) = $client->db->dbic->run(
+            fixup => sub {
+                return $_->selectrow_array('SELECT payment.aggregate_payments_by_type(?, ?, ?)',
+                    undef, $acc->id, 'payment_agent_transfer', ELIGIBILITY_THRESHOLD_IN_DAYS);
+            });
+
+        return 0 if defined $pa_net;
+
+        if ($acc->currency_code eq 'USD') {
+            return 0 unless $self->check_eligibility_for_usd_dtrade_account($client);
+            $has_eligible_usd_account = 1;
+        }
+    }
+
+    # No migration if client doesn't have fiat usd account
+    return 0 unless $has_eligible_usd_account;
+
+    return 1;
+}
+
+=head2 check_eligibility_for_usd_dtrade_account
+
+This method checks if a USD DTrade account is eligible for migration. 
+It performs a series of checks on the account's age, payment agent net, and P2P advertiser status to determine 
+if the account meets the criteria for migration.
+
+Arguments:
+
+=over 4
+
+=item * C<$client_usd>: The client object associated with the USD account.
+
+=back
+
+Returns a boolean value indicating whether the USD account is eligible for migration.
+
+=cut
+
+method check_eligibility_for_usd_dtrade_account ($client_usd) {
+    # No migration who is younger than 90 days
+    my $days_since_signup = (time - Date::Utility->new($client_usd->date_joined)->epoch) / (24 * 60 * 60);
+    return 0 if $days_since_signup < ELIGIBILITY_THRESHOLD_IN_DAYS;
+
+    # probably stupid idea to use private method over here
+    # but it provides exactly check we need
+    return 0 if $client_usd->_p2p_advertiser_cached;
+
+    return 1;
+}
+
+=head2 check_eligibility_for_country
+
+This method checks if the wallet migration can be is available in a given country. 
+
+Arguments:
+
+=over 4
+
+=item * C<$country>: The country for which the check is being performed.
+
+=back
+
+Returns a boolean value indicating whether the wallet migration is available in the given country.
+
+=cut
+
+method check_eligibility_for_country ($country) {
+    # Check that we launched wallet at client residence country
+    my $countries = Brands->new()->countries_instance;
+    for my $wallet_type (qw/real virtual/) {
+        my $wallet_complanies = $countries->wallet_companies_for_country($country, $wallet_type) // [];
+
+        return 0 unless $wallet_complanies->@*;
+
+        # MF supported countries corrently out of scope for now
+        return 0 if any { $_ eq 'maltainvest' } $wallet_complanies->@*;
+    }
 
     return 1;
 }
