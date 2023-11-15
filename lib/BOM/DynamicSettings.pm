@@ -472,7 +472,6 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.limits.crypto_to_crypto
                 payments.transfer_between_accounts.limits.crypto_to_fiat
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
-                payments.crypto.crypto_api.host
             )
         ],
         compliance => [qw(
