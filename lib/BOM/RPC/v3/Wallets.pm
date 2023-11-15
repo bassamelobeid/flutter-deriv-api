@@ -62,10 +62,13 @@ The controller is responsible for handling RPC requests related to managing wall
 =cut
 
 rpc wallet_migration => sub {
-    my ($client, $args) = shift->@{qw(client args)};
+    my ($client, $args, $app_id) = shift->@{qw(client args source)};
     my $action = $args->{wallet_migration};
 
-    my $migration = BOM::User::WalletMigration->new(user => $client->user);
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $client->user,
+        app_id => $app_id
+    );
     try {
         if ($action eq 'state') {
             my $state = $migration->state;

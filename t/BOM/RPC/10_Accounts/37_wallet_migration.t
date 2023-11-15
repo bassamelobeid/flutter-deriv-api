@@ -7,8 +7,7 @@ use Test::Deep;
 use Test::BOM::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Event::Emitter;
-
-use Data::Dumper;
+use BOM::User::WalletMigration;
 
 my $token_model = BOM::Platform::Token::API->new;
 my $rpc         = Test::BOM::RPC::QueueClient->new();
@@ -37,11 +36,15 @@ subtest 'Not eligible state' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
     my $res = $rpc->tcall(
         wallet_migration => +{
-            token => $vr_token,
-            args  => {
+            token  => $vr_token,
+            source => 1,
+            args   => {
                 wallet_migration => 'state',
             },
         });
+
+    #clean from app_id validation middleware output
+    delete $res->{stash};
 
     cmp_deeply(
         $res,
@@ -53,7 +56,8 @@ subtest 'Not eligible state' => sub {
 };
 
 subtest 'Eligible state and plan of migration' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+    my $migration_mock = Test::MockModule->new('BOM::User::WalletMigration');
+    $migration_mock->mock(is_eligible => 1);
 
     subtest 'Virtual only account' => sub {
         my $user = BOM::User->create(
@@ -72,11 +76,15 @@ subtest 'Eligible state and plan of migration' => sub {
 
         my $res = $rpc->tcall(
             wallet_migration => +{
-                token => $vr_token,
-                args  => {
+                token  => $vr_token,
+                source => 1,
+                args   => {
                     wallet_migration => 'state',
                 },
             });
+
+        #clean from app_id validation middleware output
+        delete $res->{stash};
 
         cmp_deeply(
             $res,
@@ -126,11 +134,15 @@ subtest 'Eligible state and plan of migration' => sub {
 
         my $res = $rpc->tcall(
             wallet_migration => +{
-                token => $vr_token,
-                args  => {
+                source => 1,
+                token  => $vr_token,
+                args   => {
                     wallet_migration => 'state',
                 },
             });
+
+        #clean from app_id validation middleware output
+        delete $res->{stash};
 
         cmp_deeply(
             $res,
@@ -191,7 +203,8 @@ subtest 'Eligible state and plan of migration' => sub {
 };
 
 subtest 'Start migration' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+    my $migration_mock = Test::MockModule->new('BOM::User::WalletMigration');
+    $migration_mock->mock(is_eligible => 1);
 
     my $mock_events    = Test::MockModule->new('BOM::Platform::Event::Emitter');
     my @emitted_events = ();
@@ -213,11 +226,15 @@ subtest 'Start migration' => sub {
 
     my $res = $rpc->tcall(
         wallet_migration => +{
-            token => $vr_token,
-            args  => {
+            source => 1,
+            token  => $vr_token,
+            args   => {
                 wallet_migration => 'start',
             },
         });
+
+    #clean from app_id validation middleware output
+    delete $res->{stash};
 
     cmp_deeply(
         $res,
@@ -229,11 +246,15 @@ subtest 'Start migration' => sub {
 
     my $res2 = $rpc->tcall(
         wallet_migration => +{
-            token => $vr_token,
-            args  => {
+            source => 1,
+            token  => $vr_token,
+            args   => {
                 wallet_migration => 'state',
             },
         });
+
+    #clean from app_id validation middleware output
+    delete $res2->{stash};
 
     cmp_deeply(
         $res2,
@@ -245,8 +266,9 @@ subtest 'Start migration' => sub {
 
     my $res3 = $rpc->tcall(
         wallet_migration => +{
-            token => $vr_token,
-            args  => {
+            source => 1,
+            token  => $vr_token,
+            args   => {
                 wallet_migration => 'start',
             },
         });
@@ -255,10 +277,12 @@ subtest 'Start migration' => sub {
 
     is(scalar @emitted_events,        1,         'One event emited');
     is($emitted_events[0]->{user_id}, $user->id, 'Migration started for correct user_id');
+    is($emitted_events[0]->{app_id},  1,         'Migration started with correct app_id');
 };
 
 subtest 'Migration finished' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+    my $migration_mock = Test::MockModule->new('BOM::User::WalletMigration');
+    $migration_mock->mock(is_eligible => 1);
 
     my $user = BOM::User->create(
         email    => 'testuser' . $user_counter++ . '@example.com',
@@ -274,15 +298,22 @@ subtest 'Migration finished' => sub {
 
     my $vr_token = $token_model->create_token($client_virtual->loginid, 'test token');
 
-    BOM::User::WalletMigration->new(user => $user)->process();
+    BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1
+    )->process();
 
     my $res = $rpc->tcall(
         wallet_migration => +{
-            token => $vr_token,
-            args  => {
+            source => 1,
+            token  => $vr_token,
+            args   => {
                 wallet_migration => 'state',
             },
         });
+
+    #clean from app_id validation middleware output
+    delete $res->{stash};
 
     cmp_deeply(
         $res,
