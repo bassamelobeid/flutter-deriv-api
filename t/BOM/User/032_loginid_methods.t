@@ -259,9 +259,12 @@ $user_mock->redefine(new  => sub { return bless({}, 'BOM::User') });
 
 my $user = BOM::User->new;
 
-cmp_deeply([keys $user->loginid_details->%*], bag(map { $_->{loginid} } @loginids), 'loginid_details() returns all loginids',);
+cmp_deeply([keys $user->loginid_details->%*], bag(map { $_->{loginid} } @loginids), 'loginid_details() returns all loginids');
 
-cmp_deeply([$user->loginids], bag(map { $_->{loginid} } @loginids), 'loginids() returns all loginids',);
+cmp_deeply([$user->loginids], bag(map { $_->{loginid} } @loginids), 'loginids() returns all loginids');
+
+ok((List::Util::all { $_->{platform} }, values $user->loginid_details->%*), 'platform have a value for all loginids');
+ok((List::Util::all { defined $_->{account_type} }, values $user->loginid_details->%*), 'account_type is defined for all loginids');
 
 cmp_deeply(
     [$user->bom_loginids],

@@ -274,10 +274,12 @@ sub loginid_details {
         ($row->{broker_code}) = $loginid =~ /(^[a-zA-Z]+)/;
         my $broker_info = broker_code_details($row->{broker_code});
         $row->{platform} //= $broker_info->{platform};
+        $row->{account_type} //=
+            '';    # we could set this based on broker code, but this could break code that relied on empty platform to filter out mt5 accounts
         $row->{is_virtual} = {
             demo => 1,
             real => 0
-        }->{$row->{account_type} // ''} // $broker_info->{virtual} ? 1 : 0;
+        }->{$row->{account_type}} // $broker_info->{virtual} ? 1 : 0;
         $row->{is_external} = $broker_info->{platform} !~ /^(dtrade|dwallet)$/ ? 1 : 0;
         $row->{is_wallet}   = $broker_info->{wallet}                           ? 1 : 0;
         $row->{attributes}  = decode_json($row->{attributes} // '{}');
