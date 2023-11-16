@@ -566,9 +566,10 @@ subtest 'synthetic_age_verification_check' => sub {
     SKIP: {
         $contract = produce_contract({%contract_params, underlying => 'frxUSDJPY'});
 
-        skip 'contract start or expiry is a holiday', 1
-            unless $trading_calendar->is_open_at($exchange, $contract->date_start)
-            and $trading_calendar->is_open_at($exchange, $contract->date_expiry);
+        # We're not checking for if a contract is valid to buy here. We're specifically checking for age verification for synthetic indices.
+        # So, it is fine to mock this.
+        my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+        $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
         $tx = BOM::Transaction->new({
             client        => $client,
