@@ -466,9 +466,9 @@ sub _requeue_transaction {
         $expiry_queue_params->{$key} = $contract->duration;
         $out = $expiryq->dequeue_open_contract($expiry_queue_params) // 0;
         delete $expiry_queue_params->{$key};
-        my $value = min($contract->tickcount_for($contract->max_payout), $contract->max_duration);
+        my $value = min($contract->ticks_for_payout($contract->max_payout, 1), $contract->max_duration);
         if ($self->{take_profit} and $self->{take_profit}{amount}) {
-            $value = min($value, $contract->tickcount_for($contract->_user_input_stake + $self->{take_profit}{amount}));
+            $value = min($value, $contract->ticks_for_payout($contract->_user_input_stake + $self->{take_profit}{amount}));
         }
         $expiry_queue_params->{$key} = $value;
         $in = $expiryq->enqueue_open_contract($expiry_queue_params) // 0;
