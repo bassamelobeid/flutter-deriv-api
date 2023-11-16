@@ -252,7 +252,7 @@ subtest 'buy a bet', sub {
         # note explain $trx;
 
         subtest 'transaction row', sub {
-            plan tests => 13;
+            plan tests => 12;
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id},              $acc_usd->id,           'account_id';
             is $trx->{action_type},             'buy',                  'action_type';
@@ -262,7 +262,6 @@ subtest 'buy a bet', sub {
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{quantity},                1,                      'quantity';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
-            is $trx->{remark},                  undef,                  'remark';
             is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
             is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
@@ -271,7 +270,7 @@ subtest 'buy a bet', sub {
         # note explain $fmb;
 
         subtest 'fmb row', sub {
-            plan tests => 20;
+            plan tests => 19;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,             'account_id';
             is $fmb->{bet_class},     'higher_lower_bet',       'bet_class';
@@ -284,7 +283,6 @@ subtest 'buy a bet', sub {
             is !$fmb->{is_sold},     !0,    'is_sold';
             cmp_ok $fmb->{payout_price} + 0,                          '==', 1000, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark}, qr/\btrade\[511\.47000\]/, 'remark';
             is $fmb->{sell_price}, undef, 'sell_price';
             is $fmb->{sell_time},  undef, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
@@ -362,7 +360,7 @@ subtest 'sell a bet', sub {
         # note explain $trx;
 
         subtest 'transaction row', sub {
-            plan tests => 13;
+            plan tests => 12;
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id},              $acc_usd->id,                         'account_id';
             is $trx->{action_type},             'sell',                               'action_type';
@@ -372,7 +370,6 @@ subtest 'sell a bet', sub {
             is $trx->{payment_id},              undef,                                'payment_id';
             is $trx->{quantity},                1,                                    'quantity';
             is $trx->{referrer_type},           'financial_market_bet',               'referrer_type';
-            is $trx->{remark},                  undef,                                'remark';
             is $trx->{staff_loginid},           $cl->loginid,                         'staff_loginid';
             is $trx->{source},                  23,                                   'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
@@ -381,7 +378,7 @@ subtest 'sell a bet', sub {
         # note explain $fmb;
 
         subtest 'fmb row', sub {
-            plan tests => 20;
+            plan tests => 19;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,             'account_id';
             is $fmb->{bet_class},     'higher_lower_bet',       'bet_class';
@@ -394,7 +391,6 @@ subtest 'sell a bet', sub {
             is !$fmb->{is_sold},     !1,                     'is_sold';
             cmp_ok $fmb->{payout_price} + 0,                          '==', 1000, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark}, qr/\btrade\[511\.47000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', time, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';

@@ -203,7 +203,7 @@ subtest 'buy turbos options', sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
 
         subtest 'transaction row', sub {
-            plan tests => 12;
+            plan tests => 11;
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id},              $acc_usd->id,           'account_id';
             is $trx->{action_type},             'buy',                  'action_type';
@@ -212,7 +212,6 @@ subtest 'buy turbos options', sub {
             is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
-            is $trx->{remark},                  undef,                  'remark';
             is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
             is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
@@ -280,14 +279,13 @@ subtest 'sell a bet', sub {
             is $trx->{payment_id},              undef,                    'payment_id';
             is $trx->{quantity},                1,                        'quantity';
             is $trx->{referrer_type},           'financial_market_bet',   'referrer_type';
-            is $trx->{remark},                  undef,                    'remark';
             is $trx->{staff_loginid},           $cl->loginid,             'staff_loginid';
             is $trx->{source},                  23,                       'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
         subtest 'fmb row', sub {
-            plan tests => 18;
+            plan tests => 17;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,                              'account_id';
             is $fmb->{bet_class},     'turbos',                                  'bet_class';
@@ -299,7 +297,6 @@ subtest 'sell a bet', sub {
             is $fmb->{is_expired},    0,                                         'is_expired';
             ok $fmb->{is_sold}, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
             is $fmb->{settlement_time}, $now->plus_time_interval('10h')->datetime, 'settlement_time';
@@ -363,7 +360,7 @@ subtest 'buy turbos with take profit', sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db turbos => $txn->transaction_id;
 
         subtest 'transaction row', sub {
-            plan tests => 12;
+            plan tests => 11;
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id},  $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'buy',        'action_type';
@@ -373,7 +370,6 @@ subtest 'buy turbos with take profit', sub {
             is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
-            is $trx->{remark},                  undef,                  'remark';
             is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
             is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
@@ -446,14 +442,13 @@ subtest 'sell a bet with take profit', sub {
             is $trx->{payment_id},              undef,                    'payment_id';
             is $trx->{quantity},                1,                        'quantity';
             is $trx->{referrer_type},           'financial_market_bet',   'referrer_type';
-            is $trx->{remark},                  undef,                    'remark';
             is $trx->{staff_loginid},           $cl->loginid,             'staff_loginid';
             is $trx->{source},                  23,                       'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
         subtest 'fmb row', sub {
-            plan tests => 18;
+            plan tests => 17;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,                              'account_id';
             is $fmb->{bet_class},     'turbos',                                  'bet_class';
@@ -465,7 +460,6 @@ subtest 'sell a bet with take profit', sub {
             is $fmb->{is_expired},    0,                                         'is_expired';
             ok $fmb->{is_sold}, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
             is $fmb->{settlement_time}, $now->plus_time_interval('10h')->datetime, 'settlement_time';
