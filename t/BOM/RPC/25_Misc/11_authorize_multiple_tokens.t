@@ -307,6 +307,16 @@ subtest "$method with multiple tokens" => sub {
         $c->call_ok($method, $params)->has_error->error_message_is('Duplicate token for loginid.', 'Duplicate token for loginid.');
     };
 
+    subtest "token with different app_id" => sub {
+        my $cr3_login = create_client('CR', undef, {date_joined => '2021-06-06 23:59:59'});
+        $user->add_client($cr3_login);
+        my $cr3_token = BOM::Database::Model::OAuth->new->store_access_token_only(2, $cr3_login->loginid);
+
+        $params->{args}{tokens} = [$cr_token, $vrw_token, $cr3_token];
+        $c->call_ok($method, $params)
+            ->has_error->error_message_is('Token is not valid for current app ID.', 'Token is not valid for current app ID.');
+    };
+
     subtest "multiple api tokens" => sub {
         my $cr_api_token  = BOM::Platform::Token::API->new->create_token($cr_loginid,  'Test', ['read']);
         my $cr2_api_token = BOM::Platform::Token::API->new->create_token($cr2_loginid, 'Test', ['read']);

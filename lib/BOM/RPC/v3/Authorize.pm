@@ -418,7 +418,8 @@ sub _handle_oauth_tokens {
     # Get extracted app_id. All must be the same.
     # TODO: Make this 1 query
     my $token_extracted_app_id = $oauth->get_app_id_by_token($account_tokens->{(keys %$account_tokens)[0]}{token});
-    return undef if grep { $oauth->get_app_id_by_token($_->{token}) ne $token_extracted_app_id } values %$account_tokens;
+    return undef unless $token_extracted_app_id;
+    return undef if grep { ($oauth->get_app_id_by_token($_->{token}) // '') ne $token_extracted_app_id } values %$account_tokens;
 
     my $is_from_backoffice = $token_extracted_app_id eq '4';
     if ($is_from_backoffice) {
