@@ -1,5 +1,7 @@
 name: Build workflow
 run-name: Build workflow
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
   workflow_dispatch:
   push:
@@ -27,14 +29,25 @@ jobs:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
     steps:
-      - name: setup CI
+      - 
+        name: setup CI
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
-      - name: json_schemas tests
+      - 
+        name: json_schemas tests
         run: |
-          make json_schemas
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make json_schemas 
+      - 
+        name : Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
   syntax_diff_unit: 
     runs-on: ubuntu-latest
     container:
@@ -51,16 +64,19 @@ jobs:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
     steps:
-      - name: setup CI step
+      - 
+        name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           need_service: false
           repository: ${{ github.repository }}
-      - name: Code Structure and syntax 
+      - 
+        name: Code Structure and syntax 
         run: |
           make syntax_diff
-      - name : Unit tests 
+      - 
+        name : Unit tests 
         run: make unit
   core1:
     needs: syntax_diff_unit
@@ -79,16 +95,27 @@ jobs:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
     steps:
-      - name: setup CI step
+      - 
+        name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
-      - name: Run tests 
+      - 
+        name: Run tests 
         run: |
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          make test1
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test1 
+      - 
+        name : Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
   core2:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
@@ -106,16 +133,40 @@ jobs:
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
       LOG_LEVEL: debug
     steps:
-      - name: setup CI step
+      - 
+        name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
-      - name: Run tests 
+      - 
+        name: Run tests 
         run: |
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          make test2
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test2 
+      - 
+        name : Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
+  publish_test_results:
+    needs: [ schema , core1 , core2 ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Upload results to TestSpace
+        uses: regentmarkets/github-actions/testspace-publish@master
+        with: 
+          token: ${{ secrets.TESTSPACE_TOKEN }}
+          artifact: test-results
+          file_path: ./**/*.xml
+
   # Temporarily comment out dependent job
   # dependent:
   #   needs: [schema,core1,core2]
