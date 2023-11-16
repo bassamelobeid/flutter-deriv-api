@@ -15,12 +15,21 @@
             },
             "code" : {
                "type" : "string",
-               "pattern" : "^IncompleteFinancialAssessment$"
+               "pattern" : "^AppropriatenessTestFailed$"
+            },
+            "details" : {
+               "type" : "object",
+               "properties": {
+                  "cooling_off_expiration_date": {
+                     "type" : "integer"
+                  }
+               }
             }
          },
          "required" : [
             "code",
-            "message_to_client"
+            "message_to_client",
+            "details"
          ],
          "type" : "object",
          "additionalProperties" : false
