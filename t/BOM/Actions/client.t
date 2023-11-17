@@ -6538,6 +6538,27 @@ subtest 'crypto_withdrawal_rejected_email_v2' => sub {
         ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     };
 
+    subtest 'highest_deposited_method_is_not_crypto transactional email' => sub {
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+        undef @track_args;
+        undef @transactional_args;
+        BOM::Event::Actions::Client::crypto_withdrawal_rejected_email_v2({
+                loginid       => $client->loginid,
+                reject_code   => 'highest_deposit_method_is_not_crypto--Skrill',
+                reject_remark => '',
+                amount        => '0.09',
+                currency      => $currency_code,
+                live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
+                reference_no  => 1
+            })->get;
+
+        my ($customer, %args) = @track_args;
+        is $args{event}, 'track_crypto_withdrawal_rejected_email_v2', "got correct event name";
+        ok @transactional_args, 'CIO transactional is invoked';
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+
+    };
+
     subtest 'low_trade' => sub {
         undef @track_args;
 

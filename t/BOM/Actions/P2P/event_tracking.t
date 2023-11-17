@@ -15,7 +15,7 @@ use BOM::Platform::Context::Request;
 use BOM::Config::Runtime;
 use Brands;
 
-my (@identify_args, @track_args, @emissions);
+my (@identify_args, @track_args, @transactional_args, @emissions);
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
 
 my $brand    = Brands->new->name;
@@ -38,6 +38,13 @@ $mock_segment->redefine(
     'track' => sub {
         my ($customer, %args) = @_;
         push @track_args, ($customer, \%args);
+        return Future->done(1);
+    });
+
+my $mock_cio = new Test::MockModule('WebService::Async::CustomerIO');
+$mock_cio->redefine(
+    'send_transactional' => sub {
+        @transactional_args = @_;
         return Future->done(1);
     });
 
@@ -156,6 +163,37 @@ subtest 'p2p order created' => sub {
         lang             => 'RU'
         },
         'properties are set properly for p2p_order_created event';
+};
+
+subtest 'p2p order created transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_created};
+    undef @identify_args;
+    undef @track_args;
+    undef @emissions;
+    undef @transactional_args;
+
+    $handler->({
+            client_loginid => $client->loginid,
+            order_id       => $order->{id},
+        })->get;
+    is scalar @emissions, 1, 'event emitted';
+
+    BOM::Event::Process->new(category => 'track')->process($emissions[0])->get;
+    is scalar @identify_args, 0, 'Segment identify is not called';
+    is scalar @track_args,    4, 'Segment track is called twice';
+
+    my $order = $client->_p2p_orders(id => $order->{id})->[0];
+
+    my ($customer, $args) = @track_args;
+
+    my (undef, $args_buyer, undef, $args_seller) = @track_args;
+
+    is $args_buyer->{event},  'track_p2p_order_created', 'Track event name is correct';
+    is $args_seller->{event}, 'track_p2p_order_created', 'Track event name is correct';
+    ok @transactional_args, 'transactional email is sent';
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);
 };
 
 subtest 'p2p order confirmed by buyer' => sub {
@@ -519,6 +557,23 @@ subtest 'p2p_advert_created' => sub {
         lang  => ignore()
         },
         'track event properties';
+};
+
+subtest 'p2p_advert_created transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{p2p_advert_created};
+    undef @track_args;
+    undef @transactional_args;
+    $mock_events->mock(
+        'emit' => sub {
+            if ($_[0] eq 'p2p_advert_created') { my $event_args = $_[1]; $handler->($event_args)->get; }
+        });
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
+    ok @track_args,         'track event sent';
+    ok @transactional_args, 'transactional email is sent';
+
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);
 };
 
 subtest 'p2p_advertiser_cancel_at_fault' => sub {

@@ -254,6 +254,13 @@ my @TRANSACTIONAL_EVENTS = qw(
     account_opening_existing
     account_verification_for_pending_payout
     verify_email_closed_account_other
+
+    p2p_order_created
+    crypto_deposit_confirmed_email
+    crypto_deposit_pending_email
+    p2p_advert_created
+    age_verified
+    crypto_withdrawal_rejected_email_v2
 );
 
 my $loop = IO::Async::Loop->new;
