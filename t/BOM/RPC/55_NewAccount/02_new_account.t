@@ -141,6 +141,7 @@ subtest $method => sub {
     $params->{args}->{date_first_contact} = $date_first_contact;
     $params->{args}->{signup_device}      = 'mobile';
     $params->{args}->{email_consent}      = 1;
+    $params->{user_agent}                 = "Mozilla";
 
     my $expected_utm_data = {
         utm_campaign_id  => 111017190001,
@@ -178,8 +179,9 @@ subtest $method => sub {
     my $new_loginid = $rpc_ct->result->{client_id};
 
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
-    is $emit_data->{properties}->{type},    'trading', 'type=trading';
-    is $emit_data->{properties}->{subtype}, 'virtual', 'subtype=virtual';
+    is $emit_data->{properties}->{type},       'trading', 'type=trading';
+    is $emit_data->{properties}->{subtype},    'virtual', 'subtype=virtual';
+    is $emit_data->{properties}->{user_agent}, 'Mozilla', 'user_agent=Mozilla';
 
     my $token_db = BOM::Database::Model::AccessToken->new();
     my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
@@ -463,6 +465,7 @@ subtest $method => sub {
         $params->{args}->{residence}      = 'id';
         $params->{args}->{address_state}  = 'Sumatera';
         $params->{args}->{place_of_birth} = 'id';
+        $params->{user_agent}             = 'Mozilla';
 
         @{$params->{args}}{keys %$client_details} = values %$client_details;
 
@@ -497,8 +500,9 @@ subtest $method => sub {
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
-        is $emit_data->{properties}->{type},    'trading', 'type=trading';
-        is $emit_data->{properties}->{subtype}, 'real',    'subtype=real';
+        is $emit_data->{properties}->{type},       'trading', 'type=trading';
+        is $emit_data->{properties}->{subtype},    'real',    'subtype=real';
+        is $emit_data->{properties}->{user_agent}, 'Mozilla', 'user_agent=Mozilla';
 
         my $token_db = BOM::Database::Model::AccessToken->new();
         my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);

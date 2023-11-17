@@ -167,7 +167,8 @@ rpc new_account_real => sub {
             category        => $account_type->category->name,
             broker_code     => $broker,
             environment     => request()->login_env($params),
-            ip              => $params->{client_ip} // '',
+            user_agent      => $params->{user_agent} // '',
+            ip              => $params->{client_ip}  // '',
             source          => $params->{source},
             landing_company => $company,
         );
@@ -181,7 +182,8 @@ rpc new_account_real => sub {
             category        => $account_type->category->name,
             broker_code     => $broker,
             environment     => request()->login_env($params),
-            ip              => $params->{client_ip} // '',
+            user_agent      => $params->{user_agent} // '',
+            ip              => $params->{client_ip}  // '',
             source          => $params->{source},
             landing_company => $company,
         );
@@ -327,7 +329,8 @@ rpc "new_account_virtual",
 
     my ($client, $account);
     try {
-        $args->{ip}           = $params->{client_ip} // '';
+        $args->{ip}           = $params->{client_ip}  // '';
+        $args->{user_agent}   = $params->{user_agent} // '';
         $args->{country}      = uc($params->{country_code} // '');
         $args->{environment}  = request()->login_env($params);
         $args->{source}       = $params->{source};
@@ -613,9 +616,10 @@ sub create_virtual_account {
         {
             loginid    => $client->loginid,
             properties => {
-                type     => $args->{account_type} eq 'binary' ? 'trading' : 'wallet',
-                subtype  => 'virtual',
-                utm_tags => BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_tags, $regex_validation)}});
+                type       => $args->{account_type} eq 'binary' ? 'trading' : 'wallet',
+                subtype    => 'virtual',
+                user_agent => $args->{user_agent} // '',
+                utm_tags   => BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_tags, $regex_validation)}});
 
     return $client;
 }
@@ -723,7 +727,7 @@ sub create_new_real_account {
     my $client = $params{client};
     my $args   = $params{args};
 
-    $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company environment category/);
+    $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company user_agent environment category/);
 
     my $details_ref = _new_account_pre_process($args, $client);
     my $error_map   = BOM::RPC::v3::Utility::error_map();
@@ -808,7 +812,7 @@ sub create_trading_account {
     my $client = $params{client};
     my $args   = $params{args};
 
-    $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company environment category/);
+    $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company environment category user_agent/);
     my $details_ref = _new_account_pre_process($args, $client);
     my $error_map   = BOM::RPC::v3::Utility::error_map();
     if ($details_ref->{error}) {
@@ -1116,7 +1120,8 @@ sub _new_account_post_process {
 
                 account_type => $new_client->get_account_type->name,
                 category     => $new_client->get_account_type->category->name,
-                subtype      => 'real'
+                subtype      => 'real',
+                user_agent   => $args->{user_agent},
             }});
 }
 
