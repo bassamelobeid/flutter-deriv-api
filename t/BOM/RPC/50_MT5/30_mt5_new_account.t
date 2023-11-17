@@ -4,7 +4,7 @@ use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 use Test::Deep;
-use JSON::MaybeUTF8;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -15,6 +15,7 @@ use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
 use BOM::Config::Runtime;
+use App::Config::Chronicle;
 
 use Test::BOM::RPC::Accounts;
 
@@ -67,7 +68,7 @@ my %basic_details = (
     account_opening_reason    => "testing"
 );
 
-$test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+$test_client->financial_assessment({data => encode_json_utf8(\%financial_data)});
 $test_client->save;
 
 my $m        = BOM::Platform::Token::API->new;
@@ -653,7 +654,7 @@ subtest 'MF to MLT account switching' => sub {
     $mlt_switch_client->residence('at');
     $mlt_switch_client->account_opening_reason('speculative');
 
-    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
+    $mf_switch_client->financial_assessment({data => encode_json_utf8(\%financial_data_mf)});
     $mf_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
@@ -716,7 +717,7 @@ subtest 'MLT to MF account switching' => sub {
     $mlt_switch_client->set_default_account('EUR');
     $mlt_switch_client->residence('at');
 
-    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
+    $mf_switch_client->financial_assessment({data => encode_json_utf8(\%financial_data_mf)});
     $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
@@ -782,7 +783,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     $vr_switch_client->set_default_account('USD');
     $vr_switch_client->residence('at');
 
-    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
+    $mf_switch_client->financial_assessment({data => encode_json_utf8(\%financial_data_mf)});
     $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
@@ -843,7 +844,7 @@ subtest 'CR to MLT and MF account switching' => sub {
     $cr_switch_client->set_default_account('USD');
     $cr_switch_client->residence('at');
 
-    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
+    $mf_switch_client->financial_assessment({data => encode_json_utf8(\%financial_data_mf)});
     $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
@@ -1732,7 +1733,7 @@ subtest 'migration proccess' => sub {
     );
 
     $test_client->$_($basic_details{$_}) for keys %basic_details;
-    $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $test_client->financial_assessment({data => encode_json_utf8(\%financial_data)});
     $test_client->save;
 
     my $auth_token = BOM::Platform::Token::API->new->create_token($test_client->loginid, 'test token');
@@ -1810,6 +1811,110 @@ subtest 'migration proccess' => sub {
     $mock_emitter->unmock_all;
     $mock_client->unmock_all;
     $mock_mt5_rpc->unmock_all;
+};
+
+subtest 'TIN not mandatory with NPJ country config' => sub {
+    my %fake_config;
+    my $revision = 1;
+
+    my $mock_app_config = Test::MockModule->new('App::Config::Chronicle', no_auto => 1);
+    $mock_app_config->mock(
+        'set' => sub {
+            my ($self, $conf) = @_;
+            for (keys %$conf) {
+                $fake_config{$_} = $conf->{$_};
+            }
+        },
+        'get' => sub {
+            my ($self, $key) = @_;
+            if (ref($key) eq 'ARRAY') {
+                my %result = map {
+                    my $value = (defined $fake_config{$_}) ? $fake_config{$_} : $mock_app_config->original('get')->($_);
+                    $_ => $value
+                } @{$key};
+                return \%result;
+            }
+            return $fake_config{$key} if ($fake_config{$key});
+            return $mock_app_config->original('get')->(@_);
+        },
+        'loaded_revision' => sub {
+            return $revision;
+        });
+
+    my $test_client    = create_client('CR');
+    my $test_client_vr = create_client('VRTC');
+
+    $test_client->email('test@test.com');
+    $test_client->set_default_account('USD');
+
+    $test_client_vr->email('test@test.com');
+    $test_client_vr->set_default_account('USD');
+
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $test_client->tax_residence('ke');
+    $test_client->residence('ke');
+    $test_client->account_opening_reason('speculative');
+    $test_client->place_of_birth('ke');
+    $test_client->save;
+
+    $test_client_vr->save;
+
+    my $password = 's3kr1t';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $user     = BOM::User->create(
+        email    => 'test@test.com',
+        password => $hash_pwd,
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($test_client);
+    $user->add_client($test_client_vr);
+
+    my $method = 'mt5_new_account';
+    my $token  = $m->create_token($test_client->loginid, 'test token 3');
+
+    my $npj_countries_list = {
+        bvi     => ["gi"],
+        labuan  => [],
+        vanuatu => ["ke"],
+    };
+
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->set({
+        'compliance.npj_country_list' => encode_json_utf8($npj_countries_list),
+    });
+
+    my $client_params = {
+        token => $token,
+        args  => {
+            mt5_account_type => 'financial',
+            account_type     => 'financial',
+            address          => 'ADDR 1',
+            city             => 'cyber',
+            company          => 'vanuatu',
+            country          => 'ke',
+            email            => 'test@test.com',
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            phone            => '+62417518676',
+            state            => '',
+            zipCode          => 47120,
+        },
+    };
+
+    $c->call_ok($method, $client_params)->has_no_error('Account created wihout TIN for residence ke in vanuatu NPJ');
+
+    $npj_countries_list->{'vanuatu'} = [];
+    $app_config->set({
+        'compliance.npj_country_list' => encode_json_utf8($npj_countries_list),
+    });
+
+    $c->call_ok($method, $client_params)
+        ->has_error->error_code_is('ASK_FIX_DETAILS', 'Account not created wihout TIN for residence ke in vanuatu NPJ');
+
+    $client_params->{args}->{company} = 'bvi';
+    $c->call_ok($method, $client_params)->has_no_error('BVI does not require TIN at signup even without NPJ');
+
 };
 
 done_testing();

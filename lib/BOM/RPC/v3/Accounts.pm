@@ -328,14 +328,14 @@ rpc "landing_company_details",
     return __build_landing_company($lc, $country);
     };
 
-=head2 _lc_country_requires_tin
+=head2 lc_country_requires_tin
 
 check if the country for the provided landing company is (NPJ) Non Participating Jurisdiction 
 and TIN is mandatory or not.
 
 =cut
 
-sub _lc_country_requires_tin {
+sub lc_country_requires_tin {
     my ($landing_company, $country) = @_;
 
     my $npj_countries_list = $compliance_config->get_npj_countries_list;
@@ -414,7 +414,7 @@ sub __build_landing_company {
     # Check if the country is NPJ for the landing company
     # NPJ = TIN is not required for the combination of Country + Landing Company
 
-    my $tin_not_mandatory = _lc_country_requires_tin($lc->short, $country);
+    my $tin_not_mandatory = lc_country_requires_tin($lc->short, $country);
 
     # Get suspended currencies and remove them from list of legal currencies
     my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);

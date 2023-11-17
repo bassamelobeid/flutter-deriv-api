@@ -845,10 +845,11 @@ async_rpc "mt5_new_account",
     }
 
     return create_error_future('AccountTypesMismatch') if ($client->is_virtual() and $account_type ne 'demo');
-
     my $requirements        = LandingCompany::Registry->by_name($landing_company_short)->requirements;
     my $signup_requirements = $requirements->{signup};
-    my @missing_fields      = grep { !$client->$_ } @$signup_requirements;
+    my $tin_not_mandatory   = BOM::RPC::v3::Accounts::lc_country_requires_tin($landing_company_short, $residence);
+    my @missing_fields      = grep { !($tin_not_mandatory && $_ eq 'tax_identification_number') && !$client->$_; } $signup_requirements->@*;
+
     return create_error_future(
         'MissingSignupDetails',
         {
@@ -923,7 +924,8 @@ async_rpc "mt5_new_account",
         return create_error_future('TINDetailsMandatory')
             if ($compliance_requirements->{tax_information}
             and $countries_instance->is_tax_detail_mandatory($residence)
-            and not $client->status->crs_tin_information);
+            and not $client->status->crs_tin_information)
+            and not $tin_not_mandatory;
     }
 
     my $mt5_acc_reason         = _mt5_acc_opening_reason($landing_company_short);
