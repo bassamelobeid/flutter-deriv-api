@@ -10,7 +10,7 @@ BOM::OAuth::RestAPI - JSON Rest API for application and user authentication
 
 =head1 DESCRIPTION
 
-Implementation based on the following spec: https://wikijs.deriv.cloud/en/Backend/architecture/proposal/bom_oauth_rest_api
+Implementation based on the following spec: https://wikijs.deriv.cloud/en/engineering/backend/architecture/proposal/bom_oauth_rest_api
 
 =cut
 
@@ -805,9 +805,10 @@ sub _perform_social_login {
             {
                 loginid    => $account->{client}->loginid,
                 properties => {
-                    type     => 'trading',
-                    subtype  => 'virtual',
-                    utm_tags => BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_tags, $regex_validation_keys),
+                    type       => 'trading',
+                    subtype    => 'virtual',
+                    user_agent => $c->req->headers->user_agent // '',
+                    utm_tags   => BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_tags, $regex_validation_keys),
                 }});
 
         # initialize user_id and link account to social login.
@@ -855,7 +856,8 @@ sub _perform_social_login_login {
     );
 
     my $payload = $c->req->json;
-    $payload->{domain} = social_login_callback_base(Mojo::URL->new($c->req->url->to_abs)->host);
+    $payload->{domain}     = social_login_callback_base(Mojo::URL->new($c->req->url->to_abs)->host);
+    $payload->{user_agent} = $c->req->headers->user_agent // '';
 
     my $login_attempt = $rest_handler->get_cached_login_attempt($payload->{state});
     unless ($login_attempt) {

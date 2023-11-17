@@ -244,9 +244,10 @@ sub _track_new_user {
         {
             loginid    => $account->{client}->loginid,
             properties => {
-                type     => 'trading',
-                subtype  => 'virtual',
-                utm_tags => $utm_tags,
+                type       => 'trading',
+                subtype    => 'virtual',
+                user_agent => $c->req->headers->user_agent // '',
+                utm_tags   => $utm_tags,
             }});
 }
 

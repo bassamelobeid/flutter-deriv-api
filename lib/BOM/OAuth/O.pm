@@ -157,6 +157,7 @@ sub authorize {
             return if $date->is_after(Date::Utility->today);
             $c->session(date_first_contact => $date->date_yyyymmdd);
         };
+
         $c->session(signup_device => $c->param('signup_device')) if ($c->param('signup_device') // '') =~ /^\w+$/;
         # the regexes for the following fields should be the same as new_account_virtual send schema
         $c->session(myaffiliates_token => $c->param('affiliate_token'))  if ($c->param('affiliate_token')  // '') =~ /^[\w\-]{1,32}$/;

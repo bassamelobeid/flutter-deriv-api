@@ -380,6 +380,7 @@ sub get_email_by_provider {
 
 Register user and create a virtual account for user with given information
 Returns a hashref {error}/{client, user}
+This method is used only for social login. Other account creation methods use the rpc call.
 
 Arguments:
 

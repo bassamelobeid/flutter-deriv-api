@@ -195,9 +195,10 @@ method _track_new_user ($account, $payload) {
         {
             loginid    => $account->{client}->loginid,
             properties => {
-                type     => 'trading',
-                subtype  => 'virtual',
-                utm_tags => $utm_tags
+                type       => 'trading',
+                subtype    => 'virtual',
+                user_agent => $payload->{user_agent},
+                utm_tags   => $utm_tags
             }});
 }
 
