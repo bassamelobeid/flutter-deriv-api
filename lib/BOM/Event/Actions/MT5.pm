@@ -751,6 +751,7 @@ async sub mt5_deriv_auto_rescind {
     my $override_status        = delete $args->{override_status};
     my $custom_transfer_amount = delete $args->{custom_transfer_amount};
     my $skip_archive           = delete $args->{skip_archive};
+    my $staff_name             = $args->{staff_name} // 'payment';
     my (%mt5_deriv_accounts, %process_mt5_success, %process_mt5_fail);
 
     return 1 unless (@mt5_accounts);
@@ -816,6 +817,7 @@ async sub mt5_deriv_auto_rescind {
                         process_mt5_fail       => \%process_mt5_fail,
                         custom_transfer_amount => $custom_transfer_amount,
                         skip_archive           => $skip_archive,
+                        staff_name             => $staff_name,
                     };
 
                     if ($disabled_account_option) {
@@ -906,11 +908,12 @@ Return C<$params> set of values containing information on the transfer such as c
 async sub _mt5_cr_auto_rescind_process {
     my $params = shift;
     my (
-        $deriv_account_id,   $mt5_prefix_id,    $mt5_user,                $group_to_ccy,           $override_status,
-        $mt5_deriv_accounts, $process_mt5_fail, $disabled_account_bypass, $custom_transfer_amount, $skip_archive
+        $deriv_account_id,       $mt5_prefix_id,      $mt5_user,         $group_to_ccy,
+        $override_status,        $mt5_deriv_accounts, $process_mt5_fail, $disabled_account_bypass,
+        $custom_transfer_amount, $skip_archive,       $staff_name
         )
         = @{$params}{
-        qw/deriv_account_id mt5_prefix_id mt5_user group_to_ccy override_status mt5_deriv_accounts process_mt5_fail disabled_account_bypass custom_transfer_amount skip_archive/
+        qw/deriv_account_id mt5_prefix_id mt5_user group_to_ccy override_status mt5_deriv_accounts process_mt5_fail disabled_account_bypass custom_transfer_amount skip_archive staff_name/
         };
 
     $disabled_account_bypass = 0 unless $disabled_account_bypass;
@@ -1020,6 +1023,7 @@ async sub _mt5_cr_auto_rescind_process {
         transfer_amount     => $transfer_amount,
         process_mt5_fail    => $process_mt5_fail,
         mt5_transfer_amount => $mt5_transfer_amount,
+        staff_name          => $staff_name,
     });
 
     return 0 unless ($rescind_transfer_result);
@@ -1089,8 +1093,8 @@ Return C<$params> set of values containing information on the transfer such as t
 
 async sub _mt5_cr_auto_rescind_transfer_process {
     my $params = shift;
-    my ($mt5_id, $currency, $mt5_user, $deriv_account_id, $deriv_client, $transfer_amount, $process_mt5_fail, $mt5_transfer_amount) =
-        @{$params}{qw/mt5_id currency mt5_user deriv_account_id deriv_client transfer_amount process_mt5_fail mt5_transfer_amount/};
+    my ($mt5_id, $currency, $mt5_user, $deriv_account_id, $deriv_client, $transfer_amount, $process_mt5_fail, $mt5_transfer_amount, $staff_name) =
+        @{$params}{qw/mt5_id currency mt5_user deriv_account_id deriv_client transfer_amount process_mt5_fail mt5_transfer_amount staff_name/};
 
     my $mt5_balance_before = $mt5_user->{balance};
     my $archivable         = 0;
@@ -1122,7 +1126,7 @@ async sub _mt5_cr_auto_rescind_transfer_process {
                     remark   => "Transfer from MT5 account $mt5_id to $deriv_account_id $currency $mt5_transfer_amount to "
                         . $deriv_client->currency
                         . " $transfer_amount",
-                    staff  => 'payment',
+                    staff  => $staff_name,
                     fees   => 0,
                     source => 1
                 );
@@ -1744,9 +1748,10 @@ Archives MT5 Accounts
 =cut
 
 async sub mt5_archive_accounts {
-    my $args     = shift;
-    my $loginids = $args->{loginids};
-    my $user_db  = BOM::Database::UserDB::rose_db();
+    my $args       = shift;
+    my $loginids   = $args->{loginids};
+    my $staff_name = $args->{staff_name} // 'quants';
+    my $user_db    = BOM::Database::UserDB::rose_db();
     my @email_content;
     my $archive_failed_row;
 
@@ -1900,7 +1905,7 @@ async sub mt5_archive_accounts {
                             . $mt5_user->{balance} . " to "
                             . $group_currency
                             . $transfer_amount,
-                        staff  => 'quant',
+                        staff  => $staff_name,
                         fees   => 0,
                         source => 1
                     );
