@@ -623,7 +623,7 @@ payments:
       contains:
         daily_cumulative_limit:
           isa: section
-          description: 'Daily transfer amount limits.'
+          description: 'To impose a limit on the total amount can be transferred between platforms (both ways) per account'
           contains:
             enable:
               isa: Num
@@ -672,7 +672,7 @@ payments:
               global: 1
         limits:
           isa: section
-          description: 'Limits for internal transfers. Ignored if amount limit is enabled.'
+          description: 'Set a limit on the cumulative amount an unauthorised client can transfer between different currencies.'
           contains:
             between_accounts:
               isa: Num
@@ -731,7 +731,7 @@ payments:
               global: 1          
         exchange_rate_expiry:
           isa: section
-          description: 'Exchange Rates expiry age in seconds e.g. allow conversion from BTC to USD if last known rate IS NOT OLDER THAN 1800 second'
+          description: 'This is to set the maximum threshold on the age of exchange rate. Internal transfer will be suspended if the age of a particular exchange rate is greater than the threshold.'
           contains:
             fiat:
               isa: Num
@@ -813,7 +813,7 @@ payments:
                   global: 1
         minimum:
           isa: section
-          description: 'Transfer minimum amount'
+          description: 'To set the minimum amount of transferring between platforms'
           contains:
             default:
               isa: Num
@@ -1583,7 +1583,7 @@ system:
           isa: Num
           global: 1
     suspend:
-      description: "Suspend one or more of our services"
+      description: "To suspend internal transfer (both ways)"
       isa: section
       contains:
         payout_freezing_funds:
@@ -1682,7 +1682,7 @@ system:
           default: 0
           global: 1
         transfer_currencies:
-          description: "Suspend transfer from and to the listed currencies, eg: UST, USD"
+          description: "To suspend internal transfer on currency(ies) across all platforms"
           isa: ArrayRef
           default: []
           global: 1
