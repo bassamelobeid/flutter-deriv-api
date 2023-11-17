@@ -47,7 +47,8 @@ my %EVENT_PROPERTIES = (
         qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
     ],
     login  => [qw (browser device ip new_signin_activity location app_name)],
-    signup => [qw (type subtype currency landing_company date_joined first_name last_name phone address age country provider email_consent)],
+    signup =>
+        [qw (type subtype currency landing_company date_joined first_name last_name phone address age country provider email_consent user_agent)],
     transfer_between_accounts => [
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
             is_to_account_pa gateway_code remark time id)
