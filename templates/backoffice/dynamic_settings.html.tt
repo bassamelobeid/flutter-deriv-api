@@ -117,6 +117,7 @@
 </script>
 
 [% BLOCK leaf %]
+[% IF NOT item.branch_description  %]
     <li class="leaf">
         <div>
             <label for="[% item.name %]">[% item.name.replace('^(([\w.]+)\.)([\w]+)$', '$1<strong>$3</strong>') | none %]</label>
@@ -146,6 +147,7 @@
             </cite>
         </div>
     </li>
+[% END %]
 [% END %]
 
 [% BLOCK branch %]

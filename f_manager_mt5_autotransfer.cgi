@@ -62,6 +62,7 @@ BOM::Platform::Event::Emitter::emit(
         override_status        => $override_status,
         custom_transfer_amount => $custom_transfer_amount,
         skip_archive           => $skip_archive,
+        staff_name             => $staff,
     });
 
 print join(', ', @mt5_accounts) . ' Auto Rescind/Transfer Request Initiated.';

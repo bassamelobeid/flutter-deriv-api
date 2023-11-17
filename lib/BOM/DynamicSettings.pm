@@ -225,11 +225,24 @@ sub generate_settings_branch {
         #push it in right namespace
         my $space      = $categories;
         my @namespaces = split(/\./, $ds);
-        my $i          = 0;
-        my $len        = scalar @namespaces;
+        my $count      = 0;
+        my @name_buffer;
+        my $len = scalar @namespaces;
         for my $name (@namespaces) {
-            $i++;
-            $name = $ds if $len == $i;
+            $count++;
+            if ($len == $count) {
+                # we add a description to iterate through
+                # the sections and get the description of the parent of the leaf
+                # thats why we add the description to the name buffer
+                push @name_buffer, 'definition';
+                my $description = $app_config;
+                $description = $description->$_ for @name_buffer;
+                $space->{meta_description} = {leaf => {branch_description => $description->{'description'}}};
+                # we create a new key with the full path of leaf
+                $name = $ds;
+            }
+            push @name_buffer, $name;
+
             $space->{$name} //= {};
 
             $space = $space->{$name};

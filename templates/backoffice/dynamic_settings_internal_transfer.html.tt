@@ -78,6 +78,10 @@
     input[disabled] {
         background: #eee;
     }
+ 
+    #branch_description {
+        font-size: 20px;
+    }
 </style>
 
 <div id="wrapper">
@@ -117,6 +121,7 @@
 </script>
 
 [% BLOCK leaf %]
+[% IF NOT item.branch_description  %]
     <li class="leaf">
         <div>
             <label for="[% item.name %]">[% item.name.replace('^(([\w.]+)\.)([\w]+)$', '$1<strong>$3</strong>') | none %]</label>
@@ -130,6 +135,7 @@
                 [% END %]
             </div>
         </div>
+        
         <div class="input_container">
             [% IF item.type == 'Bool' %]
                 <input id="[% item.name %]" type="checkbox" name="[% item.name %]" [% IF item.disabled %] disabled [% END %] [% IF item.value %] checked [% END %] />
@@ -147,12 +153,16 @@
         </div>
     </li>
 [% END %]
+[% END %]
 
 [% BLOCK branch %]
     <fieldset [% IF NOT config.key %] style="border: 0; margin-bottom: 0;" [% END %]>
         [% IF config.key %]
             <legend>
-                <a class="link" href=""><span class="close">&#10145;</span><span>&#11015;</span> [% config.key %]</a>
+                <a class="link" href=""><span class="close">&#10145;</span><span>&#11015;</span> [% config.key %]</a>       
+                [% IF config.value.meta_description %]
+                <span>[% config.value.meta_description.leaf.branch_description %]</span>
+                [% END %]
             </legend>
         [% END %]
         <ul>
@@ -194,8 +204,6 @@
                     <input type="hidden" name="page" value="[% s.submitted %]">
                     <input type="hidden" name="group" value="[% s.group %]">
                     <input type="hidden" name="revision" value="[% s.setting_revision %]">
-                    [% INCLUDE submit_button %]
-                    <hr>
                     [% INCLUDE branch current_config=s.settings %]
                     <hr>
                     [% INCLUDE submit_button %]

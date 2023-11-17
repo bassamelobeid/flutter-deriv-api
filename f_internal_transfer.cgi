@@ -141,7 +141,7 @@ BOM::Backoffice::Request::template()->process(
 #DYNAMIC SETTINGS FOR INTERNAL TRANSFER
 my $settings_list = [@{BOM::DynamicSettings::get_settings_by_group('internal_transfer')}];
 
-Bar("DYNAMIC SETTINGS FOR INTERNAL TRANSFER");
+Bar("SETTINGS FOR INTERNAL TRANSFER");
 
 if (!any { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}) {
     print '<div id="message"><div id="error">' . master_live_server_error() . '</div></div><br />';
@@ -153,7 +153,7 @@ if (!any { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{r
     });
 }
 
-my $title = "DYNAMIC SETTINGS FOR INTERNAL TRANSFER";
+my $title = "SETTINGS FOR INTERNAL TRANSFER";
 
 my @send_to_template = BOM::DynamicSettings::generate_settings_branch({
     settings          => [BOM::Config::Runtime->instance->app_config->all_keys()],

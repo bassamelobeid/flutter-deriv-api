@@ -84,7 +84,12 @@ if ($input{action} and $input{action} eq 'archive_MT5_accounts') {
         code_exit_BO();
     }
 
-    BOM::Platform::Event::Emitter::emit('mt5_archive_accounts', {loginids => \@mt5_accounts});
+    BOM::Platform::Event::Emitter::emit(
+        'mt5_archive_accounts',
+        {
+            loginids   => \@mt5_accounts,
+            staff_name => $staff,
+        });
     my $msg =
         Date::Utility->new->datetime . " Archival of MT5 accounts " . join(', ', @mt5_accounts) . " requested by clerk=$staff $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, undef, $staff);

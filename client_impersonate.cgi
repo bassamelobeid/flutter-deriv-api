@@ -28,6 +28,7 @@ my $broker  = $input->{'broker'}              // request()->broker_code;
 my ($dcc, $clerk);
 
 sub print_title {
+    my $title = 'Client Impersonate';
     PrintContentType();
     BrokerPresentation($title);
 }
