@@ -102,8 +102,16 @@ our %ACCOUNT_DETAILS = (
     name            => 'Meta traderman',
     group           => 'real\p01_ts01\synthetic\svg_std_usd',
     country         => 'Malta',
-    balance         => '1234',
+    balance         => 1234,
     display_balance => '1234.00',
+    phone           => '+1 234 56789',
+    zipCode         => '111111',
+    address         => 'some address',
+    phonePassword   => 'XXXXXX',
+    state           => 'CA',
+    city            => 'San Andreas :)',
+    company         => 'my company',
+    leverage        => 300,
     rights          => 16739,
 );
 

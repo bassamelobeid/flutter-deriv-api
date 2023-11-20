@@ -2,6 +2,7 @@ package BOM::RPC::v3::MT5::Account;
 
 use strict;
 use warnings;
+use experimental 'signatures';
 
 no indirect;
 
@@ -137,19 +138,24 @@ Returns any of the following:
 async_rpc "mt5_login_list",
     category => 'mt5',
     sub {
-    my $params            = shift;
-    my $client            = $params->{client};
-    my $additional_fields = ['comment'];
+    my $params = shift;
+    my $client = $params->{client};
 
-    return get_mt5_logins($client, 'all', $additional_fields)->then(
+    return get_mt5_logins($client, 'all')->then(
         sub {
             my (@logins)                = @_;
             my $residence               = $client->residence;
             my $is_mt5_restricted_group = request()->brand->countries_instance->is_mt5_restricted_group($residence);
             my $is_mt5_ib               = _is_mt5_ib(\@logins);
 
-            # Removing comment key since it is only being used for migration purposes
-            @logins = map { delete $_->{comment}; $_ } @logins;
+            @logins = map {
+                _filter_settings(
+                    $_,
+                    qw(account_type balance country currency display_balance email group landing_company_short),
+                    qw(leverage login name market_type sub_account_type sub_account_category server server_info),
+                    qw(status webtrader_url),
+                )
+            } @logins;
 
             return Future->done(\@logins) if $is_mt5_restricted_group || $is_mt5_ib;
 
@@ -262,9 +268,9 @@ Returns a Future holding list of MT5 account information or a failed future with
 =cut
 
 sub get_mt5_logins {
-    my ($client, $account_type, $additional_fields) = @_;
+    my ($client, $account_type) = @_;
 
-    return mt5_accounts_lookup($client, $account_type, $additional_fields // [])->then(
+    return mt5_accounts_lookup($client, $account_type)->then(
         sub {
             my (@logins) = @_;
             my @valid_logins = grep { defined $_ and $_ } @logins;
@@ -275,7 +281,7 @@ sub get_mt5_logins {
 
 =head2 mt5_accounts_lookup
 
-$mt5_logins = mt5_accounts_lookup($client)
+$mt5_logins = mt5_accounts_lookup($client, $account_type)
 
 Takes Client object and tries to fetch MT5 account information for each loginid
 If loginid-related account does not exist on MT5, undef will be attached to the list
@@ -298,9 +304,8 @@ Returns a Future holding list of MT5 account information (or undef) or a failed 
 
 =cut
 
-sub mt5_accounts_lookup {
-    my ($client, $account_type, $additional_fields) = @_;
-    my %allowed_error_codes = (
+sub mt5_accounts_lookup ($client, $account_type) {    ## no critic (ProhibitSubroutinePrototypes)
+    my %swallowed_error_codes = (
         ConnectionTimeout                                                => 1,
         MT5AccountInactive                                               => 1,
         NetworkError                                                     => 1,
@@ -313,31 +318,30 @@ sub mt5_accounts_lookup {
         "Could not connect to 'localhost:80': Connection refused"        => 1,
         "Timed out while waiting for socket to become ready for reading" => 1
     );
-    $additional_fields //= [];
+    my %propagated_error_codes = (
+        MT5AccountInaccessible => 1,
+    );
 
     my @futures;
 
     my $wallet_loginid = $client->is_wallet ? $client->loginid : undef;
     for my $login ($client->user->get_mt5_loginids(type_of_account => $account_type, wallet_loginid => $wallet_loginid)) {
 
-        my $f = mt5_get_settings({
-                client => $client,
-                args   => {
-                    login             => $login,
-                    additional_fields => $additional_fields // []}}
-        )->then(
+        my $f =
+            BOM::MT5::User::Async::is_suspended('', {login => $login})
+            ? Future->fail(_create_account_inaccessible_error($login))
+            : _get_user_with_group($login);
+
+        $f = $f->then(
             sub {
                 my ($setting) = @_;
+
+                return create_error_future('MT5AccountInactive') if !$setting->{active};
 
                 if (exists $setting->{login} and exists $client->user->loginid_details->{$setting->{login} // ''}) {
                     $setting->{status} = $client->user->loginid_details->{$setting->{login}}->{status};
                     $setting->{status} = undef if ($setting->{status} // '') eq 'poa_outdated' and $client->risk_level_aml ne 'high';
                 }
-
-                my @selected_fields =
-                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type sub_account_category server server_info status webtrader_url/;
-                push @selected_fields, @$additional_fields if @$additional_fields;
-                $setting = _filter_settings($setting, @selected_fields) if !$setting->{error};
 
                 return Future->done($setting);
             }
@@ -345,13 +349,16 @@ sub mt5_accounts_lookup {
             sub {
                 my ($resp) = @_;
 
+                my $resp_has_hashref_error = ref $resp eq 'HASH' && defined $resp->{error} && ref $resp->{error} eq 'HASH';
                 if ((
-                        ref $resp eq 'HASH' && defined $resp->{error} && ref $resp->{error} eq 'HASH' && ($allowed_error_codes{$resp->{error}{code}}
-                            || $allowed_error_codes{$resp->{error}{message_to_client}}))
-                    || $allowed_error_codes{$resp})
+                        $resp_has_hashref_error && ($swallowed_error_codes{$resp->{error}{code}}
+                            || $swallowed_error_codes{$resp->{error}{message_to_client}}))
+                    || $swallowed_error_codes{$resp})
                 {
                     log_stats($login, $resp);
                     return Future->done(undef);
+                } elsif ($resp_has_hashref_error && $propagated_error_codes{$resp->{error}{code}}) {
+                    return Future->done($resp);
                 } else {
                     $log->errorf("mt5_accounts_lookup Exception: %s", $resp);
                 }
@@ -675,7 +682,7 @@ sub _get_sub_account_type {
 Returns the MT5 new account permissions
 
 =over 4
- 
+
 =back
 
 =cut
@@ -1021,14 +1028,17 @@ async_rpc "mt5_new_account",
             my (@logins) = @_;
 
             my %existing_groups;
-            my $trade_server_error;
             my $has_hr_account         = undef;
             my $svg_account_to_migrate = undef;
 
             foreach my $mt5_account (@logins) {
                 if ($mt5_account->{error} and $mt5_account->{error}{code} eq 'MT5AccountInaccessible') {
-                    $trade_server_error = $mt5_account->{error};
-                    last;
+                    return create_error_future(
+                        'MT5AccountCreationSuspended',
+                        {
+                            override_code => $error_code,
+                            message       => $mt5_account->{error}{message_to_client},
+                        });
                 }
 
                 $existing_groups{$mt5_account->{group}} = $mt5_account->{login} if $mt5_account->{group};
@@ -1045,16 +1055,6 @@ async_rpc "mt5_new_account",
                     and (  ($account_type eq 'gaming' and lc($mt5_account->{group}) =~ /synthetic/)
                         or ($account_type eq 'financial' and lc($mt5_account->{group}) =~ /financial/)));
 
-            }
-
-            if ($trade_server_error) {
-
-                return create_error_future(
-                    'MT5AccountCreationSuspended',
-                    {
-                        override_code => $error_code,
-                        message       => $trade_server_error->{message_to_client},
-                    });
             }
 
             # If one of client's account has been moved to high-risk groups
@@ -1253,7 +1253,7 @@ Gets the needed Landing Company for the given combination of parameters:
 
 =over 4
 
-=item * C<$client> - The L<BOM::User::Client>  
+=item * C<$client> - The L<BOM::User::Client>
 
 =item * C<$company_type> - The company type requested.
 
@@ -1288,7 +1288,7 @@ Gets the MT Landing Company for the given combination of parameters:
 
 =over 4
 
-=item * C<$client> - The L<BOM::User::Client>  
+=item * C<$client> - The L<BOM::User::Client>
 
 =item * C<$args> - hashref of mt5 args including: country, account type and subtype.
 
@@ -1445,39 +1445,15 @@ async_rpc "mt5_get_settings",
     sub {
     my $params = shift;
 
-    my $client            = $params->{client};
-    my $args              = $params->{args};
-    my $login             = $args->{login};
-    my $additional_fields = $args->{additional_fields} // [];
+    my $client = $params->{client};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
 
     # MT5 login not belongs to user
     my $err = _check_logins($client->user, $login);
     return $err if $err;
 
-    if (BOM::MT5::User::Async::is_suspended('', {login => $login})) {
-        my $account_type  = BOM::MT5::User::Async::get_account_type($login);
-        my $server        = BOM::MT5::User::Async::get_trading_server_key({login => $login}, $account_type);
-        my $server_config = BOM::Config::MT5->new(
-            group_type  => $account_type,
-            server_type => $server
-        )->server_by_id();
-        my $resp = {
-            error => {
-                code    => 'MT5AccountInaccessible',
-                details => {
-                    login        => $login,
-                    account_type => $account_type,
-                    server       => $server,
-                    server_info  => {
-                        id          => $server,
-                        geolocation => $server_config->{$server}{geolocation},
-                        environment => $server_config->{$server}{environment},
-                    }
-                },
-                message_to_client => localize('MT5 is currently unavailable. Please try again later.'),
-            }};
-        return Future->done($resp);
-    }
+    return Future->fail(_create_account_inaccessible_error($login)) if (BOM::MT5::User::Async::is_suspended('', {login => $login}));
 
     return _get_user_with_group($login)->then(
         sub {
@@ -1485,17 +1461,53 @@ async_rpc "mt5_get_settings",
 
             return create_error_future('MT5AccountInactive') if !$settings->{active};
 
-            my @selected_fields =
-                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type sub_account_category zipCode server server_info webtrader_url/;
-            push @selected_fields, @$additional_fields if @$additional_fields;
-            $settings = _filter_settings($settings, @selected_fields);
+            $settings = _filter_settings(
+                $settings,
+                qw/account_type address balance city company country currency display_balance email group/,
+                qw/landing_company_short leverage login market_type name phone phonePassword state sub_account_type/,
+                qw/sub_account_category zipCode server/,
+            );
 
             return Future->done($settings);
         })->catch($error_handler);
     };
 
-sub _filter_settings {
-    my ($settings, @allowed_keys) = @_;
+=head2 _create_account_inaccessible_error
+
+    return Future->fail(_create_account_inaccessible_error($login))
+    if (BOM::MT5::User::Async::is_suspended('', {login => $login}));
+
+Takes a login ID and returns MT5AccountInaccessible error populated with details.
+
+=cut
+
+sub _create_account_inaccessible_error ($login) {    ## no critic (ProhibitSubroutinePrototypes)
+    my $account_type  = BOM::MT5::User::Async::get_account_type($login);
+    my $server        = BOM::MT5::User::Async::get_trading_server_key({login => $login}, $account_type);
+    my $server_config = BOM::Config::MT5->new(
+        group_type  => $account_type,
+        server_type => $server
+    )->server_by_id();
+    return {
+        error => {
+            code    => 'MT5AccountInaccessible',
+            details => {
+                login        => $login,
+                account_type => $account_type,
+                server       => $server,
+                server_info  => {
+                    id          => $server,
+                    geolocation => $server_config->{$server}{geolocation},
+                    environment => $server_config->{$server}{environment},
+                }
+            },
+            message_to_client => localize('MT5 is currently unavailable. Please try again later.'),
+        },
+    };
+}
+
+sub _filter_settings ($settings, @allowed_keys) {    ## no critic (ProhibitSubroutinePrototypes)
+    return $settings if $settings->{error};
     my $filtered_settings = {};
     @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
     $filtered_settings->{market_type} = 'synthetic' if $filtered_settings->{market_type} and $filtered_settings->{market_type} eq 'gaming';

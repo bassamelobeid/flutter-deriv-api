@@ -114,7 +114,7 @@ subtest 'login list' => sub {
     is($c->result->[0]->{market_type},           'synthetic',                                 "market_type result");
     is($c->result->[0]->{sub_account_type},      'financial',                                 "sub_account_type result");
     is($c->result->[0]->{account_type},          'real',                                      "account_type result");
-    is($c->result->[0]->{webtrader_url},         'https://mt5-real01-web.deriv.com/terminal', "account_type result");
+    is($c->result->[0]->{webtrader_url},         'https://mt5-real01-web.deriv.com/terminal', "webtrader_url result");
     cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'}], "mt5_login_list result");
 };
 
@@ -123,10 +123,9 @@ subtest 'login list partly successfull result' => sub {
     $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR40000001 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mt5_acc_mock->mock(
-        'mt5_get_settings',
-        sub {
-            my $login = shift->{args}{login};
+    $mt5_acc_mock->redefine(
+        _get_user_with_group => sub {
+            my $login = shift;
 
             #result one login should have error msg
             return BOM::RPC::v3::MT5::Account::create_error_future('General') if $login eq 'MTR00001014';
@@ -142,7 +141,11 @@ subtest 'login list partly successfull result' => sub {
     };
 
     $c->call_ok($method, $params)->has_error('has error for mt5_login_list')->error_code_is('General', 'Should return correct error code');
-    $mt5_acc_mock->unmock('mt5_get_settings');
+
+    # For some reason just after $mt5_acc_mock is created it already has refcount=2,
+    # thus it doesn't die when it goes out of scope, and thus mocked functions do not get unmocked.
+    # Thus (sorry) we unmock them manually.
+    $mt5_acc_mock->unmock_all();
 };
 
 subtest 'login list with MT5 connection problem ' => sub {
@@ -164,14 +167,12 @@ subtest 'login list with MT5 connection problem ' => sub {
     };
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
-    $mt5_async_mock->unmock('get_user');
 };
 
 subtest 'login list with MT5 connection problem on HTTP Proxy ' => sub {
     my $mt5_async_mock = Test::MockModule->new('BOM::MT5::User::Async');
-    $mt5_async_mock->mock(
-        'get_user',
-        sub {
+    $mt5_async_mock->redefine(
+        get_user => sub {
             return Future->fail('Timed out');
         });
 
@@ -183,20 +184,18 @@ subtest 'login list with MT5 connection problem on HTTP Proxy ' => sub {
     };
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
-    $mt5_async_mock->unmock('get_user');
 };
 
 subtest 'login list with archived login id ' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR41000001 MTR00001014) });
+    $bom_user_mock->redefine(get_mt5_loginids => sub { qw(MTR41000001 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mt5_acc_mock->mock('_check_logins', sub { return undef; });
+    $mt5_acc_mock->redefine(_check_logins => sub { });
 
     my $mt5_async_mock = Test::MockModule->new('BOM::MT5::User::Async');
-    $mt5_async_mock->mock(
-        'get_user',
-        sub {
+    $mt5_async_mock->redefine(
+        get_user => sub {
             my $login = shift;
 
             return Future->fail({
@@ -217,18 +216,15 @@ subtest 'login list with archived login id ' => sub {
 
     my @accounts = map { $_->{login} } @{$c->result};
     cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'}], "mt5_login_list result");
-    $mt5_async_mock->unmock('get_user');
-    $mt5_acc_mock->unmock('_check_logins');
 };
 
 subtest 'login list without success results' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR40000001 MTR00001014) });
+    $bom_user_mock->redefine(get_mt5_loginids => sub { qw(MTR40000001 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mt5_acc_mock->mock(
-        'mt5_get_settings',
-        sub {
+    $mt5_acc_mock->redefine(
+        _get_user_with_group => sub {
             BOM::RPC::v3::MT5::Account::create_error_future('General');
         });
 
@@ -240,7 +236,11 @@ subtest 'login list without success results' => sub {
     };
 
     $c->call_ok($method, $params)->has_error('has error for mt5_login_list')->error_code_is('General', 'Should return correct error code');
-    $mt5_acc_mock->unmock('mt5_get_settings');
+
+    # For some reason just after $mt5_acc_mock is created it already has refcount=2,
+    # thus it doesn't die when it goes out of scope, and thus mocked functions do not get unmocked.
+    # Thus (sorry) we unmock them manually.
+    $mt5_acc_mock->unmock_all();
 };
 
 subtest 'create new account fails, when we get error during getting login list' => sub {
@@ -263,14 +263,17 @@ subtest 'create new account fails, when we get error during getting login list' 
     $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR40000001 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mt5_acc_mock->mock(
-        'mt5_get_settings',
-        sub {
+    $mt5_acc_mock->redefine(
+        _get_user_with_group => sub {
             BOM::RPC::v3::MT5::Account::create_error_future('General');
         });
 
     $c->call_ok($method, $params)->has_error('has error for mt5_login_list')->error_code_is('General', 'Should return correct error code');
-    $mt5_acc_mock->unmock('mt5_get_settings');
+
+    # For some reason just after $mt5_acc_mock is created it already has refcount=2,
+    # thus it doesn't die when it goes out of scope, and thus mocked functions do not get unmocked.
+    # Thus (sorry) we unmock them manually.
+    $mt5_acc_mock->unmock_all();
 };
 
 subtest 'password check' => sub {
