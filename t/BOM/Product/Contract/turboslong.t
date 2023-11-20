@@ -309,19 +309,34 @@ subtest 'shortcode (legacy)' => sub {
 
 subtest 'longcode' => sub {
     my $c = produce_contract($args);
+
     is_deeply(
         $c->longcode,
         [
-            'Your payout will grow by [_5] for every point above the barrier at the expiry time if the barrier is not touched during the contract duration. You will start making a profit when the payout is higher than your stake.',
+            "For 'Long', you receive a payout on [_3] if the spot price of [_1] never touches or drops below [_4]. Your payout is equal to [_5] multiplied by the absolute difference between the final price and [_4]. You may choose to sell the contract up until 15 seconds before [_3], and receive a contract value.",
             ['Volatility 100 Index'],
             ['contract start time'],
-            {
-                'value' => 120,
-                'class' => 'Time::Duration::Concise::Localize'
-            },
+            '10-Mar-15 00:02:00GMT',
             ['entry spot minus [_1]', '73.00'],
             '1.36241'
         ]);
+
+    delete $args->{duration};
+    $args->{duration} = '5t';
+    my $tick_c = produce_contract($args);
+
+    is_deeply(
+        $tick_c->longcode,
+        [
+            "For 'Long', you receive a payout in [plural,_3,%d tick,%d ticks] if the spot price of [_1] never touches or drops below [_4]. Your payout is equal to [_5] multiplied by the absolute difference between the final price and [_4]. If you choose your duration in number of ticks, you won't be able to terminate your contract early.",
+            ['Volatility 100 Index'],
+            ['first tick'],
+            [5],
+            ['entry spot minus [_1]', '73.00'],
+            '1.36241'
+        ],
+        'longcode matches'
+    );
 };
 
 subtest 'entry and exit tick' => sub {
