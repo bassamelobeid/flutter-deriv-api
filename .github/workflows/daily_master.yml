@@ -10,3 +10,15 @@ jobs:
   core:
     uses: regentmarkets/github-actions/.github/workflows/core.yml@master
     secrets: inherit
+  publish_test_results:
+    needs: [ syntax_unit , core ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Upload results to TestSpace
+        uses: regentmarkets/github-actions/testspace-publish@master
+        with: 
+          token: ${{ secrets.TESTSPACE_TOKEN }}
+          artifact: test-results
+          file_path: ./**/*.xml
