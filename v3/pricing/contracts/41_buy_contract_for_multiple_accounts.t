@@ -4,7 +4,7 @@ use Test::More;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use Net::EmptyPort    qw(empty_port);
 use Test::MockModule;
 
@@ -12,13 +12,16 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
-use BOM::Test::Data::Utility::FeedTestDatabase;
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Date::Utility;
 
 use await;
 
-build_test_R_50_data();
 my $t = build_wsapi_test();
+
+# create ticks here
+my $now = time;
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now, 'R_50'], [101, $now + 1, 'R_50']);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -81,6 +84,7 @@ sub get_proposal {
         subscribe => 1,
         %contractParameters
     });
+
     isnt $proposal->{proposal}->{id},        undef, 'got proposal id';
     isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
 
@@ -153,7 +157,7 @@ subtest "2nd try: dummy tokens => success", sub {
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
     epoch      => Date::Utility->new->epoch + 2,
-    quote      => '963'
+    quote      => '103'
 });
 
 my $tokens_for_sell    = [];
@@ -238,7 +242,7 @@ subtest "sell_contract_for_multiple_accounts => successful", sub {
     $res = $t->await::sell_contract_for_multiple_accounts({
         sell_contract_for_multiple_accounts => 1,
         shortcode                           => $shortcode_for_sell,
-        price                               => 2.42,
+        price                               => 0,
         tokens                              => $tokens_for_sell,
     });
     isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
