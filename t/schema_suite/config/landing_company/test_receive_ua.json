@@ -912,7 +912,7 @@
       "mt_gaming_company" : {
          "additionalProperties" : false,
          "type" : "object",
-         "description" : "Landing Company for MT5 gaming contracts (Volatility Indices)",
+         "description" : "Landing Company for MT5 derived contracts (Volatility Indices)",
          "required" : [
             "financial"
          ],
