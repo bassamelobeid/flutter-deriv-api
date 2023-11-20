@@ -19,7 +19,7 @@ $loop->add(
     my $redis = Net::Async::Redis->new(
         host => $config->{host},
         port => $config->{port},
-        auth => $config->{auth}));
+        auth => $config->{password}));
 
 $redis->connect->get;
 
