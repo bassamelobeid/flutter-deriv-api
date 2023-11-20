@@ -3,6 +3,7 @@ use Test::MockObject;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Advert;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Order;
+use Binary::WebSocketAPI::v3::Subscription::P2P::P2PSettings;
 
 use JSON::MaybeUTF8 qw(:v1);
 
@@ -117,6 +118,35 @@ subtest 'P2P::Order' => sub {
         'send_data matches';
     lives_ok { $worker->unregister } 'unregister ok';
 
+};
+
+subtest 'P2P::P2PSettings' => sub {
+    my $c = mock_c();
+
+    my $worker = new_ok(
+        'Binary::WebSocketAPI::v3::Subscription::P2P::P2PSettings' => [
+            c       => $c,
+            args    => {},
+            country => 'eg',
+        ]);
+
+    lives_ok { $worker->register } 'register ok';
+    is $worker->country, 'eg', 'country matches';
+    like($worker->uuid, qr/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/, 'has correct uuid');
+    isa_ok $worker->subscription_manager, 'Binary::WebSocketAPI::v3::SubscriptionManager', 'subscription_manager';
+    is $worker->channel, 'NOTIFY::P2P_SETTINGS::EG', 'channel matches';
+
+    lives_ok { $worker->process(encode_json_utf8({data => 'test message'})) } 'process with no tx';
+    ok !$worker->c->{send_data}, 'no data when no tx';
+
+    $c->mock('tx', sub { return 1 });
+    lives_ok { $worker->process(encode_json_utf8({data => 'test message'})) } 'process ok';
+
+    my $send_data = $worker->c->{send_data}->{json};
+    is $send_data->{'subscription'}->{id}, $worker->uuid,  'subscription id matches';
+    is $send_data->{'msg_type'},           'p2p_settings', 'msg_type matches';
+    is_deeply $send_data->{'p2p_settings'}, {'data' => 'test message'}, 'send_data matches';
+    lives_ok { $worker->unregister } 'unregister ok';
 };
 
 done_testing();
