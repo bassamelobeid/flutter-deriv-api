@@ -44,6 +44,7 @@
             [ 'test_account',       'Test Account' ],
             [ 'commission_paid',    'Commission Paid' ],
             [ 'account_transfer',   'Account Transfer' ],
+            [ 'ctrader_transfer',   'cTrader Transfer' ],
         ];
     %]
 
