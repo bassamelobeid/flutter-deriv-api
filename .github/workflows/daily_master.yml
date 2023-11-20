@@ -1,5 +1,7 @@
 name: Daily master test
 run-name: Daily test on master branch
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
   workflow_dispatch:
   schedule:
@@ -23,13 +25,38 @@ jobs:
     env:
       LOG_LEVEL: debug
     steps:
-      - name: setup CI step
+      - 
+        name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
-      - name: Core tests
+      - 
+        name: Enable Test Report Generation
+        run: echo '--formatter TAP::Formatter::JUnit' >> .proverc
+      - 
+        name: Core tests
         run: |
           sudo tee -a /etc/hosts < hosts.db
           cat /etc/hosts
           make test
+      - 
+        name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
+  publish_test_results:
+    needs: [ core , syntax_unit ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Upload results to TestSpace
+        uses: regentmarkets/github-actions/testspace-publish@master
+        with: 
+          token: ${{ secrets.TESTSPACE_TOKEN }}
+          artifact: test-results
+          file_path: ./**/*.xml
