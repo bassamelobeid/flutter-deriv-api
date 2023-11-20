@@ -48,7 +48,6 @@ sub test_sendrecv {
         linenum      => (caller)[2],
         %args,
     );
-    return;
 }
 
 sub test_sendrecv_params {
@@ -58,7 +57,6 @@ sub test_sendrecv_params {
         template_values => \@params,
         linenum         => (caller)[2],
     );
-    return;
 }
 
 sub fail_test_sendrecv {

@@ -234,13 +234,14 @@ sub exec_test {
     my $test_app = $self->test_app;
 
     my $t0 = [gettimeofday];
+    my $result;
     if ($test_stream_id) {
         my $content = $self->read_templated_schema_file(
             $receive_file,
             template_values => $args{template_values},
         );
 
-        $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $expect_fail);
+        $result = $test_app->test_schema_last_stream_message($test_stream_id, $content, $receive_file, $expect_fail);
     } else {
         $send_file =~ /^(.*)\//;
         my $call = $test_app->{call} = $1;
@@ -260,7 +261,7 @@ sub exec_test {
             template_values => $args{template_values},
         );
 
-        my $result = $test_app->test_schema($req_params, $content, $receive_file, $expect_fail);
+        $result = $test_app->test_schema($req_params, $content, $receive_file, $expect_fail);
         $response->{$call} = $result;
 
         if ($start_stream_id) {
@@ -272,7 +273,7 @@ sub exec_test {
 
     print_test_diag($self->{title}, $linenum, $elapsed, ($test_stream_id || $start_stream_id), $send_file, $receive_file);
 
-    return;
+    return $result;
 }
 
 sub finish {
