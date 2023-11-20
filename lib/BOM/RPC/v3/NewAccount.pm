@@ -38,6 +38,7 @@ use BOM::RPC::v3::Services::CellxpertService;
 use BOM::RPC::v3::Services::MyAffiliates;
 use BOM::RPC::v3::VerifyEmail::Functions;
 use BOM::RPC::v3::Services::MyAffiliates;
+use BOM::RPC::v3::Annotations qw(annotate_db_calls);
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
@@ -218,7 +219,10 @@ Returns a C<BOM::User::Client> or C<BOM::User::Wallet> instance
 
 =cut
 
-rpc new_account_maltainvest => sub {
+rpc new_account_maltainvest => annotate_db_calls(
+    read  => [],
+    write => ['clientdb', 'userdb', 'authdb'],
+) => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
