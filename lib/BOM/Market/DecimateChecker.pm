@@ -229,8 +229,8 @@ async sub check_decimate_sync {
 
 sub _send_stats {
     my ($symbol, $epoch_diff, $count_diff) = @_;
-    stats_gauge('feed_decimate.redis_db_epoch_diff', $epoch_diff, {tags => ['symbol:' . $symbol]});
-    stats_gauge('feed_decimate.redis_db_count_diff', $count_diff, {tags => ['symbol:' . $symbol]});
+    stats_gauge('tick_decimator.redis_db_epoch_diff', $epoch_diff, {tags => ['symbol:' . $symbol]});
+    stats_gauge('tick_decimator.redis_db_count_diff', $count_diff, {tags => ['symbol:' . $symbol]});
 }
 
 =head2 process_tick_range

@@ -1,17 +1,17 @@
-package BOM::Market::Script::FeedDecimate;
+package BOM::Market::Script::TickDecimator;
 
 =head1 NAME
 
-BOM::Market::Script::FeedDecimate
+BOM::Market::Script::TickDecimator
 
 =head1 DESCRIPTION
 
-This script is responsible for decimating feed data in the database.
+This script is responsible for decimating tick data in the database.
 Do not be confused with L<BOM::FeedPlugin::Plugin::DataDecimate>.
 
 L<BOM::FeedPlugin::Plugin::DataDecimate> will insert raw data (every tick) into a Redis ZSET in form of DECIMATE_<symbol>_<interval>_FULL in BOM::Config::Redi::redis_feed_replica.
 
-L<BOM::Market::Script::FeedDecimate> will read from the raw Redis ZSET, decimates/resampling it (see L<Data::Decimate>) and save it in the form of DECIMATE_<symbol>_<interval>_DEC_SPOT and insert the decimated zset in BOM::Config::Redi::redis_replicated_read. This information will then be used to calculate options pricing volatility.
+L<BOM::Market::Script::TickDecimator> will read from the raw Redis ZSET, decimates/resampling it (see L<Data::Decimate>) and save it in the form of DECIMATE_<symbol>_<interval>_DEC_SPOT and insert the decimated zset in BOM::Config::Redi::redis_replicated_read. This information will then be used to calculate options pricing volatility.
 
 =cut
 
@@ -43,7 +43,7 @@ These options are available:
   -h, --help                    Show this message.
 EOF
 
-    $log->infof("Feed decimate starting");
+    $log->infof("Tick decimator starting");
 
     my $decimate_cache = BOM::Market::DataDecimate->new(market => 'forex');
 
@@ -90,7 +90,7 @@ EOF
         my $sleep = max(0, $next_start - time);
         sleep($sleep);
 
-        stats_inc('feed_decimate.heartbeat');
+        stats_inc('tick_decimator.heartbeat');
         foreach my $ul (@uls) {
             $decimate_cache->data_cache_insert_decimate($ul->symbol, $boundary);
         }
@@ -99,7 +99,7 @@ EOF
         $next_start = $boundary + $hold_time;
     }
 
-    $log->infof("Feed decimate finished");
+    $log->infof("Tick decimator finished");
     return;
 }
 

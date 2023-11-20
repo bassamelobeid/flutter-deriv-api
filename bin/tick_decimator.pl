@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use BOM::Market::Script::FeedDecimate;
+use BOM::Market::Script::TickDecimator;
 use Log::Any::Adapter;
 
 Log::Any::Adapter->import(
@@ -12,5 +12,5 @@ Log::Any::Adapter->import(
     log_level => 'info',
 );
 
-exit BOM::Market::Script::FeedDecimate::run();
+exit BOM::Market::Script::TickDecimator::run();
 

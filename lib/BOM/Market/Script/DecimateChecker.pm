@@ -10,7 +10,7 @@ use Log::Any qw($log);
 use IO::Async::Loop;
 
 # Set service name
-$0 = 'feed-decimate-async';    ## no critic
+$0 = 'tick_decimator_checker';    ## no critic
 
 async sub run {
     STDOUT->autoflush(1);

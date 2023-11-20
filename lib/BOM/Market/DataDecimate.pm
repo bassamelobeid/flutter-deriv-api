@@ -418,7 +418,7 @@ sub data_cache_insert_decimate {
         $single_data->{count}          = 0;
         my $time_diff = $boundary - $single_data->{epoch};
 
-        stats_gauge('feed_decimate.time_diff.' . $key_decimate, $time_diff);
+        stats_gauge('tick_decimator.time_diff.' . $key_decimate, $time_diff);
 
         my $update = ($time_diff > $self->raw_retention_interval->seconds) ? 0 : 1;
         $self->_upsert($symbol, $single_data, 1) if $update and _is_valid_tick($single_data->{decimate_epoch}, $symbol, $economic_event_cache);
@@ -495,9 +495,9 @@ sub _upsert {
 
 =head2 _clean_up
 
-Clean up old feed-raw or feed-decimate data up to end_epoch - retention interval.
+Clean up old feed-raw or tick_decimator data up to end_epoch - retention interval.
 raw-feed retention interval is 31m for forex and 5h for synthetic_index.
-decimate-feed retention interval is 12h.
+tick_decimator retention interval is 12h.
 
 =cut
 

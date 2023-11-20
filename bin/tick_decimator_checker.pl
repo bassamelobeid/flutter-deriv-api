@@ -8,7 +8,7 @@ use Log::Any::Adapter;
 
 =head1 NAME
 
-bom-feed-decimate.pl - Run feed decimate for checking ticks consistency
+tick_decimator_checker.pl - Run tick decimator for checking ticks consistency
 
 =head1 DESCRIPTION
 
