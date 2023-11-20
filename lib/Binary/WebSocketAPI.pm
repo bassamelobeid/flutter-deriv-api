@@ -413,9 +413,9 @@ sub startup {
                 \&Binary::WebSocketAPI::Hooks::assign_ws_backend,        \&Binary::WebSocketAPI::Hooks::check_app_id
             ],
             before_call => [
-                \&Binary::WebSocketAPI::Hooks::add_correlation_id, \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward,
-                \&Binary::WebSocketAPI::Hooks::add_app_id,         \&Binary::WebSocketAPI::Hooks::add_log_config,
-                \&Binary::WebSocketAPI::Hooks::add_brand,          \&Binary::WebSocketAPI::Hooks::start_timing
+                \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
+                \&Binary::WebSocketAPI::Hooks::add_log_config,                 \&Binary::WebSocketAPI::Hooks::add_brand,
+                \&Binary::WebSocketAPI::Hooks::start_timing
             ],
             before_get_rpc_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response  => [
@@ -461,7 +461,8 @@ sub startup {
                     # we don't log WrongResponse and Timeouts as we have metrics for them
                     # this exception should be removed when we have properly
                     # handled CallError
-                    $log->info(($error->{type} // 'n/a') . " [" . $req_storage->{msg_type} . "], details: $details");
+                    my $logger = $req_storage->{logger} // $log;
+                    $logger->infof(($error->{type} // 'n/a') . " [" . $req_storage->{msg_type} . "], details: $details");
                 }
 
                 DataDog::DogStatsd::Helper::stats_inc(

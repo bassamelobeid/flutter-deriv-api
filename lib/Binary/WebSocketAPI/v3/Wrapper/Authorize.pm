@@ -21,11 +21,11 @@ sub logout_success {
 }
 
 sub login_success {
-    my ($c, $rpc_response) = @_;
+    my ($c, $rpc_response, $req_storage) = @_;
 
+    my $logger = $req_storage->{logger} // $log;
     local $log->context->{rpc_response} = $rpc_response;
-
-    $log->error("landing_company_name in rpc_response is undef after login")
+    $logger->errorf("landing_company_name in rpc_response is undef after login")
         unless $rpc_response->{landing_company_name} and $rpc_response->{stash}{landing_company_name};
     # rpc response is not yet populated into stash
     $c->stash(loginid              => $rpc_response->{loginid});

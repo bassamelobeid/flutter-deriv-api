@@ -80,28 +80,6 @@ sub _load_schema {
     return $schema_cache{$request_type}{$direction};
 }
 
-=head2 add_correlation_id
-
-Incrementing request id and generating correlation id based on following pattern:
-
-[server name]_[pid]:[connection id]_[request id]:[timestamp]
-
-Return undef
-
-=cut
-
-sub add_correlation_id {
-    my ($c, $req_storage) = @_;
-
-    my $request_number = $c->app->stat->{cumulative_connection_requests}++;
-
-    my $conn_number = $c->app->stat->{cumulative_client_connections};
-
-    $req_storage->{call_params}->{correlation_id} = sprintf("%s_%s:%s_%s:%s", $c->server_name, $$, $conn_number, $request_number, time);
-
-    return;
-}
-
 sub start_timing {
     my ($c, $req_storage) = @_;
 

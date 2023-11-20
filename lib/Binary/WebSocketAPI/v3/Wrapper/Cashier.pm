@@ -5,8 +5,10 @@ use warnings;
 use Log::Any qw($log);
 
 sub log_paymentagent_error {
-    my ($c, $response) = @_;
-    $log->info($response->{error}->{message})
+    my ($c, $response, $req_storage) = @_;
+
+    my $logger = $req_storage->{logger} // $log;
+    $logger->info($response->{error}->{message})
         if (exists $response->{error}->{message});
     return;
 }
