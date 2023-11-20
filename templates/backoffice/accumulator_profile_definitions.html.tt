@@ -1,3 +1,5 @@
+<p>This tool expects the Max Stake Amount in <strong>USD</strong> and performs conversion to the selected or available currencies.</p>
+
 <div class="scrollable">
     <table class="small border hover alternate full-width">
         <tr>
@@ -59,8 +61,8 @@
         </td>
     </tr>
     <tr>
-        <td>Amount: </td>
-        <td><input type="text" name="amount"></input></td>
+        <td>Amount (usd): </td>
+        <td><input type="number" name="amount"></input></td>
     </tr>
     <tr>
         <td><input type="button" class="btn btn--primary" onClick="SaveAccumulatorRiskProfile()" value="Update Risk Profile"></td>

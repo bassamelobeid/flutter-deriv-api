@@ -1,3 +1,4 @@
+<p>This tool expects the Max Stake Per Trade Amount in <strong>USD</strong>.</p>
 <form id='accumulator_user_specific_limits'>
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table>
@@ -18,7 +19,7 @@
         <td><input type="number" name="max_daily_pnl"></input></td>
     </tr>
     <tr>
-        <td>Maximum Stake Per Trade: </td>
+        <td>Maximum Stake Per Trade (usd): </td>
         <td><input type="number" name="max_stake_per_trade"></input></td>
     </tr>
     <tr>
@@ -60,7 +61,6 @@
     </tbody>
 </table>
 </form>
-
 
 <script>
 var accumulator_upload_url = "[% accumulator_upload_url | none %]";

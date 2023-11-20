@@ -23,7 +23,8 @@ use YAML::XS                          qw(LoadFile);
 use List::Util                        qw(none uniq);
 use Finance::Underlying;
 use Finance::Underlying::Market::Registry;
-use ExchangeRates::CurrencyConverter qw(in_usd);
+use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
+use Format::Util::Numbers            qw(financialrounding);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth::get_staffname();
@@ -199,6 +200,7 @@ if ($r->param('save_accumulator_user_specific_limits')) {
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeAccumulatorConfig", $limit);
         $output = {success => 1};
     } catch ($e) {
+        # it will capture $1 if dir location(at ./) is included in the error message otherwise simply return error ($e).
         my ($message) = $e =~ /(.*)\sat\s\// ? $1 : $e;
         $output = {error => "$message"};
     }
@@ -290,21 +292,26 @@ if ($r->param('save_accumulator_risk_profile')) {
     }
 
     try {
-        my $currency   = $r->param('currency');
-        my $risk_level = $r->param('risk_level');
-        my $amount     = $r->param('amount');
+        my $accumulator_hard_limits = get_accumulator_hard_limits();
+        my $currency                = $r->param('currency');
+        my $risk_level              = $r->param('risk_level');
+        my $amount                  = $r->param('amount');
 
-        die 'Amount must be a number' unless looks_like_number($amount);
-        die 'Amount can not be negative' if $amount < 0;
+        validate_max_stake_per_trade(
+            $amount,
+            $accumulator_hard_limits->{stake_per_trade}{min_value},
+            $accumulator_hard_limits->{stake_per_trade}{max_value});
 
         my $existing_risk_profile = $qc->get_max_stake_per_risk_profile($risk_level);
-
+        my $exchange_amount;
         if ($currency eq 'All') {
             foreach my $ccy (keys %{$existing_risk_profile}) {
-                $existing_risk_profile->{$ccy} = $amount;
+                $exchange_amount = convert_currency($amount, "USD", $ccy);
+                $existing_risk_profile->{$ccy} = financialrounding("amount", $ccy, $exchange_amount);
             }
         } else {
-            $existing_risk_profile->{$currency} = $amount;
+            $exchange_amount = convert_currency($amount, "USD", $currency);
+            $existing_risk_profile->{$currency} = financialrounding("amount", $currency, $exchange_amount);
         }
 
         my $redis_key = join('::', 'accumulator', 'max_stake_per_risk_profile', $risk_level);
@@ -315,7 +322,8 @@ if ($r->param('save_accumulator_risk_profile')) {
 
         $output = {success => 1};
     } catch ($e) {
-        my ($message) = $e =~ /(.*)\sat\s\//;
+        # it will capture $1 if dir location(at ./) is included in the error message otherwise simply return error ($e).
+        my ($message) = $e =~ /(.*)\sat\s\// ? $1 : $e;
         $output = {error => "$message"};
     }
 
@@ -449,9 +457,7 @@ validate max stake per trade
 
 =over 4
 
-=item - $max_stake_per_trade, scalar value for stake_per_trade update. 
-
-=item - $currency, client currency. 
+=item - $max_stake_per_trade, scalar value for stake_per_trade update.
 
 =item - $min_stake_per_trade_cap, minimum stake_per_trade cap.
 
