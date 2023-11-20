@@ -10,7 +10,7 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data build_mojo_test/;
-use Net::EmptyPort    qw(empty_port);
+use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 use Test::MockObject;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
