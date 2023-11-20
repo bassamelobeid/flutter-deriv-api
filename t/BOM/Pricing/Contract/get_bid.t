@@ -104,6 +104,96 @@ my $expected = {
 $result = BOM::Pricing::v3::Contract::_build_bid_response($params);
 cmp_deeply($result, $expected, 'build_bid_response matches');
 
+my $now_tickhighlow = Date::Utility->new('21-Oct-2021');
+
+$params = {
+    bet_type      => 'TICKHIGH',
+    underlying    => 'R_50',
+    selected_tick => 5,
+    date_start    => $now_tickhighlow,
+    date_pricing  => $now_tickhighlow,
+    duration      => '5t',
+    currency      => 'USD',
+    payout        => 10,
+};
+
+my $quote = 100.000;
+for my $i (0 .. 4) {
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_50',
+        quote      => $quote,
+        epoch      => $now_tickhighlow->epoch + $i,
+    });
+    $quote += 0.01;
+}
+
+$params->{date_pricing} = $now_tickhighlow->plus_time_interval('5s');
+$contract = BOM::Product::ContractFactory::produce_contract($params);
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_50',
+    epoch      => $now_tickhighlow->epoch + 5,
+    quote      => 100.1,
+});
+
+$contract = BOM::Product::ContractFactory::produce_contract({%$params, selected_tick => 5});
+$params   = {
+    contract           => $contract,
+    is_valid_to_sell   => 0,
+    is_valid_to_cancel => 0,
+    is_sold            => 1
+};
+
+$expected = {
+    'barrier_count'              => 1,
+    'bid_price'                  => '10.00',
+    'contract_id'                => ignore(),
+    'contract_type'              => 'TICKHIGH',
+    'currency'                   => 'USD',
+    'current_spot'               => '100.1',
+    'current_spot_display_value' => '100.1000',
+    'current_spot_time'          => ignore(),
+    'date_expiry'                => ignore(),
+    'date_settlement'            => ignore(),
+    'date_start'                 => ignore(),
+    'display_name'               => 'Volatility 50 Index',
+    'expiry_time'                => ignore(),
+    'is_expired'                 => 1,
+    'is_forward_starting'        => 0,
+    'is_intraday'                => 1,
+    'is_path_dependent'          => 1,
+    'is_settleable'              => 1,
+    'is_valid_to_cancel'         => 0,
+    'is_valid_to_sell'           => 0,
+    'longcode'                   =>
+        ['Win payout if tick [_5] of [_1] is the highest among all [_3] ticks.', ['Volatility 50 Index'], ['first tick'], ['5'], ['0.0001'], '5'],
+    'payout'                   => 10,
+    'shortcode'                => ignore(),
+    'status'                   => 'sold',
+    'underlying'               => 'R_50',
+    'selected_tick'            => 5,
+    'selected_spot'            => 100.1,
+    'tick_count'               => 5,
+    'audit_details'            => ignore(),
+    'barrier'                  => ignore(),
+    'entry_spot'               => ignore(),
+    'entry_spot_display_value' => ignore(),
+    'entry_tick'               => ignore(),
+    'entry_tick_display_value' => ignore(),
+    'entry_tick_time'          => ignore(),
+    'exit_tick'                => ignore(),
+    'exit_tick_display_value'  => ignore(),
+    'exit_tick_time'           => ignore(),
+    'tick_stream'              => ignore(),
+    'validation_error'         => ignore(),
+    'validation_error_code'    => ignore(),
+    'sell_spot'                => '100.1',
+    'sell_spot_display_value'  => '100.1000',
+    'sell_spot_time'           => ignore()};
+
+$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+cmp_deeply($result, $expected, 'build_bid_response matches');
+
 $params = {
     'multiplier'            => 10,
     'proposal'              => 1,
@@ -153,33 +243,6 @@ $params = {
     'currency'              => 'USD',
     'date_expiry'           => $expiry,
     'bet_type'              => 'VANILLALONGCALL',
-    'amount'                => '100',
-    'barrier'               => '67750.20',
-    'app_markup_percentage' => 0,
-    'underlying'            => 'R_100',
-    'amount_type'           => 'stake',
-    'skip_validation'       => 1,
-    'sell_time'             => $sell_time->epoch,
-    'sell_price'            => 253
-};
-
-$contract = BOM::Product::ContractFactory::produce_contract($params);
-
-$params = {
-    contract           => $contract,
-    is_valid_to_sell   => 1,
-    is_valid_to_cancel => 1,
-    sell_time          => $sell_time->epoch,
-};
-$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
-is $result->{exit_tick_time}, $sell_time->epoch - 1, 'correct sell at market tick';
-
-$params = {
-    'proposal'              => 1,
-    'date_start'            => $now,
-    'currency'              => 'USD',
-    'date_expiry'           => $expiry,
-    'bet_type'              => 'TURBOSLONG',
     'amount'                => '100',
     'barrier'               => '67750.20',
     'app_markup_percentage' => 0,

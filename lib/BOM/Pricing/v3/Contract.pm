@@ -1036,6 +1036,15 @@ sub _build_bid_response {
     if ($contract->tick_expiry) {
 
         $response->{tick_stream} = $contract->tick_stream;
+
+        if ($contract->category->code eq 'highlowticks' and $contract->selected_tick) {
+            my $selected_tick = $contract->selected_tick;
+            $response->{selected_tick} = 0 + $selected_tick;
+
+            if ($contract->supplied_barrier) {
+                $response->{selected_spot} = 0 + $contract->supplied_barrier;
+            }
+        }
     }
 
     $response->{$_ . '_display_value'} = $contract->underlying->pipsized_value($response->{$_}) for (grep { defined $response->{$_} } @spot_list);
