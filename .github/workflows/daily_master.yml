@@ -17,3 +17,15 @@ jobs:
     with:
       env_vars: |
         OAUTH_CONFIG=/home/git/regentmarkets/bom-oauth/oauth.conf.example
+  publish_test_results:
+    needs: [ syntax_unit , core  ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Upload results to TestSpace
+        uses: regentmarkets/github-actions/testspace-publish@master
+        with: 
+          token: ${{ secrets.TESTSPACE_TOKEN }}
+          artifact: test-results
+          file_path:  ./**/*.xml
