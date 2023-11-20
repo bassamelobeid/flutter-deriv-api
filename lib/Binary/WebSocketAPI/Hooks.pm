@@ -11,6 +11,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_inc);
 use Future;
 use JSON::MaybeXS;
 use JSON::Validator;
+use Binary::WebSocketAPI::FastSchemaValidator;
 use Log::Any qw($log);
 use Mojo::IOLoop;
 use Net::Address::IP::Local;
@@ -41,7 +42,7 @@ This is required as they are not stashed.
 
 =back
 
-Returns version 4 schema
+Returns hash containing version 4 schema and a FastSchemaValidator schema if supported for this schema
 
 =cut
 
@@ -75,7 +76,13 @@ sub _load_schema {
             return {};
         }
         $schema = decode_json(path($schema_path)->slurp);
-        $schema_cache{$request_type}{$direction} = $schema;
+        my ($fast_schema, undef) =
+            Binary::WebSocketAPI::FastSchemaValidator::prepare_fast_validate($schema, {allow_additional_properties => 1});
+        $schema_cache{$request_type}{$direction} = {
+            schema_source => $schema_path,
+            json_schema   => $schema,
+            fast_schema   => $fast_schema
+        };
     }
     return $schema_cache{$request_type}{$direction};
 }
@@ -373,7 +380,13 @@ sub before_forward {
         sub {
             my $send_schema = $req_storage->{schema_send};
 
-            my $error = _validate_schema_error($send_schema, $args);
+            my $error = _validate_schema_error({
+                    json_schema   => $send_schema,
+                    fast_schema   => undef,
+                    schema_source => 'send_schema'
+                },
+                $args
+            );
             if ($error) {
                 my $message = $c->l('Input validation failed: ') . join(', ', (keys %{$error->{details}}, @{$error->{general}}));
                 return Future->fail($c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $error->{details}));
@@ -787,7 +800,7 @@ Takes the following arguments as parameters
 
 =over 4
 
-=item  C<$schema> HashRef version 4 of the schema
+=item  C<$schema> hash containing version 4 schema and a FastSchemaValidator schema if available
 
 =item  C<$args> HashRef Data from API call
 
@@ -804,28 +817,48 @@ Returns an HashRef on error or undef if no error
 
 sub _validate_schema_error {
     my ($schema, $args) = @_;
-    my $validator = JSON::Validator->new()->schema($schema);
-    # This statement will coerce items like "1" into a integer this allows for better compatibility with the existing schema
-    $validator->schema->coerce('booleans,numbers,strings');
+    my $ret;
+    my $start_time = [Time::HiRes::gettimeofday];
+    my $tags       = ["schema:" . $schema->{schema_source}];
 
-    my @errors = $validator->validate($args);
-    return undef unless scalar(@errors);    #passed Version 4 Check
+    if (defined($schema->{fast_schema})) {
+        push @$tags, "mechanism:FastValidator";
+        my $error_str = Binary::WebSocketAPI::FastSchemaValidator::fast_validate_and_coerce($schema->{fast_schema}, $args);
+        return undef unless defined($error_str);    #passed Version 4 Check
+        $ret = {
+            details => {},
+            general => [$error_str]};
+    } else {
+        push @$tags, "mechanism:JSON_Validator";
+        my $validator = JSON::Validator->new()->schema($schema->{json_schema});
+        # This statement will coerce items like "1" into a integer this allows for better compatibility with the existing schema
+        $validator->schema->coerce('booleans,numbers,strings');
+        my @errors = $validator->validate($args);
+        return undef unless scalar(@errors);        #passed Version 4 Check
 
-    my (%details, @general);
+        my (%details, @general);
 
-    foreach my $error (@errors) {
-        if ($error->path =~ /\/(.+)$/) {
-            $details{$1} = $error->message;
-        } else {
-            push @general, $error->message;
+        foreach my $error (@errors) {
+            if ($error->path =~ /\/(.+)$/) {
+                $details{$1} = $error->message;
+            } else {
+                push @general, $error->message;
+            }
         }
+
+        $ret = {
+            details => \%details,
+            general => \@general
+        };
     }
 
-    return {
-        details => \%details,
-        general => \@general
-    };
+    DataDog::DogStatsd::Helper::stats_timing(
+        'bom_websocket_api.v_3.validation.timing',
+        1000 * Time::HiRes::tv_interval($start_time),
+        {tags => $tags},
+    );
 
+    return $ret;
 }
 
 sub _handle_error {
@@ -865,7 +898,7 @@ sub _sanitize_echo {
     my ($params, $msg_type) = @_;
     return unless $msg_type;
     my $schema = _load_schema($msg_type, 'send');
-    filter_sensitive_fields($schema, $params);
+    filter_sensitive_fields($schema->{json_schema}, $params);
 
     return $params;
 }

@@ -13,6 +13,7 @@ my $allowed_naked_packages = {
     'Binary::WebSocketAPI::Hooks'                                          => 25,
     'Binary::WebSocketAPI::BalanceConnections'                             => 2,
     'Binary::WebSocketAPI::Actions'                                        => 1,
+    'Binary::WebSocketAPI::FastSchemaValidator'                            => 9,
     'Binary::WebSocketAPI::Plugins::Introspection'                         => 4,
     'Binary::WebSocketAPI::Plugins::Longcode'                              => 1,
     'Binary::WebSocketAPI::Plugins::Helpers'                               => 1,
