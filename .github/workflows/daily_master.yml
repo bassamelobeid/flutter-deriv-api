@@ -1,5 +1,7 @@
 name: Daily master test
 run-name: Daily test on master branch
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
   schedule:
     - cron: '53 20 * * *'
@@ -29,5 +31,26 @@ jobs:
           repository: ${{ github.repository }}
       - name: Core tests
         run: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
           sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db
           make test
+      - 
+        name : Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
+  publish_test_results:
+    needs: [ syntax_unit , core  ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Upload results to TestSpace
+        uses: regentmarkets/github-actions/testspace-publish@master
+        with: 
+          token: ${{ secrets.TESTSPACE_TOKEN }}
+          artifact: test-results
+          file_path:  ./**/*.xml
