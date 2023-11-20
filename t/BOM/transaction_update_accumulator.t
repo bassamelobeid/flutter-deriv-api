@@ -65,6 +65,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 initialize_realtime_ticks_db();
 
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [100, $now->epoch + 1, 'R_100']);
+
 sub db {
     return BOM::Database::ClientDB->new({
             broker_code => 'VRTC',
@@ -170,7 +172,6 @@ lives_ok {
     $cl = create_client;
 
     #make sure client can trade
-    ok(!BOM::Transaction::Validation->new({clients => [$cl]})->check_trade_status($cl),      "client can trade: check_trade_status");
     ok(!BOM::Transaction::Validation->new({clients => [$cl]})->_validate_client_status($cl), "client can trade: _validate_client_status");
 
     top_up $cl, 'USD', 5000;

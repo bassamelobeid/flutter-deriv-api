@@ -157,7 +157,6 @@ lives_ok {
     $cl = create_client('CR');
 
     #make sure client can trade
-    ok(!BOM::Transaction::Validation->new({clients => [{client => $cl}]})->check_trade_status($cl),      "client can trade: check_trade_status");
     ok(!BOM::Transaction::Validation->new({clients => [{client => $cl}]})->_validate_client_status($cl), "client can trade: _validate_client_status");
 
     top_up $cl, 'USD', 5000;

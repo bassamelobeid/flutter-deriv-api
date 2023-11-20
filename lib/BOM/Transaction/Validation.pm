@@ -857,33 +857,37 @@ sub check_tax_information {
     return undef;
 }
 
-=head2 check_trade_status
+=head2 check_client_can_trade
 
-Check if client is allowed to trade.
-
-Here we have any uncommon business logic check.
-
-Common checks (unwelcome & disabled) are done _validate_client_status.
-
-Don't allow to trade for:
-- MLT, MX and MF without confirmed age after the first deposit
-- MF without fully_authentication
-- MF without professional status
+Checks if client can trade:
+- Client with unwelcome status cannot buy but can sell.
+- Client with disabled, no_trading and no_withdrawal_or_trading status cannot buy & sell.
 
 =cut
 
-sub check_trade_status {
-    my ($self, $client) = (shift, shift);
+sub check_client_can_trade {
+    my ($self, $client) = @_;
 
-    return undef if $client->is_virtual;
+    my $status = $client->status;
 
-    my $validation_result = check_authentication_required($self, $client);
-    return $validation_result if $validation_result;
-
-    $validation_result = check_client_professional($self, $client);
-    return $validation_result if $validation_result;
-
-    return undef;
+    # for unwelcome clients, we want to allow them to sell contracts.
+    if (   ($self->transaction->action_type eq 'buy' and $status->unwelcome)
+        or $status->disabled
+        or $status->no_trading
+        or $status->no_withdrawal_or_trading)
+    {
+        my $type =
+              $status->unwelcome  ? 'ClientUnwelcome'
+            : $status->disabled   ? 'ClientDisabled'
+            : $status->no_trading ? 'ClientNoTrading'
+            :                       'ClientNoWithdrawalNoTrading';
+        return Error::Base->cuss(
+            -quiet             => 1,
+            -type              => $type,
+            -mesg              => 'your account is not authorised for any further contract purchases.',
+            -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
+        );
+    }
 }
 
 =head2 check_authentication_required

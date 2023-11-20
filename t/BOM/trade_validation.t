@@ -428,7 +428,10 @@ subtest 'Purchase Sell Contract' => sub {
 
     $error = $bpt->buy;
     like($error, qr/PleaseAuthenticate/, 'Account authentication validation failed');
-    $mock_validation->mock(check_trade_status => sub { note "mocked Transaction::Validation->check_trade_status returning nothing"; undef });
+    $mock_validation->mock(
+        check_authentication_required => sub { note "mocked Transaction::Validation->check_authentication_required returning nothing"; undef });
+    $mock_validation->mock(
+        check_client_professional => sub { note "mocked Transaction::Validation->check_client_professional returning nothing"; undef });
 
     $error = $bpt->buy;
     ok $error, 'error thrown when trying to buy contract with malta';

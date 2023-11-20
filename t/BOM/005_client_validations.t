@@ -12,6 +12,8 @@ use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Product::ContractFactory              qw(produce_contract);
 use BOM::Config::Runtime;
 
 my $rose_client = BOM::User::Client->new({loginid => 'CR2002'});
@@ -137,12 +139,39 @@ my %deposit = (
 );
 
 my $client_new = $user->create_client(%$client_details);
-$validation_obj = BOM::Transaction::Validation->new({clients => [$client_new]});
 $client_new->set_default_account('USD');
 
-is($validation_obj->check_trade_status($client_new), undef, "MX client without age_verified allowed to trade before 1st deposit");
 $client_new->payment_free_gift(%deposit);
-ok(ref $validation_obj->check_trade_status($client_new) eq 'Error::Base', "MX client without age_verified cannot trade after 1st deposit");
+my $now = time;
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now, 'R_100'], [100, $now + 1, 'R_100']);
+my $contract = produce_contract({
+    underlying => 'R_100',
+    bet_type   => 'CALL',
+    currency   => 'USD',
+    payout     => 1000,
+    duration   => '15m',
+    barrier    => 'S0P',
+    date_start => $now,
+});
+
+my $txn = BOM::Transaction->new({
+    client        => $client_new,
+    contract      => $contract,
+    price         => 511.47,
+    payout        => $contract->payout,
+    amount_type   => 'payout',
+    source        => 19,
+    purchase_date => $contract->date_start,
+});
+my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+$mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
+$mocked_validator->mock('validate_tnc',                       sub { });
+my $mock_contract = Test::MockModule->new('BOM::Product::Contract::Call');
+$mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+my $error = $txn->buy;
+
+is $error->{'-type'}, 'PleaseAuthenticate', 'error code PleaseAuthenticate';
+is $error->{'-mesg'}, 'Please authenticate your account to continue';
 
 $email = 'test1' . rand(999) . '@binary.com';
 $user  = BOM::User->create(

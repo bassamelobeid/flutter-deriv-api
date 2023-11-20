@@ -5,7 +5,7 @@ use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::Warnings;
-use Test::More tests => 8;
+use Test::More tests => 7;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
@@ -126,7 +126,6 @@ lives_ok {
     $cl = create_client;
 
     #make sure client can trade
-    ok(!BOM::Transaction::Validation->new({clients => [$cl]})->check_trade_status($cl),      "client can trade: check_trade_status");
     ok(!BOM::Transaction::Validation->new({clients => [$cl]})->_validate_client_status($cl), "client can trade: _validate_client_status");
 
     top_up $cl, 'USD', 5000;

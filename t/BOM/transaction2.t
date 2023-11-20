@@ -126,10 +126,18 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 initialize_realtime_ticks_db();
 
-my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch,
-    underlying => 'frxUSDJPY',
-});
+my @ticks = (
+    [100, $now->epoch,     'R_100'],
+    [100, $now->epoch + 1, 'R_100'],
+    [100, $now->epoch,     'WLDUSD'],
+    [100, $now->epoch + 1, 'WLDUSD'],
+    [100, $now->epoch,     'frxEURUSD'],
+    [100, $now->epoch + 1, 'frxEURUSD'],
+    [100, $now->epoch,     'frxUSDJPY'],
+    [100, $now->epoch + 1, 'frxUSDJPY'],
+    [100, $now->epoch,     'OTC_GDAXI'],
+    [100, $now->epoch + 1, 'OTC_GDAXI']);
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@ticks);
 
 my $underlying           = create_underlying('frxUSDJPY');
 my $underlying_OTC_GDAXI = create_underlying('OTC_GDAXI');
@@ -166,15 +174,14 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
         for my $i (@$keys) { BOM::Config::Redis::redis_exchangerates()->del($i); }
 
         my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 100,
-            duration     => '5m',
-            tick_expiry  => 1,
-            tick_count   => 5,
-            current_tick => $tick,
-            barrier      => 'S0P',
+            underlying  => $underlying,
+            bet_type    => 'CALL',
+            currency    => 'USD',
+            payout      => 100,
+            duration    => '5m',
+            tick_expiry => 1,
+            tick_count  => 5,
+            barrier     => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -296,14 +303,13 @@ subtest 'asian_daily_turnover_limit', sub {
         for my $i (@$keys) { BOM::Config::Redis::redis_exchangerates()->del($i); }
 
         my $contract = produce_contract({
-            underlying   => 'R_100',
-            bet_type     => 'ASIANU',
-            currency     => 'USD',
-            payout       => 100,
-            duration     => '5m',
-            tick_expiry  => 1,
-            tick_count   => 5,
-            current_tick => $tick,
+            underlying  => 'R_100',
+            bet_type    => 'ASIANU',
+            currency    => 'USD',
+            payout      => 100,
+            duration    => '5m',
+            tick_expiry => 1,
+            tick_count  => 5,
         });
 
         my $txn = BOM::Transaction->new({
@@ -426,14 +432,13 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         for my $i (@$keys) { BOM::Config::Redis::redis_exchangerates()->del($i); }
 
         my $contract = produce_contract({
-            underlying   => $underlying_OTC_GDAXI,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 100,
-            date_start   => $now->epoch,
-            date_expiry  => $now->epoch + 15 * 60,
-            current_tick => $tick,
-            barrier      => 'S0P',
+            underlying  => $underlying_OTC_GDAXI,
+            bet_type    => 'CALL',
+            currency    => 'USD',
+            payout      => 100,
+            date_start  => $now->epoch,
+            date_expiry => $now->epoch + 15 * 60,
+            barrier     => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -528,14 +533,13 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
         my $daily_contract = produce_contract({
-            underlying   => $underlying_OTC_GDAXI,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 100,
-            date_start   => $now->epoch,
-            duration     => '3d',
-            current_tick => $tick,
-            barrier      => 'S0P',
+            underlying => $underlying_OTC_GDAXI,
+            bet_type   => 'CALL',
+            currency   => 'USD',
+            payout     => 100,
+            date_start => $now->epoch,
+            duration   => '3d',
+            barrier    => 'S0P',
         });
         $txn = BOM::Transaction->new({
             client        => $cl,
@@ -605,13 +609,12 @@ subtest 'smartfx_turnover_limit', sub {
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
         my $contract = produce_contract({
-            underlying   => $underlying_WLDUSD,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 100,
-            duration     => '5m',
-            current_tick => $tick,
-            barrier      => 'S0P',
+            underlying => $underlying_WLDUSD,
+            bet_type   => 'CALL',
+            currency   => 'USD',
+            payout     => 100,
+            duration   => '5m',
+            barrier    => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -727,15 +730,14 @@ subtest 'custom client limit' => sub {
         for my $i (@$keys) { BOM::Config::Redis::redis_exchangerates()->del($i); }
 
         my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 100,
-            duration     => '5m',
-            tick_expiry  => 1,
-            tick_count   => 5,
-            current_tick => $tick,
-            barrier      => 'S0P',
+            underlying  => $underlying,
+            bet_type    => 'CALL',
+            currency    => 'USD',
+            payout      => 100,
+            duration    => '5m',
+            tick_expiry => 1,
+            tick_count  => 5,
+            barrier     => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -822,15 +824,14 @@ subtest 'non atm turnover checks' => sub {
         for my $i (@$keys) { BOM::Config::Redis::redis_exchangerates()->del($i); }
 
         my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 100,
-            duration     => '5t',
-            tick_expiry  => 1,
-            tick_count   => 5,
-            current_tick => $tick,
-            barrier      => 'S10P',
+            underlying  => $underlying,
+            bet_type    => 'CALL',
+            currency    => 'USD',
+            payout      => 100,
+            duration    => '5t',
+            tick_expiry => 1,
+            tick_count  => 5,
+            barrier     => 'S10P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -872,15 +873,14 @@ subtest 'non atm turnover checks' => sub {
             is $txn->buy, undef, 'bought 2nd contract';
 
             my $atm_contract = produce_contract({
-                underlying   => $underlying,
-                bet_type     => 'CALL',
-                currency     => 'USD',
-                payout       => 100,
-                duration     => '5t',
-                tick_expiry  => 1,
-                tick_count   => 5,
-                current_tick => $tick,
-                barrier      => 'S0P',
+                underlying  => $underlying,
+                bet_type    => 'CALL',
+                currency    => 'USD',
+                payout      => 100,
+                duration    => '5t',
+                tick_expiry => 1,
+                tick_count  => 5,
+                barrier     => 'S0P',
             });
             $txn = BOM::Transaction->new({
                 client        => $cl,

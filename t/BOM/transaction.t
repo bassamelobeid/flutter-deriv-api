@@ -184,7 +184,6 @@ lives_ok {
     $cl = create_client;
 
     #make sure client can trade
-    ok(!BOM::Transaction::Validation->new({clients => [{client => $cl}]})->check_trade_status($cl),      "client can trade: check_trade_status");
     ok(!BOM::Transaction::Validation->new({clients => [{client => $cl}]})->_validate_client_status($cl), "client can trade: _validate_client_status");
 
     top_up $cl, 'USD', 5000;
@@ -2307,8 +2306,6 @@ lives_ok {
     });
 
     #make sure client can trade
-    ok(!BOM::Transaction::Validation->new({clients => [{client => $china_account}]})->check_trade_status($china_account),
-        "China client can trade: check_trade_status");
     ok(!BOM::Transaction::Validation->new({clients => [{client => $china_account}]})->_validate_client_status($china_account),
         "China client can trade: _validate_client_status");
 
@@ -2429,8 +2426,6 @@ subtest 'buy binary option for Australian' => sub {
     });
 
     #make sure client can trade
-    ok(!BOM::Transaction::Validation->new({clients => [{client => $au_account}]})->check_trade_status($au_account),
-        "Australia client can trade: check_trade_status");
     ok(!BOM::Transaction::Validation->new({clients => [{client => $au_account}]})->_validate_client_status($au_account),
         "Australia client can trade: _validate_client_status");
 
