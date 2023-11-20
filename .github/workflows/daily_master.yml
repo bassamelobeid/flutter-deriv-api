@@ -1,5 +1,5 @@
 name: Daily master test
-run-name: Daily test on master branch
+run-name: Daily test on master branch 
 on:
   schedule:
     - cron: '4 20 * * *'
@@ -10,3 +10,15 @@ jobs:
   core:
     uses: regentmarkets/github-actions/.github/workflows/core.yml@master
     secrets: inherit
+  publish_test_results:
+    needs: [ syntax , core ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Upload results to TestSpace
+        uses: regentmarkets/github-actions/testspace-publish@master
+        with: 
+          token: ${{ secrets.TESTSPACE_TOKEN }}
+          artifact: test-results
+          file_path: ./**/*.xml
