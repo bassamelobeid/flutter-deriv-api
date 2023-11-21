@@ -335,6 +335,7 @@ $mocked->mock('compliance_checks',             sub { return undef });
 $mocked->mock('check_client_professional',     sub { return undef });
 $mocked->mock('check_authentication_required', sub { return undef });
 $mocked->mock('_validate_client_status',       sub { return undef });
+$mocked->mock('check_client_can_trade',        sub { return undef });
 
 top_up $mf, 'USD', 1000;
 my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf->loginid);
