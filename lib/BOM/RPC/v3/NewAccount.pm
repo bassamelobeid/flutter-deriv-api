@@ -10,6 +10,7 @@ use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use Log::Any qw($log);
 use URI;
+use Text::Trim;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
@@ -122,6 +123,16 @@ sub _get_professional_details_clients {
 rpc new_account_real => sub {
     my $params = shift;
     my ($client, $args) = @{$params}{qw/client args/};
+
+    # Trimming whitespaces from the values of the immutable fields to avoid whitespace entry
+    my @immutable_fields = BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*;
+    my %immutable_fields = map { $_ => 1 } @immutable_fields;
+
+    for my $field (keys %$args) {
+        if ($immutable_fields{$field}) {
+            $args->{$field} = trim($args->{$field}) if defined $args->{$field};
+        }
+    }
 
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;

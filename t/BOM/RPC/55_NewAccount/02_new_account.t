@@ -79,8 +79,8 @@ $client_details = {
     last_name              => 'Vostrov' . rand(999),
     first_name             => 'Evgeniy' . rand(999),
     date_of_birth          => '1987-09-04',
-    address_line_1         => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
-    address_line_2         => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
+    address_line_1         => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01',
+    address_line_2         => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01',
     address_city           => 'Samara',
     address_postcode       => '112233',
     phone                  => '+79272075932',
@@ -574,6 +574,48 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error;
         is $rpc_ct->result->{refresh_token}, undef, 'No refresh token generated for the third account';
         ok $rpc_ct->result->{oauth_token} =~ /^a1-.*/, 'OAuth token generated for the third account';
+    };
+
+    subtest 'Whitespaces should be trimmed' => sub {
+        $email = 'new_email' . rand(999) . '@binary.com';
+
+        $params->{args}->{email} = $email;
+
+        $params->{args}->{residence}       = 'id';
+        $params->{args}->{client_password} = 'verylongDDD1!';
+        delete $params->{token};
+
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
+        $rpc_ct->call_ok('new_account_virtual', $params)
+            ->has_no_system_error->has_no_error('If verification code is ok - account created successfully');
+
+        $params->{token} = $rpc_ct->result->{oauth_token};
+
+        $params->{args}->{currency} = 'USD';
+
+        my @fields_should_be_trimmed = grep {
+            my $element = $_;
+            not grep { $element eq $_ } qw(phone address_state date_of_birth)
+        } BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+        foreach my $field (@fields_should_be_trimmed) {
+            $params->{args}->{$field} = "Test with trailing whitespace ";
+        }
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create fiat currency account')
+            ->result_value_is(sub { shift->{currency} }, 'USD', 'fiat currency account currency is USD');
+
+        my $cl_usd = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+
+        foreach my $field (@fields_should_be_trimmed) {
+
+            is $cl_usd->{$field}, "Test with trailing whitespace", "Whitespaces are trimmed";
+        }
+
     };
 
     subtest 'Create multiple accounts in CR' => sub {
