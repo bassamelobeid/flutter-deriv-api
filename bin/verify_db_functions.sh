@@ -24,10 +24,13 @@ cd /dev/shm/"$prg"
 
 trap "rm -rf '/dev/shm/$prg/$repo'" EXIT
 
-tag="$(git ls-remote git@github.com:regentmarkets/"$repo".git refs/tags/V* |
-       sed -E '/\^\{\}$/d; s/^.*refs\/tags\///' |
-       LC_ALL=C sort -k 1.2 -g |
-       tail -1)"
+tag="$({
+        T="$(mktemp -d --tmpdir)" &&
+        trap "rm -rf '$T'" EXIT &&
+        R="git@github.com:regentmarkets/environment-manifests" &&
+        git clone -q --depth 1 -b production "$R" "$T"
+       } >/dev/null &&
+       cat "$T"/tag_gray)"
 
 echo "${html:+<p>}Checking out $tag${html:+</p>}"
 git clone --depth 1 --branch "$tag" git@github.com:regentmarkets/"$repo".git 2>/dev/null
