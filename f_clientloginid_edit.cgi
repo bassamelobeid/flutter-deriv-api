@@ -997,6 +997,24 @@ my $skip_loop_all_clients =
 # SAVE DETAILS
 # TODO:  Once we switch to userdb, we will not need to loop through all clients
 if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
+
+    # Trimming immutable text fields to avoid whitespaces which causes problems while creating a real account
+    # If there are white spaces added from BO, then while creating a real account, the request has trimmed values,
+    # which is considered as non equal for immutable fields.
+    my @text_immutable_fields = qw/first_name
+        last_name
+        secret_answer
+        secret_question
+        tax_identification_number
+        city
+        address_1
+        address_2
+        address_postcode
+        phone
+        /;
+
+    map { $input{$_} = trim($input{$_}) if defined $input{$_} } @text_immutable_fields;
+
     my $poa_updated;
     my $error;
     # algorithm provide different encrypted string from the same text based on some randomness
