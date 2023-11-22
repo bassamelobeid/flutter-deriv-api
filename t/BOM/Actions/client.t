@@ -7132,6 +7132,40 @@ subtest 'verify email closed account opening' => sub {
     is scalar @track_args, 7, 'Track event is triggered';
 };
 
+subtest 'verify email closed account opening transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+    undef @transactional_args;
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name       => 'Backend',
+            verification_url => 'https://Binary.url',
+            email            => 'Backend@binary.com',
+            code             => 'CODE',
+            language         => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_account_opening};
+    my $result  = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+    ok @transactional_args, 'CIO transactional is invoked';
+
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+};
+
 subtest 'self tagging affiliates' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -7240,6 +7274,44 @@ subtest 'request edd document upload' => sub {
     is scalar @track_args, 7, 'Track event is triggered';
 };
 
+subtest 'request edd document upload transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+    undef @transactional_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name    => $test_client->first_name,
+            email         => $test_client->email,
+            login_url     => 'https://oauth.deriv.com/oauth2/authorize?app_id=16929',
+            expiry_date   => '',
+            live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_edd_document_upload};
+    my $result  = $handler->($args)->get;
+    ok $handler->($args)->get;
+    my ($customer, %args) = @track_args;
+    is $args{event}, 'track_request_edd_document_upload', "event name";
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+    ok @transactional_args, 'CIO transactional is invoked';
+
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+};
+
 subtest 'account status set event' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -7247,7 +7319,7 @@ subtest 'account status set event' => sub {
     });
 
     ok !$client->status->disabled, 'No disabled status set';
-    delete $client->{status};    #clear status cache
+    delete $client->{status};                                                           #clear status cache
 
     my $args = {
         loginid  => $client->loginid,

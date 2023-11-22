@@ -255,7 +255,12 @@ my @TRANSACTIONAL_EVENTS = qw(
     account_opening_existing
     account_verification_for_pending_payout
     verify_email_closed_account_other
-
+    poa_verification_warning
+    account_with_false_info_locked
+    shared_payment_method_email_notification
+    request_edd_document_upload
+    verify_email_closed_account_account_opening
+    poa_verification_expired
     p2p_order_created
     crypto_deposit_confirmed_email
     crypto_deposit_pending_email
