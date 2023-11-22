@@ -2138,6 +2138,11 @@ system:
               isa: Num
               default: 10000
               global: 1
+            derivez_limit:
+              description: "The maximum binary user ids that the script can process for derivez accounts"
+              isa: Num
+              default: 5000
+              global: 1
     dxtrade:
       description: "Configuration for DXTrade"
       isa: section
