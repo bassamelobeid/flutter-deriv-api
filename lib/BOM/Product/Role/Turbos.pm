@@ -601,14 +601,22 @@ override _build_entry_tick => sub {
     return $self->_tick_accessor->tick_at($self->date_start->epoch, {allow_inconsistent => 1});
 };
 
+override _build_ticks_for_tick_expiry => sub {
+    my $self       = shift;
+    my $entry_tick = $self->entry_tick;
+    return [] unless ($self->tick_expiry and $entry_tick);
+    return $self->_tick_accessor->ticks_in_between_start_limit({
+        start_time => $entry_tick->epoch,
+        limit      => $self->ticks_to_expiry,
+    });
+};
+
 override _build_tick_stream => sub {
     my $self = shift;
 
     return unless $self->tick_expiry;
 
     my @all_ticks = @{$self->ticks_for_tick_expiry};
-    # for turbos we add the entry tick as the first element into the array
-    unshift @all_ticks, $self->entry_tick;
 
     # for path dependent contract, there should be no more tick after close tick
     # because the contract technically has expired
@@ -687,14 +695,14 @@ sub _hit_take_profit {
 
 =head2 ticks_to_expiry
 
-The number of ticks required from contract start time to expiry.
+The number of ticks required from contract start to expiry. Includes entry tick.
 
 =cut
 
 sub ticks_to_expiry {
     my $self = shift;
 
-    return $self->tick_count;
+    return $self->tick_count + 1;
 }
 
 =head2 _build_payout

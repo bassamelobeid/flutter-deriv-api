@@ -15,7 +15,7 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ github.repository }}
-  produt_contract:
+  product_contract:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
@@ -281,7 +281,7 @@ jobs:
         if: always()
   # Temporarily comment out dependent job
   # dependent:
-  #   needs: [Pricing-Engine-Tests,benchmark_merlin_ovra,produt_contract,validation,memory_test,pricing,product_others,benchmark_SD]
+  #   needs: [Pricing-Engine-Tests,benchmark_merlin_ovra,product_contract,validation,memory_test,pricing,product_others,benchmark_SD]
   #   if:  ${{ github.event_name != 'push' }}
   #   uses: ./.github/workflows/dependent.yml
   #   secrets: inherit

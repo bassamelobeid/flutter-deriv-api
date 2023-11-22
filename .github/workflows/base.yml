@@ -22,7 +22,7 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ inputs.repository }}
-  produt_contract:
+  product_contract:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:

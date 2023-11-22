@@ -51,12 +51,40 @@ subtest 'tick duration contract close tick undef' => sub {
     $args->{duration}     = '5t';
     $args->{date_pricing} = $now->plus_time_interval('5s');
     my $c = produce_contract($args);
+    ok defined($c->entry_tick), 'entry tick defined';
+    is $c->entry_tick->epoch, $now->epoch, 'entry tick epoch';
     ok !$c->pricing_new, 'contract is new';
     ok $c->is_expired,   'expired';
-    is $c->bid_price, '428.09', 'win payoff';
+    is $c->bid_price,        '428.09',        'win payoff';
+    is $c->exit_tick->epoch, $now->epoch + 5, 'exit tick epoch';
 
     # checking close tick return undef and not return tick from sell time
     is $c->close_tick, undef, 'close tick should be undefined';
+};
+
+subtest 'tick duration contract start tick before start date' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [10111.321, $now->epoch - 1, $symbol],
+        [10138.979, $now->epoch,     $symbol],
+        [10239.829, $now->epoch + 1, $symbol],
+        [10299.666, $now->epoch + 2, $symbol],
+        [10308.777, $now->epoch + 3, $symbol],
+        [10333.888, $now->epoch + 4, $symbol],
+        [10388.321, $now->epoch + 5, $symbol],
+    );
+
+    my $args1 = {%$args};
+    $args1->{underlying}   = $symbol;
+    $args1->{duration}     = '5t';
+    $args1->{date_pricing} = $now->plus_time_interval('5s');
+    $args1->{entry_epoch}  = $now->epoch - 1;
+    my $c = produce_contract($args1);
+    ok defined($c->entry_tick), 'entry tick defined';
+    is $c->entry_tick->epoch, $now->epoch - 1, 'entry tick epoch';
+    ok !$c->pricing_new, 'contract is new';
+    ok $c->is_expired,   'expired';
+    is $c->bid_price,        '392.56',        'win payoff';
+    is $c->exit_tick->epoch, $now->epoch + 4, 'exit tick epoch';
 };
 
 subtest 'tick duration contract close tick' => sub {

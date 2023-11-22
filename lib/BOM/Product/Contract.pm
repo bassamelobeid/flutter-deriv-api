@@ -827,8 +827,14 @@ sub _build_apply_market_inefficient_limit {
     return $self->market_is_inefficient && $self->priced_with_intraday_model;
 }
 
-# this needs to be a lazy build attribute because
-# it determined the expiry condition of a contract.
+=head2 ticks_for_tick_expiry
+
+for tick expiry contracts this attribute contains all the ticks of the contract
+starting with the entry tick. If the contract is still running then it may
+return less than C<ticks_to_expiry> ticks.
+
+=cut
+
 has ticks_for_tick_expiry => (
     is         => 'ro',
     lazy_build => 1

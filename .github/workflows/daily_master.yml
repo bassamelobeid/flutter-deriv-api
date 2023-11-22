@@ -7,7 +7,7 @@ jobs:
   syntax_unit:
     uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
     secrets: inherit
-  produt_contract:
+  product_contract:
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
