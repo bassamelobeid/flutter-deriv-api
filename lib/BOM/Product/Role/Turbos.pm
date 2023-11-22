@@ -510,7 +510,7 @@ sub _build_close_tick {
     my $bid_price_at_sell_time = $self->calculate_payout($tick_at_sell_time);
     my $bid_price_before_that  = $self->calculate_payout($tick_before_that);
 
-    return abs($sell_price - $bid_price_at_sell_time) < abs($sell_price - $bid_price_before_that) ? $tick_at_sell_time : $tick_before_that;
+    return abs($sell_price - $bid_price_at_sell_time) <= abs($sell_price - $bid_price_before_that) ? $tick_at_sell_time : $tick_before_that;
 
 }
 
