@@ -262,6 +262,12 @@ my @TRANSACTIONAL_EVENTS = qw(
     p2p_advert_created
     age_verified
     crypto_withdrawal_rejected_email_v2
+
+    identity_verification_rejected
+    poi_poa_resubmission
+    crypto_withdrawal_locked_email
+    authenticated_with_scans
+    underage_account_closed
 );
 
 my $loop = IO::Async::Loop->new;

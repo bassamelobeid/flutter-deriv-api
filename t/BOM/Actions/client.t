@@ -5020,6 +5020,93 @@ subtest 'crypto_withdrawal_email event' => sub {
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
+subtest 'crypto_withdrawal_email transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client->email('transactional@deriv.com');
+    $client->first_name('Jane');
+    $client->last_name('Doe');
+    $client->salutation('MR');
+    $client->save;
+
+    my $user = BOM::User->create(
+        email          => $client->email,
+        password       => "1234",
+        email_verified => 1,
+    )->add_client($client);
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    subtest 'crypto_withdrawal_email transaction_status - LOCKED' => sub {
+        undef @track_args;
+        undef @transactional_args;
+
+        BOM::Event::Actions::Client::crypto_withdrawal_email({
+                loginid            => $client->loginid,
+                amount             => '2',
+                currency           => 'ETH',
+                transaction_hash   => undef,
+                transaction_url    => undef,
+                live_chat_url      => 'https://deriv.com/en/?is_livechat_open=true',
+                transaction_status => 'LOCKED',
+                reference_no       => 1,
+                title              => 'Your ETH withdrawal is in progress',
+            })->get;
+
+        my ($customer, %args) = @track_args;
+        ok @transactional_args, 'CIO transactional is invoked';
+        is $args{event}, 'track_crypto_withdrawal_locked_email', "got correct event name";
+    };
+
+    subtest 'crypto_withdrawal_email transaction_status - REVERTED' => sub {
+        undef @track_args;
+        undef @transactional_args;
+
+        BOM::Event::Actions::Client::crypto_withdrawal_email({
+                loginid            => $client->loginid,
+                amount             => '2',
+                currency           => 'ETH',
+                transaction_hash   => undef,
+                transaction_url    => undef,
+                live_chat_url      => 'https://deriv.com/en/?is_livechat_open=true',
+                transaction_status => 'REVERTED',
+                reference_no       => 1,
+                title              => 'Your ETH withdrawal is returned',
+            })->get;
+
+        my ($customer, %args) = @track_args;
+
+        ok @transactional_args, 'CIO transactional is invoked';
+        is $args{event}, 'track_crypto_withdrawal_reverted_email', "got correct event name";
+
+        cmp_deeply $args{properties},
+            {
+            'loginid'       => $client->loginid,
+            'email'         => $client->email,
+            'brand'         => 'deriv',
+            'currency'      => 'ETH',
+            'lang'          => 'EN',
+            'amount'        => '2',
+            'reference_no'  => 1,
+            'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
+            'title'         => 'Your ETH withdrawal is returned',
+            },
+            'event properties are ok';
+
+        is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+        ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    };
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+};
+
 subtest 'deposit limits breached' => sub {
     my $cumulative_total = 0;
 
@@ -5337,6 +5424,30 @@ subtest 'underage_account_closed' => sub {
 
     is $returned_args{event},                 'underage_account_closed', 'track event name is set correctly';
     is $returned_args{properties}->{loginid}, $client->loginid,          "got correct customer loginid";
+};
+
+subtest 'underage_account_closed transactional email' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    undef @track_args;
+    undef @transactional_args;
+
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{underage_account_closed};
+
+    $action_handler->({
+            loginid    => $client->loginid,
+            properties => {
+                tnc_approval => 'https://deriv.com/en/terms-and-conditions',
+            }})->get;
+    my ($customer, %returned_args) = @track_args;
+
+    ok @transactional_args, 'CIO transactional is invoked';
+    is $returned_args{event},                 'track_underage_account_closed', 'track event name is set correctly';
+    is $returned_args{properties}->{loginid}, $client->loginid,                "got correct customer loginid";
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
 };
 
 subtest 'Onfido DOB checks' => sub {
@@ -6716,6 +6827,101 @@ subtest 'authenticated_with_scans event' => sub {
     is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 
+};
+
+subtest 'authenticated_with_scans transactional Email' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client->email('transactional2@deriv.com');
+    $client->first_name('Jane');
+    $client->last_name('Doe');
+    $client->salutation('MR');
+    $client->save;
+
+    my $user = BOM::User->create(
+        email          => $client->email,
+        password       => "1234",
+        email_verified => 1,
+    )->add_client($client);
+
+    subtest "authenticated_with_scans - poi by MANUAL" => sub {
+        undef @track_args;
+        undef @transactional_args;
+
+        BOM::Event::Actions::Client::authenticated_with_scans({
+                loginid => $client->loginid,
+            })->get;
+
+        my ($customer, %args) = @track_args;
+
+        ok @transactional_args, 'CIO transactional is invoked';
+        is $args{event}, 'track_authenticated_with_scans', "got correct event name";
+
+        cmp_deeply $args{properties},
+            {
+            'email'         => $client->email,
+            'first_name'    => $client->first_name,
+            'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
+            'lang'          => 'EN',
+            'brand'         => 'deriv',
+            'contact_url'   => 'https://deriv.com/en/contact-us',
+            'loginid'       => $client->loginid,
+            },
+            'event properties are ok';
+
+        is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+        ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    };
+
+    subtest "authenticated_with_scans - poi by IDV" => sub {
+        # give a latest_poi_by
+
+        my $mocked_cli = Test::MockModule->new('BOM::User::Client');
+        $mocked_cli->mock(
+            'latest_poi_by',
+            sub {
+                return ('idv');
+            });
+        undef @track_args;
+        undef @transactional_args;
+
+        BOM::Event::Actions::Client::authenticated_with_scans({
+                loginid => $client->loginid,
+            })->get;
+
+        my ($customer, %args) = @track_args;
+
+        ok @transactional_args, 'CIO transactional is invoked';
+        is $args{event}, 'track_authenticated_with_scans', "got correct event name";
+
+        cmp_deeply $args{properties},
+            {
+            'email'         => $client->email,
+            'first_name'    => $client->first_name,
+            'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
+            'lang'          => 'EN',
+            'brand'         => 'deriv',
+            'contact_url'   => 'https://deriv.com/en/contact-us',
+            'loginid'       => $client->loginid,
+            'latest_poi_by' => 'idv',
+            },
+            'event properties are ok';
+
+        is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+        ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    };
+
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
 };
 
 subtest 'request payment withdraw' => sub {
