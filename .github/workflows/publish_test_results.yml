@@ -1,0 +1,24 @@
+name: publish
+
+on:
+    workflow_call:
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+          - 
+            name: Set result file paths
+            id: path
+            run: | 
+              export FILE_PATH="./home/git/regentmarkets/bom-websocket-tests/v3/**/*.xml ./home/git/regentmarkets/bom-websocket-tests/v3/pricing/**/*.xml"
+              export FILE_PATH="$FILE_PATH ./home/git/regentmarkets/bom-websocket-tests/v3/security/**/*.xml ./t/**/*.xml "
+              export FILE_PATH="$FILE_PATH ./home/git/regentmarkets/bom-websocket-tests/v3/misc/**/*.xml"
+              echo "test-path=$FILE_PATH" >> "$GITHUB_OUTPUT"
+          - 
+            name: Upload results to TestSpace
+            uses: regentmarkets/github-actions/testspace-publish@master
+            with: 
+              token: ${{ secrets.TESTSPACE_TOKEN }}
+              artifact: test-results
+              file_path: ${{ steps.path.outputs.test-path }}

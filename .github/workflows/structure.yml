@@ -1,0 +1,52 @@
+name: Structure
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
+on:
+    workflow_call:
+      inputs:
+        debianci_image:
+          description: 'Docker container used by the workflow'
+          required: false
+          default: ${{ vars.DEBIAN_CI }}
+          type: string
+
+jobs:
+    structure:
+        runs-on: ubuntu-latest
+        container:
+          image: ${{ inputs.debianci_image }}
+          credentials:
+            username: circle4regentmarkets
+            password: ${{ secrets.DOCKER_PASSWORD }}
+          options: --user nobody:nogroup
+        defaults:
+          run:
+            shell: bash -le {0}
+            working-directory: /home/git/${{ github.repository }}
+        env:
+          LOG_LEVEL: debug
+          RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+          WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+        steps:
+          - 
+            name: setup CI step
+            uses: regentmarkets/github-actions/ci-setup@master
+            with:
+              read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+              repository: ${{ github.repository }}
+          - 
+            name: Code structure and syntax
+            run: make structure
+          - 
+            name: unit tests
+            run: |
+              echo '--formatter TAP::Formatter::JUnit' >> .proverc
+              make unit
+          - 
+            name : Upload test results
+            uses: actions/upload-artifact@v3
+            if: success() || failure()
+            with:
+              name: test-results
+              path: /tmp/test-output/**/*.xml
+              retention-days: 1   

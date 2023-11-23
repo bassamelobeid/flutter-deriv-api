@@ -10,31 +10,31 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 CHECK_VER = perl -MBinary::WebSocketAPI -e 'print join("\n", map { qq{requires "$$_", } .( $${$$_."::VERSION"} ? qq["== $${$$_."::VERSION"}"] : 0). q{;} } sort grep {!/^([a-z0-9:]|Binary::WebSocketAPI)/} map { s|/|::|g; s|\.pm$$||; $$_ } keys %INC) . "\n" ;'
 
 accounts:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/accounts t/999_redis_keys.t
+	@$(PROVE)  --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/accounts t/999_redis_keys.t
 
 security:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/security t/999_redis_keys.t
+	@$(PROVE)  --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/security t/999_redis_keys.t
 
 pricing:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/pricing t/999_redis_keys.t
+	@$(PROVE) --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/pricing t/999_redis_keys.t
 
 misc:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc t/999_redis_keys.t
+	@$(PROVE) --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/misc t/999_redis_keys.t
 
 p2p:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
+	@$(PROVE) --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
 
 structure:
 	@$(PROVE) --norc t
 
 schema:
-	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
+	@$(PROVE) --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
 
 subscriptions:
-	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
+	@$(PROVE)  /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
 
 backends:
-	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/backends
+	@$(PROVE)  /home/git/regentmarkets/bom-websocket-tests/v3/backends
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
@@ -59,7 +59,7 @@ doc: $(msc_graphs) $(dot_graphs)
 	dot -Tpng < $< > $@
 
 unit:
-	@$(PROVE) --norc t/unit
+	@$(PROVE) t/unit
 
 cover:
 	sed -i '/--exec/d' .proverc

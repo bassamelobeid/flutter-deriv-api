@@ -1,0 +1,32 @@
+name: update_docs
+
+on:
+    workflow_call:
+jobs:
+    update_docs:
+        if: github.ref == 'refs/heads/master'
+        runs-on: ubuntu-latest
+        container:
+          image: ${{ vars.DEBIAN_CI }}
+          credentials:
+            username: circle4regentmarkets
+            password: ${{ secrets.DOCKER_PASSWORD }}
+          options: --user nobody:nogroup
+        defaults:
+          run:
+            shell: bash -le {0}
+            working-directory: /home/git/${{ github.repository }}
+        env:
+          LOG_LEVEL: debug
+          RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+          WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
+        steps:
+          - name: setup CI step
+            uses: regentmarkets/github-actions/ci-setup@master
+            with:
+              read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+              need_service: 'false'
+              repository: ${{ github.repository }}
+          - name: Update developer.binary.com schema documentation
+            run: |
+              script/websocket_schema_update.sh    
