@@ -61,27 +61,7 @@ use constant Crypto_Results => ({
     },
     {
         account_type    => "crypto",
-        currency        => "BUSD",
-        landing_company => "svg"
-    },
-    {
-        account_type    => "crypto",
-        currency        => "DAI",
-        landing_company => "svg"
-    },
-    {
-        account_type    => "crypto",
         currency        => "ETH",
-        landing_company => "svg"
-    },
-    {
-        account_type    => "crypto",
-        currency        => "EURS",
-        landing_company => "svg"
-    },
-    {
-        account_type    => "crypto",
-        currency        => "IDK",
         landing_company => "svg"
     },
     {
@@ -91,27 +71,7 @@ use constant Crypto_Results => ({
     },
     {
         account_type    => "crypto",
-        currency        => "PAX",
-        landing_company => "svg"
-    },
-    {
-        account_type    => "crypto",
-        currency        => "TUSD",
-        landing_company => "svg"
-    },
-    {
-        account_type    => "crypto",
-        currency        => "USB",
-        landing_company => "svg"
-    },
-    {
-        account_type    => "crypto",
         currency        => "USDC",
-        landing_company => "svg"
-    },
-    {
-        account_type    => "crypto",
-        currency        => "USDK",
         landing_company => "svg"
     },
     {

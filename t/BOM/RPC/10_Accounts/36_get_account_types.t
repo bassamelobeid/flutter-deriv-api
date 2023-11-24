@@ -19,7 +19,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
-my @all_crypto_currencies = qw(EURS PAX ETH IDK eUSDT tUSDT BTC USDK LTC USB UST USDC TUSD DAI BUSD);
+my @all_crypto_currencies = qw(ETH eUSDT tUSDT BTC LTC UST USDC);
 my @all_fiat_currencies   = qw(EUR AUD USD GBP);
 my @malta_fiat_currencies = qw(EUR USD GBP);
 my @all_currencies        = (@all_crypto_currencies, @all_fiat_currencies);
