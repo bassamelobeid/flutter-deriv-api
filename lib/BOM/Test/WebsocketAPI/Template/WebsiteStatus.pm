@@ -58,14 +58,8 @@ rpc_response {
             ETH => {
                 minimum_withdrawal => 0.028,
             },
-            IDK => {
-                minimum_withdrawal => 76.632,
-            },
             LTC => {
                 minimum_withdrawal => 0.087,
-            },
-            USB => {
-                minimum_withdrawal => 5,
             },
             UST => {
                 minimum_withdrawal => 25,
@@ -86,7 +80,6 @@ rpc_response {
                         EUR => 1.0,
                         GBP => 1.0,
                         LTC => 1.0,
-                        USB => 0.5,
                         USD => 1.0,
                         UST => 0.5,
                     },
@@ -150,7 +143,6 @@ rpc_response {
                         ETH => 1.0,
                         GBP => 1.0,
                         LTC => 1.0,
-                        USB => 0.5,
                         USD => 1.0,
                         UST => 0.5,
                     },
@@ -174,7 +166,6 @@ rpc_response {
                         ETH => 1.0,
                         EUR => 1.0,
                         LTC => 1.0,
-                        USB => 0.5,
                         USD => 1.0,
                         UST => 0.5,
                     },
@@ -183,26 +174,6 @@ rpc_response {
                     },
                 },
                 type => 'fiat',
-            },
-            IDK => {
-                fractional_digits         => 0,
-                is_deposit_suspended      => 0,
-                is_suspended              => 0,
-                is_withdrawal_suspended   => 0,
-                name                      => 'IDK',
-                stake_default             => 150,
-                transfer_between_accounts => {
-                    fees => {
-                        AUD => 0.5,
-                        EUR => 0.5,
-                        GBP => 0.5,
-                        USD => 0.5,
-                    },
-                    limits => {
-                        min => 15.0,
-                    },
-                },
-                type => 'crypto',
             },
             LTC => {
                 fractional_digits         => 8,
@@ -224,26 +195,6 @@ rpc_response {
                 },
                 type => 'crypto',
             },
-            USB => {
-                fractional_digits         => 2,
-                is_deposit_suspended      => 0,
-                is_suspended              => 0,
-                is_withdrawal_suspended   => 0,
-                name                      => 'Binary Coin',
-                stake_default             => 10,
-                transfer_between_accounts => {
-                    fees => {
-                        AUD => 0.5,
-                        EUR => 0.5,
-                        GBP => 0.5,
-                        USD => 0.5,
-                    },
-                    limits => {
-                        min => 1.0,
-                    },
-                },
-                type => 'crypto',
-            },
             USD => {
                 fractional_digits         => 2,
                 is_deposit_suspended      => 0,
@@ -259,7 +210,6 @@ rpc_response {
                         EUR => 1.0,
                         GBP => 1.0,
                         LTC => 1.0,
-                        USB => 0.5,
                         UST => 0.5,
                     },
                     limits => {
