@@ -187,15 +187,9 @@
     config: BOM::Config::payment_agent
     expected_config:
       currency_specific_limits:
-        BUSD: &currency_min_max
+        USDC: &currency_min_max
           maximum: ''
           minimum: ''
-        DAI: *currency_min_max
-        EURS: *currency_min_max
-        PAX: *currency_min_max
-        TUSD: *currency_min_max
-        USDC: *currency_min_max
-        USDK: *currency_min_max
         UST: *currency_min_max
         eUSDT: *currency_min_max
       minimum_topup_balance:
@@ -244,20 +238,12 @@
         real: &client_limits_currency
           AUD: ''
           BTC: ''
-          BUSD: ''
-          DAI: ''
           ETH: ''
           EUR: ''
-          EURS: ''
           GBP: ''
-          IDK: ''
           LTC: ''
-          PAX: ''
-          TUSD: ''
-          USB: ''
           USD: ''
           USDC: ''
-          USDK: ''
           UST: ''
           eUSDT: ''
         virtual: *client_limits_currency
@@ -1355,20 +1341,12 @@
         inefficient_period_payout_max: &quants_currency_list
           AUD: ''
           BTC: ''
-          BUSD: ''
-          DAI: ''
           ETH: ''
           EUR: ''
-          EURS: ''
           GBP: ''
-          IDK: ''
           LTC: ''
-          PAX: ''
-          TUSD: ''
-          USB: ''
           USD: ''
           USDC: ''
-          USDK: ''
           UST: ''
           eUSDT: ''
         max_payout:

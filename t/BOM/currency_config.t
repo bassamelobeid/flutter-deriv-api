@@ -524,15 +524,15 @@ subtest 'exchange_rate_expiry' => sub {
             return 1;
         });
 
-    is(BOM::Config::CurrencyConfig::rate_expiry('USD',  'EUR'), 200, 'should return fiat expiry if both currencies are fiat');
-    is(BOM::Config::CurrencyConfig::rate_expiry('TUSD', 'USD'),
+    is(BOM::Config::CurrencyConfig::rate_expiry('USD',   'EUR'), 200, 'should return fiat expiry if both currencies are fiat');
+    is(BOM::Config::CurrencyConfig::rate_expiry('tUSDT', 'USD'),
         100, 'should return crypto_stable expiry if crypto_stable expiry is less than fiat expiry');
     is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'ETH'), 50, 'should return crypto_non_stable expiry if both are crypto_non_stable');
     is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'USD'),
         50, 'should return crypto_non_stable expiry if crypto_non_stable expiry is less than fiat expiry');
-    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'TUSD'),
+    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'tUSDT'),
         50, 'should return crypto_non_stable expiry crypto_non_stable expiry is less than crypto_stable expiry');
-    is(BOM::Config::CurrencyConfig::rate_expiry('TUSD', 'USDC'), 100, 'should return crypto_stable expiry if both are crypto_stable');
+    is(BOM::Config::CurrencyConfig::rate_expiry('tUSDT', 'USDC'), 100, 'should return crypto_stable expiry if both are crypto_stable');
 
     $app_config->set({'payments.transfer_between_accounts.exchange_rate_expiry.fiat' => 5});
     is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'USD'), 5, 'should return fiat expiry if fiat expiry is less than crypto expiry');
@@ -629,9 +629,9 @@ subtest 'Check Types of Suspension' => sub {
     };
 
     subtest 'Only when currency is experimental' => sub {
-        $app_config->system->suspend->experimental_currencies(['USB']);
-        ok BOM::Config::CurrencyConfig::is_experimental_currency("USB"),    'Currency USB is experimental';
-        ok !(BOM::Config::CurrencyConfig::is_experimental_currency("UST")), 'Currency UST is not experimental';
+        $app_config->system->suspend->experimental_currencies(['EXPERIMENTAL']);
+        ok BOM::Config::CurrencyConfig::is_experimental_currency("EXPERIMENTAL"), 'Currency EXPERIMENTAL is experimental';
+        ok !(BOM::Config::CurrencyConfig::is_experimental_currency("UST")),       'Currency UST is not experimental';
         $app_config->system->suspend->experimental_currencies([]);
     };
 };

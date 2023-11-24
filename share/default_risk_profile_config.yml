@@ -7,15 +7,7 @@ extreme_risk:
   BTC: 0.0008
   ETH: 0.0125
   LTC: 0.2250
-  BUSD: 50
-  DAI: 50
-  EURS: 50
-  IDK: 695
-  PAX: 50
-  TUSD: 50
-  USB: 50
   USDC: 50
-  USDK: 50
   UST: 50
   eUSDT: 50
   tUSDT: 50
@@ -27,15 +19,7 @@ high_risk:
   BTC: 0.003
   ETH: 0.05
   LTC: 0.9
-  BUSD: 200
-  DAI: 200
-  EURS: 200
-  IDK: 2780
-  PAX: 200
-  TUSD: 200
-  USB: 200
   USDC: 200
-  USDK: 200
   UST: 200
   eUSDT: 200
   tUSDT: 200
@@ -47,15 +31,7 @@ moderate_risk:
   BTC: 0.0075
   ETH: 0.125
   LTC: 2.25
-  BUSD: 500
-  DAI: 500
-  EURS: 500
-  IDK: 6950
-  PAX: 500
-  TUSD: 500
-  USB: 500
   USDC: 500
-  USDK: 500
   UST: 500
   eUSDT: 500
   tUSDT: 500
@@ -67,15 +43,7 @@ medium_risk:
   BTC: 0.015
   ETH: 0.25
   LTC: 4.5
-  BUSD: 1000
-  DAI: 1000
-  EURS: 1000
-  IDK: 13900
-  PAX: 1000
-  TUSD: 1000
-  USB: 1000
   USDC: 1000
-  USDK: 1000
   UST: 1000
   eUSDT: 1000
   tUSDT: 1000
@@ -87,15 +55,7 @@ low_risk:
   BTC: 0.03
   ETH: 0.5
   LTC: 9
-  BUSD: 2000
-  DAI: 2000
-  EURS: 2000
-  IDK: 27790
-  PAX: 2000
-  TUSD: 2000
-  USB: 2000
   USDC: 2000
-  USDK: 2000
   UST: 2000
   eUSDT: 2000
   tUSDT: 2000

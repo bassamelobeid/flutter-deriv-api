@@ -18,15 +18,7 @@ default_stake:
   BTC: 10
   ETH: 10
   LTC: 10
-  BUSD: 10
-  DAI: 10
-  EURS: 10
-  IDK: 10
-  PAX: 10
-  TUSD: 10
-  USB: 10
   USDC: 10
-  USDK: 10
   UST: 10
   eUSDT: 10
   tUSDT: 10
@@ -42,15 +34,7 @@ bet_limits:
     BTC: 200
     ETH: 200
     LTC: 200
-    BUSD: 200
-    DAI: 200
-    EURS: 200
-    IDK: 200
-    PAX: 200
-    TUSD: 200
-    USB: 200
     USDC: 200
-    USDK: 200
     UST: 200
     eUSDT: 200
     tUSDT: 200
@@ -66,15 +50,7 @@ bet_limits:
           BTC: 0.01
           ETH:  0.01
           LTC:  0.01
-          IDK: 0.1
-          PAX: 0.01
-          BUSD: 0.01
-          DAI: 0.01
-          EURS: 0.01
-          TUSD: 0.01
-          USB: 0.01
           USDC: 0.01
-          USDK: 0.01
           UST: 0.01
           eUSDT: 0.01
           tUSDT: 0.01
@@ -87,15 +63,7 @@ bet_limits:
           ETH: 1
           LTC: 1
           UST: 1
-          USB: 1
-          IDK: 1
-          PAX: 1
-          BUSD: 1
-          DAI: 1
-          EURS: 1
-          TUSD: 1
           USDC: 1
-          USDK: 1
           eUSDT: 1
           tUSDT: 1
   max_payout:
@@ -109,15 +77,7 @@ bet_limits:
           BTC: 50000
           ETH: 50000
           LTC: 50000
-          BUSD: 5000
-          DAI: 5000
-          EURS: 5000
-          IDK: 5000
-          PAX: 5000
-          TUSD: 5000
-          USB: 5000
           USDC: 5000
-          USDK: 5000
           UST: 5000
           eUSDT: 5000
           tUSDT: 5000
@@ -129,15 +89,7 @@ bet_limits:
           BTC: 10000
           ETH: 10000
           LTC: 10000
-          BUSD: 1000
-          DAI: 1000
-          EURS: 1000
-          IDK: 1000
-          PAX: 1000
-          TUSD: 1000
-          USB: 1000
           USDC: 1000
-          USDK: 1000
           UST: 1000
           eUSDT: 1000
           tUSDT: 1000
@@ -149,15 +101,7 @@ bet_limits:
           BTC: 30000
           ETH: 30000
           LTC: 30000
-          BUSD: 5000
-          DAI: 5000
-          EURS: 5000
-          IDK: 5000
-          PAX: 5000
-          TUSD: 5000
-          USB: 5000
           USDC: 5000
-          USDK: 5000
           UST: 5000
           eUSDT: 5000
           tUSDT: 5000
@@ -172,15 +116,7 @@ bet_limits:
           BTC: 0.5
           ETH: 0.5
           LTC: 0.5
-          BUSD: 0.5
-          DAI: 0.5
-          EURS: 0.5
-          IDK: 0.5
-          PAX: 0.5
-          TUSD: 0.5
-          USB: 0.5
           USDC: 0.5
-          USDK: 0.5
           UST: 0.5
           eUSDT: 0.5
           tUSDT: 0.5
@@ -192,15 +128,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
-          BUSD: 1
-          DAI: 1
-          EURS: 1
-          IDK: 1
-          PAX: 1
-          TUSD: 1
-          USB: 1
           USDC: 1
-          USDK: 1
           UST: 1
           eUSDT: 1
           tUSDT: 1
@@ -212,15 +140,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
-          BUSD: 1
-          DAI: 1
-          EURS: 1
-          IDK: 1
-          PAX: 1
-          TUSD: 1
-          USB: 1
           USDC: 1
-          USDK: 1
           UST: 1
           eUSDT: 1
           tUSDT: 1
@@ -233,15 +153,7 @@ bet_limits:
           BTC: 0.35
           ETH: 0.35
           LTC: 0.35
-          BUSD: 0.35
-          DAI: 0.35
-          EURS: 0.35
-          IDK: 0.35
-          PAX: 0.35
-          TUSD: 0.35
-          USB: 0.35
           USDC: 0.35
-          USDK: 0.35
           UST: 0.35
           eUSDT: 0.35
           tUSDT: 0.35
@@ -253,15 +165,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
-          BUSD: 1
-          DAI: 1
-          EURS: 1
-          IDK: 1
-          PAX: 1
-          TUSD: 1
-          USB: 1
           USDC: 1
-          USDK: 1
           UST: 1
           eUSDT: 1
           tUSDT: 1
@@ -273,15 +177,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
-          BUSD: 1
-          DAI: 1
-          EURS: 1
-          IDK: 1
-          PAX: 1
-          TUSD: 1
-          USB: 1
           USDC: 1
-          USDK: 1
           UST: 1
           eUSDT: 1
           tUSDT: 1
@@ -295,15 +191,7 @@ bet_limits:
           BTC: 5
           ETH: 5
           LTC: 5
-          BUSD: 5
-          DAI: 5
-          EURS: 5
-          IDK: 5
-          PAX: 5
-          TUSD: 5
-          USB: 5
           USDC: 5
-          USDK: 5
           UST: 5
           eUSDT: 5
           tUSDT: 5
@@ -318,15 +206,7 @@ bet_limits:
           BTC: 2000
           ETH: 2000
           LTC: 2000
-          BUSD: 2000
-          DAI: 2000
-          EURS: 2000
-          IDK: 2000
-          PAX: 2000
-          TUSD: 2000
-          USB: 2000
           USDC: 2000
-          USDK: 2000
           UST: 2000
           eUSDT: 2000
           tUSDT: 2000
@@ -338,15 +218,7 @@ bet_limits:
           BTC: 2000
           ETH: 2000
           LTC: 2000
-          BUSD: 2000
-          DAI: 2000
-          EURS: 2000
-          IDK: 2000
-          PAX: 2000
-          TUSD: 2000
-          USB: 2000
           USDC: 2000
-          USDK: 2000
           UST: 2000
           eUSDT: 2000
           tUSDT: 2000
@@ -359,15 +231,7 @@ bet_limits:
       BTC: 0.02
       ETH: 0.02
       LTC: 0.02
-      IDK: 0.02
-      PAX: 0.02
-      BUSD: 0.02
-      DAI: 0.02
-      EURS: 0.02
-      TUSD: 0.02
-      USB: 0.02
       USDC: 0.02
-      USDK: 0.02
       UST: 0.02
       eUSDT: 0.02
       tUSDT: 0.02
@@ -380,15 +244,7 @@ bet_limits:
       ETH: 0.05
       LTC: 0.05
       UST: 0.05
-      USB: 0.05
-      IDK: 0.05
-      PAX: 0.05
-      BUSD: 0.05
-      DAI: 0.05
-      EURS: 0.05
-      TUSD: 0.05
       USDC: 0.05
-      USDK: 0.05
       eUSDT: 0.05
       tUSDT: 0.05
   min_order_amount:
@@ -399,16 +255,8 @@ bet_limits:
     BTC: 0.1
     ETH: 0.1
     LTC: 0.1
-    BUSD: 0.1
-    DAI: 0.1
-    EURS: 0.1
     UST: 0.1
-    USB: 0.1
-    IDK: 0.1
-    PAX: 0.1
-    TUSD: 0.1
     USDC: 0.1
-    USDK: 0.1
     eUSDT: 0.1
     tUSDT: 0.1
 
@@ -478,15 +326,7 @@ lookback_limits:
     BTC: 300
     ETH: 300
     LTC: 300
-    BUSD: 300
-    DAI: 300
-    EURS: 300
-    IDK: 300
-    PAX: 300
-    TUSD: 300
-    USB: 300
     USDC: 300
-    USDK: 300
     UST: 300
     eUSDT: 300
     tUSDT: 300
@@ -501,15 +341,7 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
-          BUSD: 0
-          DAI: 0
-          EURS: 0
-          IDK: 0
-          PAX: 0
-          TUSD: 0
-          USB: 0
           USDC: 0
-          USDK: 0
           UST: 0
           eUSDT: 0
           tUSDT: 0
@@ -521,15 +353,7 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
-          BUSD: 0
-          DAI: 0
-          EURS: 0
-          IDK: 0
-          PAX: 0
-          TUSD: 0
-          USB: 0
           USDC: 0
-          USDK: 0
           UST: 0
           eUSDT: 0
           tUSDT: 0
@@ -541,15 +365,7 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
-          BUSD: 0
-          DAI: 0
-          EURS: 0
-          IDK: 0
-          PAX: 0
-          TUSD: 0
-          USB: 0
           USDC: 0
-          USDK: 0
           UST: 0
           eUSDT: 0
           tUSDT: 0
@@ -562,15 +378,7 @@ risk_profile:
           BTC: 1000
           ETH: 1000
           LTC: 1000
-          BUSD: 1000
-          DAI: 1000
-          EURS: 1000
-          IDK: 1000
-          PAX: 1000
-          TUSD: 1000
-          USB: 1000
           USDC: 1000
-          USDK: 1000
           UST: 1000
           eUSDT: 1000
           tUSDT: 1000
@@ -582,15 +390,7 @@ risk_profile:
           BTC: 100
           ETH: 100
           LTC: 100
-          BUSD: 100
-          DAI: 100
-          EURS: 100
-          IDK: 100
-          PAX: 100
-          TUSD: 100
-          USB: 100
           USDC: 100
-          USDK: 100
           UST: 100
           eUSDT: 100
           tUSDT: 100
@@ -602,15 +402,7 @@ risk_profile:
           BTC: 50
           ETH: 50
           LTC: 50
-          BUSD: 50
-          DAI: 50
-          EURS: 50
-          IDK: 50
-          PAX: 50
-          TUSD: 50
-          USB: 50
           USDC: 50
-          USDK: 50
           UST: 50
           eUSDT: 50
           tUSDT: 50
@@ -623,15 +415,7 @@ risk_profile:
           BTC: 5000
           ETH: 5000
           LTC: 5000
-          BUSD: 5000
-          DAI: 5000
-          EURS: 5000
-          IDK: 5000
-          PAX: 5000
-          TUSD: 5000
-          USB: 5000
           USDC: 5000
-          USDK: 5000
           UST: 5000
           eUSDT: 5000
           tUSDT: 5000
@@ -643,15 +427,7 @@ risk_profile:
           BTC: 1000
           ETH: 1000
           LTC: 1000
-          BUSD: 1000
-          DAI: 1000
-          EURS: 1000
-          IDK: 1000
-          PAX: 1000
-          TUSD: 1000
-          USB: 1000
           USDC: 1000
-          USDK: 1000
           UST: 1000
           eUSDT: 1000
           tUSDT: 1000
@@ -663,15 +439,7 @@ risk_profile:
           BTC: 200
           ETH: 200
           LTC: 200
-          BUSD: 200
-          DAI: 200
-          EURS: 200
-          IDK: 200
-          PAX: 200
-          TUSD: 200
-          USB: 200
           USDC: 200
-          USDK: 200
           UST: 200
           eUSDT: 200
           tUSDT: 200
@@ -684,15 +452,7 @@ risk_profile:
           BTC: 50000
           ETH: 50000
           LTC: 50000
-          BUSD: 50000
-          DAI: 50000
-          EURS: 50000
-          IDK: 50000
-          PAX: 50000
-          TUSD: 50000
-          USB: 50000
           USDC: 50000
-          USDK: 50000
           UST: 50000
           eUSDT: 50000
           tUSDT: 50000
@@ -704,15 +464,7 @@ risk_profile:
           BTC: 5000
           ETH: 5000
           LTC: 5000
-          BUSD: 5000
-          DAI: 5000
-          EURS: 5000
-          IDK: 5000
-          PAX: 5000
-          TUSD: 5000
-          USB: 5000
           USDC: 5000
-          USDK: 5000
           UST: 5000
           eUSDT: 5000
           tUSDT: 5000
@@ -724,15 +476,7 @@ risk_profile:
           BTC: 500
           ETH: 500
           LTC: 500
-          BUSD: 500
-          DAI: 500
-          EURS: 500
-          IDK: 500
-          PAX: 500
-          TUSD: 500
-          USB: 500
           USDC: 500
-          USDK: 500
           UST: 500
           eUSDT: 500
           tUSDT: 500
@@ -745,15 +489,7 @@ risk_profile:
           BTC: 100000
           ETH: 100000
           LTC: 100000
-          BUSD: 100000
-          DAI: 100000
-          EURS: 100000
-          IDK: 100000
-          PAX: 100000
-          TUSD: 100000
-          USB: 100000
           USDC: 100000
-          USDK: 100000
           UST: 100000
           eUSDT: 100000
           tUSDT: 100000
@@ -765,15 +501,7 @@ risk_profile:
           BTC: 20000
           ETH: 20000
           LTC: 20000
-          BUSD: 20000
-          DAI: 20000
-          EURS: 20000
-          IDK: 20000
-          PAX: 20000
-          TUSD: 20000
-          USB: 20000
           USDC: 20000
-          USDK: 20000
           UST: 20000
           eUSDT: 20000
           tUSDT: 20000
@@ -785,15 +513,7 @@ risk_profile:
           BTC: 1000
           ETH: 1000
           LTC: 1000
-          BUSD: 1000
-          DAI: 1000
-          EURS: 1000
-          IDK: 1000
-          PAX: 1000
-          TUSD: 1000
-          USB: 1000
           USDC: 1000
-          USDK: 1000
           UST: 1000
           eUSDT: 1000
           tUSDT: 1000
@@ -806,15 +526,7 @@ risk_profile:
           BTC: 500000
           ETH: 500000
           LTC: 500000
-          BUSD: 500000
-          DAI: 500000
-          EURS: 500000
-          IDK: 500000
-          PAX: 500000
-          TUSD: 500000
-          USB: 500000
           USDC: 500000
-          USDK: 500000
           UST: 500000
           eUSDT: 500000
           tUSDT: 500000
@@ -826,15 +538,7 @@ risk_profile:
           BTC: 50000
           ETH: 50000
           LTC: 50000
-          BUSD: 50000
-          DAI: 50000
-          EURS: 50000
-          IDK: 50000
-          PAX: 50000
-          TUSD: 50000
-          USB: 50000
           USDC: 50000
-          USDK: 50000
           UST: 50000
           eUSDT: 50000
           tUSDT: 50000
@@ -846,15 +550,7 @@ risk_profile:
           BTC: 2000
           ETH: 2000
           LTC: 2000
-          BUSD: 2000
-          DAI: 2000
-          EURS: 2000
-          IDK: 2000
-          PAX: 2000
-          TUSD: 2000
-          USB: 2000
           USDC: 2000
-          USDK: 2000
           UST: 2000
           eUSDT: 2000
           tUSDT: 2000

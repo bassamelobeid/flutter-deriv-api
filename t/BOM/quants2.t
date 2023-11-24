@@ -19,7 +19,7 @@ $redis_exchangerates->set('limit:USD-to-AUD:45', 45);
 $redis_exchangerates->set('limit:USD-to-AUD:65', 65);
 $redis_exchangerates->set('limit:USD-to-AUD:95', 95);
 
-my @all_currencies = qw(EUR EURS PAX ETH IDK AUD eUSDT tUSDT BTC USDK LTC USB UST USDC TUSD USD GBP DAI BUSD);
+my @all_currencies = qw(EUR ETH AUD eUSDT tUSDT BTC LTC UST USDC USD GBP);
 
 for my $currency (@all_currencies) {
     $redis_exchangerates->hmset(

@@ -9,15 +9,7 @@ common: &per_landing_company
       BTC: 0.5
       ETH: 8
       LTC: 100
-      BUSD: 10000
-      DAI: 10000
-      EURS: 10000
-      IDK: 100000
-      PAX: 10000
-      TUSD: 10000
-      USB: 10000
       USDC: 10000
-      USDK: 10000
       UST: 10000
       eUSDT: 10000
       tUSDT: 10000

@@ -40,10 +40,6 @@ subtest 'get_transfer_min_max' => sub {
             UST => {
                 minimum => 10,
                 maximum => 2000
-            },
-            PAX => {
-                minimum => 10,
-                maximum => 2000
             }}};
     $mock_currency_type = 'crypto';
     $test_currency      = 'UST';
