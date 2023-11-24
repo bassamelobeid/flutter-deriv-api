@@ -5,11 +5,11 @@ package main;
 use strict;
 use warnings;
 use JSON::MaybeUTF8 qw(:v1);
+use List::Util      qw(min max any);
 use YAML::XS        qw(LoadFile);
-use List::Util      qw(min max);
 
-use BOM::Config::Runtime;
 use BOM::Backoffice::Sysinit ();
+use BOM::Config::Runtime;
 use LandingCompany::Registry;
 
 BOM::Backoffice::Sysinit::init();
@@ -53,7 +53,13 @@ our @symbols_financials = (@symbols_fx, @symbols_commodities);
 foreach my $risk_level (keys %$limit_defs) {
     my $s = decode_json_utf8($app_config->get("quants.vanilla.risk_profile.$risk_level"));
     my @stake;
+    my @obsolete_currencies = ('USB', 'PAX', 'TUSD', 'DAI', 'USDK', 'BUSD', 'IDK', 'EURS');
+
     foreach my $ccy (sort keys %{$s}) {
+        if (any { $_ eq $ccy } @obsolete_currencies) {
+            next;
+        }
+
         push @stake, $s->{$ccy};
     }
 

@@ -5,14 +5,14 @@ package main;
 use strict;
 use warnings;
 use JSON::MaybeUTF8 qw(:v1);
-use YAML::XS        qw(LoadFile);
 use List::Util      qw(min max any);
+use YAML::XS        qw(LoadFile);
 
-use BOM::Config::Runtime;
 use BOM::Backoffice::Sysinit ();
-use LandingCompany::Registry;
-use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Runtime;
+use LandingCompany::Registry;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -86,7 +86,13 @@ sub _get_risk_profile_definition {
     foreach my $risk_level (keys %$limit_defs) {
         my $max_stake = _quants_config->get_max_stake_per_risk_profile($risk_level);
         my @stake;
+        my @obsolete_currencies = ('USB', 'PAX', 'TUSD', 'DAI', 'USDK', 'BUSD', 'IDK', 'EURS');
+
         foreach my $currency (sort keys %{$max_stake}) {
+            if (any { $_ eq $currency } @obsolete_currencies) {
+                next;
+            }
+
             push @stake, $max_stake->{$currency};
         }
 

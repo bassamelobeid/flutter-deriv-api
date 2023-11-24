@@ -6,18 +6,20 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 use lib  qw(/home/git/regentmarkets/bom-backoffice);
 
-use JSON::MaybeUTF8          qw(:v1);
-use Scalar::Util             qw(looks_like_number);
-use BOM::Backoffice::Sysinit ();
+use Data::Dump      qw(pp);
+use Digest::MD5     qw(md5_hex);
+use JSON::MaybeUTF8 qw(:v1);
+use List::Util      qw(any);
+use Log::Any        qw($log);
+use Scalar::Util    qw(looks_like_number);
+use Syntax::Keyword::Try;
+
 use BOM::Backoffice::Auth;
+use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Backoffice::Request qw(request);
-use Syntax::Keyword::Try;
+use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
-use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
-use Log::Any                          qw($log);
-use Digest::MD5                       qw(md5_hex);
-use Data::Dump                        qw(pp);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth::get_staffname();
@@ -291,9 +293,14 @@ if ($r->param('save_vanilla_risk_profile')) {
         die 'Amount must be a number' unless looks_like_number($amount);
 
         my $existing_risk_profile = decode_json_utf8($app_config->get("quants.vanilla.risk_profile.$risk_level"));
+        my @obsolete_currencies   = ('USB', 'PAX', 'TUSD', 'DAI', 'USDK', 'BUSD', 'IDK', 'EURS');
 
         if ($currency eq 'All') {
             foreach my $ccy (keys %{$existing_risk_profile}) {
+                if (any { $_ eq $ccy } @obsolete_currencies) {
+                    next;
+                }
+
                 $existing_risk_profile->{$ccy} = $amount;
             }
         } else {

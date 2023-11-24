@@ -6,25 +6,25 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 use lib  qw(/home/git/regentmarkets/bom-backoffice);
 
-use JSON::MaybeUTF8          qw(:v1);
-use List::Util               qw(min max any);
-use Scalar::Util             qw(looks_like_number);
-use BOM::Backoffice::Sysinit ();
+use Format::Util::Numbers qw(financialrounding);
+use JSON::MaybeUTF8       qw(:v1);
+use List::Util            qw(min max any none uniq);
+use Log::Any              qw($log);
+use Scalar::Util          qw(looks_like_number);
+use Syntax::Keyword::Try;
+use YAML::XS qw(LoadFile);
+
 use BOM::Backoffice::Auth;
+use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Backoffice::Request qw(request);
-use BOM::Config::QuantsConfig;
+use BOM::Backoffice::Sysinit ();
 use BOM::Config;
-use Syntax::Keyword::Try;
+use BOM::Config::QuantsConfig;
 use BOM::Config::Runtime;
-use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
-use Log::Any                          qw($log);
-use YAML::XS                          qw(LoadFile);
-use List::Util                        qw(none uniq);
+use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 use Finance::Underlying;
 use Finance::Underlying::Market::Registry;
-use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
-use Format::Util::Numbers            qw(financialrounding);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth::get_staffname();
@@ -304,8 +304,14 @@ if ($r->param('save_accumulator_risk_profile')) {
 
         my $existing_risk_profile = $qc->get_max_stake_per_risk_profile($risk_level);
         my $exchange_amount;
+        my @obsolete_currencies = ('USB', 'PAX', 'TUSD', 'DAI', 'USDK', 'BUSD', 'IDK', 'EURS');
+
         if ($currency eq 'All') {
             foreach my $ccy (keys %{$existing_risk_profile}) {
+                if (any { $_ eq $ccy } @obsolete_currencies) {
+                    next;
+                }
+
                 $exchange_amount = convert_currency($amount, "USD", $ccy);
                 $existing_risk_profile->{$ccy} = financialrounding("amount", $ccy, $exchange_amount);
             }
