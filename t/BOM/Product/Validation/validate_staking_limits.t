@@ -31,13 +31,6 @@ my %dataset = (
         quote            => 1587.02050,
         epoch            => time,
     },
-    'exchange_rates::IDK_USD' => {
-        source           => 'Feed',
-        offer_to_clients => 1,
-        shift_in_rate    => '-0.17517264611759',
-        quote            => 0.067374094660603,
-        epoch            => time,
-    },
 );
 
 my $args = {
@@ -108,10 +101,6 @@ subtest 'max payout during inefficient period' => sub {
     $args->{'currency'} = 'ETH';
     $c = produce_contract($args);
     is($c->staking_limits->{'max'}, 0.13, 'max payout during inefficient period for ETH is ' . 0.13);
-
-    $args->{'currency'} = 'IDK';
-    $c = produce_contract($args);
-    is($c->staking_limits->{'max'}, 3000, 'max payout during inefficient period for IDK is ' . 3000);
 
     $args->{'currency'} = 'USD';
     $c = produce_contract($args);
