@@ -15,8 +15,10 @@ use BOM::CTC::Currency;
 use BOM::CTC::Database;
 use BOM::CTC::Daemon;
 
+use BOM::Config::Redis;
+
 our @EXPORT_OK =
-    qw( wait_miner deploy_erc20_test_contract set_pending deploy_batch_withdrawal_test_contract top_up_eth_batch_withdrawal_contract create_loginid deploy_batch_balance_test_contract deploy_all_erc20_test_contracts);
+    qw( wait_miner deploy_erc20_test_contract set_pending deploy_batch_withdrawal_test_contract top_up_eth_batch_withdrawal_contract create_loginid deploy_batch_balance_test_contract deploy_all_erc20_test_contracts populate_exchange_rates);
 
 =head2 wait_miner
 
@@ -274,6 +276,34 @@ my $loginid_counter = 1;
 
 sub create_loginid {
     return "id_" . $loginid_counter++;
+}
+
+=head2 populate_exchange_rates
+
+Populate the exchange rate in the Redis server for the crypto cashier currencies
+
+=over
+
+=item * C<local_rates> - A hashref of the currenices exchange rate (optional)
+
+=back
+
+=cut
+
+my %all_currencies_rates = map { $_ => 1 } BOM::CTC::Config::Cashier::all_crypto_currencies();
+my $rates                = \%all_currencies_rates;
+
+sub populate_exchange_rates {
+    my $local_rates = shift || $rates;
+    $local_rates = {%$rates, %$local_rates};
+    my $redis = BOM::Config::Redis::redis_exchangerates_write();
+    $redis->hmset(
+        'exchange_rates::' . $_ . '_USD',
+        quote => $local_rates->{$_},
+        epoch => time
+    ) for keys %$local_rates;
+
+    return;
 }
 
 1;
