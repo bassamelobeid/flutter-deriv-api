@@ -62,12 +62,12 @@ unit:
 	@$(PROVE) t/unit
 
 cover:
-	sed -i '/--exec/d' .proverc
+	sed -i '/--exec/d' .serviceproverc
 	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
 	$C $$(find t/ -type f | grep -v 00) t/unit/
 
 cover_websocket_tests:
-	$C /home/git/regentmarkets/bom-websocket-tests/v3/$(sub_test)
+	$C --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/$(sub_test)
 
 versions:
 	@$(CHECK_VER)
