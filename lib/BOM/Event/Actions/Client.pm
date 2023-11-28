@@ -547,10 +547,18 @@ async sub poa_updated {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
 
-    if (my $best_poa_date = $client->documents->best_issue_date('proof_of_address')) {
+    my $best_issue_date    = $client->documents->best_poa_date('proof_of_address', 'best_issue_date');
+    my $best_verified_date = $client->documents->best_poa_date('proof_of_address', 'best_verified_date');
+
+    if ($best_issue_date && $best_verified_date) {
         $client->user->dbic->run(
             fixup => sub {
-                $_->do('SELECT * FROM users.upsert_poa_issuance(?::BIGINT, ?::DATE)', undef, $client->binary_user_id, $best_poa_date->date_yyyymmdd);
+                $_->do(
+                    'SELECT * FROM users.upsert_poa_verification_and_issuance(?::BIGINT, ?::DATE, ?::DATE)',
+                    undef, $client->binary_user_id,
+                    $best_verified_date->date_yyyymmdd,
+                    $best_issue_date->date_yyyymmdd
+                );
             });
     } else {
         $client->user->dbic->run(

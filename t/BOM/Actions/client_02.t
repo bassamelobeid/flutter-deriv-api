@@ -31,7 +31,7 @@ BEGIN {
 
 subtest 'POA updated' => sub {
 
-    sub grab_issuance_date {
+    sub grab_poa_dates {
         my ($user) = @_;
 
         return $user->dbic->run(
@@ -44,10 +44,8 @@ subtest 'POA updated' => sub {
         broker_code => 'CR',
     });
     my $user = BOM::User->create(
-        email          => 'error+test@test.com',
-        password       => "hello",
-        email_verified => 1,
-        email_consent  => 1,
+        email    => 'error+test@test.com',
+        password => "hello",
     );
 
     $user->add_client($client);
@@ -56,10 +54,14 @@ subtest 'POA updated' => sub {
 
     my $doc_mock = Test::MockModule->new(ref($client->documents));
     my $best_issue_date;
+    my $best_verified_date;
     $doc_mock->mock(
-        'best_issue_date',
+        'best_poa_date',
         sub {
-            return Date::Utility->new($best_issue_date) if $best_issue_date;
+            my ($self, $doc_category, $date_category) = @_;
+
+            return Date::Utility->new($best_issue_date)    if $best_issue_date    && $date_category eq 'best_issue_date';
+            return Date::Utility->new($best_verified_date) if $best_verified_date && $date_category eq 'best_verified_date';
             return undef;
         });
 
@@ -83,40 +85,44 @@ subtest 'POA updated' => sub {
             loginid => $client->loginid,
         })->get;
 
-    cmp_deeply grab_issuance_date($user), [], 'Undef date would be a delete operation';
+    cmp_deeply grab_poa_dates($user), [], 'Undef date would be a delete operation';
 
-    $best_issue_date = '2020-10-10';
+    $best_issue_date    = '2020-10-10';
+    $best_verified_date = '2021-10-10';
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
         })->get;
 
-    cmp_deeply grab_issuance_date($user),
+    cmp_deeply grab_poa_dates($user),
         [{
             binary_user_id => $user->id,
             issue_date     => Date::Utility->new($best_issue_date)->date_yyyymmdd,
+            verified_date  => Date::Utility->new($best_verified_date)->date_yyyymmdd,
         }
         ],
         'Insert operation';
 
-    $best_issue_date = '2023-10-10';
+    $best_issue_date    = '2023-10-10';
+    $best_verified_date = '2024-10-10';
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
         })->get;
 
-    cmp_deeply grab_issuance_date($user),
+    cmp_deeply grab_poa_dates($user),
         [{
             binary_user_id => $user->id,
             issue_date     => Date::Utility->new($best_issue_date)->date_yyyymmdd,
+            verified_date  => Date::Utility->new($best_verified_date)->date_yyyymmdd,
         }
         ],
         'Update operation';
 
-    $best_issue_date = undef;
+    $best_verified_date = undef;
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
         })->get;
 
-    cmp_deeply grab_issuance_date($user), [], 'Delete operation';
+    cmp_deeply grab_poa_dates($user), [], 'Delete operation';
 };
 
 subtest 'underage_client_detected' => sub {
