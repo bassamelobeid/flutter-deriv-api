@@ -1734,6 +1734,66 @@ async sub mt5_archive_restore_sync {
     return Future->done(1);
 }
 
+=head2 _get_mt5_account
+
+Get MT5 account details from users DB.
+
+=over 4
+
+=item * C<$db> - Reference of User Client's DBIC for database query
+
+=item * C<$loginid> - user's login id
+
+=back
+
+=cut
+
+sub _get_mt5_account {
+    my $params = shift;
+    my ($db, $loginid) = @{$params}{qw/db loginid/};
+    return $db->dbic->run(
+        fixup => sub {
+            $_->selectrow_arrayref(
+                'SELECT  
+                        binary_user_id,
+                        status,
+                        attributes 
+                   FROM users.loginid 
+                  WHERE loginid = ?',
+                undef, $loginid
+            );
+        });
+}
+
+=head2 _ib_affiliate_account_type
+
+Get IB affiliate account type from users DB.
+
+=over 4
+
+=item * C<$db> - Reference of User Client's DBIC for database query
+
+=item * C<$binary_user_id> - user's binary user id
+
+=item * C<$loginid> - user's login id
+
+=back
+
+=cut
+
+sub _ib_affiliate_account_type {
+    my $params = shift;
+    my ($db, $binary_user_id, $loginid) = @{$params}{qw/db binary_user_id loginid/};
+    return $db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                'SELECT mt5_account_type
+                   FROM mt5.list_user_accounts(?)
+                  WHERE mt5_account_id = ?',
+                undef, $binary_user_id, substr($loginid, 3));
+        });
+}
+
 =head2 mt5_archive_accounts
 
 Checks for open positions and orders, withdraws balance to a CR account
@@ -1748,8 +1808,11 @@ Archives MT5 Accounts
 =cut
 
 async sub mt5_archive_accounts {
-    my $args       = shift;
-    my $loginids   = $args->{loginids};
+    my $args = shift;
+
+    my $loginids = $args->{loginids};
+    die 'Must provide list of MT5 loginids' unless $loginids and @$loginids;
+
     my $staff_name = $args->{staff_name} // 'quants';
     my $user_db    = BOM::Database::UserDB::rose_db();
     my @email_content;
@@ -1764,30 +1827,26 @@ async sub mt5_archive_accounts {
         $archive_failed_row = "<tr><td>$loginid</td><td>Not Archived</td><td>%s</td><td>%s</td></tr>";
 
         try {
-            my $account = $user_db->dbic->run(
-                fixup => sub {
-                    $_->selectall_arrayref(
-                        'SELECT  
-                                binary_user_id,
-                                status,
-                                attributes 
-                           FROM users.loginid 
-                          WHERE loginid = ?',
-                        undef, $loginid
-                    );
-                });
+            my $account = _get_mt5_account({db => $user_db, loginid => $loginid});
 
             unless (@$account) {
                 push @email_content, sprintf($archive_failed_row, 'Unknown', 'Account not found');
                 next;
             }
 
-            ($binary_user_id, $status, $attributes) = @{$account->[0]};
-            $attributes = decode_json($attributes) || {group => 'Undefined'};
+            ($binary_user_id, $status, $attributes) = @$account;
+            $attributes = $attributes ? decode_json($attributes) : {group => 'Undefined'};
             $group      = $attributes->{group};
 
             if ($status and $status eq 'archived') {
                 push @email_content, sprintf($archive_failed_row, $group, 'Account already archived');
+                next;
+            }
+
+            my $affiliate_mt5_account_type = _ib_affiliate_account_type({db => $user_db, binary_user_id => $binary_user_id, loginid => $loginid});
+
+            if ($affiliate_mt5_account_type) {
+                push @email_content, sprintf($archive_failed_row, $group, "IB $affiliate_mt5_account_type account");
                 next;
             }
 
@@ -1815,50 +1874,8 @@ async sub mt5_archive_accounts {
             next;
         }
 
-        # prefer fiat currencies
-        my %fiat_currencies = (
-            'USD' => 1,
-            'EUR' => 1,
-            'AUD' => 1,
-            'GBP' => 1
-        );
-
-        # Find active CR account
         try {
-            $user = BOM::User->new((id => $binary_user_id));
-            my @bom_real_loginids = $user->bom_real_loginids;
 
-            foreach my $bom_real_loginid (@bom_real_loginids) {
-                my $bom_client = BOM::User::Client->new({loginid => $bom_real_loginid});
-
-                # active accounts only
-                if ($bom_client->is_available) {
-
-                    if ($fiat_currencies{$bom_client->currency}) {
-                        $client      = $bom_client;
-                        $bom_loginid = $client->loginid;
-                        $cr_currency = $client->currency;
-                        last;
-                    }
-
-                    $client      = $bom_client;
-                    $bom_loginid = $client->loginid;
-                    $cr_currency = $client->currency;
-                }
-            }
-
-        } catch ($e) {
-            $log->infof("MT5 archival for %s failed: [%s]", $loginid, $e);
-            push @email_content, sprintf($archive_failed_row, $group, 'Failed to fetch CR account for the withdrawal process');
-            next;
-        }
-
-        unless ($user && $client && $bom_loginid && $cr_currency) {
-            push @email_content, sprintf($archive_failed_row, $group, 'CR account for the withdrawal process not found');
-            next;
-        }
-
-        try {
             # Get user to check balance
             $mt5_user = await BOM::MT5::User::Async::get_user($loginid);
 
@@ -1868,8 +1885,19 @@ async sub mt5_archive_accounts {
                 next;
             }
 
+            $user = BOM::User->new((id => $binary_user_id));
+
             # Check balance and withdraw
             if ($mt5_user->{balance} and $mt5_user->{balance} > 0) {
+
+                $client = $user->accounts_by_category([$user->bom_real_loginids])->{enabled}->[0];
+                unless ($client) {
+                    push @email_content, sprintf($archive_failed_row, $group, 'CR account for the withdrawal process not found');
+                    next;
+                }
+
+                $bom_loginid = $client->loginid;
+                $cr_currency = $client->currency;
 
                 unless ($client->db->dbic->connected) {
                     $log->infof("MT5 archival for %s failed: [%s]", $loginid, 'DB connection lost');
@@ -1938,7 +1966,7 @@ async sub mt5_archive_accounts {
 
         my $archival_result = await _archive_mt5_account({mt5_prefix_id => $loginid, mt5_user => $mt5_user, bom_user => $user});
         unless ($archival_result) {
-            push @email_content, sprintf($archive_failed_row, $group, 'Performed withdrawal but failed to archive' . $withdrawal_result_message);
+            push @email_content, sprintf($archive_failed_row, $group, 'Performed withdrawal but failed to archive ' . $withdrawal_result_message);
             next;
         }
 
