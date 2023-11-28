@@ -16,6 +16,7 @@ __PACKAGE__->meta->setup(
         client_loginid             => { type => 'varchar', length => 12, not_null => 1 },
         authentication_method_code => { type => 'varchar', length => 50, not_null => 1 },
         expiration_date            => { type => 'date' },
+        verified_date              => { type => 'date' },
         comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
         document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
         status                     => { type => 'enum', check_in => [ 'uploading', 'uploaded', 'verified', 'rejected' ], db_type => 'status_type' },
