@@ -267,7 +267,11 @@ my @TRANSACTIONAL_EVENTS = qw(
     p2p_advert_created
     age_verified
     crypto_withdrawal_rejected_email_v2
-
+    poa_verification_failed_reminder
+    pa_first_time_approved
+    crypto_withdrawal_cancelled_email
+    self_tagging_affiliates
+    bonus_reject
     identity_verification_rejected
     poi_poa_resubmission
     crypto_withdrawal_locked_email

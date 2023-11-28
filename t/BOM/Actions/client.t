@@ -5104,6 +5104,29 @@ subtest 'crypto_withdrawal_email transactional' => sub {
         is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
         ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     };
+
+    subtest 'crypto_withdrawal_email transaction_status - cancelled' => sub {
+        undef @track_args;
+        undef @transactional_args;
+
+        BOM::Event::Actions::Client::crypto_withdrawal_email({
+                loginid            => $client->loginid,
+                amount             => '2',
+                currency           => 'ETH',
+                transaction_hash   => undef,
+                transaction_url    => undef,
+                live_chat_url      => 'https://deriv.com/en/?is_livechat_open=true',
+                transaction_status => 'CANCELLED',
+                reference_no       => 1,
+                title              => 'Your ETH withdrawal is cancelled',
+            })->get;
+
+        my ($customer, %args) = @track_args;
+        ok @transactional_args, 'CIO transactional is invoked';
+        is $args{event}, 'track_crypto_withdrawal_cancelled_email', "got correct event name";
+
+    };
+
     BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
 };
 
@@ -7185,6 +7208,37 @@ subtest 'self tagging affiliates' => sub {
     is scalar @track_args, 7, 'Track event is triggered';
 };
 
+subtest 'self tagging affiliates transactional email' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    undef @transactional_args;
+    undef @track_args;
+
+    my $args = {
+        properties => {
+            email         => 'Backend@binary.com',
+            live_chat_url => 'https://www.binary.com/en/contact.html?is_livechat_open=true',
+
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{self_tagging_affiliates};
+    my $result  = $handler->($args)->get;
+    my ($customer, %returned_args) = @track_args;
+    ok @transactional_args, 'CIO transactional is invoked';
+    is $returned_args{event}, 'track_self_tagging_affiliates', 'track event name is set correctly';
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+};
+
 subtest 'bonus_reject|approve' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -7239,6 +7293,50 @@ subtest 'bonus_reject|approve' => sub {
         'Bonus rejected';
     is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
+subtest 'bonus_reject transactional email' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @track_args;
+    undef @transactional_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            full_name => $test_client->full_name,
+            brand     => $req->brand_name,
+            language  => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{bonus_reject};
+    my $result  = $handler->($args)->get;
+
+    ok $result, 'Success result';
+    my ($customer, %args) = @track_args;
+
+    is_deeply $args->{properties},
+        {
+        full_name => $test_client->full_name,
+        brand     => 'deriv',
+        language  => 'EN',
+        },
+        'Bonus rejected';
+    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    ok @transactional_args,                                    'CIO transactional is invoked';
+    is $args{event}, 'track_bonus_reject', 'track event name is set correctly';
+
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
 };
 
 subtest 'request edd document upload' => sub {
