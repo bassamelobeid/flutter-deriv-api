@@ -4,118 +4,11 @@ use Test::More;
 use Test::MockModule;
 use Test::Deep;
 
-use BOM::User::Script::POAIssuancePopulator;
+use BOM::User::Script::POAVerifiedDatePopulator;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Database::UserDB;
 use Date::Utility;
-
-subtest 'Best Date' => sub {
-    my $tests = [{
-            hash1 => {
-
-            },
-            hash2 => {
-                1 => Date::Utility->new('2020-10-10'),
-                2 => Date::Utility->new('2020-10-10'),
-                3 => Date::Utility->new('2020-10-10'),
-            },
-            expected => {
-                1 => Date::Utility->new('2020-10-10'),
-                2 => Date::Utility->new('2020-10-10'),
-                3 => Date::Utility->new('2020-10-10'),
-            }
-        },
-        {
-            hash1 => {
-                1 => Date::Utility->new('2020-10-10'),
-                2 => Date::Utility->new('2020-10-10'),
-                3 => Date::Utility->new('2020-10-10'),
-            },
-            hash2 => {
-
-            },
-            expected => {
-                1 => Date::Utility->new('2020-10-10'),
-                2 => Date::Utility->new('2020-10-10'),
-                3 => Date::Utility->new('2020-10-10'),
-            }
-        },
-        {
-            hash1 => {
-                1 => Date::Utility->new('2020-10-10'),
-                2 => Date::Utility->new('2020-10-10'),
-                3 => Date::Utility->new('2020-10-10'),
-            },
-            hash2 => {
-                4 => Date::Utility->new('2020-10-10'),
-                5 => Date::Utility->new('2020-10-10'),
-                6 => Date::Utility->new('2020-10-10'),
-            },
-            expected => {
-                1 => Date::Utility->new('2020-10-10'),
-                2 => Date::Utility->new('2020-10-10'),
-                3 => Date::Utility->new('2020-10-10'),
-                4 => Date::Utility->new('2020-10-10'),
-                5 => Date::Utility->new('2020-10-10'),
-                6 => Date::Utility->new('2020-10-10'),
-            }
-        },
-        {
-            hash1 => {
-                1  => Date::Utility->new('2020-10-11'),
-                11 => Date::Utility->new('2020-10-10'),
-                2  => Date::Utility->new('2020-10-10'),
-                3  => Date::Utility->new('2020-10-10'),
-                4  => Date::Utility->new('2020-10-10'),
-            },
-            hash2 => {
-                1  => Date::Utility->new('2020-10-10'),
-                22 => Date::Utility->new('2020-10-10'),
-                2  => Date::Utility->new('2020-10-11'),
-                3  => Date::Utility->new('2020-10-10'),
-                5  => Date::Utility->new('2020-10-10'),
-            },
-            expected => {
-                1  => Date::Utility->new('2020-10-11'),
-                11 => Date::Utility->new('2020-10-10'),
-                22 => Date::Utility->new('2020-10-10'),
-                2  => Date::Utility->new('2020-10-11'),
-                3  => Date::Utility->new('2020-10-10'),
-                4  => Date::Utility->new('2020-10-10'),
-                5  => Date::Utility->new('2020-10-10'),
-            },
-        },
-        {
-            hash1 => {
-                1 => Date::Utility->new('2020-10-11'),
-                2 => Date::Utility->new('2020-10-12'),
-                3 => Date::Utility->new('2020-10-13'),
-                4 => Date::Utility->new('2020-10-14'),
-                5 => Date::Utility->new('2020-10-15'),
-            },
-            hash2 => {
-                1 => Date::Utility->new('2020-10-15'),
-                2 => Date::Utility->new('2020-10-14'),
-                3 => Date::Utility->new('2020-10-13'),
-                4 => Date::Utility->new('2020-10-12'),
-                5 => Date::Utility->new('2020-10-11'),
-            },
-            expected => {
-                1 => Date::Utility->new('2020-10-15'),
-                2 => Date::Utility->new('2020-10-14'),
-                3 => Date::Utility->new('2020-10-13'),
-                4 => Date::Utility->new('2020-10-14'),
-                5 => Date::Utility->new('2020-10-15'),
-            },
-        },
-    ];
-
-    for my $test ($tests->@*) {
-        cmp_deeply BOM::User::Script::POAIssuancePopulator::get_best_date($test->{hash1}, $test->{hash2}), $test->{expected},
-            'Expected hashref returned';
-    }
-};
 
 subtest 'get massive arrayref' => sub {
 
@@ -127,15 +20,15 @@ subtest 'get massive arrayref' => sub {
             },
             expected => [{
                     binary_user_id => 1,
-                    issue_date     => '2020-10-10',
+                    verified_date  => '2020-10-10',
                 },
                 {
                     binary_user_id => 2,
-                    issue_date     => '2020-10-10',
+                    verified_date  => '2020-10-10',
                 },
                 {
                     binary_user_id => 3,
-                    issue_date     => '2020-10-10',
+                    verified_date  => '2020-10-10',
                 },
             ]
         },
@@ -147,15 +40,15 @@ subtest 'get massive arrayref' => sub {
             },
             expected => [{
                     binary_user_id => 1,
-                    issue_date     => '2020-10-13',
+                    verified_date  => '2020-10-13',
                 },
                 {
                     binary_user_id => 2,
-                    issue_date     => '2020-10-12',
+                    verified_date  => '2020-10-12',
                 },
                 {
                     binary_user_id => 3,
-                    issue_date     => '2020-10-11',
+                    verified_date  => '2020-10-11',
                 },
             ]
         },
@@ -166,7 +59,7 @@ subtest 'get massive arrayref' => sub {
     ];
 
     for my $test ($tests->@*) {
-        cmp_bag BOM::User::Script::POAIssuancePopulator::get_massive_arrayref($test->{hash}), $test->{expected}, 'Expected arrayref returned';
+        cmp_bag BOM::User::Script::POAVerifiedDatePopulator::get_massive_arrayref($test->{hash}), $test->{expected}, 'Expected arrayref returned';
     }
 };
 
@@ -190,9 +83,7 @@ my ($cli4, $u4) = add_client({
 
 my $now = Date::Utility->new();
 
-subtest 'POA Issuance Populator' => sub {
-    clear_poa_issuance();
-
+subtest 'POA Verified Date Populator' => sub {
     add_document(
         $cli1,
         {
@@ -253,21 +144,24 @@ subtest 'POA Issuance Populator' => sub {
             status                     => 'verified',
         });
 
-    # running it with limit 1 ensures the inner loop is hit multiple times
-    # this is not the global limit but the limit per broker code hit
-    BOM::User::Script::POAIssuancePopulator::run({limit => 1});
-
-    cmp_bag get_poa_issuance(), [$u1->id, $u2->id, $u4->id], 'Expected POA Issuance';
-
-    # ensure the same result with default limit
-    clear_poa_issuance();
-
+    # POAVerifiedDatePopulator performs an update operation, so we need records to already be there
     BOM::User::Script::POAIssuancePopulator::run();
 
-    cmp_bag get_poa_issuance(), [$u1->id, $u2->id, $u4->id], 'Expected POA Issuance';
+    # running it with limit 1 ensures the inner loop is hit multiple times
+    # this is not the global limit but the limit per broker code hit
+    BOM::User::Script::POAVerifiedDatePopulator::run({limit => 1});
+
+    cmp_bag get_poa_verified_dates(), [$u1->id, $u2->id, $u4->id], 'Expected POA Issuance';
+
+    # ensure the same result with default limit
+    clear_poa_verified_date();
+
+    BOM::User::Script::POAVerifiedDatePopulator::run();
+
+    cmp_bag get_poa_verified_dates(), [$u1->id, $u2->id, $u4->id], 'Expected POA Issuance';
 
     # make cli3 lifetime valid
-    clear_poa_issuance();
+    clear_poa_verified_date();
 
     add_document(
         $cli3,
@@ -286,19 +180,19 @@ subtest 'POA Issuance Populator' => sub {
         });
 
     # running it with limit 1 ensures the inner loop is hit multiple times
-    BOM::User::Script::POAIssuancePopulator::run({limit => 1});
+    BOM::User::Script::POAVerifiedDatePopulator::run({limit => 1});
 
-    cmp_bag get_poa_issuance(), [$u1->id, $u4->id], 'Expected POA Issuance';
+    cmp_bag get_poa_verified_dates(), [$u1->id, $u4->id], 'Expected POA Issuance';
 
     # ensure the same result with default limit
-    clear_poa_issuance();
+    clear_poa_verified_date();
 
-    BOM::User::Script::POAIssuancePopulator::run();
+    BOM::User::Script::POAVerifiedDatePopulator::run();
 
-    cmp_bag get_poa_issuance(), [$u1->id, $u4->id], 'Expected POA Issuance';
+    cmp_bag get_poa_verified_dates(), [$u1->id, $u4->id], 'Expected POA Issuance';
 };
 
-sub get_poa_issuance {
+sub get_poa_verified_dates {
     my $user_db = BOM::Database::UserDB::rose_db()->dbic;
 
     return [
@@ -306,7 +200,7 @@ sub get_poa_issuance {
             fixup => sub {
                 # put a boundary in the future to ensure the records will get caught
                 $_->selectall_arrayref(
-                    'SELECT binary_user_id FROM users.poa_issuance WHERE issue_date < ? ORDER BY issue_date DESC LIMIT ?',
+                    'SELECT * FROM users.get_outdated_poa(?, ?)',
                     {Slice => {}},
                     $now->plus_time_interval('10y')->date_yyyymmdd, 1000
                 );
@@ -315,11 +209,11 @@ sub get_poa_issuance {
     ];
 }
 
-sub clear_poa_issuance {
+sub clear_poa_verified_date {
     my $user_db = BOM::Database::UserDB::rose_db()->dbic;
     $user_db->run(
         fixup => sub {
-            $_->do('DELETE FROM users.poa_issuance');
+            $_->do('UPDATE users.poa_issuance SET verified_date = NULL');
         });
 }
 
@@ -339,12 +233,10 @@ sub add_client {
     });
 
     my $test_user = $args->{user} // BOM::User->create(
-        email          => $args->{email},
-        password       => "hello",
-        email_verified => 1,
+        email    => $args->{email},
+        password => 'secret_pwd',
     );
     $test_user->add_client($test_client);
-    $test_client->place_of_birth('cn');
     $test_client->binary_user_id($test_user->id);
     $test_client->save;
 

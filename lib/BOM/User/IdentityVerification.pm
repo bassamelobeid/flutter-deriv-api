@@ -73,7 +73,7 @@ sub add_document {
     die 'document_number is required' unless $document_number;
     die 'document_type is required'   unless $document_type;
 
-    $expiration_date = Date::Utility->new($expiration_date)->date if $expiration_date;
+    $expiration_date = validate_date_format($expiration_date);
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
     try {
@@ -212,8 +212,8 @@ sub update_document_check {
     }
 
     # should've already been utf8 decoded
-    $messages        = encode_json_text($messages)                if $messages;
-    $expiration_date = Date::Utility->new($expiration_date)->date if $expiration_date;
+    $messages        = encode_json_text($messages) if $messages;
+    $expiration_date = validate_date_format($expiration_date);
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
@@ -431,11 +431,11 @@ sub reset_to_zero_left_submissions {
 
 =head2 limit_per_user
 
-Provides a central point for onfido resubmissions limit per user in the specified
+Provides a central point for idv resubmissions limit per user in the specified
 timeframe.
 
 Returns,
-    an integer representing the onfido submission requests allowed per user
+    an integer representing the idv submission requests allowed per user
 
 =cut
 
@@ -816,6 +816,40 @@ sub is_available {
     my $is_available = ($has_submissions_left || $expired_document_chance) && !$idv_disallowed;
 
     return $is_available ? 1 : 0;
+}
+
+=head2 validate_date_format
+
+Checks if the argument is a valid date.
+
+It takes an argument:
+
+=over 4
+
+=item * C<$expiration_date> - the document expiration date
+
+=back
+
+Returns a Date::Utility date in case of a valid date or undef otherwise.
+
+=cut
+
+sub validate_date_format {
+    my ($date_string) = @_;
+
+    if (not defined $date_string or $date_string eq 'Not Available') {
+        return undef;
+    }
+
+    my $eval_result;
+    $eval_result = eval {
+        $date_string = Date::Utility->new($date_string)->date;
+        1;
+    };
+
+    $date_string = undef unless $eval_result;
+
+    return $date_string;
 }
 
 1;

@@ -191,24 +191,33 @@ sub _build_uploaded {
             if (my $ttl = $category_config->{time_to_live}) {
                 if ($doc_status eq 'verified') {
                     if ($single_document->lifetime_valid || $has_lifetime_valid->{$category_key}) {
-                        $documents{$category_key}->{is_outdated}     = 0;
-                        $documents{$category_key}->{best_issue_date} = undef;
-                        $has_lifetime_valid->{$category_key}         = 1;
-                    } elsif (my $issue_date = $single_document->issue_date) {
-                        my $now               = Date::Utility->new;
-                        my $issuance_validity = Date::Utility->new($issue_date)->plus_time_interval($ttl);
+                        $documents{$category_key}->{is_outdated}        = 0;
+                        $documents{$category_key}->{best_issue_date}    = undef;
+                        $documents{$category_key}->{best_verified_date} = undef;
+                        $has_lifetime_valid->{$category_key}            = 1;
+                    } else {
+                        if (my $issue_date = $single_document->issue_date) {
+                            my $issue_du = Date::Utility->new($issue_date);
+                            $documents{$category_key}->{best_issue_date} //= $issue_du;
+                            $documents{$category_key}->{best_issue_date} = $issue_du
+                                if $documents{$category_key}->{best_issue_date}->is_before($issue_du);
+                        }
+                        if (my $verified_date = $single_document->verified_date) {
+                            my $now                   = Date::Utility->new;
+                            my $verification_validity = Date::Utility->new($verified_date)->plus_time_interval($ttl);
 
-                        my $days_outdated = $now->days_between($issuance_validity);
-                        $days_outdated = 0 if $days_outdated < 0;
+                            my $days_outdated = $now->days_between($verification_validity);
+                            $days_outdated = 0 if $days_outdated < 0;
 
-                        $documents{$category_key}->{is_outdated} //= $days_outdated;
-                        # the less days outdated the better
-                        $documents{$category_key}->{is_outdated} = $days_outdated if $days_outdated < $documents{$category_key}->{is_outdated};
+                            $documents{$category_key}->{is_outdated} //= $days_outdated;
+                            # the less days outdated the better
+                            $documents{$category_key}->{is_outdated} = $days_outdated if $days_outdated < $documents{$category_key}->{is_outdated};
 
-                        my $issue_du = Date::Utility->new($issue_date);
-                        $documents{$category_key}->{best_issue_date} //= $issue_du;
-                        $documents{$category_key}->{best_issue_date} = $issue_du
-                            if $documents{$category_key}->{best_issue_date}->is_before($issue_du);
+                            my $verified_du = Date::Utility->new($verified_date);
+                            $documents{$category_key}->{best_verified_date} //= $verified_du;
+                            $documents{$category_key}->{best_verified_date} = $verified_du
+                                if $documents{$category_key}->{best_verified_date}->is_before($verified_du);
+                        }
                     }
                 } elsif ($doc_status eq 'uploaded') {
                     $documents{$category_key}{is_pending} = 1;
@@ -342,6 +351,30 @@ sub best_issue_date {
     return undef unless $best_issue_date;
 
     return Date::Utility->new($best_issue_date);
+}
+
+=head2 best_poa_date
+
+Gets the best poa date from the given document and date category, this is the most future date data from a verified document
+
+Date category may be best_issue_date or best_verified_date
+
+Returns a C<Date::Utility> or C<undef> if there is no such date or no such date category.
+
+=cut
+
+sub best_poa_date {
+    my ($self, $doc_category, $date_category) = @_;
+    my $uploaded = $self->uploaded;
+    $doc_category //= 'proof_of_address';
+
+    my $category = $uploaded->{$doc_category} // {};
+
+    my $best_date = $category->{$date_category};
+
+    return undef unless $best_date;
+
+    return Date::Utility->new($best_date);
 }
 
 =head2 outdated

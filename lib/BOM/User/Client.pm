@@ -8601,10 +8601,18 @@ Returns the same C<file_id> given when no exception is seen.
 
 sub finish_document_upload {
     my ($self, $file_id, $status) = @_;
+    $status //= 'uploaded';
+
+    my $verified_date;
+    $verified_date = Date::Utility->new->date_yyyymmdd if $status eq 'verified';
 
     return $self->db->dbic->run(
         ping => sub {
-            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?::status_type)', undef, $file_id, $status // 'uploaded');
+            $_->selectrow_array(
+                'SELECT * FROM betonmarkets.finish_document_upload(?, ?::status_type, ?::date)',
+                undef, $file_id, $status // 'uploaded',
+                $verified_date
+            );
         });
 }
 

@@ -731,7 +731,7 @@ subtest 'check_poa_issuance' => sub {
 
     $user->dbic->run(
         fixup => sub {
-            $_->do('select users.upsert_poa_issuance(?,?)', undef, $user->id, '2020-10-10');
+            $_->do('select users.upsert_poa_verification_and_issuance(?,?, ?)', undef, $user->id, '2020-10-10', '2020-10-10');
         });
 
     my $mock_docs = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments::Config');

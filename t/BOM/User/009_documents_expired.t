@@ -229,8 +229,10 @@ subtest 'documents uploaded' => sub {
                     type   => "bankstatement",
                     },
             },
-            is_pending  => 0,
-            is_verified => 1,
+            is_pending         => 0,
+            is_verified        => 1,
+            is_outdated        => 0,
+            best_verified_date => ignore(),
         },
         proof_of_identity => {
             documents => {
@@ -276,8 +278,10 @@ subtest 'documents uploaded' => sub {
                     type   => "bankstatement",
                     },
             },
-            is_pending  => 0,
-            is_verified => 1,
+            is_pending         => 0,
+            is_verified        => 1,
+            is_outdated        => 0,
+            best_verified_date => ignore(),
         },
         proof_of_identity => {
             documents => {

@@ -180,241 +180,222 @@ subtest 'uploaded by IDV' => sub {
 
 subtest 'Outdated documents' => sub {
     my $one_year_ago = Date::Utility->new->minus_time_interval('1y');
+    my $now          = Date::Utility->new;
+    my $best_date;
+
+    my $SQL_1       = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,NULL,?::betonmarkets.client_document_origin)';
+    my $sth_doc_new = $dbh->prepare($SQL_1);
+
+    my $SQL_2          = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    my $sth_doc_finish = $dbh->prepare($SQL_2);
+
+    my $SQL_3          = 'UPDATE betonmarkets.client_authentication_document SET verified_date = ? WHERE id = ?';
+    my $sth_doc_update = $dbh->prepare($SQL_3);
 
     subtest 'No POA docs' => sub {
         $client->documents->_clear_uploaded;
         ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
     };
 
-    subtest 'No issuance date' => sub {
-        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'awe4', 'none', 'front', 'bo');
-
+    subtest 'No best date' => sub {
+        $best_date = undef;
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'awe4', 'none', 'front', $best_date, 'bo');
         my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
 
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
         $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
 
         $client->documents->_clear_uploaded;
-        ok !$client->documents->outdated('proof_of_address'),        'PoA is not outdated';
-        ok !$client->documents->best_issue_date('proof_of_address'), 'undef best issue date';
-    };
+        ok !$client->documents->outdated('proof_of_address'),                         'PoA is not outdated';
+        ok !$client->documents->best_poa_date('proof_of_address', 'best_issue_date'), 'undef best issue date';
 
-    subtest 'With outdated issuance date +100' => sub {
-        my $SQL =
-            'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,(?::DATE - INTERVAL \'100 day\')::DATE,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ftag', 'none', 'front', $one_year_ago->date_yyyymmdd,
-            'bo');
-
-        my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
-
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
-        $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
+        $sth_doc_update->execute($best_date, $id1);
 
         $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'), 100, 'PoA is outdated by 100 days';
-
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->minus_time_interval('100d')->date_yyyymmdd,
-            'expected best issue date';
+        ok !$client->documents->outdated('proof_of_address'),                            'PoA is not outdated';
+        ok !$client->documents->best_poa_date('proof_of_address', 'best_verified_date'), 'undef best verified date';
     };
 
-    subtest 'With outdated issuance date +2' => sub {
-        my $SQL =
-            'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,(?::DATE - INTERVAL \'2 day\')::DATE,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ddadd', 'none', 'front', $one_year_ago->date_yyyymmdd,
-            'bo');
+    subtest 'With outdated best date +100' => sub {
+        $best_date = $one_year_ago->minus_time_interval('100d')->date_yyyymmdd;
 
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ftag', 'none', 'front', $best_date, 'bo');
         my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
 
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
         $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
-
-        $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'), 2, 'PoA is outdated by 2 days';
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->minus_time_interval('2d')->date_yyyymmdd,
-            'expected best issue date';
-    };
-
-    subtest 'With outdated issuance date +1' => sub {
-        my $SQL =
-            'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,(?::DATE - INTERVAL \'1 day\')::DATE,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ffaf', 'none', 'front', $one_year_ago->date_yyyymmdd,
-            'bo');
-
-        my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
-
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
-        $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
-
-        $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'), 1, 'PoA is outdated by 1 day';
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
-            'expected best issue date';
-    };
-
-    subtest 'With outdated issuance date +3' => sub {
-        my $SQL =
-            'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,(?::DATE - INTERVAL \'3 day\')::DATE,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'xxasa', 'none', 'front', $one_year_ago->date_yyyymmdd,
-            'bo');
-
-        my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
-
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
-        $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
-
-        $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'), 1, 'PoA is outdated by 1 day still';
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
-            'expected best issue date';
-    };
-
-    subtest 'With boundary issuance date but rejected' => sub {
-        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'afkee', 'none', 'front', $one_year_ago->date_yyyymmdd,
-            'bo');
-
-        my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
-
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'rejected\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
-        $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
-
-        $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'), 1, 'PoA is outdated by 1 day still';
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
-            'expected best issue date';
-    };
-
-    subtest 'With boundary issuance date' => sub {
-        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'afk', 'none', 'front', $one_year_ago->date_yyyymmdd, 'bo');
-
-        my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
-
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
-        $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
-
-        $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'),                       0,                            'PoA is not outdated';
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->date_yyyymmdd, 'expected best issue date';
-    };
-
-    subtest 'With outdated issuance date +3' => sub {
-        my $SQL =
-            'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,(?::DATE - INTERVAL \'3 day\')::DATE,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ggasfafaggg', 'none', 'front',
-            $one_year_ago->date_yyyymmdd, 'bo');
-
-        my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
-
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
-        $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
-
-        $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'),                       0,                            'PoA is not outdated';
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->date_yyyymmdd, 'expected best issue date';
-    };
-
-    my $now = Date::Utility->new;
-
-    subtest 'With valid issuance date' => sub {
-        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'yuu', 'none', 'front', $now->date_yyyymmdd, 'bo');
-
-        my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
-
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
-        $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
 
         $client->documents->_clear_uploaded;
         ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $now->date_yyyymmdd, 'expected best issue date';
-    };
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd, $best_date, 'expected best issue date';
 
-    subtest 'With outdated issuance date +3' => sub {
-        my $SQL =
-            'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,(?::DATE - INTERVAL \'3 day\')::DATE,NULL,?::betonmarkets.client_document_origin)';
-        my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ggggg', 'none', 'front', $one_year_ago->date_yyyymmdd,
-            'bo');
-
-        my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
-
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
-        $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
+        $sth_doc_update->execute($best_date, $id1);
 
         $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'),                       0,                   'PoA is not outdated';
-        is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $now->date_yyyymmdd, 'expected best issue date';
+        is $client->documents->outdated('proof_of_address'),                                           100,        'PoA is outdated by 100 days';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $best_date, 'expected best verified date';
+    };
+
+    subtest 'With outdated poa date +2' => sub {
+        $best_date = $one_year_ago->minus_time_interval('2d')->date_yyyymmdd;
+
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ddadd', 'none', 'front', $best_date, 'bo');
+        my $id1 = $sth_doc_new->fetch()->[0];
+
+        $sth_doc_finish->execute($id1);
+
+        $client->documents->_clear_uploaded;
+        ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd, $best_date, 'expected best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->outdated('proof_of_address'),                                           2,          'PoA is outdated by 2 days';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $best_date, 'expected best verified date';
+    };
+
+    subtest 'With outdated poa date +1' => sub {
+        $best_date = $one_year_ago->minus_time_interval('1d')->date_yyyymmdd;
+
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ffaf', 'none', 'front', $best_date, 'bo');
+        my $id1 = $sth_doc_new->fetch()->[0];
+
+        $sth_doc_finish->execute($id1);
+
+        $client->documents->_clear_uploaded;
+        ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd,
+            $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
+            'expected best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->outdated('proof_of_address'),                                           1,          'PoA is outdated by 1 day';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $best_date, 'expected best verified date';
+    };
+
+    subtest 'With outdated poa date +3' => sub {
+        $best_date = $one_year_ago->minus_time_interval('3d')->date_yyyymmdd;
+
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'xxasa', 'none', 'front', $best_date, 'bo');
+        my $id1 = $sth_doc_new->fetch()->[0];
+
+        $sth_doc_finish->execute($id1);
+
+        $client->documents->_clear_uploaded;
+        ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd,
+            $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
+            'expected best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->outdated('proof_of_address'), 1, 'PoA is outdated by 1 day still';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd,
+            $one_year_ago->minus_time_interval('1d')->date_yyyymmdd, 'expected best verified date';
+    };
+
+    subtest 'With boundary poa date but rejected' => sub {
+        $best_date = $one_year_ago->date_yyyymmdd;
+
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'afkee', 'none', 'front', $best_date, 'bo');
+        my $id1 = $sth_doc_new->fetch()->[0];
+
+        my $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'rejected\'::status_type)';
+        my $sth_doc_finish = $dbh->prepare($SQL);
+        $sth_doc_finish->execute($id1);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->outdated('proof_of_address'), 1, 'PoA is outdated by 1 day still';
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd,
+            $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
+            'expected best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->outdated('proof_of_address'), 1, 'PoA is outdated by 1 day still';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd,
+            $one_year_ago->minus_time_interval('1d')->date_yyyymmdd, 'expected best verified date';
+    };
+
+    subtest 'With boundary poa date' => sub {
+        $best_date = $one_year_ago->date_yyyymmdd;
+
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'afk', 'none', 'front', $best_date, 'bo');
+        my $id1 = $sth_doc_new->fetch()->[0];
+
+        $sth_doc_finish->execute($id1);
+
+        $client->documents->_clear_uploaded;
+        ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd, $best_date, 'expected best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
+
+        $client->documents->_clear_uploaded;
+        ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $best_date, 'expected best verified date';
+    };
+
+    subtest 'With outdated poa date +3' => sub {
+        $best_date = $one_year_ago->minus_time_interval('3d')->date_yyyymmdd;
+
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ggasfafaggg', 'none', 'front', $best_date, 'bo');
+        my $id1 = $sth_doc_new->fetch()->[0];
+
+        $sth_doc_finish->execute($id1);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->outdated('proof_of_address'), 0, 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd, $one_year_ago->date_yyyymmdd,
+            'expected best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
+
+        $client->documents->_clear_uploaded;
+        ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $one_year_ago->date_yyyymmdd,
+            'expected best verified date';
+    };
+
+    subtest 'With valid best date' => sub {
+        $best_date = $now->date_yyyymmdd;
+
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'yuu', 'none', 'front', $now->date_yyyymmdd, 'bo');
+        my $id1 = $sth_doc_new->fetch()->[0];
+
+        $sth_doc_finish->execute($id1);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd, $now->date_yyyymmdd, 'expected best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
+
+        $client->documents->_clear_uploaded;
+        ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $now->date_yyyymmdd,
+            'expected best verified date';
+    };
+
+    subtest 'With outdated poa date +3' => sub {
+        $best_date = $one_year_ago->minus_time_interval('3d')->date_yyyymmdd;
+
+        $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ggggg', 'none', 'front', $best_date, 'bo');
+        my $id1 = $sth_doc_new->fetch()->[0];
+
+        $sth_doc_finish->execute($id1);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd, $now->date_yyyymmdd, 'expected best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
+
+        $client->documents->_clear_uploaded;
+        ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $now->date_yyyymmdd,
+            'expected best verified date';
     };
 
     subtest 'Lifetime valid' => sub {
@@ -422,21 +403,18 @@ subtest 'Outdated documents' => sub {
             'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,(?::DATE - INTERVAL \'100 day\')::DATE,TRUE,?::betonmarkets.client_document_origin)';
         my $sth_doc_new = $dbh->prepare($SQL);
         $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'awe', 'none', 'front', $one_year_ago->date_yyyymmdd, 'bo');
-
         my $id1 = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
 
-        my $sth_doc_info = $dbh->prepare($SQL);
-        $sth_doc_info->execute($client->loginid);
-
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-        my $sth_doc_finish = $dbh->prepare($SQL);
         $sth_doc_finish->execute($id1);
-        $sth_doc_info->execute($client->loginid);
+
+        $client->documents->_clear_uploaded;
+        is $client->documents->best_poa_date('proof_of_address', 'best_issue_date'), undef, 'undef best issue date';
+
+        $sth_doc_update->execute($best_date, $id1);
 
         $client->documents->_clear_uploaded;
         ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
-        is $client->documents->best_issue_date('proof_of_address'), undef, 'undef best issue date';
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date'), undef, 'undef best verified date';
     };
 };
 
@@ -598,7 +576,7 @@ subtest 'POA state machine' => sub {
     $client->documents->_clear_uploaded;
     is $client->get_poa_status, 'verified', 'POA status = verified';
 
-    $SQL            = "UPDATE betonmarkets.client_authentication_document SET issue_date=NOW() - INTERVAL '1 year' - INTERVAL '1 day' WHERE id = ?";
+    $SQL = "UPDATE betonmarkets.client_authentication_document SET verified_date=NOW() - INTERVAL '1 year' - INTERVAL '1 day' WHERE id = ?";
     $sth_doc_finish = $dbh->prepare($SQL);
     $sth_doc_finish->execute($id1);
 
@@ -628,20 +606,12 @@ subtest 'POA state machine' => sub {
     $client->documents->_clear_uploaded;
     is $client->get_poa_status, 'expired', 'POA status = expired (2nd doc rejected)';
 
-    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
-    $sth_doc_finish = $dbh->prepare($SQL);
-    $sth_doc_finish->execute($id2);
-
-    $client->documents->_clear_uploaded;
-    is $client->get_poa_status, 'expired', 'POA status = expired (2nd doc issue date-less)';
-
-    $SQL            = "UPDATE betonmarkets.client_authentication_document SET issue_date=NOW() - INTERVAL '1 year' WHERE id = ?";
+    $SQL            = "UPDATE betonmarkets.client_authentication_document SET verified_date=NOW() - INTERVAL '1 year' WHERE id = ?";
     $sth_doc_finish = $dbh->prepare($SQL);
     $sth_doc_finish->execute($id1);
 
     $client->documents->_clear_uploaded;
     is $client->get_poa_status, 'verified', 'POA status = verified';
-
 };
 
 done_testing();
