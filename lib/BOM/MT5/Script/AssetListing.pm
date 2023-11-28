@@ -229,8 +229,9 @@ async sub run {
 
             }
 
-            my @symbols_list      = keys $self->symbol_info_cache->{$mt5_group}->%*;
-            my $symbol_str        = join(",", @symbols_list);
+            my @symbols_list = keys $self->symbol_info_cache->{$mt5_group}->%*;
+            my $symbol_str   = join(",", sort @symbols_list);
+            stats_inc('mt5.asset_listing.symbols', {tags => ['symbols_list:' . $symbol_str, 'mt5_group:' . $mt5_group]});
             my $tick_last         = await $self->_get_last_ticks_for_group($manager_login, $symbol_str, $mt5_group);
             my $next_start_of_day = Date::Utility->new->plus_time_interval('1d')->truncate_to_day->epoch;
 
@@ -302,6 +303,8 @@ async sub run {
 
         $log->debugf('Updated %s assets', scalar(@results));
 
+        stats_inc('mt5.asset_listing.assets_updated_count', {tags => ['count:' . scalar(@results)]});
+
         # Update every at every 10th second of the minute
         my $paused_interval = UPDATE_INTERVAL_SECS - Date::Utility->new->epoch % UPDATE_INTERVAL_SECS;
         (await $self->loop->delay_future(after => $paused_interval)) if $paused_interval;
@@ -366,7 +369,7 @@ async sub _get_group_symbols {
         @group_symbols = $group_info->{symbols}->@*;
 
     } catch ($e) {
-        $log->errorf("Error in _get_group_symbols ", $e);
+        $log->errorf("Error in _get_group_symbols %s", $e);
     }
 
     return \@group_symbols;
@@ -408,7 +411,7 @@ async sub _get_symbol_info {
             point  => $symbol_info->{point}};
 
     } catch ($e) {
-        $log->errorf("Error in _get_symbol_info ", $e);
+        $log->errorf("Error in _get_symbol_info %s", $e);
     }
 
     return $symbol_info;
