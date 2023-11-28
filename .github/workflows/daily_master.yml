@@ -1,5 +1,7 @@
 name: Daily master test
 run-name: Daily test on master branch
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
   schedule:
     - cron: '30 22 * * *'
@@ -28,7 +30,16 @@ jobs:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
       - name: Product contract test
-        run: make unit_test_product_contract
+        run:  |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make unit_test_product_contract
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
   validation:
     runs-on: ubuntu-latest
     container:
@@ -50,7 +61,16 @@ jobs:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
       - name: Validation
-        run: make unit_test_validation
+        run:  |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make unit_test_validation
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
   memory_test:
     runs-on: ubuntu-latest
     container:
@@ -72,7 +92,16 @@ jobs:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
       - name: MemoryTest
-        run: make memory_test
+        run: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make memory_test
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
   pricing:
     runs-on: ubuntu-latest
     container:
@@ -94,7 +123,16 @@ jobs:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
       - name: Pricing
-        run: make unit_test_pricing
+        run: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make unit_test_pricing
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
   product_others:
     runs-on: ubuntu-latest
     container:
@@ -115,6 +153,8 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
+      - name: Enable Test Report Generation
+        run: echo '--formatter TAP::Formatter::JUnit' >> .proverc     
       - name: Product extended
         run: make unit_test_product_contract_extended
       - name: Product base
@@ -129,6 +169,13 @@ jobs:
       - name: Offerings
         run: make unit_test_offerings
         if: always()
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-output/**/*.xml
+          retention-days: 1
   benchmark_merlin_ovra:
     runs-on: ubuntu-latest
     container:
@@ -263,3 +310,15 @@ jobs:
           cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
           make test
         if: always()
+  publish_test_results:
+    needs: [ product_others , pricing , memory_test , validation , produt_contract ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Upload results to TestSpace
+        uses: regentmarkets/github-actions/testspace-publish@master
+        with: 
+          token: ${{ secrets.TESTSPACE_TOKEN }}
+          artifact: test-results
+          file_path: ./**/*.xml
