@@ -433,6 +433,9 @@ if ($input{document_list}) {
             next;
         }
 
+        my $verified_date = Date::Utility->new->date_yyyymmdd;
+        $doc->verified_date($verified_date) if $new_doc_status eq 'verified' && !$field_error;
+
         $doc->status($new_doc_status) unless $field_error;
 
         $full_msg .= (
