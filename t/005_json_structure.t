@@ -173,9 +173,8 @@ subtest 'common properties' => sub {
     my $common_properties = {
         send => {
             passthrough => {
-                description =>
-                    '[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field. Maximum size is 3500 bytes.',
-                type => 'object',
+                description => '[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.',
+                type        => 'object',
             },
             req_id => {
                 description => '[Optional] Used to map request to response.',
