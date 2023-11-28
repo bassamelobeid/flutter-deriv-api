@@ -119,7 +119,10 @@ my %document_type_sides  = $client->documents->sided_types->%*;
 my %document_sides       = $client->documents->sides->%*;
 my @numberless_doctypes  = $client->documents->numberless->@*;
 my @onfido_doctypes      = keys $client->documents->provider_types->{onfido}->%*;
-
+my $is_readonly          = BOM::Backoffice::Auth::has_readonly_access();
+my $button_type          = $is_readonly ? 'btn btn--disabled' : 'btn btn--primary';
+code_exit_BO(_get_display_error_message("Access Denied: you do not have access to make this change "))
+    if $is_readonly and request()->http_method eq 'POST';
 # Enabling onfido resubmission
 my $redis             = BOM::Config::Redis::redis_replicated_write();
 my $poi_status_reason = $input{poi_reason} // $client->status->reason('allow_poi_resubmission') // 'unselected';
@@ -336,6 +339,7 @@ if ($input{document_list}) {
     $new_doc_status = 'delete'           if $input{delete_checked_documents};
     $new_doc_status = 'address mismatch' if $input{address_mismatch_checked_documents};
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Document update status not specified<a/></p>]) unless $new_doc_status;
+    code_exit_BO(_get_display_error_message("Access Denied: you do not have access to make this change ")) if $is_readonly;
 
     my $documents = $input{document_list};
     my @documents = ref $documents ? @$documents : ($documents);
@@ -591,7 +595,7 @@ if (BOM::Backoffice::Auth::has_authorisation(['AntiFraud', 'CS'])) {
 }
 
 # sync authentication status to Doughflow
-if ($input{whattodo} eq 'sync_to_DF') {
+if ($input{whattodo} eq 'sync_to_DF' && !$is_readonly) {
     my $error = sync_to_doughflow($client, $clerk);
 
     Bar('SYNC CLIENT AUTHENTICATION STATUS TO DOUGHFLOW');
@@ -1634,26 +1638,27 @@ BOM::Backoffice::Request::template()->process(
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 # Show Self-Exclusion link
-Bar("$loginid SELF-EXCLUSION SETTINGS", {nav_link => "SELF-EXCLUSION SETTINGS"});
-print "<p><a id='self-exclusion' class=\"btn btn--primary\" href=\""
-    . request()->url_for(
-    'backoffice/f_setting_selfexclusion.cgi',
-    {
-        broker  => $broker,
-        loginid => $loginid
-    }) . "\">Configure self-exclusion settings</a> <strong>for $encoded_loginid</strong></p>";
-
-# show restricted-access fields of regulated landing company clients (accessible for compliance staff only)
-if (BOM::Backoffice::Auth::has_authorisation(['Compliance']) and $client->landing_company->is_eu) {
-    print '<a id="self-exclusion_restricted" class="btn btn--primary" href="'
+if (!$is_readonly) {
+    Bar("$loginid SELF-EXCLUSION SETTINGS", {nav_link => "SELF-EXCLUSION SETTINGS"});
+    print "<p><a id='self-exclusion' class=\"btn btn--primary\" href=\""
         . request()->url_for(
-        'backoffice/f_setting_selfexclusion_restricted.cgi',
+        'backoffice/f_setting_selfexclusion.cgi',
         {
             broker  => $broker,
             loginid => $loginid
-        }) . '">Configure restricted self-exlcusion settings</a>';
-}
+        }) . "\">Configure self-exclusion settings</a> <strong>for $encoded_loginid</strong></p>";
 
+# show restricted-access fields of regulated landing company clients (accessible for compliance staff only)
+    if (BOM::Backoffice::Auth::has_authorisation(['Compliance']) and $client->landing_company->is_eu) {
+        print '<a id="self-exclusion_restricted" class="btn btn--primary" href="'
+            . request()->url_for(
+            'backoffice/f_setting_selfexclusion_restricted.cgi',
+            {
+                broker  => $broker,
+                loginid => $loginid
+            }) . '">Configure restricted self-exlcusion settings</a>';
+    }
+}
 Bar("$loginid PAYMENT AGENT DETAILS", {nav_link => "PAYMENT AGENT DETAILS"});
 
 # Show Payment-Agent details if this client is also a Payment Agent.
@@ -1687,7 +1692,9 @@ if ($payment_agent) {
 }
 
 if ($client->landing_company->allows_payment_agents) {
-    print '<div><a class="btn btn--primary" href="'
+    print '<div><a class="'
+        . $button_type
+        . '" href="'
         . request()->url_for(
         'backoffice/f_setting_paymentagent.cgi',
         {
@@ -1924,21 +1931,20 @@ if ($payment_agent) {
     $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
     print qq{<a href="$new_log_href" class="btn btn--primary">View payment agent history for $encoded_loginid</a>};
 }
-
 print qq[<hr><form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" method="post">
-    <input type="submit" class="btn btn--primary" value="Save client details">
+    <input type="submit" class="$button_type" value="Save client details">
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="p2p_approved" value="$p2p_approved">];
 
 # Get latest client object to make sure it contains updated client info (after editing client details form)
 $client = BOM::User::Client->new({loginid => $loginid});
-print_client_details($client, $client_aml_jurisdiction_risk);
+print_client_details($client, $client_aml_jurisdiction_risk, $is_readonly);
 
 my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type="reset"]):not([type="button"])';
 
 print qq[
     <hr>
-    <input type=submit class="btn btn--primary" value="Save client details"></form>
+    <input type=submit class="$button_type" value="Save client details"></form>
     <style>
         .data-changed {
             background: var(--color-pink);
@@ -2245,7 +2251,7 @@ sub dropdown {
     return $ddl;
 }
 
-if (not $client->is_virtual) {
+if (not $client->is_virtual and !$is_readonly) {
     Bar("Sync Client Authentication Status to Doughflow", {nav_link => "Sync to Doughflow"});
     print qq{
         <p>Click to sync client authentication status to Doughflow: </p>
@@ -2280,80 +2286,83 @@ print qq{
     </form>
 } if $user->is_totp_enabled;
 
-Bar("$loginid Copiers/Traders", {nav_link => "Copiers/Traders"});
-my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
-    db             => $client->db,
-    client_loginid => $loginid
-});
-
-my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $loginid});
-my $traders = $copiers_data_mapper->get_traders_tokens_all({copier_id => $loginid});
-$_->[3] = obfuscate_token($_->[2]) for @$copiers, @$traders;
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/copy_trader_tokens.html.tt',
-    {
-        copiers   => $copiers,
-        traders   => $traders,
-        loginid   => $encoded_loginid,
-        self_post => $self_post
-    }) || die BOM::Backoffice::Request::template()->error(), "\n";
-
-Bar(
-    "$loginid Tokens",
-    {
-        collapsed => 1,
-        nav_link  => "Tokens"
+if (!$is_readonly) {
+    Bar("$loginid Copiers/Traders", {nav_link => "Copiers/Traders"});
+    my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
+        db             => $client->db,
+        client_loginid => $loginid
     });
-my $token_db = BOM::Database::Model::AccessToken->new();
-my (@all_tokens, @deleted_tokens);
 
-my $copiers_map = {};
-foreach my $c ($copiers->@*) {
-    if ($copiers_map->{$c->[2]}) {
-        push @{$copiers_map->{$c->[2]}}, $c->[0];
-    } else {
-        $copiers_map->{$c->[2]} = [$c->[0]];
+    my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $loginid});
+    my $traders = $copiers_data_mapper->get_traders_tokens_all({copier_id => $loginid});
+    $_->[3] = obfuscate_token($_->[2]) for @$copiers, @$traders;
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/copy_trader_tokens.html.tt',
+        {
+            copiers   => $copiers,
+            traders   => $traders,
+            loginid   => $encoded_loginid,
+            self_post => $self_post
+        }) || die BOM::Backoffice::Request::template()->error(), "\n";
+
+    Bar(
+        "$loginid Tokens",
+        {
+            collapsed => 1,
+            nav_link  => "Tokens"
+        });
+    my $token_db = BOM::Database::Model::AccessToken->new();
+    my (@all_tokens, @deleted_tokens);
+
+    my $copiers_map = {};
+    foreach my $c ($copiers->@*) {
+        if ($copiers_map->{$c->[2]}) {
+            push @{$copiers_map->{$c->[2]}}, $c->[0];
+        } else {
+            $copiers_map->{$c->[2]} = [$c->[0]];
+        }
     }
+
+    foreach my $l ($user_clients->@*) {
+        my $tokens = $token_db->get_all_tokens_by_loginid($l->loginid);
+        foreach my $token (@{$tokens}) {
+            $token->{loginid} = $l->loginid;
+            # we will be passing the copiers list to the template which will
+            # be used to display the copiers list in the token table using the tag <token.copiers>
+            $token->{copiers} = $copiers_map->{$token->{token}};
+            $token->{token}   = obfuscate_token($token->{token});
+            push @all_tokens, $token;
+        }
+        my $deleted_tokens = $token_db->token_deletion_history($l->loginid);
+        foreach my $token (@{$deleted_tokens}) {
+            $token->{loginid} = $l->loginid;
+            push @deleted_tokens, $token;
+        }
+    }
+
+    @all_tokens     = rev_sort_by { $_->{creation_time} } @all_tokens;
+    @deleted_tokens = rev_sort_by { $_->{deleted} } @deleted_tokens;
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/access_tokens.html.tt',
+        {
+            tokens  => \@all_tokens,
+            deleted => \@deleted_tokens
+        }) || die BOM::Backoffice::Request::template()->error(), "\n";
 }
-
-foreach my $l ($user_clients->@*) {
-    my $tokens = $token_db->get_all_tokens_by_loginid($l->loginid);
-    foreach my $token (@{$tokens}) {
-        $token->{loginid} = $l->loginid;
-        # we will be passing the copiers list to the template which will
-        # be used to display the copiers list in the token table using the tag <token.copiers>
-        $token->{copiers} = $copiers_map->{$token->{token}};
-        $token->{token}   = obfuscate_token($token->{token});
-        push @all_tokens, $token;
-    }
-    my $deleted_tokens = $token_db->token_deletion_history($l->loginid);
-    foreach my $token (@{$deleted_tokens}) {
-        $token->{loginid} = $l->loginid;
-        push @deleted_tokens, $token;
-    }
+if (!$is_readonly) {
+    Bar('Send Client Statement', {nav_link => "Send statement"});
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/send_client_statement.tt',
+        {
+            today     => Date::Utility->new()->date_yyyymmdd(),
+            broker    => $input{broker},
+            client_id => $input{loginID},
+            action    => request()->url_for('backoffice/f_send_statement.cgi')
+        },
+    );
 }
-
-@all_tokens     = rev_sort_by { $_->{creation_time} } @all_tokens;
-@deleted_tokens = rev_sort_by { $_->{deleted} } @deleted_tokens;
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/access_tokens.html.tt',
-    {
-        tokens  => \@all_tokens,
-        deleted => \@deleted_tokens
-    }) || die BOM::Backoffice::Request::template()->error(), "\n";
-
-Bar('Send Client Statement', {nav_link => "Send statement"});
-BOM::Backoffice::Request::template()->process(
-    'backoffice/send_client_statement.tt',
-    {
-        today     => Date::Utility->new()->date_yyyymmdd(),
-        broker    => $input{broker},
-        client_id => $input{loginID},
-        action    => request()->url_for('backoffice/f_send_statement.cgi')
-    },
-);
 
 Bar("Email Consent");
 print 'Email consent for marketing: ' . ($user->{email_consent} ? '<b>Yes</b>' : '<b>No</b>');
@@ -2381,27 +2390,28 @@ if (not $client->is_virtual) {
     }
 
     #upload new ID doc
-    Bar("Upload new ID document");
-    BOM::Backoffice::Request::template()->process(
-        'backoffice/client_edit_upload_doc.html.tt',
-        {
-            self_post                  => $self_post,
-            broker                     => $encoded_broker,
-            loginid                    => $encoded_loginid,
-            countries                  => request()->brand->countries_instance->countries,
-            poi_doctypes               => join('|', @poi_doctypes),
-            poa_doctypes               => join('|', @poa_doctypes),
-            expirable_doctypes         => join('|', @expirable_doctypes),
-            dateless_doctypes          => join('|', @dateless_doctypes),
-            doctypes                   => [sort { $a->{priority} <=> $b->{priority} } $doctypes->@*],
-            docsides                   => encode_json_utf8(\%document_type_sides),
-            sides                      => encode_json_utf8(\%document_sides),
-            numberless_doctypes        => join('|', @numberless_doctypes),
-            onfido_doctypes            => encode_json_utf8(\@onfido_doctypes),
-            document_size_limit        => DOCUMENT_SIZE_LIMIT_IN_MB,
-            onfido_document_size_limit => ONFIDO_DOCUMENT_SIZE_LIMIT_IN_MB,
-        });
-
+    if (!$is_readonly) {
+        Bar("Upload new ID document");
+        BOM::Backoffice::Request::template()->process(
+            'backoffice/client_edit_upload_doc.html.tt',
+            {
+                self_post                  => $self_post,
+                broker                     => $encoded_broker,
+                loginid                    => $encoded_loginid,
+                countries                  => request()->brand->countries_instance->countries,
+                poi_doctypes               => join('|', @poi_doctypes),
+                poa_doctypes               => join('|', @poa_doctypes),
+                expirable_doctypes         => join('|', @expirable_doctypes),
+                dateless_doctypes          => join('|', @dateless_doctypes),
+                doctypes                   => [sort { $a->{priority} <=> $b->{priority} } $doctypes->@*],
+                docsides                   => encode_json_utf8(\%document_type_sides),
+                sides                      => encode_json_utf8(\%document_sides),
+                numberless_doctypes        => join('|', @numberless_doctypes),
+                onfido_doctypes            => encode_json_utf8(\@onfido_doctypes),
+                document_size_limit        => DOCUMENT_SIZE_LIMIT_IN_MB,
+                onfido_document_size_limit => ONFIDO_DOCUMENT_SIZE_LIMIT_IN_MB,
+            });
+    }
     Bar('P2P Advertiser');
 
     print '<a class="btn btn--primary" href="'
@@ -2415,28 +2425,30 @@ if (not $client->is_virtual) {
         . $loginid
         . ' P2P advertiser details</a>';
 
-    Bar('Reversible balance limits');
+    if (!$is_readonly) {
+        Bar('Reversible balance limits');
 
-    my $config = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits;
-    my %global = map { $_ => $config->$_ } keys $config->definition->{contains}->%*;
+        my $config = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits;
+        my %global = map { $_ => $config->$_ } keys $config->definition->{contains}->%*;
 
-    my $client_limits = $client->db->dbic->run(
-        ping => sub {
-            $_->selectall_hashref(
-                'SELECT ROUND(limit_as_decimal_percent*100) AS val, payment_gateway_code FROM betonmarkets.client_limit_by_cashier WHERE client_loginid = ?',
-                'payment_gateway_code', undef, $loginid
-            );
-        });
+        my $client_limits = $client->db->dbic->run(
+            ping => sub {
+                $_->selectall_hashref(
+                    'SELECT ROUND(limit_as_decimal_percent*100) AS val, payment_gateway_code FROM betonmarkets.client_limit_by_cashier WHERE client_loginid = ?',
+                    'payment_gateway_code', undef, $loginid
+                );
+            });
 
-    BOM::Backoffice::Request::template()->process(
-        'backoffice/client_reversible_limits.tt',
-        {
-            global    => \%global,
-            client    => $client_limits,
-            self_post => $self_post,
-            broker    => $encoded_broker,
-            loginid   => $encoded_loginid,
-        });
+        BOM::Backoffice::Request::template()->process(
+            'backoffice/client_reversible_limits.tt',
+            {
+                global    => \%global,
+                client    => $client_limits,
+                self_post => $self_post,
+                broker    => $encoded_broker,
+                loginid   => $encoded_loginid,
+            });
+    }
 }
 
 Bar($user->{email} . " Login history", {nav_link => "Login History"});

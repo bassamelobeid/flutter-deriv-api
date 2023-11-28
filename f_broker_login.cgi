@@ -124,7 +124,7 @@ if (BOM::Backoffice::Auth::has_authorisation(['Payments', 'AccountsLimited', 'Ac
 }
 
 # CLIENT DETAILS RECORDS
-if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['CS', 'MarketingReadOnly'])) {
     print qq~
         <div class="card">
             <div class="card__label toggle">
@@ -207,7 +207,7 @@ if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
 }
 
 # PAYMENT AGENTS
-if (BOM::Backoffice::Auth::has_authorisation(['IT', 'Compliance'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['IT', 'Compliance', 'MarketingReadOnly'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -221,25 +221,27 @@ if (BOM::Backoffice::Auth::has_authorisation(['IT', 'Compliance'])) {
                 <a href="payment_agents_dynamic_settings.cgi" class="btn btn--primary">Go to Payment Agents dynamic settings</a>
             </div>~;
     }
-    if (BOM::Backoffice::Auth::has_authorisation(['Compliance'])) {
-        print qq~
+    my @cards = ({
+            title      => 'Tier management',
+            action     => 'backoffice/payment_agent_tier_manage.cgi',
+            auth_roles => ['Compliance']
+        },
+        {
+            title      => 'Search Payment Agents',
+            action     => 'backoffice/f_payment_agent_list.cgi',
+            auth_roles => ['Compliance', 'MarketingReadOnly']});
+
+    for my $card (@cards) {
+        if (BOM::Backoffice::Auth::has_authorisation($card->{auth_roles})) {
+            print qq~
             <div class="card__content">
-                <h3>Tier management</h3>
-                <form action="~ . request()->url_for('backoffice/payment_agent_tier_manage.cgi') . qq~" method="get">
+                <h3>$card->{title}</h3>
+                <form action="~ . request()->url_for($card->{action}) . qq~" method="get">
                     <label>$pa_brokerselection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
-            </div>
-            <div class="card__content">
-                <h3>Search Payment Agents</h3>
-                <form action="~ . request()->url_for('backoffice/f_payment_agent_list.cgi') . qq~" method="get">
-                    <label>$pa_brokerselection</label>
-                    <input type="submit" class="btn btn--primary" value="Go">
-                </form>
-            </div>
-            <div class="card__content">
-                <!-- empty -->
             </div>~;
+        }
     }
     print qq~
         </div>

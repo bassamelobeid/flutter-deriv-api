@@ -83,7 +83,7 @@ if (exists $input{reputation_check} && $is_compliance) {
         );
 
         if ($input{reputation_check_status} eq "Failed") {
-            $client->status->setnx('disabled', BOM::Backoffice::Auth0::get_staffname(), 'Account should be disable due to Failed Repuation check.');
+            $client->status->setnx('disabled', BOM::Backoffice::Auth::get_staffname(), 'Account should be disable due to Failed Repuation check.');
             $is_affiliate = 0;
         } else {
             $client->status->_clear('disabled');

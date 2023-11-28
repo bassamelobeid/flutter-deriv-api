@@ -26,8 +26,9 @@ my $input = request()->params;
 
 my $clerk = BOM::Backoffice::Auth::get_staffname() // '';
 
-code_exit_BO('ACCESS DENIED: This page only for Marketing Team') unless BOM::Backoffice::Auth::has_authorisation(['Marketing']);
+code_exit_BO('ACCESS DENIED: This page only for Marketing Team') unless BOM::Backoffice::Auth::has_authorisation(['Marketing', 'MarketingReadOnly']);
 
+my $is_readonly = BOM::Backoffice::Auth::has_readonly_access();
 PrintContentType();
 
 my $loginid = $input->{loginid} // '';
@@ -35,7 +36,7 @@ my $loginid = $input->{loginid} // '';
 BrokerPresentation("AFFILIATE IB STATUS MANAGING");
 
 my (@sync_accounts, $action, $action_result, $active_affiliate);
-if (request()->http_method eq 'POST') {
+if (request()->http_method eq 'POST' and !$is_readonly) {
     code_exit_BO(_get_display_error_message('Invalid CSRF Token')) if $input->{_csrf} ne BOM::Backoffice::Form::get_csrf_token();
 
     $input->{action} = 'clear' if exists $input->{untag};

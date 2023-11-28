@@ -64,7 +64,7 @@ print "<input type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<input type=hidden name=\"l\" value=\"EN\">";
 print "<INPUT type=\"submit\" class=\"btn btn--primary\" value=\"Go\"></form>
 
-<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" method=\"POST\">
+<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" method=\"GET\">
 <input type=hidden name=\"loginID\" value=\"$encoded_loginID\" />
 <input type=hidden name=\"broker\" value=\"$encoded_broker\" />
 <input type=hidden name=\"l\" value=\"EN\" />

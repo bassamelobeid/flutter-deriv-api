@@ -22,6 +22,8 @@ use BOM::Backoffice::Request qw(request);
 
 use constant BACKOFFICE_LOGIN_KEY_PREFIX => 'DERIVBOLOGIN::';
 
+use constant READ_ONLY_GROUPS => ["MarketingReadOnly"];
+
 =head2 login
 
 Validates the JWT token
@@ -89,6 +91,17 @@ sub has_authorisation {
     }
     BOM::User::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $staff->{name});
     return 0;
+}
+
+=head2 has_readonly_access
+
+Check if the staff is part of readonly access group
+
+=cut
+
+sub has_readonly_access {
+    return 0 unless BOM::Config::on_production();
+    return has_authorisation(READ_ONLY_GROUPS);
 }
 
 =head2 has_quants_write_access

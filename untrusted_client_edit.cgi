@@ -22,6 +22,8 @@ use List::Util    qw( uniqstr );
 use Net::Async::HTTP;
 
 BOM::Backoffice::Sysinit::init();
+my $is_readonly = BOM::Backoffice::Auth::has_readonly_access();
+code_exit_BO(_get_display_error_message('Access Denied: you do not have access to make this change')) if $is_readonly;
 
 PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");

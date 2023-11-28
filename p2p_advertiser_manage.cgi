@@ -30,8 +30,10 @@ use constant {
     P2P_ADVERTISER_BAND_UPGRADE_PENDING => 'P2P::ADVERTISER_BAND_UPGRADE_PENDING',
 };
 
-my $cgi = CGI->new;
-
+my $cgi         = CGI->new;
+my $is_readonly = BOM::Backoffice::Auth::has_readonly_access();
+code_exit_BO(_get_display_error_message("Access Denied: you do not have access to make this change"))
+    if $is_readonly and request()->http_method eq 'POST';
 PrintContentType();
 try { BrokerPresentation(' '); }
 catch { }
@@ -161,7 +163,8 @@ if (my $id = $input{update}) {
 $input{loginID} = trim uc $input{loginID} if $input{loginID};
 delete $input{id}                         if defined($input{id})   && $input{id}   !~ m/^[0-9]+$/;
 delete $input{days}                       if defined($input{days}) && $input{days} !~ m/^[0-9]+$/;
-$output{days} = defined($input{days}) ? $input{days} : 30;
+$output{days}        = defined($input{days}) ? $input{days} : 30;
+$output{is_readonly} = $is_readonly;
 
 if ($input{loginID} || $input{name} || $input{id}) {
     $output{advertiser} = $db->run(

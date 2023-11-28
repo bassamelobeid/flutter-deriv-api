@@ -131,9 +131,9 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         [% ELSE %]
             <strong>None</strong>
         [% END %]
-        <a class="btn btn--primary" href="[% request.url_for('backoffice/f_change_affiliates_token.cgi', {loginid => client.loginid , affiliate_token = client.myaffiliates_token }) %]">Edit affiliate token</a>
         <a class="btn btn--primary" href="[% request.url_for('backoffice/f_client_affiliate_details.cgi', {loginid => client.loginid , broker = client.broker }) %]">View affiliate details</a>
-        <a class="btn btn--primary" href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate status</a>
+        <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/f_change_affiliates_token.cgi', {loginid => client.loginid , affiliate_token = client.myaffiliates_token }) %]">Edit affiliate token</a>
+        <a  class="btn btn--primary" href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate status</a>
         </td>
     </tr>
     [% IF is_staff_compliance %]
@@ -973,10 +973,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="label">Date joined</td>
         <td>: [% client.date_joined %]<td>
-    </tr>
-    <tr>
-        <td class="label">Password</td>
-        <td>: [% client.password %]</td>
     </tr>
     [% IF show_funds_message %]
         <tr>

@@ -40,6 +40,10 @@ my %action_router = (
 my $input = request()->params;
 PrintContentType();
 
+my $is_readonly = BOM::Backoffice::Auth::has_readonly_access();
+code_exit_BO(_get_display_error_message("Access Denied: you do not have access to make this change"))
+    if $is_readonly and request()->http_method eq 'POST';
+
 return_error('Client loginid is missed') unless $input->{loginid};
 
 my $client;

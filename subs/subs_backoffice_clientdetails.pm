@@ -381,7 +381,7 @@ sub get_professional_status {
 
 sub print_client_details {
 
-    my ($client, $client_aml_jurisdiction_risk) = @_;
+    my ($client, $client_aml_jurisdiction_risk, $is_readonly) = @_;
 
     # IDENTITY SECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
@@ -711,6 +711,7 @@ SQL
     }
 
     my $template_param = {
+        is_readonly          => $is_readonly,
         balance              => $balance,
         client               => $client,
         client_phone_country => $client_phone_country,
@@ -932,8 +933,8 @@ sub link_for_copy_status_status_to_siblings {
 #           in html form
 ######################################################################
 sub build_client_warning_message {
-    my $login_id = shift;
-    my $client   = BOM::User::Client->new({'loginid' => $login_id})
+    my ($login_id, $is_readonly) = @_;
+    my $client = BOM::User::Client->new({'loginid' => $login_id})
         || return "<p>The Client's details can not be found [$login_id]</p>";
     my $broker = $client->broker;
 
@@ -1050,15 +1051,22 @@ sub build_client_warning_message {
         }
         $output .= '</tbody></table></div>';
         $output .= '<div class="row btn-group">';
-        $output .= '<button class="btn btn--primary" name="status_op" value="remove">Remove selected</button> ';
+        my $button_type = $is_readonly ? 'class="btn btn--disabled"' : 'class="btn btn--primary"';
+        $output .= '<button ' . $button_type . ' name="status_op" value="remove">Remove selected</button> ';
         $output .=
-            '<button class="btn btn--primary" name="status_op" value="remove_siblings">Remove selected including accounts within same landing company</button> ';
-        $output .= '<button class="btn btn--primary" name="status_op" value="sync">Copy selected to accounts within same landing company</button>';
+              '<button '
+            . $button_type
+            . ' name="status_op" value="remove_siblings">Remove selected including accounts within same landing company</button> ';
+        $output .= '<button ' . $button_type . ' name="status_op" value="sync">Copy selected to accounts within same landing company</button>';
         $output .= '<div class="row btn-group" style=\'margin-top: 8px;\'>';
         $output .=
-            '<button class="btn btn--primary" name="status_op" value="remove_accounts">Remove selected including accounts in all landing companies (including virtual)</button> ';
+              '<button '
+            . $button_type
+            . ' name="status_op" value="remove_accounts">Remove selected including accounts in all landing companies (including virtual)</button> ';
         $output .=
-            '<button class="btn btn--primary" name="status_op" value="sync_accounts">Copy selected to accounts in all landing companies (including virtual)</button>';
+              '<button '
+            . $button_type
+            . ' name="status_op" value="sync_accounts">Copy selected to accounts in all landing companies (including virtual)</button>';
         $output .= '</div>';
         $output .= '<input type="hidden" name="p2p_approved" value="' . $p2p_approved . '">';
         $output .= '</div>';

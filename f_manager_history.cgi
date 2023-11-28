@@ -39,8 +39,11 @@ my $encoded_loginID = encode_entities($loginID);
 my $trx_filter              = request()->param('trx_filter') // '';
 my $deposit_withdrawal_only = $trx_filter eq 'deposit_withdrawal_only' ? 1 : 0;
 
-my $from_date = trim(request()->param('startdate'));
-my $to_date   = trim(request()->param('enddate'));
+my $from_date   = trim(request()->param('startdate'));
+my $to_date     = trim(request()->param('enddate'));
+my $is_readonly = BOM::Backoffice::Auth::has_readonly_access();
+code_exit_BO(_get_display_error_message('Access Denied: you do not have access to make this change'))
+    if $is_readonly and request()->http_method eq 'POST';
 
 if ($from_date && $to_date && $from_date =~ m/^\d{4}-\d{2}-\d{2}$/ && $to_date =~ m/^\d{4}-\d{2}-\d{2}$/) {
     $from_date .= ' 00:00:00';
@@ -122,7 +125,7 @@ if (defined $action && $action eq "gross_transactions") {
 # Deleting checked statuses
 my $status_op_summary = BOM::Platform::Utility::status_op_processor($client, request()->params);
 # Print other untrusted section warning in backoffice
-print build_client_warning_message(encode_entities($client->loginid));
+print build_client_warning_message(encode_entities($client->loginid), $is_readonly);
 # The choice of positioning is to allow display under the buttons associated with this event
 print BOM::Backoffice::Utility::transform_summary_status_to_html($status_op_summary, request()->params->{status_op}) if $status_op_summary;
 
