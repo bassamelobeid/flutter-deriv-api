@@ -14,7 +14,7 @@ concurrency:
 jobs:
   schema:
     needs: syntax_diff_unit
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted ]
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -49,7 +49,7 @@ jobs:
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   syntax_diff_unit: 
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted ]
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -80,7 +80,7 @@ jobs:
         run: make unit
   core1:
     needs: syntax_diff_unit
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted ]
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -118,7 +118,7 @@ jobs:
           retention-days: 1
   core2:
     needs: syntax_diff_unit
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted ]
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -157,7 +157,7 @@ jobs:
   publish_test_results:
     needs: [ schema , core1 , core2 ]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted ]
     steps:
       - 
         name: Upload results to TestSpace
