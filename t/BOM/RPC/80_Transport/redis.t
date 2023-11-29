@@ -87,17 +87,24 @@ subtest 'Resolve pending messages' => sub {
 
 subtest 'Parse message' => sub {
     # What redis given us
-    my $raw_msg =
-        [['mt5', [['123123123-0', ['who', 'd11221d', 'rpc', 'ping', 'args', '{"key":"val"}', 'deadline', '999', 'stash', '{"key":"value"}']]]]];
+    my $raw_msg = [[
+            'mt5',
+            [[
+                    '123123123-0',
+                    [
+                        'who',      'd11221d', 'rpc',   'ping',            'args',            '{"key":"val"}',
+                        'deadline', '999',     'stash', '{"key":"value"}', 'req_log_context', '{"key":"value"}'
+                    ]]]]];
 
     my $expected = {
         message_id => '123123123-0',
         payload    => {
-            who      => 'd11221d',
-            rpc      => 'ping',
-            args     => {key => "val"},
-            deadline => '999',
-            stash    => {key => "value"}}};
+            who             => 'd11221d',
+            rpc             => 'ping',
+            args            => {key => "val"},
+            deadline        => '999',
+            stash           => {key => "value"},
+            req_log_context => {key => "value"}}};
 
     my $instance = create_transport_redis_instance();
 

@@ -454,7 +454,6 @@ Returns a hashref containing RPC response
 
 sub _dispatch_request {
     my ($self, $params) = @_;
-
     my $request_start = [Time::HiRes::gettimeofday];
 
     # Take a deep clone of params to avoid any redundant data per dispathing requests.
@@ -475,7 +474,7 @@ sub _dispatch_request {
 
     # DISPATCH
     try {
-        $result = $services{$method}{rpc_sub}->($params->{args});
+        $result = $services{$method}{rpc_sub}->($params->{args}, $params->{req_log_context});
     } catch ($err) {
         $log->errorf("An error occurred while RPC requesting for '%s', ERROR: %s", $method, $err);
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => ['rpc:' . $method, 'stream:' . $self->stream_name]});
@@ -579,16 +578,20 @@ sub _parse_message {
 
     my $decoded_args;
     my $decoded_stash;
+    my $decoded_log_context;
 
     try {
-        $decoded_args  = decode_json_utf8($params{args})  if $params{args};
-        $decoded_stash = decode_json_utf8($params{stash}) if $params{stash};
+        $decoded_args        = decode_json_utf8($params{args})            if $params{args};
+        $decoded_stash       = decode_json_utf8($params{stash})           if $params{stash};
+        $decoded_log_context = decode_json_utf8($params{req_log_context}) if $params{req_log_context};
     } catch {
         my $troubled_param = 'unknown';
         if ($params{args} && !$decoded_args) {
             $troubled_param = 'args';
         } elsif ($params{stash} && !$decoded_stash) {
             $troubled_param = 'stash';
+        } elsif ($params{req_log_context} && !$decoded_log_context) {
+            $troubled_param = 'req_log_context';
         }
 
         # remove sensitive data before log if was in production
@@ -605,8 +608,9 @@ sub _parse_message {
         die "InternalServerError\n";
     }
 
-    $params{args}  = $decoded_args  if defined $decoded_args;
-    $params{stash} = $decoded_stash if defined $decoded_stash;
+    $params{args}            = $decoded_args        if defined $decoded_args;
+    $params{stash}           = $decoded_stash       if defined $decoded_stash;
+    $params{req_log_context} = $decoded_log_context if defined $decoded_log_context;
 
     return {
         message_id => $message_id,

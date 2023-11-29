@@ -44,6 +44,7 @@ use Brands;
 use BOM::RPC::v3::Debug;
 
 use constant REQUEST_ARGUMENTS_TO_BE_IGNORED => qw (req_id passthrough);
+use Log::Any qw($log);
 
 BOM::RPC::Registry::register(longcode => \&BOM::RPC::v3::Utility::longcode);
 
@@ -76,6 +77,7 @@ sub wrap_rpc_sub {
     return sub {
         my @original_args = @_;
         my $params        = $original_args[0] // {};
+        my $log_context   = $original_args[1] // {};
         my $tv            = [Time::HiRes::gettimeofday];
 
         $params->{profile}->{rpc_send_rpcproc} = Time::HiRes::gettimeofday if $params->{is_profiling};
@@ -87,7 +89,8 @@ sub wrap_rpc_sub {
         }
         my $token_instance = BOM::Platform::Token::API->new;
         $params->{token_details} = $token_instance->get_client_details_from_token($params->{token});
-
+        # set request log context for RPC methods
+        set_request_logger_context($params->{token_details}, $log_context);
         set_current_context($params);
 
         if (exists $params->{server_name}) {
@@ -137,6 +140,29 @@ sub wrap_rpc_sub {
 
         return $result;
     };
+}
+
+=head2 set_request_logger_context
+
+the context hashref will be set for Deriv adapter context 
+so it can be appended with all log messages for RPC request
+
+=over 2
+
+=item * C<$token_details> - token information of authorize user
+
+=item * C<$context> - hashref of contexual inforamation added for logging purpose
+
+=back 
+
+=cut
+
+sub set_request_logger_context {
+    my ($token_details, $context) = @_;
+    if ($token_details) {
+        $context->{loginid} = $token_details->{loginid};
+    }
+    $log->adapter->set_context($context) if $log->adapter->can('set_context');
 }
 
 =head2 set_current_context
