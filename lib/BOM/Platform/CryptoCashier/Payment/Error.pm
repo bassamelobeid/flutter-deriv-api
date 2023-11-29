@@ -23,12 +23,12 @@ our %ERROR_MAP = (
     InvalidCurrency          => 'Invalid currency code %s.',
     CurrencyNotMatch         => 'The client currency does not match the payment request currency %s',
     ZeroPaymentAmount        => 'The amount is zero after rounding.',
-    FailedCredit             => 'Filed to credit the client account for crypto id: %s',
-    FailedDebit              => 'Filed to debit the client account for crypto id: %s',
+    FailedCredit             => 'Failed to credit the client account for crypto id: %s',
+    FailedDebit              => 'Failed to debit the client account for crypto id: %s',
     InvalidPayment           => 'Invalid payment: %s',
     UnknownError             => 'An unknown error has occurred.',
     SiblingAccountNotFound   => 'Wrong currency deposit. Client doesnt have the correct account. crypto id: %s',
-    FailedRevert             => 'Filed to revert the client\'s withdrawal for crypto id: %s',
+    FailedRevert             => 'Failed to revert the client\'s withdrawal for crypto id: %s',
     MissingWithdrawalPayment => 'Withdrawal paymnet not found for crypto id: %s',
 );
 
