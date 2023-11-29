@@ -6571,11 +6571,17 @@ sub validate_payment {
         my $params  = $e->{params}     // [];
         my $message = localize(error_map()->{$code}, @$params);
 
+        unless ($message) {
+            $log->infof('No error message mapping found for error code %s: %s', $code, encode_json_text($e));
+            $message = localize(error_map()->{PaymentValidationError});
+        }
+
         die +{
             code              => $code,
             params            => $params,
             message_to_client => $message,
         };
+
     };
 
     return 1;

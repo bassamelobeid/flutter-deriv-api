@@ -656,6 +656,29 @@ subtest 'Payout counter' => sub {
     is $client->get_df_payouts_count, 0, 'Second payout is finished';
 };
 
+subtest "Validate Payment" => sub {
+    plan tests => 1;
+    my $client             = new_client('BTC');
+    my $mocked_rule_engine = Test::MockModule->new('BOM::Rules::Engine');
+    $mocked_rule_engine->mock(
+        verify_action => sub {
+            die {
+                error_code => 'DuplicateAccount',
+                params     => [],
+                rule       => 'client.check_duplicate_account',
+            };
+        });
+
+    is_deeply exception { $client->validate_payment(%withdrawal_btc, amount => -2) },
+        {
+        code              => 'DuplicateAccount',
+        params            => [],
+        message_to_client => "An error occurred while processing your request. Please try again later.",
+        },
+        'Default error message for error not defined in error mapping';
+    $mocked_rule_engine->unmock_all();
+};
+
 # Subroutine for applying a promo code
 sub _apply_promo_amount {
     my $client    = shift;
