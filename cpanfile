@@ -240,7 +240,7 @@ requires "Mojo::UserAgent::Transactor", 0;
 requires "Mojo::Util", 0;
 requires "Mojo::WebSocket", 0;
 requires "Mojo::WebSocketProxy::Backend", "== 0.15";
-requires "Mojo::WebSocketProxy::Backend::ConsumerGroups", "== 0.03";
+requires "Mojo::WebSocketProxy::Backend::ConsumerGroups", "== 0.05";
 requires "MojoX::JSON::RPC::Client", 0;
 requires "Mojolicious", "== 7.29";
 requires "Mojolicious::Command", 0;
