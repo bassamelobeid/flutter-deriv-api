@@ -95,11 +95,11 @@ rpc "cashier", sub {
     };
 
     my ($client, $args) = @{$params}{qw/client args/};
-    my $action   = $args->{cashier}  // 'deposit';
-    my $provider = $args->{provider} // 'doughflow';
-    my $type     = $args->{type}     // 'url';
-
-    my $is_dry_run = ($provider eq 'crypto' and $type eq 'api' and $args->{dry_run}) ? 1 : 0;
+    my $action                  = $args->{cashier}                 // 'deposit';
+    my $provider                = $args->{provider}                // 'doughflow';
+    my $type                    = $args->{type}                    // 'url';
+    my $estimated_fee_unique_id = $args->{estimated_fee_unique_id} // '';
+    my $is_dry_run              = ($provider eq 'crypto' and $type eq 'api' and $args->{dry_run}) ? 1 : 0;
 
     # this should come before all validation as verification
     # token is mandatory for withdrawal.
@@ -161,7 +161,8 @@ rpc "cashier", sub {
             # get the locked min withdrawal if available in redis
             my $client_locked_min_withdrawal_amount = BOM::RPC::v3::Utility::get_client_locked_min_withdrawal_amount($client->loginid);
             return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount}, $is_dry_run, $client->currency,
-                $client_locked_min_withdrawal_amount);
+                $client_locked_min_withdrawal_amount,
+                $estimated_fee_unique_id);
         }
     }
 
