@@ -1447,9 +1447,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
             } elsif ($key eq 'tax_identification_number') {
                 code_exit_BO("<p class=\"error\">Tax residence cannot be set empty if value already exists</p>")
                     if ($cli->tax_identification_number
-                    and not $input{tax_identification_number});
+                    and not $input{tax_identification_number}
+                    and not $input{tin_not_available});
                 $cli->tax_identification_number($input{tax_identification_number});
+            } elsif ($key eq 'tin_not_available') {
+                $cli->tax_identification_number("Approved000") if $input{tin_not_available};
             }
+
         }
     }
 
