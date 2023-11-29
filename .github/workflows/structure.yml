@@ -12,7 +12,7 @@ on:
 
 jobs:
     structure:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:

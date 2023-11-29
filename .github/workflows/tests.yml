@@ -12,7 +12,7 @@ on:
         type: string
 jobs:
     accounts:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:
@@ -48,7 +48,7 @@ jobs:
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     security:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:
@@ -84,7 +84,7 @@ jobs:
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     pricing:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:
@@ -120,7 +120,7 @@ jobs:
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     misc:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:
@@ -156,7 +156,7 @@ jobs:
               path: /tmp/test-output/**/*.xml
               retention-days: 1 
     p2p:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:
@@ -192,7 +192,7 @@ jobs:
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     schema:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:
@@ -228,7 +228,7 @@ jobs:
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     subscriptions:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:
@@ -264,7 +264,7 @@ jobs:
               path: /tmp/test-output/**/*.xml
               retention-days: 1 
     backends:
-        runs-on: [ self-hosted ]
+        runs-on: ubuntu-latest
         container:
           image: ${{ inputs.debianci_image }}
           credentials:
