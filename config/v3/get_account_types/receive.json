@@ -23,7 +23,7 @@
                     "type": "object",
                     "additionalProperties": false,
                     "patternProperties": {
-                        "^(binary|dxtrade|mt5|standard|derivez)$": {
+                        "^(binary|ctrader|dxtrade|mt5|standard|derivez)$": {
                             "description": "Details for trading account types",
                             "type": "object",
                             "additionalProperties": false,
