@@ -5,9 +5,10 @@ env:
 on:
   schedule:
     - cron: '33 20 * * *'
+
 jobs:
   syntax_unit:
-    runs-on: [ self-hosted ]
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -36,7 +37,7 @@ jobs:
         name: unit tests
         run: make unit
   core1:
-    runs-on: [ self-hosted ]
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -73,7 +74,7 @@ jobs:
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   core2:
-    runs-on: [ self-hosted ]
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -110,7 +111,7 @@ jobs:
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   schema:
-    runs-on: [ self-hosted ]
+    runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -147,7 +148,7 @@ jobs:
   publish_test_results:
     needs: [ schema , core1 , core2 ]
     if: always()
-    runs-on: [ self-hosted ]
+    runs-on: ubuntu-latest
     steps:
       - 
         name: Upload results to TestSpace
