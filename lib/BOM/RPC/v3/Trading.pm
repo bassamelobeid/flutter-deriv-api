@@ -533,6 +533,7 @@ async_rpc trading_platform_investor_password_reset => auth => ['trading', 'walle
 =head2 deposit
 
 Platform deposit implementation.
+This method is called in 2 ways: normal websocket call, and internally from transfer_between_accounts.
 
 =cut
 
@@ -543,13 +544,15 @@ sub deposit {
     # as they don't pass the `currency` param, we use the account currency instead which should be valid.
 
     my ($from_account, $to_account, $amount, $currency) = $params->{args}->@{qw/from_account to_account amount currency/};
-    my $is_demo = $to_account =~ /^(DX|EZ|CT)(?=D)/;
+
+    my $user     = $params->{user}                       // $params->{client}->user;    # reuse user object when called from transfer_between_accounts
+    my $details  = $user->loginid_details->{$to_account} // {};
+    my $is_topup = $details->{is_virtual} && !$details->{wallet_loginid};
 
     try {
-        die +{error_code => 'PlatformTransferRealParams'} unless $is_demo or ($from_account and $amount);
+        die +{error_code => 'PlatformTransferRealParams'} unless $is_topup or ($from_account and $amount);
 
-        my $client = $is_demo ? $params->{client} : get_transfer_client($params, $from_account);
-        my $user   = $params->{user} // $client->user;                                           # to reuse user object from transfer_between_accounts
+        my $client = $is_topup ? $params->{client} : get_transfer_client($params, $from_account);
 
         my $platform = BOM::TradingPlatform->new(
             platform    => $params->{args}{platform},
@@ -575,6 +578,7 @@ sub deposit {
 =head2 withdrawal
 
 Platform withdrawal implementation.
+This method is called in 2 ways: normal websocket call, and internally from transfer_between_accounts.
 
 =cut
 

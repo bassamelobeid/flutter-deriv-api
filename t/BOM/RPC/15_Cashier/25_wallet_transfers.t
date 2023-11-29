@@ -459,6 +459,25 @@ subtest 'Virtual transfers' => sub {
     $c->call_ok('transfer_between_accounts', $params)
         ->error_code_is('TransferBlockedClientIsVirtual', 'VRTC token cannot perform transfer for VRW account');
 
+    # these tests are to specifically check that we don't treat VR transfers as demo topups
+    $params->{token}              = $tokens{vrw};
+    $params->{token_type}         = 'oauth_token';
+    $params->{args}{account_from} = $loginids{crw_df};
+
+    $params->{args}{account_to} = $loginids{vrtc_trading};
+    $c->call_ok('transfer_between_accounts', $params)->error_code_is('RealToVirtualNotAllowed', 'Cannot transfer from real wallet to demo standard');
+
+    $params->{args}{account_to} = $loginids{mt5_demo};
+    $c->call_ok('transfer_between_accounts', $params)->error_code_is('RealToVirtualNotAllowed', 'Cannot transfer from real wallet to mt5 demo');
+
+    $params->{args}{account_to} = $loginids{dx_demo};
+    $c->call_ok('transfer_between_accounts', $params)->error_code_is('DXInvalidAccount', 'Cannot transfer from real wallet to dxtrade demo');
+
+    $params->{args}{account_to} = $loginids{ct_demo};
+    $c->call_ok('transfer_between_accounts', $params)->error_code_is('CTraderInvalidAccount', 'Cannot transfer from real wallet to ctrader demo');
+
+    delete $params->{token_type};
+
     @tests = (
         [vrtc_binary   => 'SameAccountNotAllowed'],
         [vrw           => 'TransferBlockedLegacy'],
