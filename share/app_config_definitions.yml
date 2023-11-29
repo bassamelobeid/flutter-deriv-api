@@ -1894,6 +1894,11 @@ system:
                   isa: Bool
                   default: 0
                   global: 1
+                p03_ts01:
+                  description: "Real p03_ts01 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
         suspend:
           description: "Configuration for MT5 suspend"
           isa: section
@@ -2080,6 +2085,25 @@ system:
                       description: "Suspend MT5 withdrawals on p02_ts02"
                       isa: Bool
                       default: 0
+                      global: 1
+                p03_ts01:
+                  description: "Configuration to suspend mt5 p03_ts01"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p03_ts01"
+                      isa: Bool
+                      default: 1
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p03_ts01"
+                      isa: Bool
+                      default: 1
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p03_ts01"
+                      isa: Bool
+                      default: 1
                       global: 1
         sync_user_with_mt5:
           description: "Configuration for sync user with mt5 process"

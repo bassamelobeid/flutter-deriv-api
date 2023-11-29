@@ -194,6 +194,16 @@ subtest 'servers' => sub {
                 },
             },
         },
+        {
+            'p03_ts01' => {
+                'environment' => 'Deriv-Server-03',
+                'geolocation' => {
+                    'group'    => 'asia_synthetic',
+                    'location' => 'Hong Kong',
+                    'region'   => 'Asia',
+                    'sequence' => 3
+                }}
+        },
     ];
 
     cmp_bag($all_servers, $expected_structure, 'Correct structure for servers');
@@ -205,10 +215,10 @@ subtest 'servers' => sub {
     is scalar @{$mt5_obj->servers()}, 4, 'correct number of demo servers with group';
 
     $mt5_obj = BOM::Config::MT5->new(group_type => 'real');
-    is scalar @{$mt5_obj->servers()}, 6, 'correct number of demo servers retrieved with group_type';
+    is scalar @{$mt5_obj->servers()}, 7, 'correct number of real servers retrieved with group_type';
 
     $mt5_obj = BOM::Config::MT5->new(group => 'real\p01_ts01\synthetic\svg_std_usd');
-    is scalar @{$mt5_obj->servers()}, 6, 'correct number of demo servers retrieved with group';
+    is scalar @{$mt5_obj->servers()}, 7, 'correct number of real servers retrieved with group';
 };
 
 subtest 'symmetrical servers' => sub {
@@ -520,7 +530,7 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 121,
+            count   => 112,
             comment => 'real groups'
         },
         {
@@ -533,7 +543,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'svg'
             },
-            count   => 55,
+            count   => 50,
             comment => 'real svg groups'
         },
         {
@@ -551,7 +561,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'synthetic'
             },
-            count   => 35,
+            count   => 30,
             comment => 'real svg synthetic groups'
         },
         {
@@ -747,7 +757,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'bvi'
             },
-            count   => 23,
+            count   => 21,
             comment => 'real bvi groups'
         },
         {
@@ -765,7 +775,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'synthetic'
             },
-            count   => 14,
+            count   => 12,
             comment => 'real bvi synthetic groups'
         },
         {
@@ -800,7 +810,7 @@ subtest 'available_groups' => sub {
                 company     => 'vanuatu'
             },
             allow_multiple_subgroups => 1,
-            count                    => 18,
+            count                    => 16,
             comment                  => 'real vanuatu groups'
         },
         {
@@ -819,7 +829,7 @@ subtest 'available_groups' => sub {
                 company     => 'vanuatu',
                 market_type => 'synthetic'
             },
-            count   => 14,
+            count   => 12,
             comment => 'real vanuatu synthetic groups'
         },
         {
