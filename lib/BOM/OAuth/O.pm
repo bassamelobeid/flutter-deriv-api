@@ -46,6 +46,10 @@ sub authorize {
     # specify caching directives for the browser
     $c->res->headers->cache_control('no-store, no-cache, must-revalidate, max-age=0');
     $c->res->headers->expires('0');
+
+    # Prevent the page from being controlled by a parent window to mitigate cross-windows attacks.
+    $c->res->headers->header('Cross-Origin-Opener-Policy' => 'same-origin');
+
     # APP_ID verification logic
     my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
 
