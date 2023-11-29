@@ -298,7 +298,7 @@ When no account_tokens are provided or no loginid is present, it will return the
 sub _get_token_by_loginid {
     my ($params) = @_;
 
-    my $loginid        = $params->{args}->{loginid};
+    my $loginid        = delete $params->{args}->{loginid};
     my $token          = $params->{token};
     my $account_tokens = $params->{account_tokens};
 
