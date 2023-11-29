@@ -195,7 +195,7 @@ Or the result of withdrawal operation containing the following keys:
 =cut
 
 sub withdraw {
-    my ($self, $loginid, $address, $amount, $is_dry_run, $currency_code, $client_locked_min_withdrawal_amount) = @_;
+    my ($self, $loginid, $address, $amount, $is_dry_run, $currency_code, $client_locked_min_withdrawal_amount, $unique_id) = @_;
 
     my $result = $self->_request({
             method   => HTTP_METHODS->{POST},
@@ -207,6 +207,7 @@ sub withdraw {
                 dry_run                             => $is_dry_run,
                 currency_code                       => $currency_code,
                 client_locked_min_withdrawal_amount => $client_locked_min_withdrawal_amount,
+                estimated_fee_unique_id             => $unique_id,
             }});
 
     return $result if $result->{error};
