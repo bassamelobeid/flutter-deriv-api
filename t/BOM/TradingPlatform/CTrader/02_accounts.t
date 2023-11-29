@@ -17,36 +17,42 @@ use BOM::Config::Runtime;
 use Data::Dump 'pp';
 
 subtest "cTrader Account Creation" => sub {
-    my $ctconfig       = BOM::Config::Runtime->instance->app_config->system->ctrader;
+    my $ctconfig = BOM::Config::Runtime->instance->app_config->system->ctrader;
+    my $ctid     = 1001;
+    my $loginid  = 100001;
+
+    my $mock_apidata = {
+        ctid_create                 => sub { {userId => $ctid} },
+        ctid_getuserid              => sub { {userId => $ctid} },
+        ctradermanager_getgrouplist => sub { [{name => 'ctrader_all_svg_std_usd', groupId => 1}] },
+        trader_create               => sub {
+            {
+                login                 => $loginid,
+                groupName             => 'ctrader_all_svg_std_usd',
+                registrationTimestamp => 123456,
+                depositCurrency       => 'USD',
+                balance               => 0,
+                moneyDigits           => 2,
+            }
+        },
+        trader_get => sub {
+            {
+                login           => $loginid,
+                depositCurrency => 'USD',
+                balance         => 0,
+            }
+        },
+        tradermanager_gettraderlightlist => sub { [{traderId => $ctid, login => $loginid}] },
+        ctid_linktrader                  => sub { {ctidTraderAccountId => $ctid} },
+        tradermanager_deposit            => sub { {balanceHistoryId    => 1} },
+    };
+
     my $mocked_ctrader = Test::MockModule->new('BOM::TradingPlatform::CTrader');
-    my $mock_apidata   = {
-        ctid_create                 => {userId => 1001},
-        ctid_getuserid              => {userId => 1001},
-        ctradermanager_getgrouplist => [{name => 'ctrader_all_svg_std_usd', groupId => 1}],
-        trader_create               => {
-            login                 => 100001,
-            groupName             => 'ctrader_all_svg_std_usd',
-            registrationTimestamp => 123456,
-            depositCurrency       => 'USD',
-            balance               => 0,
-            moneyDigits           => 2
-        },
-        tradermanager_gettraderlightlist => [{traderId => 1001, login => 100001}],
-        ctid_linktrader                  => {ctidTraderAccountId => 1001},
-        tradermanager_deposit            => {balanceHistoryId    => 1}};
-
-    my %ctrader_mock = (
+    $mocked_ctrader->redefine(
         call_api => sub {
-            $mocked_ctrader->mock(
-                'call_api',
-                shift // sub {
-                    my ($self, %payload) = @_;
-                    return $mock_apidata->{$payload{method}};
-                });
-        },
-    );
-
-    $ctrader_mock{call_api}->();
+            my ($self, %payload) = @_;
+            return $mock_apidata->{$payload{method}}->();
+        });
 
     subtest "cTrader Create Account" => sub {
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
@@ -106,7 +112,7 @@ subtest "cTrader Account Creation" => sub {
 
         $response = $ctrader->get_account_info('CTD100001');
         is $response->{account_id},   'CTD100001', 'get_account_info account id';
-        is $response->{account_type}, 'demo',      'get_account_info account id';
+        is $response->{account_type}, 'demo',      'get_account_info account_type';
     };
 
     subtest "cTrader Create Account Errors" => sub {
@@ -188,35 +194,86 @@ subtest "cTrader Account Creation" => sub {
         );
         $params{market_type} = 'all';
 
-        $mock_apidata->{ctradermanager_getgrouplist} = [{name => 'ctrader_all_svg_std_myr', groupId => 1}];
+        $mock_apidata->{ctradermanager_getgrouplist} = sub { [{name => 'ctrader_all_svg_std_myr', groupId => 1}] };
         cmp_deeply(
             exception { $ctrader->new_account(%params) },
             {error_code => 'CTraderInvalidGroup'},
             'Cannot create cTrader with invalid group type'
         );
-        $mock_apidata->{ctradermanager_getgrouplist} = [{name => 'ctrader_all_svg_std_usd', groupId => 1}];
+        $mock_apidata->{ctradermanager_getgrouplist} = sub { [{name => 'ctrader_all_svg_std_usd', groupId => 1}] };
 
-        $mock_apidata->{tradermanager_gettraderlightlist} = [{traderId => 1001, login => 999991}];
+        $mock_apidata->{tradermanager_gettraderlightlist} = sub { [{traderId => 1001, login => 999991}] };
         cmp_deeply(
             exception { $ctrader->new_account(%params) },
             {error_code => 'CTraderAccountCreateFailed'},
             'Stop cTrader account creation if traderId not found'
         );
-        $mock_apidata->{tradermanager_gettraderlightlist} = [{traderId => 1001, login => 100001}];
+        $mock_apidata->{tradermanager_gettraderlightlist} = sub { [{traderId => $ctid, login => $loginid}] };
 
-        $mock_apidata->{ctid_create}    = {};
-        $mock_apidata->{ctid_getuserid} = {};
+        $mock_apidata->{ctid_create}    = sub { {} };
+        $mock_apidata->{ctid_getuserid} = sub { {} };
         cmp_deeply(exception { $ctrader->new_account(%params) }, {error_code => 'CTIDGetFailed'}, 'Stop cTrader account if CTID cannot be retrieved');
-        $mock_apidata->{ctid_create}    = {userId => 1002};
-        $mock_apidata->{ctid_getuserid} = {userId => 1002};
 
-        $mock_apidata->{ctid_linktrader} = {};
+        $ctid++;
+        $loginid++;
+        $mock_apidata->{ctid_create}     = $mock_apidata->{ctid_getuserid} = sub { {userId => $ctid} };
+        $mock_apidata->{ctid_linktrader} = sub { {} };
         cmp_deeply(
             exception { $ctrader->new_account(%params) },
             {error_code => 'CTraderAccountLinkFailed'},
             'Stop cTrader account if CTID cannot be linked'
         );
-        $mock_apidata->{ctid_linktrader} = {ctidTraderAccountId => 1001};
+        $mock_apidata->{ctid_linktrader} = sub { {ctidTraderAccountId => $ctid} };
+    };
+
+    subtest 'wallets' => sub {
+        my (%clients, %platforms, %accs);
+        my ($user, $wallet_factory) = BOM::Test::Helper::Client::create_wallet_factory;
+        $clients{legacy} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', email => $user->email});
+        $clients{legacy}->account('USD');
+        $user->add_client($clients{legacy});
+        ($clients{real})    = $wallet_factory->('CRW', 'doughflow', 'USD');
+        ($clients{virtual}) = $wallet_factory->('VRW', 'virtual',   'USD');
+
+        for my $c (sort keys %clients) {
+            $platforms{$c} = BOM::TradingPlatform->new(
+                platform    => 'ctrader',
+                client      => $clients{$c},
+                user        => $user,
+                rule_engine => BOM::Rules::Engine->new(
+                    client => $clients{$c},
+                    user   => $user
+                ));
+
+            $ctid++;
+            $loginid++;
+            my $account_type = $c eq 'virtual' ? 'demo' : 'real';
+            $accs{$c} = $platforms{$c}->new_account(
+                account_type => $account_type,
+                market_type  => 'all'
+            );
+            ok $accs{$c}->{account_id}, "create $c account ok";
+
+            cmp_deeply(
+                exception { $platforms{$c}->new_account(account_type => $account_type, market_type => 'all') },
+                {error_code => 'CTraderExistingActiveAccount'},
+                "Cannot create duplicate $c account"
+            );
+        }
+
+        for my $c1 (sort keys %clients) {
+            for my $c2 (sort keys %clients) {
+                is $platforms{$c1}->get_account_info($accs{$c2}->{account_id})->{account_id}, $accs{$c2}->{account_id},
+                    "$c1 can see $c2 account in get_account_info()";
+            }
+
+            cmp_deeply(
+                [map { $_->{account_id} } $platforms{$c1}->get_accounts->@*],
+                [$accs{$c1}->{account_id}],
+                "$c1 only sees $c1 account in get_accounts"
+            );
+
+        }
     };
 };
 

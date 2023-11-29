@@ -33,6 +33,7 @@ use constant {
         mt5     => 1,
         dxtrade => 1,
         derivez => 1,
+        ctrader => 1,
     },
 };
 
@@ -223,7 +224,7 @@ method process {
     # 3. virtual account VRTC
     # 4. virtual account for trading platforms
 
-    my @account_to_upgrade = sort_by_priority(
+    my @account_to_upgrade = $self->sort_by_priority(
         grep { !$account_links->{$_} }
             keys $login_details->%*
     );
@@ -231,7 +232,7 @@ method process {
     my $existing_wallets = $self->existing_wallets;
 
     for my $loginid (@account_to_upgrade) {
-        my $account_info  = parse_loginid($loginid);
+        my $account_info  = $login_details->{$loginid};
         my $wallet_params = $self->wallet_params_for($loginid);
 
         my ($lc, $type, $currency) = $wallet_params->@{qw(landing_company account_type currency)};
@@ -262,7 +263,7 @@ method process {
             loginid        => $loginid,
             wallet_loginid => $wallet_to_link->loginid,
             platform       => $account_info->{platform},
-            account_type   => $account_info->{type},
+            account_type   => $account_info->{is_virtual} ? 'demo' : 'real',
         });
     }
 
@@ -299,10 +300,11 @@ Returns an array reference containing the migration plan for wallet migration. E
 method plan {
     my %wallets_to_create;
 
-    my @account_to_upgrade = sort_by_priority(keys $user->loginid_details->%*);
+    my $loginid_details    = $user->loginid_details;
+    my @account_to_upgrade = $self->sort_by_priority(keys %$loginid_details);
 
     for my $loginid (@account_to_upgrade) {
-        my $platform = parse_loginid($loginid)->{platform};
+        my $platform = $loginid_details->{$loginid}{platform};
 
         next if $platform eq 'dwallet';
 
@@ -521,21 +523,14 @@ Returns a boolean value indicating whether the user is eligible for wallet migra
 =cut
 
 method check_eligibility_for_user () {
-    my $loginid_details = $user->loginid_details;
-
-    my @accounts = map {
-        my $acc = parse_loginid($_);
-        $acc->{loginid} = $_;
-        $acc
-    } keys $loginid_details->%*;
-
     # Start with checks on user level to minimize number of db calls
     # and fail fast based on information which we already have
+    my @accounts = values $user->loginid_details->%*;
 
     # clients without virtual account are not eligible for now
-    return 0 unless any { $_->{platform} eq 'dtrade' && $_->{type} eq 'demo' } @accounts;
+    return 0 unless any { $_->{platform} eq 'dtrade' && $_->{is_virtual} } @accounts;
 
-    my @real_dtrade_accounts = grep { $_->{platform} eq 'dtrade' && $_->{type} eq 'real' } @accounts;
+    my @real_dtrade_accounts = grep { $_->{platform} eq 'dtrade' && !$_->{is_virtual} } @accounts;
 
     return 0 unless @real_dtrade_accounts;
 
@@ -694,7 +689,7 @@ Returns a hash reference containing the wallet parameters for the given login ID
 =cut
 
 method wallet_params_for ($loginid) {
-    my $account_info = parse_loginid($loginid);
+    my $account_info = $user->loginid_details->{$loginid};
 
     # Trading platforms
     if (SUPPORTED_TRADING_PLATFORMS->{$account_info->{platform}}) {
@@ -706,7 +701,7 @@ method wallet_params_for ($loginid) {
             account_type    => 'doughflow',
             landing_company => 'svg',
             currency        => 'USD',
-        } if $account_info->{type} eq 'real';
+        } unless $account_info->{is_virtual};
 
         # Demo account
         return +{
@@ -731,7 +726,7 @@ method wallet_params_for ($loginid) {
         currency        => $currency,
         client          => $client,
         }
-        if $account_info->{type} eq 'demo';
+        if $account_info->{is_virtual};
 
     my $type = LandingCompany::Registry::get_currency_type($currency) eq 'crypto' ? 'crypto' : 'doughflow';
 
@@ -743,126 +738,14 @@ method wallet_params_for ($loginid) {
     };
 }
 
-=head1 FUNCTIONS
-
-=head2 parse_loginid
-
-The C<parse_loginid> subroutine takes a login ID as input and parses it to retrieve platform and type information associated with the login ID. 
-The subroutine returns a hash reference containing the platform and type based on the provided login ID.
-
-Arguments:
-
-=over 4
-
-=item * C<$loginid>: The login ID to be parsed.
-
-=back
-
-
-The method may throw the following exception:
-
-=over 4
-
-=item * InternalServerError
-
-if the provided login ID is invalid or belongs to an unsupported platform.
-
-=back
-
-Returns a hash reference containing the platform and type information for the provided login ID. 
-The hash reference structure is as follows:
-
-    {
-        platform => '...',
-        type     => '...',
-    }
-
-The C<platform> key represents the platform associated with the login ID, and the C<type> key represents the type of the account.
-
-=cut
-
-sub parse_loginid ($loginid) {
-    my ($broker_code) = $loginid =~ /^([A-Z]+)\d+$/;
-
-    my $result = +{
-        CR => {
-            platform => 'dtrade',
-            type     => 'real'
-        },
-        MF => {
-            platform => 'dtrade',
-            type     => 'real'
-        },
-        VRTC => {
-            platform => 'dtrade',
-            type     => 'demo'
-        },
-        VRTCR => {
-            platform => 'dtrade',
-            type     => 'demo'
-        },
-        MTR => {
-            platform => 'mt5',
-            type     => 'real'
-        },
-        MTD => {
-            platform => 'mt5',
-            type     => 'demo'
-        },
-        DXR => {
-            platform => 'dxtrade',
-            type     => 'real'
-        },
-        DXD => {
-            platform => 'dxtrade',
-            type     => 'demo'
-        },
-        EZR => {
-            platform => 'derivez',
-            type     => 'real'
-        },
-        EZD => {
-            platform => 'derivez',
-            type     => 'demo'
-        },
-        CTR => {
-            platform => 'ctrader',
-            type     => 'real'
-        },
-        CTD => {
-            platform => 'ctrader',
-            type     => 'demo'
-        },
-        CRW => {
-            platform => 'dwallet',
-            type     => 'real'
-        },
-        MFW => {
-            platform => 'dwallet',
-            type     => 'real'
-        },
-        VRW => {
-            platform => 'dwallet',
-            type     => 'demo'
-        },
-    }->{$broker_code // ''};
-
-    unless ($result) {
-        $log->errorf("Unable to parse loginid %s as part of wallet migration", $loginid);
-        die +{error_code => "InternalServerError"} unless $result;
-    }
-
-    return $result;
-}
-
 =head2 sort_by_priority
 
-The C<sort_by_priority> function sorts the provided login IDs based on their priority. 
+The C<sort_by_priority> method sorts the provided login IDs based on their priority. 
 It uses a cache to store the priority value for each login ID, ensuring efficient sorting.
 
 Arguments:
 
-The C<sort_by_priority> function expects the following parameter:
+The C<sort_by_priority> method expects the following parameter:
 
 =over 4
 
@@ -870,22 +753,22 @@ The C<sort_by_priority> function expects the following parameter:
 
 =back
 
-In list context, the function returns an array containing the login IDs sorted by priority. In scalar context, the function throws an exception.
+In list context, the method returns an array containing the login IDs sorted by priority. In scalar context, the function throws an exception.
 
 =cut
 
-sub sort_by_priority (@loginids) {
+method sort_by_priority (@loginids) {
     croak "Can't sort in scalar context" unless wantarray;
 
     my %cache;
-    my @sorted_loginids = sort { ($cache{$a} //= priority_for($a)) <=> ($cache{$b} //= priority_for($b)) } @loginids;
+    my @sorted_loginids = sort { ($cache{$a} //= $self->priority_for($a)) <=> ($cache{$b} //= $self->priority_for($b)) } @loginids;
 
     return @sorted_loginids;
 }
 
 =head2 priority_for
 
-The C<priority_for> function determines the priority for an account based on the provided login ID.
+The C<priority_for> method determines the priority for an account based on the provided login ID.
 It uses the platform and type information obtained from the login ID to assign a priority value.
 
 Arguments:
@@ -902,13 +785,14 @@ The priority values are assigned as follows:
 
 =cut
 
-sub priority_for ($loginid) {
-    my $account = parse_loginid($loginid);
-    if ($account->{platform} eq 'dtrade') {
-        return $account->{type} eq 'demo' ? 3 : 1;
+method priority_for ($loginid) {
+    my $account_info = $user->loginid_details->{$loginid};
+
+    if ($account_info->{platform} eq 'dtrade') {
+        return $account_info->{is_virtual} ? 3 : 1;
     }
 
-    return $account->{type} eq 'demo' ? 4 : 2;
+    return $account_info->{is_virtual} ? 4 : 2;
 }
 
 1;

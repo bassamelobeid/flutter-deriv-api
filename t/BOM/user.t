@@ -23,9 +23,12 @@ use BOM::MT5::User::Async;
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Script::DevExperts;
+use BOM::Test::Helper::CTrader;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
+
+BOM::Test::Helper::CTrader::mock_server();
 
 my $oauth = BOM::Database::Model::OAuth->new;
 
@@ -824,7 +827,7 @@ subtest 'get_wallet_by_loginid' => sub {
     throws_ok { $user->get_wallet_by_loginid('DW1002') } qr/InvalidWalletAccount/, 'invalid wallet account';
 };
 
-my ($dxtrade_account, $dxtrader);
+my ($dxtrade_account, $dxtrader, $ctrader_demo_loginid, $ctrader);
 subtest 'get_account_by_loginid' => sub {
     $client_cr_new->status->clear_disabled;
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
@@ -865,6 +868,25 @@ subtest 'get_account_by_loginid' => sub {
     my $dxtrade_loginid = $dxtrade_account->{account_id};
     delete $user->{loginid_details};
     is $user->get_account_by_loginid($dxtrade_loginid)->{account_id}, $dxtrade_loginid, 'can find dxtrade demo account';
+
+    # ctrader
+    throws_ok { $user->get_account_by_loginid('CTD2000') } qr/InvalidTradingAccount/, 'invalid ctrader account';
+
+    $ctrader = BOM::TradingPlatform->new(
+        platform    => 'ctrader',
+        client      => $client_cr_new,
+        user        => $user,
+        rule_engine => BOM::Rules::Engine->new(client => $client_cr_new),
+    );
+
+    $ctrader_demo_loginid = $ctrader->new_account(
+        account_type => 'demo',
+        ,
+        market_type => 'all',
+        currency    => 'USD',
+    )->{account_id};
+
+    is $user->get_account_by_loginid($ctrader_demo_loginid)->{account_id}, $ctrader_demo_loginid, 'can find ctrader demo account';
 };
 
 subtest 'link_wallet' => sub {
@@ -889,6 +911,11 @@ subtest 'link_wallet' => sub {
     $args->{wallet_id} = $wallet->loginid;
     $args->{client_id} = $dxtrade_account->{account_id};
     ok $user->link_wallet_to_trading_account($args), 'can bind virtual wallet to a demo dxtrade account';
+
+    # try demo ctrader <-> virtual wallet
+    $args->{wallet_id} = $wallet->loginid;
+    $args->{client_id} = $ctrader_demo_loginid;
+    ok $user->link_wallet_to_trading_account($args), 'can bind virtual wallet to a demo ctrader account';
 
     my $wallet_2 = create_client('VRW');
     $wallet_2->set_default_account('USD');
@@ -922,6 +949,16 @@ subtest 'link_wallet' => sub {
     $args->{client_id} = $dxtrade_real_account->{account_id};
     throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real dxtrade account';
 
+    my $ctrader_real_loginid = $ctrader->new_account(
+        account_type => 'real',
+        market_type  => 'all',
+        currency     => 'USD',
+    )->{account_id};
+
+    $args->{wallet_id} = $wallet->loginid;
+    $args->{client_id} = $ctrader_real_loginid;
+    throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real ctrader account';
+
     subtest 'get list of linked accounts for user' => sub {
         my $account_links = $user->get_accounts_links;
 
@@ -941,6 +978,11 @@ subtest 'link_wallet' => sub {
             'Wallet is linked to DX account'
         );
         cmp_deeply(
+            $account_links->{$ctrader_demo_loginid},
+            [{loginid => $wallet->loginid, platform => 'dwallet'}],
+            'Wallet is linked to ctrader demo'
+        );
+        cmp_deeply(
             $account_links->{$wallet->loginid},
             bag({
                     loginid  => $client_vr->loginid,
@@ -953,7 +995,11 @@ subtest 'link_wallet' => sub {
                 {
                     loginid  => $dxtrade_account->{account_id},
                     platform => 'dxtrade'
-                }
+                },
+                {
+                    loginid  => $ctrader_demo_loginid,
+                    platform => 'ctrader'
+                },
             ),
             'Wallet has links to all trading accounts'
         );
@@ -980,7 +1026,11 @@ subtest 'link_wallet' => sub {
                 {
                     loginid  => $dxtrade_account->{account_id},
                     platform => 'dxtrade'
-                }
+                },
+                {
+                    loginid  => $ctrader_demo_loginid,
+                    platform => 'ctrader'
+                },
             ),
             'returns correct list of linked_to trading account ids and wallet details'
         );

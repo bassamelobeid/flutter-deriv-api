@@ -624,7 +624,8 @@ sub new_account {
 
     my $group = construct_group_name($market_type, $landing_company_short, $currency);
 
-    my @loginids = $user->get_ctrader_loginids();
+    my $wallet_loginid = $self->client->is_wallet ? $self->client->loginid : undef;
+    my @loginids       = $user->get_ctrader_loginids(wallet_loginid => $wallet_loginid);
 
     my $existing_account = check_existing_account(\@loginids, $user, $group, $account_type);
     die +{error_code => $existing_account->{error}} if $existing_account->{error};
@@ -725,7 +726,7 @@ sub new_account {
         landing_company => $landing_company_short,
     };
 
-    $user->add_loginid($account_id, PLATFORM_ID, $account_type, $currency, $attributes);
+    $user->add_loginid($account_id, PLATFORM_ID, $account_type, $currency, $attributes, $wallet_loginid);
 
     if (my $token = $self->client->myaffiliates_token and $args{account_type} ne 'demo') {
         BOM::Platform::Event::Emitter::emit(

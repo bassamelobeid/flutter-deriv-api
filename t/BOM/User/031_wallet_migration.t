@@ -13,60 +13,17 @@ use BOM::MT5::User::Async;
 use BOM::Rules::Engine;
 use BOM::TradingPlatform;
 use BOM::Test::Script::DevExperts;
+use BOM::Test::Helper::MT5;
+use BOM::Test::Helper::CTrader;
 
 use BOM::User::WalletMigration;
 
 use BOM::Config::Runtime;
 
-plan tests => 10;
+plan tests => 9;
 
-# Mocking MT5 API
-# After Bill's card is merged, we can remove this mock and use the one from bom-test
-
-my $mt_counter = 1000;
-
-sub mock_mt5_api {
-    my $mock_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
-
-    my $mock_user_data = +{};
-    # Mocking get_user to return undef to make sure user dont have any derivez account yet
-    $mock_mt5->mock('get_user', sub { return Future->done($mock_user_data->{$_[0]}); });
-
-    # Mocking create_user to create a new derivez user
-    $mock_mt5->mock(
-        'create_user',
-        sub {
-            my $prefix = ($_[0]{group} // '') =~ /derivez/ ? 'EZ' : 'MT';
-            $prefix .= ($_[0]{group} // '') =~ /^demo/ ? 'D' : 'R';
-            my $login = $prefix . ($mt_counter++);
-            $mock_user_data->{$login} = +{
-                $_[0]->%*,
-                login           => $login,
-                balance         => 0,
-                display_balance => '0.00',
-                country         => Locale::Country::Extra->new->country_from_code($_[0]->{country} // 'za'),
-            };
-            return Future->done({login => $login});
-        });
-
-    # Mocking deposit to deposit demo account
-    $mock_mt5->mock('deposit', sub { return Future->done({status => 1}); });
-
-    # Mocking get_group to return group in from mt5
-    $mock_mt5->mock(
-        'get_group',
-        sub {
-            return Future->done(
-                +{
-                    'currency' => 'USD',
-                    'group'    => $_[0],
-                    'leverage' => 1,
-                    'company'  => 'Deriv Limited'
-                });
-        });
-
-    return $mock_mt5;
-}
+BOM::Test::Helper::MT5::mock_server();
+BOM::Test::Helper::CTrader::mock_server();
 
 subtest 'Constructor: new' => sub {
     my ($user) = create_user();
@@ -251,101 +208,8 @@ subtest 'Get existing wallets' => sub {
     is($wallets->{svg}{crypto}{ETH}->loginid,      $crypto1_wallet->loginid,   'Should return the correct crypto wallet');
 };
 
-subtest parse_loginid => sub {
-    my @test_cases = ({
-            loginid => 'VRTC0000000',
-            result  => {
-                platform => 'dtrade',
-                type     => 'demo'
-            },
-            error => undef
-        },
-        {
-            loginid => 'CR0000000',
-            result  => {
-                platform => 'dtrade',
-                type     => 'real'
-            },
-            error => undef
-        },
-        {
-            loginid => 'MF0000000',
-            result  => {
-                platform => 'dtrade',
-                type     => 'real'
-            },
-            error => undef
-        },
-        {
-            loginid => 'MTR0000000',
-            result  => {
-                platform => 'mt5',
-                type     => 'real'
-            },
-            error => undef
-        },
-        {
-            loginid => 'MTD0000000',
-            result  => {
-                platform => 'mt5',
-                type     => 'demo'
-            },
-            error => undef
-        },
-        {
-            loginid => 'DXR0000000',
-            result  => {
-                platform => 'dxtrade',
-                type     => 'real'
-            },
-            error => undef
-        },
-        {
-            loginid => 'DXD0000000',
-            result  => {
-                platform => 'dxtrade',
-                type     => 'demo'
-            },
-            error => undef
-        },
-        {
-            loginid => 'EZR0000000',
-            result  => {
-                platform => 'derivez',
-                type     => 'real'
-            },
-            error => undef
-        },
-        {
-            loginid => 'EZD0000000',
-            result  => {
-                platform => 'derivez',
-                type     => 'demo'
-            },
-            error => undef
-        },
-        {
-            loginid => 'NOTLOGINID',
-            error   => +{error_code => "InternalServerError"}
-        },
-    );
-
-    for my $test_case (@test_cases) {
-        my $result;
-        my $error = exception {
-            $result = BOM::User::WalletMigration::parse_loginid($test_case->{loginid});
-        };
-
-        if ($test_case->{error}) {
-            cmp_deeply($error, $test_case->{error}, 'Should throw expected error if loginid is invalid: ' . $test_case->{loginid});
-            next;
-        }
-        cmp_deeply($result, $test_case->{result}, 'Should return the expected result: ' . $test_case->{loginid});
-    }
-};
-
 subtest wallet_params_for => sub {
-    my ($user) = create_user();
+    my ($user, $virtual) = create_user();
 
     my $migration = BOM::User::WalletMigration->new(
         user   => $user,
@@ -374,27 +238,26 @@ subtest wallet_params_for => sub {
         EZD123 => $demo_result,
     );
 
+    $user->add_loginid($_) for keys %test_cases;
+
     for my $loginid (keys %test_cases) {
         my $result;
         my $error = exception {
             $result = $migration->wallet_params_for($loginid);
         };
 
-        cmp_deeply($error,  undef,                 'Should retuturn no error: ' . $loginid);
+        cmp_deeply($error,  undef,                 'Should return no error: ' . $loginid);
         cmp_deeply($result, $test_cases{$loginid}, 'Should return the expected result: ' . $loginid);
     }
 
-    # Invalid login id
-
-    my $error = exception {
-        $migration->wallet_params_for("ABCD123");
-    };
-
-    cmp_deeply($error, +{error_code => "InternalServerError"}, 'Should throw exception in case of invalid loginid');
-
     # Internal accounts
+    ($user, $virtual) = create_user();
 
-    (undef, my $virtual) = create_user();
+    $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
     my $res = $migration->wallet_params_for($virtual->loginid);
 
     is $res->{client}->loginid, $virtual->loginid, 'Correct client object is returned in result for virtual account';
@@ -412,6 +275,7 @@ subtest wallet_params_for => sub {
 
     my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     $cr_usd->set_default_account('USD');
+    $user->add_client($cr_usd);
 
     $res = $migration->wallet_params_for($cr_usd->loginid);
     is $res->{client}->loginid, $cr_usd->loginid, 'Correct client object is returned in result for CR USD account';
@@ -429,6 +293,7 @@ subtest wallet_params_for => sub {
 
     my $cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     $cr_eur->set_default_account('EUR');
+    $user->add_client($cr_eur);
 
     $res = $migration->wallet_params_for($cr_eur->loginid);
     is $res->{client}->loginid, $cr_eur->loginid, 'Correct client object is returned in result for CR EUR account';
@@ -446,6 +311,7 @@ subtest wallet_params_for => sub {
 
     my $cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     $cr_btc->set_default_account('BTC');
+    $user->add_client($cr_btc);
 
     $res = $migration->wallet_params_for($cr_btc->loginid);
     is $res->{client}->loginid, $cr_btc->loginid, 'Correct client object is returned in result for CR BTC account';
@@ -463,6 +329,7 @@ subtest wallet_params_for => sub {
 
     my $cr_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     $cr_eth->set_default_account('ETH');
+    $user->add_client($cr_eth);
 
     $res = $migration->wallet_params_for($cr_eth->loginid);
     is $res->{client}->loginid, $cr_eth->loginid, 'Correct client object is returned in result for CR ETH account';
@@ -480,6 +347,7 @@ subtest wallet_params_for => sub {
 
     my $mf_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
     $mf_eur->set_default_account('EUR');
+    $user->add_client($mf_eur);
 
     $res = $migration->wallet_params_for($mf_eur->loginid);
     is $res->{client}->loginid, $mf_eur->loginid, 'Correct client object is returned in result for MF EUR account';
@@ -560,8 +428,6 @@ subtest process_migration => sub {
     };
 
     subtest 'Virtual account + MT5 demo' => sub {
-        my $mt5_mock = mock_mt5_api();
-
         my ($user, $virtual) = create_user();
 
         my $mt5_login = BOM::MT5::User::Async::create_user({
@@ -591,8 +457,6 @@ subtest process_migration => sub {
     };
 
     subtest 'CR + MT5 real' => sub {
-        my $mt5_mock = mock_mt5_api();
-
         my ($user, $virtual) = create_user();
 
         my $mt5_login = BOM::MT5::User::Async::create_user({
@@ -622,14 +486,13 @@ subtest process_migration => sub {
         ok($account_links->{$mt5_login},       'Account link is created for virtual account');
         my $wallet_id = $account_links->{$cr_usd->loginid}[0]{loginid};
         like $wallet_id, qr/^CRW\d+$/, 'Wallet id is generated for virtual account';
-        is($wallet_id, $account_links->{$mt5_login}[0]{loginid}, 'Wallet id is the same for virtual and mt5 demo');
+        is($wallet_id, $account_links->{$mt5_login}[0]{loginid}, 'Wallet id is the same for virtual and mt5 real');
     };
 
     subtest 'Virtual account + dxtrade demo' => sub {
         my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
         $dxconfig->suspend->all(0);
         $dxconfig->suspend->demo(0);
-        my $mt5_mock = mock_mt5_api();
 
         my ($user, $virtual) = create_user();
 
@@ -665,14 +528,13 @@ subtest process_migration => sub {
         ok($account_links->{$dxtrade_id},       'Account link is created for virtual account');
         my $wallet_id = $account_links->{$virtual->loginid}[0]{loginid};
         like $wallet_id, qr/^VRW\d+$/, 'Wallet id is generated for virtual account';
-        is($wallet_id, $account_links->{$dxtrade_id}[0]{loginid}, 'Wallet id is the same for virtual and mt5 demo');
+        is($wallet_id, $account_links->{$dxtrade_id}[0]{loginid}, 'Wallet id is the same for virtual and dxtrade demo');
     };
 
     subtest 'CR + dxtrade real' => sub {
         my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
         $dxconfig->suspend->all(0);
         $dxconfig->suspend->real(0);
-        my $mt5_mock = mock_mt5_api();
 
         my ($user, $virtual) = create_user();
 
@@ -713,12 +575,10 @@ subtest process_migration => sub {
         ok($account_links->{$dxtrade_id},      'Account link is created for virtual account');
         my $wallet_id = $account_links->{$cr_usd->loginid}[0]{loginid};
         like $wallet_id, qr/^CRW\d+$/, 'Wallet id is generated for virtual account';
-        is($wallet_id, $account_links->{$dxtrade_id}[0]{loginid}, 'Wallet id is the same for virtual and mt5 demo');
+        is($wallet_id, $account_links->{$dxtrade_id}[0]{loginid}, 'Wallet id is the same for virtual and dxtrade real');
     };
 
     subtest 'Virtual account + DerivEZ demo' => sub {
-        my $mt5_mock = mock_mt5_api();
-
         my ($user, $virtual) = create_user();
 
         my $derivez_login = BOM::MT5::User::Async::create_user({
@@ -744,12 +604,10 @@ subtest process_migration => sub {
         ok($account_links->{$derivez_login},    'Account link is created for virtual account');
         my $wallet_id = $account_links->{$virtual->loginid}[0]{loginid};
         like $wallet_id, qr/^VRW\d+$/, 'Wallet id is generated for virtual account';
-        is($wallet_id, $account_links->{$derivez_login}[0]{loginid}, 'Wallet id is the same for virtual and mt5 demo');
+        is($wallet_id, $account_links->{$derivez_login}[0]{loginid}, 'Wallet id is the same for virtual and derivez demo');
     };
 
     subtest 'CR + DerivEZ real' => sub {
-        my $mt5_mock = mock_mt5_api();
-
         my ($user, $virtual) = create_user();
 
         my $derivez_login = BOM::MT5::User::Async::create_user({
@@ -775,12 +633,91 @@ subtest process_migration => sub {
 
         my $account_links = $user->get_accounts_links();
 
-        ok($account_links->{$cr_usd->loginid}, 'Account link is created for virtual account');
-        ok($account_links->{$derivez_login},   'Account link is created for virtual account');
+        ok($account_links->{$cr_usd->loginid}, 'Account link is created for real account');
+        ok($account_links->{$derivez_login},   'Account link is created for real account');
         my $wallet_id = $account_links->{$cr_usd->loginid}[0]{loginid};
-        like $wallet_id, qr/^CRW\d+$/, 'Wallet id is generated for virtual account';
-        is($wallet_id, $account_links->{$derivez_login}[0]{loginid}, 'Wallet id is the same for virtual and mt5 demo');
+        like $wallet_id, qr/^CRW\d+$/, 'Wallet id is generated for real account';
+        is($wallet_id, $account_links->{$derivez_login}[0]{loginid}, 'Wallet id is the same for real and derivez real');
     };
+
+    subtest 'Virtual account + CTrader demo' => sub {
+        my ($user, $virtual) = create_user();
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $virtual,
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(client => $virtual),
+        );
+
+        my $ctrader_id = $ctrader->new_account(
+            account_type => 'demo',
+            password     => 'test',
+            market_type  => 'all',
+            currency     => 'USD'
+        )->{account_id};
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        my $error = exception {
+            $migration->process();
+        };
+
+        is($error, undef, 'No error is thrown');
+
+        my $account_links = $user->get_accounts_links();
+
+        ok($account_links->{$virtual->loginid}, 'Account link is created for virtual account');
+        ok($account_links->{$ctrader_id},       'Account link is created for virtual account');
+        my $wallet_id = $account_links->{$virtual->loginid}[0]{loginid};
+        like $wallet_id, qr/^VRW\d+$/, 'Wallet id is generated for virtual account';
+        is($wallet_id, $account_links->{$ctrader_id}[0]{loginid}, 'Wallet id is the same for virtual and ctrader demo');
+    };
+
+    subtest 'Virtual account + CTrader real' => sub {
+        my ($user, $virtual) = create_user();
+
+        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $cr_usd->set_default_account('USD');
+        $user->add_client($cr_usd);
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $cr_usd,
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(client => $cr_usd),
+        );
+
+        my $ctrader_id = $ctrader->new_account(
+            account_type => 'real',
+            password     => 'test',
+            market_type  => 'all',
+            currency     => 'USD'
+        )->{account_id};
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        my $error = exception {
+            $migration->process();
+        };
+
+        is($error, undef, 'No error is thrown');
+
+        my $account_links = $user->get_accounts_links();
+
+        ok($account_links->{$virtual->loginid}, 'Account link is created for real account');
+        ok($account_links->{$ctrader_id},       'Account link is created for real account');
+        my $wallet_id = $account_links->{$cr_usd->loginid}[0]{loginid};
+        like $wallet_id, qr/^CRW\d+$/, 'Wallet id is generated for real account';
+        is($wallet_id, $account_links->{$ctrader_id}[0]{loginid}, 'Wallet id is the same for real and ctrader real');
+    };
+
 };
 
 subtest 'Getting migration plan' => sub {
@@ -887,8 +824,6 @@ subtest 'Getting migration plan' => sub {
     };
 
     subtest 'Virtual account + MT5 demo' => sub {
-        my $mt5_mock = mock_mt5_api();
-
         my ($user, $virtual) = create_user();
 
         my $mt5_login = BOM::MT5::User::Async::create_user({
@@ -932,8 +867,6 @@ subtest 'Getting migration plan' => sub {
     };
 
     subtest 'MT5 real' => sub {
-        my $mt5_mock = mock_mt5_api();
-
         my ($user, $virtual) = create_user();
 
         my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
@@ -1018,7 +951,6 @@ subtest 'Getting migration plan' => sub {
         my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
         $dxconfig->suspend->all(0);
         $dxconfig->suspend->demo(0);
-        my $mt5_mock = mock_mt5_api();
 
         my ($user, $virtual) = create_user();
 
@@ -1076,7 +1008,6 @@ subtest 'Getting migration plan' => sub {
         my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
         $dxconfig->suspend->all(0);
         $dxconfig->suspend->real(0);
-        my $mt5_mock = mock_mt5_api();
 
         my ($user, $virtual) = create_user();
 
@@ -1170,12 +1101,10 @@ subtest 'Getting migration plan' => sub {
     };
 
     subtest 'Virtual account + DerivEZ demo' => sub {
-        my $mt5_mock = mock_mt5_api();
-
         my ($user, $virtual) = create_user();
 
         my $derivez_id = BOM::MT5::User::Async::create_user({
-                group => 'demo\derivez_svg',
+                group => 'demo\svg_ez',
             })->get()->{login};
 
         $user->add_loginid($derivez_id, 'derivez', 'demo', 'USD', +{}, undef);
@@ -1213,16 +1142,13 @@ subtest 'Getting migration plan' => sub {
             ),
             'Migration plan is correct'
         );
-
     };
 
     subtest 'CR + DerivEZ real' => sub {
-        my $mt5_mock = mock_mt5_api();
-
         my ($user, $virtual) = create_user();
 
         my $derivez_login = BOM::MT5::User::Async::create_user({
-                group => 'real\derivez_svg',
+                group => 'real\svg_ez',
             })->get()->{login};
 
         $user->add_loginid($derivez_login, 'derivez', 'real', 'USD', +{}, undef);
@@ -1298,8 +1224,148 @@ subtest 'Getting migration plan' => sub {
             ),
             'Migration plan is correct'
         );
-
     };
+
+    subtest 'ctrader demo' => sub {
+        my ($user, $virtual) = create_user();
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $virtual,
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(client => $virtual),
+        );
+
+        my $ctrader_id = $ctrader->new_account(
+            account_type => 'demo',
+            market_type  => 'all',
+            currency     => 'USD',
+        )->{account_id};
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+        my $plan = $migration->plan();
+
+        cmp_deeply(
+            $plan,
+            bag(
+                +{
+                    account_category      => 'wallet',
+                    account_type          => 'virtual',
+                    platform              => 'dwallet',
+                    currency              => 'USD',
+                    landing_company_short => 'virtual',
+                    link_accounts         => bag(
+                        +{
+                            loginid          => $virtual->loginid,
+                            account_category => 'trading',
+                            account_type     => 'standard',
+                            platform         => 'dtrade',
+                        },
+                        +{
+                            loginid          => $ctrader_id,
+                            account_category => 'trading',
+                            account_type     => 'ctrader',
+                            platform         => 'ctrader',
+                        },
+                    ),
+                },
+            ),
+            'Migration plan is correct'
+        );
+    };
+
+    subtest 'CR + ctrader real' => sub {
+        my ($user, $virtual) = create_user();
+
+        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $cr_usd->set_default_account('USD');
+        $user->add_client($cr_usd);
+
+        my $cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $cr_btc->set_default_account('BTC');
+        $user->add_client($cr_btc);
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $cr_usd,
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(client => $cr_usd),
+        );
+
+        my $ctrader_id = $ctrader->new_account(
+            account_type => 'real',
+            market_type  => 'all',
+            currency     => 'USD',
+        )->{account_id};
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+        my $plan = $migration->plan();
+
+        cmp_deeply(
+            $plan,
+            bag(
+                +{
+                    account_category      => 'wallet',
+                    account_type          => 'virtual',
+                    platform              => 'dwallet',
+                    currency              => 'USD',
+                    landing_company_short => 'virtual',
+                    link_accounts         => bag(
+                        +{
+                            loginid          => $virtual->loginid,
+                            account_category => 'trading',
+                            account_type     => 'standard',
+                            platform         => 'dtrade',
+                        },
+                    ),
+                },
+                +{
+                    account_category      => 'wallet',
+                    account_type          => 'crypto',
+                    platform              => 'dwallet',
+                    currency              => 'BTC',
+                    landing_company_short => 'svg',
+                    link_accounts         => [
+                        +{
+                            loginid          => $cr_btc->loginid,
+                            account_category => 'trading',
+                            account_type     => 'standard',
+                            platform         => 'dtrade',
+                        }
+                    ],
+                },
+                +{
+                    account_category      => 'wallet',
+                    account_type          => 'doughflow',
+                    platform              => 'dwallet',
+                    currency              => 'USD',
+                    landing_company_short => 'svg',
+                    link_accounts         => bag(
+                        +{
+                            loginid          => $cr_usd->loginid,
+                            account_category => 'trading',
+                            account_type     => 'standard',
+                            platform         => 'dtrade',
+                        },
+                        +{
+                            loginid          => $ctrader_id,
+                            account_category => 'trading',
+                            account_type     => 'ctrader',
+                            platform         => 'ctrader',
+                        },
+                    ),
+                },
+            ),
+            'Migration plan is correct'
+        );
+    };
+
 };
 
 my $user_counter = 1;
