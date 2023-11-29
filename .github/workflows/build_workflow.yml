@@ -3,7 +3,7 @@ run-name: Build workflow
 env:
   PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
-  workflow_dispatch:
+  workflow_dispatch: 
   push:
     branches:
       - master
@@ -327,7 +327,7 @@ jobs:
           make test
         if: always()
   publish_test_results:
-    needs: [ product_others , pricing , memory_test , validation , produt_contract ]
+    needs: [ product_others , pricing , memory_test , validation , product_contract ]
     if: always()
     runs-on: ubuntu-latest
     steps:
