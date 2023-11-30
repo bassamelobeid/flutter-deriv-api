@@ -311,7 +311,7 @@ jobs:
           make test
         if: always()
   publish_test_results:
-    needs: [ product_others , pricing , memory_test , validation , produt_contract ]
+    needs: [ product_others , pricing , memory_test , validation , product_contract ]
     if: always()
     runs-on: ubuntu-latest
     steps:
