@@ -9,21 +9,98 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::Sysinit      ();
-use BOM::Config::Runtime;
+use BOM::Backoffice::Utility      qw(master_live_server_error);
+use BOM::Config;
 use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
-use LandingCompany::Registry;
+use BOM::Config::Redis;
+use BOM::Config::Runtime;
+use BOM::Database::ClientDB;
 use BOM::DynamicSettings;
-use BOM::Config;
-use HTML::Entities;
 use Data::Compare;
-use BOM::Backoffice::Sysinit ();
-use BOM::Backoffice::Utility qw(master_live_server_error);
-use List::Util               qw(any);
+use HTML::Entities;
+use LandingCompany::Registry;
+use List::Util qw(any);
+use Log::Any   qw($log);
+use Syntax::Keyword::Try;
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('INTERNAL TRANSFER SETTINGS');
+
+use constant EXCHANGE_RATE_SPREAD_NAMESPACE => 'exchange_rates_spread';
+
+my $action = request()->url_for('backoffice/f_internal_transfer.cgi');
+
+Bar("EXCHANGE RATE SPREAD");
+
+sub get_exchange_rate_spreads_data {
+    try {
+        my $collector_db = BOM::Database::ClientDB->new({
+                broker_code => 'FOG',
+                operation   => 'collector',
+            })->db->dbic;
+
+        my @data = $collector_db->run(
+            fixup => sub {
+                $_->selectall_arrayref('SELECT * FROM data_collection.get_exchange_rate_spreads()', {Slice => {}});
+            });
+
+        return @data;
+    } catch ($error) {
+        log->warn("Failed to fetch exchange rate spreads data - $error");
+    }
+}
+
+sub update_spread_value {
+    my ($currency_pair, $new_spread_value, $update_reason) = @_;
+
+    try {
+        my $collector_db = BOM::Database::ClientDB->new({
+                broker_code => 'FOG',
+                operation   => 'collector',
+            })->db->dbic;
+
+        $collector_db->run(
+            fixup => sub {
+                return $_->selectall_arrayref(
+                    'SELECT * FROM data_collection.update_spread_value(?, ?, ?, ?)',
+                    {Slice => {}},
+                    $currency_pair, $new_spread_value, BOM::Backoffice::Auth::get_staffname(),
+                    $update_reason
+                );
+            });
+
+        # This if statement is necessary to avoid warnings of uninitialized value
+        if (defined $currency_pair && defined $new_spread_value) {
+            my $redis     = BOM::Config::Redis::redis_exchangerates_write();
+            my $redis_key = EXCHANGE_RATE_SPREAD_NAMESPACE . "::$currency_pair";
+            $redis->set($redis_key, $new_spread_value);
+        }
+
+        print "<p class=\"notify\">Successfully updated.</p>";
+    } catch ($error) {
+        print "<p class=\"notify notify--warning\">Failed to update.</p>";
+        $log->errorf("Failed to update spread value %s - %s", $currency_pair, $error);
+    }
+}
+
+if ($action && request()->http_method eq 'POST') {
+    _show_error_and_exit(' not authorized to make this change ') unless (BOM::Backoffice::Auth::has_authorisation(['PaymentInternalTransfer']));
+
+    my $currency_pair    = request()->param('symbol');
+    my $new_spread_value = request()->param('new_spread');
+    my $update_reason    = request()->param('reason');
+
+    update_spread_value($currency_pair, $new_spread_value, $update_reason);
+}
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/exchange_rate_spread.html.tt',
+    {
+        spread_data           => get_exchange_rate_spreads_data(),
+        internal_transfer_url => $action,
+    });
 
 my @all_currencies = LandingCompany::Registry::all_currencies();
 my $app_config     = BOM::Config::Runtime->instance->app_config();
@@ -58,8 +135,6 @@ for my $currency (@all_currencies) {
 
 # Get inputs
 my $submit = request()->param('_form_submit');
-
-my $action = request()->url_for('backoffice/f_internal_transfer.cgi');
 
 my $defaults_msg = '';
 my $currency_msg = '';
