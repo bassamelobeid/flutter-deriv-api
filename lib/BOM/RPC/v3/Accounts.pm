@@ -3008,6 +3008,7 @@ async_rpc service_token => sub {
                         service => 'ctrader',
                     });
             } catch ($e) {
+                $e = BOM::RPC::v3::Utility::create_error_by_code($e->{error_code}) if ref $e eq 'HASH';
                 push @service_futures, Future->fail($e);
             }
         }

@@ -677,6 +677,7 @@ sub error_map {
         DXTokenGenerationFailed    => localize('Token generation failed. Please try later.'),
         DifferentLandingCompanies  => localize('Payment agent transfers are not allowed for the specified accounts.'),
         CTraderGeneral             => localize('This service is currently unavailable. Please try again later.'),
+        CTraderAccountNotFound     => localize('No cTrader accounts found.'),
         CTraderSuspended           => localize('cTrader account management is currently suspended.'),
         CTraderServerSuspended     => localize('This feature is suspended for system maintenance. Please try later.'),
         CTraderDepositSuspended    => localize('cTrader deposit is currently suspended.'),
