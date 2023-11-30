@@ -214,6 +214,20 @@ subtest "cTrader Account Creation" => sub {
         $mock_apidata->{ctid_getuserid} = sub { {} };
         cmp_deeply(exception { $ctrader->new_account(%params) }, {error_code => 'CTIDGetFailed'}, 'Stop cTrader account if CTID cannot be retrieved');
 
+        $mocked_ctrader->mock(
+            '_add_ctid_userid',
+            sub {
+                return {error => "dummy error"};
+            });
+
+        cmp_deeply(
+            exception { $ctrader->new_account(%params) },
+            {error_code => 'CTIDGetFailed'},
+            'Stop cTrader account if CTID cannot be saved to DB'
+        );
+        $mocked_ctrader->unmock('_add_ctid_userid');
+
+        $mock_apidata->{ctid_linktrader} = {};
         $ctid++;
         $loginid++;
         $mock_apidata->{ctid_create}     = $mock_apidata->{ctid_getuserid} = sub { {userId => $ctid} };

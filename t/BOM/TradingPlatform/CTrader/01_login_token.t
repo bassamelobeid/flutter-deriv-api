@@ -24,8 +24,8 @@ subtest 'generate_login_token' => sub {
     );
 
     like exception { $ctrader->generate_login_token() }, qr/^user_agent is mandatory argument/, 'User agent is validated';
-    like exception { $ctrader->generate_login_token('Mozzila 5.0') }, qr/^No cTrader accounts found for/,
-        'Cannot generate token for user without ctrader accoutns';
+    my $error = exception { $ctrader->generate_login_token('Mozzila 5.0') };
+    is $error->{error_code}, 'CTraderAccountNotFound', 'Cannot generate token for user without cTrader account';
 
     $user->add_loginid('CTR1', 'ctrader', 'real', 'USD', {ctid => 1});
     $ctrader->_add_ctid_userid(1);

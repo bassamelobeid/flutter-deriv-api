@@ -130,7 +130,7 @@ sub generate_login_token {
 
     my ($login) = $self->user->get_ctrader_loginids;
 
-    die "No cTrader accounts found for " . $self->{client}->loginid unless $login;
+    die +{error_code => 'CTraderAccountNotFound'} unless $login;
 
     # Should never happen, it means we have corrupted data in db
     # But because it's json field we cannot enforce at DB level
@@ -700,7 +700,10 @@ sub new_account {
 
         $ctid_userid = $ctid->{userId};
         die +{error_code => 'CTIDGetFailed'} unless $ctid_userid;
-        $self->_add_ctid_userid($ctid_userid);
+
+        my $ctid_insert_check = $self->_add_ctid_userid($ctid_userid);
+
+        die +{error_code => 'CTIDGetFailed'} if ref $ctid_insert_check eq 'HASH' and $ctid_insert_check->{error};
     }
 
     my $citd_link_resp = $self->call_api(
@@ -898,7 +901,7 @@ sub register_partnerid {
 
 =head2 get_ctid_userid
 
-Gets ctid's userid by binary_user_id
+Gets ctid userid by binary_user_id
 
 =cut
 
@@ -923,10 +926,12 @@ sub _add_ctid_userid {
     my ($self, $ctid_userid) = @_;
 
     try {
-        return $self->user->dbic->run(
+        my ($result) = $self->user->dbic->run(
             fixup => sub {
                 $_->do('SELECT FROM ctrader.add_ctrader_userid(?, ?)', undef, $self->user->id, $ctid_userid);
             });
+
+        return $result;
     } catch ($e) {
         return {error => 'ErrorAddingCtidUserId'};
     }
