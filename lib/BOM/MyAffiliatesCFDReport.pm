@@ -24,7 +24,7 @@ class BOM::MyAffiliatesCFDReport {
     use constant NEW_REGISTRATIONS   => '_registrations_';
     use constant TRADING_ACTIVITY    => '_pl_';
     use constant COMMISSION          => '_commissions_';
-    use constant FTP_PATH            => '/myaffiliates/bom/data/';
+    use constant FTP_PATH            => '/myaffiliates/bom/data/data2/';
     use constant DAYS_TO_STORE_CSVS  => 30;
     use constant RETRY_LIMIT         => 5;
     use constant BATCH_SIZE          => 1000;
