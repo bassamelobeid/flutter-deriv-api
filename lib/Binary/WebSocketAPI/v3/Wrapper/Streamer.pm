@@ -443,9 +443,10 @@ sub exchange_rates {
                 my ($c, $api_response, $req_storage) = @_;
                 # the input parameter is a base currency which means the exchange rates provided by this API
                 # will the quoted currency (E.g. the amount required to exchange for 1 base currency)
-                if ($req_storage->{args}{subscribe}) {
-                    my ($local, $base) = @{$req_storage->{args}}{'target_currency', 'base_currency'};
-                    my $subscription_symbol = $local ? join('_', ($base, $local)) : $base . "_*";
+                my ($target_currency, $base) = @{$req_storage->{args}}{'target_currency', 'base_currency'};
+
+                if ($req_storage->{args}{subscribe} && defined $target_currency && defined $base) {
+                    my $subscription_symbol = join('_', ($base, $target_currency));
 
                     my $worker = Binary::WebSocketAPI::v3::Subscription::ExchangeRates->new(
                         c      => $c,
