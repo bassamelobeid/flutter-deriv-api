@@ -3373,7 +3373,7 @@ sub p2p_order_create {
     my $open_orders = $self->_p2p_orders(
         advert_id => $advert_id,
         loginid   => $self->loginid,
-        status    => ['pending', 'buyer-confirmed'],
+        status    => P2P_ORDER_STATUS->{active},
     );
 
     die +{error_code => 'OrderAlreadyExists'} if @{$open_orders};

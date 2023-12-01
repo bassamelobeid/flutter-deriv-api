@@ -169,7 +169,8 @@ subtest 'timeouts and disputes' => sub {
     $client->p2p_expire_order(id => $ord1->{id});
 
     my $ord2;
-    lives_ok { ($client, $ord2) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad1->{id}, amount => 10) }
+    my $ad2 = (BOM::Test::Helper::P2P::create_advert(type => 'sell', rate => 2))[1];
+    lives_ok { ($client, $ord2) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad2->{id}, amount => 10) }
     'timed-out order does not count as cancel';
     $client->p2p_order_cancel(id => $ord2->{id});    # grace period
 
@@ -177,7 +178,8 @@ subtest 'timeouts and disputes' => sub {
     $client->p2p_expire_order(id => $ord1->{id});
 
     my $ord3;
-    lives_ok { ($client, $ord3) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad1->{id}, amount => 10) }
+    my $ad3 = (BOM::Test::Helper::P2P::create_advert(type => 'sell', rate => 3))[1];
+    lives_ok { ($client, $ord3) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad3->{id}, amount => 10) }
     'timeded out refunded order does not count as cancel';
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $ord3->{id});
@@ -194,7 +196,8 @@ subtest 'timeouts and disputes' => sub {
     );
 
     my $ord4;
-    lives_ok { ($client, $ord4) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad1->{id}, amount => 10) }
+    my $ad4 = (BOM::Test::Helper::P2P::create_advert(type => 'sell', rate => 4))[1];
+    lives_ok { ($client, $ord4) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad4->{id}, amount => 10) }
     'dispute refunded order does not count as cancel';
     tt_hours(2);
     BOM::Test::Helper::P2P::expire_order($client, $ord4->{id});

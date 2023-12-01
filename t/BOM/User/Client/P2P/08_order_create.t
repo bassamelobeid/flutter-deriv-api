@@ -335,14 +335,33 @@ subtest 'Creating two new orders from one client for one advert' => sub {
     is($order_data->{status}, 'pending', 'Status for new order is correct');
     ok($order_data->{amount} == 50, 'Amount for new order is correct');
 
-    my $err = exception {
-        $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => 50,
-            rule_engine => $rule_engine,
-        );
-    };
-    is $err->{error_code}, 'OrderAlreadyExists', 'Could not create order, got error code OrderAlreadyExists';
+    foreach my $status (qw(pending buyer-confirmed timed-out disputed)) {
+        BOM::Test::Helper::P2P::set_order_status($client, $order_data->{id}, $status);
+        my $err = exception {
+            $client->p2p_order_create(
+                advert_id   => $advert_info->{id},
+                amount      => 10,
+                expiry      => 7200,
+                rule_engine => $rule_engine,
+            );
+        };
+        is $err->{error_code}, "OrderAlreadyExists",
+            "Client can't create new order against advertiser's ad when he already have an ongoing active order against the same ad";
+    }
+
+    BOM::Test::Helper::P2P::set_order_status($client, $order_data->{id}, 'completed');
+    is(
+        exception {
+            $client->p2p_order_create(
+                advert_id   => $advert_info->{id},
+                amount      => 10,
+                expiry      => 7200,
+                rule_engine => $rule_engine,
+            )
+        },
+        undef,
+        "No error since client has no ongoing active order against advertiser's ad"
+    );
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
