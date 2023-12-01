@@ -58,6 +58,7 @@ rpc exchange_rates => sub {
 
     my $base_currency   = $params->{args}->{base_currency};
     my $target_currency = $params->{args}->{target_currency};
+    my $is_subscribed   = $params->{args}->{subscribe};
     my $country_code    = request()->country_code;
 
     if ($params->{token_details} and $params->{token_details}->{loginid}) {
@@ -76,6 +77,11 @@ rpc exchange_rates => sub {
     if ($base_currency and $target_currency) {
         ## no critic (RequireCheckingReturnValueOfEval)
         eval { $rates_hash{$target_currency} = convert_currency(1, $base_currency, $target_currency) };
+    } elsif ($base_currency && $is_subscribed && !$target_currency) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'MissingRequiredParams',
+            message_to_client => localize('Target currency is required.'),
+        });
     } else {
         foreach my $currency (uniq(keys %BOM::Config::CurrencyConfig::ALL_CURRENCIES, LandingCompany::Registry::all_currencies())) {
             next if $currency eq $base_currency;
