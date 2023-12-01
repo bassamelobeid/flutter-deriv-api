@@ -33,6 +33,7 @@ use constant BVI_WARNING_DAYS           => 8;
 use constant VANUATU_EXPIRATION_DAYS    => 5;      # Need to consider the accounts created on the day until 23:59:59
 use constant VANUATU_WARNING_DAYS       => 3;
 use constant COLOR_RED                  => 255;    # BGR (0,0,255)
+use constant COLOR_NONE                 => -1;
 use constant RETRY_LIMIT                => 5;
 use constant ACCOUNTS_BATCH_SIZE        => 1000;
 
@@ -139,35 +140,37 @@ or a hashref with error field descibing the error
         }
     }
 
-=head2 change_color_to_red
+=head2 change_account_color
 
-Changes account color to red in MT5 side, representing that is a restricted in trading rights account
+Changes MT5 account color 
 
 =over 4
 
 =item * C<$mt5_account> The loginid of the MT5 account
 
+=item * C<$color> The color to change to
+
 =back
 
-Returns the status of the operation from BOM::Platform::Event::Emitter
-or a hashref with error field describing the failure
+Returns 1 for success or a hashref with error field describing the failure
 
 =cut
 
-    method change_color_to_red {
-        my $mt5_account = shift;
-        return $self->return_error("change_color_to_red", "No parameters passed") unless ($mt5_account);
+    method change_account_color {
+        my $param   = shift;
+        my $loginid = $param->{loginid};
+        my $color   = $param->{color};
+        return $self->return_error("change_account_color", "Some or all parameters are missing")
+            unless ($loginid and defined $color);
 
-        try {
-            return BOM::Platform::Event::Emitter::emit(
-                'mt5_change_color',
-                {
-                    loginid => $mt5_account,
-                    color   => COLOR_RED
-                });
-        } catch ($e) {
-            return $self->return_error("change_color_to_red", "Could not update loginid $mt5_account account color: $e");
-        }
+        BOM::Platform::Event::Emitter::emit(
+            'mt5_change_color',
+            {
+                loginid => $loginid,
+                color   => $color
+            });
+
+        return;
     }
 
 =head2 update_loginid_status
@@ -186,24 +189,23 @@ or a hashref with error field describing the failure
 =cut
 
     method update_loginid_status ($params) {
-        return $self->return_error("update_loginid_status", "No parameters passed") unless ($params);
         my $binary_user_id = $params->{binary_user_id};
         my $loginid        = $params->{loginid};
         my $to_status      = $params->{to_status};
 
+        return $self->return_error("update_loginid_status", "Some or all parameters are missing")
+            unless ($binary_user_id and $loginid);
         $self->dd_log_info('update_loginid_status', "Updating status for $loginid");
-        try {
-            return BOM::Platform::Event::Emitter::emit(
-                'update_loginid_status',
-                {
-                    binary_user_id => $binary_user_id,
-                    loginid        => $loginid,
-                    status_code    => $to_status
-                });
-        } catch ($e) {
-            return $self->return_error("update_loginid_status", "Could not update loginid $loginid status: $e");
-        }
 
+        BOM::Platform::Event::Emitter::emit(
+            'update_loginid_status',
+            {
+                binary_user_id => $binary_user_id,
+                loginid        => $loginid,
+                status_code    => $to_status
+            });
+
+        return;
     }
 
 =head2 send_email_to_client
@@ -603,41 +605,36 @@ or error field otherwise
         for my $mt5_account (@mt5_accounts_under_same_jurisdiction) {
 
             next if $parsed_mt5_account{$mt5_account};
-            my $tries          = 0;
-            my $color_changed  = 0;
-            my $status_updated = 0;
-            while (not $account_restricted and $tries++ < RETRY_LIMIT) {
-                try {
+            my $color_change_response  = 1;
+            my $status_update_response = 1;
+            try {
 
-                    $color_changed = $self->change_color_to_red($mt5_account) unless ($color_changed);
-                    $self->return_error("restrict_client_and_send_email",
-                        "Failed to change color for $mt5_account" . (($tries < RETRY_LIMIT) ? '. Trying again' : '.'))
-                        unless ($color_changed);
+                $color_change_response = $self->change_account_color({loginid => $mt5_account, color => COLOR_RED});
+                $self->return_error("restrict_client_and_send_email", "Failed to change color for $mt5_account")
+                    unless ($color_change_response);
 
-                    $status_updated = $self->update_loginid_status({%$params, to_status => 'poa_failed'}) unless ($status_updated);
-                    $self->return_error("restrict_client_and_send_email",
-                        "Failed to change status for $mt5_account" . (($tries < RETRY_LIMIT) ? '. Trying again' : '.'))
-                        unless ($status_updated);
+                $status_update_response = $self->update_loginid_status({%$params, to_status => 'poa_failed'});
+                $self->return_error("restrict_client_and_send_email", "Failed to change status for $mt5_account")
+                    if ($status_update_response);
 
-                    if ($color_changed and $status_updated) {
+                if ($color_change_response and $status_update_response) {
 
-                        $self->dd_log_info("restrict_client_and_send_email",
-                            "Client $mt5_account is restricted for $landing_company groups due to poa submit expiry")
-                            if $self->send_email_to_client({
-                                email_type   => 'poa_verification_expired',
-                                email_params => {
-                                    loginid     => $bom_loginid,
-                                    mt5_account => $mt5_account
-                                }});
-                    } else {
-                        $self->return_error("restrict_client_and_send_email", "The account $mt5_account is restricted but failed to send the email");
-                    }
-
-                    $account_restricted = $color_changed && $status_updated;
-                } catch ($e) {
-                    $self->return_error("restrict_client_and_send_email",
-                        "The script ran into an error while changing color and updating status for poa pending/rejected client $mt5_account: $e");
+                    $self->dd_log_info("restrict_client_and_send_email",
+                        "Client $mt5_account is restricted for $landing_company groups due to poa submit expiry")
+                        if $self->send_email_to_client({
+                            email_type   => 'poa_verification_expired',
+                            email_params => {
+                                loginid     => $bom_loginid,
+                                mt5_account => $mt5_account
+                            }});
+                } else {
+                    $self->return_error("restrict_client_and_send_email", "The account $mt5_account is restricted but failed to send the email");
                 }
+
+                $account_restricted = $color_change_response && $status_update_response;
+            } catch ($e) {
+                $self->return_error("restrict_client_and_send_email",
+                    "The script ran into an error while changing color and updating status for poa pending/rejected client $mt5_account: $e");
             }
 
             $parsed_mt5_account{$mt5_account} = 1;
@@ -792,14 +789,7 @@ Does not takes or returns any parameters
                 my $user_data = $self->load_all_user_data($binary_user_id);
                 my $client    = $user_data->{client};
 
-                if ($client->get_poa_status eq 'verified') {
-                    $mt5_client->{to_status} = undef;
-                    $self->update_loginid_status($mt5_client);
-                    $self->dd_log_info("grace_period_actions",
-                        "The client with loginid $loginid status is updated to clear, because his prove of address status is verified");
-                    next;
-                }
-
+                next if $self->check_for_verified_poa_and_update_status({client => $client, loginid => $loginid, mt5_client => $mt5_client});
                 if (   ($group =~ m{bvi} and $creation_stamp->days_since_epoch < $bvi_expiration_timestamp->days_since_epoch)
                     or ($group =~ m{vanuatu} and $creation_stamp->days_since_epoch < $vanuatu_expiration_timestamp->days_since_epoch))
                 {
@@ -852,7 +842,9 @@ Does not takes or returns any parameters
 
                 my $user_data = $self->load_all_user_data($mt5_client->{binary_user_id});
                 my $group     = $mt5_client->{group};
+                my $client    = $user_data->{client};
 
+                next if $self->check_for_verified_poa_and_update_status({client => $client, loginid => $loginid, mt5_client => $mt5_client});
                 if ($group =~ m/(bvi|vanuatu)/) {
                     my $expiration_days = $1 eq 'bvi' ? BVI_EXPIRATION_DAYS : VANUATU_EXPIRATION_DAYS;
 
@@ -1013,8 +1005,10 @@ Does not takes or returns any parameters
                 my $group          = $mt5_client->{group};
                 my $creation_stamp = $mt5_client->{creation_stamp};
                 my $loginid        = $mt5_client->{loginid};
+                my $client         = $user_data->{client};
                 $bom_loginid = $user_data->{bom_loginid};
 
+                next if $self->check_for_verified_poa_and_update_status({client => $client, loginid => $loginid, mt5_client => $mt5_client});
                 if ($group =~ m{bvi}) {
                     if (   ($creation_stamp->days_since_epoch == $bvi_expiration_timestamp->days_since_epoch - FIRST_REMINDER_EMAIL_DAYS)
                         or ($creation_stamp->days_since_epoch == $bvi_expiration_timestamp->days_since_epoch - SECOND_REMINDER_EMAIL_DAYS))
@@ -1094,14 +1088,7 @@ Does not takes or returns any parameters
                 my $bom_loginid    = $user_data->{bom_loginid};
                 my $client         = $user_data->{client};
 
-                if ($client->get_poa_status eq 'verified') {
-
-                    $self->update_loginid_status($mt5_client);
-                    $self->dd_log_info("send_warning_emails",
-                        "The client with loginid $loginid status is updated to clear, because his prove of address status is verified");
-                    next;
-                }
-
+                next if $self->check_for_verified_poa_and_update_status({client => $client, loginid => $loginid, mt5_client => $mt5_client});
                 if ($group =~ m{bvi} and $creation_stamp->days_since_epoch == $bvi_warning_timestamp->days_since_epoch) {
 
                     my $poa_expiry_date = $creation_stamp->plus_time_interval(BVI_EXPIRATION_DAYS . 'd');
@@ -1152,6 +1139,36 @@ Set the status of the MT5 accounts as `poa_outdated` on outdated POAs scenario.
             fixup => sub {
                 $_->do('SELECT users.update_outdated_poa_mt5_loginids(?::DATE,?::VARCHAR[])', undef, $boundary->date_yyyymmdd, $reg_accounts);
             });
+    }
+
+=head2 check_for_verified_poa_and_update_status
+
+Checks if the POA status for the client is verified, if so, updates the status of the client to clear
+
+=over 4
+
+=item * C<$params> Hashref that contains client, loginid, mt5_client fields
+
+=back
+
+Returns 1 if status is 'verified', 0 otherwise
+
+=cut
+
+    method check_for_verified_poa_and_update_status ($params) {
+        my $loginid    = $params->{loginid};
+        my $mt5_client = $params->{mt5_client};
+        my $client     = $params->{client};
+
+        if ($client->get_poa_status eq 'verified') {
+            $mt5_client->{to_status} = undef;
+            $self->update_loginid_status($mt5_client);
+            $self->change_account_color({loginid => $loginid, color => COLOR_NONE});
+            $self->dd_log_info("check_for_verified_poa_and_update_status",
+                "The client with loginid $loginid status is updated to clear, because his prove of address status is verified");
+            return 1;
+        }
+        return 0;
     }
 }
 

@@ -58,6 +58,15 @@ my $vanuatu_group_attributes = encode_json({
     landing_company => "svg"
 });
 
+my $svg_group_attributes = encode_json({
+    group           => 'real\p01_ts01\financial\svg_std_usd',
+    currency        => "USD",
+    leverage        => 1000,
+    market_type     => "financial",
+    account_type    => "real",
+    landing_company => "svg"
+});
+
 my $creation_stamp = Date::Utility->new('2022-10-24 1000');
 
 my @test_pending_users = (
@@ -75,7 +84,10 @@ my @test_pending_users = (
         'MTR100000005', '10000005', $creation_stamp->minus_time_interval('2d')->db_timestamp,
         'poa_outdated', 'mt5', 'real', 'USD', $bvi_group_attributes
     ],
-    ['MTR100000006', '10000006', $creation_stamp->minus_time_interval('2d')->db_timestamp, 'poa_outdated', 'mt5', 'real', 'USD', 'svg'],
+    [
+        'MTR100000006', '10000006', $creation_stamp->minus_time_interval('2d')->db_timestamp,
+        'poa_outdated', 'mt5', 'real', 'USD', $svg_group_attributes
+    ],
 );
 
 my $status_update_mock = Test::MockModule->new('BOM::MT5::Script::StatusUpdate');
@@ -113,21 +125,19 @@ subtest 'grace_period_actions' => sub {
     my $restricted_clients = 0;
     my $users_loaded       = 0;
 
-    $status_update_mock->mock(
+    $status_update_mock->redefine(
         'gather_users',
         sub {
             return @test_pending_users;
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'restrict_client_and_send_email',
         async sub {
             my $params = $_[1];
             $restricted_loginids{$params->{loginid}} = 1;
             $restricted_clients++;
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'load_all_user_data',
         sub {
             $users_loaded++;
@@ -141,7 +151,7 @@ subtest 'grace_period_actions' => sub {
             };
         });
 
-    $client_mock->mock(
+    $client_mock->redefine(
         'get_poa_status',
         sub {
             return 'pending';
@@ -150,7 +160,7 @@ subtest 'grace_period_actions' => sub {
     my $verification_status = BOM::MT5::Script::StatusUpdate->new;
     $verification_status->grace_period_actions;
 
-    is $users_loaded,       5, 'correct number of clients loaded';
+    is $users_loaded,       6, 'correct number of clients loaded';
     is $restricted_clients, 3, 'correct number restrictions';
 
     cmp_deeply(
@@ -163,15 +173,6 @@ subtest 'grace_period_actions' => sub {
         'expected restricted loginids'
     );
 
-    # rare case if status is verified but not displayed in db
-    $status_update_mock->mock(
-        'gather_users',
-        sub {
-            my @clients;
-            push @clients, ['MTR100000007', '10000007', $creation_stamp->db_timestamp, 'poa_pending', 'mt5', 'real', 'USD', $bvi_group_attributes];
-            return @clients;
-        });
-
     $client_mock->mock(
         'get_poa_status',
         sub {
@@ -179,7 +180,15 @@ subtest 'grace_period_actions' => sub {
         });
 
     my $status_params;
-    $status_update_mock->mock(
+    # rare case if status is verified but not displayed in db
+    $status_update_mock->redefine(
+        'gather_users',
+        sub {
+            my @clients;
+            push @clients, ['MTR100000007', '10000007', $creation_stamp->db_timestamp, 'poa_pending', 'mt5', 'real', 'USD', $bvi_group_attributes];
+            return @clients;
+        }
+    )->redefine(
         'update_loginid_status',
         sub {
             $status_params = $_[1];
@@ -199,35 +208,30 @@ subtest 'grace_period_actions' => sub {
 subtest 'restrict_client_and_send_email' => async sub {
 
     my %color_changed_loginids;
-    my $tries = 0;
     my $status_params;
     my $email_params;
     my $email_triggered = 0;
 
-    $status_update_mock->mock(
+    $status_update_mock->redefine(
         'send_email_to_client',
         sub {
             $email_triggered = 1;
             $email_params    = $_[1];
             return 1;
-        });
-
-    $status_update_mock->mock(
-        'change_color_to_red',
+        }
+    )->redefine(
+        'change_account_color',
         sub {
-            $tries++;
-            my $loginid = $_[1];
-            $color_changed_loginids{$loginid} = 1;
+            my $params = $_[1];
+            $color_changed_loginids{$params->{loginid}} = 1;
             return 0;
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'get_mt5_accounts_under_same_jurisdiction',
         sub {
             return 'MTR10010100';
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'update_loginid_status',
         sub {
             $status_params = $_[1];
@@ -245,29 +249,31 @@ subtest 'restrict_client_and_send_email' => async sub {
         0, 'returns 0 because had some fails';
 
     is $color_changed_loginids{'MTR10010100'}, 1,             'correct loginid to change the color';
-    is $tries ,                                RETRY_LIMIT,   'correct retry attempts to change the status in case of fail';
     is $status_params->{binary_user_id},       '999999',      'got correct binary_user_id';
     is $status_params->{to_status},            'poa_failed',  'got correct status';
     is $status_params->{loginid},              'MTR10010100', 'got correct loginid';
     is $email_triggered ,                      0,             'email shouldnt be triggered';
 
     # correct result
-    $status_update_mock->mock(
+    $status_update_mock->redefine(
         'update_loginid_status',
         sub {
             return 1;
-        });
-
-    $status_update_mock->mock(
-        'change_color_to_red',
+        }
+    )->redefine(
+        'change_account_color',
         sub {
             return 1;
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'get_mt5_accounts_under_same_jurisdiction',
         sub {
             return ('MTR10010100', 'MTR10010101');
+        }
+    )->redefine(
+        'check_for_verified_poa_and_update_status',
+        sub {
+            return 0;
         });
 
     ok $verification_status->restrict_client_and_send_email({
@@ -299,18 +305,16 @@ subtest 'disable_users_actions' => async sub {
     my $hash_pwd = BOM::User::Password::hashpw($password);
 
     my $gather_params;
-    $status_update_mock->mock(
+    $status_update_mock->redefine(
         'gather_users',
         sub {
             $gather_params = $_[1];
-
             return ([
                 'MTR100000007', '10000007', Date::Utility->new('2022-09-24 1000')->db_timestamp,
                 'poa_pending',  'mt5', 'real', 'USD', $bvi_group_attributes
             ]);
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'load_all_user_data',
         sub {
             return +{
@@ -319,12 +323,16 @@ subtest 'disable_users_actions' => async sub {
                 cr_currency => 'EUR',
                 bom_loginid => $test_client->loginid
             };
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'check_activity_and_process_client',
         async sub {
             $params = $_[1];
+        }
+    )->redefine(
+        'check_for_verified_poa_and_update_status',
+        sub {
+            return 0;
         });
 
     my $verification_status = BOM::MT5::Script::StatusUpdate->new;
@@ -353,14 +361,14 @@ subtest 'check_activity_and_process_client' => async sub {
         'get_open_orders_count',
         sub {
             return Future->done({total => 0});
-        });
-    $emitter_mock->mock(
+        }
+    )->mock(
         'get_open_positions_count',
         sub {
             return Future->done({total => 0});
         });
 
-    $status_update_mock->mock(
+    $status_update_mock->redefine(
         'withdraw_and_archive',
         async sub {
             return +{result => 1};
@@ -408,42 +416,33 @@ subtest 'withdraw_and_archive' => async sub {
     $params->{bom_loginid}    = 'CR1000001';
     $params->{binary_user_id} = '1000001';
     $params->{client}         = $test_client;
+    my $withdrawal_amount;
 
     $emitter_mock->mock(
         'get_user',
         sub {
             return Future->done({balance => $mt5_balance});
-        });
-
-    $emitter_mock->mock(
+        }
+    )->mock(
         'get_group',
         sub {
             return Future->done({currency => 'USD'});
-        });
-
-    my $withdrawal_amount;
-    $emitter_mock->mock(
+        }
+    )->mock(
         'withdrawal',
         sub {
             $withdrawal_amount = shift;
             return Future->done({status => 1});
-        });
-
-    $emitter_mock->mock(
+        }
+    )->mock(
         'user_archive',
         sub {
             return Future->done({status => 1});
         });
 
     my $update_status_params;
-    $status_update_mock->mock(
-        'update_loginid_status',
-        sub {
-            $update_status_params = $_[1];
-            return 1;
-        });
 
-    $currency_mock->mock(
+    $currency_mock->redefine(
         'in_usd',
         sub {
             my $price         = shift;
@@ -457,16 +456,21 @@ subtest 'withdraw_and_archive' => async sub {
         sub {
             my $self;
             ($self, %client_args) = @_;
-        });
-
-    $client_mock->mock(
+        }
+    )->mock(
         'payment_id',
         sub {
             return '777';
         });
 
     my $record_transfer_params;
-    $status_update_mock->mock(
+    $status_update_mock->redefine(
+        'update_loginid_status',
+        sub {
+            $update_status_params = $_[1];
+            return 1;
+        }
+    )->redefine(
         'record_mt5_transfer',
         sub {
             my $self;
@@ -538,7 +542,13 @@ subtest 'send_warning_emails' => sub {
 
     my @must_sent_warning = ('MTR100000001', 'MTR100000002', 'MTR100000004', 'MTR100000005', 'MTR100000006', 'MTR100000007');
 
-    $status_update_mock->mock(
+    my %sent_warnings_loginids;
+    my $verified_account_loginid;
+    my $is_it_warning_flag = 1;
+    my $color_changed_loginids;
+    my $color;
+
+    $status_update_mock->redefine(
         'load_all_user_data',
         sub {
             my $params = shift;
@@ -548,27 +558,35 @@ subtest 'send_warning_emails' => sub {
                 cr_currency => 'USD',
                 bom_loginid => $test_client->loginid
             };
-        });
-
-    my %sent_warnings_loginids;
-    my $is_it_warning_flag = 1;
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'send_email_to_client',
         sub {
             my $params = $_[1];
             $is_it_warning_flag = 0 if ($params->{email_type} ne 'poa_verification_warning');
             $sent_warnings_loginids{$params->{email_params}->{mt5_account}} = 1;
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'gather_users',
         sub {
             @test_pending_users;
+        }
+    )->redefine(
+        'update_loginid_status',
+        sub {
+            my $params = $_[1];
+            $verified_account_loginid = $params->{loginid};
+        }
+    )->redefine(
+        'change_account_color',
+        sub {
+            my $params = $_[1];
+            $color_changed_loginids = $params->{loginid};
+            $color                  = $params->{color};
         });
 
     my $first_account = 1;
-    $client_mock->mock(
+    $client_mock->redefine(
         'get_poa_status',
         sub {
             if ($first_account) {
@@ -576,14 +594,6 @@ subtest 'send_warning_emails' => sub {
                 return 'verified';
             }
             return 'rejected';
-        });
-
-    my $verified_account_loginid;
-    $status_update_mock->mock(
-        'update_loginid_status',
-        sub {
-            my $params = $_[1];
-            $verified_account_loginid = $params->{loginid};
         });
 
     my $verification_status = BOM::MT5::Script::StatusUpdate->new;
@@ -596,7 +606,8 @@ subtest 'send_warning_emails' => sub {
     isnt $sent_warnings_loginids{'MTR100000000'}, 1,              'MTR100000000 account must be skipped because it is verified';
     is $verified_account_loginid,                 'MTR100000000', 'MTR100000000 account status must be updated because it is verified';
     ok $is_it_warning_flag, 'only warning emails';
-
+    is $color_changed_loginids, 'MTR100000000', 'MTR100000000 account color must be changed because it is verified';
+    is $color,                  -1,             'MTR100000000 account color must be changed to none because it is verified';
     $status_update_mock->unmock_all;
 
 };
@@ -660,8 +671,11 @@ subtest 'send_reminder_emails' => sub {
         'MTR100000006', 'MTR100000007', 'MTR100000008'
     );
 
+    my %sent_reminder_loginids;
     my $loginids_counter = 0;
-    $status_update_mock->mock(
+    my $verified_account_loginid;
+
+    $status_update_mock->redefine(
         'load_all_user_data',
         sub {
             my $params = shift;
@@ -671,25 +685,19 @@ subtest 'send_reminder_emails' => sub {
                 cr_currency => 'USD',
                 bom_loginid => $bom_loginids[$loginids_counter++]    # in the script it will be $client->loginid
             };
-        });
-
-    my %sent_reminder_loginids;
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'send_email_to_client',
         sub {
             my $params = $_[1];
             $sent_reminder_loginids{$params->{email_params}->{loginid}} = 1 if ($params->{email_type} eq 'poa_verification_failed_reminder');
-        });
-
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'gather_users',
         sub {
             @test_pending_users;
-        });
-
-    my $verified_account_loginid;
-    $status_update_mock->mock(
+        }
+    )->redefine(
         'update_loginid_status',
         sub {
             my $params = $_[1];
@@ -726,9 +734,7 @@ subtest 'check_poa_issuance' => sub {
     $user->update_loginid_status('MTD10000001', 'proof_failed');
 
     $user->add_loginid('MTR10000002', 'mt5', 'real', 'USD', {group => 'real\p01_ts01\financial\labuan_stp_usd'});
-
-    $user->add_loginid('MTD10000002', 'mt5', 'demo', 'USD', {test => 'test'});
-
+    $user->add_loginid('MTD10000002', 'mt5', 'demo', 'USD', {test  => 'test'});
     $user->dbic->run(
         fixup => sub {
             $_->do('select users.upsert_poa_verification_and_issuance(?,?, ?)', undef, $user->id, '2020-10-10', '2020-10-10');
