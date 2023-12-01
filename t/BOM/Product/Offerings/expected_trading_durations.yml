@@ -1131,6 +1131,30 @@
       trade_type:
         display_name: Vanilla Options
         name: vanilla
+    - durations:
+      - display_name: Ticks
+        max: 10
+        min: 5
+        name: ticks
+      - display_name: Seconds
+        max: 86400
+        min: 15
+        name: s
+      - display_name: Minutes
+        max: 1440
+        min: 1
+        name: m
+      - display_name: Hours
+        max: 24
+        min: 1
+        name: h
+      - display_name: Days
+        max: 365
+        min: 1
+        name: days
+      trade_type:
+        display_name: Turbos Options
+        name: turbos
   market:
     display_name: Derived
     name: synthetic_index

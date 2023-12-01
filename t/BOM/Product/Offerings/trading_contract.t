@@ -37,7 +37,7 @@ subtest 'non available' => sub {
         landing_company_name => 'virtual',
     };
     my $unavailable = get_unavailable_contracts($args);
-    my @expected    = ('accumulator', 'asian', 'digits', 'highlowticks', 'lookback', 'reset', 'runs', 'vanilla',);
+    my @expected    = ('accumulator', 'asian', 'digits', 'highlowticks', 'lookback', 'reset', 'runs', 'turbos', 'vanilla',);
     my @got;
     for my $ct (@$unavailable) {
         push @got, $ct->{contract_category};
@@ -67,6 +67,7 @@ subtest 'by landing company' => sub {
             'touchnotouch'  => 6,
             'callputspread' => 4,
             'accumulator'   => 1,
+            'turbos'        => 6,
             'vanilla'       => 8,
         );
         lives_ok {
@@ -135,17 +136,17 @@ subtest 'by app id' => sub {
         };
 
         my %expected = (
-            11780 => 45,
-            1411  => 45,
-            16303 => 45,
-            16929 => 45,
+            11780 => 51,
+            1411  => 51,
+            16303 => 51,
+            16929 => 51,
             19111 => 54,
             19112 => 54,
             22168 => 55,
             23789 => 28,
             27315 => 55,
             29864 => 52,
-            30767 => 45,
+            30767 => 51,
             30768 => 55
         );
         my $apps = $deriv->whitelist_apps;
