@@ -1,0 +1,21 @@
+name: 'Test Report'
+on:
+  workflow_run:
+    workflows: ['Build workflow', 'Daily master test']                     # runs after CI workflow
+    types:
+      - completed
+permissions:
+  contents: read
+  actions: read
+  checks: write  # create check runs
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: deriv-com/test-reporter@main
+      with:
+        artifact: test-results    # artifact name
+        name: Perl Tests with java parser 
+        path: './**/*.xml'  
+        reporter: java-junit # There is no perl parser yet. Use java-junit to parse perl JUnit output because the output is very like java test output. 
+
