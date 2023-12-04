@@ -13,7 +13,7 @@ use BOM::User;
 use utf8;
 use BOM::Platform::Token;
 
-# init db
+# Init db
 my $email_vr = 'abv@binary.com';
 my $email_cr = 'abc1@binary.com';
 my $password = 'jskjd8292922';
@@ -36,7 +36,7 @@ $user_vr->add_client($test_client_vr);
 
 my ($status, $code);
 
-# check login of vrtc client
+# Check login of vrtc client
 subtest 'check_login_vrtc' => sub {
     $status = $user_vr->login(password => $password);
     is $status->{success}, 1, 'vrtc login with current password OK';
@@ -60,7 +60,7 @@ my $expected_result = {
     },
 };
 
-# reset password vrtc
+# Reset password vrtc
 my $method = 'reset_password';
 subtest 'reset_password_vrtc' => sub {
     $code = BOM::Platform::Token->new({
@@ -83,7 +83,7 @@ subtest 'reset_password_vrtc' => sub {
     ok @emitted, 'reset password event emitted correctly';
 };
 
-# refetch vrtc user
+# Refetch vrtc user
 subtest 'check_password' => sub {
     $user_vr = $test_client_vr->user;
     $status  = $user_vr->login(password => $new_password);
@@ -105,48 +105,47 @@ my $user_cr = BOM::User->create(
 );
 $user_cr->add_client($test_client_cr);
 
-# check login of cr client
+# Check login of cr client
 subtest 'check_login_cr' => sub {
     $status = $user_cr->login(password => $password);
     is $status->{success}, 1, 'cr login with current password OK';
 };
 
-# reset password cr
+# Reset password cr
 subtest $method => sub {
     undef @emitted;
     my $params = {
         args => {
             new_password      => 'Weakpassword',
-            date_of_birth     => $dob,
             verification_code => 123456
         }};
 
-    # reset password with invalid verification code
+    # Test reset password with invalid verification code
     $c->call_ok($method, $params)->has_error->error_message_is('Your token has expired or is invalid.', 'InvalidToken');
 
+    # Test reset password with a weak password, set up a valid token
     $code = BOM::Platform::Token->new({
             email       => $email_cr,
             expires_in  => 3600,
             created_for => 'reset_password'
         })->token;
     $params->{args}->{verification_code} = $code;
-
-    # reset password with weak password
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'PasswordError');
 
+    # Reset password with email as password
     $code = BOM::Platform::Token->new({
             email       => $email_cr,
             expires_in  => 3600,
             created_for => 'reset_password'
         })->token;
     $params->{args}->{verification_code} = $code;
-
-    # reset password with email as password
-    $params->{args}->{new_password} = 'Abc1@binary.com';
+    $params->{args}->{new_password}      = 'Abc1@binary.com';
     $c->call_ok($method, $params)->has_error->error_message_is('You cannot use your email address as your password.', 'PasswordError');
 
+    # Test reset password with wrong DOB arg
+    # - it should be ignored as the DOB was removed from the API function
     $code = BOM::Platform::Token->new({
             email       => $email_cr,
             expires_in  => 3600,
@@ -155,34 +154,16 @@ subtest $method => sub {
     $params->{args}->{verification_code} = $code;
     $params->{args}->{new_password}      = $new_password;
     $params->{args}->{date_of_birth}     = '1991-01-01';
-
-    # reset password with wrong date of birth
-    $c->call_ok($method, $params)->has_error->error_message_is('The email address and date of birth do not match.', 'DateOfBirthMismatch');
-    $params->{args}->{date_of_birth} = $dob;
-    $code = BOM::Platform::Token->new({
-            email       => $email_cr,
-            expires_in  => 3600,
-            created_for => 'reset_password'
-        })->token;
-    $params->{args}->{verification_code} = $code;
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
-    is($emitted[0][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
-    is($emitted[0][1]->{properties}->{type},       'reset_password',              'type is correct');
-    is($emitted[0][1]->{loginid},                  'CR10000',                     'loginid is correct');
-    is($emitted[0][0],                             'reset_password_confirmation', 'event name is correct');
-    ok @emitted, 'reset password event emitted correctly';
 
-    # Should reset password if DOB is not provided
+    # Test reset password is successful with correct args
     $code = BOM::Platform::Token->new({
             email       => $email_cr,
             expires_in  => 3600,
             created_for => 'reset_password'
         })->token;
     $params->{args}->{verification_code} = $code;
-    $params->{args}->{new_password}      = $new_password;
     delete $params->{args}->{date_of_birth};
-
-    undef @emitted;
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
     is($emitted[0][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
     is($emitted[0][1]->{properties}->{type},       'reset_password',              'type is correct');
@@ -190,7 +171,7 @@ subtest $method => sub {
     is($emitted[0][0],                             'reset_password_confirmation', 'event name is correct');
     ok @emitted, 'reset password event emitted correctly';
 
-    # refetch cr user
+    # Re-fetch cr user
     subtest 'check_password' => sub {
         $user_cr = $test_client_cr->user;
         $status  = $user_cr->login(password => $new_password);

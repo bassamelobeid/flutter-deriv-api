@@ -920,9 +920,11 @@ sub get_dxtrade_server_list {
 
     my @market_types = grep {
         local $log->context->{account_type} = $_;
-        $countries->dx_company_for_country(
-            country      => $client->residence,
-            account_type => $_
+        (
+            $countries->dx_company_for_country(
+                country      => $client->residence,
+                account_type => $_
+            ) // ''
         ) ne 'none'
     } qw/all/;
 

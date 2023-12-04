@@ -1,7 +1,7 @@
 {
     "args": {
-      "reset_password": 1,
-      "verification_code": "[_1]",
-      "new_password": "[_2]"
+        "reset_password": 1,
+        "verification_code": "[_1]",
+        "new_password": "[_2]"
     }
 }

@@ -77,7 +77,7 @@ use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use constant DEFAULT_STATEMENT_LIMIT         => 100;
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 
-# limit the number of Landing Companies provided as arguments for kyc_auth_status
+# Limit the number of Landing Companies provided as arguments for kyc_auth_status
 use constant LCS_ARGUMENT_LIMIT => 20;
 
 # Expected withdrawal processing times in days [min, max].
@@ -114,7 +114,7 @@ my $email_field_labels = {
     session_duration_limit => 'Session duration limit, in minutes',
 };
 
-# max deposit limits are named differently in websocket API and database
+# Max deposit limits are named differently in websocket API and database
 my $max_deposit_key_mapping = {
     max_deposit       => 'max_deposit_daily',
     max_7day_deposit  => 'max_deposit_7day',
@@ -251,7 +251,7 @@ rpc "landing_company",
     #   }
     # }
 
-    # we don't want to send "mt" as key so need to delete from structure
+    # We don't want to send "mt" as key so need to delete from structure
     my $mt5_landing_company_details = delete $landing_company{mt};
     my %output_map                  = (
         stp       => 'financial_stp',
@@ -330,7 +330,7 @@ rpc "landing_company_details",
 
 =head2 lc_country_requires_tin
 
-check if the country for the provided landing company is (NPJ) Non Participating Jurisdiction 
+Check if the country for the provided landing company is (NPJ) Non Participating Jurisdiction 
 and TIN is mandatory or not.
 
 =cut
@@ -460,7 +460,7 @@ sub _withdrawal_details {
     $durations = WITHDRAWAL_PROCESSING_TIMES->{$gateway}{$df_method} if $gateway eq 'doughflow';
     return unless $durations;
 
-    # estimated processing times are business days. We double the max to allow for holidays and unusual circumstances.
+    # Estimated processing times are business days. We double the max to allow for holidays and unusual circumstances.
     my $days     = $durations->[1] * 2;
     my $end_date = Date::Utility->new($txn->{transaction_time})->plus_time_interval($days . 'd');
 
@@ -480,7 +480,7 @@ rpc "statement",
         my $duration_in_seconds = 0;
         $duration_in_seconds = $args->{date_to} - $args->{date_from} if ($args->{date_to}   && $args->{date_from});
         $duration_in_seconds = time - $args->{date_from}             if ($args->{date_from} && !$args->{date_to});
-        # make it -1 if there is only date_to
+        # Make it -1 if there is only date_to
         $duration_in_seconds = -1 if ($args->{date_to} && !$args->{date_from});
 
         my $action_type      = $args->{action_type} // 'all';
@@ -576,7 +576,7 @@ rpc request_report => sub {
             message_to_client => localize("From date must be before To date for sending statement")}
     ) unless ($params->{args}->{date_to} > $params->{args}->{date_from});
 
-    # more different type of reports maybe added here in the future
+    # More different types of reports may be added here in the future
 
     if ($params->{args}->{report_type} eq 'statement') {
 
@@ -683,7 +683,7 @@ rpc "profit_table",
         transactions => [],
         count        => 0
     } unless (scalar @{$data});
-    # args is passed to echo req hence we need to delete them
+    # Clear args as they are passed to echo req
     delete $args->{after};
     delete $args->{before};
 
@@ -697,7 +697,7 @@ rpc "profit_table",
             source      => $params->{source},
         }) if $args->{description} and @short_codes;
 
-    ## remove useless and plus new
+    ## Remove useless and plus new
     my @transactions;
     foreach my $row (@{$data}) {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
@@ -759,7 +759,7 @@ rpc balance => sub {
 
     return $response unless ($arg_account eq 'all');
 
-    # now is all accounts - need OAuth token
+    # Now is all accounts - need OAuth token
     unless (($params->{token_type} // '') eq 'oauth_token') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => "PermissionDenied",
@@ -898,9 +898,9 @@ rpc get_account_status => sub {
     my $id_auth_status             = $client->authentication_status;
     my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
 
-    # some clients were withdrawal locked for high aml risk;
+    # Some clients were withdrawal locked for high aml risk;
     # but their risk level has dropped before they could authenticate their accounts.
-    # this flag is used to let them get correct instructions in the FE.
+    # This flag is used to let them get correct instructions in the FE.
     my $was_locked_for_high_risk = $client->was_locked_for_high_risk;
 
     my $is_withdrawal_locked_for_fa =
@@ -908,7 +908,7 @@ rpc get_account_status => sub {
     push @$status, 'document_' . $id_auth_status if $authentication_in_progress;
     if ($client->fully_authenticated()) {
         push @$status, 'authenticated';
-        # we send this status as client is already authenticated
+        # We send this status as client is already authenticated
         # so they can view or upload more documents if needed
         push @$status, 'allow_document_upload';
         push @$status, 'financial_assessment_notification' if BOM::RPC::v3::Utility::notify_financial_assessment($client);
@@ -922,32 +922,29 @@ rpc get_account_status => sub {
         push @$status, 'allow_document_upload';
     }
 
-    # check if there is a dup client to grab the financial assessment from
+    # Check if there is a dup client to grab the financial assessment from
     # and also idv_disallowed flag
 
     my $duplicated;
-
     $duplicated = $client->duplicate_sibling_from_vr if $client->is_virtual;
-
     my $idv_client = $duplicated // $client;
-
     push @$status, 'idv_disallowed' if BOM::User::IdentityVerification::is_idv_disallowed({client => $idv_client});
 
+    # Differentiate between social and password based accounts
     my $user = $client->user;
-
     my $provider;
     if ($user->{has_social_signup}) {
-        push @$status, 'social_signup';    # differentiate between social and password based accounts
+        push @$status, 'social_signup';
         my $user_connect = BOM::Database::Model::UserConnect->new;
         $provider = $user_connect->get_connects_by_user_id($client->user->{id})->[0];
     }
     my $fa_client = $duplicated // $client;
 
-    # push age verification status if the duplicated has got it
+    # Push age verification status if the duplicated has got it
     push @$status, 'skip_idv' if $duplicated && $duplicated->status->age_verification;
     push @$status, 'skip_idv' if $duplicated && !BOM::User::IdentityVerification->new(user_id => $duplicated->binary_user_id)->submissions_left;
 
-    # check whether the user need to perform financial assessment
+    # Check whether the user needs to perform financial assessment
     my $client_fa = decode_fa($fa_client->financial_assessment());
 
     push(@$status, 'financial_information_not_complete')
@@ -1026,7 +1023,7 @@ rpc get_account_status => sub {
     );
 
     if ($is_document_expiry_check_required) {
-        # check if the user's documents are expired or expiring soon
+        # Check if the user's documents are expired or expiring soon
         my $expiry_soon_date = Date::Utility->new()->plus_time_interval(DOCUMENT_EXPIRING_SOON_INTERVAL)->epoch;
         if ($authentication->{identity}{status} eq 'expired') {
             push(@$status, 'document_expired');
@@ -1111,7 +1108,7 @@ rpc kyc_auth_status => sub {
     my $kyc_jurisdiction_authentication_object;
 
     if ($landing_companies) {
-        # if valid landing company argument is provided, we return nested structure
+        # If valid landing company argument is provided, we return nested structure
         my @all_lcs = LandingCompany::Registry->get_all;
         for my $landing_company (@uniq_landing_companies) {
 
@@ -1635,7 +1632,7 @@ sub _get_idv_service_detail {
 
     my $submissions_left = $idv->submissions_left();
 
-    # automatically give 1 attempt if doc is expired and no submissions are left
+    # Automatically give 1 attempt if doc is expired and no submissions are left
     $submissions_left = $idv->has_expired_document_chance() ? 1 : 0 if $submissions_left <= 0 && $client->get_idv_status() eq 'expired';
 
     return {
@@ -1709,7 +1706,7 @@ rpc change_email => sub {
     my $client = $params->{client};
     my ($token_type, $client_ip, $args) = @{$params}{qw/token_type client_ip args/};
     my $brand = request()->brand;
-    # allow OAuth token
+    # Allow OAuth token
     unless (($token_type // '') eq 'oauth_token') {
         return BOM::RPC::v3::Utility::permission_error();
     }
@@ -1732,7 +1729,7 @@ rpc change_email => sub {
                     message_to_client => localize("This email is already in use. Please use a different email.")});
         }
 
-        # send token to new email
+        # Send token to new email
         my $code = BOM::Platform::Token->new({
                 email       => $args->{new_email},
                 expires_in  => CHANGE_EMAIL_TOKEN_TTL,
@@ -1864,12 +1861,12 @@ rpc change_password => sub {
     my $client = $params->{client};
     my ($token_type, $client_ip, $args) = @{$params}{qw/token_type client_ip args/};
 
-    # allow OAuth token
+    # Allow OAuth token
     unless (($token_type // '') eq 'oauth_token') {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    # if the user doesn't exist or
+    # If the user doesn't exist or
     # has no associated clients then throw exception
     my $user = $client->user;
     my @clients;
@@ -1877,7 +1874,7 @@ rpc change_password => sub {
         return BOM::RPC::v3::Utility::client_error();
     }
 
-    # do not allow social based clients to reset password
+    # Do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
             message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
@@ -1924,20 +1921,8 @@ rpc "reset_password",
         return BOM::RPC::v3::Utility::client_error();
     }
 
-    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+    # Clients are ordered by reals first, then by loginid. So the first one is used here.
     my $client = $clients[0];
-
-    unless ($client->is_virtual) {
-        if ($args->{date_of_birth}) {
-
-            (my $user_dob = $args->{date_of_birth}) =~ s/-0/-/g;
-            (my $db_dob   = $client->date_of_birth) =~ s/-0/-/g;
-
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => "DateOfBirthMismatch",
-                    message_to_client => localize("The email address and date of birth do not match.")}) if ($user_dob ne $db_dob);
-        }
-    }
 
     if (
         my $pass_error = BOM::RPC::v3::Utility::check_password({
@@ -1958,7 +1943,7 @@ rpc "reset_password",
         });
     }
 
-    # if user have social signup and decided to proceed, update has_social_signup to false
+    # If user has social signup and decided to proceed, update has_social_signup to false
     if ($user->{has_social_signup}) {
         $user->unlink_social;
     }
@@ -2014,7 +1999,7 @@ rpc get_settings => sub {
     my $cooling_off_period =
         BOM::Config::Redis::redis_replicated_read()->ttl(APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD . $client->{binary_user_id});
 
-    # grab from dup account
+    # Grab from dup account
     my $duplicated;
 
     $duplicated = $client->duplicate_sibling;
@@ -2142,7 +2127,7 @@ rpc set_settings => sub {
         }
     }
 
-    # only allow current client to set allow_copiers
+    # Only allow current client to set allow_copiers
     if (defined $allow_copiers) {
         $current_client->allow_copiers($allow_copiers);
         return BOM::RPC::v3::Utility::client_error() unless $current_client->save();
@@ -2163,13 +2148,13 @@ rpc set_settings => sub {
         }
     }
 
-    # email consent is per user whereas other settings are per client
+    # Email consent is per user whereas other settings are per client
     # so need to save it separately
     if (defined $args->{email_consent}) {
         $user->update_email_fields(email_consent => $args->{email_consent});
     }
 
-    # Shold not allow client to change TIN number if we have TIN format for the country and it doesnt match
+    # Should not allow client to change TIN number if we have TIN format for the country and it doesn't match
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence = $tax_residence =~ /\,/g ? $current_client->residence : $tax_residence;
     my $now                    = Date::Utility->new;
@@ -2207,7 +2192,7 @@ rpc set_settings => sub {
         push @loginids, $user->bom_real_loginids if $user->bom_real_loginids;
     }
 
-    # set professional status for applicable countries
+    # Set professional status for applicable countries
     if ($args->{request_professional_status}) {
         $current_client->status->multi_set_clear({
             set        => ['professional_requested'],
@@ -2249,7 +2234,7 @@ rpc set_settings => sub {
 
         $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
-        # non-pep declaration is shared among siblings of the same landing complany.
+        # Non-pep declaration is shared among siblings of the same landing company.
         if (   $args->{non_pep_declaration}
             && !$client->non_pep_declaration_time
             && $client->landing_company->short eq $current_client->landing_company->short)
@@ -2276,7 +2261,7 @@ rpc set_settings => sub {
             return BOM::RPC::v3::Utility::client_error();
         }
     }
-    # When a trader stop being a trader, need to delete from clientdb betonmarkets.copiers
+    # When a trader stops being a trader, need to delete from clientdb betonmarkets.copiers
     if (defined $allow_copiers and $allow_copiers == 0) {
         my $copier = BOM::Database::DataMapper::Copier->new(
             broker_code => $current_client->broker_code,
@@ -2305,7 +2290,7 @@ rpc set_settings => sub {
         }
     }
 
-    # send email only if there was any changes
+    # Send email only if there were any changes
     if (scalar keys %$updated_fields_for_track) {
         BOM::Platform::Event::Emitter::emit(
             'profile_change',
@@ -2334,7 +2319,7 @@ rpc set_settings => sub {
             });
     }
 
-    # check if newly added address matches expected
+    # Check if newly added address matches expected
     if ($args->{'address_line_1'} || $args->{'address_line_2'}) {
         if ($current_client->documents->is_poa_address_fixed()) {
             $current_client->documents->poa_address_fix();
@@ -2404,7 +2389,7 @@ sub _find_updated_fields {
     }
     my $user = $client->user;
 
-    # email consent is per user whereas other settings are per client
+    # Email consent is per user whereas other settings are per client
     # so need to save it separately
     if (defined($args->{email_consent}) and (($user->email_consent // 0) ne $args->{email_consent})) {
         $updated_fields->{email_consent} = $args->{email_consent};
@@ -2480,7 +2465,7 @@ rpc set_self_exclusion => sub {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     }
 
-    # get old from above sub _get_self_exclusion_details
+    # Get old from above sub _get_self_exclusion_details
     my $self_exclusion = _get_self_exclusion_details($client);
 
     # Max balance and Max open bets are given default values, if not set by client
@@ -2511,7 +2496,7 @@ rpc set_self_exclusion => sub {
             });
     };
 
-    ## validate
+    ## Validate
     my %fields = (
         numerical => {(
                 map { $_ => {is_integer => 0} } (
@@ -2575,17 +2560,17 @@ rpc set_self_exclusion => sub {
         my $regex = $field_settings->{is_integer} ? qr/^\d+$/ : qr/^\d{0,20}(?:\.\d{0,$decimals})?$/;
         return $validation_error_sub->($field) unless $value =~ $regex;
 
-        # zero value is unconditionally accepatable for unregulated landing companies (limit removal)
+        # Zero value is unconditionally accepatable for unregulated landing companies (limit removal)
         next if not $is_regulated and 0 == $value;
 
         my ($min, $max) = @$field_settings{qw/min max/};
         return $error_sub->($min->{message}, $field) if $min and $value < $min->{value};
         return $error_sub->($max->{message}, $field) if $max and $value > $max->{value};
 
-        # accept any max value if unregulated account and the field is not 'max_open_bets'
+        # Accept any max value if unregulated account and the field is not 'max_open_bets'
         next if (not $is_regulated and $field ne 'max_open_bets');
 
-        # in regulated landing companies, clients are not allowed to extend or remove their self-exclusion settings
+        # In regulated landing companies, clients are not allowed to extend or remove their self-exclusion settings
         # non-regulated clients are allowed to extend max_open_bets up to default max value
         if ($self_exclusion->{$field}) {
             $min = $field_settings->{is_integer} ? 1 : 0;
@@ -2604,7 +2589,7 @@ rpc set_self_exclusion => sub {
 
         next unless defined $value;
 
-        # empty value is unconditionally accepatable for unregulated landing companies (limit removal)
+        # Empty value is unconditionally accepatable for unregulated landing companies (limit removal)
         next unless $is_regulated or $value;
 
         my $field_settings = $fields{date}->{$field};
@@ -2661,7 +2646,7 @@ rpc set_self_exclusion => sub {
     }
 
     if ($args{exclude_until} and $client->landing_company->short eq 'maltainvest') {
-        # send exclude_until email for MF only
+        # Send exclude_until email for MF only
         warn 'Compliance email regarding self exclusion from the website failed to send.'
             unless send_self_exclusion_notification($client, 'self_exclusion', \%args, $balance);
     }
@@ -2810,7 +2795,7 @@ rpc api_token => sub {
         });
         $m->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
-        # send notification to cancel streaming, if we add more streaming
+        # Send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
         if (defined $params->{account_id}) {
             BOM::Config::Redis::redis_transaction_write()->publish(
@@ -2831,7 +2816,7 @@ rpc api_token => sub {
     }
     if (my $display_name = $args->{new_token}) {
 
-        ## for old API calls (we'll make it required on v4)
+        ## For old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trading_information', 'trade', 'payments', 'admin'];
         my $token  = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
 
@@ -3218,7 +3203,7 @@ rpc account_closure => sub {
 
     my $oauth = BOM::Database::Model::OAuth->new;
     foreach my $client (@accounts_to_disable) {
-        # revoke access_token
+        # Revoke access_token
         $oauth->revoke_tokens_by_loginid($loginid);
         try {
             $client->status->upsert('disabled', $loginid, $closing_reason) unless $client->status->disabled;
@@ -3230,7 +3215,7 @@ rpc account_closure => sub {
             $loginids_disabled_failed .= $client->loginid . ' ';
         }
     }
-    # revoke refresh_token
+    # Revoke refresh_token
     $oauth->revoke_refresh_tokens_by_user_id($user->id);
 
     # Return error if NO loginids have been disabled
@@ -3321,15 +3306,15 @@ rpc set_financial_assessment => sub {
     my $financial_assessment;
     my %changed_items;
 
-    #extract needed params
+    # Extract needed params
     foreach my $fa_information (@keys) {
         # This is kept here for a transitional state only
         next unless any { $fa_information eq $_ } qw{trading_experience trading_experience_regulated financial_information};
 
-        #disregard trading_experience value if landing company is maltainvest
+        # Disregard trading_experience value if landing company is maltainvest
         next if $fa_information eq 'trading_experience' && $company eq 'maltainvest';
 
-        #disregard trading_experience_regulated value if landing company is not maltainvest
+        # Disregard trading_experience_regulated value if landing company is not maltainvest
         next if $fa_information eq 'trading_experience_regulated' && $company ne 'maltainvest';
 
         next if $fa_information eq 'set_financial_assessment';
@@ -3367,7 +3352,7 @@ rpc set_financial_assessment => sub {
 
     if ($company eq 'maltainvest') {
         $response->{trading_score} = delete $response->{trading_experience_regulated};
-        # if there is a change in trading experience regulated only
+        # If there is a change in trading experience regulated only
         if ($params->{args}->{trading_experience_regulated}) {
             $client->status->clear_financial_risk_approval();
             if ($response->{trading_score} == 0) {
@@ -3411,7 +3396,8 @@ sub _deprecated_financial_assessment {
 
     update_financial_assessment($client->user, $params->{args});
 
-    # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
+    # This is here to continue sending scores through our api as we cannot change the output of our calls.
+    # However, this should be removed with v4 as this is not used by front-end at all
     my $response = build_financial_assessment($params->{args})->{scores};
 
     $response->{financial_information_score} = delete $response->{financial_information};
@@ -3463,7 +3449,8 @@ rpc get_financial_assessment => sub {
         }
     }
     my $company = $client->landing_company->short;
-    # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
+    # This is here to continue sending scores through our api as we cannot change the output of our calls.
+    # However, this should be removed with v4 as this is not used by front-end at all
     if (keys %$response) {
         if ($company eq 'maltainvest') {
             $response->{calculate_appropriateness} = 1;
@@ -3502,14 +3489,14 @@ rpc reality_check => sub {
     my $has_reality_check = $client->landing_company->has_reality_check;
     return {} unless ($has_reality_check);
 
-    # we get token creation time and as cap limit if creation time is less than 48 hours from current
+    # We get token creation time and as cap limit if creation time is less than 48 hours from current
     # time we default it to 48 hours, default 48 hours was decided To limit our definition of session
     # if you change this please ask compliance first
     my $start = $token_details->{epoch};
     my $tm    = time - 48 * 3600;
     $start = $tm unless $start and $start > $tm;
 
-    # sell expired contracts so that reality check has proper
+    # Sell expired contracts so that reality check has proper
     # count for open_contract_count
     BOM::Transaction::sell_expired_contracts({
         client => $client,
@@ -3612,7 +3599,7 @@ rpc paymentagent_create => sub {
     $pa->status('applied');
     $pa->save();
 
-    # create a livechat ticket
+    # Create a livechat ticket
     my $loginid = $client->loginid;
     my $brand   = request->brand;
     my $message = "Client $loginid has submitted the payment agent application form with following content:\n\n";
@@ -3752,7 +3739,7 @@ rpc "unsubscribe_email",
     $user->update_email_fields(email_consent => 0);
     my @all_loginid = $user->loginids();
 
-    # after update notify customer io
+    # After update notify customer io
     my $data_subscription = {
         loginid      => $all_loginid[0],
         unsubscribed => 1,
