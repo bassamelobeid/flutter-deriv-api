@@ -19,11 +19,6 @@
                 1
             ]
         },
-        "date_of_birth": {
-            "description": "[Optional] Date of birth format: `yyyy-mm-dd`. Only required for clients with real-money accounts.",
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$"
-        },
         "new_password": {
             "description": "New password. For validation (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address).",
             "type": "string",
