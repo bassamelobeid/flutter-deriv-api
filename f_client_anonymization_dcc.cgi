@@ -5,8 +5,9 @@ use warnings;
 
 use Date::Utility;
 use CGI;
-use Digest::SHA qw(sha1_hex);
-use Text::Trim  qw(trim);
+use Digest::SHA              qw(sha1_hex);
+use Text::Trim               qw(trim);
+use BOM::Backoffice::Request qw(request);
 
 BOM::Backoffice::Sysinit::init();
 use constant MAX_FILE_SIZE => 1024 * 1600;
@@ -59,24 +60,21 @@ my $message = "The dual control code created by $clerk  (for a " . $input->{tran
 BOM::User::AuditLog::log($message, '', $clerk);
 
 # Display
+my $template_data = {
+    dcc_code => encode_entities($code),
+    utc_date => Date::Utility->new->datetime_ddmmmyy_hhmmss,
+    clerk    => $clerk
+};
 
-print '<p>'
-    . 'DCC: (single click to copy)<br>'
-    . '<div class="dcc-code copy-on-click">'
-    . encode_entities($code)
-    . '</div><script>initCopyText()</script><br>'
-    . 'This code is valid for 1 hour from now: UTC '
-    . Date::Utility->new->datetime_ddmmmyy_hhmmss . '<br>'
-    . 'Creator: '
-    . $clerk . '<br>' . '</p>';
+if ($input->{clientloginid}) {
+    $template_data->{client_login_id} = encode_entities($input->{clientloginid});
+    $template_data->{salutation}      = encode_entities($client->salutation);
+    $template_data->{first_name}      = encode_entities($client->first_name);
+    $template_data->{last_name}       = encode_entities($client->last_name);
+    $template_data->{email}           = encode_entities($client->email);
+}
 
-print "<p>Note: "
-    . encode_entities($input->{clientloginid}) . " is "
-    . encode_entities($client->salutation) . ' '
-    . encode_entities($client->first_name) . ' '
-    . encode_entities($client->last_name)
-    . ' current email is '
-    . encode_entities($client->email)
-    if $input->{clientloginid};
+BOM::Backoffice::Request::template()->process('backoffice/f_client_anonymization_dcc.html.tt', $template_data)
+    || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();
