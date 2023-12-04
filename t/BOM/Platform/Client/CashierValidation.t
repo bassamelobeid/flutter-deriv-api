@@ -309,7 +309,7 @@ subtest 'Cashier validation deposit' => sub {
     $app_config->system->suspend->cryptocurrencies_deposit(['BTC']);
     $res = BOM::Platform::Client::CashierValidation::validate(%args, loginid => $cr_client_2->loginid);
     is $res->{error}{message_to_client}, 'Deposits are temporarily unavailable for BTC. Please try later.', 'crypto currency deposit suspended';
-    cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
+    cmp_deeply $res->{status}, set('system_maintenance_deposit_outage'), 'correct status';
     $app_config->system->suspend->cryptocurrencies_deposit([]);
 
 };
@@ -343,7 +343,7 @@ subtest 'Cashier validation withdraw' => sub {
     $app_config->system->suspend->cryptocurrencies_withdrawal(['BTC']);
     $res = BOM::Platform::Client::CashierValidation::validate(%args, loginid => $cr_client_2->loginid);
     is $res->{error}{message_to_client}, 'Withdrawals are temporarily unavailable for BTC. Please try later.', 'crypto currency withdrawal suspended';
-    cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
+    cmp_deeply $res->{status}, set('system_maintenance_withdrawal_outage'), 'correct status';
     $app_config->system->suspend->cryptocurrencies_withdrawal([]);
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');

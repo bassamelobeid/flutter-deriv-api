@@ -80,8 +80,8 @@ my %error_to_status_mapping = (
     PotentialFraud                    => 'ASK_AUTHENTICATE',
     SystemMaintenance                 => 'system_maintenance',
     SystemMaintenanceCrypto           => 'system_maintenance',
-    SystemMaintenanceDepositOutage    => 'system_maintenance',
-    SystemMaintenanceWithdrawalOutage => 'system_maintenance',
+    SystemMaintenanceDepositOutage    => 'system_maintenance_deposit_outage',
+    SystemMaintenanceWithdrawalOutage => 'system_maintenance_withdrawal_outage',
 );
 
 # error codes passed through for crypto_cashier
@@ -202,7 +202,7 @@ sub check_availability {
         and (BOM::Config::CurrencyConfig::is_crypto_cashier_suspended() or BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency));
 
     _add_error_by_code($errors, 'SystemMaintenanceDepositOutage', params => [$currency])
-        if $currency_type eq 'crypto' && BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency);
+        if $currency_type eq 'crypto' && $action eq 'deposit' && BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency);
 
     _add_error_by_code($errors, 'SystemMaintenanceWithdrawalOutage', params => [$currency])
         if $currency_type eq 'crypto' && $action eq 'withdrawal' && BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended($currency);
