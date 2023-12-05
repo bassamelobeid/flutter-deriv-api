@@ -21,6 +21,7 @@ use BOM::User;
 use BOM::Test::Script::OnfidoMock;
 use BOM::Platform::Context           qw(request);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+use BOM::Test::Helper::Client        qw(invalidate_object_cache);
 
 use WebService::Async::Onfido;
 use WebService::Async::Onfido::Check;
@@ -5601,6 +5602,8 @@ subtest 'Onfido DOB checks' => sub {
         }
         'the event made it alive!';
 
+        invalidate_object_cache($_) for ($vrtc_client, $test_client);
+
         cmp_deeply $vrtc_client->status->disabled,
             +{
             last_modified_date => re('\w'),
@@ -5673,6 +5676,8 @@ subtest 'Onfido DOB checks' => sub {
             }
             'the event made it alive!';
 
+            invalidate_object_cache($_) for ($vrtc_client, $test_client);
+
             ok !$vrtc_client->status->disabled, 'Disabled status not set (mt5 real)';
 
             ok !$test_client->status->disabled, 'Disabled status not set (mt5 real)';
@@ -5730,6 +5735,8 @@ subtest 'Onfido DOB checks' => sub {
             }
             'the event made it alive!';
 
+            invalidate_object_cache($_) for ($vrtc_client, $test_client);
+
             ok $vrtc_client->status->disabled, 'Disabled status set (mt5 demo)';
 
             ok $test_client->status->disabled, 'Disabled status set (mt5 demo)';
@@ -5785,6 +5792,8 @@ subtest 'Onfido DOB checks' => sub {
                 'Expected dd metrics';
         }
         'the event made it alive!';
+
+        invalidate_object_cache($_) for ($vrtc_client, $test_client);
 
         cmp_deeply $emissions->{underage_account_closed},
             {
@@ -5904,6 +5913,8 @@ subtest 'Onfido DOB checks' => sub {
             }
             'the event made it alive!';
 
+            invalidate_object_cache($_) for ($vrtc_client, $test_client);
+
             cmp_deeply $emissions->{underage_account_closed},
                 {
                 loginid    => $test_client->loginid,
@@ -5961,6 +5972,8 @@ subtest 'Onfido DOB checks' => sub {
                 'Expected dd metrics';
         }
         'the event made it alive!';
+
+        invalidate_object_cache($_) for ($vrtc_client, $test_client);
 
         ok !$emissions->{underage_account_closed}, 'underage_account_closed event was not emitted';
 
@@ -6022,6 +6035,8 @@ subtest 'Onfido DOB checks' => sub {
             }
             'the event made it alive!';
 
+            invalidate_object_cache($_) for ($vrtc_client, $test_client);
+
             ok !$emissions->{underage_account_closed}, 'underage_account_closed event not emitted';
 
             ok !$vrtc_client->status->disabled, 'Disabled status not set (dxtrader real)';
@@ -6076,6 +6091,8 @@ subtest 'Onfido DOB checks' => sub {
                 'Expected dd metrics';
         }
         'the event made it alive!';
+
+        invalidate_object_cache($_) for ($vrtc_client, $test_client);
 
         ok !$emissions->{underage_account_closed}, 'underage_account_closed event was not emitted';
 
@@ -6276,6 +6293,7 @@ subtest 'Onfido Name Mismatch' => sub {
 
         ok !$emissions->{underage_account_closed}, 'underage_account_closed event was not emitted';
 
+        invalidate_object_cache($_) for ($vrtc_client, $test_client);
         ok !$vrtc_client->status->disabled,         'Not disabled';
         ok !$test_client->status->disabled,         'Not disabled';
         ok !$test_client->status->age_verification, 'Not age verified';

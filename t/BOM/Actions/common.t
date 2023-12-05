@@ -14,7 +14,8 @@ use IO::Async::Loop;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Email;
-use BOM::Platform::Context qw( request );
+use BOM::Test::Helper::Client qw(invalidate_object_cache);
+use BOM::Platform::Context    qw( request );
 
 use BOM::Event::Actions::Common;
 use BOM::User;
@@ -538,6 +539,7 @@ subtest 'underage handling' => sub {
         $client->status->_build_all;
 
         BOM::Event::Actions::Common::handle_under_age_client($client, 'qa', $from);
+        invalidate_object_cache($client);
 
         my $email = mailbox_search(subject => qr/Underage client detection/);
 
