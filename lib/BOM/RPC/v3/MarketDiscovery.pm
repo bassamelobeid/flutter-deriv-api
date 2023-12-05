@@ -15,9 +15,9 @@ use BOM::Product::ContractFinder::Basic;
 rpc active_symbols => sub {
     my $params = shift;
 
-    my $language = $params->{language} // 'EN';
-    my $args     = _extract_params($params);
-    $args->{type} = $params->{args}->{active_symbols};
+    my $args = _extract_params($params);
+    $args->{type}          = $params->{args}->{active_symbols};
+    $args->{contract_type} = $params->{args}->{contract_type};
 
     my $res = get_symbols($args);
 
