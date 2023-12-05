@@ -24,6 +24,7 @@ foreach my $language (@languages) {
         #Force load the MakeText
         ok BOM::Platform::Context::localize("Hello, World!"), "Translation working!";
         test_language_file($language);
+        test_contract_longcodes($language);
     };
 }
 
@@ -80,4 +81,21 @@ sub prepare_params {
     my $text     = shift;
     my $how_many = () = $text =~ /_\d/g;
     return 1 .. $how_many;
+}
+
+sub test_contract_longcodes {
+    my $language = shift;
+
+    my $lc_lang = lc $language;
+    my $handler = BOM::Platform::Context::I18N::handle_for($lc_lang);
+    my $longcode =
+        'For \'Long\', you receive a payout in 7 ticks if the spot price of Volatility 100 (1s) Index never touches or drops below entry spot minus 30.36. Your payout is equal to 0.93933 multiplied by the absolute difference between the final price and entry spot minus 30.36. If you choose your duration in number of ticks, you won\'t be able to terminate your contract early.';
+    $handler->encoding('UTF-8');
+
+    my $translated;
+
+    unless (warning_is { $translated = $handler->maketext($longcode); } undef, "Successfully translated longcode $longcode") {
+        fail "Translation of longcode - $longcode failed for language $language ";
+    }
+
 }

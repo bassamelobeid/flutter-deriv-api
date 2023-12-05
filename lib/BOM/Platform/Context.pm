@@ -24,6 +24,8 @@ use Time::Duration::Concise::Localize;
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
 use BOM::Platform::Context::I18N;
+use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 our $current_request;
 state $template_config = {};
@@ -86,7 +88,6 @@ It handles following cases for localization and returns localized string
 
 sub localize {
     my ($content, @params) = @_;
-
     return '' unless $content;
 
     my $request  = request();
@@ -96,30 +97,39 @@ sub localize {
         || die("could not build locale for language $language");
 
     my @texts = ();
-    if (ref $content eq 'ARRAY') {
-        return '' unless scalar @$content;
-        # first one is always text string
-        push @texts, shift @$content;
-        # followed by parameters
-        foreach my $elm (@$content) {
-            # some params also need localization (longcode)
-            if (ref $elm eq 'ARRAY' and scalar @$elm) {
-                push @texts, $lh->maketext(@$elm);
-            } elsif (ref $elm eq 'HASH') {
-                my $l = $elm->{class}->new(
-                    interval => $elm->{value},
-                    locale   => lc $language
-                );
-                push @texts, $l->as_string;
-            } else {
-                push @texts, $elm;
-            }
-        }
-    } else {
-        @texts = ($content, @params);
-    }
 
-    return $lh->maketext(@texts);
+    try {
+        if (ref $content eq 'ARRAY') {
+            return '' unless scalar @$content;
+
+            # first one is always text string
+            push @texts, shift @$content;
+
+            # followed by parameters
+            foreach my $elm (@$content) {
+                # some params also need localization (longcode)
+                if (ref $elm eq 'ARRAY' and scalar @$elm) {
+                    push @texts, $lh->maketext(@$elm);
+                } elsif (ref $elm eq 'HASH') {
+                    my $l = $elm->{class}->new(
+                        interval => $elm->{value},
+                        locale   => lc $language
+                    );
+                    push @texts, $l->as_string;
+                } else {
+                    push @texts, $elm;
+                }
+            }
+        } else {
+            @texts = ($content, @params);
+        }
+
+        return $lh->maketext(@texts);
+
+    } catch ($e) {
+        warn "Failed to localize - target language " . $language . ' : ' . $e;
+        $log->warn('Localize debug info - ', @texts);
+    }
 }
 
 sub _configure_template_for {
