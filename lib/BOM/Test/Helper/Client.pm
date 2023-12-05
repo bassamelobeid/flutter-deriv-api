@@ -13,9 +13,11 @@ use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Database::ClientDB;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Platform::Token::API;
+use Scalar::Util qw(blessed);
+use Carp         qw(croak);
 use BOM::Platform::Locale;
 
-our @EXPORT_OK = qw( create_client top_up close_all_open_contracts);
+our @EXPORT_OK = qw(create_client top_up close_all_open_contracts invalidate_object_cache);
 
 #
 # wrapper for BOM::Test::Data::Utility::UnitTestDatabase::create_client(
@@ -192,6 +194,26 @@ sub fill_up_maltainvest_financial_assestment {
                 })});
     $client->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
     $client->save();
+}
+
+=head2 invalidate_object_cache
+
+Invalidate the cache of a BOM::User or BOM::User::Client object.
+
+    invalidate_object_cache($obj);
+
+=cut
+
+sub invalidate_object_cache {
+    my $obj = shift;
+
+    croak 'Object for invalidation need to be provided' unless blessed($obj);
+
+    croak 'Provided object is unsupported: ' . ref $obj unless $obj->isa('BOM::User') || $obj->isa('BOM::User::Client');
+
+    delete $obj->@{$obj->CACHED_FIELDS};
+
+    return;
 }
 
 1;
