@@ -251,6 +251,43 @@ SQL
     return $details;
 }
 
+=head2 get_attributes_from_multiple_tokens
+
+Get token details from oauth.access_token table
+
+=over 4
+
+=item * C<tokens> - array of tokens to get the attributes from
+
+=back
+
+Returns a hash reference for the token attributes
+
+=cut
+
+sub get_attributes_from_multiple_tokens {
+    my ($self, $tokens) = @_;
+
+    my $details = $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(<<'SQL', undef, $tokens) });
+SELECT loginid, access_token, app_id
+  FROM oauth.get_attributes_from_multiple_tokens($1)
+SQL
+
+    # Make a hash of token attributes per loginid
+    my %attributes;
+    for my $detail ($details->@*) {
+        my ($loginid, $token, $app_id) = $detail->@*;
+        $attributes{$loginid} = {
+            token  => $token,
+            app_id => $app_id,
+        };
+    }
+
+    return \%attributes;
+}
+
 sub get_verification_uri_by_app_id {
     my ($self, $app_id) = @_;
 
