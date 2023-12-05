@@ -7,6 +7,7 @@ use Test::Mojo;
 use Email::Address::UseXS;
 use BOM::Test::Email                           qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client                  qw(invalidate_object_cache);
 use BOM::Platform::Token::API;
 use BOM::User;
 use BOM::User::Password;
@@ -487,6 +488,7 @@ subtest 'get and set self_exclusion' => sub {
     delete $params->{args};
     is $c->tcall('get_self_exclusion', $params)->{max_balance}, $new_max_balance, 'Correct max_balance are returned which was set higher';
 
+    invalidate_object_cache($test_client_cr);
     is($test_client_cr->get_limit_for_account_balance, $new_max_balance, "Correct account balance has returned");
 };
 

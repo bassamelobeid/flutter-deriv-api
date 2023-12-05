@@ -6,6 +6,7 @@ use Test::Mojo;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helper::Client                  qw(invalidate_object_cache);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::RPC::QueueClient;
 use BOM::Database::Model::OAuth;
@@ -79,6 +80,7 @@ subtest 'Set currency of account without a currency' => sub {
     $params->{currency} = 'GBP';
     $c->call_ok($method, $params)->has_no_error;
     is($c->result->{status}, 1, 'set currency ok');
+    invalidate_object_cache($client);
 
     isnt($client->account, undef, 'default account set');
     is($client->account->currency_code(), 'GBP', 'default account set to GBP');
@@ -88,14 +90,16 @@ subtest 'Can change fiat -> fiat before first deposit' => sub {
     subtest 'Change to EUR' => sub {
         $params->{currency} = 'EUR';
         $c->call_ok($method, $params)->has_no_error;
-        is($c->result->{status},              1,     'set currency succeeded');
+        is($c->result->{status}, 1, 'set currency succeeded');
+        invalidate_object_cache($client);
         is($client->account->currency_code(), 'EUR', 'currency successfully changed to EUR');
     };
 
     subtest 'Change back to USD' => sub {
         $params->{currency} = 'USD';
         $c->call_ok($method, $params)->has_no_error;
-        is($c->result->{status},              1,     'set currency succeeded');
+        is($c->result->{status}, 1, 'set currency succeeded');
+        invalidate_object_cache($client);
         is($client->account->currency_code(), 'USD', 'currency successfully changed back to USD');
     };
 };

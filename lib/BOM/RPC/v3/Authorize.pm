@@ -19,6 +19,7 @@ use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::Config::Runtime;
 use BOM::Config::AccountType::Registry;
+use BOM::User::ExecutionContext;
 
 use LandingCompany::Registry;
 
@@ -36,7 +37,8 @@ rpc authorize => sub {
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
-    my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
+    my $ctx    = BOM::User::ExecutionContext->new;
+    my $client = BOM::User::Client->get_client_instance($loginid, 'replica', $ctx);
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
     my $user = $client->user;
@@ -57,7 +59,7 @@ rpc authorize => sub {
     }
 
     my $account_links = $user->get_accounts_links();
-    my $clients       = _get_clients($user);
+    my $clients       = _get_clients($user, $client->get_db);
     my $account_list  = _get_account_list($clients, $account_links);
     _add_details_to_account_token_list($account_list, $account_tokens);
 
@@ -543,14 +545,16 @@ Gets a list of valid clients of the user in a sorted order (real/virtual, active
 
 =item * - C<user> - the L<BOM::User> instance
 
+=item * - db_operation - type of db operation is required write or replica
+
 =back
 
 =cut
 
 sub _get_clients {
-    my ($user) = @_;
+    my ($user, $db_operation) = @_;
 
-    my $all_clients = $user->get_clients_in_sorted_order;
+    my $all_clients = $user->get_clients_in_sorted_order(db_operation => $db_operation);
 
     # Return a client if:
     # its a virtual account
