@@ -32,10 +32,7 @@ is $user->set_affiliate_coc_approval(0),     1, 'can set affiliate coc approval 
 is $user->set_affiliate_coc_approval(1),     1, 'can set affiliate coc approval to true';
 
 $user->set_affiliate_id('02b');
-is $user->affiliate->{affiliate_id}, '01a', 'old affiliate is cached';
-
-delete $user->{affiliate};
-is $user->affiliate->{affiliate_id}, '02b', 'uncached affiliate id is changed';
+is $user->affiliate->{affiliate_id}, '02b', 'cached is updated';
 
 is $user->affiliate->{coc_approval}, 1, 'affiliate coc approval is still true';
 

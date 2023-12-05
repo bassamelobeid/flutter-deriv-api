@@ -33,6 +33,7 @@ use BOM::Platform::Redis;
 use LandingCompany::Registry;
 use BOM::Config::AccountType::Registry;
 use BOM::Platform::Context qw(request);
+use Scalar::Util           qw(weaken);
 use Exporter               qw( import );
 our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
 
@@ -50,6 +51,7 @@ use constant CLIENT_LOGIN_HISTORY_KEY_PREFIX => "CLIENT_LOGIN_HISTORY::";
 use constant DAILY_TRANSFER_COUNT_KEY_PREFIX => "USER_TRANSFERS_DAILY::";
 # Redis key prefix for counting daily user amount transfers
 use constant DAILY_TRANSFER_AMOUNT_KEY_PREFIX => "USER_TOTAL_AMOUNT_TRANSFERS_DAILY::";
+use constant CACHED_FIELDS                    => qw(loginid_details affiliate);
 
 # used for extracting numerical portion of MT5 loginids
 use constant {
@@ -97,7 +99,16 @@ sub create {
         fixup => sub {
             $_->selectrow_hashref($sql, undef, @new_values);
         });
-    return bless $result, $class;
+
+    my $self = bless $result, $class;
+
+    if (my $context = $args{context}) {
+        $context->user_registry->add_user($self);
+        $self->{context} = $context;
+        weaken($self->{context});
+    }
+
+    return $self;
 }
 
 =head2 new
@@ -111,6 +122,22 @@ sub new {
     my $k = first { exists $args{$_} } qw(id email loginid);
     croak "no email nor id or loginid" unless $k;
 
+    my $context = $args{context};
+    if ($context && $k eq 'id') {
+        my $user = $context->user_registry->get_user($args{id});
+        return $user if $user;
+    }
+
+    if ($context && $k eq 'email') {
+        my $user = $context->user_registry->get_user_by_email($args{email});
+        return $user if $user;
+    }
+
+    # We're not implementing look up by loginid in the registry,
+    # as it's not common in our codebase and cache hit by loginid is expected to be very low
+    # Also to create index by loginid we need to hit one more table, which is not worth it
+    # if this conditions will be different in future feel free to change it
+
     my $v    = $args{$k};
     my $self = $class->dbic->run(
         fixup => sub {
@@ -118,7 +145,23 @@ sub new {
         });
 
     return undef unless $self;
-    return bless $self, $class;
+
+    my $user = bless $self, $class;
+
+    if ($context && $k eq 'loginid') {
+        # We don't have index by loginid in registry, so we need to check if user is already there
+        if (my $user = $context->user_registry->get_user($self->{id})) {
+            return $user;
+        }
+    }
+
+    if ($context) {
+        $context->user_registry->add_user($self);
+        $self->{context} = $context;
+        weaken($self->{context});
+    }
+
+    return $user;
 }
 
 sub add_client {
@@ -319,6 +362,7 @@ sub create_client {
     my ($self, %args) = @_;
     $args{binary_user_id} = $self->{id};
     my $wallet_loginid = delete $args{wallet_loginid};
+    $args{context} = $self->{context};
 
     my $client = BOM::User::Client->register_and_return_new_client(\%args);
     $self->add_client($client, $wallet_loginid);
@@ -326,7 +370,7 @@ sub create_client {
     # Enable the trading_hub status if any siblings already has it enabled
     my $siblings = $client->get_siblings_information();
     for my $each_sibling (keys %{$siblings}) {
-        my $sibling = BOM::User::Client->new({loginid => $each_sibling});
+        my $sibling = $self->get_client_instance($each_sibling);
         if ($sibling->status->trading_hub) {
             $client->status->setnx('trading_hub', 'system', 'Enabling the Trading Hub');
             last;
@@ -358,7 +402,7 @@ sub create_wallet {
         for my $account (values $self->loginid_details->%*) {
             next unless $account->{is_wallet};
             next unless $account->{is_virtual} == (($args{account_type} // '') eq 'demo' ? 1 : 0);
-            my $wallet = BOM::User::Client->get_client_instance($account->{loginid}, 'replica');
+            my $wallet = $self->get_client_instance($account->{loginid}, 'replica');
             next unless $wallet->get_account_type->name eq ($args{account_type} // '');
             next unless $wallet->default_account;
             next unless $wallet->account->currency_code eq ($args{currency} // '');
@@ -367,7 +411,8 @@ sub create_wallet {
         }
 
         my $currency_code = delete $args{currency};
-        my $wallet        = BOM::User::Wallet->register_and_return_new_client(\%args);
+        $args{context} = $self->{context};
+        my $wallet = BOM::User::Wallet->register_and_return_new_client(\%args);
         $wallet->set_default_account($currency_code);
 
         # in current back-end perspective wallet is a client
@@ -376,7 +421,7 @@ sub create_wallet {
         # Enable the trading_hub status if any siblings already has it enabled
         my $siblings = $wallet->get_siblings_information();
         for my $each_sibling (keys %{$siblings}) {
-            my $sibling = BOM::User::Client->new({loginid => $each_sibling});
+            my $sibling = $self->get_client_instance($each_sibling);
             if ($sibling->status->trading_hub) {
                 $wallet->status->setnx('trading_hub', 'system', 'Enabling the Trading Hub');
                 last;
@@ -567,7 +612,7 @@ sub clients_for_landing_company {
 
     my @login_ids = grep { LandingCompany::Registry->check_broker_from_loginid($_) } $self->bom_loginids;
 
-    return map { BOM::User::Client->get_client_instance($_, $args{db_operation} // 'write') }
+    return map { $self->get_client_instance($_, $args{db_operation} // 'write') }
         grep { LandingCompany::Registry->by_loginid($_)->short eq $lc_short } @login_ids;
 }
 
@@ -788,10 +833,10 @@ sub accounts_by_category {
             next;
         }
 
-        my $cl = BOM::User::Client->get_client_instance($loginid, $args{db_operation} // 'write');
+        my $cl = $self->get_client_instance($loginid, $args{db_operation} // 'write');
         next unless $cl;
 
-        next if ($cl->status->is_login_disallowed and not $args{include_duplicated});
+        next if (!$args{include_duplicated} && $cl->status->is_login_disallowed);
 
         # we store the first suitable client to _disabled_real_client/_self_excluded_client/_virtual_client/_first_enabled_real_client.
         # which will be used in get_default_client
@@ -832,6 +877,33 @@ sub accounts_by_category {
         disabled      => \@disabled_accounts,
         duplicated    => \@duplicated_accounts
     };
+}
+
+=head2 get_client_instance
+
+Get client instance from cache if exists, otherwise create new instance and cache it
+
+
+
+Arguments:
+
+=over 4
+
+=item * C<loginid> - client loginid
+
+=item * C<db_operation> - defaults to write.
+
+=back
+
+Returns client instance
+
+=cut
+
+sub get_client_instance {
+    my ($self, $loginid, $db_operation) = @_;
+    $db_operation //= 'write';
+
+    return BOM::User::Client->get_client_instance($loginid, $db_operation, $self->{context});
 }
 
 =head2 get_default_client
@@ -955,7 +1027,7 @@ sub get_siblings_for_transfer {
         die +{error => 'InternalServerError'};
     }
 
-    my @clients = map { BOM::User::Client->get_client_instance($_, 'replica') } @loginids;
+    my @clients = map { $self->get_client_instance($_, 'replica') } @loginids;
     @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
     @clients = grep { $_->get_account_type->transfers ne 'none' } @clients;
     @clients = grep { $_->landing_company->short eq $client->landing_company->short } @clients;
@@ -1491,14 +1563,14 @@ sub get_client_using_replica {
     my $error;
 
     try {
-        $cl = BOM::User::Client->get_client_instance($login_id, 'replica');
+        $cl = $self->get_client_instance($login_id, 'replica');
     } catch ($e) {
         $log->warnf("Error getting replica connection: %s", $e);
         $error = $e;
     }
 
     # try master if replica is down
-    $cl = BOM::User::Client->get_client_instance($login_id, 'write') if not $cl or $error;
+    $cl = $self->get_client_instance($login_id, 'write') if not $cl or $error;
 
     return $cl;
 }
@@ -1632,7 +1704,7 @@ sub has_virtual_client {
     my $vr_clients = first { $_->is_virtual } $self->clients;    # can be vrtc or vrw
     my $loginid    = $vr_clients->{loginid};
     if ($loginid) {
-        my $client = BOM::User::Client->get_client_instance($loginid);
+        my $client = $self->get_client_instance($loginid);
         return 'duplicate email'        if !$is_wallet && !$client->is_wallet;    # a virtual client already exists
         return 'DuplicateVirtualWallet' if $is_wallet  && $client->is_wallet;     # a virtual wallet client already exists
     }
@@ -1826,7 +1898,7 @@ sub link_wallet_to_trading_account {
         }
     } else {
         # Handling internal accounts
-        my $client = BOM::User::Client->get_client_instance($loginid);
+        my $client = $self->get_client_instance($loginid);
         my $acc    = $client->default_account;
         $currency = $acc ? $acc->currency_code : '';
     }
@@ -1872,7 +1944,7 @@ sub get_wallet_by_loginid {
 
     die "InvalidWalletAccount\n" unless $self->loginid_details->{$loginid};
 
-    return BOM::User::Client->get_client_instance($loginid, $args->{db_operation} // 'write');
+    return $self->get_client_instance($loginid, $args->{db_operation} // 'write');
 }
 
 =head2 get_account_by_loginid
@@ -2279,10 +2351,14 @@ This check is to be done manually by Compliance team.
 sub set_affiliate_id {
     my ($self, $affiliate_id) = @_;
 
-    return $self->dbic->run(
+    $self->dbic->run(
         fixup => sub {
             $_->do('SELECT FROM users.set_affiliate_id(?, ?)', undef, $self->{id}, $affiliate_id);
         });
+
+    delete $self->{affiliate};
+
+    return;
 }
 
 =head2 set_affiliate_coc_approval
@@ -2302,7 +2378,7 @@ sub set_affiliate_coc_approval {
 
     my $coc_version = '';    # putting '' as coc_version for now, maybe in future we'll have proper coc_version numbering
 
-    return $self->dbic->run(
+    my $res = $self->dbic->run(
         fixup => sub {
             $_->do(
                 'SELECT users.set_affiliate_coc_approval(?, ?, ?, ?)',
@@ -2310,6 +2386,10 @@ sub set_affiliate_coc_approval {
                 $coc_approval, $coc_version
             );
         });
+
+    delete $self->{affiliate};
+
+    return $res;
 }
 
 =head2 affiliate_coc_approval_required

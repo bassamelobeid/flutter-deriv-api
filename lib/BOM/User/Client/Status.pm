@@ -449,6 +449,7 @@ sub _get_all_clients_status {
     delete @{$list}{@deprecated_codes};
 
     #populate attributes for object
+    @{$self}{@status_codes} = ();
     @{$self}{keys %$list} = values %$list;
     return $list;
 
