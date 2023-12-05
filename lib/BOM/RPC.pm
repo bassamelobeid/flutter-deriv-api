@@ -87,6 +87,7 @@ sub wrap_rpc_sub {
         foreach (REQUEST_ARGUMENTS_TO_BE_IGNORED) {
             delete $params->{args}{$_};
         }
+
         my $token_instance = BOM::Platform::Token::API->new;
         $params->{token_details} = $token_instance->get_client_details_from_token($params->{token});
         # set request log context for RPC methods

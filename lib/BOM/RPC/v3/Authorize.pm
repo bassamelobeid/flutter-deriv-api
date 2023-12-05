@@ -31,6 +31,8 @@ rpc authorize => sub {
 
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
+    # This returns a hash of loginid with required details for each token provided in the request.
+    # For API tokens only 1 token is allowed. Only for OAuth tokens, multiple tokens are allowed.
     my $account_tokens_result = _get_account_tokens($params, $token, $token_details, $client_ip);
     return $account_tokens_result->{error} if $account_tokens_result->{status} == 0;
     my $account_tokens = $account_tokens_result->{result};
@@ -145,7 +147,7 @@ Returns an hash of loginid with token for each token provided in the request (to
 sub _get_account_tokens {
     my ($params, $token, $token_details, $client_ip) = @_;
 
-    my $account_tokens_details_result = _get_all_token_details_by_loginid($params, $token, $token_details);
+    my $account_tokens_details_result = _get_attributes_for_all_tokens($token, $token_details, $params->{args}->{tokens});
     return $account_tokens_details_result if $account_tokens_details_result->{status} == 0;
     my $account_tokens_details = $account_tokens_details_result->{result};
 
@@ -155,24 +157,73 @@ sub _get_account_tokens {
         error  => $token_error
     } if $token_error;
 
-    my %account_tokens = map { $_ => {token => $account_tokens_details->{$_}{token}} } keys $account_tokens_details->%*;
     return {
         status => 1,
-        result => \%account_tokens
+        result => $account_tokens_details
     };
 }
 
-=head2 _get_all_token_details_by_loginid
+=head2 _get_attributes_for_all_tokens
 
-    @tokens_loginids = _get_all_token_details_by_loginid($params, $auth_token, $token_details)
+    $result = _get_attributes_for_all_tokens($params, $token, $token_details)
 
-Returns an hash of loginid with token and details for each token provided in the request (tokens+authorize).
+Returns an hash of loginid with token and app_id/valid_for_ip for each token provided in the request (tokens+authorize).
+
+For API tokens, only valid_for_ip is set and only 1 token is allowed.
 
 =over 4
 
 =item * - C<params> - RPC params
 
-=item * - C<auth_token> - token from the authorize request
+=item * - C<authorize_token> - token from the authorize request
+
+=item * - C<token_details> - token details from token in the authorize request. These are retrieved in wrap_rpc_sub.
+
+=back
+
+=cut
+
+sub _get_attributes_for_all_tokens {
+    my ($authorize_token, $token_details, $tokens) = @_;
+
+    my @tokens = $tokens ? $tokens->@* : ();
+
+    return _get_details_of_single_token($authorize_token, $token_details) unless @tokens;
+
+    # Get the attributes from database for each token, including the authorize token
+    push @tokens, $authorize_token;
+    my $token_instance = BOM::Platform::Token::API->new;
+    my $attributes     = $token_instance->get_attributes_from_multiple_tokens(\@tokens);
+
+    return {
+        status => 0,
+        error  => BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidToken',
+                message_to_client => BOM::Platform::Context::localize("None of the provided tokens are valid.")})}
+        unless $attributes;
+
+    return {
+        status => 0,
+        error  => BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidToken',
+                message_to_client => BOM::Platform::Context::localize("Invalid/duplicate token for a loginid provided.")})}
+        unless keys $attributes->%* == scalar @tokens;
+
+    return {
+        status => 1,
+        result => $attributes
+    };
+}
+
+=head2 _get_details_of_single_token
+
+    $result = _get_details_of_single_token($authorize_token, $token_details)
+
+Returns an hash of loginid with token and app_id for the token provided in the request (authorize).
+
+=over 4
+
+=item * - C<authorize_token> - token from the authorize request
 
 =item * - C<token_details> - token details from the authorize request
 
@@ -180,44 +231,19 @@ Returns an hash of loginid with token and details for each token provided in the
 
 =cut
 
-sub _get_all_token_details_by_loginid {
-    my ($params, $auth_token, $token_details) = @_;
+sub _get_details_of_single_token {
+    my ($authorize_token, $token_details) = @_;
 
     my %tokens_details = ();
-    $tokens_details{$token_details->{loginid}} = $token_details;
-    $tokens_details{$token_details->{loginid}}{token} = $auth_token;
+    $tokens_details{$token_details->{loginid}}{token} = $authorize_token;
 
-    if (!$params->{args}->{tokens}) {
-        return {
-            status => 1,
-            result => \%tokens_details
-        };
-    }
-
-    my $token_instance = BOM::Platform::Token::API->new;
-    foreach my $token ($params->{args}->{tokens}->@*) {
-        my $detail = $token_instance->get_client_details_from_token($token);
-
-        my $error;
-        if (!$detail) {
-            $error = BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidToken',
-                    message_to_client => BOM::Platform::Context::localize("Token doesn't exist.")});
-        } elsif (exists $tokens_details{$detail->{loginid}}) {
-            $error = BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidToken',
-                    message_to_client => BOM::Platform::Context::localize("Duplicate token for loginid.")});
-        }
-
-        if ($error) {
-            return {
-                status => 0,
-                error  => $error
-            };
-        }
-
-        $detail->{token} = $token;
-        $tokens_details{$detail->{loginid}} = $detail;
+    # Api tokens don't have app_id restriction, but do have a possible ip restriction.
+    if (_is_api_token($authorize_token)) {
+        $tokens_details{$token_details->{loginid}}{valid_for_ip} = $token_details->{valid_for_ip};
+    } else {
+        my $oauth                  = BOM::Database::Model::OAuth->new;
+        my $token_extracted_app_id = $oauth->get_app_id_by_token($authorize_token) // '';
+        $tokens_details{$token_details->{loginid}}{app_id} = $token_extracted_app_id;
     }
 
     return {
@@ -414,16 +440,14 @@ Additional check on app_id if it's valid or a login from the backoffice.
 sub _handle_oauth_tokens {
     my ($params, $account_tokens, $clients, $user) = @_;
 
-    my $oauth    = BOM::Database::Model::OAuth->new;
     my @loginids = keys $account_tokens->%*;
 
-    # Get extracted app_id. All must be the same.
-    # TODO: Make this 1 query
-    my $token_extracted_app_id = $oauth->get_app_id_by_token($account_tokens->{(keys %$account_tokens)[0]}{token});
-    return undef unless $token_extracted_app_id;
-    return undef if grep { ($oauth->get_app_id_by_token($_->{token}) // '') ne $token_extracted_app_id } values %$account_tokens;
+    # For multiple authorization tokens, all tokens should be for the same app_id
+    my $extracted_app_id = (values $account_tokens->%*)[0]->{app_id};
 
-    my $is_from_backoffice = $token_extracted_app_id eq '4';
+    return undef if grep { $_->{app_id} ne $extracted_app_id } values %$account_tokens;
+
+    my $is_from_backoffice = $extracted_app_id eq '4';
     if ($is_from_backoffice) {
         return undef if @loginids > 1;    # Only allow one token when this is a backoffice login
 
@@ -431,10 +455,10 @@ sub _handle_oauth_tokens {
             environment => request()->login_env($params),
             successful  => 't',
             action      => 'login',
-            app_id      => $token_extracted_app_id,
+            app_id      => $extracted_app_id,
             token       => $params->{token});
     } else {
-        return undef unless valid_shared_token($oauth, $params->{app_id}, $token_extracted_app_id);
+        return undef unless valid_shared_token($params->{app_id}, $extracted_app_id);
 
         my %client_list = map { $_->loginid => $_ } $clients->@*;
 
@@ -770,11 +794,13 @@ Returns 0 if not authorized, 1 in case of successful validation.
 =cut
 
 sub valid_shared_token {
-    my ($oauth, $app_id, $token_extracted_app_id) = @_;
+    my ($app_id, $token_extracted_app_id) = @_;
 
     return 1 unless BOM::Config::Runtime->instance->app_config->system->suspend->access_token_sharing;
 
     return 1 if $app_id == $token_extracted_app_id;
+
+    my $oauth = BOM::Database::Model::OAuth->new;
 
     return 0 unless $oauth->is_official_app($app_id);
 

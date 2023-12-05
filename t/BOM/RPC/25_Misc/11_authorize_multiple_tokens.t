@@ -118,7 +118,8 @@ subtest "$method with multiple tokens" => sub {
         token    => $token,
         args     => {tokens => [$token_mx, '1111']}};
 
-    $c->call_ok($method, $params)->has_error->error_message_is("Token doesn't exist.", 'check invalid token');
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Invalid/duplicate token for a loginid provided.');
 
     $params->{args}{tokens} = [$token_mx, $token_mx_2];
 
@@ -167,22 +168,26 @@ subtest "$method with multiple tokens" => sub {
                     $cr_loginid => {
                         token      => $cr_token,
                         broker     => $cr_login->broker,
-                        is_virtual => $cr_login->is_virtual
+                        is_virtual => $cr_login->is_virtual,
+                        app_id     => 1,
                     },
                     $cr2_loginid => {
                         token      => $cr2_token,
                         broker     => $cr2_login->broker,
-                        is_virtual => $cr2_login->is_virtual
+                        is_virtual => $cr2_login->is_virtual,
+                        app_id     => 1,
                     },
                     $vrw_loginid => {
                         token      => $vrw_token,
                         broker     => $vr_wallet->broker,
-                        is_virtual => $vr_wallet->is_virtual
+                        is_virtual => $vr_wallet->is_virtual,
+                        app_id     => 1,
                     },
                     $test_client->loginid => {
                         token      => $token,
                         broker     => $test_client->broker,
-                        is_virtual => $test_client->is_virtual
+                        is_virtual => $test_client->is_virtual,
+                        app_id     => 1,
                     },
                 },
             },
@@ -281,7 +286,7 @@ subtest "$method with multiple tokens" => sub {
         my $cr_api_token = BOM::Platform::Token::API->new->create_token($cr_loginid, 'Test', ['read']);
         $params->{args}{tokens} = [$cr_api_token, $vrw_token];
         $c->call_ok($method, $params)
-            ->has_error->error_message_is("API tokens can't be used to authorize multiple accounts.", 'Api token provided in tokens.');
+            ->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Api token provided in tokens.');
     };
 
     subtest "add token of account not belonging to user" => sub {
@@ -299,12 +304,12 @@ subtest "$method with multiple tokens" => sub {
 
     subtest "invalid token added" => sub {
         $params->{args}{tokens} = [$cr_token, $vrw_token, 'xxxxxxxxxx'];
-        $c->call_ok($method, $params)->has_error->error_message_is("Token doesn't exist.", 'Unknown token.');
+        $c->call_ok($method, $params)->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Unknown token.');
     };
 
     subtest "duplicated token added" => sub {
         $params->{args}{tokens} = [$cr_token, $vrw_token, $token_mx, $token_mx];
-        $c->call_ok($method, $params)->has_error->error_message_is('Duplicate token for loginid.', 'Duplicate token for loginid.');
+        $c->call_ok($method, $params)->has_error->error_message_is('Invalid/duplicate token for a loginid provided.', 'Duplicate token for loginid.');
     };
 
     subtest "token with different app_id" => sub {
@@ -322,8 +327,7 @@ subtest "$method with multiple tokens" => sub {
         my $cr2_api_token = BOM::Platform::Token::API->new->create_token($cr2_loginid, 'Test', ['read']);
         $params->{token} = $cr2_api_token;
         $params->{args}{tokens} = [$cr_api_token];
-        $c->call_ok($method, $params)
-            ->has_error->error_message_is("API tokens can't be used to authorize multiple accounts.", 'Api token provided in tokens.');
+        $c->call_ok($method, $params)->has_error->error_message_is("None of the provided tokens are valid.", 'Api token provided in tokens.');
     };
 
     subtest "Add a non available account" => sub {
@@ -361,9 +365,18 @@ subtest 'get account tokens' => sub {
 
     $tokens_result = BOM::RPC::v3::Authorize::_get_account_tokens($params, $auth_token, $token_details);
     my $expected_result = {
-        $test_client_vr->loginid   => {token => $token_vr},
-        $test_client_mx->loginid   => {token => $token_mx},
-        $test_client_mx_2->loginid => {token => $token_mx_2},
+        $test_client_vr->loginid => {
+            token  => $token_vr,
+            app_id => 1
+        },
+        $test_client_mx->loginid => {
+            token  => $token_mx,
+            app_id => 1
+        },
+        $test_client_mx_2->loginid => {
+            token  => $token_mx_2,
+            app_id => 1
+        },
     };
 
     is_deeply($tokens_result->{result}, $expected_result, 'get tokens by loginid');

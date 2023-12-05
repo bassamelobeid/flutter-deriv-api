@@ -140,7 +140,8 @@ subtest $method => sub {
                 $test_client->loginid => {
                     token      => $token,
                     is_virtual => $test_client->is_virtual,
-                    broker     => $test_client->broker
+                    broker     => $test_client->broker,
+                    app_id     => 1,
                 }
             },
         },
@@ -288,12 +289,13 @@ subtest $method => sub {
 
         BOM::Config::Runtime->instance->app_config->system->suspend->access_token_sharing(0);
         my ($unofficial_app_token1) = $oauth->store_access_token_only($app1->{app_id}, $test_client->loginid);
-        $params->{token}                                                          = $unofficial_app_token1;
-        $params->{source}                                                         = $app2->{app_id};
-        $expected_result->{stash}->{valid_source}                                 = $app2->{app_id};
-        $expected_result->{stash}->{source_type}                                  = 'unofficial';
-        $expected_result->{stash}->{token}                                        = $unofficial_app_token1;
-        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token} = $unofficial_app_token1;
+        $params->{token}                                                           = $unofficial_app_token1;
+        $params->{source}                                                          = $app2->{app_id};
+        $expected_result->{stash}->{valid_source}                                  = $app2->{app_id};
+        $expected_result->{stash}->{source_type}                                   = 'unofficial';
+        $expected_result->{stash}->{token}                                         = $unofficial_app_token1;
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{app_id} = $app1->{app_id};
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token}  = $unofficial_app_token1;
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'Third party app can share oAuth token while flag is off');
 
         BOM::Config::Runtime->instance->app_config->system->suspend->access_token_sharing(1);
@@ -308,18 +310,20 @@ subtest $method => sub {
         $c->call_ok($method, $params)->has_error->error_message_is("Token is not valid for current app ID.",
             "Third party app oAuth token can't be used by another third party app");
 
-        $params->{source}                                                         = $app2->{app_id};
-        $expected_result->{stash}->{valid_source}                                 = $app2->{app_id};
-        $expected_result->{stash}->{token}                                        = $unofficial_app_token2;
-        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token} = $unofficial_app_token2;
+        $params->{source}                                                          = $app2->{app_id};
+        $expected_result->{stash}->{valid_source}                                  = $app2->{app_id};
+        $expected_result->{stash}->{token}                                         = $unofficial_app_token2;
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{app_id} = $app2->{app_id};
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token}  = $unofficial_app_token2;
         $c->call_ok($method, $params)
             ->has_no_error->result_is_deeply($expected_result, 'Third party app can only be authorize by oAuth token created');
 
-        $params->{source}                                                         = $official_app_ids[1];
-        $params->{token}                                                          = $official_app_token;
-        $expected_result->{stash}->{valid_source}                                 = $official_app_ids[1];
-        $expected_result->{stash}->{token}                                        = $official_app_token;
-        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token} = $official_app_token;
+        $params->{source}                                                          = $official_app_ids[1];
+        $params->{token}                                                           = $official_app_token;
+        $expected_result->{stash}->{valid_source}                                  = $official_app_ids[1];
+        $expected_result->{stash}->{token}                                         = $official_app_token;
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{app_id} = $official_app_ids[0];
+        $expected_result->{stash}->{account_tokens}{$test_client->loginid}{token}  = $official_app_token;
 
         $c->call_ok($method, $params)
             ->has_no_error->result_is_deeply($expected_result, 'Third party app can only be authorize by oAuth token created');
@@ -378,7 +382,8 @@ subtest $method => sub {
                     $test_client_vr->loginid => {
                         token      => $token_vr,
                         is_virtual => $test_client_vr->is_virtual,
-                        broker     => $test_client_vr->broker
+                        broker     => $test_client_vr->broker,
+                        app_id     => 1,
                     }
                 },
             },
@@ -482,7 +487,8 @@ subtest $method => sub {
                     $vr_wallet->loginid => {
                         token      => $token_wallet,
                         is_virtual => $vr_wallet->is_virtual,
-                        broker     => $vr_wallet->broker
+                        broker     => $vr_wallet->broker,
+                        app_id     => 1,
                     }
                 },
             },
