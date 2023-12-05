@@ -64,6 +64,57 @@ subtest 'error check' => sub {
         is $res->{symbols}->@*, 84, '84 active symbols';
     }
     'invalid app_id will not throw an error';
+
+    lives_ok {
+        my $res = get_symbols({
+            contract_type        => ["RANGE"],
+            app_id               => 1004,
+            landing_company_name => undef,
+            country_code         => 'my'
+        });
+
+        # Remove "OTC_IBEX35" and "frxEURCAD" members from the $res->{symbols} array
+        # The reason for removing these two members is that the active_symbols list,
+        # when applied with the contract_type 'RANGE,' contains two additional members
+        # in the testing environment compared to the QA environment.
+
+        @{$res->{symbols}} = grep { $_->{symbol} ne "OTC_IBEX35" && $_->{symbol} ne "frxEURCAD" } @{$res->{symbols}};
+
+        ok !$res->{error},  'no error';
+        ok $res->{symbols}, 'returns symbol list';
+        is $res->{symbols}->@*, 39, '39 active symbols';
+    }
+    'invalid RANGE will not throw an error';
+
+    lives_ok {
+        my $res = get_symbols({
+            contract_type        => ["ASIANU"],
+            app_id               => 1004,
+            landing_company_name => undef,
+            country_code         => 'my'
+        });
+
+        ok !$res->{error},  'no error';
+        ok $res->{symbols}, 'returns symbol list';
+        is $res->{symbols}->@*, 10, '10 active symbols';
+    }
+    'invalid ASIANU will not throw an error';
+
+    lives_ok {
+        my $res = get_symbols({
+            contract_type        => ["RANGE", "ASIANU"],
+            app_id               => 1004,
+            landing_company_name => undef,
+            country_code         => 'my'
+        });
+
+        @{$res->{symbols}} = grep { $_->{symbol} ne "OTC_IBEX35" && $_->{symbol} ne "frxEURCAD" } @{$res->{symbols}};
+
+        ok !$res->{error},  'no error';
+        ok $res->{symbols}, 'returns symbol list';
+        is $res->{symbols}->@*, 39, '39 active symbols';
+    }
+    'invalid Union of RANGE, ASIANU will not throw an error';
 };
 
 subtest 'with invalid app id - 123' => sub {
