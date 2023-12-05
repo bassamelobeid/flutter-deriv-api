@@ -608,19 +608,13 @@ rpc "paymentagent_list",
         my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
         $broker_code = $client->broker_code if $client;
     }
-    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
-    my $all_pa_countries     = $payment_agent_mapper->get_all_authenticated_payment_agent_countries();
-    my @available_countries  = grep { !is_payment_agents_suspended_in_country($_->[0]) } @$all_pa_countries;
 
-    # add country name plus code
-    foreach (@available_countries) {
-        $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
-    }
-    my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $currency, $loginid, 1);
+    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code, operation => 'replica'});
 
-    my $payment_agent_list = [];
-    foreach my $loginid (keys %{$available_payment_agents}) {
-        my $payment_agent = $available_payment_agents->{$loginid};
+    my $available_payment_agents = _get_available_payment_agents($payment_agent_mapper, $target_country, $currency, $loginid, 1);
+    my $payment_agent_list       = [];
+    foreach my $pa_loginid (keys $available_payment_agents->%*) {
+        my $payment_agent = $available_payment_agents->{$pa_loginid};
         my $currency      = $payment_agent->{currency_code};
 
         my $min_max;
@@ -628,29 +622,32 @@ rpc "paymentagent_list",
             $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
         } catch ($e) {
             log_exception();
-            $log->warnf('%s dropped from PA list. Failed to retrieve limits: %s', $loginid, $e);
+            $log->warnf('%s dropped from PA list. Failed to retrieve limits: %s', $pa_loginid, $e);
             next;
         }
 
         push @{$payment_agent_list},
             {
-            'paymentagent_loginid'      => $loginid,
-            'name'                      => $payment_agent->payment_agent_name,
-            'summary'                   => $payment_agent->summary,
-            'urls'                      => $payment_agent->urls,
-            'email'                     => $payment_agent->email,
-            'phone_numbers'             => $payment_agent->phone_numbers,
+            'paymentagent_loginid'      => $pa_loginid,
+            'name'                      => $payment_agent->{payment_agent_name},
+            'summary'                   => $payment_agent->{summary},
+            'urls'                      => $payment_agent->{urls} // [],
+            'email'                     => $payment_agent->{email},
+            'phone_numbers'             => $payment_agent->{phone_numbers} // [],
             'currencies'                => $currency,
-            'deposit_commission'        => $payment_agent->commission_deposit,
-            'withdrawal_commission'     => $payment_agent->commission_withdrawal,
-            'further_information'       => $payment_agent->information,
-            'supported_payment_methods' => $payment_agent->supported_payment_methods,
-            'max_withdrawal'            => $payment_agent->max_withdrawal || $min_max->{maximum},
-            'min_withdrawal'            => $payment_agent->min_withdrawal || $min_max->{minimum},
+            'deposit_commission'        => $payment_agent->{commission_deposit},
+            'withdrawal_commission'     => $payment_agent->{commission_withdrawal},
+            'further_information'       => $payment_agent->{information},
+            'supported_payment_methods' => $payment_agent->{supported_payment_methods} // [],
+            'max_withdrawal'            => $payment_agent->{max_withdrawal} || $min_max->{maximum},
+            'min_withdrawal'            => $payment_agent->{min_withdrawal} || $min_max->{minimum},
             };
     }
+
+    # The hash keys operation in the above loop changed the order. Sort again on name.
     @$payment_agent_list = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_list;
 
+    my @available_countries = _get_available_pa_countries($payment_agent_mapper, $language);
     return {
         available_countries => \@available_countries,
         list                => $payment_agent_list
@@ -720,8 +717,8 @@ rpc paymentagent_transfer => sub {
 
     #disable/suspending pa transfers in a country, does not exclude a pa if a previous transfer is recorded in db.
     if (is_payment_agents_suspended_in_country($client_to->residence)) {
-        my $available_payment_agents_for_client =
-            _get_available_payment_agents($client_to->residence, $client_to->broker_code, $currency, $loginid_to);
+        my $payment_agent_mapper                = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client_to->broker_code});
+        my $available_payment_agents_for_client = _get_available_payment_agents($payment_agent_mapper, $client_to->residence, $currency, $loginid_to);
 
         return $error_sub->(localize("Payment agent transfers are temporarily unavailable in the client's country of residence."))
             unless $available_payment_agents_for_client->{$client_fm->loginid};
@@ -933,21 +930,19 @@ sub _get_json_error {
 
 =head2 _get_available_payment_agents
 
-	my $available_agents = _get_available_payment_agents('id', 'CR', 'USD', 'CR90000', 1);
-
 Returns a hash reference containing authenticated payment agents available for the input search criteria.
 
 It gets the following args:
 
 =over 4
 
-=item * country
+=item * payment_agent_mapper
 
-=item * broker_code
+=item * country
 
 =item * currency (optional)
 
-=item * client_loginid (optional), it is used for retrieving payment agents with previous transfer/withdrawal with a C<client> when the feature is suspended in the C<country> of residence.
+=item * client_loginid (optional), it is used for retrieving payment agents details with previous transfer/withdrawal with a C<client> when the feature is suspended in the C<country> of residence.
 
 =item * is_listed
 
@@ -956,13 +951,12 @@ It gets the following args:
 =cut
 
 sub _get_available_payment_agents {
-    my ($country, $broker_code, $currency, $loginid, $is_listed) = @_;
-    my $payment_agent_mapper              = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
-    my $authenticated_paymentagent_agents = BOM::User::Client::PaymentAgent->get_payment_agents(
-        country_code => $country,
-        broker_code  => $broker_code,
-        currency     => $currency,
-        is_listed    => $is_listed,
+    my ($payment_agent_mapper, $country, $currency, $loginid, $is_listed) = @_;
+    my $authenticated_paymentagent_agents = $payment_agent_mapper->get_payment_agents_details_full(
+        country_code         => $country,
+        currency             => $currency,
+        is_listed            => $is_listed,
+        details_field_mapper => BOM::User::Client::PaymentAgent::details_main_field
     );
 
     #if payment agents are suspended in client's country, we will keep only those agents that the client has previously transfered money with.
@@ -977,7 +971,37 @@ sub _get_available_payment_agents {
             delete $authenticated_paymentagent_agents->{$key} unless $linked_agents{$key} or $loginid and ($key eq $loginid);
         }
     }
+
     return $authenticated_paymentagent_agents;
+}
+
+=head2 _get_available_pa_countries
+
+Returns a list containing all available countries that have payment agents in addition to localized code2country.
+
+It gets the following args:
+
+=over 4
+
+=item C<$payment_agent_mapper> - a payment agent mapper instace used to fetch the data.
+
+=item C<$language> - of which the country will be localized to. 
+
+=back
+
+=cut
+
+sub _get_available_pa_countries {
+    my ($payment_agent_mapper, $language) = @_;
+
+    my $all_pa_countries    = $payment_agent_mapper->get_all_authenticated_payment_agent_countries();
+    my @available_countries = grep { !is_payment_agents_suspended_in_country($_->[0]) } @$all_pa_countries;
+
+    # add country name plus code
+    foreach (@available_countries) {
+        $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
+    }
+    return @available_countries;
 }
 
 sub _is_pa_residence_exclusion {
@@ -1051,8 +1075,9 @@ rpc paymentagent_withdraw => sub {
     }
     my $pa_client = $paymentagent->client;
     if (is_payment_agents_suspended_in_country($client->residence)) {
+        my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client->broker_code});
         my $available_payment_agents_for_client =
-            _get_available_payment_agents($client->residence, $client->broker_code, $currency, $client->loginid);
+            _get_available_payment_agents($payment_agent_mapper, $client->residence, $currency, $client->loginid);
         return $error_sub->(localize("Payment agent transfers are temporarily unavailable in the client's country of residence."))
             unless $available_payment_agents_for_client->{$pa_client->loginid};
     }
