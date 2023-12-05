@@ -14,6 +14,7 @@ use BOM::User::Client;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Helper::Client                  qw(invalidate_object_cache);
 
 use APIHelper   qw/ balance deposit request decode_json /;
 use Digest::SHA qw/sha256_hex/;
@@ -293,7 +294,7 @@ subtest 'Deposit currency mismatch' => sub {
 
     $cli->status->set('deposit_attempt', 'SYSTEM', 'Simulate a deposit attempt');
 
-    $cli->status->_build_all;    #reload
+    invalidate_object_cache($cli);
 
     ok $cli->status->deposit_attempt, 'Client has deposit_attempt status';
 
@@ -307,6 +308,7 @@ subtest 'Deposit currency mismatch' => sub {
     is $req->code, 400, 'Bad request is thrown for deposit currency mismatch';
     like $req->content, qr/Deposit currency mismatch, client account is in USD, but the deposit is in EUR/, 'Describe the currency mismatch found';
 
+    invalidate_object_cache($cli);
     ok $cli->status->deposit_attempt, 'Client has deposit_attempt status yet, even if deposit failed';
 
     $req = deposit(
@@ -318,9 +320,9 @@ subtest 'Deposit currency mismatch' => sub {
 
     is $req->code, 201, 'Deposit with correct currency succeed';
 
-    $cli->status->_build_all;              #reload
+    invalidate_object_cache($cli);
 
-    ok $cli->status->deposit_attempt, 'The status was removed after successful deposit';
+    ok !$cli->status->deposit_attempt, 'The status was removed after successful deposit';
 
 };
 
