@@ -110,6 +110,32 @@ sub get_client_details_from_token {
     };
 }
 
+=head2 get_attributes_from_multiple_tokens
+
+Returns a hash reference containing attributes of the given oauth tokens
+The hash reference returned contains the following:
+loginid  of token -> { token, app_id }
+
+=over 4
+
+=item tokens - array reference of tokens
+
+=back
+
+=cut
+
+sub get_attributes_from_multiple_tokens {
+    my ($self, $tokens) = @_;
+
+    return undef unless $tokens->@*;
+
+    return undef unless (grep { length $_ == 32 && /^a1-/ } $tokens->@*);
+
+    my $auth_model = BOM::Database::Model::OAuth->new;
+
+    return $auth_model->get_attributes_from_multiple_tokens($tokens);
+}
+
 =head2 get_token_details
 
 returns a hash reference containing details of a token
