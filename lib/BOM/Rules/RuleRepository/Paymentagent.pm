@@ -178,7 +178,7 @@ rule 'paymentagent.action_is_allowed' => {
 
             return 1 if $available > 0 && abs($args->{amount} // 0) <= $available;
             $self->fail('PACommisionWithdrawalLimit', params => [$pa_client->currency, $available])
-                if $limits->{commission} > 0;
+                if ($limits->{commission} // 0) > 0;
         }
 
         my %error_mapping = (
