@@ -1167,12 +1167,6 @@ sub deal_get_batch {
             my ($response) = @_;
 
             return Future->done($response);
-        }
-    )->catch(
-        sub {
-            my ($error) = @_;
-
-            return $error;
         });
 }
 
