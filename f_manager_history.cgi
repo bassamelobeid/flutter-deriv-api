@@ -12,7 +12,7 @@ use HTML::Entities;
 use Date::Utility;
 use YAML::XS;
 use List::Util                       qw(min max);
-use ExchangeRates::CurrencyConverter qw(in_usd);
+use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 use Format::Util::Numbers            qw(formatnumber);
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
@@ -85,7 +85,7 @@ my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 
 my $loginid_bar = $loginID;
 $loginid_bar .= ' (DEPO & WITH ONLY)' if ($deposit_withdrawal_only);
-my $pa = $client->payment_agent;
+my $pa = $client->get_payment_agent;
 
 Bar($loginid_bar);
 print "<span class='error'>PAYMENT AGENT</span>" if ($pa and $pa->status and $pa->status eq 'authorized');
@@ -206,6 +206,36 @@ if (my $advertiser = $client->_p2p_advertiser_cached) {
     $p2p_summary->{withdrawal_limit} = formatnumber('amount', $currency, $advertiser->{withdrawal_limit}) if defined $advertiser->{withdrawal_limit};
 }
 
+my $pa_summary;
+if ($pa and $pa->status and $pa->status eq 'authorized') {
+    if ($pa->service_is_allowed('cashier_withdraw')) {
+        $pa_summary->{withdrawal_allowed} = 1;
+    } else {
+        $pa_summary = $pa->cashier_withdrawable_balance;
+        $pa_summary->{$_} = formatnumber('amount', $currency, $pa_summary->{$_} // 0) for qw(available commission payouts);
+
+        for my $acc (sort { $a->{loginid} cmp $b->{loginid} } $pa_summary->{accounts}->@*) {
+            for my $total (sort { $a->{payment_type} cmp $b->{payment_type} } $acc->{totals}->@*) {
+                $total->{net} = formatnumber('amount', $acc->{currency}, ($total->{credit} // 0) - ($total->{debit} // 0));
+                if ($acc->{currency} ne $currency) {
+                    my $converted = convert_currency($total->{net}, $acc->{currency}, $currency);
+                    $total->{net} .= " $acc->{currency} (" . formatnumber('amount', $currency, $converted) . " $currency)";
+                }
+
+                if ($total->{payment_type} =~ /^(mt5_transfer|affiliate_reward|arbitrary_markup)$/) {
+                    if ($total->{debit}) {
+                        $total->{net} .= ' (withdrawals: ' . formatnumber('amount', $acc->{currency}, $total->{debit});
+                        $total->{net} .= ', deposits: ' . formatnumber('amount', $acc->{currency}, ($total->{credit} // 0)) . ')';
+                    }
+                    $total->{payment_type} .= ' net deposits';
+                } else {
+                    $total->{payment_type} .= ' withdrawals';
+                }
+            }
+        }
+    }
+}
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
@@ -266,6 +296,7 @@ BOM::Backoffice::Request::template()->process(
         payment_type_urls  => $payment_type_urls,
         transfer_type_urls => internal_transfer_statement_urls($client, $overview_from_date, $overview_to_date),
         p2p_summary        => $p2p_summary,
+        pa_summary         => $pa_summary,
 
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
