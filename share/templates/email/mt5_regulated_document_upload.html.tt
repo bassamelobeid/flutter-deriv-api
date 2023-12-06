@@ -1,0 +1,14 @@
+<p>Client with regulated MT5 account has uploaded a new [% category %] document.</p>
+<ul>
+    <li><b>Loginid:</b> [% loginid %]</li>
+    <li><b>Residence:</b> [% country %]</li>
+    <li><b>POI status:</b> [% poi_status %] [% IF poi_expiry %](expiry date: [% poi_expiry %])[% END %]</li>
+    <li><b>POA status:</b> [% poa_status %] [% IF poa_issuance %](issuance date: [% poa_issuance %])[% END %]</li>
+</ul>
+
+<p>MT5 accounts</p>
+<ul>
+[% FOR mt5_loginid IN mt5_loginids.keys %]
+    <li><b>[% mt5_loginid %]</b>: [% mt5_loginids.$mt5_loginid.group %]</li>
+[% END %]
+</ul>

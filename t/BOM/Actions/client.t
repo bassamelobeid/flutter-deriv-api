@@ -231,8 +231,8 @@ subtest 'upload document' => sub {
                 my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client->user_id);
             });
 
-        my $email = mailbox_search(subject => qr/Manual age verification needed for/);
-        ok !$email, 'Not a POI, no email sent to CS';
+        my $email = mailbox_search(subject => qr/(Manual age verification needed for)|(Document Upload from a client with MT5 regulated account)/);
+        ok !$email, 'Not a POI, no email sent to CS. Documents were not outdated/client does not have a regulated MT5 either';
 
         is $applicant, undef, 'POA does not populate to onfido';
 
@@ -241,6 +241,61 @@ subtest 'upload document' => sub {
 
         my $sibling_resubmission_flag_after = $test_sibling->status->_get('allow_poa_resubmission');
         ok !$sibling_resubmission_flag_after, 'poa resubmission status is removed from the sibling after document uploading';
+
+        # make the document outdated
+        $test_client->db->dbic->run(
+            ping => sub {
+                $_->do(
+                    'UPDATE betonmarkets.client_authentication_document SET status=?,verified_date = ? WHERE id = ?',
+                    undef, 'verified',
+                    Date::Utility->new()->minus_time_interval('1y')->minus_time_interval('1d')->date_yyyymmdd,
+                    $upload_info->{file_id});
+            });
+
+        $test_client->documents->_clear_uploaded;
+
+        ok $test_client->documents->outdated, 'POA outdated';
+        is $test_client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd,
+            Date::Utility->new()->minus_time_interval('1y')->minus_time_interval('1d')->date_yyyymmdd, 'Expected best issuance date';
+
+        BOM::Event::Actions::Client::document_upload({
+                loginid => $test_client->loginid,
+                file_id => $upload_info->{file_id}})->get;
+
+        $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+        ok !$email, 'Client does not have a regulated MT5 account';
+
+        my $user_mock = Test::MockModule->new('BOM::User');
+        $user_mock->mock(
+            'has_mt5_regulated_account',
+            sub {
+                return 1;
+            });
+
+        $test_client->user->add_loginid("MTR112358", 'mt5', 'real', 'USD', {group => 'test/test'});
+
+        my $redis = $services->redis_events_write();
+        ok !$redis->get(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get, 'email not locked down';
+        BOM::Event::Actions::Client::document_upload({
+                loginid => $test_client->loginid,
+                file_id => $upload_info->{file_id}})->get;
+
+        $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+        ok $email, 'An email has been sent';
+
+        ok $redis->get(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get,     'email got a lock';
+        ok $redis->ttl(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get > 0, 'email lock got a ttl';
+        mailbox_clear();
+
+        BOM::Event::Actions::Client::document_upload({
+                loginid => $test_client->loginid,
+                file_id => $upload_info->{file_id}})->get;
+
+        $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+        ok !$email, 'Email is locked';
+        $redis->del(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get;
+
+        $user_mock->unmock_all;
     };
 
     my $args = {
@@ -253,6 +308,8 @@ subtest 'upload document' => sub {
     };
 
     subtest 'upload POI documents' => sub {
+        my $j = 0;
+        $loop->add(my $services = BOM::Event::Services->new);
         my $test_client_alter = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             email       => 'valid_poi@binary.com',
             broker_code => 'CR',
@@ -403,6 +460,8 @@ subtest 'upload document' => sub {
                 my ($document_type, $document_format, $by_staff, $email_sent, $checksum) =
                     @{$test_case}{qw/document_type document_format by_staff email_sent checksum/};
 
+                ++$j;
+
                 subtest $document_type => sub {
                     my $old_pob  = $upload_info;
                     my $old_args = $args;
@@ -440,6 +499,10 @@ subtest 'upload document' => sub {
 
                     mailbox_clear();
 
+                    my $redis = $services->redis_events_write();
+                    ok !$redis->get(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get,
+                        'email not locked down';
+
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => $by_staff,
                             loginid                    => $test_client->loginid,
@@ -469,6 +532,161 @@ subtest 'upload document' => sub {
 
                     my $sibling_resubmission_flag_after = $test_sibling->status->_get('allow_poi_resubmission');
                     ok !$sibling_resubmission_flag_after, 'poi resubmission status is removed from the sibling after document uploading';
+
+                    # make the document expired
+                    $test_client->db->dbic->run(
+                        ping => sub {
+                            $_->do(
+                                'UPDATE betonmarkets.client_authentication_document SET status=?,expiration_date = ? WHERE id = ?',
+                                undef, 'verified',
+                                Date::Utility->new()->minus_time_interval('1y')->date_yyyymmdd,
+                                $upload_info->{file_id});
+                        });
+
+                    # upload a fresh document
+                    $args->{expected_checksum} = 'anotherone' . $j;
+                    my $new_doc = start_document_upload($args, $test_client);
+
+                    $test_client->db->dbic->run(
+                        ping => sub {
+                            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $new_doc->{file_id});
+                        });
+
+                    $test_client->documents->_clear_uploaded;
+                    is $test_client->documents->best_expiry_date->date_yyyymmdd, Date::Utility->new()->minus_time_interval('1y')->date_yyyymmdd,
+                        'expected best expiry date';
+                    ok $test_client->documents->expired(1), 'expired documents';
+
+                    $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+                    ok !$email, 'Email not sent, no mt5 regulated';
+
+                    my $user_mock = Test::MockModule->new('BOM::User');
+                    $user_mock->mock(
+                        'has_mt5_regulated_account',
+                        sub {
+                            return 1;
+                        });
+
+                    BOM::Event::Actions::Client::document_upload({
+                            uploaded_manually_by_staff => 1,
+                            loginid                    => $test_client->loginid,
+                            file_id                    => $new_doc->{file_id}})->get;
+
+                    $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+                    ok !$email, 'Email not sent, sent by staff';
+
+                    BOM::Event::Actions::Client::document_upload({
+                            uploaded_manually_by_staff => 0,
+                            loginid                    => $test_client->loginid,
+                            file_id                    => $new_doc->{file_id}})->get;
+
+                    $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+                    ok $email, 'An email has been sent';
+
+                    BOM::Event::Actions::Client::document_upload({
+                            uploaded_manually_by_staff => 0,
+                            loginid                    => $test_client->loginid,
+                            file_id                    => $new_doc->{file_id}})->get;
+
+                    ok $redis->get(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get,
+                        'email got a lock';
+                    ok $redis->ttl(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get > 0,
+                        'email lock got a ttl';
+                    mailbox_clear();
+
+                    BOM::Event::Actions::Client::document_upload({
+                            loginid => $test_client->loginid,
+                            file_id => $new_doc->{file_id}})->get;
+
+                    $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+                    ok !$email, 'Email is locked';
+                    $redis->del(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get;
+
+                    my $documents_mock = Test::MockModule->new(ref($test_client->documents));
+                    $documents_mock->mock(
+                        'expired',
+                        sub {
+                            return 0;
+                        });
+                    $documents_mock->mock(
+                        'valid',
+                        sub {
+                            return 1;
+                        });
+                    $documents_mock->mock(
+                        'outdated',
+                        sub {
+                            return 0;
+                        });
+
+                    $args->{expected_checksum} = 'anotharone' . $j;
+                    $new_doc = start_document_upload($args, $test_client);
+
+                    $test_client->db->dbic->run(
+                        ping => sub {
+                            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $new_doc->{file_id});
+                        });
+
+                    # make the document to expire in 30 days
+                    $test_client->db->dbic->run(
+                        ping => sub {
+                            $_->do(
+                                'UPDATE betonmarkets.client_authentication_document SET status=?,expiration_date = ? WHERE id = ?',
+                                undef, 'verified', Date::Utility->new()->plus_time_interval('30d')->date_yyyymmdd,
+                                $new_doc->{file_id});
+                        });
+
+                    $test_client->documents->_clear_uploaded;
+
+                    mailbox_clear();
+
+                    BOM::Event::Actions::Client::document_upload({
+                            loginid => $test_client->loginid,
+                            file_id => $new_doc->{file_id}})->get;
+
+                    $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+
+                    my $category_config = $test_client->documents->get_category_config($document_type);
+
+                    if (($category_config->{types}->{$document_type}->{date} // '') eq 'expiration') {
+                        ok $email, 'Email is sent mt5 regulated';
+                    } else {
+                        ok !$email, 'Email is not sent as the document is not expirable';
+                    }
+
+                    # make the document to expire in 31 days
+                    $test_client->db->dbic->run(
+                        ping => sub {
+                            $_->do(
+                                'UPDATE betonmarkets.client_authentication_document SET status=?,expiration_date = ? WHERE id = ?',
+                                undef, 'verified', Date::Utility->new()->plus_time_interval('31d')->date_yyyymmdd,
+                                $new_doc->{file_id});
+                        });
+
+                    $redis->del(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get;
+                    $test_client->documents->_clear_uploaded;
+
+                    mailbox_clear();
+
+                    BOM::Event::Actions::Client::document_upload({
+                            loginid => $test_client->loginid,
+                            file_id => $new_doc->{file_id}})->get;
+
+                    $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
+                    ok !$email, 'Email not sent';
+
+                    $documents_mock->unmock_all;
+                    $user_mock->unmock_all;
+
+                    $test_client->db->dbic->run(
+                        ping => sub {
+                            $_->do('UPDATE betonmarkets.client_authentication_document SET status=?WHERE id = ?',
+                                undef, 'uploaded', $new_doc->{file_id});
+                        });
+
+                    $documents_mock->unmock_all;
+                    $user_mock->unmock_all;
+                    $redis->del(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get;
                 }
             }
         };
@@ -1608,6 +1826,7 @@ for my $client ($test_client, $test_client_mf) {
                         $_->do('DELETE FROM betonmarkets.client_authentication_document WHERE client_loginid = ?', undef, $test_client->loginid,);
                     });
 
+                @emit_args = ();
                 $log->clear();
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
@@ -1637,6 +1856,31 @@ for my $client ($test_client, $test_client_mf) {
                     is $db_doc->issuing_country, 'br',       'expected issuing country';
                     is $db_doc->status,          'rejected', 'upload doc status is rejected';
                 }
+
+                cmp_bag [@emit_args],
+                    [
+                    'sync_mt5_accounts_status',
+                    {
+                        binary_user_id => $client->user->id,
+                        client_loginid => $client->loginid,
+                    },
+                    $client->landing_company->short eq 'maltainvest'
+                    ? ()
+                    : (
+                        'document_uploaded',
+                        {
+                            loginid    => $client->loginid,
+                            properties => {
+                                lifetime_valid  => 1,
+                                document_type   => 'passport',
+                                upload_date     => re('\w+'),
+                                file_name       => re('\w+'),
+                                expiration_date => undef,
+                                comments        => '',
+                                document_id     => '',
+                                id              => re('\d+')}})
+                    ],
+                    'expected emissions';
 
                 $cli_onfido_mock->unmock_all;
                 $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
@@ -1740,6 +1984,8 @@ for my $client ($test_client, $test_client_mf) {
 
                     cmp_bag [@emit_args],
                         [
+                        'poi_updated',
+                        {loginid => $client->loginid},
                         'sync_mt5_accounts_status',
                         {
                             binary_user_id => $client->binary_user_id,
@@ -1841,6 +2087,10 @@ for my $client ($test_client, $test_client_mf) {
                         cmp_deeply $onfido_report_filters, $expected_filter, 'Expected filtering';
                         cmp_bag [@emit_args],
                             [
+                            'poi_updated',
+                            {
+                                loginid => $client->loginid,
+                            },
                             'sync_mt5_accounts_status',
                             {
                                 binary_user_id => $client->binary_user_id,
@@ -1967,6 +2217,11 @@ for my $client ($test_client, $test_client_mf) {
             };
 
             subtest 'forged email' => sub {
+                @emit_args = ();
+                my $redis_write = $services->redis_events_write();
+                $redis_write->del('FORGED::EMAIL::LOCK::' . $test_client->loginid)->get;
+                $redis_write->set($doc_key, $db_doc_id)->get;
+                $db_doc_id = undef;
                 reset_onfido_check({
                     id     => $db_check->{id},
                     status => 'in_progress',
@@ -1978,8 +2233,6 @@ for my $client ($test_client, $test_client_mf) {
                     sub {
                         return $ryu_data->{document_list};
                     });
-                my $redis_write = $services->redis_events_write();
-                $redis_write->del('FORGED::EMAIL::LOCK::' . $client->loginid)->get;
 
                 mailbox_clear();
                 $client->status->clear_cashier_locked;
@@ -2004,6 +2257,18 @@ for my $client ($test_client, $test_client_mf) {
                 }
                 "client verification no exception";
 
+                my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
+                is $db_doc->status, 'rejected', 'upload doc status is rejected';
+
+                cmp_bag [@emit_args],
+                    [
+                    'sync_mt5_accounts_status',
+                    {
+                        binary_user_id => $client->user->id,
+                        client_loginid => $client->loginid,
+                    }
+                    ],
+                    'expected emissions';
                 $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
                 is $db_check->{status}, 'complete', 'check has been completed';
 

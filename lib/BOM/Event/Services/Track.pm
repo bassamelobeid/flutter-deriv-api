@@ -177,6 +177,8 @@ my %EVENT_PROPERTIES = (
     shared_payment_method_email_notification => [qw(client_first_name client_last_name ask_poi authentication_url payment_methods_url email)],
     derivez_inactive_notification            => [qw(email name closure_date accounts)],
     derivez_inactive_account_closed          => [qw(name title derivez_accounts live_chat_url)],
+    document_expiring_today                  => [qw(authentication_url live_chat_url email)],
+    document_expiring_soon                   => [qw(authentication_url live_chat_url expiration_date email)],
 
 );
 
@@ -234,6 +236,8 @@ my @COMMON_EVENT_METHODS = qw(
     p2p_limit_upgrade_available
     identity_verification_rejected
     pa_first_time_approved
+    document_expiring_today
+    document_expiring_soon
     shared_payment_method_email_notification
 );
 
@@ -248,6 +252,8 @@ my @TRANSACTIONAL_EVENTS = qw(
     reset_password_request
     pa_transfer_confirm
     reset_password_confirmation
+    document_expiring_today
+    document_expiring_soon
     crypto_withdrawal_reverted_email
     account_reactivated
     verify_email_closed_account_reset_password
@@ -1667,6 +1673,18 @@ It is triggered for each B<derivx_account_deactivated> event emitted, delivering
 =head2 pa_first_time_approved
 
 It is triggered for each B<pa_first_time_approved> event emitted, delivering it to Rudderstack.
+
+=cut
+
+=head2 document_expiring_soon
+
+It is triggered for each B<document_expiring_soon> event emitted, delivering it to Rudderstack.
+
+=cut
+
+=head2 document_expiring_today
+
+It is triggered for each B<document_expiring_today> event emitted, delivering it to Rudderstack.
 
 =cut
 

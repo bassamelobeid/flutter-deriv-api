@@ -134,7 +134,7 @@ subtest 'process - generic jobs' => sub {
                 account_verification_for_pending_payout bulk_client_status_update
                 trigger_cio_broadcast crypto_cashier_transaction_updated
                 update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind mt5_archive_restore_sync sync_mt5_accounts_status
-                poa_updated underage_client_detected mt5_archive_accounts wallet_migration_started mt5_svg_migration_requested ctrader_account_created nodejs_hello
+                poa_updated poi_updated underage_client_detected mt5_archive_accounts wallet_migration_started mt5_svg_migration_requested ctrader_account_created nodejs_hello
                 withdrawal_estimated_fee_updated p2p_settings_updated onfido_check_completed/
         ),
         'Correct number of actions that can be emitted'
@@ -243,7 +243,7 @@ subtest 'process - tracking jobs' => sub {
                 account_opening_existing self_tagging_affiliates authenticated_with_scans document_uploaded new_mt5_signup_stored
                 identity_verification_rejected p2p_advertiser_approved p2p_order_updated_handled
                 risk_disclaimer_resubmission unknown_login derivx_account_deactivated poa_verification_failed_reminder professional_status_requested dp_successful_login pa_first_time_approved shared_payment_method_email_notification
-                pa_transfer_confirm pa_withdraw_confirm derivez_inactive_notification derivez_inactive_account_closed/
+                pa_transfer_confirm pa_withdraw_confirm derivez_inactive_notification derivez_inactive_account_closed document_expiring_soon document_expiring_today/
         ),
         'Correct number of actions that can be emitted'
     );

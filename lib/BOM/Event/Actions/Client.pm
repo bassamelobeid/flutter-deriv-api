@@ -33,6 +33,7 @@ use Log::Any               qw($log);
 use POSIX                  qw(strftime);
 use Syntax::Keyword::Try;
 use Template::AutoFilter;
+use Template;
 use Time::HiRes;
 use Text::Levenshtein::XS;
 use Array::Utils qw(intersect array_minus);
@@ -117,6 +118,8 @@ use constant PAYMENT_ACCOUNT_LIMIT_REACHED_TTL                 => 86400;        
 use constant PAYMENT_ACCOUNT_LIMIT_REACHED_KEY                 => 'PAYMENT_ACCOUNT_LIMIT_REACHED';
 use constant ONFIDO_DAILY_LIMIT_FLAG                           => 'ONFIDO_DAILY_LIMIT_FLAG::';
 use constant SECONDS_IN_DAY                                    => 86400;
+use constant MT5_REGULATED_DOCUMENT_UPLOAD_LOCK                => 'MT5::REGULATED:DOCUMENT::UPLOAD::LOCK::';
+use constant MT5_REGULATED_DOCUMENT_UPLOAD_TTL                 => 86400 * 7;                                                # once per week seems fine
 
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;                                                          # 10 days in seconds
@@ -134,6 +137,8 @@ use constant APPLICANT_CHECK_LOCK_TTL    => 30;
 use constant APPLICANT_ONFIDO_TIMING     => 'ONFIDO::APPLICANT::TIMING::';
 use constant APPLICANT_ONFIDO_TIMING_TTL => 86400;
 
+# template path
+use constant TEMPLATE_PREFIX_PATH => "/home/git/regentmarkets/bom-events/share/templates/email/";
 # Fraud Prevention constants
 use constant NUMBER_OF_RETRIES => 2;
 use constant SLEEP_TIMER       => 3;
@@ -308,6 +313,10 @@ async sub document_upload {
             $is_onfido_document = any { $_ eq $document_entry->{document_type} } keys $client->documents->provider_types->{onfido}->%*;
         }
 
+        # send an email to x-compops if this is a new POI/POA upload by the client
+        await _notify_document_upload_compops($client, $document_entry, $is_poa_document ? 'POA' : 'POI')
+            if ($is_poa_document || $is_poi_document) && !$uploaded_manually_by_staff;
+
         my $is_pow_document = any { $_ eq $document_entry->{document_type} } $client->documents->pow_types->@*;
         $log->warnf("Unsupported document by onfido $document_entry->{document_type}") if $is_poi_document && !$is_onfido_document;
 
@@ -344,6 +353,93 @@ async sub document_upload {
     }
 
     return;
+}
+
+=head2 _notify_document_upload_compops
+
+Sends an internal email if the client has regulated MT5 account.
+
+Takes the following:
+
+=over 4
+
+=item * C<$client> - the L<BOM::User::Client> instance.
+
+=item * C<$document_entry> - the new document.
+
+=item * C<$category> - category of the document, either POA or POI
+
+=back
+
+Returns L<Future> which resolves to C<undef>.
+
+=cut
+
+async sub _notify_document_upload_compops {
+    my ($client, $document_entry, $category) = @_;
+    # x-compops might be interested on clients who have mt5 regulated accounts
+    if ($client->user->has_mt5_regulated_account(use_mt5_conf => 1)) {
+        # only notify those who are expiring/outdating within 30 days
+        if ($client->documents->expiration_look_ahead(30) || $client->documents->expired(1) || $client->documents->outdated) {
+            my $redis_events_write = _redis_events_write();
+            await $redis_events_write->connect;
+            # check the cooldown
+            return undef if await $redis_events_write->get(MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $client->user->id);
+
+            my $brand   = request()->brand;
+            my $country = code2country($client->residence);
+
+            # this is an internal email, no customer.io
+            # no fancy templates, css, etc...
+
+            my $tt         = Template->new(ABSOLUTE => 1);
+            my $from_email = $brand->emails('no-reply');
+            my $to_email   = $brand->emails('compliance_ops');
+
+            try {
+                my $loginids = $client->user->loginid_details;
+
+                my $mt5_loginids =
+                    +{map { $loginids->{$_}->{attributes} ? ($_ => $loginids->{$_}->{attributes}) : () } $client->user->get_mt5_loginids};
+
+                my $best_issue  = $client->documents->best_issue_date;
+                my $best_expiry = $client->documents->best_expiry_date;
+
+                my $data = {
+                    category     => $category,
+                    poa_status   => $client->get_poa_status,
+                    poi_status   => $client->get_poi_status,
+                    loginid      => $client->loginid,
+                    country      => $country,
+                    mt5_loginids => $mt5_loginids,
+                    poa_issuance => $best_issue  ? $best_issue->date_yyyymmdd  : undef,
+                    poi_expiry   => $best_expiry ? $best_expiry->date_yyyymmdd : undef,
+                };
+
+                $tt->process(TEMPLATE_PREFIX_PATH . 'mt5_regulated_document_upload.html.tt', $data, \my $html);
+                die "Template error: @{[$tt->error]}" if $tt->error;
+                send_email({
+                    from                  => $from_email,
+                    to                    => $to_email,
+                    subject               => "New $category Document Upload from a client with MT5 regulated account",
+                    message               => [$html],
+                    use_email_template    => 0,
+                    email_content_is_html => 1,
+                    skip_text2html        => 1,
+                });
+
+                # since documents are shared across the siblings, the lock can be acquired upon the client id
+                await $redis_events_write->setex(MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $client->user->id, MT5_REGULATED_DOCUMENT_UPLOAD_TTL, 1);
+            } catch ($error) {
+                $log->warnf("Error sending email to x-compops. Details: $error");
+                exception_logged();
+            }
+        }
+
+        return undef;
+    }
+
+    return undef;
 }
 
 =head2 _notify_onfido_on_forged_document
@@ -564,6 +660,47 @@ async sub poa_updated {
         $client->user->dbic->run(
             fixup => sub {
                 $_->do('SELECT * FROM users.delete_poa_issuance(?::BIGINT)', undef, $client->binary_user_id);
+            });
+    }
+
+    return undef;
+}
+
+=head2 poi_updated
+
+This event is triggered on POI document update, this could come from BO or Onfido (verified docs).
+
+Side effects:
+
+=over 4
+
+=item  * populate the `users.poi_expiration` table
+
+=back
+
+Resolves to C<undef>.
+
+=cut
+
+async sub poi_updated {
+    my ($args) = @_;
+
+    my $loginid = $args->{loginid}
+        or die 'No client login ID supplied?';
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die 'Could not instantiate client for login ID ' . $loginid;
+
+    if (my $best_expiration_date = $client->documents->best_expiry_date()) {
+        $client->user->dbic->run(
+            fixup => sub {
+                $_->do('SELECT * FROM users.upsert_poi_expiration(?::BIGINT, ?::DATE)',
+                    undef, $client->binary_user_id, $best_expiration_date->date_yyyymmdd);
+            });
+    } else {
+        $client->user->dbic->run(
+            fixup => sub {
+                $_->do('SELECT * FROM users.delete_poi_expiration(?::BIGINT)', undef, $client->binary_user_id);
             });
     }
 
@@ -966,6 +1103,10 @@ async sub client_verification {
                                     $db_doc->expiration_date($expiration_date);
                                     $db_doc->document_id($doc_numbers->[0]->{value});
                                     $db_doc->status('verified');
+
+                                    # call poi_update as there could be a better expiration after this verified upload
+                                    BOM::Platform::Event::Emitter::emit('poi_updated', {loginid => $client->loginid});
+
                                 } else {
                                     $db_doc->status('rejected');
                                 }

@@ -125,6 +125,99 @@ subtest 'POA updated' => sub {
     cmp_deeply grab_poa_dates($user), [], 'Delete operation';
 };
 
+subtest 'POI updated' => sub {
+
+    sub grab_expiration_date {
+        my ($user) = @_;
+
+        return $user->dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref('SELECT * FROM users.poi_expiration WHERE binary_user_id = ?', {Slice => {}}, $user->id);
+            });
+    }
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $user = BOM::User->create(
+        email          => 'poiexp+test@test.com',
+        password       => "hello",
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+    $client->save;
+
+    my $doc_mock = Test::MockModule->new(ref($client->documents));
+    my $best_expiration_date;
+    $doc_mock->mock(
+        'best_expiry_date',
+        sub {
+            return Date::Utility->new($best_expiration_date) if $best_expiration_date;
+            return undef;
+        });
+
+    my $exception = exception {
+        BOM::Event::Actions::Client::poi_updated({
+                loginid => undef,
+            })->get;
+    };
+
+    ok $exception =~ /No client login ID supplied/, 'Expected exception if no loginid is supplied';
+
+    $exception = exception {
+        BOM::Event::Actions::Client::poi_updated({
+                loginid => 'CR0',
+            })->get;
+    };
+
+    ok $exception =~ /Could not instantiate client for login ID/, 'Expected exception when bogus loginid is supplied';
+
+    BOM::Event::Actions::Client::poi_updated({
+            loginid => $client->loginid,
+        })->get;
+
+    cmp_deeply grab_expiration_date($user), [], 'Undef date would be a delete operation';
+
+    $best_expiration_date = '2020-10-10';
+    BOM::Event::Actions::Client::poi_updated({
+            loginid => $client->loginid,
+        })->get;
+
+    cmp_deeply grab_expiration_date($user),
+        [{
+            binary_user_id         => $user->id,
+            last_notification_date => undef,
+            expiration_date        => Date::Utility->new($best_expiration_date)->date_yyyymmdd,
+        }
+        ],
+        'Insert operation';
+
+    $best_expiration_date = '2023-10-10';
+    BOM::Event::Actions::Client::poi_updated({
+            loginid => $client->loginid,
+        })->get;
+
+    cmp_deeply grab_expiration_date($user),
+        [{
+            binary_user_id         => $user->id,
+            last_notification_date => undef,
+            expiration_date        => Date::Utility->new($best_expiration_date)->date_yyyymmdd,
+        }
+        ],
+        'Update operation';
+
+    $best_expiration_date = undef;
+    BOM::Event::Actions::Client::poi_updated({
+            loginid => $client->loginid,
+        })->get;
+
+    cmp_deeply grab_expiration_date($user), [], 'Delete operation';
+};
+
 subtest 'underage_client_detected' => sub {
     my $args      = {};
     my $exception = exception {
