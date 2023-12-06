@@ -16,10 +16,16 @@ $client_mock->mock(
     });
 my $docs_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 my $expired;
+my $outdated;
 $docs_mock->mock(
     'expired',
     sub {
         return $expired;
+    });
+$docs_mock->mock(
+    'outdated',
+    sub {
+        return $outdated;
     });
 
 $client_mock->mock(
@@ -30,10 +36,16 @@ $client_mock->mock(
 
 my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
 my $withdrawal_locked;
+my $mt5_withdrawal_locked;
 $status_mock->mock(
     'withdrawal_locked',
     sub {
         return $withdrawal_locked;
+    });
+$status_mock->mock(
+    'mt5_withdrawal_locked',
+    sub {
+        return $mt5_withdrawal_locked;
     });
 
 my $cashier_locked;
@@ -43,7 +55,16 @@ $status_mock->mock(
         return $cashier_locked;
     });
 
+my $user_mock = Test::MockModule->new('BOM::User');
+my $has_mt5_regulated_account;
+$user_mock->mock(
+    'has_mt5_regulated_account',
+    sub {
+        return $has_mt5_regulated_account;
+    });
+
 my $client = BOM::User::Client->rnew;
+$client_mock->mock('user', sub { bless {}, 'BOM::User' });
 $client->broker('CR');
 $client->residence('br');
 
@@ -95,6 +116,80 @@ subtest 'cashier locked' => sub {
     $expired                          = 1;
     $is_financial_assessment_complete = 0;
     cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'Virtual cashier locked not needed as the real status is there';
+};
+
+subtest 'mt5 withdrawal locked' => sub {
+    $mt5_withdrawal_locked     = undef;
+    $expired                   = 0;
+    $outdated                  = 0;
+    $has_mt5_regulated_account = undef;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'No MT5 withdrawal locked needed';
+
+    $mt5_withdrawal_locked     = undef;
+    $expired                   = 0;
+    $outdated                  = 0;
+    $has_mt5_regulated_account = 1;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'No MT5 withdrawal locked needed';
+
+    $mt5_withdrawal_locked     = undef;
+    $expired                   = 1;
+    $outdated                  = 0;
+    $has_mt5_regulated_account = 0;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'No MT5 withdrawal locked needed';
+
+    $mt5_withdrawal_locked     = undef;
+    $expired                   = 1;
+    $outdated                  = 0;
+    $has_mt5_regulated_account = 1;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)},
+        +{
+        'MT5 Withdrawal Locked' => {
+            last_modified_date => re('.*'),
+            reason             => 'POI has expired',
+            staff_name         => "SYSTEM",
+            status_code        => "mt5_withdrawal_locked",
+            warning            => 'var(--color-red)',
+        }
+        },
+        'Virtual mt5 withdrawal locked due to expired POI';
+
+    $mt5_withdrawal_locked     = undef;
+    $expired                   = 0;
+    $outdated                  = 1;
+    $has_mt5_regulated_account = 1;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)},
+        +{
+        'MT5 Withdrawal Locked' => {
+            last_modified_date => re('.*'),
+            reason             => 'POA is outdated',
+            staff_name         => "SYSTEM",
+            status_code        => "mt5_withdrawal_locked",
+            warning            => 'var(--color-red)',
+        }
+        },
+        'Virtual mt5 withdrawal locked due to outdated POA';
+
+    $mt5_withdrawal_locked     = undef;
+    $expired                   = 1;
+    $outdated                  = 1;
+    $has_mt5_regulated_account = 1;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)},
+        +{
+        'MT5 Withdrawal Locked' => {
+            last_modified_date => re('.*'),
+            reason             => 'POA is outdated. POI has expired',
+            staff_name         => "SYSTEM",
+            status_code        => "mt5_withdrawal_locked",
+            warning            => 'var(--color-red)',
+        }
+        },
+        'Virtual mt5 withdrawal locked due to outdated POA';
+
+    $mt5_withdrawal_locked     = 1;
+    $has_mt5_regulated_account = 1;
+    $expired                   = 1;
+    $outdated                  = 1;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'Virtual withdrawal locked not needed as the real status is there';
 };
 
 done_testing;

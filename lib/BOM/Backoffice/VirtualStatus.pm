@@ -38,8 +38,9 @@ sub get {
     my ($client) = @_;
 
     my %list = (
-        'Withdrawal Locked' => _withdrawal_locked($client),
-        'Cashier Locked'    => _cashier_locked($client));
+        'MT5 Withdrawal Locked' => _mt5_withdrawal_locked($client),
+        'Withdrawal Locked'     => _withdrawal_locked($client),
+        'Cashier Locked'        => _cashier_locked($client));
 
     return map { $list{$_} ? ($_ => $list{$_}) : () } keys %list;
 }
@@ -100,6 +101,38 @@ sub _withdrawal_locked {
     );
 
     return _build_fake_status('withdrawal_locked', %reasons);
+}
+
+=head2 _mt5_withdrawal_locked
+
+Computes the virtual C<mt5_withdrawal_locked> status.
+
+It takes the following arguments:
+
+=over 4
+
+=item C<$client> - the client being computed.
+
+=back 
+
+Returns a virtual C<mt5_withdrawal_locked> status hashref or C<undef> if there is no need to add it.
+
+=cut
+
+sub _mt5_withdrawal_locked {
+    my ($client) = @_;
+
+    # skip if the status is there
+    return undef if $client->status->mt5_withdrawal_locked;
+
+    my $has_regulated_mt5 = $client->user->has_mt5_regulated_account(use_mt5_conf => 1);
+
+    my %reasons = (
+        'POI has expired' => $has_regulated_mt5 && $client->documents->expired($has_regulated_mt5),
+        'POA is outdated' => $has_regulated_mt5 && $client->documents->outdated(),
+    );
+
+    return _build_fake_status('mt5_withdrawal_locked', %reasons);
 }
 
 =head2 _build_fake_status

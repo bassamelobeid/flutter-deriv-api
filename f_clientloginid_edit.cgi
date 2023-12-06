@@ -334,6 +334,7 @@ if (defined $input{show_aml_screen_table}) {
 if ($input{document_list}) {
     my $new_doc_status;
     my $poa_updated;
+    my $poi_updated;
     $new_doc_status = 'rejected'         if $input{reject_checked_documents};
     $new_doc_status = 'verified'         if $input{verify_checked_documents};
     $new_doc_status = 'delete'           if $input{delete_checked_documents};
@@ -369,6 +370,7 @@ if ($input{document_list}) {
         }
 
         my $is_poa = any { $_ eq $doc->document_type } $client->documents->poa_types->@*;
+        $poi_updated ||= any { $_ eq $doc->document_type } $client->documents->poi_types->@*;
         $poa_updated ||= $is_poa;
 
         if ($new_doc_status eq 'delete') {
@@ -457,6 +459,7 @@ if ($input{document_list}) {
         $client->propagate_clear_status('address_verified');
     }
 
+    BOM::Platform::Event::Emitter::emit('poi_updated', {loginid => $client->loginid}) if $poi_updated;
     BOM::Platform::Event::Emitter::emit('poa_updated', {loginid => $client->loginid}) if $poa_updated;
 }
 
@@ -1023,6 +1026,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     map { $input{$_} = trim($input{$_}) if defined $input{$_} } @text_immutable_fields;
 
     my $poa_updated;
+    my $poi_updated;
     my $error;
     # algorithm provide different encrypted string from the same text based on some randomness
     # so we update this encrypted field only on value change - we don't want our trigger log trash
@@ -1416,6 +1420,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                 }
                 next CLIENT_KEY if $new_value && $new_value eq $doc->$document_field();
                 try {
+                    $poi_updated ||= any { $_ eq $doc->document_type } $client->documents->poi_types->@*;
                     $poa_updated ||= any { $_ eq $doc->document_type } $client->documents->poa_types->@*;
                     $doc->$document_field($new_value);
                 } catch ($e) {
@@ -1516,6 +1521,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
     }
 
+    BOM::Platform::Event::Emitter::emit('poi_updated', {loginid => $client->loginid}) if $poi_updated;
     BOM::Platform::Event::Emitter::emit('poa_updated', {loginid => $client->loginid}) if $poa_updated;
 
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $client->loginid})
