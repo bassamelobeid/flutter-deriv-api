@@ -91,7 +91,7 @@ subtest 'IDV attempts' => sub {
     my $expected_response_object = {
         identity => {
             last_rejected => {
-                rejected_reasons => ['The verification status is not available, provider says: Unexpected Error.'],
+                rejected_reasons => ['UnexpectedError'],
                 document_type    => 'national_id'
             },
             available_services => ['idv', 'onfido', 'manual'],
@@ -184,7 +184,7 @@ subtest 'Landing Companies provided as arguments' => sub {
         svg => {
             identity => {
                 last_rejected => {
-                    rejected_reasons => ['The name retrieved from your document doesn\'t match your profile.'],
+                    rejected_reasons => ['NameMismatch'],
                     document_type    => 'passport'
                 },
                 available_services => ['idv', 'onfido', 'manual'],
