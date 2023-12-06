@@ -2073,7 +2073,31 @@ async sub mt5_deposit_retry {
     $log->debugf("Deposit retry parameters: %s", $parameters);
 
     # Get the deals
-    my $deals = await BOM::MT5::User::Async::deal_get_batch($params);
+    my $deals = await BOM::MT5::User::Async::deal_get_batch($params)->catch(
+        sub {
+            my $error = shift;
+
+            if ($retry_last) {
+                # Send email notification for MT5 deposit errors
+                my $brand   = request()->brand;
+                my $message = "Error occurred when getting user's deal information:";
+
+                send_email({
+                    from    => $brand->emails('system'),
+                    to      => $brand->emails('payments'),
+                    subject => "MT5 Deal Retrieval Issue on Deposit Retry Attempt",
+                    message =>
+                        [$message, "Client login id: $from_login_id", "MT5 login: $destination_mt5_account", "Amount: $amount", "error: $error"],
+                    use_email_template    => 1,
+                    email_content_is_html => 1,
+                    template_loginid      => 'real ' . $destination_mt5_account,
+                });
+            }
+
+            $log->errorf("Failed to get user deal_get_batch: %s", $error);
+
+            return Future->fail($error);
+        });
 
     # Log the deals
     $log->debugf("Deals: %s", $deals);
