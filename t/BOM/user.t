@@ -27,6 +27,7 @@ use BOM::Test::Helper::CTrader;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
+use BOM::Config;
 
 BOM::Test::Helper::CTrader::mock_server();
 
@@ -1220,6 +1221,122 @@ subtest 'check mt5 regulated accs' => sub {
     $user_2->add_loginid('MTR00007', 'mt5', 'real', 'USD', {group => 'real\test_financial'});
 
     is $user_2->has_mt5_regulated_account, '1', "Client has a real MT5 account";
+
+    subtest 'using mt5 conf' => sub {
+        my $conf = BOM::Config::mt5_account_types();
+        my $j    = 0;
+
+        for my $group (keys $conf->%*) {
+            $j++;
+
+            my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+                email       => '0x' . $j . '+testing+mt5+conf@testing.com',
+            });
+
+            my $user = BOM::User->create(
+                email          => $test_client->email,
+                password       => $hash_pwd,
+                email_verified => 1,
+            );
+
+            $user->add_loginid("MTR112358$j", 'mt5', 'real', 'USD', {group => $group});
+
+            if (
+                $conf->{$group}->{account_type} eq 'real' && List::Util::any { $conf->{$group}->{landing_company_short} eq $_ }
+                qw/bvi labuan vanuatu/
+                )
+            {
+                ok $user->has_mt5_regulated_account(use_mt5_conf => 1), "$group is regulated";
+            } else {
+                ok !$user->has_mt5_regulated_account(use_mt5_conf => 1), "$group is not regulated";
+            }
+        }
+    };
+};
+
+subtest 'has_mt5_groups' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'has_mt5_groups@testing.com',
+    });
+
+    my $user = BOM::User->create(
+        email          => $client->email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+
+    my %args = ();
+
+    ok !$user->has_mt5_groups(%args), 'by default no mt5 loginids';
+
+    $user->add_loginid('MTR22001', 'mt5', 'real', 'USD', {group => 'real\p01_ts04\financial\svg'});
+
+    $args{type_of_account} = 'real';
+
+    ok !$user->has_mt5_groups(%args), 'no regexes specified';
+
+    $args{regexes} = ['^real'];
+
+    ok $user->has_mt5_groups(%args), 'regexes match';
+
+    $args{type_of_account} = 'demo';
+
+    ok !$user->has_mt5_groups(%args), 'no demo accounts';
+
+    $user->add_loginid('MTD22001', 'mt5', 'demo', 'USD', {group => 'demo\p01_ts04\financial\svg'});
+
+    ok !$user->has_mt5_groups(%args), 'no regex match';
+
+    $args{regexes} = ['^real', 'svg$'];
+
+    ok $user->has_mt5_groups(%args), 'regex match';
+
+    delete $args{regexes};
+    $args{full_match} = ['test'];
+    ok !$user->has_mt5_groups(%args), 'no full match';
+
+    $args{full_match} = ['test', 'demo\p01_ts04\financial\svg'];
+    ok $user->has_mt5_groups(%args), 'full match';
+
+    $args{full_match} = ['test', 'demo\p01_ts04\financial\svg'];
+    ok $user->has_mt5_groups(%args), 'full match';
+
+    $args{type_of_account} = 'real';
+    ok !$user->has_mt5_groups(%args), 'no full match';
+
+    $args{full_match} = ['real\p01_ts04\financial\svg', 'demo\p01_ts04\financial\svg'];
+    ok $user->has_mt5_groups(%args), 'full match';
+
+    $args{full_match} = ['real\p02_ts04\financial\svg', 'demo\p01_ts04\financial\svg'];
+    ok !$user->has_mt5_groups(%args), 'no full match';
+
+    $args{type_of_account} = 'all';
+    ok $user->has_mt5_groups(%args), 'full match';
+
+    # key must be group
+    $user->add_loginid('MTR3434334', 'mt5', 'real', 'USD', {g => 'dummy'});
+    delete $args{regexes};
+    $args{type_of_account} = 'real';
+    $args{full_match}      = ['dummy'];
+
+    ok !$user->has_mt5_groups(%args), 'has no valid dummy loginid';
+
+    $user->add_loginid('MTR3434335', 'mt5', 'real', 'USD', {group => 'dummy'});
+    delete $args{regexes};
+    $args{type_of_account} = 'real';
+    $args{full_match}      = ['dummy'];
+
+    ok $user->has_mt5_groups(%args), 'now it has a valid dummy loginid';
+
+    # undef attributes
+    $user->add_loginid('MTR3434336', 'mt5', 'real', 'USD', undef);
+    delete $args{regexes};
+    $args{type_of_account} = 'real';
+    $args{full_match}      = ['dummy'];
+
+    ok $user->has_mt5_groups(%args), 'now it has a valid dummy loginid';
 };
 
 done_testing();

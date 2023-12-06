@@ -109,10 +109,11 @@ subtest 'client documents expiry' => sub {
             $sth_doc_update->execute('tomorrow', $id1);
             is($client->documents->expired(), 0, $test);
 
-            $test = qq{BOM::User::Client->documents->expired returns $document_expiry if document has an expiration date of today};
+            # boundary = not expired
+            $test = qq{BOM::User::Client->documents->expired returns 0 if document has an expiration date of today};
             $sth_doc_update->execute('today', $id1);
             $client->client_authentication_document(undef);
-            is($client->documents->expired(), $document_expiry, $test);
+            is($client->documents->expired(), 0, $test);
 
             $test =
                 qq{BOM::User::Client->documents->expired returns $document_expiry depending if expiration date check is required for document that has an expiration date of yesterday};
@@ -232,6 +233,7 @@ subtest 'documents uploaded' => sub {
             is_pending         => 0,
             is_verified        => 1,
             is_outdated        => 0,
+            to_be_outdated     => -366,       # okay to be a negative number
             best_verified_date => ignore(),
         },
         proof_of_identity => {
@@ -255,10 +257,11 @@ subtest 'documents uploaded' => sub {
                     type   => "passport",
                     },
             },
-            is_expired  => 0,
-            is_pending  => 0,
-            is_verified => 2,
-            expiry_date => $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
+            is_expired    => 0,
+            is_pending    => 0,
+            is_verified   => 2,
+            to_be_expired => -1,    # it's okay for this to be a negative number
+            expiry_date   => $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
         },
     };
 
@@ -282,6 +285,7 @@ subtest 'documents uploaded' => sub {
             is_verified        => 1,
             is_outdated        => 0,
             best_verified_date => ignore(),
+            to_be_outdated     => -366,       # okay to be a negative number
         },
         proof_of_identity => {
             documents => {
@@ -302,10 +306,11 @@ subtest 'documents uploaded' => sub {
                     type        => "passport",
                     },
             },
-            is_expired  => 0,
-            is_pending  => 0,
-            is_verified => 2,
-            expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744441_front.PNG'}{expiry_date},
+            is_expired    => 0,
+            is_pending    => 0,
+            is_verified   => 2,
+            to_be_expired => -1,    # it's okay for this to be a negative number
+            expiry_date   => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744441_front.PNG'}{expiry_date},
         },
     };
 
@@ -774,11 +779,12 @@ subtest 'rejected and uploaded' => sub {
 
     $expected = {
         'proof_of_identity' => {
-            'expiry_date' => re('\d+'),
-            'is_expired'  => 0,
-            'is_pending'  => 0,
-            'is_verified' => 3,
-            'documents'   => {
+            'expiry_date'   => re('\d+'),
+            'is_expired'    => 0,
+            'is_pending'    => 0,
+            'is_verified'   => 3,
+            'to_be_expired' => -1,          # it's okay for this to be a negative number
+            'documents'     => {
                 $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
                     'type'        => 'passport',
@@ -961,11 +967,12 @@ subtest 'rejected an accepted' => sub {
                     'status'      => 'verified'
                 }
             },
-            'is_pending'  => 1,
-            'expiry_date' => re('\d+'),
-            'is_expired'  => 0,
-            'is_uploaded' => 2,
-            'is_verified' => 1,
+            'is_pending'    => 1,
+            'expiry_date'   => re('\d+'),
+            'is_expired'    => 0,
+            'is_uploaded'   => 2,
+            'is_verified'   => 1,
+            'to_be_expired' => -1,          # it's okay for this to be a negative number
 
         }};
     cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result after Onfido verification';
@@ -973,7 +980,9 @@ subtest 'rejected an accepted' => sub {
 
 subtest 'Payment Agent has expired documents' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $mock_user   = Test::MockModule->new('BOM::User');
     my $mock_lc     = Test::MockModule->new('LandingCompany');
+    my $has_mt5_regulated_account;
     my $risk;
     my $pa;
 
@@ -987,6 +996,12 @@ subtest 'Payment Agent has expired documents' => sub {
         'aml_risk_classification',
         sub {
             return $risk;
+        });
+
+    $mock_user->mock(
+        'has_mt5_regulated_account',
+        sub {
+            return $has_mt5_regulated_account;
         });
 
     $mock_client->mock(
@@ -1010,6 +1025,12 @@ subtest 'Payment Agent has expired documents' => sub {
     $risk = 'high';
     $pa   = 0;
     ok $client_cr->is_document_expiry_check_required, 'Expire check required for non PA high risk';
+
+    $risk                      = 'low';
+    $pa                        = 0;
+    $has_mt5_regulated_account = 1;
+    ok $client_cr->is_document_expiry_check_required, 'Expire check required while having mt5 regulated account';
+    $has_mt5_regulated_account = 0;
 
     subtest 'Documents' => sub {
         my $docs;
@@ -1045,6 +1066,8 @@ subtest 'Payment Agent has expired documents' => sub {
             $self->_clear_uploaded;
             return $documents_mock->original('uploaded')->(@_);
         });
+
+    $mock_user->unmock_all;
 };
 
 subtest 'Lifetime Valid Documents' => sub {
@@ -1227,6 +1250,66 @@ subtest 'manual & onfido' => sub {
 
         ok !$client_cr->documents->expired, 'does not have expired documents';
     };
+};
+
+subtest 'expiry check required mt5' => sub {
+    my $user_client1 = BOM::User->create(
+        email          => 'expcheck+mt5@binary.com',
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+    my $client_cr = create_client('CR');
+
+    $user_client1->add_client($client_cr);
+    $client_cr->set_default_account('USD');
+    $client_cr->save();
+
+    my $cli_mock  = Test::MockModule->new(ref($client_cr));
+    my $user_mock = Test::MockModule->new(ref($user_client1));
+
+    my $is_document_expiry_check_required;
+    my $has_mt5_regulated_account;
+    my %args = ();
+
+    $cli_mock->mock(
+        'is_document_expiry_check_required',
+        sub {
+            return $is_document_expiry_check_required;
+        });
+
+    $user_mock->mock(
+        'has_mt5_regulated_account',
+        sub {
+            return $has_mt5_regulated_account;
+        });
+
+    $is_document_expiry_check_required = 0;
+    $has_mt5_regulated_account         = 0;
+    $args{has_mt5_regulated_account}   = 0;
+    ok !$client_cr->is_document_expiry_check_required_mt5(%args), 'Not required';
+
+    $is_document_expiry_check_required = 1;
+    $has_mt5_regulated_account         = 0;
+    $args{has_mt5_regulated_account}   = 0;
+    ok $client_cr->is_document_expiry_check_required_mt5(%args), 'Check required';
+
+    $is_document_expiry_check_required = 0;
+    $has_mt5_regulated_account         = 1;
+    $args{has_mt5_regulated_account}   = 0;
+    ok !$client_cr->is_document_expiry_check_required_mt5(%args), 'Check not required';
+
+    $is_document_expiry_check_required = 0;
+    $has_mt5_regulated_account         = 1;
+    $args{has_mt5_regulated_account}   = undef;
+    ok $client_cr->is_document_expiry_check_required_mt5(%args), 'Check required';
+
+    $is_document_expiry_check_required = 0;
+    $has_mt5_regulated_account         = 0;
+    $args{has_mt5_regulated_account}   = 1;
+    ok $client_cr->is_document_expiry_check_required_mt5(%args), 'Check required';
+
+    $user_mock->unmock_all;
+    $cli_mock->unmock_all;
 };
 
 subtest 'client IDV+Photo scenario: photo document type should not expire' => sub {

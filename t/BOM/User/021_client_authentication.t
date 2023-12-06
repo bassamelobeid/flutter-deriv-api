@@ -170,6 +170,7 @@ subtest 'set_authentication_and_status' => sub {
     ok $client_cr1->fully_authenticated(),            'Client is fully authenticated';
     is $client_cr1->authentication_status(), 'online', 'expected auth status';
     ok $client_cr1->status->address_verified, "Client is address verified";
+    is $client_cr1->get_idv_status(), 'none', 'ID_ONLINE authentication does not affect idv status';
 
     $client_cr1->status->clear_address_verified();
     $client_cr1->status->_build_all;
@@ -177,6 +178,7 @@ subtest 'set_authentication_and_status' => sub {
     ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has NEEDS_ACTION";
     ok $client_cr1->status->allow_document_upload,     "Client is allowed to upload document";
     ok !$client_cr1->status->address_verified,         "Client is not address verified";
+    is $client_cr1->get_idv_status(), 'none', 'NEEDS_ACTION authentication does not affect idv status';
 
     $client_cr1->status->clear_address_verified();
     $client_cr1->status->_build_all;
@@ -184,6 +186,7 @@ subtest 'set_authentication_and_status' => sub {
     is $client_cr1->get_authentication('IDV')->{status}, 'pass', 'Expected status';
     ok !$client_mf2->get_authentication('IDV'), "Client has not IDV";
     ok $client_cr1->status->address_verified,   "Client is address verified";
+    is $client_cr1->get_idv_status(), 'verified', 'IDV authentication returns idv status verified';
 
     ok $client_cr1->fully_authenticated(), 'Client is fully authenticated';
     is $client_cr1->authentication_status(), 'idv', 'expected auth status';
@@ -193,6 +196,7 @@ subtest 'set_authentication_and_status' => sub {
     ok !$client_mf2->get_authentication('IDV_PHOTO'), "Client has not IDV_PHOTO";
     ok $client_cr1->fully_authenticated(),            'Client is not fully authenticated';
     is $client_cr1->authentication_status(), 'idv_photo', 'expected auth status';
+    is $client_cr1->get_idv_status(),        'verified',  'IDV_PHOTO authentication returns idv status verified';
 
     subtest 'IDV + Photo' => sub {
         my $tests = [{

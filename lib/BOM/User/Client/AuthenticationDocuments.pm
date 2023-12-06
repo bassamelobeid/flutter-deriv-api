@@ -17,6 +17,7 @@ use constant POA_ADDRESS_MISMATCH_KEY => 'POA_ADDRESS_MISMATCH::';
 use constant MAX_UPLOAD_TRIES_PER_DAY => 20;
 use constant MAX_UPLOADS_KEY          => 'MAX_UPLOADS_KEY::';
 
+use constant DOCUMENT_EXPIRING_SOON_DAYS_TO_LOOK_AHEAD => 90;
 use BOM::User::Client::AuthenticationDocuments::Config;
 
 =head1 NAME
@@ -135,6 +136,12 @@ It may contain:
 
 =item * C<is_rejected> a flag that indicates whether the client has rejected documents in this category.
 
+=item * C<is_outdated> an integer that indicates how many days the category has been expired
+
+=item * C<to_be_expired> an integer that indicates in how many days a category will be expired
+
+=item * C<to_be_outdated> an integer that indicates in how many days a category will be outdated
+
 =back
 
 Returns the uploaded documents for the client and its siblings, organized in a fancy structure by category.
@@ -192,6 +199,7 @@ sub _build_uploaded {
                 if ($doc_status eq 'verified') {
                     if ($single_document->lifetime_valid || $has_lifetime_valid->{$category_key}) {
                         $documents{$category_key}->{is_outdated}        = 0;
+                        $documents{$category_key}->{to_be_outdated}     = undef;
                         $documents{$category_key}->{best_issue_date}    = undef;
                         $documents{$category_key}->{best_verified_date} = undef;
                         $has_lifetime_valid->{$category_key}            = 1;
@@ -207,6 +215,13 @@ sub _build_uploaded {
                             my $verification_validity = Date::Utility->new($verified_date)->plus_time_interval($ttl);
 
                             my $days_outdated = $now->days_between($verification_validity);
+                            # we exploit the fact that days between can produce a negative number
+                            # we will carry the smaller negative number (best issuance date)
+
+                            $documents{$category_key}->{to_be_outdated} //= $days_outdated if $days_outdated <= 0;
+                            $documents{$category_key}->{to_be_outdated} = $days_outdated
+                                if $days_outdated <= 0 && $days_outdated < $documents{$category_key}->{to_be_outdated};
+
                             $days_outdated = 0 if $days_outdated < 0;
 
                             $documents{$category_key}->{is_outdated} //= $days_outdated;
@@ -237,8 +252,9 @@ sub _build_uploaded {
             next if $doc_status ne 'verified';
 
             # Populate the lifetime valid hashref per category
-            $has_lifetime_valid->{$category_key} = 1 if $single_document->lifetime_valid;
-            next                                     if $has_lifetime_valid->{$category_key};
+            $has_lifetime_valid->{$category_key}       = 1     if $single_document->lifetime_valid;
+            $documents{$category_key}->{to_be_expired} = undef if $has_lifetime_valid->{$category_key};
+            next if $has_lifetime_valid->{$category_key};
 
             # and the document should report a expiration date
             my $expires = $documents{$category_key}{documents}{$single_document->file_name}{expiry_date};
@@ -256,8 +272,19 @@ sub _build_uploaded {
             $expiry_date = max($expires, $existing_expiry_date_epoch) if $expiration_strategy eq 'max';
             $expiry_date = min($expires, $existing_expiry_date_epoch) if $expiration_strategy eq 'min';
 
+            my $now             = Date::Utility->new;
+            my $expiry_datetime = Date::Utility->new($expiry_date);
+            my $days_expired    = $now->days_between($expiry_datetime);
+
             $documents{$category_key}{expiry_date} = $expiry_date;
-            $documents{$category_key}{is_expired}  = Date::Utility->new->epoch > $expiry_date ? 1 : 0;
+            $documents{$category_key}{is_expired}  = $days_expired > 0 ? 1 : 0;
+
+            # we exploit the fact that days between can produce a negative number
+            # we will carry the smaller negative number (best expiry date)
+
+            $documents{$category_key}->{to_be_expired} //= $days_expired if $days_expired <= 0;
+            $documents{$category_key}->{to_be_expired} = $days_expired
+                if $days_expired <= 0 && $days_expired < $documents{$category_key}->{to_be_expired};
         }
     }
 
@@ -326,6 +353,43 @@ sub get_category_config {
             return $category;
         }
     }
+
+    return undef;
+}
+
+=head2 best_expiry_date
+
+Gets the best issue date from the given category, this is the most future expiry date from
+a verified document
+
+Returns a C<Date::Utility> or C<undef> if there is no such date.
+
+=cut
+
+sub best_expiry_date {
+    my ($self, $type) = @_;
+    my $uploaded = $self->uploaded;
+    $type //= ['proof_of_identity', 'onfido'];
+
+    $type = [$type] unless ref($type) eq 'ARRAY';
+
+    my $best_expiry_date;
+
+    for my $cat ($type->@*) {
+        my $category = $uploaded->{$cat} // {};
+
+        return undef if $category->{lifetime_valid};
+
+        my $expiry_date = $category->{expiry_date};
+
+        next unless $expiry_date;
+
+        $best_expiry_date //= $expiry_date;
+
+        $best_expiry_date = $expiry_date if $expiry_date > $best_expiry_date;
+    }
+
+    return Date::Utility->new($best_expiry_date) if defined $best_expiry_date;
 
     return undef;
 }
@@ -399,6 +463,117 @@ sub outdated {
     my $category = $uploaded->{$type} // {};
 
     return $category->{is_outdated} // 0;
+}
+
+=head2 to_be_outdated
+
+Returns the number of days a category will get outdated.
+
+It takes the following paremeters
+
+=over 4
+
+=item * C<$category> - the category, by default `proof_of_address`
+
+=back
+
+Returns an integer or C<undef> if the catgory won't expire.
+
+=cut
+
+sub to_be_outdated {
+    my ($self, $category) = @_;
+    my $uploaded = $self->uploaded;
+    $category //= 'proof_of_address';
+
+    my $data = $uploaded->{$category} // {};
+
+    # this is a negative number
+    my $days = $data->{to_be_outdated};
+
+    return abs($days) if defined $days;
+
+    return undef;
+}
+
+=head2 to_be_expired
+
+Returns the number of days a category will get outdated.
+
+It takes the following paremeters
+
+=over 4
+
+=item * C<$category> - the category, by default `proof_of_identity`
+
+=back
+
+Returns an integer or C<undef> if the category won't expire.
+
+=cut
+
+sub to_be_expired {
+    my ($self, $categories) = @_;
+
+    $categories //= ['onfido', 'proof_of_identity'];
+
+    $categories = [$categories] unless ref($categories) eq 'ARRAY';
+
+    my $uploaded = $self->uploaded;
+
+    my $best_expiration = undef;
+
+    for my $cat ($categories->@*) {
+        my $data = $uploaded->{$cat} // {};
+
+        return undef if defined $data->{lifetime_valid};
+
+        # this is a negative number
+        my $days = $data->{to_be_expired};
+
+        $days = abs($days) if defined $days;
+
+        $best_expiration = $days if defined $days && ($best_expiration // $days) <= $days;
+    }
+
+    return $best_expiration;
+}
+
+=head2 expiration_look_ahead
+
+Given a number of days, this function determines if the client's document will expire on that timeframe.
+
+Takes the following:
+
+=over 4
+
+=item * C<$days> - number of days to look ahead
+
+=item * C<$expired_categories> - arrayref of categories to check for expiration, defaults to poi+onfido
+
+=item * C<$outdated_category> - category to look for outdated documents, defaults to poa
+
+=back
+
+Returns a boolean value
+
+=cut
+
+sub expiration_look_ahead {
+    my ($self, $days, $expired_categories, $outdated_category) = @_;
+
+    $expired_categories //= ['proof_of_identity', 'onfido'];
+    $outdated_category  //= 'proof_of_address';
+
+    my $expiring_within = $self->to_be_expired($expired_categories) // $days + 1;    # just a trick to bypass the if below
+
+    return 1 if $expiring_within <= $days;
+
+    my $outdated_within = $self->to_be_outdated($outdated_category) // $days + 1;    # just a trick to bypass the if below
+
+    return 1 if $outdated_within <= $days;
+
+    return 0;
 }
 
 =head2 expired
@@ -516,9 +691,12 @@ sub valid {
     # no documents
     return 0 unless @types;
 
+    # small optimization
+    return 1 unless $is_document_expiry_check_required;
+
     # Note `is_expired` is calculated from the max expiration timestamp found for POI
     # Other type of documents take the min expiration timestamp found
-    return 0 if any { $self->uploaded->{$_}{is_expired} and $is_document_expiry_check_required } @types;
+    return 0 if any { $self->uploaded->{$_}{is_expired} } @types;
 
     return 1;
 }
@@ -1228,6 +1406,44 @@ sub get_poinc_count {
         }
     }
     return $poinc_count;
+}
+
+=head2 poi_expiration_look_ahead
+
+Computes a flag that determines whether the POI is expiring within the established
+timeframe the client should be able to re-upload it.
+
+=cut
+
+sub poi_expiration_look_ahead {
+    my ($self) = @_;
+
+    return 0 unless $self->client->user->has_mt5_regulated_account(use_mt5_conf => 1);
+
+    my $to_be_expired_at = $self->to_be_expired() // return undef;
+
+    return 1 if $to_be_expired_at <= DOCUMENT_EXPIRING_SOON_DAYS_TO_LOOK_AHEAD;
+
+    return 0;
+}
+
+=head2 poa_outdated_look_ahead
+
+Computes a flag that determines whether the POA is getting outdated within the established
+timeframe the client should be able to re-upload it.
+
+=cut
+
+sub poa_outdated_look_ahead {
+    my ($self) = @_;
+
+    return 0 unless $self->client->user->has_mt5_regulated_account(use_mt5_conf => 1);
+
+    my $to_be_outdated_at = $self->to_be_outdated() // return 0;
+
+    return 1 if $to_be_outdated_at <= DOCUMENT_EXPIRING_SOON_DAYS_TO_LOOK_AHEAD;
+
+    return 0;
 }
 
 =head2 is_upload_available

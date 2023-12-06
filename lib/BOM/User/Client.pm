@@ -1989,6 +1989,8 @@ Check if we need to validate for expired documents.
 sub is_document_expiry_check_required {
     my $self = shift;
 
+    return 1 if $self->user->has_mt5_regulated_account(use_mt5_conf => 1);
+
     return 1 if $self->landing_company->documents_expiration_check_required();
 
     return 1 if ($self->aml_risk_classification // '') eq 'high';
@@ -2017,7 +2019,7 @@ sub is_document_expiry_check_required_mt5 {
 
     return 1 if $self->is_document_expiry_check_required();
 
-    return 1 if $args{has_mt5_regulated_account} // $self->user->has_mt5_regulated_account();
+    return 1 if $args{has_mt5_regulated_account} // $self->user->has_mt5_regulated_account(use_mt5_conf => 1);
 
     return 0;
 }
@@ -7979,11 +7981,17 @@ It takes the following parameters:
 Returns,
     string for the current IDV status, it can be: none, expired, pending, rejected, verified.
 
+Note:
+    poa_authenticated_with_idv will override a 'none' status.
+
 =cut
 
 sub get_idv_status {
     my ($self, $document) = @_;
-    return BOM::User::IdentityVerification->new(user_id => $self->binary_user_id)->status($document);
+    my $idv_status = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id)->status($document);
+
+    return 'verified' if $idv_status eq 'none' && $self->poa_authenticated_with_idv;
+    return $idv_status;
 }
 
 =head2 get_onfido_status

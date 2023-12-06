@@ -14,6 +14,7 @@ use Carp                  qw(croak carp);
 use Log::Any              qw($log);
 use JSON::MaybeXS         qw(encode_json decode_json);
 
+use BOM::Config::MT5;
 use BOM::MT5::User::Async;
 use BOM::Database::UserDB;
 use BOM::Database::Model::UserConnect;
@@ -745,30 +746,79 @@ sub get_last_successful_login_history {
 
 =head2 has_mt5_regulated_account
 
-Check if user has any mt5 regulated account - currently its only Labuan
+Check if user has any mt5 regulated account - currently its only Labuan (deprecated).
+
+If a truthy C<use_mt5_conf> flag is given, it will filter using the mt5 conf (as it should've been).
+
+Returns a boolean value.
 
 =cut
 
 sub has_mt5_regulated_account {
-    my $self = shift;
+    my ($self, %args) = @_;
 
-    # We want to check the real mt5 accounts, so we filter out MTD, then reverse sort,
-    # that will move MTR first, and latest created id first
-    my @all_mt5_loginids = $self->get_mt5_loginids(type_of_account => 'real');
+    my $params = {
+        type_of_account => 'real',
+        regexes         => [],
+        full_match      => []};
+
+    if ($args{use_mt5_conf}) {
+        my $mt5_config = BOM::Config::MT5->new;
+        $params->{full_match} = [uniq map { $mt5_config->available_groups({company => $_, server_type => 'real'}, 1) } qw/bvi labuan vanuatu/];
+    } else {
+        # these regexes seems to be way outdated
+        $params->{regexes} = ['^(?!demo)[a-z]+\\\\(?!svg)[a-z]+(?:_financial)', '^real(\\\\p01_ts)?(?:01|02|03|04)\\\\financial\\\\(?!svg)'];
+    }
+
+    return $self->has_mt5_groups($params->%*);
+}
+
+=head2 has_mt5_groups
+
+Checks if the user has the desired groups by account type, it takes the following arguments as hash:
+
+=over 4
+
+=item * C<type_of_account> by default `all`, can be also `real` or `demo`
+
+=item * C<regexes> arrayref of regexes (mandatory otherwise the function is pointless)
+
+=item * C<full_match> arrayref of groups to filter
+
+=back
+
+Returns a boolean value
+
+=cut
+
+sub has_mt5_groups {
+    my ($self, %args) = @_;
+
+    $args{type_of_account} //= 'all';
+    $args{regexes}         //= [];
+    $args{full_match}      //= [];
+
+    # no point in checking if there is not filtering condition
+    return 0 unless scalar $args{full_match}->@* || scalar $args{regexes}->@*;
+
+    my @all_mt5_loginids = $self->get_mt5_loginids(%args);
 
     return 0 unless @all_mt5_loginids;
 
     my $login_accs = $self->loginid_details;
 
-    for my $loginid (@all_mt5_loginids) {
-        my $acc = $login_accs->{$loginid};
+    # hashify the groups
+    my $groups = +{map { $login_accs->{$_}->{attributes}->{group} ? ($login_accs->{$_}->{attributes}->{group} => 1) : () } @all_mt5_loginids};
 
-        next unless $acc->{attributes} && $acc->{attributes}->{group};
+    return 1 if any { defined $groups->{$_} } $args{full_match}->@*;
 
-        return 1
-            if $acc->{attributes}->{group} =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_financial)/
-            || $acc->{attributes}->{group} =~ /^real(\\p01_ts)?(?:01|02|03|04)\\financial\\(?!svg)/;
-    }
+    # cut here if empty regexes
+    return 0 unless scalar $args{regexes}->@*;
+
+    # glue the regexes into the big one
+    my $big_regex = join '|', map { "($_)" } $args{regexes}->@*;
+
+    return 1 if any { $_ =~ qr/$big_regex/ } keys $groups->%*;
 
     return 0;
 }

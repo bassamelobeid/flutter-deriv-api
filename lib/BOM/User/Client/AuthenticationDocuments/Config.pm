@@ -66,4 +66,14 @@ sub poa_types {
     return [keys BOM::User::Client::AuthenticationDocuments::Config::categories()->{POA}->{types}->%*];
 }
 
+=head2 poi_types
+
+Returns an arrayref containing the POI types from the current configuration.
+
+=cut
+
+sub poi_types {
+    return [keys BOM::User::Client::AuthenticationDocuments::Config::categories()->{POI}->{types}->%*];
+}
+
 1;
