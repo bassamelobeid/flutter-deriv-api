@@ -366,7 +366,7 @@ sub has_idv {
 
 =head2 rejected_onfido_reasons
 
-return a hashref about strings of recjected onfido reasons
+returns a hashref about strings of rejected onfido reasons
 
 =cut
 
@@ -458,9 +458,72 @@ sub rejected_onfido_reasons {
 
 }
 
+=head2 rejected_onfido_reasons_error_codes
+
+returns a hashref about rejected onfido reasons with error codes in pascal case
+
+=cut
+
+sub rejected_onfido_reasons_error_codes {
+
+    return {
+        'age_validation.minimum_accepted_age'                                    => "AgeValidationMinimumAcceptedAge",
+        'compromised_document'                                                   => "CompromisedDocument",
+        'data_comparison.date_of_birth'                                          => "DataComparisonDateOfBirth",
+        'data_comparison.date_of_expiry'                                         => "DataComparisonDateOfExpiry",
+        'data_comparison.document_numbers'                                       => "DataComparisonDocumentNumbers",
+        'data_comparison.document_type'                                          => "DataComparisonDocumentType",
+        'data_comparison.first_name'                                             => "DataComparisonName",
+        'data_comparison.issuing_country'                                        => "DataComparisonIssuingCountry",
+        'data_comparison.last_name'                                              => "DataComparisonName",
+        'data_validation.date_of_birth'                                          => "DataValidationDateOfBirth",
+        'data_validation.document_expiration'                                    => "DataValidationDocumentExpiration",
+        'data_validation.document_numbers'                                       => "DataValidationDocumentNumbers",
+        'data_validation.expiry_date'                                            => "DataValidationExpiryDate",
+        'data_validation.mrz'                                                    => "DataValidationMrz",
+        'data_validation.no_document_numbers'                                    => "DataValidationNoDocumentNumbers",
+        'image_integrity.colour_picture'                                         => "ImageIntegrityColourPicture",
+        'image_integrity.conclusive_document_quality'                            => "ImageIntegrityConclusiveDocumentQuality",
+        'image_integrity.conclusive_document_quality.abnormal_document_features' => "ImageIntegrityConclusiveDocumentQualityAbnormalDocumentFeatures",
+        'image_integrity.conclusive_document_quality.corner_removed'             => "ImageIntegrityConclusiveDocumentQualityCornerRemoved",
+        'image_integrity.conclusive_document_quality.digital_document'           => "ImageIntegrityConclusiveDocumentQualityDigitalDocument",
+        'image_integrity.conclusive_document_quality.missing_back'               => "ImageIntegrityConclusiveDocumentQualityMissingBack",
+        'image_integrity.conclusive_document_quality.obscured_data_points'       => "ImageIntegrityConclusiveDocumentQualityObscuredDataPoints",
+        'image_integrity.conclusive_document_quality.obscured_security_features' => "ImageIntegrityConclusiveDocumentQualityObscuredSecurityFeatures",
+        'image_integrity.conclusive_document_quality.punctured_document'         => "ImageIntegrityConclusiveDocumentQualityPuncturedDocument",
+        'image_integrity.conclusive_document_quality.watermarks_digital_text_overlay' =>
+            "ImageIntegrityConclusiveDocumentQualityWatermarksDigitalTextOverlay",
+        'image_integrity.image_quality'                                           => "ImageIntegrityImageQuality",
+        'image_integrity.image_quality.blurred_photo'                             => "ImageIntegrityImageQualityBlurredPhoto",
+        'image_integrity.image_quality.covered_photo'                             => "ImageIntegrityImageQualityCoveredPhoto",
+        'image_integrity.image_quality.cut_off_document'                          => "ImageIntegrityImageQualityCutOffDocument",
+        'image_integrity.image_quality.damaged_document'                          => "ImageIntegrityImageQualityDamagedDocument",
+        'image_integrity.image_quality.dark_photo'                                => "ImageIntegrityImageQualityDarkPhoto",
+        'image_integrity.image_quality.glare_on_photo'                            => "ImageIntegrityImageQualityGlareOnPhoto",
+        'image_integrity.image_quality.incorrect_side'                            => "ImageIntegrityImageQualityIncorrectSide",
+        'image_integrity.image_quality.no_document_in_image'                      => "ImageIntegrityImageQualityNoDocumentInImage",
+        'image_integrity.image_quality.other_photo_issue'                         => "ImageIntegrityImageQualityOtherPhotoIssue",
+        'image_integrity.image_quality.two_documents_uploaded'                    => "ImageIntegrityImageQualityTwoDocumentsUploaded",
+        'image_integrity.supported_document'                                      => "ImageIntegritySupportedDocument",
+        'selfie'                                                                  => "SelfieRejected",
+        'visual_authenticity.digital_tampering'                                   => "VisualAuthenticityDigitalTampering",
+        'visual_authenticity.face_detection'                                      => "VisualAuthenticityFaceDetection",
+        'visual_authenticity.fonts'                                               => "VisualAuthenticityFonts",
+        'visual_authenticity.original_document_present'                           => "VisualAuthenticityOriginalDocumentPresent",
+        'visual_authenticity.original_document_present.document_on_printed_paper' =>
+            "VisualAuthenticityOriginalDocumentPresentDocumentOnPrintedPaper",
+        'visual_authenticity.original_document_present.photo_of_screen' => "VisualAuthenticityOriginalDocumentPresentPhotoOfScreen",
+        'visual_authenticity.original_document_present.scan'            => "VisualAuthenticityOriginalDocumentPresentScan",
+        'visual_authenticity.original_document_present.screenshot'      => "VisualAuthenticityOriginalDocumentPresentScreenshot",
+        'visual_authenticity.picture_face_integrity'                    => "VisualAuthenticityPictureFaceIntegrity",
+        'visual_authenticity.security_features'                         => "VisualAuthenticitySecurityFeatures",
+        'visual_authenticity.template'                                  => "VisualAuthenticityTemplate",
+    };
+}
+
 =head2 rejected_identity_verification_reasons
 
-return a hashref about strings of recjected identity verificationreasons
+returns a hashref about strings of rejected identity verification reasons
 
 =cut
 
@@ -486,6 +549,44 @@ sub rejected_identity_verification_reasons {
         'UNDESIRED_HTTP_CODE'           => localize("The verification status is not available, provider says: Undesired HTTP code."),
         'TIMEOUT'                       => localize("The verification status is not available, provider says: Timeout."),
         'NEEDS_TECHNICAL_INVESTIGATION' => localize("The verification status is not available, provider says: Needs Technical Investigation."),
+        'EMPTY_RESPONSE'                => localize("The verification status is not available, There is no response from provider."),
+        'DECEASED'                      => localize("The document's owner is deceased."),
+        'UNAVAILABLE_MICROSERVICE'      => localize("The verification status is not available, provider says:  Microservice unavailable."),
+        'INVALID_WEBHOOK_REQUEST'       => localize("The verification status is not available, provider says: Invalid webhook request."),
+    };
+}
+
+=head2 rejected_identity_verification_reasons_error_codes 
+
+returns a hashref about rejected identity verification reasons with error codes in pascal case
+
+=cut
+
+sub rejected_identity_verification_reasons_error_codes {
+
+    return {
+        'UNDERAGE'                      => "Underage",
+        'NAME_MISMATCH'                 => "NameMismatch",
+        'DOB_MISMATCH'                  => "DobMismatch",
+        'EMPTY_STATUS'                  => "EmptyStatus",
+        'INFORMATION_LACK'              => "InformationLack",
+        'DOCUMENT_REJECTED'             => "DocumentRejected",
+        'UNAVAILABLE_STATUS'            => "UnavailableStatus",
+        'UNAVAILABLE_ISSUER'            => "UnavailableIssuer",
+        'EXPIRED'                       => "Expired",
+        'PROVIDER_UNAVAILABLE'          => "ProviderUnavailable",
+        'REJECTED_BY_PROVIDER'          => "RejectedByProvider",
+        'MALFORMED_JSON'                => "MalformedJson",
+        'VERIFICATION_STARTED'          => "VerificationStarted",
+        'UNEXPECTED_ERROR'              => "UnexpectedError",
+        'UNDESIRED_HTTP_CODE'           => "UndesiredHttpCode",
+        'TIMEOUT'                       => "Timeout",
+        'NEEDS_TECHNICAL_INVESTIGATION' => "NeedsTechnicalInvestigation",
+        'EMPTY_RESPONSE'                => "EmptyResponse",
+        'DECEASED'                      => "Deceased",
+        'UNAVAILABLE_MICROSERVICE'      => "UnavailableMicroservice",
+        'INVALID_WEBHOOK_REQUEST'       => "InvalidWebhookRequest",
+
     };
 }
 

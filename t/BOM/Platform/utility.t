@@ -112,4 +112,30 @@ subtest 'extract_valid_params' => sub {
 
 };
 
+subtest 'rejected identity verification reasons' => sub {
+    subtest 'rejected Onfido reasons' => sub {
+        # both functions have to return the same keys as hash ref
+        my $rejected_identity_verification_reasons             = BOM::Platform::Utility::rejected_onfido_reasons();
+        my $rejected_identity_verification_reasons_error_codes = BOM::Platform::Utility::rejected_onfido_reasons_error_codes();
+
+        cmp_deeply(
+            [sort keys %$rejected_identity_verification_reasons],
+            [sort keys %$rejected_identity_verification_reasons_error_codes],
+            "Both functions return the same keys"
+        );
+    };
+
+    subtest 'rejected IDV reasons' => sub {
+        # both functions have to return the same keys as hash ref
+        my $rejected_identity_verification_reasons             = BOM::Platform::Utility::rejected_identity_verification_reasons();
+        my $rejected_identity_verification_reasons_error_codes = BOM::Platform::Utility::rejected_identity_verification_reasons_error_codes();
+
+        cmp_deeply(
+            [sort keys %$rejected_identity_verification_reasons],
+            [sort keys %$rejected_identity_verification_reasons_error_codes],
+            "Both functions return the same keys"
+        );
+    };
+};
+
 done_testing;
