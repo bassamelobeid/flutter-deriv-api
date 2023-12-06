@@ -42,7 +42,7 @@ $user_mock->mock(
         return $user_mock->original('get_edd_status')->(@_);
     });
 subtest 'idv details' => sub {
-    my %rejected_reasons = BOM::Platform::Utility::rejected_identity_verification_reasons()->%*;
+    my %rejected_reasons = BOM::Platform::Utility::rejected_identity_verification_reasons_error_codes()->%*;
     my $client           = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
@@ -58,6 +58,15 @@ subtest 'idv details' => sub {
 
     my $non_expired_date = Date::Utility->today->_plus_years(1);
     my $expired_date     = Date::Utility->today->_minus_years(1);
+    my $client_mock      = Test::MockModule->new(ref($client));
+    my @latest_poi_by;
+    $client_mock->mock(
+        'latest_poi_by',
+        sub {
+            return @latest_poi_by;
+        });
+
+    @latest_poi_by = ('idv');
 
     my $tests = [{
             title    => 'documentless scenario',
@@ -131,7 +140,7 @@ subtest 'idv details' => sub {
             },
             result => {
                 submissions_left    => 3,
-                last_rejected       => [map { $rejected_reasons{$_} } qw/UNDERAGE NAME_MISMATCH/],
+                last_rejected       => ["Underage", "NameMismatch"],
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -147,7 +156,7 @@ subtest 'idv details' => sub {
             },
             result => {
                 submissions_left    => 3,
-                last_rejected       => [map { $rejected_reasons{$_} } qw/UNDERAGE/],
+                last_rejected       => ["Underage"],
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -179,7 +188,7 @@ subtest 'idv details' => sub {
             },
             result => {
                 submissions_left    => 3,
-                last_rejected       => ["The verification status was empty, rejected for lack of information."],
+                last_rejected       => ["EmptyStatus"],
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -195,7 +204,7 @@ subtest 'idv details' => sub {
             },
             result => {
                 submissions_left    => 3,
-                last_rejected       => ["The verification is passed but the personal info is not available to compare."],
+                last_rejected       => ["InformationLack"],
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -211,7 +220,7 @@ subtest 'idv details' => sub {
             },
             result => {
                 submissions_left    => 3,
-                last_rejected       => ["Document was rejected by the provider."],
+                last_rejected       => ["DocumentRejected"],
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -227,7 +236,7 @@ subtest 'idv details' => sub {
             },
             result => {
                 submissions_left    => 3,
-                last_rejected       => ["The verification status is not available, provider says: Issuer Unavailable."],
+                last_rejected       => ["UnavailableIssuer"],
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -243,7 +252,7 @@ subtest 'idv details' => sub {
             },
             result => {
                 submissions_left    => 3,
-                last_rejected       => ["The verification status is not available, provider says: N/A."],
+                last_rejected       => ["UnavailableStatus"],
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -1534,6 +1543,16 @@ subtest 'poi name mismatch on age verified scenario' => sub {
     );
     $user->add_client($client);
 
+    my $client_mock = Test::MockModule->new(ref($client));
+    my @latest_poi_by;
+    $client_mock->mock(
+        'latest_poi_by',
+        sub {
+            return @latest_poi_by;
+        });
+
+    @latest_poi_by = ('idv');
+
     $client->status->setnx('poi_name_mismatch', 'test', 'test');
 
     my $token  = $m->create_token($client->loginid, 'test token');
@@ -1732,6 +1751,16 @@ subtest 'poi dob mismatch on age verified scenario' => sub {
         password => 'Abcd1234'
     );
     $user->add_client($client);
+
+    my $client_mock = Test::MockModule->new(ref($client));
+    my @latest_poi_by;
+    $client_mock->mock(
+        'latest_poi_by',
+        sub {
+            return @latest_poi_by;
+        });
+
+    @latest_poi_by = ('idv');
 
     $client->status->setnx('poi_dob_mismatch', 'test', 'test');
 

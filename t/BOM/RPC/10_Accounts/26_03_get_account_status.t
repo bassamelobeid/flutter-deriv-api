@@ -219,7 +219,8 @@ subtest 'IDV + Photo ID' => sub {
 
     my $token  = $m->create_token($client->loginid, 'test token');
     my $result = $c->tcall('get_account_status', {token => $token});
-    cmp_deeply $result, +{
+    cmp_deeply $result,
+        +{
         status => [
             'allow_document_upload',          'authenticated',
             'authenticated_with_idv_photoid', 'cashier_locked',
@@ -242,7 +243,7 @@ subtest 'IDV + Photo ID' => sub {
                         submissions_left     => 1
                     },
                     idv => {
-                        status              => 'none',    # this none may be suspicious but intenally, for the client object is verified
+                        status              => 'verified',
                         last_rejected       => [],
                         reported_properties => {},
                         submissions_left    => 3
@@ -303,7 +304,7 @@ subtest 'IDV + Photo ID' => sub {
                         submissions_left     => 1
                     },
                     idv => {
-                        status              => 'none',
+                        status              => 'verified',
                         last_rejected       => [],
                         reported_properties => {},
                         submissions_left    => 3
@@ -375,8 +376,9 @@ subtest 'expired docs account' => sub {
 
     $documents = {
         proof_of_identity => {
-            is_expired => 1,
-            documents  => {
+            is_expired    => 1,
+            to_be_expired => -30,
+            documents     => {
                 document1 => {
                     type => 'passport',
                 }}}};
@@ -476,6 +478,223 @@ subtest 'expired docs account' => sub {
     $documents_mock->unmock_all;
 };
 
+subtest 'poi soon to be expired' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $user = BOM::User->create(
+        email    => 'poi+soon+to+be+expired@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+
+    $client->status->set('financial_risk_approval', 'system', 'Accepted approval');
+    $client->status->set('crs_tin_information',     'test',   'test');
+    $client->status->set('age_verification',        'test',   'test');
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $client->aml_risk_classification('high');
+    $client->set_default_account('EUR');
+    $client->financial_assessment({
+        data => encode_json_utf8($fa_data),
+    });
+
+    $client->save();
+
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    my $documents;
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            $self->_clear_uploaded;
+            return $documents // {};
+        });
+
+    my $user_mock = Test::MockModule->new(ref($user));
+    my $has_mt5_regulated_account;
+    $user_mock->mock(
+        'has_mt5_regulated_account',
+        sub {
+            return $has_mt5_regulated_account;
+        });
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set'
+        ],
+        'Expected statuses';
+
+    $documents = {
+        proof_of_identity => {
+            is_expired    => 1,
+            to_be_expired => -90,
+            documents     => {
+                test => {
+                    test => 1,
+                    type => 'passport'
+                }}}};
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set',
+        'cashier_locked',           'document_expired',
+        ],
+        'Expected statuses while expired';
+
+    $has_mt5_regulated_account = 1;
+    $result                    = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set',
+        'cashier_locked',           'document_expired',        'poi_expiring_soon'
+        ],
+        'Expected statuses while expired + having mt5 regulated';
+
+    $documents = {};
+    $result    = $c->tcall('get_account_status', {token => $token});
+    $documents = {
+        proof_of_identity => {
+            is_expired    => 1,
+            to_be_expired => -91,
+            documents     => {test => {test => 1}}}};
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set'
+        ],
+        'Expected statuses, not within the boundary';
+
+    $documents = {};
+    $result    = $c->tcall('get_account_status', {token => $token});
+    $documents = {
+        proof_of_identity => {
+            is_expired    => 1,
+            to_be_expired => undef,
+            documents     => {test => {test => 1}}}};
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set'
+        ],
+        'Expected statuses, undef to be expired';
+
+    $documents_mock->unmock_all;
+    $user_mock->unmock_all;
+};
+
+subtest 'poa soon to be outdated' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $user = BOM::User->create(
+        email    => 'poi+soon+to+be+outdated@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+
+    $client->status->set('financial_risk_approval', 'system', 'Accepted approval');
+    $client->status->set('crs_tin_information',     'test',   'test');
+    $client->status->set('age_verification',        'test',   'test');
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $client->aml_risk_classification('high');
+    $client->set_default_account('EUR');
+    $client->financial_assessment({
+        data => encode_json_utf8($fa_data),
+    });
+    $client->save();
+
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    my $documents;
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            $self->_clear_uploaded;
+            return $documents // {};
+        });
+
+    my $user_mock = Test::MockModule->new(ref($user));
+    my $has_mt5_regulated_account;
+    $user_mock->mock(
+        'has_mt5_regulated_account',
+        sub {
+            return $has_mt5_regulated_account;
+        });
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set'
+        ],
+        'Expected statuses';
+
+    $documents = {
+        proof_of_address => {
+            is_outdated    => 1,
+            to_be_outdated => -90,
+            documents      => {test => {test => 1}}}};
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set',
+        'document_expired'
+        ],
+        'Expected statuses while outdated';
+
+    $has_mt5_regulated_account = 1;
+    $result                    = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set',
+        'poa_expiring_soon',        'document_expired'
+        ],
+        'Expected statuses while outdated + having mt5 regulated';
+
+    $documents = {};
+    $result    = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set'
+        ],
+        'Expected statuses, not within the boundary';
+
+    $documents = {};
+    $result    = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set'
+        ],
+        'Expected statuses, undef to be expired';
+
+    $documents_mock->unmock_all;
+    $user_mock->unmock_all;
+};
+
 subtest 'POA state machine' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -498,7 +717,6 @@ subtest 'POA state machine' => sub {
             $self->_clear_uploaded;
             return $documents // {};
         });
-
     my $token  = $m->create_token($client->loginid, 'test token');
     my $result = $c->tcall('get_account_status', {token => $token});
 

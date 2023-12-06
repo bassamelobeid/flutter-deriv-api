@@ -70,12 +70,12 @@ use BOM::User::IdentityVerification;
 use BOM::Rules::Engine;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::TradingPlatform::CTrader;
+use BOM::User::Client::AuthenticationDocuments;
 
 use Locale::Country;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 
-use constant DEFAULT_STATEMENT_LIMIT         => 100;
-use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
+use constant DEFAULT_STATEMENT_LIMIT => 100;
 
 # Limit the number of Landing Companies provided as arguments for kyc_auth_status
 use constant LCS_ARGUMENT_LIMIT => 20;
@@ -963,6 +963,15 @@ rpc get_account_status => sub {
 
     push(@$status, 'p2p_blocked_for_pa') if $client->payment_agent && !$client->get_payment_agent->service_is_allowed('p2p');
 
+    my $has_mt5_regulated_account = $client->user->has_mt5_regulated_account(use_mt5_conf => 1);
+
+    # if POI is soon to be expired, report it so FE could show the upload UI
+    push(@$status, 'poi_expiring_soon') if $client->documents->poi_expiration_look_ahead();
+
+    # if POA is soon to be outdated, report it so FE could show the upload UI
+    push(@$status, 'poa_expiring_soon') if $client->documents->poa_outdated_look_ahead();
+
+    my $age_verif_client = $duplicated // $client;
     push(@$status, 'authenticated_with_idv_photoid') if $client->poa_authenticated_with_idv;
 
     push(@$status, 'idv_revoked') if BOM::User::IdentityVerification::is_idv_revoked($idv_client);
@@ -1006,7 +1015,6 @@ rpc get_account_status => sub {
         push(@$status, 'password_reset_required') unless $client->status->migrated_universal_password;
     }
 
-    my $has_mt5_regulated_account         = $user->has_mt5_regulated_account();
     my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5(has_mt5_regulated_account => $has_mt5_regulated_account);
     my $is_verification_required          = $client->is_verification_required(
         check_authentication_status => 1,
@@ -1023,12 +1031,12 @@ rpc get_account_status => sub {
     );
 
     if ($is_document_expiry_check_required) {
-        # Check if the user's documents are expired or expiring soon
-        my $expiry_soon_date = Date::Utility->new()->plus_time_interval(DOCUMENT_EXPIRING_SOON_INTERVAL)->epoch;
         if ($authentication->{identity}{status} eq 'expired') {
             push(@$status, 'document_expired');
-        } elsif ($authentication->{identity}{expiry_date} && $expiry_soon_date > $authentication->{identity}{expiry_date}) {
-            push(@$status, 'document_expiring_soon');
+        }
+
+        if ($authentication->{document}{status} eq 'expired') {
+            push(@$status, 'document_expired');
         }
     }
     my %currency_config = map {
@@ -1279,7 +1287,7 @@ sub _get_last_rejected {
         my $idv_document = $idv->get_last_updated_document();
         $idv_rejected_document_type = $idv_document->{document_type};
 
-        $idv_reject_reasons_catalog = BOM::Platform::Utility::rejected_identity_verification_reasons();
+        $idv_reject_reasons_catalog = BOM::Platform::Utility::rejected_identity_verification_reasons_error_codes();
 
         my $idv_reject_reasons;
         $idv_reject_reasons = eval { decode_json_utf8($idv_document->{status_messages} // '[]') };
@@ -1290,14 +1298,14 @@ sub _get_last_rejected {
         push $onfido_reject_reasons->@*, BOM::User::Onfido::get_consider_reasons($client)->@*;
         push $onfido_reject_reasons->@*, BOM::User::Onfido::get_rules_reasons($client)->@*;
 
-        $onfido_reject_reasons_catalog = BOM::Platform::Utility::rejected_onfido_reasons();
+        $onfido_reject_reasons_catalog = BOM::Platform::Utility::rejected_onfido_reasons_error_codes();
         $service_reasons               = $onfido_reject_reasons;
     }
 
     $reject_reasons_catalog = $latest_poi_by eq 'manual' ? () : ($idv_reject_reasons_catalog // $onfido_reject_reasons_catalog);
 
     my $last_rejected_reasons =
-        [uniq map { exists $reject_reasons_catalog->{$_} ? localize($reject_reasons_catalog->{$_}) : () } grep { $_ } $service_reasons->@*];
+        [uniq map { exists $reject_reasons_catalog->{$_} ? $reject_reasons_catalog->{$_} : () } grep { $_ } $service_reasons->@*];
 
     return {
         rejected_reasons => $last_rejected_reasons,
@@ -1564,16 +1572,18 @@ sub _get_authentication_poi {
     my $poi_status           = $client->get_poi_status($documents);
     my $country_code_triplet = uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // "");
 
-    my $last_rejected = [];
-    push $last_rejected->@*, BOM::User::Onfido::get_consider_reasons($client)->@* if $poi_status =~ /rejected|suspected/;
-    push $last_rejected->@*, BOM::User::Onfido::get_rules_reasons($client)->@*;
+    my $poi_rejected   = $poi_status =~ /rejected|suspected/;
+    my $rejected_rules = BOM::User::Onfido::get_rules_reasons($client)->@*;
+    my $last_rejected  = [];
+
+    if ($poi_rejected || $rejected_rules) {
+        $last_rejected = _get_last_rejected($params)->{rejected_reasons};
+    }
 
     my $idv_details = _get_idv_service_detail($client);
     my ($latest_poi_by) = $client->latest_poi_by();
     $latest_poi_by //= '';
     $expiry_date   //= $idv_details->{expiry_date} if $latest_poi_by eq 'idv';
-
-    my $rejected_onfido_reasons = BOM::Platform::Utility::rejected_onfido_reasons();
 
     # Return the identity structure
     return {
@@ -1584,10 +1594,9 @@ sub _get_authentication_poi {
                 submissions_left     => BOM::User::Onfido::submissions_left($client),
                 is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
                 documents_supported  => BOM::Config::Onfido::supported_documents_for_country($country_code),
-                last_rejected        =>
-                    [uniq map { defined $rejected_onfido_reasons->{$_} ? localize($rejected_onfido_reasons->{$_}) : () } $last_rejected->@*],
-                reported_properties => BOM::User::Onfido::reported_properties($client),
-                status              => $client->get_onfido_status($documents),
+                last_rejected        => $last_rejected,
+                reported_properties  => BOM::User::Onfido::reported_properties($client),
+                status               => $client->get_onfido_status($documents),
                 $country_code_triplet ? (country_code => $country_code_triplet) : (),
             },
             manual => {
@@ -1612,22 +1621,13 @@ sub _get_idv_service_detail {
     my $expiration_date;
     my $idv_reject_reasons;
     my $reported_properties;
-    my $status;
+
+    my $status = $client->get_idv_status($document);
 
     if ($document) {
         $expiration_date = eval { Date::Utility->new($document->{document_expiration_date})->epoch } if $document->{document_expiration_date};
-        $status          = $client->get_idv_status($document);
 
-        if ($status eq 'rejected') {
-            my $messages = eval { decode_json_utf8($document->{status_messages} // '[]') };
-
-            my $rejected_identity_verification_reasons = BOM::Platform::Utility::rejected_identity_verification_reasons();
-
-            $idv_reject_reasons = [
-                map  { $rejected_identity_verification_reasons->{$_} ? localize($rejected_identity_verification_reasons->{$_}) : () }
-                grep { $_ } $messages->@*
-            ];
-        }
+        $idv_reject_reasons = _get_last_rejected({client => $client})->{rejected_reasons} if $status eq 'rejected';
     }
 
     my $submissions_left = $idv->submissions_left();
@@ -2880,9 +2880,12 @@ async_rpc service_token => sub {
             my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
             my $tags        = ["country:$country_tag"];
 
+            # on QA we most likely don't care, plus this will help FE to develop locally
+            $referrer = '*' if BOM::Config::on_qa();
             # The requirement for the format of <referrer> is https://*.<DOMAIN>/*
             # as stated in https://documentation.onfido.com/#generate-web-sdk-token
-            $referrer =~ s/(\/\/).*?(\..*?)(\/|$).*/$1\*$2\/\*/g;
+            $referrer =~ s/(\/\/).*?(\..*?)(\/|$).*/$1\*$2\/\*/g unless BOM::Config::on_qa();
+
             stats_inc(
                 'rpc.onfido.service_token.dispatch',
                 {

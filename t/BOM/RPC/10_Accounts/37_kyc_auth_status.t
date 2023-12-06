@@ -551,7 +551,7 @@ subtest 'kyc authorization status' => sub {
                 my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
                 # mocks get_last_updated_document
 
-                my $idv_rejected_reasons = BOM::Platform::Utility::rejected_identity_verification_reasons();
+                my $idv_rejected_reasons = BOM::Platform::Utility::rejected_identity_verification_reasons_error_codes();
 
                 my $non_expired_date = Date::Utility->today->_plus_years(1);
                 my $expired_date     = Date::Utility->today->_minus_years(1);
@@ -823,7 +823,7 @@ subtest 'kyc authorization status' => sub {
 
                 my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
                 # mocks get_latest_check get_consider_reasons
-                my $onfido_reject_reasons = BOM::Platform::Utility::rejected_onfido_reasons();
+                my $onfido_reject_reasons = BOM::Platform::Utility::rejected_onfido_reasons_error_codes();
                 my $onfido_document_sub_result;
                 my $onfido_check_result;
 
@@ -866,7 +866,7 @@ subtest 'kyc authorization status' => sub {
                         onfido_consider_reasons => ['data_comparison.first_name', 'data_comparison.last_name'],
                         onfido_status           => 'suspected',
                         expected_result         => {
-                            last_rejected => {rejected_reasons => ['The name on your document doesn\'t match your profile.']},
+                            last_rejected => {rejected_reasons => ['DataComparisonName']},
                             poi_status    => 'suspected',
                         },
                     },
@@ -876,14 +876,8 @@ subtest 'kyc authorization status' => sub {
                         onfido_consider_reasons => ['data_comparison.first_name', 'age_validation.minimum_accepted_age', 'selfie', 'garbage'],
                         onfido_status           => 'suspected',
                         expected_result         => {
-                            last_rejected => {
-                                rejected_reasons => [
-                                    'The name on your document doesn\'t match your profile.',
-                                    'Your age in the document you provided appears to be below 18 years. We\'re only allowed to offer our services to clients above 18 years old, so we\'ll need to close your account. If you have a balance in your account, contact us via live chat and we\'ll help to withdraw your funds before your account is closed.',
-                                    'We\'re unable to verify the selfie you provided as it does not match the required criteria. Please provide a photo that closely resembles the document photo provided.'
-                                ]
-                            },
-                            poi_status => 'suspected',
+                            last_rejected => {rejected_reasons => ['DataComparisonName', 'AgeValidationMinimumAcceptedAge', 'SelfieRejected']},
+                            poi_status    => 'suspected',
                         },
                     },
                     {
@@ -893,7 +887,7 @@ subtest 'kyc authorization status' => sub {
                         onfido_status           => 'rejected',
                         onfido_consider_reasons => [],
                         expected_result         => {
-                            last_rejected => {rejected_reasons => ['The name on your document doesn\'t match your profile.']},
+                            last_rejected => {rejected_reasons => ['DataComparisonName']},
                             poi_status    => 'rejected',
                         },
                     },
@@ -904,7 +898,7 @@ subtest 'kyc authorization status' => sub {
                         onfido_status           => 'rejected',
                         onfido_consider_reasons => [],
                         expected_result         => {
-                            last_rejected => {rejected_reasons => ['The date of birth on your document doesn\'t match your profile.']},
+                            last_rejected => {rejected_reasons => ['DataComparisonDateOfBirth']},
                             poi_status    => 'rejected',
                         },
                     },
@@ -1371,7 +1365,7 @@ subtest 'kyc authorization status' => sub {
                 $idv_mock->mock(submissions_left => 0);
 
                 my $expected_response_object = {
-                    last_rejected      => {rejected_reasons => ['The name retrieved from your document doesn\'t match your profile.']},
+                    last_rejected      => {rejected_reasons => ['NameMismatch']},
                     available_services => ['onfido', 'manual'],
                     service            => 'idv',
                     status             => 'rejected',
@@ -1446,7 +1440,7 @@ subtest 'kyc authorization status' => sub {
                 $onfido_mock->mock(get_consider_reasons => ['data_comparison.first_name']);
 
                 my $expected_response_object = {
-                    last_rejected      => {rejected_reasons => ['The name on your document doesn\'t match your profile.']},
+                    last_rejected      => {rejected_reasons => ['DataComparisonName']},
                     available_services => ['idv', 'onfido', 'manual'],
                     service            => 'onfido',
                     status             => 'suspected',
@@ -1853,7 +1847,7 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                 identity => {
                     status             => 'suspected',
                     service            => 'onfido',
-                    last_rejected      => {rejected_reasons => ['The name on your document doesn\'t match your profile.']},
+                    last_rejected      => {rejected_reasons => ['DataComparisonName']},
                     available_services => ['onfido', 'manual']
                 },
                 address => {status => 'none'}}};

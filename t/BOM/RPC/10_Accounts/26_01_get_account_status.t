@@ -20,7 +20,6 @@ use BOM::User::Onfido;
 use BOM::Test::Helper::Token;
 use Test::BOM::RPC::QueueClient;
 use Syntax::Keyword::Try;
-
 use BOM::Config::Redis;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
@@ -775,7 +774,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status                        => superbagof(qw(document_expiring_soon withdrawal_locked)),
+                    status                        => superbagof(qw(withdrawal_locked)),
                     risk_classification           => 'standard',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
@@ -3424,7 +3423,7 @@ subtest 'Rejected reasons' => sub {
             return $poi_dob_mismatch;
         });
 
-    my %catalog = BOM::Platform::Utility::rejected_onfido_reasons()->%*;
+    my %catalog = BOM::Platform::Utility::rejected_onfido_reasons_error_codes()->%*;
     my $tests   = [map { +{reasons => [$_], poi_status => 'rejected', expected => [$catalog{$_}], test => "Testing $_",} } keys %catalog];
 
     # Adding more cases
@@ -3460,19 +3459,15 @@ subtest 'Rejected reasons' => sub {
     push $tests->@*,
         {
         reasons    => ['data_comparison.first_name', 'data_comparison.last_name'],
-        expected   => ["The name on your document doesn't match your profile."],
+        expected   => ["DataComparisonName"],
         test       => 'Duplicated message is reported once',
         poi_status => 'suspected',
         };
 
     push $tests->@*,
         {
-        reasons  => ['data_comparison.first_name', 'age_validation.minimum_accepted_age', 'selfie', 'garbage'],
-        expected => [
-            "The name on your document doesn't match your profile.",
-            "Your age in the document you provided appears to be below 18 years. We're only allowed to offer our services to clients above 18 years old, so we'll need to close your account. If you have a balance in your account, contact us via live chat and we'll help to withdraw your funds before your account is closed.",
-            "We're unable to verify the selfie you provided as it does not match the required criteria. Please provide a photo that closely resembles the document photo provided."
-        ],
+        reasons    => ['data_comparison.first_name', 'age_validation.minimum_accepted_age', 'selfie', 'garbage'],
+        expected   => ["DataComparisonName", "AgeValidationMinimumAcceptedAge", "SelfieRejected"],
         test       => 'Multiple messages reported',
         poi_status => 'suspected',
         };
@@ -3480,7 +3475,7 @@ subtest 'Rejected reasons' => sub {
     push $tests->@*,
         {
         reasons    => ['data_comparison.date_of_birth'],
-        expected   => ["The date of birth on your document doesn't match your profile.",],
+        expected   => ["DataComparisonDateOfBirth"],
         test       => 'Date of birth issues',
         poi_status => 'rejected',
         };
@@ -3489,7 +3484,7 @@ subtest 'Rejected reasons' => sub {
         {
         poi_dob_mismatch => 1,
         reasons          => [],
-        expected         => ["The date of birth on your document doesn't match your profile.",],
+        expected         => ["DataComparisonDateOfBirth"],
         test             => 'Date of birth mismatch',
         poi_status       => 'rejected',
         };
@@ -3505,7 +3500,7 @@ subtest 'Rejected reasons' => sub {
     push $tests->@*,
         {
         reasons           => [],
-        expected          => ["The name on your document doesn't match your profile.",],
+        expected          => ["DataComparisonName"],
         test              => 'From our rules (poi_name_mismatch)',
         poi_status        => 'suspected',
         poi_name_mismatch => 1,
@@ -3514,7 +3509,7 @@ subtest 'Rejected reasons' => sub {
     push $tests->@*,
         {
         reasons           => [],
-        expected          => ["The name on your document doesn't match your profile.",],
+        expected          => ["DataComparisonName"],
         test              => 'From our rules (poi_name_mismatch)',
         poi_status        => 'verified',
         poi_name_mismatch => 1,

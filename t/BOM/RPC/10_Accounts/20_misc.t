@@ -353,4 +353,247 @@ subtest 'service_token validation' => sub {
 
 };
 
+subtest 'onfido referrer' => sub {
+    my $services_mock = Test::MockModule->new('BOM::RPC::v3::Services');
+    my $service_token_future;
+    my @called_with;
+
+    $services_mock->mock(
+        'service_token',
+        sub {
+            push @called_with, @_;
+            return $service_token_future if $service_token_future;
+
+            return $services_mock->original('service_token')->(@_);
+        });
+
+    $service_token_future = Future->done({
+        token => 'test',
+    });
+
+    my $config_mock = Test::MockModule->new('BOM::Config');
+    my $on_qa;
+    $config_mock->mock(
+        'on_qa',
+        sub {
+            return $on_qa;
+        });
+
+    subtest 'implicit referer on QA' => sub {
+        my $email       = 'implicit+referrer@binary.com';
+        my $password    = 'jskjd8292922';
+        my $hash_pwd    = BOM::User::Password::hashpw($password);
+        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
+        });
+
+        $test_client->email($email);
+        $test_client->save;
+
+        my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+        $test_client_vr->email($email);
+        $test_client_vr->save;
+
+        my $user = BOM::User->create(
+            email    => $email,
+            password => $hash_pwd
+        );
+        $user->add_client($test_client);
+        $user->add_client($test_client_vr);
+
+        @called_with = ();
+        $on_qa       = 1;
+
+        my $token = $m->create_token($test_client->loginid, 'test token');
+        my $args  = {
+            service => 'onfido',
+        };
+
+        my $res = $c->tcall(
+            $method,
+            {
+                token => $token,
+                args  => $args
+            });
+        cmp_deeply $res, {onfido => {token => 'test'}}, 'expected token';
+
+        my $cli = shift @called_with;
+        is $cli->loginid, $test_client->loginid, 'expected loginid';
+
+        my $actual_args = shift @called_with;
+        cmp_deeply $actual_args,
+            +{
+            country  => 'id',
+            referrer => '*',
+            service  => 'onfido',
+            },
+            'expected arguments';
+    };
+
+    subtest 'explicit referer on QA' => sub {
+        my $email       = 'explicit+referrer@binary.com';
+        my $password    = 'jskjd8292922';
+        my $hash_pwd    = BOM::User::Password::hashpw($password);
+        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
+        });
+
+        $test_client->email($email);
+        $test_client->save;
+
+        my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+        $test_client_vr->email($email);
+        $test_client_vr->save;
+
+        my $user = BOM::User->create(
+            email    => $email,
+            password => $hash_pwd
+        );
+        $user->add_client($test_client);
+        $user->add_client($test_client_vr);
+
+        @called_with = ();
+        $on_qa       = 1;
+
+        my $token = $m->create_token($test_client->loginid, 'test token');
+        my $args  = {
+            service  => 'onfido',
+            referrer => 'test.com',
+        };
+
+        my $res = $c->tcall(
+            $method,
+            {
+                token => $token,
+                args  => $args
+            });
+        cmp_deeply $res, {onfido => {token => 'test'}}, 'expected token';
+
+        my $cli = shift @called_with;
+        is $cli->loginid, $test_client->loginid, 'expected loginid';
+
+        my $actual_args = shift @called_with;
+        cmp_deeply $actual_args,
+            +{
+            country  => 'id',
+            referrer => '*',
+            service  => 'onfido',
+            },
+            'expected arguments';
+    };
+
+    subtest 'implicit referer no QA' => sub {
+        my $email       = 'implicit+referrer+noqa@binary.com';
+        my $password    = 'jskjd8292922';
+        my $hash_pwd    = BOM::User::Password::hashpw($password);
+        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
+        });
+
+        $test_client->email($email);
+        $test_client->save;
+
+        my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+        $test_client_vr->email($email);
+        $test_client_vr->save;
+
+        my $user = BOM::User->create(
+            email    => $email,
+            password => $hash_pwd
+        );
+        $user->add_client($test_client);
+        $user->add_client($test_client_vr);
+
+        @called_with = ();
+        $on_qa       = 0;
+
+        warning {
+            my $token = $m->create_token($test_client->loginid, 'test token');
+            my $args  = {
+                service => 'onfido',
+            };
+
+            my $res = $c->tcall(
+                $method,
+                {
+                    token => $token,
+                    args  => $args
+                });
+            cmp_deeply $res, {onfido => {token => 'test'}}, 'expected token';
+
+            my $cli = shift @called_with;
+            is $cli->loginid, $test_client->loginid, 'expected loginid';
+
+            my $actual_args = shift @called_with;
+            cmp_deeply $actual_args,
+                +{
+                country  => 'id',
+                referrer => undef,
+                service  => 'onfido',
+                },
+                'expected arguments';
+        };
+    };
+
+    subtest 'explicit referer no QA' => sub {
+        my $email       = 'explicit+referrer+noqa@binary.com';
+        my $password    = 'jskjd8292922';
+        my $hash_pwd    = BOM::User::Password::hashpw($password);
+        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
+        });
+
+        $test_client->email($email);
+        $test_client->save;
+
+        my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+        $test_client_vr->email($email);
+        $test_client_vr->save;
+
+        my $user = BOM::User->create(
+            email    => $email,
+            password => $hash_pwd
+        );
+        $user->add_client($test_client);
+        $user->add_client($test_client_vr);
+
+        @called_with = ();
+        $on_qa       = 0;
+
+        my $token = $m->create_token($test_client->loginid, 'test token');
+        my $args  = {
+            service  => 'onfido',
+            referrer => 'https://www.test.com',
+        };
+
+        my $res = $c->tcall(
+            $method,
+            {
+                token => $token,
+                args  => $args
+            });
+        cmp_deeply $res, {onfido => {token => 'test'}}, 'expected token';
+
+        my $cli = shift @called_with;
+        is $cli->loginid, $test_client->loginid, 'expected loginid';
+
+        my $actual_args = shift @called_with;
+        cmp_deeply $actual_args,
+            +{
+            country  => 'id',
+            referrer => 'https://*.test.com/*',
+            service  => 'onfido',
+            },
+            'expected arguments';
+    };
+};
+
 done_testing();

@@ -41,16 +41,28 @@ $runtime_payment->transfer_between_accounts->limits->MT5(999);
 scope_guard { restore_time() };
 
 my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
-my $has_expired_documents;
+my $expired_documents;
+my $expired_enforced;
+my $outdated_poa;
+
 $documents_mock->mock(
     'expired',
     sub {
-        my ($self) = @_;
+        my ($self, $enforce) = @_;
 
-        return $has_expired_documents if defined $has_expired_documents;
+        $expired_enforced ||= $enforce;
+
+        return $expired_documents if defined $expired_documents;
         return $documents_mock->original('expired')->(@_);
     });
+$documents_mock->mock(
+    'outdated',
+    sub {
+        my ($self) = @_;
 
+        return $outdated_poa if defined $outdated_poa;
+        return $documents_mock->original('outdated')->(@_);
+    });
 my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');
 $manager_module->mock(
     'deposit',
@@ -593,14 +605,14 @@ subtest 'labuan withdrawal' => sub {
         ->error_message_is('Your account cashier is locked. Please contact us for more information.');
 
     $mocked_status->unmock_all;
+    $expired_documents = 1;
 
-    $has_expired_documents = 1;
     $c->call_ok($method, $params)->has_error('request failed as labuan needs to have valid documents')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_is(
         'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.');
 
-    $has_expired_documents = 0;
+    $expired_documents = 0;
 
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from labuan mt5 without FA before first deposit');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
@@ -631,7 +643,53 @@ subtest 'labuan withdrawal' => sub {
     $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 200, "Correct balance after withdrawal";
 
-    $has_expired_documents = undef;
+    # enforcement depends on whether the client has mt5 regulated accounts or not
+    ok $user->has_mt5_regulated_account(use_mt5_conf => 1), 'User has mt5 regulated';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 1;
+    $expired_documents = 0;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired docs';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 0;
+    $expired_documents = 1;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired was forced';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 1;
+    $expired_documents = 1;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired was forced';
+
+    $expired_enforced  = undef;
+    $expired_documents = 0;
+    $outdated_poa      = 0;
+    $c->call_ok($method, $params)->has_no_error('Withdrawal succeded.');
+    ok $expired_enforced, 'Expired was enforced';
+
+    $test_client->status->clear_mt5_withdrawal_locked;
+    $test_client->status->_build_all;
+
+    $outdated_poa     = 1;
+    $expired_enforced = undef;
+    $c->call_ok(
+        'mt5_deposit',
+        {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                to_mt5      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'},
+                from_binary => $test_client->loginid,
+                amount      => 50,
+            },
+        })->has_no_error('Deposit does not enforces expiration/outdated checks');
+    ok $expired_enforced, 'Expired check was enforced';
+
+    $expired_documents = undef;
+    $outdated_poa      = undef;
 };
 
 subtest 'mf_withdrawal' => sub {
@@ -668,7 +726,7 @@ subtest 'mf_withdrawal' => sub {
     my $mocked_client = Test::MockModule->new(ref($test_mf_client));
     $mocked_client->mock(is_financial_assessment_complete => 1);
 
-    $has_expired_documents = 0;
+    $expired_documents = undef;
 
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
@@ -676,11 +734,43 @@ subtest 'mf_withdrawal' => sub {
 
     cmp_ok $test_mf_client->default_account->balance, '==', 350, "Correct balance after withdrawal";
 
-    $has_expired_documents = undef;
+    $expired_documents = 1;
+
+    # enforcement depends on whether the client has mt5 regulated accounts or not
+    my $user_mock = Test::MockModule->new(ref($user));
+    $user_mock->mock(
+        'has_mt5_regulated_account',
+        sub {
+            return 0;
+        });
+
+    ok !$user->has_mt5_regulated_account(use_mt5_conf => 1), 'User does not have mt5 regulated';
+
+    $expired_enforced  = undef;
+    $expired_documents = 1;
+    $outdated_poa      = 0;
+    $c->call_ok($method, $params_mf)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok !$expired_enforced, 'Expiration check was not enforced';
+
+    $expired_enforced  = undef;
+    $expired_documents = 0;
+    $outdated_poa      = 1;
+    $c->call_ok($method, $params_mf)->has_no_error('Withdrawal succeded (POA is not checked on this scenario).');
+    ok !$expired_enforced, 'Expiration check was not enforced';
+
+    $expired_enforced  = undef;
+    $expired_documents = 0;
+    $outdated_poa      = 0;
+    $c->call_ok($method, $params_mf)->has_no_error('Withdrawal succeded.');
+    ok !$expired_enforced, 'Expiration check was not enforced';
+
+    $expired_documents = undef;
     $demo_account_mock->unmock_all();
+    $user_mock->unmock_all();
 };
 
 subtest 'mf_deposit' => sub {
+    $expired_documents = 1;
     my $test_mf_client = create_client('MF');
     $test_mf_client->account('USD');
     top_up $test_mf_client, USD => 1000;
@@ -713,7 +803,7 @@ subtest 'mf_deposit' => sub {
     my $mocked_client = Test::MockModule->new(ref($test_mf_client));
     $mocked_client->mock(is_financial_assessment_complete => 1);
 
-    $has_expired_documents = 0;
+    $expired_documents = undef;
 
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
@@ -724,15 +814,18 @@ subtest 'mf_deposit' => sub {
     $test_mf_client->tax_residence('de');
     $test_mf_client->tax_identification_number('111-222-333');
     $test_mf_client->save;
-
+    $expired_enforced = undef;
     $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_deposit');
+    ok $expired_enforced, 'Expiration check was enforced';
 
     cmp_ok $test_mf_client->default_account->balance, '==', 650, "Correct balance after deposit";
-    $has_expired_documents = undef;
+    $expired_documents = 1;
     $demo_account_mock->unmock_all();
 };
 
 subtest 'labuan deposit' => sub {
+    $expired_documents = 1;
+
     my $loginid = $test_client->loginid;
     $test_client->financial_assessment({data => '{}'});
     $test_client->save();
@@ -753,7 +846,7 @@ subtest 'labuan deposit' => sub {
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
 
-    $has_expired_documents = 0;
+    $expired_documents = undef;
     $c->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired', 'Custom error code for FA required');
 
     $manager_module->mock(
@@ -784,18 +877,24 @@ subtest 'labuan deposit' => sub {
     $c->call_ok($method, $params)->has_error('client is disable')
         ->error_code_is('MT5DepositLocked', 'Deposit is locked when mt5 account is disabled for labuan');
 
-    cmp_ok $test_client->default_account->balance, '==', 1050 + 120, "Balance has not changed because mt5 account is locked";
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 200, "Balance has not changed because mt5 account is locked";
     $manager_module->unmock('get_user', 'get_group');
     $c->call_ok($method, $params)->has_error('You cannot perform this action, as your account is withdrawal locked.');
     $test_client->status->clear_mt5_withdrawal_locked;
     # Using enable rights 482 should enable transfer.
     $c->call_ok($method, $params)->has_no_error('Deposit allowed when mt5 account gets enabled');
-    cmp_ok $test_client->default_account->balance, '==', 1030 + 120, "Correct balance after deposit";
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 200 - 20, "Correct balance after deposit";
+    $expired_documents = 0;
+    $expired_documents = undef;
+    $expired_enforced  = undef;
+    $c->call_ok($method, $params)->has_no_error('Deposit succeded');
+    ok $expired_enforced, 'Expiration check was enforced';
     $account_mock->unmock('_is_financial_assessment_complete');
-    $has_expired_documents = undef;
+    $expired_documents = 1;
 };
 
 subtest 'bvi withdrawal' => sub {
+    $expired_documents = undef;
     my $new_email  = 'bvi_withdraw' . $DETAILS{email};
     my $new_client = create_client('CR', undef, {residence => 'br'});
     my $token      = $m->create_token($new_client->loginid, 'test token 2');
@@ -957,7 +1056,7 @@ subtest 'bvi withdrawal' => sub {
     };
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-    $has_expired_documents = 0;
+    $expired_documents = undef;
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('bvi'); });
 
@@ -1005,12 +1104,54 @@ subtest 'bvi withdrawal' => sub {
     $c->call_ok($method, $params)->has_error('Withdrawal failed.')
         ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
 
+    $mock_logindetails->{MTR1001019}->{creation_stamp} = Date::Utility->new()->date_yyyymmdd;
+    $c->call_ok($method, $params)->has_no_error('withdrawal ok');
+
+    # document expiration
+    # outdated POA, poa_outdated, fail.
+    $user_client_mock->mock(
+        'get_poi_status',
+        sub {
+            return 'expired';
+        });
+
+    # enforcement depends on whether the client has mt5 regulated accounts or not
+    ok $user->has_mt5_regulated_account(use_mt5_conf => 1), 'User has mt5 regulated';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 0;
+    $expired_documents = 1;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired check was enforced';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 0;
+    $expired_documents = 1;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired check was enforced';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 1;
+    $expired_documents = 0;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired check was enforced';
+
+    $expired_enforced  = undef;
+    $expired_documents = 0;
+    $outdated_poa      = 0;
+    $c->call_ok($method, $params)->has_no_error('Withdrawal succeded.');
+    ok $expired_enforced, 'Expired check was enforced';
+
     $manager_module->unmock('get_user', 'get_group');
     $user_client_mock->unmock('get_poi_status_jurisdiction', 'get_poa_status');
     $bom_user_mock->unmock('loginid_details');
+
+    $outdated_poa      = undef;
+    $expired_documents = undef;
 };
 
 subtest 'vanuatu withdrawal' => sub {
+    $expired_documents = undef;
     my $new_email  = 'vanuatu_withdraw' . $DETAILS{email};
     my $new_client = create_client('CR', undef, {residence => 'br'});
     my $token      = $m->create_token($new_client->loginid, 'test token 2');
@@ -1172,7 +1313,7 @@ subtest 'vanuatu withdrawal' => sub {
     };
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-    $has_expired_documents = 0;
+    $expired_documents = undef;
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('vanuatu'); });
 
@@ -1237,9 +1378,50 @@ subtest 'vanuatu withdrawal' => sub {
     $c->call_ok($method, $params)->has_error('Withdrawal failed.')
         ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
 
+    $mock_logindetails->{MTR1001019}->{creation_stamp} = Date::Utility->new()->date_yyyymmdd;
+    $c->call_ok($method, $params)->has_no_error('withdrawal ok');
+
+    # document expiration
+    # outdated POA, poa_outdated, fail.
+    $user_client_mock->mock(
+        'get_poi_status',
+        sub {
+            return 'expired';
+        });
+
+    # enforcement depends on whether the client has mt5 regulated accounts or not
+    ok $user->has_mt5_regulated_account(use_mt5_conf => 1), 'User has mt5 regulated';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 0;
+    $expired_documents = 1;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired check was enforced';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 0;
+    $expired_documents = 1;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired check was enforced';
+
+    $expired_enforced  = undef;
+    $outdated_poa      = 1;
+    $expired_documents = 0;
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    ok $expired_enforced, 'Expired check was enforced';
+
+    $expired_enforced  = undef;
+    $expired_documents = 0;
+    $outdated_poa      = 0;
+    $c->call_ok($method, $params)->has_no_error('Withdrawal succeded.');
+    ok $expired_enforced, 'Expired check was enforced';
+
     $manager_module->unmock('get_user', 'get_group');
     $user_client_mock->unmock('get_poi_status_jurisdiction', 'get_poa_status');
     $bom_user_mock->unmock('loginid_details');
+
+    $expired_documents = undef;
+    $outdated_poa      = undef;
 };
 
 subtest 'cannot deposit if status is migrated_without_position' => sub {

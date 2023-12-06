@@ -2387,7 +2387,7 @@ sub _mt5_validate_and_get_amount {
             }
 
             # Validate the binary client
-            my ($err, $params) = _validate_client($client, $mt5_lc);
+            my ($err, $params) = _validate_client($client, $mt5_lc, $action);
             return create_error_future(
                 $err,
                 {
@@ -2670,7 +2670,7 @@ Validate the client account, which is involved in real-money deposit/withdrawal
 =cut
 
 sub _validate_client {
-    my ($client_obj, $mt5_lc) = @_;
+    my ($client_obj, $mt5_lc, $action) = @_;
 
     my $loginid = $client_obj->loginid;
 
@@ -2705,11 +2705,19 @@ sub _validate_client {
     return ('CashierLocked', $loginid)
         if ($client_obj->status->cashier_locked);
 
-    # check if binary client expired documents
-    # documents->expired check internaly if landing company
-    # needs expired documents check or not
-    return ('ExpiredDocuments', request()->brand->emails('support'))
-        if ($client_obj->documents->expired($mt5_lc->documents_expiration_check_required()));
+    if ($action eq 'withdrawal') {
+        # check if the client has mt5 regulated account
+        my $has_regulated_mt5 = $client_obj->user->has_mt5_regulated_account(use_mt5_conf => 1);
+
+        # if the client has regulated mt5 we will enforce the expiration check
+        return ('ExpiredDocuments', request()->brand->emails('support')) if $client_obj->documents->expired($has_regulated_mt5);
+
+        return ('ExpiredDocuments', request()->brand->emails('support')) if $has_regulated_mt5 && $client_obj->documents->outdated();
+    } else {
+        # for other actions we won't enforce the expired check
+        return ('ExpiredDocuments', request()->brand->emails('support'))
+            if $client_obj->documents->expired($mt5_lc->documents_expiration_check_required());
+    }
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
 
