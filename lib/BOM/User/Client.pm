@@ -8362,7 +8362,8 @@ Returns withdrawable amount for doughflow. Used for paymentapi /account endpoint
 sub balance_for_doughflow {
     my ($self) = @_;
 
-    if (my $pa = $self->get_payment_agent) {
+    my $pa = $self->get_payment_agent;
+    if ($pa && ($pa->status // '') eq 'authorized' && !$pa->service_is_allowed('cashier_withdraw')) {
         return $pa->cashier_withdrawable_balance()->{available};
     }
 
@@ -9119,42 +9120,6 @@ sub apply_reversible_deposit_conditions {
 
     return "PaymentAgentUseOtherMethod" if $cft_blocked_countries->{lc $self->residence};
     return "PaymentAgentWithdrawSameMethod";
-}
-
-=head2 payment_type_totals
-
-Returns totals of withdrawals and deposits per payment type.
-
-Takes the following arguments as named parameters:
-
-=over
-
-=item * C<payment_types> - arrayref, defaults to all
-
-=item * C<days> - days to look back, defaults to lifetime
-
-=back
-
-=cut
-
-sub payment_type_totals {
-    my ($self, %param) = @_;
-
-    die 'Client has no account' unless $self->account;
-
-    my $old_db = $self->get_db;
-    $self->set_db('replica') unless 'replica' eq $old_db;
-
-    my $result = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref(
-                'SELECT * FROM payment.client_payment_type_totals(?, ?, ?)',
-                {Slice => {}},
-                , $self->account->id, $param{payment_types}, $param{days});
-        });
-
-    $self->set_db($old_db) unless 'replica' eq $old_db;
-    return $result;
 }
 
 =head2 duplicate_sibling_from_vr

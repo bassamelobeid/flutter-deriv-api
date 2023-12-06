@@ -11,21 +11,29 @@ use BOM::Test::Helper::Client;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 
 populate_exchange_rates({
-    BTC => 3000,
+    BTC => 30000,
 });
 
-subtest 'Fiat PA' => sub {
+subtest 'Withdrawable balance' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => 'aff1@test.com'
     });
-    BOM::User->create(
-        email    => $client->email,
-        password => 'x'
-    )->add_client($client);
     $client->account('USD');
 
-    $client->payment_agent({
+    my $sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $sibling->account('BTC');
+
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'x'
+    );
+
+    $user->add_client($_) for ($client, $sibling);
+
+    my $pa_details = {
         payment_agent_name    => 'bob1',
         email                 => 'bob1@test.com',
         information           => 'x',
@@ -35,7 +43,9 @@ subtest 'Fiat PA' => sub {
         status                => 'authorized',
         currency_code         => 'USD',
         is_listed             => 't',
-    });
+    };
+
+    $client->payment_agent($pa_details);
     $client->save;
     my $pa = $client->get_payment_agent;
 
@@ -48,11 +58,15 @@ subtest 'Fiat PA' => sub {
     cmp_deeply(
         $pa->cashier_withdrawable_balance,
         {
-            available  => 0,
-            commission => 0,
-            payouts    => 0,
+            available => 0,
+            accounts  => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => [],
+                }
+            ),
         },
-        'Cannot withdraw doughflow deposit'
+        'After doughflow deposit'
     );
 
     $client->payment_affiliate_reward(
@@ -66,13 +80,23 @@ subtest 'Fiat PA' => sub {
         {
             available  => 11,
             commission => 11,
-            payouts    => 0,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        }
+                    ),
+                }
+            ),
         },
-        'Allowed to withdraw affiliate_reward'
+        'After receive affiliate_reward'
     );
 
     $client->payment_doughflow(
-        amount   => -11,
+        amount   => -12,
         currency => 'USD',
         remark   => 'x',
     );
@@ -82,13 +106,29 @@ subtest 'Fiat PA' => sub {
         {
             available  => 0,
             commission => 11,
-            payouts    => 11,
+            payouts    => 12,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(12),
+                        },
+                    ),
+                }
+            ),
         },
-        'After withdraw commission'
+        'After doughflow withdrawal'
     );
 
     $client->payment_mt5_transfer(
-        amount   => 12,
+        amount   => 13,
         currency => 'USD',
         remark   => 'x',
     );
@@ -97,8 +137,29 @@ subtest 'Fiat PA' => sub {
         $pa->cashier_withdrawable_balance,
         {
             available  => 12,
-            commission => 23,
-            payouts    => 11,
+            commission => 24,
+            payouts    => 12,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(12),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => undef,
+                        },
+                    ),
+                }
+            ),
         },
         'After mt5 commision received'
     );
@@ -113,14 +174,35 @@ subtest 'Fiat PA' => sub {
         $pa->cashier_withdrawable_balance,
         {
             available  => 0,
-            commission => 23,
-            payouts    => 23,
+            commission => 24,
+            payouts    => 24,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(24),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => undef,
+                        },
+                    ),
+                }
+            ),
         },
-        'After doughflow withdrawal'
+        'After 2nd doughflow withdrawal'
     );
 
     $client->payment_arbitrary_markup(
-        amount   => 13,
+        amount   => 14,
         currency => 'USD',
         remark   => 'x',
     );
@@ -128,11 +210,37 @@ subtest 'Fiat PA' => sub {
     cmp_deeply(
         $pa->cashier_withdrawable_balance,
         {
-            available  => 13,
-            commission => 36,
-            payouts    => 23,
+            available  => 14,
+            commission => 38,
+            payouts    => 24,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(24),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'arbitrary_markup',
+                            credit       => num(14),
+                            debit        => undef,
+                        },
+                    ),
+                }
+            ),
         },
-        'After api commision received',
+        'After arbitrary_markup received',
     );
 
     $client->payment_mt5_transfer(
@@ -144,190 +252,274 @@ subtest 'Fiat PA' => sub {
     cmp_deeply(
         $pa->cashier_withdrawable_balance,
         {
-            available  => 11,
-            commission => 34,
-            payouts    => 23,
+            available  => 12,
+            commission => 36,
+            payouts    => 24,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(24),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => num(2),
+                        },
+                        {
+                            payment_type => 'arbitrary_markup',
+                            credit       => num(14),
+                            debit        => undef,
+                        },
+                    ),
+                }
+            ),
         },
-        'Withdrawals to MT5 are excluded',
+        'After transfer to MT5',
     );
 
-    $pa->status('applied');
-
-    cmp_deeply(
-        $pa->cashier_withdrawable_balance,
-        {
-            available  => num(21),
-            commission => 34,
-            payouts    => 23,
-        },
-        'Can withdraw full balance if status not authorized'
-    );
-
-};
-
-subtest 'Crypto PA' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'aff2@test.com'
-    });
-    BOM::User->create(
-        email    => $client->email,
-        password => 'x'
-    )->add_client($client);
-    $client->account('USDC');
-    $client->payment_agent({
-        payment_agent_name    => 'bob2',
-        email                 => 'bob2@test.com',
-        information           => 'x',
-        summary               => 'x',
-        commission_deposit    => 0,
-        commission_withdrawal => 0,
-        status                => 'authorized',
-        currency_code         => 'USD',
-        is_listed             => 't',
-    });
-    $client->save;
-    my $pa = $client->get_payment_agent;
-
-    $client->payment_ctc(
-        amount    => 10,
-        currency  => 'USDC',
-        crypto_id => 1,
+    $client->payment_account_transfer(
+        toClient     => $sibling,
+        currency     => 'USD',
+        amount       => 9,
+        to_amount    => 9 / 30000,
+        fees         => 0,
+        gateway_code => 'account_transfer',
     );
 
     cmp_deeply(
         $pa->cashier_withdrawable_balance,
         {
-            available  => 0,
-            commission => 0,
-            payouts    => 0,
+            available  => 3,
+            commission => 36,
+            payouts    => 33,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(24),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => num(2),
+                        },
+                        {
+                            payment_type => 'arbitrary_markup',
+                            credit       => num(14),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'internal_transfer',
+                            credit       => undef,
+                            debit        => num(9),
+                        },
+                    ),
+                }
+            ),
         },
-        'Cannot withdraw crypto deposit'
+        'After transfer to non-PA sibling',
     );
 
-    $client->payment_affiliate_reward(
-        amount   => 5,
-        currency => 'USDC',
-        remark   => 'x',
-    );
+    $sibling->payment_agent($pa_details);
+    $sibling->save;
+    my $sibling_pa = $sibling->get_payment_agent;
 
     cmp_deeply(
         $pa->cashier_withdrawable_balance,
         {
-            available  => 5,
-            commission => 5,
-            payouts    => 0,
+            available  => 12,
+            commission => 36,
+            payouts    => 24,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(24),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => num(2),
+                        },
+                        {
+                            payment_type => 'arbitrary_markup',
+                            credit       => num(14),
+                            debit        => undef,
+                        },
+                    ),
+                },
+                {
+                    loginid  => $sibling->loginid,
+                    currency => 'BTC',
+                    totals   => [],
+                },
+            ),
         },
-        'After affiliate reward'
+        'After sibling becomes a PA',
     );
-
-    $client->payment_ctc(
-        amount    => -5,
-        currency  => 'USDC',
-        crypto_id => 2,
-    );
-
-    cmp_deeply(
-        $pa->cashier_withdrawable_balance,
-        {
-            available  => 0,
-            commission => 5,
-            payouts    => 5,
-        },
-        'After crypto withdrawal'
-    );
-};
-
-subtest 'PA with siblings' => sub {
-    my $usd_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'aff3@test.com'
-    });
-    my $user = BOM::User->create(
-        email    => $usd_client->email,
-        password => 'x'
-    )->add_client($usd_client);
-    $usd_client->account('USD');
-    BOM::Test::Helper::Client::top_up($usd_client, 'USD', 1000);
-
-    $usd_client->payment_agent({
-            payment_agent_name    => 'bob3',
-            email                 => 'bob3@test.com',
-            information           => 'x',
-            summary               => 'x',
-            commission_deposit    => 0,
-            commission_withdrawal => 0,
-            status                => 'authorized',
-            currency_code         => 'USD',
-            is_listed             => 't',
-        })->client_loginid;
-    $usd_client->save;
-    my $usd_pa = $usd_client->get_payment_agent;
-
-    my $btc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-    $btc_client->account('BTC');
-    $user->add_client($btc_client);
-
-    $btc_client->payment_agent({
-        payment_agent_name    => 'bob4',
-        email                 => 'bob4@test.com',
-        information           => 'x',
-        summary               => 'x',
-        commission_deposit    => 0,
-        commission_withdrawal => 0,
-        status                => 'authorized',
-        currency_code         => 'BTC',
-        is_listed             => 't',
-    });
-    $btc_client->save;
-    my $btc_pa = $btc_client->get_payment_agent;
-
-    $btc_client->payment_affiliate_reward(
-        amount   => 0.02,    # 60 USD equivalent
-        currency => 'BTC',
-        remark   => 'x',
-    );
-
-    cmp_deeply(
-        $usd_pa->cashier_withdrawable_balance,
-        {
-            available  => 60,
-            commission => 60,
-            payouts    => 0,
-        },
-        'USD pa can withdraw after sibling PA gets affiliate reward'
-    );
-
-    $usd_client->payment_doughflow(
-        amount   => -45,     # 0.015 BTC equivalent
-        currency => 'USD',
-        remark   => 'x',
-    );
-
-    cmp_deeply(
-        $btc_pa->cashier_withdrawable_balance,
-        {
-            available  => 0.005,
-            commission => 0.02,
-            payouts    => 0.015,
-        },
-        'BTC pa limit reduced after sibling PA withdraws'
-    );
-
-    $btc_client->payment_ctc(
-        amount    => -0.005,
+    $sibling->payment_ctc(
+        amount    => sprintf('%.6f', -8 / 30000),
         currency  => 'BTC',
-        crypto_id => 3,
+        remark    => 'x',
+        crypto_id => 123,
     );
 
     cmp_deeply(
-        $usd_pa->cashier_withdrawable_balance,
+        $pa->cashier_withdrawable_balance,
         {
-            available  => 0,
-            commission => 60,
-            payouts    => 60,
+            available  => num(4, .1),
+            commission => 36,
+            payouts    => num(32, .1),
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(24),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => num(2),
+                        },
+                        {
+                            payment_type => 'arbitrary_markup',
+                            credit       => num(14),
+                            debit        => undef,
+                        },
+                    ),
+                },
+                {
+                    loginid  => $sibling->loginid,
+                    currency => 'BTC',
+                    totals   => bag({
+                            payment_type => 'crypto_cashier',
+                            credit       => undef,
+                            debit        => num(8 / 30000, .1),
+                        },
+                    ),
+                },
+            ),
         },
-        'USD pa cannot withdraw after sibling withdrew everything'
+        'After PA sibling cashier withdrawal',
+    );
+
+    cmp_deeply(
+        $sibling_pa->cashier_withdrawable_balance,
+        {
+            available  => num(4 / 30000,  .1),
+            commission => num(36 / 30000, .1),
+            payouts    => num(32 / 30000, .1),
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(24),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => num(2),
+                        },
+                        {
+                            payment_type => 'arbitrary_markup',
+                            credit       => num(14),
+                            debit        => undef,
+                        },
+                    ),
+                },
+                {
+                    loginid  => $sibling->loginid,
+                    currency => 'BTC',
+                    totals   => bag({
+                            payment_type => 'crypto_cashier',
+                            credit       => undef,
+                            debit        => num(8 / 30000, .1),
+                        },
+                    ),
+                },
+            ),
+        },
+        'PA sibling gets correct result',
+    );
+
+    $sibling_pa->status('suspended');
+    $sibling_pa->save;
+
+    cmp_deeply(
+        $pa->cashier_withdrawable_balance,
+        {
+            available  => 3,
+            commission => 36,
+            payouts    => 33,
+            accounts   => bag({
+                    loginid  => $client->loginid,
+                    currency => 'USD',
+                    totals   => bag({
+                            payment_type => 'affiliate_reward',
+                            credit       => num(11),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'external_cashier',
+                            credit       => undef,
+                            debit        => num(24),
+                        },
+                        {
+                            payment_type => 'mt5_transfer',
+                            credit       => num(13),
+                            debit        => num(2),
+                        },
+                        {
+                            payment_type => 'arbitrary_markup',
+                            credit       => num(14),
+                            debit        => undef,
+                        },
+                        {
+                            payment_type => 'internal_transfer',
+                            credit       => undef,
+                            debit        => num(9),
+                        },
+                    ),
+                }
+            ),
+        },
+        'After sibling PA is suspended',
     );
 };
 
@@ -374,6 +566,11 @@ subtest 'balance_for_doughflow' => sub {
     $client->save;
 
     cmp_ok $client->balance_for_doughflow, '==', 31, 'balance for pa with commission';
+
+    my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+    $mock_pa->mock(service_is_allowed => sub { return $_[1] eq 'cashier_withdraw' });
+
+    cmp_ok $client->balance_for_doughflow, '==', 101 + 31, 'full balance when tier allows cashier_withdraw';
 };
 
 done_testing();
