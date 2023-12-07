@@ -312,6 +312,7 @@ sub mt5_accounts_lookup ($client, $account_type) {    ## no critic (ProhibitSubr
         NoConnection                                                     => 1,
         NotFound                                                         => 1,
         ERR_NOSERVICE                                                    => 1,
+        NonSuccessResponse                                               => 1,
         'Service is not available.'                                      => 1,
         'Timed out'                                                      => 1,
         'Connection closed'                                              => 1,
