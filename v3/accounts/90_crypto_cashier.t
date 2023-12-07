@@ -43,6 +43,19 @@ my $client_token = $m->create_token($client->loginid, 'test token', ['read', 'pa
 subtest 'Crypto cashier calls' => sub {
     $t->await::authorize({authorize => $client_token});
 
+    my $error_response = {
+        code    => 'InvalidRequest',
+        message => "Cashier API doesn't support the selected provider or operation.",
+    };
+    my $ws_response = $t->await::cashier({
+        cashier  => 'deposit',
+        provider => 'crypto',
+        type     => 'url',
+    });
+    test_schema(cashier => $ws_response);
+    cmp_deeply $ws_response->{error}, $error_response, 'Returns error when "type: url" used for crypto provider'
+        or diag explain $ws_response;
+
     my $rpc_response    = {};
     my $mocked_response = Test::MockObject->new();
     $mocked_response->mock('is_error', sub { 0 });
@@ -61,7 +74,7 @@ subtest 'Crypto cashier calls' => sub {
             address => 'sample_deposit_address',
         },
     };
-    my $ws_response = $t->await::cashier({
+    $ws_response = $t->await::cashier({
         cashier  => 'deposit',
         provider => 'crypto',
         type     => 'api',
