@@ -1,3 +1,0 @@
-<p class="center-text notice-msg">
-    <span><%= stash('error') %></span>
-</p>
