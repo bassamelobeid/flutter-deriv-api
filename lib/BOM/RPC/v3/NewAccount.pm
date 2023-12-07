@@ -124,15 +124,7 @@ rpc new_account_real => sub {
     my $params = shift;
     my ($client, $args) = @{$params}{qw/client args/};
 
-    # Trimming whitespaces from the values of the immutable fields to avoid whitespace entry
-    my @immutable_fields = BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*;
-    my %immutable_fields = map { $_ => 1 } @immutable_fields;
-
-    for my $field (keys %$args) {
-        if ($immutable_fields{$field}) {
-            $args->{$field} = trim($args->{$field}) if defined $args->{$field};
-        }
-    }
+    $args = BOM::User::Utility::trim_immutable_client_fields($args);
 
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;
@@ -238,6 +230,7 @@ rpc new_account_maltainvest => annotate_db_calls(
 
     my ($client, $args) = @{$params}{qw/client args/};
     my $user = $client->user;
+    $args = BOM::User::Utility::trim_immutable_client_fields($args);
 
     # this API call will be depricated and only available for legacy accounts.
     # After upgrading to wallets all trading accounts creation must be done through new_account_real
@@ -397,6 +390,7 @@ rpc new_account_wallet => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
+    $args = BOM::User::Utility::trim_immutable_client_fields($args);
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
         return BOM::RPC::v3::Utility::create_error({

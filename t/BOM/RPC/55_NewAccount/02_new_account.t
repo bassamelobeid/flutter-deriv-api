@@ -893,6 +893,15 @@ subtest $method => sub {
         $params->{args}->{address_postcode} = '';
         $client->save();
 
+        my @fields_should_be_trimmed = grep {
+            my $element = $_;
+            not grep { $element eq $_ } qw(phone address_state date_of_birth)
+        } BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+        foreach my $field (@fields_should_be_trimmed) {
+            $params->{args}->{$field} = "Test with trailing whitespace ";
+        }
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
             'Deriv Investments (Europe) Limited',
@@ -903,6 +912,11 @@ subtest $method => sub {
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
+
+        foreach my $field (@fields_should_be_trimmed) {
+            is $cl->{$field}, "Test with trailing whitespace", "Whitespaces are trimmed";
+        }
+
         ok($cl->status->financial_risk_approval, 'For mf accounts we will set financial risk approval status');
         is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
             'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';

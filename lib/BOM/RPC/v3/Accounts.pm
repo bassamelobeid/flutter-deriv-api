@@ -23,6 +23,7 @@ use JSON::MaybeUTF8 qw( decode_json_utf8 encode_json_utf8);
 use URI;
 
 use BOM::User::Client;
+use BOM::User::Utility;
 use BOM::User::FinancialAssessment
     qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD);
 use LandingCompany::Registry;
@@ -2086,6 +2087,8 @@ rpc set_settings => sub {
     # This function used to find the fields updated to send them as properties to track event
     # TODO Please rename this to updated_fields once you refactor this function to remove deriv set settings email.
     my $updated_fields_for_track = _find_updated_fields($params);
+
+    $args = BOM::User::Utility::trim_immutable_client_fields($args);
 
     my $brand              = request()->brand;
     my $countries_instance = request()->brand->countries_instance();
