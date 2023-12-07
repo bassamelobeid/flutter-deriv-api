@@ -1838,6 +1838,9 @@ foreach my $mt_ac ($mt_logins->@*) {
             $aff_mt_accounts->{$mt_ac}{mt5_myaffiliate_id},
             $aff_mt_accounts->{$mt_ac}{mt5_server_key} // $aff_mt_accounts->{$mt_ac}{mt5_server_id});
     }
+    if ($loginid_details->{$mt_ac}->{status} =~ /migrated/) {
+        print "  MIGRATED  ";
+    }
     print "</li>";
 }
 
