@@ -179,12 +179,24 @@ subtest 'common' => sub {
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has wrong default currency for landing_company')
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
 
+    $params->{token} = $client_btc_token;
+    $params->{args}{type} = 'url';
+    $rpc_ct->call_ok('cashier', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidRequest', '"type: url" is not supported for crypto accounts')
+        ->error_message_is("Cashier API doesn't support the selected provider or operation.", 'Correct error message for wrong type: url (crypto)');
+
     $params->{token} = $client_cr_token;
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
         ->error_message_is('Please set the currency.', 'Correct error message when currency is not set');
 
     $client_cr->set_default_account('USD');
     $client_cr->save;
+
+    $params->{args}{type} = 'api';
+    $rpc_ct->call_ok('cashier', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidRequest', '"type: api" is not supported for fiat accounts')
+        ->error_message_is("Cashier API doesn't support the selected provider or operation.", 'Correct error message for wrong type: api (fiat)');
+    delete $params->{args}{type};
 
     $documents_expired = 1;
 
@@ -274,32 +286,6 @@ subtest 'deposit' => sub {
     };
     $runtime_system->suspend->cryptocashier(0);
 
-};
-
-subtest 'crypto deposit' => sub {
-    $params->{token} = $client_btc_token;
-
-    $runtime_system->suspend->payments(1);
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
-        ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.', 'error when payments are suspended.');
-    $runtime_system->suspend->payments(0);
-
-    $runtime_system->suspend->cryptocashier(1);
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
-        ->error_message_is('Sorry, crypto cashier is temporarily unavailable due to system maintenance.', 'error when cryptocashier is suspended.');
-    $runtime_system->suspend->cryptocashier(0);
-
-    $runtime_system->suspend->cashier(1);
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error('no error when fiat cashier is suspended');
-    $runtime_system->suspend->cashier(0);
-
-    $runtime_system->suspend->cryptocurrencies('BTC');
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
-        ->error_message_is('Sorry, crypto cashier is temporarily unavailable due to system maintenance.', 'error when currency is suspended.');
-
-    $runtime_system->suspend->cryptocurrencies('LTC');
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error('no error when other currency is suspended');
-    $runtime_system->suspend->cryptocurrencies('');
 };
 
 subtest 'withdraw' => sub {
@@ -453,64 +439,6 @@ subtest 'all status are covered' => sub {
     fail("missing status $_") for sort grep !exists $seen{$_}, @can_affect_cashier;
     pass("ok to prevent warning 'no tests run");
     done_testing();
-};
-
-subtest 'crypto_cashier_forward_page' => sub {
-    my $prefix = 'cryptocurrency';
-
-    my $mock_cashier = Test::MockModule->new('BOM::RPC::v3::Cashier');
-    $mock_cashier->mock(_get_handoff_token_key => sub { return 'test_token' });
-
-    my $args = {
-        loginid      => 'CR90000000',
-        website_name => '',
-        currency     => 'BTC',
-        action       => 'deposit',
-        language     => 'EN',
-        brand_name   => 'binary',
-        domain       => 'binary.la',
-        app_id       => 1098
-    };
-
-    sub test_uri_params {
-        my ($address, $args) = @_;
-
-        my $url             = URI->new($address);
-        my %expected_params = (
-            $args->%{qw/loginid currency action brand app_id/},
-            l     => $args->{language},
-            brand => $args->{brand_name},
-            token => 'test_token'
-        );
-        is_deeply({$url->query_form}, \%expected_params, 'URL params are matching');
-    }
-
-    my $invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
-    ok $invalid_deposit =~ /^https:\/\/crypto-cashier.binary.com/, 'valid domain to invalid domain';
-    test_uri_params($invalid_deposit, $args);
-
-    $args->{domain} = 'binary.me';
-    my $valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
-    test_uri_params($valid_deposit, $args);
-
-    $args->{domain} = 'binary.la';
-    ok $valid_deposit =~ /^https:\/\/crypto-cashier.binary.me/, 'valid domain to valid domain';
-    my $deriv_invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
-    test_uri_params($deriv_invalid_deposit, $args);
-
-    $args->{domain} = 'deriv.app';
-    ok $deriv_invalid_deposit =~ /^https:\/\/crypto-cashier.binary.com/, 'valid deriv domain to invalid domain';
-    my $deriv_valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
-    ok $deriv_valid_deposit =~ /^https:\/\/crypto-cashier.deriv.app/, 'valid deriv domain to valid deriv domain';
-    test_uri_params($deriv_valid_deposit, $args);
-
-    $args->{website_name} = 'binaryqa25.com';
-    $args->{domain}       = 'binary.me';
-    my $valid_QA_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
-    ok $valid_QA_deposit =~ /^https:\/\/binaryqa25.com/;
-    test_uri_params($valid_QA_deposit, $args);
-
-    $mock_cashier->unmock_all;
 };
 
 done_testing();

@@ -139,14 +139,14 @@ rpc "cashier", sub {
         });
     }
 
-    if ($type eq 'api') {
-        if ($provider ne 'crypto') {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidRequest',
-                message_to_client => localize("Cashier API doesn't support the selected provider or operation."),
-            });
-        }
+    if (($type eq 'api') != ($provider eq 'crypto')) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidRequest',
+            message_to_client => localize("Cashier API doesn't support the selected provider or operation."),
+        });
+    }
 
+    if ($type eq 'api') {
         my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
         if ($action eq 'deposit') {
             return $crypto_service->deposit($client->loginid, $client->currency);
@@ -164,19 +164,6 @@ rpc "cashier", sub {
                 $client_locked_min_withdrawal_amount,
                 $estimated_fee_unique_id);
         }
-    }
-
-    if ($provider eq 'crypto') {
-        return _get_cryptocurrency_cashier_url({
-            loginid      => $client->loginid,
-            website_name => $params->{website_name},
-            currency     => $currency,
-            action       => $action,
-            language     => $params->{language},
-            brand_name   => $brand->name,
-            domain       => $params->{domain},
-            app_id       => $params->{app_id} // $params->{source},
-        });
     }
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client->loginid});
@@ -380,39 +367,6 @@ sub _get_handoff_token_key {
     $handoff_token->save;
 
     return $handoff_token->key;
-}
-
-sub _get_cryptocurrency_cashier_url {
-    return _get_cashier_url('cryptocurrency', @_);
-}
-
-sub _get_cashier_url {
-    my ($prefix, $args) = @_;
-
-    my ($loginid, $website_name, $currency, $action, $language, $brand_name, $domain, $app_id) =
-        @{$args}{qw/loginid website_name currency action language brand_name domain app_id/};
-
-    $prefix = lc($currency) if $prefix eq 'cryptocurrency';
-
-    BOM::User::AuditLog::log("redirecting to $prefix");
-
-    $language = uc($language // 'EN');
-
-    my $url = 'https://';
-    if (($website_name // '') =~ /qa/) {
-        $url .= lc($website_name) . "/cryptocurrency/$prefix";
-    } else {
-        my $is_white_listed = $domain && (any { $domain eq $_ } BOM::Config->domain->{white_list}->@*);
-        $domain = BOM::Config->domain->{default_domain} unless $domain and $is_white_listed;
-        $url .= "crypto-cashier.$domain/cryptocurrency/$prefix";
-    }
-
-    $url .=
-          "/handshake?token="
-        . _get_handoff_token_key($loginid)
-        . "&loginid=$loginid&currency=$currency&action=$action&l=$language&brand=$brand_name&app_id=$app_id";
-
-    return $url;
 }
 
 rpc 'get_limits',
