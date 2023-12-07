@@ -23,6 +23,7 @@ use Digest::SHA     qw(hmac_sha1_hex);
 use List::Util      qw (any uniq);
 use POSIX           qw( floor );
 use Math::BigFloat;
+use Text::Trim qw( trim );
 
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
@@ -495,6 +496,34 @@ sub notify_submission_of_documents_for_pending_payout {
                 email => $client->email,
                 date  => $due_date->date_ddmmyyyy,
             }});
+}
+
+=head2 trim_immutable_client_fields
+
+It is responsible for trimming client fields defined in the constant 
+PROFILE_FIELDS_IMMUTABLE_DUPLICATED to avoid whitespace entry
+
+=over 4
+
+=item - $inputs:  Inputs containing client related fields
+
+=back
+
+Returns inputs after trimming the fields matching with immutable_fields
+
+=cut
+
+sub trim_immutable_client_fields {
+    my %inputs           = (shift)->%*;
+    my @immutable_fields = BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_DUPLICATED()->@*;
+    my %immutable_fields = map { $_ => 1 } @immutable_fields;
+
+    for my $field (keys %inputs) {
+        if ($immutable_fields{$field}) {
+            $inputs{$field} = trim($inputs{$field}) if defined $inputs{$field};
+        }
+    }
+    return \%inputs;
 }
 
 1;
