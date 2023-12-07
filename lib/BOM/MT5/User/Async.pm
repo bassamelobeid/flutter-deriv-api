@@ -369,7 +369,8 @@ sub _invoke_mt5 {
 
                 if (   $error_code eq $error_category_mapping->{9}
                     || $error_code eq $error_category_mapping->{10}
-                    || $error_message eq $error_category_mapping->{11})
+                    || $error_message eq $error_category_mapping->{11}
+                    || $error_message eq 'NonSuccessResponse')
                 {
                     stats_inc('mt5.call.connection_fail', {tags => $dd_tags});
                     $circuit_breaker->record_failure();
@@ -584,14 +585,19 @@ sub _invoke_using_proxy {
         $response = $out;
         $success  = 1;
     } catch ($e) {
+        my $http_status_code     = (ref $result_http eq 'HASH' && exists $result_http->{status}) ? $result_http->{status} : 'unknown';
+        my $http_status_category = categorize_http_status($http_status_code);
+        my $error_message        = $http_status_category eq 'success' ? $e                         : $out;
+        my $response_code_error  = $http_status_category eq 'success' ? 'SuccessWithErrorResponse' : 'NonSuccessResponse';
+
+        push @$dd_tags, "http_status_category:${http_status_category}";
         stats_inc('mt5.call.proxy.request_error', {tags => $dd_tags});
-        my $error_message = $result_http->{status} == 200 ? $e : $out;
+
         $response = {
-            code              => MT5_ERROR_MESSAGE_CODE_MAPPING->{$error_message},
-            error             => MT5_ERROR_MESSAGE_CODE_MAPPING->{$error_message},
+            code              => $response_code_error,
+            error             => $response_code_error,
             message_to_client => $error_message
         };
-
     }
 
     stats_timing('mt5.call.proxy.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
@@ -1129,8 +1135,6 @@ sub get_account_type {
 
 Get deal within a given range
 
-
-
 =over 4
 
 =item * C<server> (required) MT5 server, e.g. real_p01_ts01, demo_p01_ts01
@@ -1168,6 +1172,49 @@ sub deal_get_batch {
 
             return Future->done($response);
         });
+}
+
+=head2 categorize_http_status
+
+Categorize an HTTP status code into a specific category.
+
+=over 4
+
+=item * C<status_code> (required) HTTP status code to categorize.
+
+=back
+
+This subroutine categorizes an HTTP status code into one of five categories: 
+    Informational (100-199)
+    Success (200-299)
+    Redirection (300-399)
+    Client Error (400-499)
+    Server Error (500-599)
+
+If the status code does not fall into these categories, 'unknown' is returned.
+
+Examples:
+
+    categorize_http_status(100); # Returns 'informational'
+    categorize_http_status(200); # Returns 'success'
+    categorize_http_status(300); # Returns 'redirection'
+    categorize_http_status(404); # Returns 'client_error'
+    categorize_http_status(500); # Returns 'server_error'
+    categorize_http_status(600); # Returns 'unknown'
+
+=cut
+
+sub categorize_http_status {
+    my ($status_code) = @_;
+
+    # Use regex to categorize the status code
+    return 'informational' if $status_code =~ /^1\d\d$/;
+    return 'success'       if $status_code =~ /^2\d\d$/;
+    return 'redirection'   if $status_code =~ /^3\d\d$/;
+    return 'client_error'  if $status_code =~ /^4\d\d$/;
+    return 'server_error'  if $status_code =~ /^5\d\d$/;
+
+    return 'unknown';
 }
 
 1;

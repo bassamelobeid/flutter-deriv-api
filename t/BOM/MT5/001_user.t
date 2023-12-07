@@ -17,6 +17,7 @@ use BOM::MT5::User::Async;
 use BOM::User::Utility qw(parse_mt5_group);
 use BOM::Config::Runtime;
 use BOM::MT5::Utility::CircuitBreaker;
+use BOM::Config::Runtime;
 
 subtest 'MT5 Circuit Breaker' => sub {
     my $mock_server_key = Test::MockModule->new('BOM::MT5::User::Async');
@@ -491,6 +492,63 @@ subtest 'MT5 ConnectionTimeout Error' => sub {
         is $redis_keys_value->{failure_count}, 1, 'Fail counter count is updated';
         ok $redis_keys_value->{last_failure_time}, 'Last failure time is updated';
     }
+};
+
+subtest 'Verify Circuit Breaker Activation for Various Network Errors' => sub {
+    my $app_config      = BOM::Config::Runtime->instance->app_config;
+    my $mock_http_tiny  = Test::MockModule->new('HTTP::Tiny');
+    my $mock_server_key = Test::MockModule->new('BOM::MT5::User::Async');
+    $mock_server_key->mock('get_trading_server_key', sub { 'p01_ts01' });
+
+    # Test scenarios
+    my @test_cases = ({
+            status        => 499,
+            content       => 'client closed request',
+            error_message => 'client closed request',
+        },
+        {
+            status        => 502,
+            content       => '502 Bad Gateway',
+            error_message => '502 Bad Gateway',
+        },
+    );
+
+    foreach my $case (@test_cases) {
+        $app_config->system->mt5->http_proxy->real->p01_ts01(1);
+        @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+
+        # Mock HTTP::Tiny with the specific test case
+        $mock_http_tiny->mock(post => sub { return {status => $case->{status}, content => $case->{content}}; });
+
+        my $circuit_breaker = BOM::MT5::Utility::CircuitBreaker->new(
+            server_type => 'real',
+            server_code => 'p01_ts01'
+        );
+        $circuit_breaker->circuit_reset();
+
+        try {
+            my $details = {
+                login    => 'MTR1000',
+                password => 'FakePass'
+            };
+            BOM::MT5::User::Async::password_check($details)->get;
+            is 1, 0, 'This wont be executed';
+        } catch ($e) {
+            my $expected_error = {
+                'error'             => 'NonSuccessResponse',
+                'code'              => 'NonSuccessResponse',
+                'message_to_client' => $case->{error_message}};
+            cmp_deeply($e->[0], $expected_error, 'Returned timed out connection');
+            my $redis_keys_value = $circuit_breaker->_get_keys_value();
+            is $redis_keys_value->{failure_count}, 1, 'Fail counter count is updated';
+            ok $redis_keys_value->{last_failure_time}, 'Last failure time is updated';
+        }
+
+        $app_config->system->mt5->http_proxy->real->p01_ts01(0);
+        $mock_http_tiny->unmock_all;
+    }
+
+    $mock_server_key->unmock_all;
 };
 
 done_testing;

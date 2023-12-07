@@ -69,9 +69,10 @@ $mock_http->mock(
         return $response;
     });
 
-my $cmd      = 'UserAdd';
-my $srv_type = 'demo';
-my $srv_key  = 'p01_ts01';
+my $cmd                  = 'UserAdd';
+my $srv_type             = 'demo';
+my $srv_key              = 'p01_ts01';
+my $http_status_category = 'unknown';
 
 subtest 'Sending http proxy timing to DataDog' => sub {
     my $param = {param => 'something'};
@@ -112,7 +113,11 @@ subtest 'Sending http proxy error count to DataDog' => sub {
     exception { BOM::MT5::User::Async::_invoke($cmd, $srv_type, $srv_key, 'MTD', {})->get() };
 
     is($key_inc, 'mt5.call.proxy.request_error', 'The key for error mt5 http proxy call is correct');
-    is_deeply($tags, {tags => ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"]}, 'Tags received as expected');
+    is_deeply(
+        $tags,
+        {tags => ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key", "http_status_category:$http_status_category"]},
+        'Tags received as expected'
+    );
 };
 
 subtest 'php script sending timing stats' => sub {

@@ -511,7 +511,8 @@ sub derivez_accounts_lookup {
         ERR_NOSERVICE               => 1,
         'Service is not available.' => 1,
         'Timed out'                 => 1,
-        'Connection closed'         => 1
+        'Connection closed'         => 1,
+        NonSuccessResponse          => 1,
     );
 
     # Determine whether to get real or demo accounts, or both
