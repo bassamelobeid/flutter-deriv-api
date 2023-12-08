@@ -46,11 +46,11 @@ my $permissions = {
     'f_manager_mt5_autotransfer.cgi' => ['Payments'],
     'crypto_admin.cgi'               => ['Crypto'],
 
-    'monthly_client_report.cgi'   => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
-    'monthly_payments_report.cgi' => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
-    'f_accountingreports.cgi'     => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
-    'aggregate_balance.cgi'       => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
-    'f_upload_ewallet.cgi'        => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
+    'monthly_client_report.cgi' => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
+    'payments_report.cgi'       => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
+    'f_accountingreports.cgi'   => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
+    'aggregate_balance.cgi'     => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
+    'f_upload_ewallet.cgi'      => ['AccountsLimited', 'AccountsAdmin', 'Marketing'],
 
     'promocode_edit.cgi'            => ['Marketing'],
     'f_promotional.cgi'             => ['Marketing'],

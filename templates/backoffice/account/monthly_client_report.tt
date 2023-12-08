@@ -50,7 +50,7 @@
 
     <h3>Payments Report</h3>
     <p>Select any of these payment types:</p>
-    <form action="[%request.url_for('backoffice/monthly_payments_report.cgi') | none %]" method="post" class="row">
+    <form action="[%request.url_for('backoffice/payments_report.cgi') | none %]" method="post" class="row">
         <input type="hidden" name="broker" value="[%request.broker_code%]"/>
         <div class="row brick-group">
             [% FOR pt IN payment_types %]
@@ -64,13 +64,8 @@
                 <label for="all_payment_types" title="(including obsolete types)">ALL</label>
             </div>
         </div>
-        <label>Run month (e.g. 2014-12):</label><input size="8" type="text" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}"/>
-        <label>Duration:</label>
-        <select name="months">
-        [% FOR i IN [1..6]%]
-            <option value="[% i %]">[% i %]</option>
-        [% END %]
-        </select> months&nbsp;&nbsp;
+        <label>Start date (e.g. 2014-12-01):</label><input size="8" type="text" name="start_yyyymmdd" value="$start_yyyymmdd" required pattern="\d{4}-\d{2}-\d{2}" />
+        <label>End date (e.g. 2014-12-05):</label><input size="8" type="text" name="end_yyyymmdd" value="$end_yyyymmdd" required pattern="\d{4}-\d{2}-\d{2}" />
         <input type="submit" class="btn btn--primary" value="Download CSV file"/>
         <i>* All currencies for broker code [%request.broker_code%] will be included</i>
     </form>
