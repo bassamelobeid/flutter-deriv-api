@@ -4167,7 +4167,7 @@ subtest 'mt5_deposit_retry function' => sub {
             });
         $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $parameters});
         isa_ok $result, 'Future';
-        is $result->failure->{code}, 'NotFound', 'skip deposit retry attempt if deal_get_brach got NotFound error';
+        is $result->failure->{code}, 'NotFound', 'skip deposit retry attempt if deal_get_batch got NotFound error';
 
         # Connection timeout error
         $mock_http_tiny->mock(
@@ -4179,7 +4179,7 @@ subtest 'mt5_deposit_retry function' => sub {
             });
         $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $parameters});
         isa_ok $result, 'Future';
-        is $result->failure->{code}, 'ConnectionTimeout', 'skip deposit retry attempt if deal_get_brach got Connection timeout error';
+        is $result->failure->{code}, 'NonSuccessResponse', 'skip deposit retry attempt if deal_get_batch got Connection timeout error';
 
         $mock_http_tiny->unmock_all;
         $app_config->system->mt5->http_proxy->real->p01_ts03(0);
