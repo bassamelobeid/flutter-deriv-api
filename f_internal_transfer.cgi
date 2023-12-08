@@ -48,7 +48,7 @@ sub get_exchange_rate_spreads_data {
 
         return @data;
     } catch ($error) {
-        log->warn("Failed to fetch exchange rate spreads data - $error");
+        $log->warn("Failed to fetch exchange rate spreads data - $error");
     }
 }
 
