@@ -261,6 +261,8 @@ Takes the following named parameters:
 
 =item * C<params> array reference of additional fields to be fetched from MT5. Example: ['comment']
 
+=item * C<return_errors> boolean to indicate if the function should return errors or not
+
 =back
 
 Returns a Future holding list of MT5 account information or a failed future with error information
@@ -268,9 +270,9 @@ Returns a Future holding list of MT5 account information or a failed future with
 =cut
 
 sub get_mt5_logins {
-    my ($client, $account_type) = @_;
+    my ($client, $account_type, $return_errors) = @_;
 
-    return mt5_accounts_lookup($client, $account_type)->then(
+    return mt5_accounts_lookup($client, $account_type, $return_errors // 0)->then(
         sub {
             my (@logins) = @_;
             my @valid_logins = grep { defined $_ and $_ } @logins;
@@ -298,13 +300,15 @@ Takes the following parameters:
 
 =item * C<params> array reference of additional fields to be fetched from MT5. Example: ['comment']
 
+=item * C<return_errors> boolean to indicate if the function should return errors or not
+
 =back
 
 Returns a Future holding list of MT5 account information (or undef) or a failed future with error information
 
 =cut
 
-sub mt5_accounts_lookup ($client, $account_type) {    ## no critic (ProhibitSubroutinePrototypes)
+sub mt5_accounts_lookup ($client, $account_type, $return_errors) {    ## no critic (ProhibitSubroutinePrototypes)
     my %swallowed_error_codes = (
         ConnectionTimeout                                                => 1,
         MT5AccountInactive                                               => 1,
@@ -357,6 +361,7 @@ sub mt5_accounts_lookup ($client, $account_type) {    ## no critic (ProhibitSubr
                     || $swallowed_error_codes{$resp})
                 {
                     log_stats($login, $resp);
+                    return Future->done($resp) if ($return_errors);
                     return Future->done(undef);
                 } elsif ($resp_has_hashref_error && $propagated_error_codes{$resp->{error}{code}}) {
                     return Future->done($resp);
@@ -1024,7 +1029,7 @@ async_rpc "mt5_new_account",
     }
 
     my $additional_fields_for_migration = $migration_request ? ['comment'] : [];
-    return get_mt5_logins($client, $account_type eq 'demo' ? 'demo' : 'real', $additional_fields_for_migration)->then(
+    return get_mt5_logins($client, $account_type eq 'demo' ? 'demo' : 'real', 1)->then(
         sub {
             my (@logins) = @_;
 
@@ -1033,13 +1038,23 @@ async_rpc "mt5_new_account",
             my $svg_account_to_migrate = undef;
 
             foreach my $mt5_account (@logins) {
-                if ($mt5_account->{error} and $mt5_account->{error}{code} eq 'MT5AccountInaccessible') {
+
+                if ($mt5_account->{error}) {
+
+                    # There are cases when the account is deleted on MT5 but still appearing on our side
+                    # we don't want to block account creation for that case
+                    next if ($mt5_account->{error}{code} eq 'MT5AccountInactive' or $mt5_account->{error}{code} eq 'NotFound');
+
+                    $log->errorf("Error while creating mt5 account with MT5 response [%s]", $mt5_account->{error}{message_to_client});
+
                     return create_error_future(
                         'MT5AccountCreationSuspended',
                         {
                             override_code => $error_code,
                             message       => $mt5_account->{error}{message_to_client},
-                        });
+                        }) if ($mt5_account->{error}{code} eq 'MT5AccountInaccessible');
+
+                    return create_error_future('General');
                 }
 
                 $existing_groups{$mt5_account->{group}} = $mt5_account->{login} if $mt5_account->{group};

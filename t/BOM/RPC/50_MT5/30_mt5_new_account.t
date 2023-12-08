@@ -1917,4 +1917,67 @@ subtest 'TIN not mandatory with NPJ country config' => sub {
 
 };
 
+subtest 'Don\'t allow creating MT5 account if there are failures in mt5_accounts_lookup' => sub {
+    my $mock_mt5_rpc = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    my $mock_client  = Test::MockModule->new('BOM::User::Client');
+    my $mock_mt5     = Test::MockModule->new('BOM::MT5::User::Async');
+    my $mock_user    = Test::MockModule->new('BOM::User');
+
+    my $mt5_login_number = 1010;
+    $mock_mt5->mock('create_user', sub { return Future->done({login => "MTR" . ($mt5_login_number++)}); })
+        ->mock('get_user', sub { return Future->fail({error => "Somethings is not right", code => 'ERR_NOSERVICE'}); });
+
+    $mock_client->mock(fully_authenticated => sub { return 1 });
+
+    $mock_user->mock(get_mt5_loginids => sub { return ('MTR1010') });
+
+    my $test_client = create_client('CR');
+    my $new_email   = 'test1+' . $details{email};
+    $test_client->email($new_email);
+    $test_client->set_default_account('USD');
+    $test_client->binary_user_id(1001);
+    $test_client->save;
+
+    my $password = 's3kr1t_p4ssw0rD';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $user     = BOM::User->create(
+        email    => $new_email,
+        password => $hash_pwd,
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($test_client);
+    my %basic_details = (
+        place_of_birth            => "af",
+        tax_residence             => "af",
+        tax_identification_number => "1122334455",
+        account_opening_reason    => "testing"
+    );
+
+    $test_client->$_($basic_details{$_}) for keys %basic_details;
+    $test_client->financial_assessment({data => encode_json_utf8(\%financial_data)});
+    $test_client->save;
+
+    my $auth_token = BOM::Platform::Token::API->new->create_token($test_client->loginid, 'test token');
+    my $params     = {
+        token => $auth_token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'af',
+            email            => $new_email,
+            name             => 'cat',
+            mainPassword     => $details{password}{main},
+            leverage         => 100,
+            mt5_account_type => 'financial',
+            company          => 'bvi',
+        }};
+
+    $c->call_ok('mt5_new_account', $params)
+        ->has_error->error_code_is('General', 'Should not create the account if there is an error responce from MT5.');
+
+    # NotFound and MT5AccountInactive are not considered as errors when creating MT5 account
+    $mock_mt5->mock('get_user', sub { return Future->fail({error => "Somethings is not right", code => 'NotFound'}); });
+    $c->call_ok('mt5_new_account', $params)->has_no_error;
+
+};
+
 done_testing();
