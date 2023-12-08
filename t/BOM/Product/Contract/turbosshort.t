@@ -66,11 +66,11 @@ subtest 'config' => sub {
     is $c->n_max, 2.84824818495384, 'correct n_max';
 
     my $barriers = $c->strike_price_choices;
-    is $barriers->[0],                               '+270.72',   'correct first barrier';
-    is $barriers->[5],                               '+1487.6',   'correct 5th barrier';
-    is $barriers->[-1],                              '+175546.5', 'correct last barrier';
-    is sprintf("%.5f", $c->bid_probability->amount), '531.06700', 'correct bid probability';
-    is sprintf("%.5f", $c->ask_probability->amount), '502.93300', 'correct ask probability';
+    is $barriers->[0],                               '+270.72',    'correct first barrier';
+    is $barriers->[5],                               '+1487.60',   'correct 5th barrier';
+    is $barriers->[-1],                              '+175546.50', 'correct last barrier';
+    is sprintf("%.5f", $c->bid_probability->amount), '531.06700',  'correct bid probability';
+    is sprintf("%.5f", $c->ask_probability->amount), '502.93300',  'correct ask probability';
 };
 
 subtest 'number of contracts' => sub {

@@ -756,31 +756,28 @@ sub strike_price_choices {
         current_spot           => $self->current_spot,
         sigma                  => $sigma,
         n_max                  => $self->n_max,
-        sentiment              => $self->sentiment,
         min_distance_from_spot => $min_distance_from_spot,
         num_of_barriers        => $num_of_barriers,
     };
 
-    my $code            = $self->code;
-    my $key             = "turbos:${code}:${symbol}:${min_distance_from_spot}:${num_of_barriers}";
+    my $key             = "turbos:${symbol}:${min_distance_from_spot}:${num_of_barriers}";
     my $barrier_choices = [split(':', $self->_redis_read->get($key) || '')];
     if (scalar @$barrier_choices) {
         my $last_spot = shift @$barrier_choices;
 
-        my $treshold_coef = $sigma * sqrt(7200 / BOM::Product::Contract::Strike::Turbos::SECONDS_IN_A_YEAR);
+        my $threshold_coefficient = $sigma * sqrt(7200 / BOM::Product::Contract::Strike::Turbos::SECONDS_IN_A_YEAR);
         if (
-            not(   $self->current_spot > (1 + $treshold_coef) * $last_spot
-                || $self->current_spot < (1 - $treshold_coef) * $last_spot))
+            not(   $self->current_spot > (1 + $threshold_coefficient) * $last_spot
+                || $self->current_spot < (1 - $threshold_coefficient) * $last_spot))
         {
-            return $barrier_choices;
+            return BOM::Product::Contract::Strike::Turbos::prepend_barrier_offsets($self->code, $barrier_choices);
         }
     }
 
     $barrier_choices = BOM::Product::Contract::Strike::Turbos::strike_price_choices($args);
-
     $self->_redis_write->set($key, join(':', $self->current_spot, @$barrier_choices), EX => 60 * 60);
 
-    return $barrier_choices;
+    return BOM::Product::Contract::Strike::Turbos::prepend_barrier_offsets($self->code, $barrier_choices);
 }
 
 =head2 _validate_barrier_choice
