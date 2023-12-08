@@ -55,8 +55,11 @@ sub _prepare_fast_validate_part {
         }
     }
     if ($type eq 'object') {
-        _check_for_unknown_keys($path, $schema, [@basic_keys, 'properties', 'required', 'additionalProperties']);
+        _check_for_unknown_keys($path, $schema,
+            [@basic_keys, 'properties', 'required', 'additionalProperties', 'patternProperties', 'minProperties', 'maxProperties']);
         my $additional_properties;
+        my $pattern_properties = {};
+
         if (exists($schema->{'additionalProperties'})) {
             my $additional_properties_schema = _get_value_for($path, $schema, 'additionalProperties', undef);
             if (JSON::PP::is_bool($additional_properties_schema) and (!$additional_properties_schema)) {
@@ -69,6 +72,14 @@ sub _prepare_fast_validate_part {
         } else {
             $additional_properties = {mode => 'allow'};    #Allow any if the key does not exist
         }
+
+        if (exists($schema->{'patternProperties'})) {
+            foreach my $pattern (keys %{$schema->{'patternProperties'}}) {
+                my $pattern_schema = $schema->{'patternProperties'}->{$pattern};
+                $pattern_properties->{$pattern} = _prepare_fast_validate_part([@$path, 'patternProperties'], $pattern_schema);
+            }
+        }
+
         my $fields     = undef;
         my $properties = _get_value_for($path, $schema, 'properties', undef);
         if (defined($properties)) {
@@ -84,7 +95,10 @@ sub _prepare_fast_validate_part {
             fields                => $fields,
             required              => \%required,
             additional_properties => $additional_properties,
-            allow_null            => $allow_null
+            pattern_properties    => $pattern_properties,
+            allow_null            => $allow_null,
+            min_properties        => _get_value_for($path, $schema, 'minProperties', undef),
+            max_properties        => _get_value_for($path, $schema, 'maxProperties', undef),
         };
     } elsif ($type eq 'array') {
         _check_for_unknown_keys($path, $schema, [@basic_keys, 'items']);
@@ -100,13 +114,14 @@ sub _prepare_fast_validate_part {
         if ($type eq 'integer' or $type eq 'number') {
             push @extra_fields, 'maximum', 'minimum';
         } elsif ($type eq 'string') {
-            push @extra_fields, 'maxLength';
+            push @extra_fields, 'maxLength', 'pattern';
         }
-        _check_for_unknown_keys($path, $schema, [@basic_keys, 'enum', @extra_fields]);
+        _check_for_unknown_keys($path, $schema, [@basic_keys, 'enum', 'default', @extra_fields]);
         my $ret = {allow_null => $allow_null};
         $ret->{maximum}   = _get_value_for($path, $schema, 'maximum')   if (defined(_get_value_for($path, $schema, 'maximum',   undef)));
         $ret->{minimum}   = _get_value_for($path, $schema, 'minimum')   if (defined(_get_value_for($path, $schema, 'minimum',   undef)));
         $ret->{maxLength} = _get_value_for($path, $schema, 'maxLength') if (defined(_get_value_for($path, $schema, 'maxLength', undef)));
+        $ret->{pattern}   = _get_value_for($path, $schema, 'pattern')   if (defined(_get_value_for($path, $schema, 'pattern',   undef)));
 
         my $enum = _get_value_for($path, $schema, 'enum', undef);
         if (!defined($enum)) {
@@ -120,6 +135,13 @@ sub _prepare_fast_validate_part {
             $ret->{type}   = "enum_$type";
             $ret->{values} = \%values;
         }
+
+        my $default = _get_value_for($path, $schema, 'default', undef);
+        if (defined($default)) {
+            _die_at_path($path, "Invalid default value '$default' for type $type") unless _check_basic_type($type, $default);
+            $ret->{default} = _coerce_basic_type($type, $default);
+        }
+
         return $ret;
     } else {
         _die_at_path $path, "Unknown type $type";
@@ -192,6 +214,11 @@ sub _coerce_basic_type {
     }
 
 }
+# Check the JSON pattern - this matches the behavior of JSON::Validator and treats it as a perl regexp (the json schema spec specifies ECMA regex)
+sub _check_pattern {
+    my ($pattern, $str) = @_;
+    return $str =~ /$pattern/;
+}
 
 sub _fast_validate_and_coerce_part {
     my ($path, $fast_schema, $messageRef) = @_;
@@ -218,6 +245,10 @@ sub _fast_validate_and_coerce_part {
             if defined($fast_schema->{maxLength})
             and length($$messageRef) > $fast_schema->{maxLength};
 
+        _die_at_path($path, "Value does not match pattern (" . $fast_schema->{pattern} . "): " . $$messageRef)
+            if defined($fast_schema->{pattern})
+            and (!_check_pattern($fast_schema->{pattern}, $$messageRef));
+
         $$messageRef = _coerce_basic_type($type, $$messageRef);
     } elsif ($type eq "enum_string" or $type eq "enum_integer" or $type eq "enum_number") {
         my $basic_type = (split(/_/, $type))[1];
@@ -235,6 +266,14 @@ sub _fast_validate_and_coerce_part {
 
         _die_at_path($path, "Expected object, found: " . _get_type_description($$messageRef)) unless ref $$messageRef eq "HASH";
 
+        _die_at_path($path, "Object, contains " . scalar(keys(%$$messageRef)) . " properties, max allowed " . $fast_schema->{max_properties})
+            if defined($fast_schema->{max_properties})
+            and scalar(keys(%$$messageRef)) > $fast_schema->{max_properties};
+
+        _die_at_path($path, "Object, contains " . scalar(keys(%$$messageRef)) . " properties, min allowed " . $fast_schema->{min_properties})
+            if defined($fast_schema->{min_properties})
+            and scalar(keys(%$$messageRef)) < $fast_schema->{min_properties};
+
         if (defined($fast_schema->{fields})) {
             for my $field_name (keys %{$fast_schema->{fields}}) {
                 my $field_defintion = $fast_schema->{fields}->{$field_name};
@@ -243,21 +282,36 @@ sub _fast_validate_and_coerce_part {
                 }
                 if (exists($$messageRef->{$field_name})) {
                     _fast_validate_and_coerce_part([@$path, $field_name], $field_defintion, \$$messageRef->{$field_name});
+                } elsif (exists($field_defintion->{default})) {
+                    $$messageRef->{$field_name} = $field_defintion->{default};
                 }
             }
         }
 
         for my $field_name (keys %$$messageRef) {
             if (!defined($fast_schema->{fields}->{$field_name})) {
-                my $additional_properties = $fast_schema->{'additional_properties'};
-                if ($additional_properties->{mode} eq "reject") {
-                    _die_at_path($path, "Unexpected element '$field_name'");
-                } elsif ($additional_properties->{mode} eq "check") {
-                    _fast_validate_and_coerce_part([@$path, $field_name], $additional_properties->{schema}, \$$messageRef->{$field_name});
-                } elsif ($additional_properties->{mode} eq "allow") {
-                    # allow anything
-                } else {
-                    _die_at_path($path, "Internal error #39742424 additional property mode '" . ($additional_properties->{mode} // "undef") . "'");
+                my $matched = undef;
+                foreach my $pattern (keys %{$fast_schema->{'pattern_properties'}}) {
+                    if (_check_pattern($pattern, $field_name)) {
+                        _fast_validate_and_coerce_part(
+                            [@$path, $field_name],
+                            $fast_schema->{'pattern_properties'}->{$pattern},
+                            \$$messageRef->{$field_name});
+                        $matched = 1;
+                    }
+                }
+                if (!$matched) {
+                    my $additional_properties = $fast_schema->{'additional_properties'};
+                    if ($additional_properties->{mode} eq "reject") {
+                        _die_at_path($path, "Unexpected element '$field_name'");
+                    } elsif ($additional_properties->{mode} eq "check") {
+                        _fast_validate_and_coerce_part([@$path, $field_name], $additional_properties->{schema}, \$$messageRef->{$field_name});
+                    } elsif ($additional_properties->{mode} eq "allow") {
+                        # allow anything
+                    } else {
+                        _die_at_path($path,
+                            "Internal error #39742424 additional property mode '" . ($additional_properties->{mode} // "undef") . "'");
+                    }
                 }
             }
         }
