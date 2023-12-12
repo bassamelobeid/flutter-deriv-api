@@ -8,7 +8,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User::Client;
 use BOM::User;
 
-my $email = 'abc@binary.com';
+my $email      = 'abc@binary.com';
+my $email_diel = 'abcd@binary.com';
 
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -25,6 +26,18 @@ my $user = BOM::User->create(
     password => 'test',
 );
 
+my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+    email       => $email,
+    residence   => 'za',
+});
+
+my $user_diel = BOM::User->create(
+    email    => $email_diel,
+    password => 'test',
+);
+
+$user_diel->add_client($client_mf);
 $user->add_client($client_vr);
 $user->add_client($client_mx);
 
@@ -93,8 +106,6 @@ $mock_lc->mock(
         return 'maltainvest';
     });
 
-is($client_mx->is_verification_required(), 1, 'return 1 because LC is maltainvest');
-
 $mock_lc->mock(
     'short',
     sub {
@@ -118,4 +129,38 @@ $user_mock->mock(
 
 is($client_mx->is_verification_required(), 0, 'return 0 because it does not have mt5 regulated account');
 
+my $mock_cli_diel  = Test::MockModule->new(ref($client_mf));
+my $user_mock_diel = Test::MockModule->new(ref($user_diel));
+
+$mock_lc->unmock_all;
+$mock_lc->mock(
+    'short',
+    sub {
+        return 'maltainvest';
+    });
+
+$mock_cli_diel->mock('has_deposits', sub { 0 });
+
+$user_mock_diel->mock(
+    'has_mt5_regulated_account',
+    sub {
+        return 1;
+    });
+
+is($client_mf->is_verification_required(has_mt5_regulated_account => 1),
+    0, 'return 0 because it has mt5 regulated account(maltainvest) w/o deposit accoriding to new DIEL flow');
+
+$mock_cli_diel->mock('has_deposits', sub { 1 });
+
+is($client_mf->is_verification_required(has_mt5_regulated_account => 1),
+    1, 'return 1 because it has mt5 regulated account(maltainvest) with deposit accoriding to new DIEL flow');
+
+$mock_lc->mock(
+    'short',
+    sub {
+        return 'labuan';
+    });
+
+is($client_mf->is_verification_required(has_mt5_regulated_account => 1),
+    1, 'return 1 because it has mt5 regulated account except for maltainvest irrespective of deposit');
 done_testing();

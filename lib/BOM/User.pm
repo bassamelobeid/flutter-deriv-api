@@ -1218,7 +1218,7 @@ sub is_active_loginid {
 
     return 1
         if any { $details->{status} eq $_ }
-        qw/poa_outdated poa_pending poa_rejected poa_failed proof_failed verification_pending migrated_with_position migrated_without_position/;
+        qw/poa_outdated poa_pending poa_rejected poa_failed proof_failed verification_pending needs_verification migrated_with_position migrated_without_position/;
 
     return 0;
 }

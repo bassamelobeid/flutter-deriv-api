@@ -1962,20 +1962,22 @@ sub is_verification_required {
     # applicable for all landing companies
     return 1 if ($args{risk_sr}  // '') eq 'high';
     return 1 if ($args{risk_aml} // '') eq 'high';
+    my $has_deposits = $self->has_deposits();
     return 1
         if ($self->landing_company->short =~ /^(?:malta|iom)$/
         and not $country_config->{skip_deposit_verification}
-        and $self->has_deposits());
-
+        and $has_deposits);
+    return 1 if $self->landing_company->first_deposit_auth_check_required and $has_deposits;
     return 1
         if ($country_config->{require_verification_when_not_age_verified}
         and not $self->status->age_verification);
 
-    return 1 if $self->landing_company->short eq 'maltainvest';
-
     # we need to check if mt5 group is for
     # labuan - regulated one, if yes then it needs authentication
-    return 1 if $args{has_mt5_regulated_account} // $self->user->has_mt5_regulated_account();
+    return 1
+        if ($args{has_mt5_regulated_account} // $self->user->has_mt5_regulated_account())
+        and ($self->landing_company->first_deposit_auth_check_required and $has_deposits);
+    return 1 if ($args{has_mt5_regulated_account} && !$self->landing_company->first_deposit_auth_check_required);
 
     return 0;
 }
@@ -6591,6 +6593,7 @@ sub validate_payment {
             currency            => $currency,
             action              => $action_type,
             amount              => $amount,
+            has_deposits        => $self->has_deposits(),
             is_internal         => (any { $payment_type eq $_ } @internal)       ? 1 : 0,
             is_p2p_restricted   => (any { $payment_type eq $_ } @p2p_restricted) ? 1 : 0,
             brand               => request->brand(),
@@ -7441,10 +7444,14 @@ sub update_status_after_auth_fa {
 
             if ($sibling->fully_authenticated && !$sibling->documents->expired) {
                 $sibling_status->clear_withdrawal_locked
-                    if ($sibling_status->reason('withdrawal_locked') // '') =~ 'Pending authentication or FA';
+                    if (($sibling_status->reason('withdrawal_locked') // '') =~
+                    /(Pending authentication or FA|Client Deposited - Pending Authentication)/);
 
                 $sibling_status->clear_allow_document_upload
                     if ($sibling_status->reason('allow_document_upload') // '') =~ /BECOME_HIGH_RISK|Pending authentication or FA/;
+
+                $sibling_status->clear_unwelcome
+                    if ($sibling_status->reason('unwelcome') // '') =~ /Client Deposited - Pending Authentication/;
             }
         }
 

@@ -176,4 +176,55 @@ subtest 'Name change after first deposit' => sub {
     ok $client->status->withdrawal_locked, 'retain withdrawal_locked for other reason';
 };
 
+subtest 'DIEL after authentication status removal' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+        email       => 'dielflow@test.com',
+    });
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test',
+    )->add_client($client);
+
+    #FA not completed
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    $mocked_client->mock('is_financial_assessment_complete' => sub { return 0 });
+    $mocked_client->mock('fully_authenticated'              => sub { return 1 });
+
+    $client->status->set('unwelcome',         'system', 'Client Deposited - Pending Authentication');
+    $client->status->set('withdrawal_locked', 'system', 'Client Deposited - Pending Authentication');
+
+    $client->update_status_after_auth_fa;
+    undef $client->{status};
+    ok $client->status->unwelcome,         'unwelcome status not removed when FA not completed even when fully authenticated';
+    ok $client->status->withdrawal_locked, 'withdrawal_locked status not removed when FA not completed even when fully authenticated';
+
+    $mocked_client->mock('is_financial_assessment_complete' => sub { return 1 });
+    $mocked_client->mock('fully_authenticated'              => sub { return 0 });
+
+    $client->update_status_after_auth_fa;
+    undef $client->{status};
+    ok $client->status->unwelcome,         'unwelcome status not removed when FA completed but not fully authenticated';
+    ok $client->status->withdrawal_locked, 'withdrawal_locked status not removed when FA completed but not fully authenticated';
+
+    $mocked_client->mock('is_financial_assessment_complete' => sub { return 1 });
+    $mocked_client->mock('fully_authenticated'              => sub { return 1 });
+
+    $client->update_status_after_auth_fa;
+    undef $client->{status};
+    ok !$client->status->unwelcome,         'unwelcome status removed when FA completed and fully authenticated';
+    ok !$client->status->withdrawal_locked, 'withdrawal_locked status removed when FA completed and fully authenticated';
+
+    #Checking the other reason
+    $client->status->set('unwelcome',             'system', 'Pending authentication or FA');
+    $client->status->set('allow_document_upload', 'system', 'Pending authentication or FA');
+
+    $client->update_status_after_auth_fa;
+    undef $client->{status};
+
+    ok !$client->status->allow_document_upload, 'allow document upload status removed when FA completed and when fully authenticated';
+    ok !$client->status->withdrawal_locked,     'withdrawal_locked status not removed when FA not completed and when fully authenticated';
+};
+
 done_testing();

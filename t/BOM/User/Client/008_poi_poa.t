@@ -1126,7 +1126,8 @@ subtest 'needs_poa_verification' => sub {
                 proof_of_address => {
                     documents => undef,
                 }};
-
+            ok !$test_client_mf->needs_poa_verification, 'POA is not needed before first deposit';
+            $mocked_client->mock('has_deposits', sub { return 1 });
             ok $test_client_mf->needs_poa_verification, 'POA is needed due not fully authenticated and authentication needed';
             $mocked_client->unmock_all;
 

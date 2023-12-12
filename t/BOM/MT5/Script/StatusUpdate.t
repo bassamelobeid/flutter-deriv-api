@@ -878,7 +878,7 @@ subtest 'sync_status_actions' => sub {
         cmp_deeply $dog_logs,
             [[
                 'StatusUpdate.sync_status_actions',
-                'Info: Gathered 4 accounts form the DB with status [\'poa_failed\', \'proof_failed\', \'verification_pending\', \'poa_rejected\', \'poa_pending\'] with the newest created at: '
+                'Info: Gathered 4 accounts form the DB with status [\'poa_failed\', \'proof_failed\', \'verification_pending\', \'poa_rejected\', \'poa_pending\', \'needs_verification\'] with the newest created at: '
                     . Date::Utility->new('2022-11-3 1245')->datetime_ddmmmyy_hhmmss_TZ,
                 {alert_type => 'info'}]
             ],
@@ -896,7 +896,7 @@ subtest 'sync_status_actions' => sub {
         cmp_deeply $dog_logs,
             [[
                 'StatusUpdate.sync_status_actions',
-                'Info: Gathered 4 accounts form the DB with status [\'poa_failed\', \'proof_failed\', \'verification_pending\', \'poa_rejected\', \'poa_pending\'] with the newest created at: '
+                'Info: Gathered 4 accounts form the DB with status [\'poa_failed\', \'proof_failed\', \'verification_pending\', \'poa_rejected\', \'poa_pending\', \'needs_verification\'] with the newest created at: '
                     . Date::Utility->new('2022-11-3 1245')->datetime_ddmmmyy_hhmmss_TZ,
                 {alert_type => 'info'}]
             ],

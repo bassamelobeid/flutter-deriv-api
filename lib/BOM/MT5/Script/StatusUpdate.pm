@@ -936,13 +936,14 @@ Does not takes or returns any parameters
     method sync_status_actions {
         my @combined = $self->gather_users({
             newest_created_at => $now,
-            statuses          => ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'poa_outdated'],
+            statuses          =>
+                ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'poa_outdated', 'needs_verification'],
         });
 
         $self->dd_log_info('sync_status_actions',
                   "Gathered "
                 . scalar(@combined)
-                . " accounts form the DB with status ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending'] with the newest created at: "
+                . " accounts form the DB with status ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'needs_verification'] with the newest created at: "
                 . $now->datetime_ddmmmyy_hhmmss_TZ);
 
         my %processed_binary_user;
