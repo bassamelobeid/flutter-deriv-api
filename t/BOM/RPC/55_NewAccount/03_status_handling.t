@@ -101,7 +101,7 @@ subtest 'MF' => sub {
     my $mf_client = BOM::User::Client->new({loginid => $loginid});
     $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
 
-    ok($mf_client->status->unwelcome,  'Account unwelcome on creation');
+    ok(!$mf_client->status->unwelcome, 'Account welcome on creation');
     ok(!$vr_client->status->unwelcome, 'Virtual account not unwelcome');
 
     $rpc_ct->call_ok('new_account_real', $params)->has_error->error_code_is('InvalidAccount')

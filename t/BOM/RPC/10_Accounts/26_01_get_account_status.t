@@ -577,7 +577,7 @@ subtest 'get account status' => sub {
                     },
                     status                        => noneof(qw(authenticated)),
                     risk_classification           => 'low',
-                    prompt_client_to_authenticate => '1',
+                    prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
                             status => "none",
@@ -609,14 +609,14 @@ subtest 'get account status' => sub {
                             requests => [],
                         },
                         income             => {status => 'none'},
-                        needs_verification => ["document", "identity"],
+                        needs_verification => [],
                         attempts           => {
                             latest  => undef,
                             count   => 0,
                             history => []
                         },
                     },
-                    cashier_validation => ['ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
+                    cashier_validation => ['ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                     p2p_status         => "none",
                 },
                 'prompt for non authenticated MF client'
@@ -2820,7 +2820,7 @@ subtest 'get account status' => sub {
                         p2p_status                    => "none",
                         status                        => superbagof(qw(age_verification financial_information_not_complete)),
                         risk_classification           => 'standard',
-                        prompt_client_to_authenticate => 1,
+                        prompt_client_to_authenticate => 0,
                         authentication                => {
                             document => {
                                 status => "none",
@@ -2854,7 +2854,7 @@ subtest 'get account status' => sub {
                             income => {
                                 status => 'none',
                             },
-                            needs_verification => ["document"],
+                            needs_verification => [],
                             attempts           => {
                                 latest  => undef,
                                 count   => 0,
@@ -2899,7 +2899,7 @@ subtest 'get account status' => sub {
                         p2p_status                    => "none",
                         status                        => superbagof(qw(age_verification financial_information_not_complete)),
                         risk_classification           => 'standard',
-                        prompt_client_to_authenticate => 1,
+                        prompt_client_to_authenticate => 0,
                         authentication                => {
                             identity => {
                                 status      => "expired",
@@ -2934,7 +2934,7 @@ subtest 'get account status' => sub {
                             income => {
                                 status => 'none',
                             },
-                            needs_verification => ["document", "identity"],
+                            needs_verification => ["identity"],
                             attempts           => {
                                 latest  => undef,
                                 count   => 0,
@@ -2970,7 +2970,7 @@ subtest 'get account status' => sub {
                     p2p_status                    => "none",
                     status                        => superbagof(qw(financial_information_not_complete)),
                     risk_classification           => 'standard',
-                    prompt_client_to_authenticate => 1,
+                    prompt_client_to_authenticate => 0,
                     authentication                => {
                         document => {
                             status => "none",
@@ -3004,7 +3004,7 @@ subtest 'get account status' => sub {
                         income => {
                             status => 'none',
                         },
-                        needs_verification => ["document", "identity"],
+                        needs_verification => [],
                         attempts           => {
                             latest  => undef,
                             count   => 0,

@@ -381,10 +381,20 @@ subtest 'landing_companies_specific' => sub {
 
     $client_mf->financial_assessment({data => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa()});
     $client_mf->save();
-
+    $client_mocked->mock(has_deposits => sub { 1 });
     $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
         ->error_message_is('Please authenticate your account.', 'MF client needs to be fully authenticated');
+
+    $client_mocked->mock(has_deposits => sub { undef });
+    $rpc_ct->call_ok('cashier', $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_FINANCIAL_RISK_APPROVAL', 'financial risk approval is required')
+        ->error_message_is('Financial Risk approval is required.', 'financial risk approval is required');
+
+    $client_mocked->mock(has_deposits => sub { 0 });
+    $rpc_ct->call_ok('cashier', $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_FINANCIAL_RISK_APPROVAL', 'financial risk approval is required')
+        ->error_message_is('Financial Risk approval is required.', 'financial risk approval is required');
 
     $client_mf->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $client_mf->save;

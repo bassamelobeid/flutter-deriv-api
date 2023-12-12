@@ -966,6 +966,7 @@ async_rpc "mt5_new_account",
                         loginid              => $client->loginid,
                         new_mt5_jurisdiction => $landing_company_short,
                         loginid_details      => $user->loginid_details,
+                        new_mt5_account      => 1,
                     );
                 } catch ($error) {
                     my $failed_mt5_status = $error->{params}->{mt5_status};
