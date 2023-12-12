@@ -461,6 +461,9 @@ if ($input{document_list}) {
 
     BOM::Platform::Event::Emitter::emit('poi_updated', {loginid => $client->loginid}) if $poi_updated;
     BOM::Platform::Event::Emitter::emit('poa_updated', {loginid => $client->loginid}) if $poa_updated;
+    if ($client->landing_company->first_deposit_auth_check_required) {
+        _update_mt5_status($client);
+    }
 }
 
 # Deleting checked statuses
@@ -820,6 +823,9 @@ if ($input{whattodo} eq 'uploadID') {
         }
     }
     print $result;
+    if ($client->landing_company->first_deposit_auth_check_required) {
+        _update_mt5_status($client);
+    }
     code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
 }
 
@@ -1460,6 +1466,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
             }
 
         }
+        _update_mt5_status($cli);
     }
 
     # Check if expected address has been updated
