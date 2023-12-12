@@ -142,7 +142,7 @@ subtest 'MF accounts' => sub {
         $v->run_authentication;
 
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
-        ok $v->client->status->unwelcome,    "Unwelcome";
+        ok !$v->client->status->unwelcome,   "Unwelcome not applied as being handled by Payops-IT team for MF clients";
     };
     subtest "Authenticated prior to run_authentication" => sub {
         my $user_client_mf = BOM::User->create(

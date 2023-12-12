@@ -386,14 +386,21 @@ subtest 'Cashier validation landing company and country specific' => sub {
         my $res = BOM::Platform::Client::CashierValidation::validate(%args);
         is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
         is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
-        cmp_deeply $res->{status}, set('ASK_CURRENCY', 'ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
+        cmp_deeply $res->{status}, set('ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
 
         $mf_client->set_default_account('EUR');
         $mf_client->save;
 
         $res = BOM::Platform::Client::CashierValidation::validate(%args);
-        is $res->{error}->{code},              'ASK_AUTHENTICATE',                  'Correct error code for not authenticated';
-        is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message for not authenticated';
+        is $res->{error}->{code}, 'ASK_FINANCIAL_RISK_APPROVAL', 'Correct error code for incomplete financial approval';
+        is $res->{error}->{message_to_client}, 'Financial Risk approval is required.',
+            'Correct error message for financial approval is not completed';
+        cmp_deeply $res->{status}, set('ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
+        $mock_client->mock(has_deposits => sub { note "mocked Client->has_deposits returning true"; 1 });
+
+        $res = BOM::Platform::Client::CashierValidation::validate(%args);
+        is $res->{error}->{code},              'ASK_AUTHENTICATE',                  'Correct error code for unauthentication is received';
+        is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message for unathentication is received';
         cmp_deeply $res->{status}, set('ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
 
         $mock_client->mock(fully_authenticated => sub { note "mocked Client->fully_authenticated returning true"; 1 });

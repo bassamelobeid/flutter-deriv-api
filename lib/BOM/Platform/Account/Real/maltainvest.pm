@@ -34,7 +34,6 @@ sub create_account {
     update_financial_assessment($client->user, $params, new_mf_client => 1);
 
     # after_register_client sub save client so no need to call it here
-    $client->status->set('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     if ($accept_risk) {
         $client->status->setnx('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
     } elsif (not $should_warn) {

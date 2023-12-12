@@ -133,7 +133,8 @@ sub validate {
 
     $errors = check_availability($client, $action) // {};
 
-    my $currency = $client->account ? $client->account->currency_code : '';
+    my $currency     = $client->account ? $client->account->currency_code : '';
+    my $has_deposits = $client->has_deposits();
 
     my $failed_rules;
 
@@ -141,11 +142,12 @@ sub validate {
         'cashier_validation',
         underlying_action => $underlying_action->{name} // ('cashier_' . $action),
         $underlying_action->{args}->%*,
-        loginid     => $loginid,
-        action      => $action,
-        currency    => $currency,
-        is_internal => $is_internal ? 1 : 0,
-        is_cashier  => $is_cashier,
+        loginid      => $loginid,
+        action       => $action,
+        currency     => $currency,
+        is_internal  => $is_internal ? 1 : 0,
+        is_cashier   => $is_cashier,
+        has_deposits => $has_deposits ? 1 : 0,
         # Keep the rule engine from stopping on failure
         rule_engine_context => {stop_on_failure => 0},
     );
