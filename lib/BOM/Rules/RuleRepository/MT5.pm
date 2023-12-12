@@ -16,7 +16,7 @@ use warnings;
 use BOM::Rules::Registry qw(rule);
 use Time::Moment;
 use Date::Utility;
-use List::Util qw( any );
+use List::Util qw( any all none );
 
 use constant JURISDICTION_DAYS_LIMIT => {
     bvi     => 10,
@@ -61,7 +61,9 @@ rule 'mt5_account.account_poa_status_allowed' => {
             $self->fail($error_message) if $selected_mt5_status eq 'poa_failed';
 
             # active accounts might have to look back into the authentication status
-            return 1 unless any { $selected_mt5_status eq $_ } qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending active/;
+            return 1
+                unless any { $selected_mt5_status eq $_ }
+                qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending active needs_verification/;
         }
 
         my @mt5_accounts =
@@ -106,6 +108,7 @@ rule 'mt5_account.account_proof_status_allowed' => {
         my %loginid_details  = %{$args->{loginid_details}};
         my $error_message    = 'ProofRequirementError';
         my $mt5_jurisdiction = $new_mt5_jurisdiction;
+        my $mt5_new_acc      = $args->{new_mt5_account};
 
         my %proof_check = (
             poi => sub {
@@ -133,13 +136,28 @@ rule 'mt5_account.account_proof_status_allowed' => {
 
         my %proof_status = map { $_ => {$proof_check{$_}->($mt5_jurisdiction) => 1} } @{$required_proof};
 
+        #Here checking whether we require authentication only first deposit by the client or not(In this case only for Maltainvest clients as part of DIEL flow)
+        if ($client->landing_company->first_deposit_auth_check_required) {
+            $self->fail($error_message, params => {mt5_status => 'needs_verification'})
+                if ($mt5_new_acc && $proof_status{'poi'}->{'none'} && $proof_status{'poa'}->{'none'});
+
+            if (all { _is_proof_needed($proof_status{$_}) } @{$required_proof}) {
+                if (any { $proof_status{$_}->{none} } @{$required_proof}) {
+                    $self->fail($error_message, params => {mt5_status => 'needs_verification'});
+                } elsif (any { $proof_status{$_}->{pending} } @{$required_proof}) {
+                    $self->fail($error_message, params => {mt5_status => 'verification_pending'});
+                }
+            }
+
+        }
+
         $self->fail($error_message, params => {mt5_status => 'proof_failed'}) if any { _is_proof_failed($proof_status{$_}) } @{$required_proof};
 
         $self->fail($error_message, params => {mt5_status => 'verification_pending'})
             if any { ($proof_status{$_}->{pending} // 0) == 1 } @{$required_proof};
 
         return 1;
-    },
+    }
 };
 
 =head2 _is_proof_failed
@@ -159,3 +177,22 @@ sub _is_proof_failed {
     return 0 if any { ($proof_status->{$_} // 0) == 1 } ('verified', 'pending');
     return 1;
 }
+
+=head2 _is_proof_needed
+
+Check if current proof status considered pending or needs_verification. It should return 1 if any of the proof status is 'verified' or 'pending'.
+
+=over 4
+
+=item * C<proof_status> - The current poi/poa's verification result.
+
+=back
+
+=cut
+
+sub _is_proof_needed {
+    my $proof_status = shift;
+    return 1 if any { ($proof_status->{$_} // 0) == 1 } ('verified', 'pending', 'none');
+    return 0;
+}
+

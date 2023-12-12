@@ -647,18 +647,165 @@ subtest $rule_name => sub {
         email       => 'mt5+poa+checks2@test.com',
     });
 
+    my $client_diel = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+        email       => 'mt5+poa+diel@test.com',
+        residence   => 'za',
+    });
+
     BOM::User->create(
         email    => $client_cr->email,
         password => 'x',
     )->add_client($client_cr);
 
+    BOM::User->create(
+        email    => $client_diel->email,
+        password => 'x',
+    )->add_client($client_diel);
+
     $client_cr->account('USD');
+    $client_diel->account('USD');
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    my $rule_engine      = BOM::Rules::Engine->new(client => $client_cr);
+    my $rule_engine_diel = BOM::Rules::Engine->new(client => $client_diel);
 
+    # diel flow
+    $poa_status = 'none';
+    $poi_status = 'none';
+
+    my $args_new_account = {
+        loginid         => $client_diel->loginid,
+        loginid_details => {
+            MTR1005 => {attributes => {group => 'maltainvest'}},
+        },
+        mt5_id               => 'undef',
+        new_mt5_jurisdiction => 'maltainvest',
+        new_mt5_account      => 1,
+    };
+
+    cmp_deeply(
+        exception { $rule_engine_diel->apply_rules($rule_name, $args_new_account->%*) },
+        {
+            error_code => 'ProofRequirementError',
+            rule       => $rule_name,
+            params     => {mt5_status => 'needs_verification'},
+        },
+        "DIEL rule reports an error for needs_verification status"
+    );
+
+    my $statuses = [qw/none verified pending/];
+    my $args     = {
+        loginid         => $client_diel->loginid,
+        loginid_details => {
+            MTR1005 => {attributes => {group => 'maltainvest'}},
+        },
+        mt5_id => 'MTR1005',
+    };
+
+    for my $status ($statuses->@*) {
+        $poa_status = 'none';
+        $poi_status = $status;
+
+        cmp_deeply(
+            exception { $rule_engine_diel->apply_rules($rule_name, $args->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => $rule_name,
+                params     => {mt5_status => 'needs_verification'},
+            },
+            "DIEL rule reports correct status -> needs_verification for POI status = $poi_status, POA status = $poa_status"
+        );
+
+        cmp_deeply(
+            exception { $rule_engine_diel->apply_rules($rule_name, $args_new_account->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => $rule_name,
+                params     => {mt5_status => 'needs_verification'},
+            },
+            "DIEL rule reports correct status -> needs_verification for POI status = $poi_status, POA status = $poa_status when creating MT5 account after submitting either one document"
+        );
+
+        $poa_status = $status;
+        $poi_status = 'none';
+
+        cmp_deeply(
+            exception { $rule_engine_diel->apply_rules($rule_name, $args->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => $rule_name,
+                params     => {mt5_status => 'needs_verification'},
+            },
+            "DIEL rule reports correct status -> needs_verification for POI status = $poi_status, POA status = $poa_status"
+        );
+
+        cmp_deeply(
+            exception { $rule_engine_diel->apply_rules($rule_name, $args_new_account->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => $rule_name,
+                params     => {mt5_status => 'needs_verification'},
+            },
+            "DIEL rule reports correct status -> needs_verification for POI status = $poi_status, POA status = $poa_status when creating MT5 account after submitting either one document"
+        );
+    }
+
+    $statuses = [qw/verified pending/];
+    for my $status ($statuses->@*) {
+        $poa_status = $status;
+        $poi_status = 'pending';
+
+        cmp_deeply(
+            exception { $rule_engine_diel->apply_rules($rule_name, $args->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => $rule_name,
+                params     => {mt5_status => 'verification_pending'},
+            },
+            "DIEL rule reports correct status -> pending_verification for POI status = $poi_status, POA status = $poa_status"
+        );
+
+        cmp_deeply(
+            exception { $rule_engine_diel->apply_rules($rule_name, $args_new_account->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => $rule_name,
+                params     => {mt5_status => 'verification_pending'},
+            },
+            "DIEL rule reports correct status -> pending_verification for POI status = $poi_status, POA status = $poa_status when creating MT5 account after submitting/verifying either one document"
+        );
+
+        $poa_status = 'pending';
+        $poi_status = $status;
+
+        cmp_deeply(
+            exception { $rule_engine_diel->apply_rules($rule_name, $args->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => $rule_name,
+                params     => {mt5_status => 'verification_pending'},
+            },
+            "DIEL rule reports correct status -> pending_verification for POI status = $poi_status, POA status = $poa_status"
+        );
+
+        cmp_deeply(
+            exception { $rule_engine_diel->apply_rules($rule_name, $args_new_account->%*) },
+            {
+                error_code => 'ProofRequirementError',
+                rule       => $rule_name,
+                params     => {mt5_status => 'verification_pending'},
+            },
+            "DIEL rule reports correct status -> pending_verification for POI status = $poi_status, POA status = $poa_status when creating MT5 account after submitting/verifying either one document"
+        );
+
+    }
+
+    $poa_status = 'verified';
+    $poi_status = 'verified';
+    ok $rule_engine_diel->apply_rules($rule_name, $args->%*), 'Rule passes for DIEL flow with both POI and POA verified';
     # undefined group
 
-    my $args = {
+    $args = {
         loginid         => $client_cr->loginid,
         loginid_details => {
             MTR1000 => {attributes => {group => undef}},

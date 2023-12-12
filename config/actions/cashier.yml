@@ -61,6 +61,7 @@ paymentagent_withdraw:
         loginid: loginid_client
         action: "'withdrawal'"
         is_internal: "'0'"
+        has_deposits : "'1'"
         amount: amount
         currency: currency
     - type: group

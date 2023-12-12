@@ -28,9 +28,16 @@ cashier_validation:
       on: landing_company
       rules_per_value:
         maltainvest:
-          - client.fully_authenticated
-          - client.financial_risk_approval_status
-          - client.crs_tax_information_status
+          type: conditional
+          on: has_deposits
+          rules_per_value:
+            0:
+              - client.financial_risk_approval_status
+              - client.crs_tax_information_status
+            1:
+              - client.fully_authenticated
+              - client.financial_risk_approval_status
+              - client.crs_tax_information_status
         default:
           - client.check_max_turnover_limit
     - type: conditional
