@@ -1539,7 +1539,7 @@ async sub sync_mt5_accounts_status {
         # client should have been checked imho anyway
         next
             if none { ($loginid_data->{status} // 'active') eq $_ }
-            ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', 'active');
+            ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', 'active', 'needs_verification');
 
         push $jurisdiction_mt5_accounts{$mt5_jurisdiction}->@*, $loginid;
     }
