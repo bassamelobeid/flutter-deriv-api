@@ -17,6 +17,7 @@ use BOM::MT5::User::Async;
 use BOM::Config::Redis;
 use BOM::Config;
 use BOM::Event::Services::Track;
+use BOM::Event::Utility;
 use BOM::Platform::Client::Sanctions;
 use BOM::Config::MT5;
 use BOM::Rules::Engine;
@@ -32,6 +33,7 @@ use Path::Tiny;
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use JSON::MaybeXS   qw(decode_json);
 use DataDog::DogStatsd::Helper;
+use DateTime::Format::Strptime;
 use Syntax::Keyword::Try;
 use Future::Utils qw(fmap_void try_repeat);
 use Time::Moment;
@@ -328,6 +330,33 @@ async sub mt5_change_color {
         mt5_loginid => $loginid,
         color       => $color
     });
+}
+
+=head2 sort_login_ids_by_transaction
+
+Sort login ids by most recent transactions done
+
+=over 4
+
+=item * C<login_ids> - Reference of login ids list
+
+=back
+
+Returns array of sorted loginids
+
+=cut
+
+sub sort_login_ids_by_transaction {
+    my ($args)        = @_;
+    my $bom_login_ids = $args->{login_ids};
+    my @clients       = map { BOM::User::Client->get_client_instance($_) } @$bom_login_ids;
+    @clients = sort {
+        my $a_epoch = defined $a->account && defined $a->account->{last_modified} ? Date::Utility->new($a->account->{last_modified})->epoch : 0;
+        my $b_epoch = defined $b->account && defined $b->account->{last_modified} ? Date::Utility->new($b->account->{last_modified})->epoch : 0;
+        $b_epoch <=> $a_epoch
+    } @clients;
+    @$bom_login_ids = map { $_->{loginid} } @clients;
+    return @$bom_login_ids;
 }
 
 =head2 mt5_password_changed
@@ -778,6 +807,8 @@ async sub mt5_deriv_auto_rescind {
                     next;
                 }
 
+                @bom_login_ids = sort_login_ids_by_transaction({login_ids => \@bom_login_ids});
+
                 $mt5_deriv_accounts{$user->{email}} = {
                     bom_user               => $bom_user,
                     deriv_accounts         => \@bom_login_ids,
@@ -788,6 +819,7 @@ async sub mt5_deriv_auto_rescind {
             push $mt5_deriv_accounts{$user->{email}}{mt5_accounts}->@*, $mt5_account;
 
         } catch ($e) {
+
             if (defined($e->{error})) {
                 _create_error(\%process_mt5_fail, $mt5_account, 'MT5 Error', $e->{error});
             } else {
@@ -799,8 +831,7 @@ async sub mt5_deriv_auto_rescind {
     my %group_to_currency;
     foreach my $bom_email (keys %mt5_deriv_accounts) {
         foreach my $mt5_account ($mt5_deriv_accounts{$bom_email}{mt5_accounts}->@*) {
-            my $mt5_user = await BOM::MT5::User::Async::get_user($mt5_account);
-
+            my $mt5_user                = await BOM::MT5::User::Async::get_user($mt5_account);
             my $is_demo                 = $mt5_user->{group} =~ /^demo/ ? 1 : 0;
             my $disabled_account_option = 0;
             if ($is_demo) {
@@ -819,20 +850,17 @@ async sub mt5_deriv_auto_rescind {
                         skip_archive           => $skip_archive,
                         staff_name             => $staff_name,
                     };
-
                     if ($disabled_account_option) {
                         $params->{deriv_account_id}        = $mt5_deriv_accounts{$bom_email}{disabled_deriv_account};
                         $params->{disabled_account_bypass} = 1;
                     }
 
                     my $process_result = await _mt5_cr_auto_rescind_process($params);
-
                     if ($process_result) {
                         last if $custom_transfer_amount and not $process_result->{archived} and not $skip_archive;
 
                         $process_mt5_success{$bom_email}{bom_user} = $mt5_deriv_accounts{$bom_email}{bom_user}
                             if not defined($process_mt5_success{$bom_email});
-
                         if ($process_result->{transferred_deriv}) {
                             $process_mt5_success{$bom_email}{$mt5_user->{login}} = {
                                 transferred_deriv          => $process_result->{transferred_deriv},
@@ -843,13 +871,11 @@ async sub mt5_deriv_auto_rescind {
 
                             push $process_mt5_success{$bom_email}{transfer_targets}->@*, $params->{deriv_account_id};
                         }
-
                         push $process_mt5_success{$bom_email}{mt5_accounts}->@*, $mt5_user;
 
                         delete $process_mt5_fail{$mt5_user->{login}} if exists($process_mt5_fail{$mt5_user->{login}});
 
                         last;
-
                     } else {
                         #Consider disabled account option if failed at last available Deriv account.
                         if (    $override_status
@@ -918,7 +944,6 @@ async sub _mt5_cr_auto_rescind_process {
 
     $disabled_account_bypass = 0 unless $disabled_account_bypass;
     my $mt5_id = $mt5_user->{login};
-
     my $deriv_client;
     try {
         $deriv_client = BOM::User::Client->new({loginid => $deriv_account_id});
@@ -926,17 +951,14 @@ async sub _mt5_cr_auto_rescind_process {
         _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, "Error getting Deriv Account");
         return 0;
     }
-
     unless ($deriv_client) {
         _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, "Deriv Account not found");
         return 0;
     }
-
     unless ($deriv_client->currency) {
         _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, "Deriv Account currency not found");
         return 0;
     }
-
     my $currency;
     if (exists $group_to_ccy->{$mt5_user->{group}} and defined $group_to_ccy->{$mt5_user->{group}}) {
         $currency = $group_to_ccy->{$mt5_user->{group}};
@@ -945,21 +967,17 @@ async sub _mt5_cr_auto_rescind_process {
         $currency = uc($user_group->{currency}) if defined($user_group->{currency});
         $group_to_ccy->{$mt5_user->{group}} = $currency;
     }
-
     unless ($currency) {
         _create_error($process_mt5_fail, $mt5_id, "MT5 Error", "Currency Group not found");
         return 0;
     }
-
     my $mt5_transfer_amount = $mt5_user->{balance};
     if ($custom_transfer_amount) {
         $custom_transfer_amount = financialrounding('amount', $currency, $custom_transfer_amount);
         $mt5_transfer_amount    = $custom_transfer_amount < $mt5_user->{balance} ? $custom_transfer_amount : $mt5_user->{balance};
     }
-
     my $transfer_amount =
         $deriv_client->currency ne $currency ? convert_currency($mt5_transfer_amount, $currency, $deriv_client->currency) : $mt5_transfer_amount;
-
     my $rule_engine = BOM::Rules::Engine->new(client => [$deriv_client]);
     unless ($override_status) {
         try {

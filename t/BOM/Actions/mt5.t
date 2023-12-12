@@ -633,6 +633,72 @@ subtest 'mt5 account closure report' => sub {
     like $email->{body}, qr/MT5 account closure report is attached/, 'corrent content';
 };
 
+subtest 'tests for loginids sorted by last login' => sub {
+
+    my $day_one   = '2011-03-08 12:59:59';
+    my $day_two   = '2011-03-09 12:59:59';
+    my $day_three = '2011-03-10 12:59:59';
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+
+    });
+    $client->payment_legacy_payment(
+        currency         => 'USD',
+        amount           => 100,
+        remark           => 'top up',
+        payment_type     => 'credit_debit_card',
+        transaction_time => $day_three,
+        payment_time     => $day_three,
+        source           => 1,
+    );
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
+
+    });
+    $client_mf->payment_legacy_payment(
+        currency         => 'USD',
+        amount           => 100,
+        remark           => 'top up',
+        payment_type     => 'credit_debit_card',
+        transaction_time => $day_two,
+        payment_time     => $day_two,
+        source           => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+
+    });
+
+    $client_vr->payment_legacy_payment(
+        currency         => 'USD',
+        amount           => 100,
+        remark           => 'top up',
+        payment_type     => 'credit_debit_card',
+        transaction_time => $day_one,
+        payment_time     => $day_one,
+        source           => 1,
+    );
+
+    my $user = BOM::User->create(
+        email          => 'rule_client@binary.com',
+        password       => 'abcd',
+        email_verified => 1,
+    );
+
+    $user->add_client($client);
+    $user->add_client($client_vr);
+    $user->add_client($client_mf);
+
+    is_deeply [BOM::Event::Actions::MT5::sort_login_ids_by_transaction({login_ids => [$user->bom_real_loginids()]})],
+        [$client->loginid, $client_mf->loginid], 'loginids are sorted by last login';
+    $mocked_user_client->mock('account', shift // sub { undef });
+    is_deeply [BOM::Event::Actions::MT5::sort_login_ids_by_transaction({login_ids => [$user->bom_real_loginids()]})],
+        [$client->loginid, $client_mf->loginid], 'loginids are sorted by last login';
+    $mocked_user_client->unmock_all;
+
+};
+
 subtest 'mt5 deriv auto rescind' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -734,13 +800,25 @@ subtest 'mt5 deriv auto rescind' => sub {
             $mocked_user->mock('new', shift // sub { bless $sample_bom_user, 'BOM::User' });
         },
         bom_real_loginids => sub {
-            $mocked_user->mock('bom_real_loginids', shift // sub { ('CR90000') });
+            $mocked_user->mock('bom_real_loginids', shift // sub { ($auto_rescind_test_client->loginid) });
+        },
+    );
+
+    my %bom_user_client_account_mock = (
+        payment_id => sub {
+            $mocked_user_client_account->mock('payment_id', shift // sub { '123' });
         },
     );
 
     my %bom_user_client_mock = (
         new => sub {
             $mocked_user_client->mock('new', shift // sub { bless $sample_bom_user_client, 'BOM::User::Client' });
+        },
+        get_client_instance => sub {
+            $mocked_user_client->mock('get_client_instance', shift // sub { bless $auto_rescind_test_client, 'BOM::User::Client' });
+        },
+        account => sub {
+            $mocked_user_client->mock('account', shift // sub { bless $auto_rescind_test_client, 'BOM::User::Client::Account' });
         },
         currency => sub {
             $mocked_user_client->mock('currency', shift // sub { 'USD' });
@@ -766,12 +844,6 @@ subtest 'mt5 deriv auto rescind' => sub {
         },
         dbic => sub {
             $mocked_user_client->mock('dbic', shift // sub { 1 });
-        },
-    );
-
-    my %bom_user_client_account_mock = (
-        payment_id => sub {
-            $mocked_user_client_account->mock('payment_id', shift // sub { '123' });
         },
     );
 
@@ -901,8 +973,8 @@ subtest 'mt5 deriv auto rescind' => sub {
         $demo_mt5_user{group} = 'demo\\p01_ts03\\synthetic\\svg_std_usd\\03';
         $mt5_mock{get_user}->(sub { Future->done(\%demo_mt5_user) });
         $bom_user_mock{new}->();
-        $bom_user_mock{bom_real_loginids}->(sub { ('CR90000') });
-
+        $bom_user_mock{bom_real_loginids}->(sub { ($auto_rescind_test_client->loginid) });
+        $bom_user_client_mock{get_client_instance}->();
         my $result = $action_get->($args)->get;
         is_deeply $result->{failed_case}, {'MTD10000' => {'MT5 Error' => 'Demo Account detected, do nothing'}},
             'Got demo account detected, do nothing error';
@@ -916,9 +988,10 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         $mt5_deriv_auto_rescind_mock_set->();
         $bom_user_client_mock{new}->(sub { die {error => 'Generic Error'} });
+        $bom_user_client_mock{get_client_instance}->();
 
         my $result = $action_get->($args)->get;
-        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Error getting Deriv Account'}}, 'Got error getting deriv account error';
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR10003' => 'Error getting Deriv Account'}}, 'Got error getting deriv account error';
     };
 
     subtest 'Deriv Account not found' => sub {
@@ -929,9 +1002,10 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         $mt5_deriv_auto_rescind_mock_set->();
         $bom_user_client_mock{new}->(sub { undef; });
+        $bom_user_client_mock{get_client_instance}->();
 
         my $result = $action_get->($args)->get;
-        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Deriv Account not found'}}, 'Got deriv account not found error';
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR10003' => 'Deriv Account not found'}}, 'Got deriv account not found error';
     };
 
     subtest 'Deriv Account currency not found' => sub {
@@ -943,9 +1017,11 @@ subtest 'mt5 deriv auto rescind' => sub {
         $mt5_deriv_auto_rescind_mock_set->();
         $mt5_deriv_auto_rescind_process_mock_set->();
         $bom_user_client_mock{currency}->(sub { undef; });
+        $bom_user_client_mock{get_client_instance}->();
+        $bom_user_client_mock{account}->();
 
         my $result = $action_get->($args)->get;
-        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Deriv Account currency not found'}},
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR10003' => 'Deriv Account currency not found'}},
             'Got deriv account currency not found error';
     };
 
@@ -971,10 +1047,11 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         $mt5_deriv_auto_rescind_mock_set->();
         $mt5_deriv_auto_rescind_process_mock_set->();
+        $bom_user_client_mock{get_client_instance}->();
         $bom_user_client_mock{validate_payment}->(sub { die {error => 'Generic Error'} });
 
         my $result = $action_get->($args)->get;
-        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Validate Payment failed'}}, 'Got validate payment failed error';
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR10003' => 'Validate Payment failed'}}, 'Got validate payment failed error';
     };
 
     subtest 'Currency not allowed' => sub {
@@ -988,7 +1065,7 @@ subtest 'mt5 deriv auto rescind' => sub {
         $bom_rule_engine_mock{apply_rules}->(sub { die {error => 'Generic Error'} });
 
         my $result = $action_get->($args)->get;
-        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Currency not allowed'}}, 'Got currency not allowed error';
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR10003' => 'Currency not allowed'}}, 'Got currency not allowed error';
     };
 
     subtest 'Account Disabled error' => sub {
@@ -1002,7 +1079,7 @@ subtest 'mt5 deriv auto rescind' => sub {
         $bom_user_client_mock{status}->(sub { bless {disabled => 1}, 'BOM::User::Client::Status' });
 
         my $result = $action_get->($args)->get;
-        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Account Disabled'}}, 'Got account disabled error';
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR10003' => 'Account Disabled'}}, 'Got account disabled error';
     };
 
     subtest 'MT5 open position error' => sub {
@@ -1074,7 +1151,7 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         is_deeply $result->{failed_case},
-            {'MTR10000' => {'CR90000' => 'Funds transfer operation completed but error in recording mt5_transfer, archive process skipped'}},
+            {'MTR10000' => {'CR10003' => 'Funds transfer operation completed but error in recording mt5_transfer, archive process skipped'}},
             'Got mt5 db record error';
     };
 
@@ -1099,7 +1176,7 @@ subtest 'mt5 deriv auto rescind' => sub {
         $bom_user_client_mock{payment_mt5_transfer}->(sub { die {error => 'Generic Error'} });
 
         my $result = $action_get->($args)->get;
-        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Payment MT5 Transfer failed - MT5 Balance changes reverted'}},
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR10003' => 'Payment MT5 Transfer failed - MT5 Balance changes reverted'}},
             'Got payment error';
     };
 
@@ -1132,7 +1209,7 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         is_deeply $result->{failed_case},
-            {'MTR10000' => {'CR90000' => 'Payment MT5 Transfer failed - MT5 Balance modified and may failed to revert. Manual check required.'}},
+            {'MTR10000' => {'CR10003' => 'Payment MT5 Transfer failed - MT5 Balance modified and may failed to revert. Manual check required.'}},
             'Got payment with failed to revert error';
     };
 
@@ -1183,8 +1260,8 @@ subtest 'mt5 deriv auto rescind' => sub {
         my $result = $action_get->($args)->get;
         is_deeply $result->{success_case},
             {
-            $auto_rescind_test_client->email => {
-                bom_user     => $sample_bom_user,
+            'testrescind@test.com' => {
+                bom_user     => bless($sample_bom_user, 'BOM::User'),
                 mt5_accounts => [$sample_mt5_user]}
             },
             'Success Case with Balance 0';
@@ -1210,18 +1287,18 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         is_deeply $result->{success_case}, {
-            $auto_rescind_test_client->email => {
+            'testrescind@test.com' => {
                 bom_user     => $sample_bom_user,
                 mt5_accounts => [$sample_mt5_user],
                 MTR10000     => {
-                    transferred_deriv          => "CR90000",
+                    transferred_deriv          => "CR10003",
                     transferred_deriv_amount   => "10.00",
                     transferred_deriv_currency => "USD",
                     transferred_mt5_amount     => "10.00",
                     transferred_mt5_currency   => "USD",
 
                 },
-                transfer_targets => ["CR90000"],
+                transfer_targets => ["CR10003"],
             }
             },
             'Success Case with Balance 10 USD to USD';
@@ -1248,18 +1325,18 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         is_deeply $result->{success_case}, {
-            $auto_rescind_test_client->email => {
+            'testrescind@test.com' => {
                 bom_user     => $sample_bom_user,
                 mt5_accounts => [$sample_mt5_user],
                 MTR10000     => {
-                    transferred_deriv          => "CR90000",
+                    transferred_deriv          => "CR10003",
                     transferred_deriv_amount   => "9.8",
                     transferred_deriv_currency => "EUR",
                     transferred_mt5_amount     => "10.00",
                     transferred_mt5_currency   => "USD",
 
                 },
-                transfer_targets => ["CR90000"],
+                transfer_targets => ["CR10003"],
             }
             },
             'Success Case with Balance 10 USD to EUR';
@@ -1286,18 +1363,18 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         is_deeply $result->{success_case}, {
-            $auto_rescind_test_client->email => {
+            'testrescind@test.com' => {
                 bom_user     => $sample_bom_user,
                 mt5_accounts => [$sample_mt5_user],
                 MTR10000     => {
-                    transferred_deriv          => "CR90000",
+                    transferred_deriv          => "CR10003",
                     transferred_deriv_amount   => "10.00",
                     transferred_deriv_currency => "USD",
                     transferred_mt5_amount     => "10.00",
                     transferred_mt5_currency   => "USD",
 
                 },
-                transfer_targets => ["CR90000"],
+                transfer_targets => ["CR10003"],
             }
             },
             'Success Case with Balance 10 USD to USD with Disabled Account';
@@ -1325,18 +1402,18 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         is_deeply $result->{success_case}, {
-            $auto_rescind_test_client->email => {
+            'testrescind@test.com' => {
                 bom_user     => $sample_bom_user,
                 mt5_accounts => [\%mt5_user_with_balance],
                 MTR10000     => {
-                    transferred_deriv          => "CR90000",
+                    transferred_deriv          => "CR10003",
                     transferred_deriv_amount   => "5.00",
                     transferred_deriv_currency => "USD",
                     transferred_mt5_amount     => "5.00",
                     transferred_mt5_currency   => "USD",
 
                 },
-                transfer_targets => ["CR90000"],
+                transfer_targets => ["CR10003"],
             }
             },
             'Success Case with Balance 10 and transfer 5 USD to USD';
@@ -1363,18 +1440,18 @@ subtest 'mt5 deriv auto rescind' => sub {
 
         my $result = $action_get->($args)->get;
         is_deeply $result->{success_case}, {
-            $auto_rescind_test_client->email => {
+            'testrescind@test.com' => {
                 bom_user     => $sample_bom_user,
                 mt5_accounts => [\%mt5_user_with_balance],
                 MTR10000     => {
-                    transferred_deriv          => "CR90000",
+                    transferred_deriv          => "CR10003",
                     transferred_deriv_amount   => "5.00",
                     transferred_deriv_currency => "USD",
                     transferred_mt5_amount     => "5.00",
                     transferred_mt5_currency   => "USD",
 
                 },
-                transfer_targets => ["CR90000"],
+                transfer_targets => ["CR10003"],
             }
             },
             'Success Case with Balance 5 and transfer 5 USD to USD';
@@ -1414,7 +1491,7 @@ subtest 'mt5 deriv auto rescind' => sub {
         MTR10000
         <br>
         <b>Success Result Details:</b><br>
-        <b>-</b> MTR10000 (Archived) Transferred USD 10.00 to CR90000 With Value of USD 10.00 <br>
+        <b>-</b> MTR10000 (Archived) Transferred USD 10.00 to CR10003 With Value of USD 10.00 <br>
         <br>
         <br>Total MT5 Accounts Processed: 1<br>
         Total MT5 Accounts Processed (Succeed): 1<br>
@@ -1462,7 +1539,7 @@ subtest 'mt5 deriv auto rescind' => sub {
         MTR10000
         <br>
         <b>Success Result Details:</b><br>
-        <b>-</b> MTR10000 (Archive Skipped) Transferred USD 10.00 to CR90000 With Value of USD 10.00 <br>
+        <b>-</b> MTR10000 (Archive Skipped) Transferred USD 10.00 to CR10003 With Value of USD 10.00 <br>
         <br>
         <br>Total MT5 Accounts Processed: 1<br>
         Total MT5 Accounts Processed (Succeed): 1<br>
@@ -3888,7 +3965,7 @@ subtest 'mt5_svg_migration_requested' => sub {
         my $result = $action_get->($args);
 
         is_deeply \@emitter_args, [], 'Correct absence of color change emission';
-        is_deeply \@datadog_args, ['MT5AccountMigrationSkipped', 'Aborted migration for CR10004 on financial/bvi', {alert_type => 'warning'}],
+        is_deeply \@datadog_args, ['MT5AccountMigrationSkipped', 'Aborted migration for CR10005 on financial/bvi', {alert_type => 'warning'}],
             'Correct warning';
     };
 
@@ -3921,7 +3998,7 @@ subtest 'mt5_svg_migration_requested' => sub {
         my $result = $action_get->($args);
 
         is_deeply \@emitter_args, [], 'Correct absence of color change emission';
-        is_deeply \@datadog_args, ['MT5AccountMigrationSkipped', 'Aborted migration for CR10004 on financial/bvi', {alert_type => 'warning'}],
+        is_deeply \@datadog_args, ['MT5AccountMigrationSkipped', 'Aborted migration for CR10005 on financial/bvi', {alert_type => 'warning'}],
             'Correct warning';
     };
 
