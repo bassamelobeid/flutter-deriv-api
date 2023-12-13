@@ -216,6 +216,12 @@ subtest 'residence_list' => sub {
         'Expected Indonesia config'
     );
 
+    BOM::Config::Runtime->instance->app_config->system->suspend->onfido(1);
+    $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
+    $index  = +{map { (delete $_->{value} => $_) } $result->@*};
+    is_deeply($index->{co}->{identity}->{services}->{onfido}->{is_country_supported}, 0, 'Onfido disabled');
+    BOM::Config::Runtime->instance->app_config->system->suspend->onfido(0);
+
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
     $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
     $index  = +{map { (delete $_->{value} => $_) } $result->@*};

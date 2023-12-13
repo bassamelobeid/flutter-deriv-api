@@ -87,8 +87,10 @@ rpc residence_list => sub {
         my $idv_config         = $countries_instance->get_idv_config($country_code) // {};
         my $idv_docs_supported = $idv_config->{document_types}                      // {};
         my $has_visual_sample  = $idv_config->{has_visual_sample}                   // 0;
-
-        my $option = {
+        my $app_config         = BOM::Config::Runtime->instance->app_config;
+        $app_config->check_for_update;
+        my $onfido_suspended = $app_config->system->suspend->onfido;
+        my $option           = {
             value => $country_code,
             text  => $country_name,
             $phone_idd  ? (phone_idd  => $phone_idd)  : (),
@@ -120,7 +122,7 @@ rpc residence_list => sub {
                     onfido => {
                         documents_supported =>
                             +{map { _onfido_doc_type($_) } BOM::Config::Onfido::supported_documents_for_country($country_code)->@*},
-                        is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
+                        is_country_supported => (!$onfido_suspended && BOM::Config::Onfido::is_country_supported($country_code)) ? 1 : 0,
                     }
                 },
             }};

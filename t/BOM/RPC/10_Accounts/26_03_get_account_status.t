@@ -889,4 +889,134 @@ subtest 'POA state machine' => sub {
     is $result->{authentication}->{document}->{status}, 'verified', 'Verified document';
 };
 
+subtest "suspended onfido" => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+onfido+suspended@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $client->set_default_account('USD');
+    $client->save();
+
+    my $token = $m->create_token($client->loginid, 'test token');
+
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result,
+        +{
+        status => [
+            'allow_document_upload',              'dxtrade_password_not_set',
+            'financial_information_not_complete', 'mt5_additional_kyc_required',
+            'mt5_password_not_set',               'trading_experience_not_complete'
+        ],
+        p2p_status     => 'none',
+        authentication => {
+            identity => {
+                status   => 'none',
+                services => {
+                    onfido => {
+                        is_country_supported => 1,
+                        reported_properties  => {},
+                        last_rejected        => [],
+                        status               => 'none',
+                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                        country_code         => 'IDN',
+                        submissions_left     => 1
+                    },
+                    idv => {
+                        status              => 'none',
+                        last_rejected       => [],
+                        reported_properties => {},
+                        submissions_left    => 3
+                    },
+                    manual => {status => 'none'}}
+            },
+            ownership => {
+                requests => [],
+                status   => 'none'
+            },
+            attempts => {
+                'history' => [],
+                'count'   => 0,
+                'latest'  => undef
+            },
+            needs_verification => [],
+            income             => {'status' => 'none'},
+            document           => {'status' => 'none'}
+        },
+        currency_config => {
+            USD => {
+                'is_deposit_suspended'    => 0,
+                'is_withdrawal_suspended' => 0
+            }
+        },
+        prompt_client_to_authenticate => 0,
+        risk_classification           => 'low'
+        },
+        'expected response for onfido active';
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->onfido(1);
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result,
+        +{
+        status => [
+            'allow_document_upload',              'dxtrade_password_not_set',
+            'financial_information_not_complete', 'mt5_additional_kyc_required',
+            'mt5_password_not_set',               'onfido_suspended',
+            'trading_experience_not_complete'
+        ],
+        p2p_status     => 'none',
+        authentication => {
+            identity => {
+                status   => 'none',
+                services => {
+                    onfido => {
+                        is_country_supported => 0,
+                        reported_properties  => {},
+                        last_rejected        => [],
+                        status               => 'none',
+                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                        country_code         => 'IDN',
+                        submissions_left     => 1
+                    },
+                    idv => {
+                        status              => 'none',
+                        last_rejected       => [],
+                        reported_properties => {},
+                        submissions_left    => 3
+                    },
+                    manual => {status => 'none'}}
+            },
+            ownership => {
+                requests => [],
+                status   => 'none'
+            },
+            attempts => {
+                'history' => [],
+                'count'   => 0,
+                'latest'  => undef
+            },
+            needs_verification => [],
+            income             => {'status' => 'none'},
+            document           => {'status' => 'none'}
+        },
+        currency_config => {
+            USD => {
+                'is_deposit_suspended'    => 0,
+                'is_withdrawal_suspended' => 0
+            }
+        },
+        prompt_client_to_authenticate => 0,
+        risk_classification           => 'low'
+        },
+        'expected response for onfido suspended';
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->onfido(0);
+};
+
 done_testing();

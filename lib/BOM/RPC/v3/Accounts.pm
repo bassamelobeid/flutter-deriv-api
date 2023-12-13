@@ -977,6 +977,11 @@ rpc get_account_status => sub {
 
     push(@$status, 'idv_revoked') if BOM::User::IdentityVerification::is_idv_revoked($idv_client);
 
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update;
+    my $onfido_suspended = $app_config->system->suspend->onfido;
+    push(@$status, 'onfido_suspended') if $onfido_suspended;
+
     my $rule_engine = BOM::Rules::Engine->new(
         client          => $client,
         stop_on_failure => 0
@@ -1025,6 +1030,7 @@ rpc get_account_status => sub {
     );
     my $authentication = _get_authentication(
         client                            => $client,
+        onfido_suspended                  => $onfido_suspended,
         is_document_expiry_check_required => $is_document_expiry_check_required,
         is_verification_required          => $is_verification_required,
         risk_aml                          => $was_locked_for_high_risk ? 'high' : $risk_aml,
@@ -1359,6 +1365,8 @@ It takes the following named params:
 
 =item * C<client> the client itself
 
+=item * L<onfido_suspended> flag for onfido suspended/available
+
 =item * C<is_document_expiry_check_required> indicates if `expired` status is allowed for the given client
 
 =back
@@ -1448,12 +1456,14 @@ sub _get_authentication {
     return $authentication_object if $client->is_virtual;
     # Each key from the authentication object will be filled up independently by an assembler method.
     # The `needs_verification` array can be filled with `identity` and/or `document`, there is a method for each one.
-    my $documents = $client->documents->uploaded();
-    my $poo_list  = $client->proof_of_ownership->full_list();
-    my $args      = {
-        client    => $client,
-        documents => $documents,
-        poo_list  => $poo_list,
+    my $documents        = $client->documents->uploaded();
+    my $poo_list         = $client->proof_of_ownership->full_list();
+    my $onfido_suspended = $args{onfido_suspended};
+    my $args             = {
+        client           => $client,
+        documents        => $documents,
+        poo_list         => $poo_list,
+        onfido_suspended => $onfido_suspended,
     };
     # Resolve the POA
     $authentication_object->{document} = _get_authentication_poa($args);
@@ -1554,6 +1564,8 @@ It takes the following named params:
 
 =item * L<BOM::User::Client> the client itself
 
+=item * L<onfido_suspended> flag for onfido suspended/available
+
 =item * C<documents> hashref containing the client documents by type
 
 
@@ -1566,7 +1578,7 @@ Returns,
 
 sub _get_authentication_poi {
     my $params = shift;
-    my ($client, $documents) = @{$params}{qw/client documents/};
+    my ($client, $onfido_suspended, $documents) = @{$params}{qw/client onfido_suspended documents/};
     my $poi_expiry_date      = $documents->{proof_of_identity}->{expiry_date};
     my $expiry_date          = $poi_expiry_date ? $poi_expiry_date : undef;
     my $country_code         = uc($client->place_of_birth || $client->residence // '');
@@ -1586,6 +1598,8 @@ sub _get_authentication_poi {
     $latest_poi_by //= '';
     $expiry_date   //= $idv_details->{expiry_date} if $latest_poi_by eq 'idv';
 
+    my $onfido_available = !$onfido_suspended && BOM::Config::Onfido::is_country_supported($country_code);
+
     # Return the identity structure
     return {
         status   => $poi_status,
@@ -1593,7 +1607,7 @@ sub _get_authentication_poi {
             idv    => $idv_details,
             onfido => {
                 submissions_left     => BOM::User::Onfido::submissions_left($client),
-                is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
+                is_country_supported => $onfido_available ? 1 : 0,
                 documents_supported  => BOM::Config::Onfido::supported_documents_for_country($country_code),
                 last_rejected        => $last_rejected,
                 reported_properties  => BOM::User::Onfido::reported_properties($client),
