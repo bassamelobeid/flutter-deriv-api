@@ -1,0 +1,116 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "required" : [
+      "account_list",
+      "msg_type",
+      "echo_req"
+   ],
+   "type" : "object",
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "enum": [
+            "account_list"
+         ]
+      },
+      "echo_req" : {},
+      "account_list" : {
+         "type" : "array",          
+         "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+               "account_category",
+               "account_type",
+               "broker",
+               "created_at",
+               "currency",
+               "is_disabled",
+               "is_virtual",
+               "landing_company_name",
+               "linked_to",
+               "loginid"
+            ],        
+            "properties": {
+               "account_category": {
+                  "type": "string",
+                  "enum": [
+                     "trading",
+                     "wallet"
+                  ]
+               },
+               "account_type": {
+                  "type": "string",
+                  "enum": [
+                     "binary",
+                     "crypto",
+                     "ctrader",
+                     "doughflow",
+                     "dxtrade",
+                     "derivez",
+                     "mt5",
+                     "p2p",
+                     "paymentagent",
+                     "paymentagent_client",
+                     "standard",
+                     "virtual"
+                  ]
+               },
+               "broker": {
+                  "type": "string",
+                  "pattern": "[A-Z]{2,4}"
+               },
+               "created_at": {
+                  "description": "Creation time of the account as epoch.",
+                  "type": "integer"
+               },
+               "currency": {
+                  "type": [
+                     "null",
+                     "string"
+                  ]
+               },
+               "excluded_until": {
+                  "type": "integer"
+              },
+               "is_disabled": {
+                  "type": "integer",
+                  "enum": [
+                     1,
+                     0
+                  ]
+               },
+               "is_virtual": {
+                  "type": "integer",
+                  "enum": [
+                     1,
+                     0
+                  ]
+               },
+               "landing_company_name": {
+                  "type": [
+                     "null",
+                     "string"
+                  ]
+               },
+               "linked_to": {
+                  "type": "array",
+                  "items": {
+                     "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                           "loginid": {
+                              "type": "string"
+                        }
+                     }
+                  }
+               },
+               "loginid": {
+                  "type": "string"
+               }
+            }
+         }
+      }
+   }
+}

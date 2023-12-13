@@ -217,8 +217,8 @@ test_sendrecv_params 'link_wallet/test_send.json', 'link_wallet/test_receive.jso
 test_sendrecv_params 'get_account_types/test_send.json',  'get_account_types/test_receive.json',  $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'available_accounts/test_send.json', 'available_accounts/test_receive.json', $suite->get_stashed('authorize/authorize/loginid');
 
-test_sendrecv_params 'get_available_accounts_to_transfer/test_send.json', 'get_available_accounts_to_transfer/test_receive.json',
-    $suite->get_stashed('authorize/authorize/loginid');
+# account_list
+test_sendrecv 'account_list/test_send.json', 'account_list/test_receive.json';
 
 fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
 test_sendrecv 'logout/test_send.json', 'logout/test_receive.json';
