@@ -63,49 +63,5 @@ Returns whether this client instance can perform trading.
 
 sub can_trade { 0 }
 
-=head2 linked_accounts
-
-Returns a L<BOM::User::Wallet> account details with a list of linked Trading account details:
-
-    {
-        wallet => {
-            linked_to => [
-                {
-                    account_id => 'CR1000',
-                    balance    => '0.00',
-                    currency   => 'USD',
-                    platform   => 'binary'
-                },
-                {
-                    account_id => 'MTR1000',
-                    balance    => '0.00',
-                    currency   => 'USD'
-                    platform   => 'mt5'
-                },
-                {
-                    account_id => 'DXR1000'
-                    balance    => '0.00',
-                    currency   => 'USD',
-                    platform   => 'dxtrade'
-                }
-            ],
-            account_id     => 'DW1000',
-            payment_method => 'Skrill',
-            balance        => '0.00',
-            currency       => 'USD'
-        }
-    }
-
-=cut
-
-sub linked_accounts {
-    my $self = shift;
-
-    my $loginid       = $self->loginid;
-    my $account_links = $self->user->get_accounts_links({wallet_loginid => $loginid});
-
-    return $account_links->{$loginid} // [];
-}
-
 1;
 

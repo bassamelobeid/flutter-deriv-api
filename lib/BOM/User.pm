@@ -2045,55 +2045,38 @@ sub get_account_by_loginid {
 
 =head2 get_accounts_links
 
-regurns list of links between user's trading and wallets accounts
-
-=over 4
-
-=item * C<trading_loginid> - filter links by trading account login id
-=item * C<wallet_loginid> - filter links by wallet account login id
-
-=back
-
-Returns a hash where keys are representing loginid of accounts and values are arrays with linked accounts 
+Returns a hash where keys are representing loginid of accounts and values are arrays with linked accounts.
 
 =cut
 
 sub get_accounts_links {
-    my ($self, $args) = @_;
+    my ($self) = @_;
 
-    my $links = $self->dbic->run(
-        fixup => sub {
-            return $_->selectall_arrayref(
-                'select wallet_loginid, loginid trading_loginid  from users.get_linked_wallet(?,?,?)',
-                {Slice => {}},
-                $args->{trading_loginid},
-                $self->{id}, $args->{wallet_loginid});
-        }) // [];
+    my %details  = $self->loginid_details->%*;
+    my @loginids = sort keys %details;
+    my %result;
 
-    my $details = $self->loginid_details;
-
-    my %grouped_result;
-    for my $link ($links->@*) {
+    for my $loginid (@loginids) {
         # Checking that trading account is active, currently is applicable only for mt5 and derivez
         # In future may worth to add wallet check here as well, if we'll keep statuses at userdb
-        next unless $self->is_active_loginid($link->{trading_loginid});
+        next unless $self->is_active_loginid($loginid);
 
-        $grouped_result{$_} //= [] for $link->@{qw(wallet_loginid trading_loginid)};
+        my $item = +{
+            loginid  => $loginid,
+            platform => $details{$loginid}{platform},
+        };
 
-        push $grouped_result{$link->{wallet_loginid}}->@*,
-            +{
-            loginid  => $link->{trading_loginid},
-            platform => $details->{$link->{trading_loginid}}{platform} // 'dtrade',
-            };
+        if (my $wallet_loginid = $details{$loginid}{wallet_loginid}) {
+            push $result{$wallet_loginid}->@*, $item;
+            next;
+        }
 
-        push $grouped_result{$link->{trading_loginid}}->@*,
-            +{
-            loginid  => $link->{wallet_loginid},
-            platform => $details->{$link->{wallet_loginid}}{platform},
-            };
+        if (my @children = grep { ($details{$_}{wallet_loginid} // '') eq $loginid } @loginids) {
+            push $result{$_}->@*, $item for @children;
+        }
     }
 
-    return \%grouped_result;
+    return \%result;
 }
 
 =head2 migrate_loginid

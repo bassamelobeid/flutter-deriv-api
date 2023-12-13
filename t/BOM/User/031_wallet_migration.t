@@ -77,6 +77,7 @@ subtest 'State check' => sub {
     is($migration->state, 'eligible', 'Should return new state if no action was performed');
 
     eval { $migration->start() };
+    delete $user->{loginid_details};
 
     is($migration->state, 'in_progress', 'Should return new state if no action was performed');
 
@@ -379,6 +380,8 @@ subtest process_migration => sub {
         };
 
         is($error, undef, 'No error is thrown');
+
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$virtual->loginid}, 'Account link is created for virtual account');
@@ -409,6 +412,7 @@ subtest process_migration => sub {
 
         is($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$virtual->loginid}, 'Account link is created for virtual account');
@@ -447,6 +451,7 @@ subtest process_migration => sub {
 
         is_deeply($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$virtual->loginid}, 'Account link is created for virtual account');
@@ -480,6 +485,7 @@ subtest process_migration => sub {
 
         is_deeply($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$cr_usd->loginid}, 'Account link is created for virtual account');
@@ -522,6 +528,7 @@ subtest process_migration => sub {
 
         is_deeply($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$virtual->loginid}, 'Account link is created for virtual account');
@@ -569,6 +576,7 @@ subtest process_migration => sub {
 
         is_deeply($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$cr_usd->loginid}, 'Account link is created for virtual account');
@@ -598,6 +606,7 @@ subtest process_migration => sub {
 
         is_deeply($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$virtual->loginid}, 'Account link is created for virtual account');
@@ -631,6 +640,7 @@ subtest process_migration => sub {
 
         is_deeply($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$cr_usd->loginid}, 'Account link is created for real account');
@@ -668,6 +678,7 @@ subtest process_migration => sub {
 
         is($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$virtual->loginid}, 'Account link is created for virtual account');
@@ -709,6 +720,7 @@ subtest process_migration => sub {
 
         is($error, undef, 'No error is thrown');
 
+        delete $user->{loginid_details};
         my $account_links = $user->get_accounts_links();
 
         ok($account_links->{$virtual->loginid}, 'Account link is created for real account');

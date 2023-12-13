@@ -8720,10 +8720,7 @@ Returns L<BOM::User::Wallet> account details linked to a L<BOM::User::Client> in
 sub linked_accounts {
     my $self = shift;
 
-    my $loginid       = $self->loginid;
-    my $account_links = $self->user->get_accounts_links({trading_loginid => $loginid});
-
-    return $account_links->{$loginid} // [];
+    return $self->user->get_accounts_links->{$self->loginid} // [];
 }
 
 =head2 latest_poi_by
