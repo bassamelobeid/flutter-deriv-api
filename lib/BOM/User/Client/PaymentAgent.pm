@@ -720,10 +720,10 @@ sub cashier_withdrawable_balance {
 
         for my $total (@$totals) {
             if ($total->{payment_type} =~ /^(mt5_transfer|affiliate_reward|arbitrary_markup)$/) {
-                $result->{commission} += convert_currency($total->{credit} - ($total->{debit} // 0), $sibling->currency, $client->currency);
+                $result->{commission} += convert_currency(($total->{credit} // 0) - ($total->{debit} // 0), $sibling->currency, $client->currency);
             }
             if ($total->{payment_type} =~ /^(external_cashier|crypto_cashier|internal_transfer)$/) {
-                $result->{payouts} += convert_currency($total->{debit}, $sibling->currency, $client->currency);
+                $result->{payouts} += convert_currency(($total->{debit} // 0), $sibling->currency, $client->currency);
             }
         }
 

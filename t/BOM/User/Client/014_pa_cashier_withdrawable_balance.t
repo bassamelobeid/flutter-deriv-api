@@ -573,4 +573,41 @@ subtest 'balance_for_doughflow' => sub {
     cmp_ok $client->balance_for_doughflow, '==', 101 + 31, 'full balance when tier allows cashier_withdraw';
 };
 
+subtest 'client used MT5 before becoming PA' => sub {
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'aff5@test.com'
+    });
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'x'
+    )->add_client($client);
+    $client->account('USD');
+    BOM::Test::Helper::Client::top_up($client, 'USD', 100);
+
+    $client->payment_mt5_transfer(
+        amount   => -10,
+        currency => 'USD',
+        remark   => 'x',
+    );
+
+    $client->payment_agent({
+        payment_agent_name    => 'bob6',
+        email                 => $client->email,
+        information           => 'x',
+        summary               => 'x',
+        commission_deposit    => 0,
+        commission_withdrawal => 0,
+        status                => 'authorized',
+        currency_code         => 'USD',
+        is_listed             => 't',
+    });
+    $client->save;
+    my $pa = $client->get_payment_agent;
+
+    # checking we don't get warnings because deposits are null (COMP-938)
+    is $pa->cashier_withdrawable_balance->{available}, 0, 'limit is zero';
+};
+
 done_testing();
