@@ -15,8 +15,9 @@ use BOM::User::Client;
 use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use Deriv::P2P;
 use JSON::MaybeUTF8                            qw(:v1);
+use lib '/home/git/regentmarkets/p2p/lib/';
+use P2P;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -46,7 +47,7 @@ subtest 'advertiser Registration' => sub {
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
     @emitted_events = ();
-    my $p2p = Deriv::P2P->new({client => $client});
+    my $p2p = P2P->new({client => $client});
     cmp_deeply(exception { $p2p->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
     my $advertiser;
     lives_ok { $advertiser = $p2p->p2p_advertiser_create(name => $advertiser_name) } 'create advertiser ok';
@@ -76,7 +77,7 @@ subtest 'advertiser basic and full verification' => sub {
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
 
-    my $p2p = Deriv::P2P->new({client => $client});
+    my $p2p        = P2P->new({client => $client});
     my $advertiser = $p2p->p2p_advertiser_create(name => 'advertiser 1');
 
     my $advertiser_info = $p2p->p2p_advertiser_info;
@@ -98,17 +99,17 @@ subtest 'advertiser already age verified' => sub {
 
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
-    my $p2p = Deriv::P2P->new({client => $client});
+    my $p2p = P2P->new({client => $client});
 
     $client->status->set('age_verification', 'system', 'testing');
     ok $p2p->p2p_advertiser_create(name => 'age_verified already')->{is_approved};
     ok $p2p->p2p_advertiser_info->{is_approved}, 'advertiser is approved';
-    ok !$client->status->allow_document_upload,     'allow_document_upload status not present';
+    ok !$client->status->allow_document_upload,  'allow_document_upload status not present';
 };
 
 subtest 'Duplicate advertiser Registration' => sub {
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
-    
+
     cmp_deeply(
         exception {
             $advertiser->p2p_advertiser_create(name => $advertiser_name)
@@ -122,8 +123,7 @@ subtest 'Advertiser name already taken' => sub {
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
     my $client     = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
-    my $p2p = Deriv::P2P->new({client => $client});
-
+    my $p2p = P2P->new({client => $client});
 
     cmp_deeply(
         exception { $p2p->p2p_advertiser_create(name => 'ad_MAN') },

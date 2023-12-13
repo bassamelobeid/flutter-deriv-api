@@ -1,4 +1,4 @@
-package Deriv::P2P;
+package P2P;
 
 use strict;
 use warnings;
@@ -6,10 +6,10 @@ use warnings;
 no indirect;
 use Syntax::Keyword::Try;
 use Date::Utility;
-use List::Util   qw(all first any min max none pairgrep uniq reduce);
-use Array::Utils qw(array_minus intersect);
-use Text::Trim             qw(trim);
-use BOM::Platform::Context qw(localize request);
+use List::Util                       qw(all first any min max none pairgrep uniq reduce);
+use Array::Utils                     qw(array_minus intersect);
+use Text::Trim                       qw(trim);
+use BOM::Platform::Context           qw(localize request);
 use Format::Util::Numbers            qw(financialrounding formatnumber);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use JSON::MaybeXS;
@@ -34,24 +34,22 @@ use Log::Any qw($log);
 
 =head1 NAME
 
-Deriv::P2P
+P2P
 
 =cut
+
 my $json = JSON::MaybeXS->new;
 
 sub new {
-    my $class = shift;
-    my $args  = shift || die 'Deriv::P2P->new called without args';
+    my $class   = shift;
+    my $args    = shift || die 'P2P->new called without args';
     my $loginid = $args->{loginid};
-    my $client = $args->{client} // BOM::User::Client->new({loginid => $loginid });
+    my $client  = $args->{client} // BOM::User::Client->new({loginid => $loginid});
 
-    my $self = bless {
-        client => $client
-    }, $class;
+    my $self = bless {client => $client}, $class;
 
     return $self;
 }
-
 
 =head1 METHODS - P2P cashier
 
@@ -865,7 +863,7 @@ sub p2p_order_create {
     die +{error_code => 'OrderCreateFailRateChanged'}
         if defined $param{rate} and p2p_rate_rounding($param{rate}) != p2p_rate_rounding($advert->{effective_rate});
 
-    my $advertiser = Deriv::P2P->new({loginid => $advertiser_info->{client_loginid}});
+    my $advertiser = P2P->new({loginid => $advertiser_info->{client_loginid}});
     my ($order_type, $amount_advertiser, $amount_client);
 
     if ($advert_type eq 'buy') {
@@ -4148,7 +4146,11 @@ sub p2p_exclusion_amount {
 
     my ($amount) = $self->{client}->db->dbic->run(
         fixup => sub {
-            $_->selectrow_array('SELECT * FROM p2p.balance_exclusion_amount(?, ?, ?, ?)', undef, $self->{client}->account->id, $limit, $lookback, $reversible);
+            $_->selectrow_array(
+                'SELECT * FROM p2p.balance_exclusion_amount(?, ?, ?, ?)',
+                undef,  $self->{client}->account->id,
+                $limit, $lookback, $reversible
+            );
         });
 
     return $amount;
@@ -4221,7 +4223,7 @@ sub db {
 }
 
 sub set_db {
-    my $self = shift;
+    my $self  = shift;
     my $param = shift;
     return $self->{client}->set_db($param);
 }
