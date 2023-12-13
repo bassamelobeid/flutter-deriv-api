@@ -170,6 +170,7 @@ subtest $method => sub {
                 'account_category'     => 'trading',
                 'linked_to'            => [],
                 'created_at'           => '1623023999',
+                'broker'               => $test_client->broker,
             },
             {
                 'currency'             => '',
@@ -182,6 +183,7 @@ subtest $method => sub {
                 'account_category'     => 'trading',
                 'linked_to'            => [],
                 'created_at'           => '1623023999',
+                'broker'               => $self_excluded_client->broker,
             },
             {
                 'currency'             => 'USD',
@@ -193,6 +195,7 @@ subtest $method => sub {
                 'account_category'     => 'trading',
                 'linked_to'            => [],
                 'created_at'           => '1623023999',
+                'broker'               => $test_client_disabled->broker,
             }
             # Duplicated client must  not be returned
         ]    # no wallet is linked
@@ -411,7 +414,8 @@ subtest $method => sub {
                     'account_type'         => 'binary',
                     'account_category'     => 'trading',
                     'linked_to'            => [],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $test_client->broker,
                 },
                 {
                     'currency'             => 'USD',
@@ -422,7 +426,8 @@ subtest $method => sub {
                     'account_type'         => 'binary',
                     'account_category'     => 'trading',
                     'linked_to'            => [{loginid => $vr_wallet->loginid, platform => 'dwallet'}],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $test_client_vr->broker,
                 },
                 {
                     'currency'             => 'USD',
@@ -433,7 +438,8 @@ subtest $method => sub {
                     'account_type'         => 'virtual',
                     'account_category'     => 'wallet',
                     'linked_to'            => [{loginid => $test_client_vr->loginid, platform => 'dtrade'}],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $vr_wallet->broker,
                 },
                 {
                     'currency'             => '',
@@ -446,7 +452,8 @@ subtest $method => sub {
                     'account_type'         => 'binary',
                     'account_category'     => 'trading',
                     'linked_to'            => [],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $self_excluded_client->broker,
                 },
                 {
                     'currency'             => 'USD',
@@ -457,7 +464,8 @@ subtest $method => sub {
                     'account_type'         => 'binary',
                     'account_category'     => 'trading',
                     'linked_to'            => [],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $test_client_disabled->broker,
                 },
             ],
         };
@@ -516,7 +524,8 @@ subtest $method => sub {
                     'account_type'         => 'binary',
                     'account_category'     => 'trading',
                     'linked_to'            => [],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $test_client->broker,
                 },
                 {
                     'currency'             => 'USD',
@@ -527,7 +536,8 @@ subtest $method => sub {
                     'account_type'         => 'binary',
                     'account_category'     => 'trading',
                     'linked_to'            => [{'loginid' => $vr_wallet->loginid, 'platform' => 'dwallet'}],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $test_client_vr->broker,
                 },
                 {
                     'currency'             => 'USD',
@@ -538,7 +548,8 @@ subtest $method => sub {
                     'account_type'         => 'virtual',
                     'account_category'     => 'wallet',
                     'linked_to'            => [{'loginid' => $test_client_vr->loginid, 'platform' => 'dtrade'}],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $vr_wallet->broker,
                 },
                 {
                     'currency'             => '',
@@ -550,7 +561,8 @@ subtest $method => sub {
                     'account_type'         => 'binary',
                     'account_category'     => 'trading',
                     'linked_to'            => [],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $self_excluded_client->broker,
                 },
                 {
                     'currency'             => 'USD',
@@ -561,7 +573,8 @@ subtest $method => sub {
                     'account_type'         => 'binary',
                     'account_category'     => 'trading',
                     'linked_to'            => [],
-                    'created_at'           => '1623023999'
+                    'created_at'           => '1623023999',
+                    'broker'               => $test_client_disabled->broker,
                 },
             ],
         };

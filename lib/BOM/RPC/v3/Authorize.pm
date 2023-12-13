@@ -124,6 +124,19 @@ rpc authorize => sub {
     };
 };
 
+rpc account_list => (auth => [qw(wallet trading)] => readonly => 1) => sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $user   = $client->user;
+
+    my $account_links = $user->get_accounts_links();
+    my $clients       = _get_clients($user);
+    my $account_list  = _get_account_list($clients, $account_links);
+
+    return $account_list;
+};
+
 =head2 _get_account_tokens
 
     $result = _get_account_tokens($params, $token, $token_details, $client_ip)
@@ -322,7 +335,6 @@ sub _add_details_to_account_token_list {
             $token_details->{is_virtual} = $account->{is_virtual};
             $token_details->{broker}     = $account->{broker};
         }
-        delete $account->{broker};
     }
 }
 

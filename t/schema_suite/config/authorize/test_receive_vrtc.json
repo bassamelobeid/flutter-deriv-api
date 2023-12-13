@@ -43,7 +43,8 @@
                "currency",
                "loginid",
                "is_disabled",
-               "landing_company_name"
+               "landing_company_name",
+               "broker"
             ],
             "properties" : {
                "is_virtual" : {
@@ -85,7 +86,11 @@
                      "trading",
                      "wallet"
                   ]
-              },
+               },
+               "broker" : {
+                  "type" : "string",
+                  "description" : "Broker code."
+               },
               "linked_to": {
                   "description": "list of linked accounts.",
                   "type": "array",

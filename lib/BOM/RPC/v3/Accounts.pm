@@ -3712,23 +3712,6 @@ rpc get_account_types => sub {
     return \%result;
 };
 
-rpc get_available_accounts_to_transfer => sub {
-
-    return {
-        account_list => [{
-                "account_type" => "trading",
-                "loginid"      => "CR176299",
-                "type"         => "fiat",
-                "currency"     => "USD"
-            },
-            {
-                "account_type" => "wallet",
-                "loginid"      => "CRW2132132",
-                "type"         => "crypto",
-                "currency"     => "BTC"
-            }]};
-};
-
 rpc "unsubscribe_email",
     auth => [],    # unauthenticated
     sub {

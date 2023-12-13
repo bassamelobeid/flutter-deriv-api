@@ -216,6 +216,7 @@ subtest "$method with multiple tokens" => sub {
                     'account_category'     => 'trading',
                     'linked_to'            => [],
                     'created_at'           => '1623023999',
+                    'broker'               => $test_client->broker,
                 },
                 {
                     'linked_to'            => [],
@@ -227,6 +228,7 @@ subtest "$method with multiple tokens" => sub {
                     'created_at'           => 1623023999,
                     'landing_company_name' => 'svg',
                     'account_type'         => 'binary',
+                    'broker'               => $cr_login->broker,
                 },
                 {
                     'account_category'     => 'trading',
@@ -238,6 +240,7 @@ subtest "$method with multiple tokens" => sub {
                     'is_virtual'           => 0,
                     'currency'             => '',
                     'is_disabled'          => 0,
+                    'broker'               => $cr2_login->broker,
                 },
                 {
                     'currency'             => '',
@@ -249,8 +252,9 @@ subtest "$method with multiple tokens" => sub {
                     'account_category'     => 'wallet',
                     'is_virtual'           => 1,
                     'created_at'           => 1623023999,
-                },
+                    'broker'               => $vr_wallet->broker,
 
+                },
                 {
                     'currency'             => '',
                     'is_disabled'          => '0',
@@ -262,7 +266,7 @@ subtest "$method with multiple tokens" => sub {
                     'account_category'     => 'trading',
                     'linked_to'            => [],
                     'created_at'           => '1623023999',
-
+                    'broker'               => $self_excluded_client->broker,
                 },
                 {
                     'currency'             => 'USD',
@@ -274,7 +278,7 @@ subtest "$method with multiple tokens" => sub {
                     'account_category'     => 'trading',
                     'linked_to'            => [],
                     'created_at'           => '1623023999',
-
+                    'broker'               => $test_client_disabled->broker,
                 },
 
             ]};
