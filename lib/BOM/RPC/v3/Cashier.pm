@@ -374,15 +374,14 @@ rpc 'get_limits',
     sub {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $user   = $client->user;
-
-    my $limits     = {};
-    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my $client   = $params->{client};
+    my $user     = $client->user;
+    my $currency = $client->currency;
+    my $limits   = {};
 
     if (!$client->is_virtual) {
         my $landing_company = $client->landing_company->short;
-        my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
+        my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $currency);
 
         $limits->{account_balance} = formatnumber('amount', $currency, $client->get_limit_for_account_balance);
         $limits->{payout}          = formatnumber('price',  $currency, $client->get_limit_for_payout);
@@ -446,34 +445,36 @@ rpc 'get_limits',
 
     # also add Daily Transfer Limits
     return $limits unless $client->default_account;
-    my %limits_config;
+
+    my $transfer_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts;
+    my %daily_limits;
 
     if (!$client->is_virtual) {
         # skip linked dtrade accounts
         if (!$wallet_loginid) {
-            $limits_config{internal} = {
+            $daily_limits{internal} = {
                 config => 'between_accounts',
                 type   => 'internal',
             };
-            $limits_config{mt5} = {
+            $daily_limits{mt5} = {
                 config => 'MT5',
                 type   => 'MT5',
             };
-            $limits_config{dxtrade} = {
+            $daily_limits{dxtrade} = {
                 config => 'dxtrade',
                 type   => 'dxtrade',
             };
-            $limits_config{derivez} = {
+            $daily_limits{derivez} = {
                 config => 'derivez',
                 type   => 'derivez',
             };
-            $limits_config{ctrader} = {
+            $daily_limits{ctrader} = {
                 config => 'ctrader',
                 type   => 'ctrader',
             };
 
             if ($client->is_wallet) {
-                $limits_config{wallets} = {
+                $daily_limits{wallets} = {
                     config => 'between_wallets',
                     type   => 'wallet'
                 };
@@ -481,34 +482,34 @@ rpc 'get_limits',
         }
 
         if (!$client->is_legacy) {
-            $limits_config{dtrade} = {
+            $daily_limits{dtrade} = {
                 config => 'dtrade',
                 type   => 'dtrade',
             };
         }
     } elsif ($client->is_wallet) {
-        $limits_config{virtual} = {
+        $daily_limits{virtual} = {
             config => 'virtual',
             type   => 'virtual',
         };
     }
 
-    if (%limits_config) {
-        my $cumulative_limit_enabled = $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
+    if (%daily_limits) {
+        my $cumulative_limit_enabled = $transfer_config->daily_cumulative_limit->enable;
         $limits->{daily_cumulative_amount_transfers} = {
             enabled => $cumulative_limit_enabled,
         };
         $limits->{daily_transfers} = {};
 
-        for my $transfer (keys %limits_config) {
-            my ($config, $type) = $limits_config{$transfer}->@{qw/config type/};
+        for my $transfer (keys %daily_limits) {
+            my ($config, $type) = $daily_limits{$transfer}->@{qw/config type/};
 
             my $identifier =
                   $type !~ /^(virtual|internal|wallet)$/ && ($client->is_wallet || $wallet_loginid)
                 ? $wallet_loginid // $client->loginid
                 : $user->id;
 
-            my $count_limit = $app_config->payments->transfer_between_accounts->limits->$config;
+            my $count_limit = $transfer_config->limits->$config;
             if ($count_limit > 0) {
                 next unless $count_limit > 0;
                 my $today_count = $user->daily_transfer_count(
@@ -522,7 +523,7 @@ rpc 'get_limits',
                 };
             }
 
-            my $amount_limit = $app_config->payments->transfer_between_accounts->daily_cumulative_limit->$config;
+            my $amount_limit = $transfer_config->daily_cumulative_limit->$config;
             if ($amount_limit > 0) {
                 my $today_amount = $user->daily_transfer_amount(
                     type       => $type,
@@ -534,6 +535,21 @@ rpc 'get_limits',
                     available => financialrounding('amount', 'USD', max($available, 0)),
                 };
             }
+        }
+    }
+
+    # these conditions match check in _validate_transfer_between_accounts() below in this file
+    if ($client->landing_company->short eq 'svg' && !($client->status->age_verification || $client->fully_authenticated)) {
+        my $lifetime_transfer_amount = $client->lifetime_internal_withdrawals();
+        my $currency_type            = LandingCompany::Registry::get_currency_type($currency);
+        my @limit_types              = grep { $_ =~ /$currency_type/ } qw(crypto_to_crypto crypto_to_fiat fiat_to_crypto);
+
+        for my $type (@limit_types) {
+            my $limit = convert_currency($transfer_config->limits->$type, 'USD', $currency);
+            $limits->{lifetime_transfers}{$type} = {
+                allowed   => financialrounding('amount', $currency, $limit),
+                available => financialrounding('amount', $currency, max(0, $limit - $lifetime_transfer_amount)),
+            };
         }
     }
 

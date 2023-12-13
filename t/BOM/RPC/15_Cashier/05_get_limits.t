@@ -8,11 +8,12 @@ use Test::MockModule;
 use Test::Deep;
 use YAML::XS qw(LoadFile);
 
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::RPC::QueueClient;
+use BOM::Test::Helper::Client;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RiskProfile;
 use Email::Stuffer::TestLinks;
@@ -41,6 +42,8 @@ $mocked_CurrencyConverter->mock(
         return 0;
     });
 
+$mocked_CurrencyConverter->mock(offer_to_clients => 1);
+
 my %withdrawal = (
     currency     => 'USD',
     amount       => -1000,
@@ -54,6 +57,12 @@ my %deposit = (
     payment_type => 'external_cashier',
     remark       => 'test deposit'
 );
+
+my $transfer_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts;
+
+$transfer_config->limits->crypto_to_crypto(100);
+$transfer_config->limits->crypto_to_fiat(200);
+$transfer_config->limits->fiat_to_crypto(300);
 
 # Test for CR accounts which use USD as the currency
 subtest 'CR - USD' => sub {
@@ -123,7 +132,16 @@ subtest 'CR - USD' => sub {
             'remainder'                           => formatnumber('price', 'USD', $limits->{lifetime_limit}),
             'daily_transfers'                     => ignore(),
             'daily_cumulative_amount_transfers'   => ignore(),
-        };
+            'lifetime_transfers'                  => {
+                crypto_to_fiat => {
+                    allowed   => num(200),
+                    available => num(200),
+                },
+                fiat_to_crypto => {
+                    allowed   => num(300),
+                    available => num(300),
+                },
+            }};
 
         cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'initial expected result',);
 
@@ -164,7 +182,16 @@ subtest 'CR - USD' => sub {
         'remainder'                           => formatnumber('price', 'USD', 99998999),
         'daily_transfers'                     => ignore(),                                 # daily limits tests are in 22_daily_transfer_limit.t
         'daily_cumulative_amount_transfers'   => ignore(),
-    };
+        'lifetime_transfers'                  => {
+            crypto_to_fiat => {
+                allowed   => num(200),
+                available => num(200),
+            },
+            fiat_to_crypto => {
+                allowed   => num(300),
+                available => num(300),
+            },
+        }};
 
     subtest 'skip_authentication' => sub {
         my $mock_lc = Test::MockModule->new('LandingCompany');
@@ -178,6 +205,7 @@ subtest 'CR - USD' => sub {
         # Set client status to authenticated and save
         $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
+        delete $expected_auth_result->{lifetime_transfers};
 
         cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_auth_result, 'result is ok for fully authenticated client',);
     };
@@ -255,6 +283,16 @@ subtest 'CR-EUR' => sub {
             'remainder'                           => $lifetime_limit,
             'daily_transfers'                     => ignore(),
             'daily_cumulative_amount_transfers'   => ignore(),
+            'lifetime_transfers'                  => {
+                crypto_to_fiat => {
+                    allowed   => financialrounding('amount', 'EUR', convert_currency(200, 'USD', 'EUR')),
+                    available => financialrounding('amount', 'EUR', convert_currency(200, 'USD', 'EUR')),
+                },
+                fiat_to_crypto => {
+                    allowed   => financialrounding('amount', 'EUR', convert_currency(300, 'USD', 'EUR')),
+                    available => financialrounding('amount', 'EUR', convert_currency(300, 'USD', 'EUR')),
+                },
+            },
         };
 
         cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
@@ -362,6 +400,20 @@ subtest 'CR-BTC' => sub {
             'remainder'                           => $lifetime_limit,
             'daily_transfers'                     => ignore(),
             'daily_cumulative_amount_transfers'   => ignore(),
+            'lifetime_transfers'                  => {
+                crypto_to_crypto => {
+                    allowed   => financialrounding('amount', 'BTC', convert_currency(100, 'USD', 'BTC')),
+                    available => financialrounding('amount', 'BTC', convert_currency(100, 'USD', 'BTC')),
+                },
+                crypto_to_fiat => {
+                    allowed   => financialrounding('amount', 'BTC', convert_currency(200, 'USD', 'BTC')),
+                    available => financialrounding('amount', 'BTC', convert_currency(200, 'USD', 'BTC')),
+                },
+                fiat_to_crypto => {
+                    allowed   => financialrounding('amount', 'BTC', convert_currency(300, 'USD', 'BTC')),
+                    available => financialrounding('amount', 'BTC', convert_currency(300, 'USD', 'BTC')),
+                },
+            },
         };
 
         cmp_deeply($c->call_ok('get_limits', $params)->has_no_error->result, $expected_result, 'result is ok',);
@@ -701,7 +753,6 @@ subtest 'VRTC' => sub {
 };
 
 subtest 'Daily limits' => sub {
-    my $transfer_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts;
     $transfer_config->daily_cumulative_limit->enable(1);
 
     my $amt = 5;
@@ -1014,5 +1065,176 @@ subtest 'Daily limits' => sub {
     };
 };
 
-done_testing();
+subtest 'lifetime transfer limits' => sub {
 
+    my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $client_usd->account('USD');
+    BOM::Test::Helper::Client::top_up($client_usd, 'USD', 1000);
+    my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', email => $client_usd->email});
+    $client_btc->account('BTC');
+    my $user = BOM::User->create(
+        email    => $client_usd->email,
+        password => 'x'
+    );
+    $user->add_client($client_usd);
+    $user->add_client($client_btc);
+    my $token_usd = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_usd->loginid);
+    my $token_btc = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_btc->loginid);
+
+    $params->{token} = $token_usd;
+    cmp_deeply(
+        $c->call_ok('get_limits', $params)->result->{lifetime_transfers},
+        {
+            crypto_to_fiat => {
+                allowed   => num(200),
+                available => num(200),
+            },
+            fiat_to_crypto => {
+                allowed   => num(300),
+                available => num(300),
+            },
+        },
+        'new usd account'
+    );
+
+    $params->{token} = $token_btc;
+    cmp_deeply(
+        $c->call_ok('get_limits', $params)->result->{lifetime_transfers},
+        {
+            crypto_to_crypto => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(100, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(100, 'USD', 'BTC')),
+            },
+            crypto_to_fiat => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(200, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(200, 'USD', 'BTC')),
+            },
+            fiat_to_crypto => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(300, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(300, 'USD', 'BTC')),
+            },
+        },
+        'new btc account'
+    );
+
+    $params->{token} = $token_usd;
+    $params->{args}  = {
+        account_from => $client_usd->loginid,
+        account_to   => $client_btc->loginid,
+        amount       => 50,
+        currency     => 'USD',
+    };
+
+    $c->call_ok('transfer_between_accounts', $params)->has_no_error('transfer from fiat to crypto');
+
+    cmp_deeply(
+        $c->call_ok('get_limits', $params)->result->{lifetime_transfers},
+        {
+            crypto_to_fiat => {
+                allowed   => num(200),
+                available => num(150),
+            },
+            fiat_to_crypto => {
+                allowed   => num(300),
+                available => num(250),
+            },
+        },
+        'usd account limits reduced after transfer'
+    );
+
+    $params->{token} = $token_btc;
+    cmp_deeply(
+        $c->call_ok('get_limits', $params)->result->{lifetime_transfers},
+        {
+            crypto_to_crypto => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(100, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(100, 'USD', 'BTC')),
+            },
+            crypto_to_fiat => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(200, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(200, 'USD', 'BTC')),
+            },
+            fiat_to_crypto => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(300, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(300, 'USD', 'BTC')),
+            },
+        },
+        'btc account limits not reduced after transfer'
+    );
+
+    my $amount = financialrounding('amount', 'BTC', convert_currency(10, 'USD', 'BTC'));
+
+    $params->{token} = $token_btc;
+    $params->{args}  = {
+        account_from => $client_btc->loginid,
+        account_to   => $client_usd->loginid,
+        amount       => $amount,
+        currency     => 'BTC',
+    };
+
+    $c->call_ok('transfer_between_accounts', $params)->has_no_error('transfer from crypto to fiat');
+
+    cmp_deeply(
+        $c->call_ok('get_limits', $params)->result->{lifetime_transfers},
+        {
+            crypto_to_crypto => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(100, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(100, 'USD', 'BTC') - $amount),
+            },
+            crypto_to_fiat => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(200, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(200, 'USD', 'BTC') - $amount),
+            },
+            fiat_to_crypto => {
+                allowed   => financialrounding('amount', 'BTC', convert_currency(300, 'USD', 'BTC')),
+                available => financialrounding('amount', 'BTC', convert_currency(300, 'USD', 'BTC') - $amount),
+            },
+        },
+        'btc account limits reduced after transfer'
+    );
+
+    $params->{token} = $token_usd;
+    cmp_deeply(
+        $c->call_ok('get_limits', $params)->result->{lifetime_transfers},
+        {
+            crypto_to_fiat => {
+                allowed   => num(200),
+                available => num(150),
+            },
+            fiat_to_crypto => {
+                allowed   => num(300),
+                available => num(250),
+            },
+        },
+        'usd account limits not reduced after transfer'
+    );
+
+    $client_usd->account->add_payment_transaction({
+        amount               => -900,
+        payment_gateway_code => 'account_transfer',
+        payment_type_code    => 'internal_transfer',
+        status               => 'OK',
+        staff_loginid        => $client_usd->loginid,    # db function filters by this
+        remark               => 'x',
+    });
+
+    cmp_ok $client_usd->lifetime_internal_withdrawals, '==', 950, 'client now has 950 lifetime internal withdrawals';
+
+    cmp_deeply(
+        $c->call_ok('get_limits', $params)->result->{lifetime_transfers},
+        {
+            crypto_to_fiat => {
+                allowed   => num(200),
+                available => num(0),
+            },
+            fiat_to_crypto => {
+                allowed   => num(300),
+                available => num(0),
+            },
+        },
+        'limits floor at zero when exceeded'
+    );
+
+};
+
+done_testing();
