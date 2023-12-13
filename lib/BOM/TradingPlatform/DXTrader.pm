@@ -998,6 +998,11 @@ sub call_api {
 
     $self->server_check($args{server});
 
+    my $server    = $args{server};
+    my $auth_type = BOM::Config::Runtime->instance->app_config->system->dxtrade->token_authentication->$server;
+
+    $args{token_auth} = $auth_type;
+
     my $quiet   = delete $args{quiet};
     my $payload = encode_json_utf8(\%args);
     my $resp;
