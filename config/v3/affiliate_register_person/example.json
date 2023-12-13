@@ -13,12 +13,12 @@
     "non_pep_declaration": 1,
     "over_18_declaration": 1,
     "phone": "+971541234",
-    "phone_code": 971,
+    "phone_code": "971",
     "tnc_accepted": 1,
     "tnc_affiliate_accepted": 1,
     "type_of_account": 2,
     "user_name": "MyAffUser",
     "website_url": "www.xyz.com",
     "whatsapp_number": "+971541233",
-    "whatsapp_number_phoneCode": 971
+    "whatsapp_number_phoneCode": "971"
 }

@@ -76,12 +76,13 @@
         "company_name": {
             "description": "Name of the company.",
             "type": "string",
-            "pattern": "^\\w{3,128}$",
+            "pattern": "^[a-zA-Z0-9_ ]*$",
             "sensitive": 1
         },
         "company_registration_number": {
             "description": "Registration number of the company",
-            "type": "integer",
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_ ]*$",
             "sensitive": 1
         },
         "country": {
@@ -130,6 +131,12 @@
                 0,
                 1
             ]
+        },
+        "password": {
+            "description": "Password for the affiliate account. (Accepts any printable ASCII character. Must be between 6-50 characters, and include numbers, lowercase and uppercase letters.).",
+            "type": "string",
+            "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{6,50}$",
+            "sensitive": 1
         },
         "phone": {
             "description": "Registered phone number of the affiliate. Starting with `+` followed by 8-35 digits, allowing hyphens or space.",
