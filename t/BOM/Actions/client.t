@@ -308,7 +308,8 @@ subtest 'upload document' => sub {
     };
 
     subtest 'upload POI documents' => sub {
-        my $j = 0;
+        my $redis = BOM::Config::Redis::redis_events();
+        my $j     = 0;
         $loop->add(my $services = BOM::Event::Services->new);
         my $test_client_alter = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             email       => 'valid_poi@binary.com',
@@ -335,6 +336,22 @@ subtest 'upload document' => sub {
         $test_sibling_alter->binary_user_id($test_user_alter->id);
         $test_sibling_alter->save;
 
+        my $test_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            email       => 'dummy_poi@binary.com',
+            broker_code => 'CR',
+        });
+        $test_dummy->set_default_account('USD');
+
+        my $test_user_dummy = BOM::User->create(
+            email          => $test_dummy->email,
+            password       => "hello",
+            email_verified => 1,
+        );
+        $test_user_dummy->add_client($test_dummy);
+        $test_dummy->place_of_birth('co');
+        $test_dummy->binary_user_id($test_user_dummy->id);
+        $test_dummy->save;
+
         my $upload_info_alter = start_document_upload($args, $test_client_alter);
 
         subtest 'client manual upload a valid poi' => sub {
@@ -350,6 +367,16 @@ subtest 'upload document' => sub {
                     by_staff        => 0,
                     email_sent      => 0,
                 }];
+
+            my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+            my @metrics;
+            $dog_mock->mock(
+                'stats_inc',
+                sub {
+                    push @metrics, @_ if scalar @_ == 2;
+                    push @metrics, @_, undef if scalar @_ == 1;
+                    return 1;
+                });
 
             for my $test_case ($tests->@*) {
                 my ($document_type, $document_format, $by_staff, $email_sent) = @{$test_case}{qw/document_type document_format by_staff email_sent/};
@@ -391,6 +418,44 @@ subtest 'upload document' => sub {
 
                     mailbox_clear();
 
+                    BOM::Config::Runtime->instance->app_config->system->suspend->onfido(1);
+                    @metrics = ();
+
+                    BOM::Event::Actions::Client::document_upload({
+                            uploaded_manually_by_staff => $by_staff,
+                            loginid                    => $test_client_alter->loginid,
+                            file_id                    => $upload_info_alter->{file_id}})->get;
+
+                    cmp_deeply [@metrics],
+                        [
+                        'event.upload_poi_document.onfido_suspended' => undef,
+                        ],
+                        'Expected dd metrics for onfido suspended';
+
+                    my $zset = $redis->zrangebyscore(+BOM::User::Onfido::ONFIDO_SUSPENDED_UPLOADS, '-Inf', '+Inf');
+                    cmp_deeply $zset, [$test_client_alter->binary_user_id], 'Added into the suspended uploads zset';
+
+                    $redis->del(+BOM::User::Onfido::ONFIDO_SUSPENDED_UPLOADS);
+
+                    my $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
+                        fixup => sub {
+                            my $sth =
+                                $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client_alter->user_id);
+                        });
+
+                    ok !$applicant, 'No applicant created when onfido is suspended';
+
+                    my $document_file = $test_client_alter->db->dbic->run(
+                        fixup => sub {
+                            my $sth = $_->prepare('select * from betonmarkets.client_authentication_document where client_loginid=?');
+                            $sth->execute($test_client_alter->loginid);
+                            return $sth->fetchall_arrayref({})->[0];
+                        });
+
+                    ok $document_file, 'POI document is uploaded successfully regardless of onfido status';
+
+                    BOM::Config::Runtime->instance->app_config->system->suspend->onfido(0);
+
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => $by_staff,
                             loginid                    => $test_client_alter->loginid,
@@ -400,19 +465,35 @@ subtest 'upload document' => sub {
 
                     ok !$email, 'Email not sent for valid poi for onfido';
 
-                    my $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
+                    $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
                         fixup => sub {
                             my $sth =
                                 $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client_alter->user_id);
                         });
 
-                    ok $applicant, 'Suported POI document is uploaded to onfido';
+                    ok $applicant, 'Applicant created for suported POI document and onfido active';
+                    $zset = $redis->zrangebyscore(+BOM::User::Onfido::ONFIDO_SUSPENDED_UPLOADS, '-Inf', '+Inf');
+                    cmp_deeply $zset, [], 'No addition into the suspended uploads zset';
+                    $document_file = $test_client_alter->db->dbic->run(
+                        fixup => sub {
+                            my $sth = $_->prepare('select * from betonmarkets.client_authentication_document where client_loginid=?');
+                            $sth->execute($test_client_alter->loginid);
+                            return $sth->fetchall_arrayref({})->[0];
+                        });
+
+                    ok $document_file, 'Onfido suported POI document is uploaded successfully';
 
                     my $resubmission_flag_after = $test_client_alter->status->_get('allow_poi_resubmission');
                     ok !$resubmission_flag_after, 'poi resubmission status is removed after document uploading';
 
                     my $sibling_resubmission_flag_after = $test_sibling_alter->status->_get('allow_poi_resubmission');
                     ok !$sibling_resubmission_flag_after, 'poi resubmission status is removed from the sibling after document uploading';
+
+                    BOM::Database::UserDB::rose_db()->dbic->run(
+                        fixup => sub {
+                            $_->do('UPDATE users.onfido_applicant SET binary_user_id = ? WHERE id = ?', undef, $test_dummy->user_id,
+                                $applicant->{id});
+                        });
                 }
             }
         };

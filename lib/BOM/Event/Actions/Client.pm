@@ -559,16 +559,21 @@ This subroutine handles uploading POI documents to onfido.
 =cut
 
 async sub _upload_poi_document {
-    die 'Onfido is suspended' if BOM::Config::Runtime->instance->app_config->system->suspend->onfido;
-
     my $data = shift;
 
     my ($args, $client, $document_entry, $uploaded_by_staff) = @{$data}{qw/args client document_entry uploaded_by_staff/};
 
+    BOM::Config::Runtime->instance->app_config->check_for_update();
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido) {
+        BOM::User::Onfido::suspended_upload($client->binary_user_id);
+        DataDog::DogStatsd::Helper::stats_inc('event.upload_poi_document.onfido_suspended');
+        return undef;
+    }
+
     my $country                     = $client->place_of_birth // $client->residence;
     my $is_onfido_supported_country = BOM::Config::Onfido::is_country_supported($country);
 
-    return unless $is_onfido_supported_country;    # unsupported countries should not attempt to create onfido applicant
+    return undef unless $is_onfido_supported_country;    # unsupported countries should not attempt to create onfido applicant
 
     $log->debugf('Applying Onfido verification process for client %s', $client->loginid);
 
