@@ -341,8 +341,8 @@ subtest 'take_profit' => sub {
         $args->{date_pricing} = $now->epoch + 30;
         $c = produce_contract($args);
         ok $c->take_profit, 'take profit is defined';
-        is $c->take_profit->{amount},     10,               'take profit amount is 10';
-        is $c->take_profit_barrier_value, 1726.32577607076, 'take profit barrier value is 1726.32577607076';
+        is $c->take_profit->{amount},     10,      'take profit amount is 10';
+        is $c->take_profit_barrier_value, 1726.32, 'take profit barrier value is 1726.32';
         ok $c->is_expired, 'expired when take profit is set at ' . $epoch;
 
         $args->{limit_order} = {
@@ -352,8 +352,8 @@ subtest 'take_profit' => sub {
             }};
         $c = produce_contract($args);
         ok $c->take_profit, 'take profit is defined';
-        is $c->take_profit->{amount},     10,               'take profit amount is 10';
-        is $c->take_profit_barrier_value, 1726.32577607076, 'take profit barrier value is 1726.32577607076';
+        is $c->take_profit->{amount},     10,      'take profit amount is 10';
+        is $c->take_profit_barrier_value, 1726.32, 'take profit barrier value is 1726.32';
         ok !$c->is_expired, 'not expired when take profit is set at ' . $c->take_profit->{date}->epoch;
     };
 };

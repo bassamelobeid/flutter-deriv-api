@@ -6,6 +6,7 @@ with 'BOM::Product::Role::Turbos';
 
 use BOM::Product::Exception;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
+use BOM::Product::Utils   qw(rounddown);
 
 =head1 DESCRIPTION
 
@@ -157,7 +158,10 @@ The corresponding barrier/strike value to close the contract with the predefined
 sub take_profit_barrier_value {
     my $self = shift;
 
-    return ($self->barrier->as_absolute - ($self->ask_price + $self->take_profit->{amount}) / $self->number_of_contracts) / (1 + $self->ask_spread);
+    my $value =
+        ($self->barrier->as_absolute - ($self->ask_price + $self->take_profit->{amount}) / $self->number_of_contracts) / (1 + $self->ask_spread);
+
+    return rounddown($value, $self->underlying->pip_size);
 }
 
 no Moose;

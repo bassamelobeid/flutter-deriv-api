@@ -684,7 +684,7 @@ sub _hit_take_profit {
         my %hit_conditions = (
             start_time              => $start_time,
             end_time                => $end_time,
-            $self->take_profit_side => $self->underlying->pipsized_value($self->take_profit_barrier_value),
+            $self->take_profit_side => $self->take_profit_barrier_value,
         );
 
         return $self->_tick_accessor->breaching_tick(%hit_conditions);

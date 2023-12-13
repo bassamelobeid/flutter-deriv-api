@@ -216,8 +216,8 @@ subtest 'take_profit' => sub {
         $args->{date_pricing} = $now->epoch + 30;
         $c = produce_contract($args);
         ok $c->take_profit, 'take profit is defined';
-        is $c->take_profit->{amount},     10,               'take profit amount is 10';
-        is $c->take_profit_barrier_value, 1771.14070582724, 'take profit barrier value is 1771.14070582724';
+        is $c->take_profit->{amount},     10,      'take profit amount is 10';
+        is $c->take_profit_barrier_value, 1771.15, 'take profit barrier value is 1771.15';
         ok $c->is_expired, 'expired when take profit is set at ' . $epoch;
 
         $args->{limit_order} = {
@@ -227,8 +227,8 @@ subtest 'take_profit' => sub {
             }};
         $c = produce_contract($args);
         ok $c->take_profit, 'take profit is defined';
-        is $c->take_profit->{amount},     10,               'take profit amount is 10';
-        is $c->take_profit_barrier_value, 1771.14070582724, 'take profit barrier value is 1771.14070582724';
+        is $c->take_profit->{amount},     10,      'take profit amount is 10';
+        is $c->take_profit_barrier_value, 1771.15, 'take profit barrier value is 1771.15';
         ok !$c->is_expired, 'not expired when take profit is set at ' . $c->take_profit->{date}->epoch;
     };
 };
@@ -449,6 +449,41 @@ subtest 'consistent sell tick' => sub {
     is $c->close_tick->quote, 10139.829,           'correct tick';
     is $c->close_tick->epoch, $now->epoch + 17999, 'correct tick';
 
+};
+
+subtest 'special test for take profit discrepancies' => sub {
+    my $epoch_date_start   = 1699519419;
+    my $epoch_date_pricing = 1699519608;
+    my $epoch_date_expiry  = 1699551819;
+    my $special_args       = {
+        bet_type            => 'TURBOSLONG',
+        underlying          => $symbol,
+        date_start          => $epoch_date_start,
+        date_pricing        => $epoch_date_pricing,
+        duration            => '9h',
+        currency            => 'USD',
+        amount_type         => 'stake',
+        amount              => 500,
+        number_of_contracts => 71.56449,
+        bid_spread          => 0.000165607364228642,
+        barrier             => 2156.68,
+    };
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [2163.32, $epoch_date_start,   $symbol],
+        [2165.43, $epoch_date_pricing, $symbol],
+        [2166.71, $epoch_date_expiry,  $symbol],
+    );
+    $special_args->{limit_order} = {
+        take_profit => {
+            order_amount => 100,
+            order_date   => $epoch_date_start,
+        }};
+
+    my $c = produce_contract($special_args);
+    ok $c->take_profit, 'take profit is defined';
+    is $c->take_profit->{amount},     100,     'take profit amount is 100';
+    is $c->hit_tick->{quote},         2165.43, 'hit tick at 2165.43';
+    is $c->take_profit_barrier_value, 2165.43, 'take profit barrier value is 2165.43';
 };
 
 done_testing();
