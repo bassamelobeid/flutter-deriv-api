@@ -92,6 +92,9 @@ sub affiliate_add_general {
         $fields->{PARAM_business}           = $args->{company_name};
         $fields->{PARAM_business_regnumber} = $args->{company_registration_number};
     }
+    if (defined($args->{password})) {
+        $fields->{PARAM_password} = $args->{password};
+    }
     try {
         my $aff_id = $myaffiliate->register_affiliate(%$fields)->get;
         return {
