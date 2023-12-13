@@ -20,6 +20,7 @@ use BOM::Rules::Engine;
 use BOM::TradingPlatform;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 use BOM::Platform::Event::Emitter;
+use BOM::Config::Runtime;
 use Data::Dump 'pp';
 
 # Maximum age of accounts (based on creation date) to not archive
@@ -105,6 +106,8 @@ for my $server_type (@servers) {
         $dxsca_client{$server_type} = WebService::Async::DevExperts::Dxsca::Client->new(
             host    => $config->{servers}{$server_type}{host},
             port    => $config->{servers}{$server_type}{port},
+            user    => $config->{servers}{$server_type}{user},
+            pass    => $config->{servers}{$server_type}{pass},
             timeout => 15
         ));
 }
@@ -196,12 +199,16 @@ async sub process_account {
 
     my $client = BOM::User::Client->new({loginid => $cr_account});
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    my $rule_engine = BOM::Rules::Engine->new(
+        client => $client,
+        user   => $client->user
+    );
 
     my $dx = BOM::TradingPlatform->new(
         rule_engine => $rule_engine,
         platform    => 'dxtrade',
-        client      => $client
+        client      => $client,
+        user        => $client->user
     );
 
     my ($username, $domain) = split '@', $config->{servers}{$type}{user};
@@ -222,17 +229,19 @@ async sub process_account {
 
     $log->debugf("Will archive '%s'", $dx_account);
 
+    my $auth_type = BOM::Config::Runtime->instance->app_config->system->dxtrade->token_authentication->$type;
+
     try {
         await $dxweb_client{$type}->account_update(
             clearing_code => $clearing_code,
             account_code  => $dx_account,
-            status        => 'TERMINATED'
+            status        => 'TERMINATED',
+            tokenAuth     => $auth_type,
         );
     } catch ($e) {
         # 404 means account was not found on DerivX,
         # therefore we proceed in archiving it
-        $log->debugf("Error when terminating '%s' : %s", $dx_account, pp($e)) unless @$e[2] = '404';
-        die $e unless @$e[2] = '404';
+        die $e unless @$e[2] eq '404';
     }
 
     $user_db->dbic->run(
