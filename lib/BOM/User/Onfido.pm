@@ -25,6 +25,144 @@ use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 use constant ONFIDO_REQUEST_PENDING_PREFIX  => 'ONFIDO::REQUEST::PENDING::PER::USER::';
 use constant ONFIDO_REQUEST_PENDING_TTL     => 86400;                                     # one day in second
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS => qw(address_postcode residence);
+use constant ONFIDO_SUSPENDED_UPLOADS       => 'ONFIDO::SUSPENDED::UPLOADS';
+
+=head2 candidate_documents
+
+Gets a stash of documents that:
+
+=over 4
+
+=item * are origin = `client` (manually uploaded)
+
+=item * are status = `uploaded` (pending)
+
+=item * are Onfido supported by document type
+
+=item * are Onfido supported by issuing country
+
+=back
+
+It takes:
+
+=over 4
+
+=item * C<$user> - the current L<BOM::User>
+
+=back
+
+Returns an hashref with C<selfie> and C<documents> (arrayref), or C<undef> if there is no such documents.
+
+=cut
+
+sub candidate_documents {
+    my $user   = shift;
+    my $client = $user->get_default_client;
+
+    # this sorting will ensure (not 100% though but pretty close) that the documents being processed are related to each other in sequence
+    my $stash = [sort { $b->id <=> $a->id }
+            $client->documents->stash('uploaded', 'client', ['national_identity_card', 'driving_licence', 'passport', 'selfie_with_id'])->@*];
+
+    # having the stash of Onfido potential documents
+    # we need to find a valid cluster of documents:
+    #  - passport + selfie_with_id
+    #  - driving_licence (front and back) + selfie_with_id
+    #  - national_identity_card (front and back) + selfie_with_id
+
+    my $stack = {};
+    my $selfie;
+
+    # extract the selfie (easy)
+    # and the candidate documents (hard)
+
+    for my $document ($stash->@*) {
+        next unless BOM::Config::Onfido::is_country_supported($document->issuing_country);
+
+        my $type = $document->document_type;
+
+        if ($type eq 'selfie_with_id') {
+            $selfie = $document unless $selfie;
+            next;
+        }
+
+        my $side = $document->file_name =~ /_front\./ ? 'front' : 'back';
+
+        # index by document id (numbers) + country + type, so we stack related documents
+
+        my $index = join '-', $document->document_id, $document->issuing_country, $type;
+
+        $stack->{$index} //= {};
+
+        # index again (2nd dimension) by its side (front/back), as some document types are 2 sided
+
+        $stack->{$index}->{$side} = $document unless $stack->{$index}->{$side};
+    }
+
+    return undef unless $selfie;
+
+    # observe the 2 dimensional stack built,
+    # for passport we need 1 document
+    # the rest of the documents types would require 2
+    # if some stack matches the criteria we just found our candidates, bravo!
+    my $documents;
+    my $highest;
+
+    for (keys $stack->%*) {
+        my $docs = $stack->{$_};
+
+        my ($first, $second) = sort { $b->id <=> $a->id } values $docs->%*;
+
+        my $type = $first->document_type;
+
+        if ($type eq 'passport') {
+            $documents = [$first->id, $first] if $first && (!defined $highest || $first->id > $highest);
+        } else {
+            $documents = [$first->id, $first, $second] if $first && $second && (!defined $highest || $first->id > $highest);
+        }
+
+        $highest = $documents->[0] if $documents;    # carry only the highest id found
+    }
+
+    return undef unless $documents;
+
+    # now get the documents without the first element (highest id)
+    my @documents = $documents->@*;
+    shift @documents;
+
+    return {
+        selfie    => $selfie,
+        documents => [@documents],
+    };
+}
+
+=head2 suspended_upload
+
+Enqueues the current client into the "POI uploaded while Onfido is suspended" ZSET.
+
+It takes the following:
+
+=over 4
+
+=item * C<$binary_user_id> - the binary user id of the current client.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub suspended_upload {
+    my ($binary_user_id) = @_;
+
+    my $redis = BOM::Config::Redis::redis_events();
+
+    # adds the binary user id as the member
+    # score is the current timestamp
+    # theoretically, the lower the score the better to ensure higher priority
+    $redis->zadd(ONFIDO_SUSPENDED_UPLOADS, 'NX', time, $binary_user_id);
+
+    return undef;
+}
 
 =head2 store_onfido_applicant
 

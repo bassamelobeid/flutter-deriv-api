@@ -1,6 +1,7 @@
 use strict;
 use warnings;
-use Test::More tests => 15;
+use Test::More tests => 17;
+use Test::MockTime qw( :all );
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
@@ -1333,3 +1334,447 @@ subtest 'is available' => sub {
 
     $onfido_mock->unmock_all();
 };
+
+subtest 'suspended uploads' => sub {
+    subtest 'add to the zset' => sub {
+        my $redis = BOM::Config::Redis::redis_events();
+        my $time  = time - 3600;
+
+        set_absolute_time($time);
+
+        BOM::User::Onfido::suspended_upload(10);
+
+        my $zset = $redis->zrangebyscore(+BOM::User::Onfido::ONFIDO_SUSPENDED_UPLOADS, '-Inf', '+Inf', 'WITHSCORES');
+        cmp_deeply $zset, [10, $time], 'Expected member added';
+
+        set_absolute_time(2000 + $time);
+
+        BOM::User::Onfido::suspended_upload(10);
+        BOM::User::Onfido::suspended_upload(20);
+
+        $zset = $redis->zrangebyscore(+BOM::User::Onfido::ONFIDO_SUSPENDED_UPLOADS, '-Inf', '+Inf', 'WITHSCORES');
+        cmp_deeply $zset, [10, $time, 20, 2000 + $time], 'Expected member added';
+
+        restore_time();
+    };
+};
+
+subtest 'candidate documents' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email          => 'thecandidates@test.com',
+        password       => "hello",
+        email_verified => 1,
+    );
+
+    my $user_mock = Test::MockModule->new(ref($user));
+    $user_mock->mock(
+        'get_default_client',
+        sub {
+            return $client;
+        });
+    my $documents_mock = Test::MockModule->new(ref($client->documents));
+    my $stash          = [];
+    $documents_mock->mock(
+        'stash',
+        sub {
+            my @args = @_;
+
+            cmp_deeply [@args], [ignore(), 'uploaded', 'client', ['national_identity_card', 'driving_licence', 'passport', 'selfie_with_id']],
+                'expected stash requested';
+
+            return $stash;
+        });
+
+    subtest 'empty stash' => sub {
+        $stash = [];
+
+        is BOM::User::Onfido::candidate_documents($user), undef, 'Empty stash returns undef';
+    };
+
+    subtest 'only selfie' => sub {
+        $stash = [
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'br',
+                })];
+
+        is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
+    };
+
+    my $two_sided = [qw/national_identity_card driving_licence/];
+    my $sides     = [qw/front back/];
+
+    subtest 'two sided documents' => sub {
+        subtest 'only one side' => sub {
+            for my $document_type ($two_sided->@*) {
+                subtest $document_type => sub {
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                issuing_country => 'br',
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.2_front.jpg",
+                                id              => 2,
+                            }
+                        ),
+                    ];
+
+                    is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
+
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                issuing_country => 'br',
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.2_front.jpg",
+                                id              => 2,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.3_front.jpg",
+                                id              => 4,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.4_front.jpg",
+                                id              => 4,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.5_front.jpg",
+                                id              => 5,
+                            }
+                        ),
+                    ];
+
+                    is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
+                };
+            }
+
+            subtest 'mixings' => sub {
+                my $i = 1;
+
+                for my $side ($sides->@*) {
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                issuing_country => 'br',
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        map {
+                            $i++;
+
+                            build_document({
+                                    document_type   => $_,
+                                    issuing_country => 'br',
+                                    file_name       => "CR1.$_.$i\_$side.jpg",
+                                    id              => $i,
+                                })
+                        } $two_sided->@*,
+                    ];
+
+                    is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
+                }
+
+                my @sides = $sides->@*;
+
+                $stash = [
+                    build_document({
+                            document_type   => 'selfie_with_id',
+                            issuing_country => 'br',
+                            file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                            id              => 1,
+                        }
+                    ),
+                    map {
+                        my $side = shift @sides;
+                        $i++;
+
+                        build_document({
+                                document_type   => $_,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$_.$i\_$side.jpg",
+                                id              => $i,
+                            })
+                    } $two_sided->@*,
+                ];
+
+                @sides = reverse $sides->@*;
+
+                $stash = [
+                    build_document({
+                            document_type   => 'selfie_with_id',
+                            issuing_country => 'br',
+                            file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                            id              => 1,
+                        }
+                    ),
+                    map {
+                        my $side = shift @sides;
+                        $i++;
+
+                        build_document({
+                                document_type   => $_,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$_.$i\_$side.jpg",
+                                id              => $i,
+                            })
+                    } $two_sided->@*,
+                ];
+
+                is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
+
+                # some permutations
+
+                for my $document_type ($two_sided->@*) {
+                    for my $side ($sides->@*) {
+                        $stash = [
+                            build_document({
+                                    document_type   => 'selfie_with_id',
+                                    issuing_country => 'br',
+                                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                    id              => 1,
+                                }
+                            ),
+                            build_document({
+                                    document_type   => $document_type,
+                                    issuing_country => 'br',
+                                    file_name       => "CR1.$document_type.2_$side.jpg",
+                                    id              => 2,
+                                }
+                            ),
+                            build_document({
+                                    document_type   => $document_type,
+                                    issuing_country => 'br',
+                                    file_name       => "CR1.$document_type.3_$side.jpg",
+                                    id              => 3,
+                                }
+                            ),
+                        ];
+
+                        is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
+                    }
+                }
+            };
+
+            subtest 'valid candidates' => sub {
+                for my $document_type ($two_sided->@*) {
+                    subtest $document_type => sub {
+                        my $i = 1;
+
+                        $stash = [
+                            build_document({
+                                    document_type   => 'selfie_with_id',
+                                    issuing_country => 'br',
+                                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                    id              => 1,
+                                }
+                            ),
+                            map {
+                                $i++;
+
+                                build_document({
+                                        document_type   => $document_type,
+                                        issuing_country => 'br',
+                                        file_name       => "CR1.$document_type.$i\_$_.jpg",
+                                        id              => $i,
+                                    })
+                            } $sides->@*,
+                        ];
+
+                        my @stash = $stash->@*;
+
+                        cmp_deeply BOM::User::Onfido::candidate_documents($user),
+                            {
+                            selfie    => shift @stash,
+                            documents => [reverse @stash],
+                            },
+                            'Expected candidates returned';
+
+                        $i = 3;
+
+                        $stash = [
+                            build_document({
+                                    document_type   => 'selfie_with_id',
+                                    issuing_country => 'br',
+                                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                    id              => 1,
+                                }
+                            ),
+                            map {
+                                $i--;
+
+                                build_document({
+                                        document_type   => $document_type,
+                                        issuing_country => 'br',
+                                        file_name       => "CR1.$document_type.$i\_$_.jpg",
+                                        id              => $i,
+                                    })
+                            } $sides->@*,
+                        ];
+
+                        @stash = $stash->@*;
+
+                        cmp_deeply BOM::User::Onfido::candidate_documents($user),
+                            {
+                            selfie    => shift @stash,
+                            documents => [@stash],
+                            },
+                            'Expected candidates returned';
+                    }
+                }
+            };
+        };
+    };
+
+    my $one_sided = [qw/passport/];
+
+    subtest 'one sided documents' => sub {
+        for my $document_type ($one_sided->@*) {
+            # generally speaking, we don't care about the side for passports, this will be `front` always
+            for my $side ($sides->@*) {
+                subtest $document_type => sub {
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                issuing_country => 'br',
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.2_$side.jpg",
+                                id              => 2,
+                            }
+                        ),
+                    ];
+
+                    my @stash = $stash->@*;
+
+                    cmp_deeply BOM::User::Onfido::candidate_documents($user),
+                        {
+                        selfie    => shift @stash,
+                        documents => [@stash],
+                        },
+                        'Expected candidates returned';
+                }
+            }
+        }
+    };
+
+    subtest 'ties' => sub {
+        $stash = [
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'br',
+                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                    id              => 1,
+                }
+            ),
+            build_document({
+                    document_type   => 'national_identity_card',
+                    issuing_country => 'br',
+                    file_name       => "CR1.national_identity_card.4_front.jpg",
+                    id              => 4,
+                }
+            ),
+            build_document({
+                    document_type   => 'national_identity_card',
+                    issuing_country => 'br',
+                    file_name       => "CR1.national_identity_card.3_back.jpg",
+                    id              => 3,
+                }
+            ),
+            build_document({
+                    document_type   => 'passport',
+                    issuing_country => 'br',
+                    file_name       => "CR1.passport.10_front.jpg",
+                    id              => 10,
+                }
+            ),
+        ];
+
+        my @stash = $stash->@*;
+
+        cmp_deeply BOM::User::Onfido::candidate_documents($user),
+            {
+            selfie    => shift @stash,
+            documents => [$stash[2]],
+            },
+            'Expected candidates returned (passport)';
+
+        $stash = [
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'br',
+                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                    id              => 1,
+                }
+            ),
+            build_document({
+                    document_type   => 'national_identity_card',
+                    issuing_country => 'br',
+                    file_name       => "CR1.national_identity_card.4_front.jpg",
+                    id              => 4,
+                }
+            ),
+            build_document({
+                    document_type   => 'national_identity_card',
+                    issuing_country => 'br',
+                    file_name       => "CR1.national_identity_card.3_back.jpg",
+                    id              => 3,
+                }
+            ),
+            build_document({
+                    document_type   => 'passport',
+                    issuing_country => 'br',
+                    file_name       => "CR1.passport.10_front.jpg",
+                    id              => 2,
+                }
+            ),
+        ];
+
+        @stash = $stash->@*;
+
+        cmp_deeply BOM::User::Onfido::candidate_documents($user),
+            {
+            selfie    => shift @stash,
+            documents => [$stash[0], $stash[1]],
+            },
+            'Expected candidates returned (national_identity_card)';
+    };
+
+    $documents_mock->unmock_all;
+    $user_mock->unmock_all;
+};
+
+sub build_document {
+    my $args = shift;
+
+    return (bless $args, 'BOM::Database::AutoGenerated::Rose::ClientAuthenticationDocument');
+}

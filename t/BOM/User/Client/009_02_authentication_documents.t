@@ -1510,4 +1510,309 @@ subtest 'poa look ahead' => sub {
     $docs_mock->unmock_all;
 };
 
+subtest 'stash' => sub {
+    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+
+    my $user = BOM::User->create(
+        email    => 'stash-of-documents@binary.com',
+        password => 'Abcd1234'
+    );
+
+    $user->add_client($cr);
+    $user->add_client($mf);
+    $user->add_client($vr);
+
+    $cr->binary_user_id($user->id);
+    $cr->user($user);
+    $cr->save;
+
+    $mf->binary_user_id($user->id);
+    $mf->user($user);
+    $mf->save;
+
+    $vr->binary_user_id($user->id);
+    $vr->user($user);
+    $vr->save;
+
+    # seed a bit
+    upload($cr, '123', 'national_identity_card', 'uploaded', 'mychecksum1',  'client', 'front', '2020-10-10', 'br');
+    upload($cr, '123', 'national_identity_card', 'uploaded', 'mychecksum2',  'client', 'back',  '2020-10-10', 'br');
+    upload($cr, '123', 'national_identity_card', 'uploaded', 'mychecksum3',  'bo',     'front', '2000-10-10', 'br');
+    upload($cr, '123', 'national_identity_card', 'uploaded', 'mychecksum4',  'bo',     'back',  '2000-10-10', 'br');
+    upload($vr, '123', 'national_identity_card', 'uploaded', 'mychecksum5',  'client', 'front', '1999-10-10', 'br');
+    upload($vr, '123', 'national_identity_card', 'uploaded', 'mychecksum6',  'client', 'back',  '1999-10-10', 'br');
+    upload($mf, '123', 'national_identity_card', 'verified', 'mychecksum7',  'client', 'front', '1998-10-10', 'br');
+    upload($mf, '123', 'national_identity_card', 'verified', 'mychecksum8',  'client', 'back',  '1998-10-10', 'br');
+    upload($mf, '123', 'national_identity_card', 'uploaded', 'mychecksum9',  'client', 'front', '2021-10-10', 'br');
+    upload($mf, '123', 'national_identity_card', 'uploaded', 'mychecksum10', 'client', 'back',  '2021-10-10', 'br');
+    upload($mf, '123', 'passport',               'uploaded', 'mychecksum11', 'client', 'front', '2021-10-10', 'br');
+    upload($mf, '123', 'passport',               'uploaded', 'mychecksum12', 'client', 'back',  '2021-10-10', 'br');
+    upload($mf, '123', 'bank_statement',         'uploaded', 'mychecksum13', 'client', 'front', '1997-10-10', 'br');
+    upload($mf, '123', 'bank_statement',         'uploaded', 'mychecksum14', 'client', 'back',  '1997-10-10', 'br');
+    upload($cr, '123', 'selfie_with_id',         'uploaded', 'mychecksum15', 'client', 'front', '1997-10-10', 'br');
+    upload($cr, '123', 'selfie_with_id',         'uploaded', 'mychecksum16', 'client', 'back',  '1997-10-10', 'br');
+    upload($vr, '123', 'poa',                    'uploaded', 'mychecksum17', 'client', 'front', '1999-10-10', 'br');
+    upload($vr, '123', 'poa',                    'uploaded', 'mychecksum18', 'client', 'back',  '1999-10-10', 'br');
+
+    my $stash = [
+        map {
+            {
+                client_loginid  => $_->{client_loginid},
+                document_id     => $_->{document_id},
+                issuing_country => $_->{issuing_country},
+                document_type   => $_->{document_type},
+                origin          => $_->{origin},
+                status          => $_->{status},
+                file_name       => $_->{file_name},
+            }
+        } $cr->documents->stash('uploaded', 'client', ['national_identity_card', 'passport'])->@*
+    ];
+
+    cmp_bag $stash,
+        [{
+            file_name       => re('front'),
+            client_loginid  => $cr->loginid,
+            document_type   => 'national_identity_card',
+            issuing_country => 'br',
+            origin          => 'client',
+            document_id     => '123',
+            status          => 'uploaded'
+        },
+        {
+            document_type   => 'national_identity_card',
+            document_id     => '123',
+            status          => 'uploaded',
+            origin          => 'client',
+            issuing_country => 'br',
+            file_name       => re('back'),
+            client_loginid  => $cr->loginid,
+        },
+        {
+            file_name       => re('back'),
+            client_loginid  => $mf->loginid,
+            document_type   => 'national_identity_card',
+            document_id     => '123',
+            status          => 'uploaded',
+            issuing_country => 'br',
+            origin          => 'client'
+        },
+        {
+            client_loginid  => $mf->loginid,
+            file_name       => re('front'),
+            document_type   => 'passport',
+            origin          => 'client',
+            issuing_country => 'br',
+            document_id     => '123',
+            status          => 'uploaded'
+        },
+        {
+            file_name       => re('back'),
+            client_loginid  => $mf->loginid,
+            origin          => 'client',
+            issuing_country => 'br',
+            status          => 'uploaded',
+            document_id     => '123',
+            document_type   => 'passport'
+        },
+        {
+            origin          => 'client',
+            issuing_country => 'br',
+            document_id     => '123',
+            status          => 'uploaded',
+            document_type   => 'national_identity_card',
+            client_loginid  => $mf->loginid,
+            file_name       => re('front'),
+        }
+        ],
+        'Expected stash';
+
+    $stash = [
+        map {
+            {
+                client_loginid  => $_->{client_loginid},
+                document_id     => $_->{document_id},
+                issuing_country => $_->{issuing_country},
+                document_type   => $_->{document_type},
+                origin          => $_->{origin},
+                status          => $_->{status},
+                file_name       => $_->{file_name},
+            }
+        } $cr->documents->stash('uploaded', 'client', ['passport'])->@*
+    ];
+
+    cmp_bag $stash,
+        [{
+            origin          => 'client',
+            document_type   => 'passport',
+            status          => 'uploaded',
+            issuing_country => 'br',
+            client_loginid  => 'MF90000000',
+            file_name       => re('front'),
+            document_id     => '123'
+        },
+        {
+            file_name       => re('back'),
+            client_loginid  => 'MF90000000',
+            document_id     => '123',
+            issuing_country => 'br',
+            status          => 'uploaded',
+            origin          => 'client',
+            document_type   => 'passport'
+        },
+        ],
+        'Expected stash';
+
+    $stash = [
+        map {
+            {
+                client_loginid  => $_->{client_loginid},
+                document_id     => $_->{document_id},
+                issuing_country => $_->{issuing_country},
+                document_type   => $_->{document_type},
+                origin          => $_->{origin},
+                status          => $_->{status},
+                file_name       => $_->{file_name},
+            }
+        } $cr->documents->stash('uploaded', 'bo', ['passport'])->@*
+    ];
+
+    cmp_bag $stash, [], 'Expected stash';
+
+    $stash = [
+        map {
+            {
+                client_loginid  => $_->{client_loginid},
+                document_id     => $_->{document_id},
+                issuing_country => $_->{issuing_country},
+                document_type   => $_->{document_type},
+                origin          => $_->{origin},
+                status          => $_->{status},
+                file_name       => $_->{file_name},
+            }
+        } $cr->documents->stash('uploaded', 'legacy', ['passport'])->@*
+    ];
+
+    cmp_bag $stash, [], 'Expected stash';
+
+    $stash = [
+        map {
+            {
+                client_loginid  => $_->{client_loginid},
+                document_id     => $_->{document_id},
+                issuing_country => $_->{issuing_country},
+                document_type   => $_->{document_type},
+                origin          => $_->{origin},
+                status          => $_->{status},
+                file_name       => $_->{file_name},
+            }
+        } $cr->documents->stash('verified', 'client', ['passport'])->@*
+    ];
+
+    cmp_bag $stash, [], 'Expected stash';
+
+    $stash = [
+        map {
+            {
+                client_loginid  => $_->{client_loginid},
+                document_id     => $_->{document_id},
+                issuing_country => $_->{issuing_country},
+                document_type   => $_->{document_type},
+                origin          => $_->{origin},
+                status          => $_->{status},
+                file_name       => $_->{file_name},
+            }
+        } $cr->documents->stash('verified', 'client', ['national_identity_card', 'passport'])->@*
+    ];
+
+    cmp_bag $stash,
+        [{
+            status          => 'verified',
+            document_type   => 'national_identity_card',
+            origin          => 'client',
+            document_id     => '123',
+            file_name       => re('front'),
+            client_loginid  => 'MF90000000',
+            issuing_country => 'br'
+        },
+        {
+            status          => 'verified',
+            document_type   => 'national_identity_card',
+            origin          => 'client',
+            document_id     => '123',
+            file_name       => re('back'),
+            client_loginid  => 'MF90000000',
+            issuing_country => 'br'
+        },
+        ],
+        'Expected stash';
+
+    $stash = [
+        map {
+            {
+                client_loginid  => $_->{client_loginid},
+                document_id     => $_->{document_id},
+                issuing_country => $_->{issuing_country},
+                document_type   => $_->{document_type},
+                origin          => $_->{origin},
+                status          => $_->{status},
+                file_name       => $_->{file_name},
+            }
+        } $cr->documents->stash('uploaded', 'client', ['poa', 'bank_statement'])->@*
+    ];
+
+    cmp_bag $stash,
+        [{
+            status          => 'uploaded',
+            document_type   => 'bank_statement',
+            origin          => 'client',
+            document_id     => '123',
+            file_name       => re('front'),
+            client_loginid  => 'MF90000000',
+            issuing_country => 'br'
+        },
+        {
+            status          => 'uploaded',
+            document_type   => 'bank_statement',
+            origin          => 'client',
+            document_id     => '123',
+            file_name       => re('back'),
+            client_loginid  => 'MF90000000',
+            issuing_country => 'br'
+        },
+        ],
+        'Expected stash';
+};
+
+sub upload {
+    my ($client, $document_id, $type, $status, $checksum, $origin, $side, $upload_date, $country) = @_;
+
+    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,NULL,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin, ?)';
+    my $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, $type, 'PNG', $document_id, $checksum, 'none', $side, $origin, $country);
+
+    my $id1 = $sth_doc_new->fetch()->[0];
+    $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
+
+    my $sth_doc_info = $dbh->prepare($SQL);
+    $sth_doc_info->execute($client->loginid);
+    $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, ?::status_type)';
+    my $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1, $status);
+
+    $SQL = 'UPDATE betonmarkets.client_authentication_document SET upload_date = ? WHERE id = ?';
+
+    my $sth_doc_upd = $dbh->prepare($SQL);
+    $sth_doc_upd->execute($upload_date, $id1);
+
+    return $id1;
+}
+
 done_testing();

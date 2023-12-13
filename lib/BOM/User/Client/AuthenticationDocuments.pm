@@ -325,6 +325,51 @@ sub _build_uploaded {
     return \%documents;
 }
 
+=head2 stash
+
+Retrieves documents from all the siblings following the matching criteria.
+
+It takes the following:
+
+=over 4
+
+=item * C<$status> - status of the documents: uploaded, verified, rejected.
+
+=item * C<$origin> - origin of the documents: idv, onfido, bo, client, legacy.
+
+=item * C<$types> - arrayref of document types.
+
+=back
+
+Returns an arrayref of documents.
+
+=cut
+
+sub stash {
+    my ($self, $status, $origin, $types) = @_;
+
+    my @siblings = $self->client->user->clients(
+        include_disabled   => 1,
+        include_duplicated => 1
+    );
+
+    my @stash;
+
+    for my $sibling (@siblings) {
+        next if $sibling->is_virtual;
+
+        push @stash,
+            $sibling->find_client_authentication_document(
+            query => [
+                origin        => $origin,
+                status        => $status,
+                document_type => $types,
+            ]);
+    }
+
+    return [@stash];
+}
+
 =head2 get_category_config
 
 Computes the category configuration of the given type of document.
