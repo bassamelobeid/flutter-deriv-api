@@ -2137,6 +2137,20 @@ system:
               isa : Bool
               defaul: 0
               global: 1
+        token_authentication:
+          description: "Enable token authentication for DerivX API calls"
+          isa : section
+          contains:
+            demo:
+              description: "Enable token authentication for demo DerivX API calls"
+              isa : Bool
+              defaul: 0
+              global: 1
+            real:
+              description: "Enable token authentication for real DerivX API calls"
+              isa : Bool
+              defaul: 0
+              global: 1
         suspend:
           description: "Suspend DXTrade features"
           isa: section
