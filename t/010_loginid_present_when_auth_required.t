@@ -9,16 +9,28 @@ use File::Basename;
 use Binary::WebSocketAPI::Actions qw(actions_config);
 
 use JSON;
-use List::Util qw(first all);
+use List::Util qw(any);
 
 my $base_path = 'config/v3';
 my $dir       = path($base_path);
 my $json      = JSON->new;
 
+# these calls require authorization but only return user data; i.e. the response is the same for a user regards which loginid they authorize with
+my @user_level_calls = qw(
+    account_list
+);
+
+# These actions are forwarded by the websocket (instead of handled by RPC) and need a token.
+my @forwarded_actions = qw(
+    proposal
+    exchange_rates
+    crypto_estimations
+    trading_platform_asset_listing
+);
+
 # Next to schemas that are auth_required, there are actions that are not auth_required, but need a token.
 # For example, payment_methods is not auth_required, but needs a token and therefore a loginid.
 my @actions_with_token = get_actions_with_token();
-my @forwarded_actions  = get_actions_forwarded_with_tokens();
 
 subtest 'Check that loginid in present in all the schemas that are auth_required or need a token.' => sub {
     for (sort $dir->children) {
@@ -47,6 +59,8 @@ subtest 'Check that loginid in present in all the schemas that are auth_required
 sub auth_required {
     my ($request, $auth_required, $actions_with_token, $forwarded_actions) = @_;
 
+    return if any { $_ eq $request } @user_level_calls;
+
     my $has_stash_token = grep(/^$request$/, $actions_with_token->@*);
     return $auth_required || $has_stash_token || grep(/^$request$/, $forwarded_actions->@*);
 }
@@ -65,16 +79,6 @@ sub get_actions_with_token {
     }
 
     return @actions_with_token;
-}
-
-# These actions are forwarded by the websocket (instead of handled by RPC) and need a token.
-sub get_actions_forwarded_with_tokens {
-    return qw(
-        proposal
-        exchange_rates
-        crypto_estimations
-        trading_platform_asset_listing
-    );
 }
 
 done_testing;

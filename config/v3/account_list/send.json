@@ -1,30 +1,23 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Get Available Accounts to Transfer (request)",
-    "description": "Get Available Accounts to Transfer.",
-    "hidden": 1,
+    "title": "Account List (request)",
+    "description": "Returns all accounts belonging to the authorized user.",
     "type": "object",
     "auth_required": 1,
     "auth_scopes": [
-        "payments"
+        "read"
     ],
     "additionalProperties": false,
     "required": [
-        "get_available_accounts_to_transfer",
-        "loginid"
+        "account_list"
     ],
     "properties": {
-        "get_available_accounts_to_transfer": {
+        "account_list": {
             "description": "Must be `1`",
-            "type": "number",
+            "type": "integer",
             "enum": [
                 1
             ]
-        },
-        "loginid": {
-            "description": "The unique identifier for this trading/wallet account.",
-            "type": "string",
-            "pattern": "^[A-Za-z]+[0-9]+$"
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
