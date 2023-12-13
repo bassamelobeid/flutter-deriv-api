@@ -34,7 +34,7 @@ rule 'residence.account_type_is_available' => {
 
             return $self->fail('InvalidAccount') unless any { $_ eq $wallet_type } $account_type->linkable_wallet_types->@*;
 
-            my @account_links = ($wallet->user->get_accounts_links({wallet_loginid => $wallet->loginid})->{$wallet->loginid} // [])->@*;
+            my @account_links = ($wallet->user->get_accounts_links->{$wallet->loginid} // [])->@*;
 
             for my $account_link (@account_links) {
                 next if $account_link->{platform} ne $account_type->platform;
