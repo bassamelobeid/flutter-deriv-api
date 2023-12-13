@@ -1,21 +1,25 @@
 name: 'Test Report'
+run-name: "Test Report for ${{ github.event.workflow.name }} #${{ github.event.workflow_run.run_number }}"
 on:
   workflow_run:
     workflows: ['Build workflow', 'Daily master test']                     # runs after CI workflow
     types:
       - completed
-permissions:
-  contents: read
-  actions: read
-  checks: write  # create check runs
 jobs:
   report:
+    permissions:
+      contents: read
+      actions: read
+      checks: write  # create check runs
     runs-on: ubuntu-latest
     steps:
     - uses: deriv-com/test-reporter@main
       with:
         artifact: test-results    # artifact name
-        name: Perl Tests with java parser 
+        name: "Test report for ${{ github.event.workflow.name }} #${{ github.event.workflow_run.run_number }}"
         path: './**/*.xml'  
-        reporter: java-junit # There is no perl parser yet. Use java-junit to parse perl JUnit output because the output is very like java test output. 
+        reporter: perl-junit              # Format of test results
+        list-suites: 'failed'
+        list-tests: 'failed'
+        
 
