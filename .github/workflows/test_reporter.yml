@@ -19,6 +19,7 @@ jobs:
         name: "Test report for ${{ github.event.workflow.name }} #${{ github.event.workflow_run.run_number }}"
         path: './**/*.xml'  
         reporter: perl-junit              # Format of test results
+        only-summary: 'true'
         list-suites: 'failed'
         list-tests: 'failed'
         
