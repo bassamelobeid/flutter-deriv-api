@@ -671,150 +671,149 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td class="label" style="vertical-align:middle">KYC EMAIL</td>
         <td>:<input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
     </tr>
-     [% IF poo_access %] 
-    <tr>
-        <td class="bg-lightgrey" colspan="2">#Proof of Ownership</td>
-    </tr>
-    <tr>
-        <td>
-            <table>
-            [% IF doughflow_methods.size %]
-                <tr>
-                    <th><input type="checkbox" name="checkbox-master" onclick="return selectAll()" class='check1'></th>
-                    <th>Payment Method</th>
-                </tr>
-                    [% FOR pm IN doughflow_methods %]
-                <tr>
-                <td><input type="checkbox" name='poo[[% pm.2 %]]' value="[% pm.1 %]" class='check2'></td>
-                <td> [% pm.1 %] </td>
-                </tr>
-                
-                [% END %]
-                <tr>
-                    <td class="label">&nbsp;</td>
-                    <td>
-                        <button name="request_poo" type="submit" class="btn btn--primary" value="1">Request POO</button>
-                    </td>
-                    <br>
-                </tr>
-            [% ELSE %]
-            <tr>
-                <td> Client has no doughflow transactions </td>
-            </tr>
-            [% END %]
-            </table>
-        </td>
-    </tr>
-    <br>
-    <tr>
-    <tr>
-        <td class="bg-lightgrey" colspan="2">#Proof of Income</td>
-    </tr>
-    <tr>
-        <td class="label"></td>
-        <td>
-            Submissions left: [% poinc_submissions_left %]
-        </td>
-    </tr>
-    <tr>
-        <td class="label" style="vertical-align:middle">Allow Proof of Income Resubmission</td>
-        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poinc_resubmission" value="1" [% IF poinc_resubmission_allowed %] checked="checked" [% END %]>
-        <span id="allow_poinc_resubmission_toggle" [% IF poinc_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
-        <label for="poinc_reasons">REASON:</label>
-        <select name="poinc_reason" >
-                <option value="unselected"  [% IF poinc_resubmission_allowed && poinc_resubmission_allowed=="unselected" %] selected [% END %] > Please Select </option>
-                [% FOREACH option IN poinc_reasons %]
-                  <option value="[% option.index %]" [% IF poinc_resubmission_allowed && poinc_resubmission_allowed==option.index %] selected [% END %] >[% option.reason %]</option>
-                [% END %]
-                <option value="other"  [% IF poinc_resubmission_allowed && poinc_resubmission_allowed=="other" %] selected [% END %] > Other </option>
-            </select>
-        </span>
-        </td>
-    </tr>
 
-    <tr>
-        <td class="label" >Resubmission Counter</td>
-        <td>: [% poinc_resubmission_count %]</td>
-    </tr>
-
-    <tr>
-    [% IF proof_of_ownership_list.size %]
-        <td class="label" colspan="2">
-            <table width="100%" class="collapsed hover alternate">
-            <form method="POST">
-                <tr>
-                    <th>Payment Method</th>
-                    <th>Comment</th>
-                    <th>Status</th>
-                    <th>Requested At</th>
-                    <th>Uploaded At</th>
-                    <th>Documents</th>
-                    <th>Details</th>
-                    <th>Actions</th>
-                </tr>
-                [% FOR poo IN proof_of_ownership_list %]
+    [% IF poo_access %] 
+        <tr>
+            <td class="bg-lightgrey" colspan="2">#Proof of Ownership</td>
+        </tr>
+        <tr>
+            <td>
+                <table>
+                    [% IF doughflow_methods.size %]
+                        <tr>
+                            <th><input type="checkbox" name="checkbox-master" onclick="return selectAll()" class='check1'></th>
+                            <th>Payment Method</th>
+                        </tr>
+                        [% FOR pm IN doughflow_methods %]
+                            <tr>
+                                <td><input type="checkbox" name='poo[[% pm.2 %]]' value="[% pm.1 %]" class='check2'></td>
+                                <td> [% pm.1 %] </td>
+                            </tr>
+                        [% END %]
+                        <tr>
+                            <td class="label">&nbsp;</td>
+                            <td>
+                                <button name="request_poo" type="submit" class="btn btn--primary" value="1">Request POO</button>
+                            </td>
+                            <br>
+                        </tr>
+                    [% ELSE %]
+                        <tr>
+                            <td> Client has no doughflow transactions </td>
+                        </tr>
+                    [% END %]
+                </table>
+            </td>
+        </tr>
+        <br>
+        [% IF proof_of_ownership_list.size %]
+            <td class="label" colspan="2">
+                <table width="100%" class="collapsed hover alternate">
+                <form method="POST">
                     <tr>
-                        <td>[% poo.payment_method %]</td>
-                        <td><textarea rows="1" type="text" name="poo_comment_[% poo.id %]" size="15" data-lpignore="true">[% poo.comment %]</textarea></td>
-                        <td>[% poo.status %]</td>
-                        <td>[% poo.creation_time %]</td>
-                        <td>[% poo.uploaded_time || '<i>upload pending</i>' | none %]</td>
-                        <td style="text-align:left;">
-                            [% IF poo.documents.empty %]
-                                <i>No documents uploaded</i>
-                            [% ELSE %]
-                                <ul style="list-style-type:none;padding-inline-start:8px;">
-                                    [% FOR doc IN poo.documents %]
-                                        <li> ► <a target="_blank" class="link" href="#" data-poo-doc-id="[% doc %]">[% doc %]</a></li>
-                                    [% END %]
-                                <ul>
-                            [% END %]
-                        </td>
-                        <td style="text-align:left;">
-                            [% IF poo.payment_method_details.keys.empty %]
-                                <i>No details</i>
-                            [% ELSE %]
-                                <ul style="list-style-type:none;padding-inline-start:8px;">
-                                [% FOR key IN poo.payment_method_details.keys %]
-                                    <li> ► <b>[% key %]:</b> [% poo.payment_method_details.$key %]</li>
+                        <th>Payment Method</th>
+                        <th>Comment</th>
+                        <th>Status</th>
+                        <th>Requested At</th>
+                        <th>Uploaded At</th>
+                        <th>Documents</th>
+                        <th>Details</th>
+                        <th>Actions</th>
+                    </tr>
+                    [% FOR poo IN proof_of_ownership_list %]
+                        <tr>
+                            <td>[% poo.payment_method %]</td>
+                            <td><textarea rows="1" type="text" name="poo_comment_[% poo.id %]" size="15" data-lpignore="true">[% poo.comment %]</textarea></td>
+                            <td>[% poo.status %]</td>
+                            <td>[% poo.creation_time %]</td>
+                            <td>[% poo.uploaded_time || '<i>upload pending</i>' | none %]</td>
+                            <td style="text-align:left;">
+                                [% IF poo.documents.empty %]
+                                    <i>No documents uploaded</i>
+                                [% ELSE %]
+                                    <ul style="list-style-type:none;padding-inline-start:8px;">
+                                        [% FOR doc IN poo.documents %]
+                                            <li> ► <a target="_blank" class="link" href="#" data-poo-doc-id="[% doc %]">[% doc %]</a></li>
+                                        [% END %]
+                                    <ul>
                                 [% END %]
-                                </ul>
-                            [% END %]
-                        </td>
-                        <td>
-                            [% IF poo.status != 'pending' %]
-                                <button class="btn btn--primary" name="verify_proof_of_ownership" value="[% poo.id %]">
-                                    Verify
-                                </button>
-                                <button class="btn btn--secondary" name="reject_proof_of_ownership" value="[% poo.id %]">
-                                    Reject
-                                </button>
-                                  <button class="btn btn--secondary" name="delete_proof_of_ownership" value="[% poo.id %]">
-                                    Delete
-                                </button>      
-                            [% ELSE %]
-                                <i>Waiting for upload</i>
-                                <button class="btn btn--primary" name="delete_proof_of_ownership" value="[% poo.id %]">
-                                    Delete
-                                </button>      
-                            [% END %]
-                    
-                        </td>
-                    </tr>
-                [% END %]
+                            </td>
+                            <td style="text-align:left;">
+                                [% IF poo.payment_method_details.keys.empty %]
+                                    <i>No details</i>
+                                [% ELSE %]
+                                    <ul style="list-style-type:none;padding-inline-start:8px;">
+                                    [% FOR key IN poo.payment_method_details.keys %]
+                                        <li> ► <b>[% key %]:</b> [% poo.payment_method_details.$key %]</li>
+                                    [% END %]
+                                    </ul>
+                                [% END %]
+                            </td>
+                            <td>
+                                [% IF poo.status != 'pending' %]
+                                    <button class="btn btn--primary" name="verify_proof_of_ownership" value="[% poo.id %]">
+                                        Verify
+                                    </button>
+                                    <button class="btn btn--secondary" name="reject_proof_of_ownership" value="[% poo.id %]">
+                                        Reject
+                                    </button>
+                                    <button class="btn btn--secondary" name="delete_proof_of_ownership" value="[% poo.id %]">
+                                        Delete
+                                    </button>      
+                                [% ELSE %]
+                                    <i>Waiting for upload</i>
+                                    <button class="btn btn--primary" name="delete_proof_of_ownership" value="[% poo.id %]">
+                                        Delete
+                                    </button>      
+                                [% END %]
+                            </td>
+                        </tr>
+                    [% END %]
                     <tr>
-                    <td></td>
-                    <td colspan="7"><button name="save_comments" type="submit" class="btn btn--primary" value="1">Save Comments</button></td>
+                        <td></td>
+                        <td colspan="7"><button name="save_comments" type="submit" class="btn btn--primary" value="1">Save Comments</button></td>
                     </tr>
-                    </form>
-            </table>
-        </td>
+                </form>
+                </table>
+            </td>
+        [% END %]
+        <br>
+
+        <tr>
+            <td class="bg-lightgrey" colspan="2">#Proof of Income</td>
+        </tr>
+        <tr>
+            <td class="label"></td>
+            <td>
+                Submissions left: [% poinc_submissions_left %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">Allow Proof of Income Resubmission</td>
+                <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poinc_resubmission" value="1" [% IF poinc_resubmission_allowed %] checked="checked" [% END %]>
+                <span id="allow_poinc_resubmission_toggle" [% IF poinc_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
+                    <label for="poinc_reasons">REASON:</label>
+                    <select name="poinc_reason" >
+                            <option value="unselected"  [% IF poinc_resubmission_allowed && poinc_resubmission_allowed=="unselected" %] selected [% END %] > Please Select </option>
+                            [% FOREACH option IN poinc_reasons %]
+                                <option value="[% option.index %]" [% IF poinc_resubmission_allowed && poinc_resubmission_allowed==option.index %] selected [% END %] >[% option.reason %]</option>
+                            [% END %]
+                            <option value="other"  [% IF poinc_resubmission_allowed && poinc_resubmission_allowed=="other" %] selected [% END %] > Other </option>
+                    </select>
+                </span>
+            </td>
+        </tr>
+
+        <tr>
+            <td class="label" >Resubmission Counter</td>
+            <td>: [% poinc_resubmission_count %]</td>
+        </tr>
     [% END %]
-    </tr>
-     [% END %]
+
     <tr>
         <td class="label" colspan="2"><hr/></td>
     </tr>
+
     <tr>
         <td class="bg-lightgrey" colspan="2">#Documents</td>
     </tr>
