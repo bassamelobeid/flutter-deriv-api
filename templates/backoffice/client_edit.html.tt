@@ -551,7 +551,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                         </tbody>
                     </table>
                 [% END %]
-
+            [% ELSIF onfido_suspended %]
+                <strong style="color: red;">
+                        Onfido is suspended
+                </strong>
             [% ELSE %]
                 <strong>
                         Check not performed

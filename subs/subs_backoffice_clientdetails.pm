@@ -807,6 +807,7 @@ SQL
         manual_status            => $client->get_manual_poi_status,
         is_npj                   => $is_npj,
         onfido_pdf_url           => $onfido_pdf_url,
+        onfido_suspended         => BOM::Config::Runtime->instance->app_config->system->suspend->onfido,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
