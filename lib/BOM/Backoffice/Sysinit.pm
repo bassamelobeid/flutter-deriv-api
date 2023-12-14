@@ -167,6 +167,7 @@ my $permissions = {
     'quant/turbos_risk_management.cgi'                                        => ['Quants'],
     'quant/feed_configuration.cgi'                                            => ['Quants'],
     'quant/commission_management.cgi'                                         => ['Quants'],
+    'quant/affiliate_payment_management.cgi'                                  => ['Quants'],
     'doughflow_method_manage.cgi'                                             => ['IT', 'PaymentsAdmin'],
     'dividend_scheduler_tool.cgi'                                             => ['Quants'],
     'quant/dividend_schedulers/new_dividend_scheduler.cgi'                    => ['Quants'],

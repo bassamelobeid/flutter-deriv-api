@@ -59,14 +59,6 @@ BOM::Backoffice::Request::template()->process(
         provider        => $provider,
     }) || die BOM::Backoffice::Request::template()->error;
 
-Bar("Update Affiliate Payment Details");
-BOM::Backoffice::Request::template()->process(
-    'backoffice/commission_affiliate_payment_update.html.tt',
-    {
-        upload_url         => request()->url_for('backoffice/quant/market_data_mgmt/update_commission.cgi'),
-        affiliate_provider => BOM::Backoffice::CommissionTool::get_enum_type('affiliate.affiliate_provider'),
-    }) || die BOM::Backoffice::Request::template()->error;
-
 Bar("Transaction/Commission Preview");
 BOM::Backoffice::Request::template()->process(
     'backoffice/affiliate_commission_preview.html.tt',

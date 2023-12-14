@@ -394,6 +394,10 @@ if (BOM::Backoffice::Auth::has_authorisation(['Quants'])) {
                     <label>$provider_selection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
+                <h3>Affiliate payment tool</h3>
+                <form action="~ . request()->url_for('backoffice/quant/affiliate_payment_management.cgi') . qq~" method="get">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
             </div>
             <div class="card__content">
                 <h3>Callputspread Barrier Multiplier</h3>
