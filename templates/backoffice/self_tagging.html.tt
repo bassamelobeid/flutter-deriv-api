@@ -3,16 +3,13 @@
 [% ELSIF show_success_message %]
 <p class="success"> Number of Total Rows affected: [% number_of_rows_affected %]</p>
 [% END %]
-<form id='selfTaggingForm' ACTION="[% self_post %]" method='post' enctype="multipart/form-data">
-    <label>Select Type of client in the file</label>
-    <select class="client_type_dropdown" name="client_type">
-        <option value="CR">CR</option>
-        <option value="MF">MF</option>
-    </select>
+<form id='BULKTAGGINGForm' ACTION="[% self_post %]" method='post' enctype="multipart/form-data">
+    Please upload CSV file contains two columns => Email, New Token
+    <br/>
     *<input type="FILE" name="csv_file_field" onchange="file_size_validation()">
     <br><br><label>DCC:</label><input type='text' name='DCcode' placeholder='required' value='[% prev_dcc %]' data-lpignore='true' />
 
-    <br><br><input type='submit' name="ApplySelfTagging" class="btn btn--primary" value='Upload'>
+    <br><br><input type='submit' name="ApplyBULKTAGGING" class="btn btn--primary" value='Upload'>
 </form>
 <script type="text/javascript" language="javascript">
 

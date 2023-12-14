@@ -25,7 +25,7 @@ my $title = 'Make dual control code';
 my $now   = Date::Utility->new;
 my $input = request()->params;
 
-unless ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token|SELFTAGGING/) {
+unless ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token|BULKTAGGING/) {
     code_exit_BO('please select a valid transaction type to update client details', $title);
 }
 
@@ -72,7 +72,7 @@ if ($input->{'transtype'} =~ /^UPDATECLIENTDETAILS|Edit affiliates token/) {
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->batch_status_update_control_code([map { join "\0" => $_->@* } $lines->@*]);
 
-} elsif ($input->{'transtype'} eq "SELFTAGGING") {
+} elsif ($input->{'transtype'} eq "BULKTAGGING") {
     $code = BOM::DualControl->new({
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->self_tagging_control_code();
@@ -134,7 +134,7 @@ if ($input->{'transtype'} eq "UPDATECLIENT_DETAILS_BULK") {
         . encode_entities($client->last_name)
         . ' current email is '
         . encode_entities($client_email);
-} elsif ($input->{'transtype'} eq "SELFTAGGING") {
+} elsif ($input->{'transtype'} eq "BULKTAGGING") {
     my $message =
           "The dual control code created by $clerk  (for a "
         . $input->{'transtype'}

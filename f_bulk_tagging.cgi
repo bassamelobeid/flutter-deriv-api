@@ -17,6 +17,7 @@ use BOM::User::Client;
 use Syntax::Keyword::Try;
 use CGI;
 use Text::CSV;
+use BOM::User;
 
 use constant {
     DOCUMENT_SIZE_LIMIT_IN_BYTES => 20 * 1024 * 1024,    # 20 MB
@@ -24,6 +25,26 @@ use constant {
 };
 
 BOM::Backoffice::Sysinit::init();
+
+sub update_affiliate_token_for_all_sibling_accounts {
+    my ($affiliate_token, $email) = @_;
+    my $user;
+
+    # Updates that apply to both active client and its corresponding clients
+    try {
+        $user = BOM::User->new(email => $email);
+        foreach my $client ($user->clients) {
+            $client->myaffiliates_token($affiliate_token);
+            my $client_loginid = $client->loginid;
+            if (not $client->save) {
+                code_exit_BO("<p class=\"error\">ERROR : Could not update client details for $client_loginid </p></p>");
+            }
+            print "<p class=\"success\">Client " . $client_loginid . " saved</p>";    # Corrected the variable name
+        }
+    } catch ($e) {
+        $log->warnf("Error when getting user with email $email. More detail: %s", $e);
+    }
+}
 
 my $q = CGI->new;
 
@@ -39,14 +60,14 @@ PrintContentType();
 
 my $prev_dcc = $input->{DCcode} // '';
 
-my $self_post = request()->url_for('backoffice/f_self_tagging.cgi');
+my $self_post = request()->url_for('backoffice/f_bulk_tagging.cgi');
 
-BrokerPresentation("Self Tagging Tool");
+BrokerPresentation("Bulk Tagging Tool");
 
 if ($q->request_method() eq 'POST') {
     my $dcc_error = BOM::DualControl->new({
             staff           => $clerk,
-            transactiontype => 'SELFTAGGING'
+            transactiontype => 'BULKTAGGING'
         })->validate_self_tagging_control_code($input->{DCcode});
     code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
 
@@ -63,29 +84,19 @@ if ($q->request_method() eq 'POST') {
         my $header          = $csv->getline($csv_file_handle);
         my %holder;
         chomp(@$header);
-        my ($first_column, $second_column, $third_column) = @$header;
-        if ($first_column eq "Login ID" && $second_column eq "Current Token" && $third_column eq "New Token") {
+        my ($first_column, $second_column) = @$header;
+        if ($first_column eq "Email" && $second_column eq "New Token") {
             while (my $row = $csv->getline($csv_file_handle)) {
                 chomp(@$row);
                 $number_of_rows += 1;
-                my ($login_id, $current_token, $new_token) = @$row;
-                if (exists $holder{$new_token}) {
-                    push @{$holder{$new_token}}, $login_id;
-                } else {
-                    $holder{$new_token} = [$login_id];
-                }
+                my ($email, $new_token) = @$row;
+                update_affiliate_token_for_all_sibling_accounts($new_token, $email);
             }
-            foreach my $token (keys %holder) {
-                my @login_ids = @{$holder{$token}};
-                $number_of_rows_affected += BOM::User::Client::update_affiliate_token_for_batch_of_clients($token, $broker_code, \@login_ids);
-            }
-
             $show_success_message = 1;
 
         } else {
             code_exit_BO(
-                _get_display_error_message(
-                    "ERROR: CSV file headers are incorrect. They should be 3 columns named in order: Login ID|Current Token|New Token"));
+                _get_display_error_message("ERROR: CSV file headers are incorrect. They should be 3 columns named in order: Email|New Token"));
 
         }
 

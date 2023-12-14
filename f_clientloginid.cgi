@@ -84,7 +84,7 @@ if (!$is_readonly) {
         . "<option value='UPDATECLIENTDETAILS'>Update client details</option>"
         . "<option selected disabled hidden >select transaction type</option>"
         . "<option value='UPDATECLIENT_DETAILS_BULK'>Update client status bulk</option>"
-        . "<option value='SELFTAGGING'>Self Tagging</option>"
+        . "<option value='BULKTAGGING'>Bulk Tagging</option>"
         . "</select>"
         . "<label name='login_IDs'>Login ID:</label><input type='text' name='client_loginid' size='15' placeholder='required' data-lpignore='true' />"
         . "<label name='bulk_login_IDs'>File:</label><input type='file' name='bulk_clientloginids'>"
