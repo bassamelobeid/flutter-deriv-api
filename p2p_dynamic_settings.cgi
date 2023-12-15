@@ -64,6 +64,9 @@ my %setting_keys = (
     "payments.p2p.cross_border_ads_restricted_countries"  => 0,
     "payments.p2p.fiat_deposit_restricted_countries"      => 0,
     "payments.p2p.fiat_deposit_restricted_lookback"       => 0,
+    "payments.p2p.poa.enabled"                            => 0,
+    "payments.p2p.poa.countries_includes"                 => 0,
+    "payments.p2p.poa.countries_excludes"                 => 0,
 );
 
 my $app_config     = BOM::Config::Runtime->instance->app_config;
