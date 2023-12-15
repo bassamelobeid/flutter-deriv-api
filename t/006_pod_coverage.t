@@ -12,7 +12,7 @@ use lib "$FindBin::Bin/..";    # include root files.
 
 my $allowed_naked_packages = {
     'BOM::ContractInfo'                                  => 1,
-    'BOM::PricingDetails'                                => 16,
+    'BOM::PricingDetails'                                => 15,
     'BOM::DailySummaryReport'                            => 6,
     'BOM::DynamicSettings'                               => 6,
     'BOM::DualControl'                                   => 18,

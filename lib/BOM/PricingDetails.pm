@@ -785,53 +785,5 @@ sub _debug_prob {
     return $table;
 }
 
-sub _get_cost_of_greeks {
-    my $self = shift;
-    my $bet  = $self->bet;
-
-    my $cost_greeks;
-    if ($bet->pricing_engine_name eq 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated') {
-        my $bet_duration   = $bet->date_expiry->days_between(Date::Utility->new);
-        my $days_to_expiry = $bet->volsurface->term_by_day;
-        foreach my $days (grep { /^\d+$/ } @{$days_to_expiry}) {    # Integer number of days only, now matter what the surface says.
-            my $new_bet;
-            if ($days == $bet_duration) {
-                $new_bet = $bet;
-            } else {
-                my $date_expiry = Date::Utility->new({epoch => Date::Utility->new->epoch + $days * 86400})->date;
-                my %barriers;
-                if ($bet->two_barriers) {
-                    %barriers = (
-                        high_barrier => $bet->high_barrier->supplied_barrier,
-                        low_barrier  => $bet->low_barrier->supplied_barrier
-                    );
-                } elsif ($bet->can('barrier')) {
-                    %barriers = (barrier => $bet->barrier->supplied_barrier);
-                }
-                $new_bet = produce_contract({
-                    'current_spot' => $bet->current_spot,
-                    'market'       => $bet->underlying->market,
-                    'bet_type'     => $bet->code,
-                    'currency'     => $bet->currency,
-                    'underlying'   => $bet->underlying,
-                    'date_start'   => $bet->date_start,
-                    'payout'       => $bet->payout,
-                    'date_expiry'  => $date_expiry,
-                    %barriers
-                });
-            }
-            my $pe                   = $new_bet->pricing_engine_name->new({bet => $new_bet});
-            my $greeks_market_prices = $pe->greek_market_prices;
-
-            $cost_greeks->{$days} = {
-                'vanna' => sprintf('%.5f', $greeks_market_prices->{vanna}),
-                'volga' => sprintf('%.5f', $greeks_market_prices->{volga}),
-                'vega'  => sprintf('%.5f', $greeks_market_prices->{vega}),
-            };
-        }
-    }
-    return $cost_greeks;
-}
-
 __PACKAGE__->meta->make_immutable;
 1;
