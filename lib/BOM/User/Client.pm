@@ -1378,13 +1378,6 @@ sub account {
     return $self->{account};
 }
 
-sub open_bets {
-    my $self    = shift;
-    my $account = $self->default_account || return undef;
-    my $fmbs    = $account->find_financial_market_bet(query => [is_sold => 0]);
-    return @$fmbs;
-}
-
 =head1 CUSTOMER SERVICE RELATED FUNCTIONS
 
 These are for interfacing with customer service facing applications (like email

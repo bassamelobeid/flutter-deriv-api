@@ -10,9 +10,9 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'BOM::User'                                        => 28,
-    'BOM::User::Client'                                => 62,
+    'BOM::User::Client'                                => 61,
     'BOM::User::AuditLog'                              => 1,
-    'BOM::User::Utility'                               => 5,
+    'BOM::User::Utility'                               => 4,
     'BOM::User::Password'                              => 3,
     'BOM::User::FinancialAssessment'                   => 3,
     'BOM::User::Client::Status'                        => 58,

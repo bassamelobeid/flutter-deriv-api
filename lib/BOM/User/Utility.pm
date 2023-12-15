@@ -79,15 +79,6 @@ sub decrypt_secret_answer {
     return $secret_answer;
 }
 
-# set exclude_until to n-months from now and returns that in yyyy-mm-dd format
-sub set_exclude_until_for {
-    my ($client, $num_months) = @_;
-    my $to_date = Date::Utility->new(DateTime->now()->add(months => $num_months))->date_yyyymmdd;
-    $client->set_exclusion->exclude_until($to_date);
-    $client->save();
-    return $to_date;
-}
-
 =head2 get_details_from_environment
 
 Get details from environment, which includes the IP address, country, user agent, and the
