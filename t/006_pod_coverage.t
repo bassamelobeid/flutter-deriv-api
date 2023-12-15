@@ -10,7 +10,7 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'Binary::WebSocketAPI'                                                 => 2,
-    'Binary::WebSocketAPI::Hooks'                                          => 25,
+    'Binary::WebSocketAPI::Hooks'                                          => 24,
     'Binary::WebSocketAPI::BalanceConnections'                             => 2,
     'Binary::WebSocketAPI::Actions'                                        => 1,
     'Binary::WebSocketAPI::FastSchemaValidator'                            => 10,
@@ -26,7 +26,7 @@ my $allowed_naked_packages = {
     'Binary::WebSocketAPI::v3::Wrapper::Transaction'                       => 4,
     'Binary::WebSocketAPI::v3::Wrapper::Accounts'                          => 4,
     'Binary::WebSocketAPI::v3::Wrapper::Streamer'                          => 3,
-    'Binary::WebSocketAPI::v3::Wrapper::Pricer'                            => 7,
+    'Binary::WebSocketAPI::v3::Wrapper::Pricer'                            => 5,
     'Binary::WebSocketAPI::v3::Wrapper::Cashier'                           => 2,
     'Binary::WebSocketAPI::v3::Wrapper::DocumentUpload'                    => 18,
     'Binary::WebSocketAPI::v3::Wrapper::Authorize'                         => 2,

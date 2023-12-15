@@ -502,19 +502,6 @@ sub _check_auth {
     return 0;
 }
 
-sub _rpc_suffix {
-    my ($c, $req_storage) = @_;
-
-    my $group_suffix = $Binary::WebSocketAPI::DIVERT_CATEGORY{$req_storage->{category} // ''} // '';
-    my $app_id       = $c->app_id                                                             // '';
-    my $app_suffix   = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
-    my $processor    = join q{_} => (grep { $_ } ($group_suffix, $app_suffix));
-
-    my $suffix = $processor ? '_' . $processor : '';
-
-    return $suffix;
-}
-
 =head2 assign_ws_backend
 
 Saves the configured B<backend> of an API call into the request storage, before forwarding it to RPC.

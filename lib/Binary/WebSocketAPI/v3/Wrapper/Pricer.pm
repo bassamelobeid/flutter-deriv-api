@@ -243,27 +243,6 @@ sub _create_pricer_channel {
     };
 }
 
-sub _unique_barriers {
-    my $barriers = shift;
-    my %h;
-    for my $barrier (@$barriers) {
-        my $idx = $barrier->{barrier} // '' . ":" . ($barrier->{barrier2} // '');
-        return 0 if $h{$idx}++;
-    }
-    return 1;
-}
-
-sub make_barrier_key {
-    my ($barrier) = @_;
-    return $barrier unless ref $barrier;
-
-    # Even if it's a relative barrier, for that Contract->handle_batch_contract also sends the supplied barrier back.
-    if (exists $barrier->{supplied_barrier}) {
-        return join ':', $barrier->{supplied_barrier}, $barrier->{supplied_barrier2} // ();
-    }
-    return join ':', $barrier->{barrier} // (), $barrier->{barrier2} // ();
-}
-
 =head2 create_subscription
 
 create subscription given the subscription type. It map the price_daemon_cmd to the proper Subscription subclass.
