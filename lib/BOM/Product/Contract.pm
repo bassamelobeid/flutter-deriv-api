@@ -1493,13 +1493,6 @@ sub _build_priced_with_intraday_model {
     return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
 }
 
-sub allowed_amount_type {
-    return {
-        stake  => 1,
-        payout => 1,
-    };
-}
-
 # Please do not extend code with $contract->is_settleable function. This function will be removed.
 # To check if an open contract can be settled, use $self->is_expired and $self->is_valid_to_sell.
 sub is_settleable {
