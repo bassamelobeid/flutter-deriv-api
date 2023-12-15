@@ -20,7 +20,7 @@ has dbic => (
     required => 1,
 );
 
-my @status_codes = qw(
+use constant STATUS_CODES => qw(
     age_verification  cashier_locked  disabled  unwelcome  withdrawal_locked
     mt5_withdrawal_locked  ukgc_funds_protection  financial_risk_approval
     crs_tin_information  max_turnover_limit_not_set
@@ -41,7 +41,7 @@ my @deprecated_codes = qw(
     proveid_requested proveid_pending
 );
 
-for my $code (@status_codes) {
+for my $code (STATUS_CODES) {
     has $code => (
         is      => 'ro',
         lazy    => 1,
@@ -449,7 +449,7 @@ sub _get_all_clients_status {
     delete @{$list}{@deprecated_codes};
 
     #populate attributes for object
-    @{$self}{@status_codes} = ();
+    @{$self}{STATUS_CODES} = ();
     @{$self}{keys %$list} = values %$list;
     return $list;
 
