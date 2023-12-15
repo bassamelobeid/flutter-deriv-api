@@ -42,6 +42,13 @@
                }
            }
       },
+      "p2p_poa_required":{
+        "type" : "integer",
+        "enum" : [
+           0,
+           1
+        ]
+     },
       "p2p_status":{
         "description": "Represent current P2P status of client if client is a P2P advertiser, otherwise return none",
         "type": "string",

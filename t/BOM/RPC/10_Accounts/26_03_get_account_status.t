@@ -113,6 +113,7 @@ subtest 'check legacy cfd_score' => sub {
                     is_withdrawal_suspended => 0
                 },
             },
+            p2p_poa_required              => 0,
             p2p_status                    => "none",
             prompt_client_to_authenticate => 0,
             risk_classification           => "standard",
@@ -176,6 +177,7 @@ subtest 'check legacy cfd_score' => sub {
                     is_withdrawal_suspended => 0
                 },
             },
+            p2p_poa_required              => 0,
             p2p_status                    => "none",
             prompt_client_to_authenticate => 0,
             risk_classification           => "standard",
@@ -228,8 +230,9 @@ subtest 'IDV + Photo ID' => sub {
             'mt5_additional_kyc_required',    'mt5_password_not_set',
             'trading_experience_not_complete'
         ],
-        p2p_status     => 'none',
-        authentication => {
+        p2p_poa_required => 0,
+        p2p_status       => 'none',
+        authentication   => {
             identity => {
                 status   => 'verified',
                 services => {
@@ -289,8 +292,9 @@ subtest 'IDV + Photo ID' => sub {
             'idv_revoked',                        'mt5_additional_kyc_required',
             'mt5_password_not_set',               'trading_experience_not_complete'
         ],
-        p2p_status     => 'none',
-        authentication => {
+        p2p_poa_required => 0,
+        p2p_status       => 'none',
+        authentication   => {
             identity => {
                 status   => 'none',
                 services => {
@@ -954,7 +958,8 @@ subtest "suspended onfido" => sub {
             }
         },
         prompt_client_to_authenticate => 0,
-        risk_classification           => 'low'
+        risk_classification           => 'low',
+        p2p_poa_required              => 0
         },
         'expected response for onfido active';
 
@@ -1012,7 +1017,8 @@ subtest "suspended onfido" => sub {
             }
         },
         prompt_client_to_authenticate => 0,
-        risk_classification           => 'low'
+        risk_classification           => 'low',
+        p2p_poa_required              => 0
         },
         'expected response for onfido suspended';
 

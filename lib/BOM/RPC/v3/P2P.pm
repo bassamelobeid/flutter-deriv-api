@@ -210,6 +210,7 @@ our %ERROR_MAP = do {
         InvalidLocalCurrency          => localize('Invalid currency provided.'),
         BlockTradeNotAllowed          => localize("You're not eligible for block trading. Contact our Customer Support team for more information."),
         BlockTradeDisabled            => localize('Block trading is currently unavailable. Please try again later.'),
+        AuthenticationRequired        => localize('Submit your proof of address and identity before signing up for Deriv P2P.'),
         InvalidOrderExpiryPeriod      => localize('Invalid order expiry period provided.'),
     );
 };

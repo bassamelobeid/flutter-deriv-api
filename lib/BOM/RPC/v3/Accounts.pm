@@ -1068,6 +1068,15 @@ rpc get_account_status => sub {
         }
     }
 
+    my $poa_setting      = BOM::Config::Runtime->instance->app_config->payments->p2p->poa;
+    my $p2p_poa_required = 0;
+    if ((
+               ($poa_setting->enabled and none { $client->residence eq $_ } $poa_setting->countries_excludes->@*)
+            || (not $poa_setting->enabled and any { $client->residence eq $_ } $poa_setting->countries_includes->@*)))
+    {
+        $p2p_poa_required = 1;
+    }
+
     if ($client->status->age_verification || $client->fully_authenticated) {
         $status = [grep { $_ ne 'poi_dob_mismatch' } @$status];
     }
@@ -1084,7 +1093,8 @@ rpc get_account_status => sub {
         @cashier_validation     ? (cashier_validation       => [sort(uniq(@cashier_validation))])     : (),
         @cashier_missing_fields ? (cashier_missing_fields   => [sort(uniq(@cashier_missing_fields))]) : (),
         $provider               ? (social_identity_provider => $provider)                             : (),
-        p2p_status => $p2p_status,
+        p2p_status       => $p2p_status,
+        p2p_poa_required => $p2p_poa_required
     };
 };
 
