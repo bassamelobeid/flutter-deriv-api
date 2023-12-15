@@ -124,9 +124,9 @@ sub copy_status_from_siblings {
 
             # For the poi/poa flags the reason should match otherwise the BO dropdown will be unselected
             if ($status =~ /allow_po(i|a)_resubmission/ || $status =~ /poi_(.*)_mismatch/ || $status eq 'financial_risk_approval') {
-                $cur_client->status->set($status, 'system', $reason);
+                $cur_client->status->upsert($status, 'system', $reason);
             } else {
-                $cur_client->status->set($status, 'system', $reason . ' - copied from ' . $client->loginid);
+                $cur_client->status->upsert($status, 'system', $reason . ' - copied from ' . $client->loginid);
             }
 
             my $config = request()->brand->countries_instance->countries_list->{$cur_client->residence};
@@ -187,15 +187,17 @@ sub copy_data_to_siblings {
 sub after_register_client {
     my $args = shift;
     my ($client, $user) = @{$args}{qw(client user details ip country)};
-
     unless ($client->is_virtual) {
         $client->user->set_tnc_approval;
         copy_status_from_siblings(
             $client,
             [
-                'no_trading',             'withdrawal_locked',      'age_verification', 'transfers_blocked',
-                'allow_poi_resubmission', 'allow_poa_resubmission', 'potential_fraud',  'poi_name_mismatch',
-                'poi_dob_mismatch'
+                'no_trading',               'withdrawal_locked',      'age_verification',        'transfers_blocked',
+                'allow_poi_resubmission',   'allow_poa_resubmission', 'potential_fraud',         'poi_name_mismatch',
+                'poi_dob_mismatch',         'cashier_locked',         'unwelcome',               'no_withdrawal_or_trading',
+                'internal_client',          'shared_payment_method',  'df_deposit_requires_poi', 'poi_name_mismatch',
+                'smarty_streets_validated', 'address_verified',       'poi_dob_mismatch',        'cooling_off_period',
+                'poi_poa_uploaded',         'poa_address_mismatch'
             ],
             ['financial_risk_approval']);
         copy_data_to_siblings($client);

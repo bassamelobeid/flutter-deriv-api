@@ -4,8 +4,9 @@ use Test::MockTime::HiRes;
 use Guard;
 use JSON::MaybeXS;
 use Date::Utility;
+use Array::Utils;
 
-use Test::More (tests => 8);
+use Test::More (tests => 9);
 use Test::Exception;
 use Test::Fatal;
 use Test::Warn;
@@ -15,6 +16,7 @@ use Test::Deep;
 
 use BOM::User;
 use BOM::User::Client;
+use BOM::User::Client::Status;
 use BOM::User::FinancialAssessment qw(decode_fa);
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
@@ -792,6 +794,80 @@ subtest 'create affiliate' => sub {
     'create CRA acc';
 
     isa_ok $aff->{client}, 'BOM::User::Affiliate', 'Expected package for CRA';
+};
+
+subtest 'Sibling Status Sync upon creation' => sub {
+
+    my $vr_account = create_vr_acc({
+        email     => 'someclient@binary.com',
+        password  => 'Secret0',
+        residence => 'br',
+    });
+
+    my $vr_client = @{$vr_account}{'client'};
+    my $user      = @{$vr_account}{'user'};
+
+    my $real_acc = create_real_acc($vr_client, $user, 'CR');
+
+    my ($real_client) = @{$real_acc}{'client'};
+
+    my @statuses_to_be_copied = (
+        'no_trading',               'withdrawal_locked',      'age_verification',        'transfers_blocked',
+        'allow_poi_resubmission',   'allow_poa_resubmission', 'potential_fraud',         'poi_name_mismatch',
+        'poi_dob_mismatch',         'cashier_locked',         'unwelcome',               'no_withdrawal_or_trading',
+        'internal_client',          'shared_payment_method',  'df_deposit_requires_poi', 'poi_name_mismatch',
+        'smarty_streets_validated', 'address_verified',       'poi_dob_mismatch',        'cooling_off_period',
+        'poi_poa_uploaded',         'poa_address_mismatch'
+    );
+
+    subtest 'Statuses that should be copied' => sub {
+
+        for my $status (@statuses_to_be_copied) {
+            $real_client->status->upsert($status, 'system', "$status is now set");
+        }
+
+        my $real_acc_new    = create_real_acc($vr_client, $user, 'CR');
+        my $real_client_new = @{$real_acc_new}{'client'};
+
+        for my $status (@statuses_to_be_copied) {
+            ok $real_client_new->status->$status->{staff_name} eq $real_client->status->$status->{staff_name},
+                "$status staff_name copied to new real client upon creation";
+            if ($status =~ /allow_po(i|a)_resubmission/ || $status =~ /poi_(.*)_mismatch/ || $status eq 'financial_risk_approval') {
+                ok $real_client_new->status->reason($status) eq $real_client->status->reason($status),
+                    "$status reason copied to new real client upon creation";
+            } elsif ($status eq 'age_verification' or $status eq 'address_verified') {
+                ok $real_client_new->status->reason($status) eq "Copied from " . $vr_client->loginid,
+                    "$status reason copied to new real client upon creation";
+            } else {
+                ok $real_client_new->status->reason($status) eq $real_client->status->reason($status) . " - copied from " . $real_client->loginid,
+                    "$status reason copied to new real client upon creation";
+            }
+        }
+    };
+
+    subtest 'Statuses that shouldn\'t be copied' => sub {
+
+        my @all_statuses              = BOM::User::Client::Status::STATUS_CODES;
+        my @statuses_not_to_be_copied = Array::Utils::array_diff(@all_statuses, @statuses_to_be_copied);
+
+        for my $status (@statuses_not_to_be_copied) {
+            $real_client->status->upsert($status, 'system', "$status is now set");
+        }
+
+        my $real_acc_new    = create_real_acc($vr_client, $user, 'CR');
+        my $real_client_new = @{$real_acc_new}{'client'};
+
+        for my $status (@statuses_not_to_be_copied) {
+            if ($real_client_new->status->$status) {
+                # if status is present then reason should not match
+                ok $real_client_new->status->reason($status) ne $real_client->status->reason($status) . " - copied from " . $real_client->loginid,
+                    "$status reason not copied to new real client upon creation";
+            } else {
+                ok !$real_client_new->status->$status, "$status status not copied to new real client upon creation";
+            }
+        }
+    };
+
 };
 
 sub create_vr_acc {
