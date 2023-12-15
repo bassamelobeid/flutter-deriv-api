@@ -337,6 +337,7 @@ payments:
               isa: Num
               global: 1
               default: 5000
+              
     p2p:
       description: 'Peer-to-peer payment system'
       isa: section
@@ -562,6 +563,25 @@ payments:
               description: 'Maximum amount per block trade advert (in USD)'
               default: 20000
               global: 1
+        poa:
+          description: 'P2P POA settings'
+          isa: section
+          contains:
+            enabled:
+              description: 'Enables POA as requirement for all available countries '
+              isa: Bool
+              global: 1
+              default: 0
+            countries_includes:
+              description: 'List of countries which have mandatory POA, 2 letter lower case country codes. This is deactivated if global is enabled.'
+              isa: ArrayRef
+              global: 1
+              default: []
+            countries_excludes:
+              description: 'List of countries which do not require POA, 2 letter lower case country codes. This is activated if global is enabled.'
+              isa: ArrayRef
+              global: 1
+              default: []
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
