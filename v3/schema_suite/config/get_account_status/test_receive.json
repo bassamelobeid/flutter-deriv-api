@@ -12,6 +12,7 @@
       "get_account_status" : {
          "required" : [
             "prompt_client_to_authenticate",
+            "p2p_poa_required",
             "status",
             "risk_classification",
             "currency_config"
@@ -40,6 +41,13 @@
                        }
                    }
                }
+            },
+            "p2p_poa_required":{
+               "type" : "integer",
+               "enum" : [
+                  0,
+                  1
+               ]
             },
             "p2p_status":{
                "type":"string",

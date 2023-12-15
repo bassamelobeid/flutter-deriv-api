@@ -362,6 +362,7 @@ is $call_params->{token}, $token;
     risk_classification           => 1,
     prompt_client_to_authenticate => '1',
     currency_config               => {},
+    p2p_poa_required              => 0,
     p2p_status                    => "none",
 );
 $res = $t->await::get_account_status({get_account_status => 1});
