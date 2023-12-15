@@ -201,7 +201,7 @@ Return all the groups we have in backoffice with write access
 =cut
 
 sub write_access_groups {
-    return qw(AntiFraud CSWrite Compliance P2PWrite Payments QuantsWrite);
+    return qw(AntiFraud CSWrite Compliance P2PWrite Payments QuantsWrite AccountsAdmin AccountsLimited);
 }
 
 1;

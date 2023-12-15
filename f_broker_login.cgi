@@ -124,7 +124,7 @@ if (BOM::Backoffice::Auth::has_authorisation(['Payments', 'AccountsLimited', 'Ac
 }
 
 # CLIENT DETAILS RECORDS
-if (BOM::Backoffice::Auth::has_authorisation(['CS', 'MarketingReadOnly'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['CS', 'MarketingReadOnly', 'AccountsLimited', 'AccountsAdmin'])) {
     print qq~
         <div class="card">
             <div class="card__label toggle">
@@ -137,18 +137,20 @@ if (BOM::Backoffice::Auth::has_authorisation(['CS', 'MarketingReadOnly'])) {
                     <input type="submit" class="btn btn--primary" value="Client details">
                 </form>
             </div>
-        </div>
-        <div class="card">
-            <div class="card__label toggle">
-                Contract details
-            </div>
-            <div class="card__content">
-                <h3>Bet price over time</h3>
-                <form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post">
-                    <input type="submit" class="btn btn--primary" value="Bet price over time">
-                </form>
-            </div>
         </div>~;
+    unless (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'])) {
+        print qq~<div class="card">
+                <div class="card__label toggle">
+                    Contract details
+                </div>
+                <div class="card__content">
+                    <h3>Bet price over time</h3>
+                    <form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post">
+                        <input type="submit" class="btn btn--primary" value="Bet price over time">
+                    </form>
+                </div>
+            </div>~;
+    }
 }
 
 if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {

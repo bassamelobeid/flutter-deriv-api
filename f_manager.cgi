@@ -153,6 +153,9 @@ One staff member needs to generate a 'Dual Control Code' that is then used by th
         . " <input type=submit class='btn btn--primary' value='Rescind these accounts!'></div>"
         . "</form>";
 
+}
+
+if (BOM::Backoffice::Auth::has_authorisation(['Payments', 'AccountsAdmin', 'AccountsLimited'])) {
     Bar("Crypto cashier");
 
     print '<a class="btn btn--primary" href="f_manager_crypto.cgi">Go to crypto cashier management page</a>';

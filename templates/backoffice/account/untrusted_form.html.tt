@@ -199,6 +199,7 @@
     </tbody>
 </table>
 
+[% IF show_disabled %]
 [%# view all disabled accounts details %]
 <hr>
 <h3>View all disabled accounts and their a/c details</h3>
@@ -211,4 +212,5 @@
     </div>
     <input type="submit" class="btn btn--primary" value="Monitor disabled accounts">
 </form>
+[% END %]
 [% END %]

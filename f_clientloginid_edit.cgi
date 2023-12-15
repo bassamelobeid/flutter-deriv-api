@@ -1577,31 +1577,33 @@ BOM::Backoffice::Request::template()->process(
         checked         => '',
     });
 
-Bar("IMPERSONATE CLIENT");
-BOM::Backoffice::Request::template()->process(
-    'backoffice/client_impersonate_form.html.tt',
-    {
-        impersonate_url => $impersonate_url,
-        encoded_loginid => $encoded_loginid,
-        encoded_broker  => $encoded_broker,
-    });
-
-# Display only the latest 2 comments here for faster review by CS
-my $comments_count  = 2;
-my @client_comments = grep { defined } $client->get_all_comments()->@[0 .. $comments_count - 1];
-if (@client_comments) {
-    my $comments_url = request()->url_for('backoffice/f_client_comments.cgi', {loginid => $client->loginid});
-    print qq~
-        <hr><h3>Latest Comment(s)</h3><p>Displaying up to <b>$comments_count</b> most recent comments:</p>~;
+unless (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'])) {
+    Bar("IMPERSONATE CLIENT");
     BOM::Backoffice::Request::template()->process(
-        'backoffice/client_comments_table.html.tt',
+        'backoffice/client_impersonate_form.html.tt',
         {
-            comments  => [@client_comments],
-            loginid   => $client->loginid,
-            csrf      => BOM::Backoffice::Form::get_csrf_token(),
-            is_hidden => BOM::Backoffice::Auth::has_authorisation(['CS']),
+            impersonate_url => $impersonate_url,
+            encoded_loginid => $encoded_loginid,
+            encoded_broker  => $encoded_broker,
         });
-    print qq~<br><a class="link" href="$comments_url">Add a new comment / View full list</a>~;
+
+    # Display only the latest 2 comments here for faster review by CS
+    my $comments_count  = 2;
+    my @client_comments = grep { defined } $client->get_all_comments()->@[0 .. $comments_count - 1];
+    if (@client_comments) {
+        my $comments_url = request()->url_for('backoffice/f_client_comments.cgi', {loginid => $client->loginid});
+        print qq~
+            <hr><h3>Latest Comment(s)</h3><p>Displaying up to <b>$comments_count</b> most recent comments:</p>~;
+        BOM::Backoffice::Request::template()->process(
+            'backoffice/client_comments_table.html.tt',
+            {
+                comments  => [@client_comments],
+                loginid   => $client->loginid,
+                csrf      => BOM::Backoffice::Form::get_csrf_token(),
+                is_hidden => BOM::Backoffice::Auth::has_authorisation(['CS']),
+            });
+        print qq~<br><a class="link" href="$comments_url">Add a new comment / View full list</a>~;
+    }
 }
 
 Bar("$loginid STATUSES", {nav_link => "STATUSES"});
@@ -1653,6 +1655,10 @@ BOM::Backoffice::Request::template()->process(
         p2p_approved             => $p2p_approved,
         client_statuses_readonly => \%client_statuses,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
+
+if (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'])) {
+    code_exit_BO();
+}
 
 # Show Self-Exclusion link
 if (!$is_readonly) {

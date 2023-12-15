@@ -93,6 +93,24 @@ sub has_authorisation {
     return 0;
 }
 
+=head2 has_authority
+
+Validates the staff authorization as per the group staff is assigned to,
+Intended to not break the views for qa environments and internally calls has_authorization for production
+TODO: Improve this logic to incorporate it into the generic has_authorization function
+
+=cut
+
+sub has_authority {
+    my $groups = shift;
+
+    if (not $groups or not BOM::Config::on_production()) {
+        return 0;
+    }
+
+    return has_authorisation($groups);
+}
+
 =head2 has_readonly_access
 
 Check if the staff is part of readonly access group

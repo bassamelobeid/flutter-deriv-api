@@ -59,17 +59,23 @@ print qq~
     </form>
 ~;
 
-Bar("IMPERSONATE CLIENT");
-BOM::Backoffice::Request::template()->process(
-    'backoffice/client_impersonate_form.html.tt',
-    {
-        impersonate_url => request()->url_for('backoffice/client_impersonate.cgi'),
-        encoded_broker  => $encoded_broker,
-    });
-if (!$is_readonly) {
-    Bar("SEND ACCOUNT RECOVERY EMAIL");
-    BOM::Backoffice::Request::template()->process('backoffice/newpassword_email.html.tt') || die BOM::Backoffice::Request::template()->error(), "\n";
+my $has_accounts_access = BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin']);
+unless ($has_accounts_access) {
+    Bar("IMPERSONATE CLIENT");
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_impersonate_form.html.tt',
+        {
+            impersonate_url => request()->url_for('backoffice/client_impersonate.cgi'),
+            encoded_broker  => $encoded_broker,
+        });
+}
 
+if (!$is_readonly) {
+    unless ($has_accounts_access) {
+        Bar("SEND ACCOUNT RECOVERY EMAIL");
+        BOM::Backoffice::Request::template()->process('backoffice/newpassword_email.html.tt') || die BOM::Backoffice::Request::template()->error(),
+            "\n";
+    }
     Bar("MAKE DUAL CONTROL CODE");
     print
         "<p>To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.</p>";
@@ -103,6 +109,7 @@ Bar("CLOSED/DISABLED ACCOUNTS");
 my $client_login      = request()->param('login_id') // '';
 my $show_notification = request()->param('editlink') and $client_login and request()->param('untrusted_action_type');
 my $bulk_loginids     = request()->param('bulk_loginids');
+my $show_disabled     = !$has_accounts_access;
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
@@ -117,59 +124,62 @@ BOM::Backoffice::Request::template()->process(
         show_untrusted            => 1,
         show_login                => 1,
         show_notification         => $show_notification,
+        show_disabled             => $show_disabled,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
-Bar("Set Aml Risk Classification - Multiple loginids");
-BOM::Backoffice::Request::template()->process(
-    'backoffice/account/bulk_aml_risk_form.html.tt',
-    {
-        selected_aml_risk_level => request()->param('aml_risk_level'),
-        edit_url                => request()->url_for('backoffice/bulk_aml_risk.cgi'),
-        loginids                => request()->param('risk_loginids') // '',
-        aml_risk_levels         => [get_aml_risk_classicications()],
-        disabled                => not BOM::Backoffice::Auth::has_authorisation(['Compliance']),
-    }) || die BOM::Backoffice::Request::template()->error(), "\n";
+unless ($has_accounts_access) {
+    Bar("Set Aml Risk Classification - Multiple loginids");
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/account/bulk_aml_risk_form.html.tt',
+        {
+            selected_aml_risk_level => request()->param('aml_risk_level'),
+            edit_url                => request()->url_for('backoffice/bulk_aml_risk.cgi'),
+            loginids                => request()->param('risk_loginids') // '',
+            aml_risk_levels         => [get_aml_risk_classicications()],
+            disabled                => not BOM::Backoffice::Auth::has_authorisation(['Compliance']),
+        }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
-# Monitor client lists
-Bar("Monitor client lists");
+    # Monitor client lists
+    Bar("Monitor client lists");
 
-print "<p>Kindly select status to monitor clients on:</p>";
+    print "<p>Kindly select status to monitor clients on:</p>";
 
-my $untrusted_status = get_untrusted_types_hashref();
+    my $untrusted_status = get_untrusted_types_hashref();
 
-print "<form action=\""
-    . request()->url_for('backoffice/f_viewclientsubset.cgi')
-    . "\" method=get>"
-    . "<input type=hidden name=broker value=$encoded_broker>"
-    . "<div class='row'><label>Status:</label><select name=show>"
-    . "<option value='age_verification'>Age Verified</option>"
-    . "<option value='closed'>Closed Accounts</option>"
-    . join('',
-    map { "<option value='$_'> $untrusted_status->{$_}->{comments} </option>" }
-        qw /disabled cashier_locked withdrawal_locked unwelcome no_trading no_withdrawal_or_trading/)
-    . "</select></div>"
-    . '<div class="row"><input type=checkbox value="1" name="onlyfunded" id="chk_onlyfunded" /><label for="chk_onlyfunded">Only funded accounts</label></div>'
-    . '<div class="row"><input type=checkbox value="1" name="onlynonzerobalance" id="chk_onlynonzerobalance" /><label for="chk_onlynonzerobalance">Only nonzero balance</label></div>'
-    . "<input type=submit class='btn btn--primary' value='Monitor clients on this list'>"
-    . "</form>";
+    print "<form action=\""
+        . request()->url_for('backoffice/f_viewclientsubset.cgi')
+        . "\" method=get>"
+        . "<input type=hidden name=broker value=$encoded_broker>"
+        . "<div class='row'><label>Status:</label><select name=show>"
+        . "<option value='age_verification'>Age Verified</option>"
+        . "<option value='closed'>Closed Accounts</option>"
+        . join('',
+        map { "<option value='$_'> $untrusted_status->{$_}->{comments} </option>" }
+            qw /disabled cashier_locked withdrawal_locked unwelcome no_trading no_withdrawal_or_trading/)
+        . "</select></div>"
+        . '<div class="row"><input type=checkbox value="1" name="onlyfunded" id="chk_onlyfunded" /><label for="chk_onlyfunded">Only funded accounts</label></div>'
+        . '<div class="row"><input type=checkbox value="1" name="onlynonzerobalance" id="chk_onlynonzerobalance" /><label for="chk_onlynonzerobalance">Only nonzero balance</label></div>'
+        . "<input type=submit class='btn btn--primary' value='Monitor clients on this list'>"
+        . "</form>";
 
-Bar('Client complete audit log');
-print '<h3>View client sequential combined activity</h3>';
+    Bar('Client complete audit log');
+    print '<h3>View client sequential combined activity</h3>';
 
-print "<form action=\"" . request()->url_for('backoffice/f_client_combined_audit.cgi') . "\" method=get>";
-print qq~
-    <div class="row">
-        <label>Login ID:</label>
-        <input type=text size=15 name="loginid" value="" data-lpignore="true" />
-        <label>From:</label>
-        <input class="datepick" name=startdate type=text data-lpignore='true' size=10 value='~
-    . Date::Utility->today()->minus_time_interval('30d')->date . qq~'/>
-        <label>To:</label>
-        <input class="datepick" name=enddate type=text data-lpignore='true' size=10 value='~ . Date::Utility->today()->date . qq~'/>
-    </div>
-    ~;
-print '<input type="submit" class="btn btn--primary" value="Submit">';
-print "</form>";
+    print "<form action=\"" . request()->url_for('backoffice/f_client_combined_audit.cgi') . "\" method=get>";
+    print qq~
+        <div class="row">
+            <label>Login ID:</label>
+            <input type=text size=15 name="loginid" value="" data-lpignore="true" />
+            <label>From:</label>
+            <input class="datepick" name=startdate type=text data-lpignore='true' size=10 value='~
+        . Date::Utility->today()->minus_time_interval('30d')->date . qq~'/>
+            <label>To:</label>
+            <input class="datepick" name=enddate type=text data-lpignore='true' size=10 value='~ . Date::Utility->today()->date . qq~'/>
+        </div>
+        ~;
+    print '<input type="submit" class="btn btn--primary" value="Submit">';
+    print "</form>";
+}
 
 if (BOM::Backoffice::Auth::has_authorisation(['CS', 'Compliance', 'CostControl', 'IDV'])) {
     Bar("IDV DASHBOARD");
