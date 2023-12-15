@@ -1,0 +1,235 @@
+provider,account_type,type,mapped_symbol,commission_rate
+ctrader,standard,volume,AAL,0.0001
+ctrader,standard,volume,AAPL,0.0001
+ctrader,standard,volume,ABNB,0.0001
+ctrader,standard,volume,ADAUSD,0.0001
+ctrader,standard,volume,ADS,0.0001
+ctrader,standard,volume,AGG.US,0.0001
+ctrader,standard,volume,AIG,0.0001
+ctrader,standard,volume,AIR,0.0001
+ctrader,standard,volume,AIRF,0.0001
+ctrader,standard,volume,ALGUSD,0.0001
+ctrader,standard,volume,AMD,0.0001
+ctrader,standard,volume,AMZN,0.0001
+ctrader,standard,volume,ARKK.US,0.0001
+ctrader,standard,volume,AUD Basket,0.000015
+ctrader,standard,volume,AUDCAD,0.00002
+ctrader,standard,volume,AUDCHF,0.00002
+ctrader,standard,volume,AUDJPY,0.00002
+ctrader,standard,volume,AUDNZD,0.00002
+ctrader,standard,volume,AUDUSD,0.00002
+ctrader,standard,volume,AUDUSD DFX 10 Index,0
+ctrader,standard,volume,AUDUSD DFX 20 Index,0
+ctrader,standard,volume,AUS_200,0.00001
+ctrader,standard,volume,AVAUSD,0.0001
+ctrader,standard,volume,BA,0.0001
+ctrader,standard,volume,BABA,0.0001
+ctrader,standard,volume,BAC,0.0001
+ctrader,standard,volume,BATUSD,0.0001
+ctrader,standard,volume,BAY,0.0001
+ctrader,standard,volume,BCHUSD,0.0001
+ctrader,standard,volume,BIIB,0.0001
+ctrader,standard,volume,BMW,0.0001
+ctrader,standard,volume,BNBUSD,0.0001
+ctrader,standard,volume,Boom 1000 Index,0.0000025
+ctrader,standard,volume,Boom 300 Index,0.00001
+ctrader,standard,volume,Boom 500 Index,0.0000035
+ctrader,standard,volume,BTCETH,0.0001
+ctrader,standard,volume,BTCLTC,0.0001
+ctrader,standard,volume,BTCUSD,0.0001
+ctrader,standard,volume,C,0.0001
+ctrader,standard,volume,CADCHF,0.00002
+ctrader,standard,volume,CADJPY,0.00002
+ctrader,standard,volume,CHFJPY,0.00002
+ctrader,standard,volume,CL_BRENT,0.00005
+ctrader,standard,volume,CONG,0.0001
+ctrader,standard,volume,Crash 1000 Index,0.0000025
+ctrader,standard,volume,Crash 300 Index,0.00001
+ctrader,standard,volume,Crash 500 Index,0.0000035
+ctrader,standard,volume,CRM,0.0001
+ctrader,standard,volume,CSCO,0.0001
+ctrader,standard,volume,DAL,0.0001
+ctrader,standard,volume,DAX_40,0.00001
+ctrader,standard,volume,DBK,0.0001
+ctrader,standard,volume,DEX 1500 DOWN Index,0
+ctrader,standard,volume,DEX 1500 UP Index,0
+ctrader,standard,volume,DEX 600 DOWN Index,0
+ctrader,standard,volume,DEX 600 UP Index,0
+ctrader,standard,volume,DEX 900 DOWN Index,0
+ctrader,standard,volume,DEX 900 UP Index,0
+ctrader,standard,volume,DIA.US,0.0001
+ctrader,standard,volume,DIS,0.0001
+ctrader,standard,volume,DOGUSD,0.0001
+ctrader,standard,volume,DOTUSD,0.0001
+ctrader,standard,volume,Drift Switch Index 10,0
+ctrader,standard,volume,Drift Switch Index 20,0
+ctrader,standard,volume,Drift Switch Index 30,0
+ctrader,standard,volume,DSHUSD,0.0001
+ctrader,standard,volume,EBAY,0.0001
+ctrader,standard,volume,EEM.US,0.0001
+ctrader,standard,volume,EFA.US,0.0001
+ctrader,standard,volume,EOSUSD,0.0001
+ctrader,standard,volume,ERX.US,0.0001
+ctrader,standard,volume,ESP_35,0.00001
+ctrader,standard,volume,ETCUSD,0.0001
+ctrader,standard,volume,ETHUSD,0.0001
+ctrader,standard,volume,EUR Basket,0.000015
+ctrader,standard,volume,EUR_50,0.00001
+ctrader,standard,volume,EURAUD,0.00002
+ctrader,standard,volume,EURCAD,0.00002
+ctrader,standard,volume,EURCHF,0.00002
+ctrader,standard,volume,EURGBP,0.00002
+ctrader,standard,volume,EURJPY,0.00002
+ctrader,standard,volume,EURNOK,0.00002
+ctrader,standard,volume,EURNZD,0.00002
+ctrader,standard,volume,EURPLN,0.00002
+ctrader,standard,volume,EURSEK,0.00002
+ctrader,standard,volume,EURUSD,0.00002
+ctrader,standard,volume,EURUSD DFX 10 Index,0
+ctrader,standard,volume,EURUSD DFX 20 Index,0
+ctrader,standard,volume,FB,0.0001
+ctrader,standard,volume,FDX,0.0001
+ctrader,standard,volume,FILUSD,0.0001
+ctrader,standard,volume,FOX,0.0001
+ctrader,standard,volume,FRA_40,0.00001
+ctrader,standard,volume,GBP Basket,0.000015
+ctrader,standard,volume,GBPAUD,0.00002
+ctrader,standard,volume,GBPCAD,0.00002
+ctrader,standard,volume,GBPCHF,0.00002
+ctrader,standard,volume,GBPJPY,0.00002
+ctrader,standard,volume,GBPNOK,0.00002
+ctrader,standard,volume,GBPNZD,0.00002
+ctrader,standard,volume,GBPSEK,0.00002
+ctrader,standard,volume,GBPUSD,0.00002
+ctrader,standard,volume,GBPUSD DFX 10 Index,0
+ctrader,standard,volume,GBPUSD DFX 20 Index,0
+ctrader,standard,volume,GDX.US,0.0001
+ctrader,standard,volume,GLD.US,0.0001
+ctrader,standard,volume,GM,0.0001
+ctrader,standard,volume,Gold Basket,0.00007
+ctrader,standard,volume,GOOG,0.0001
+ctrader,standard,volume,GS,0.0001
+ctrader,standard,volume,HD,0.0001
+ctrader,standard,volume,HPQ,0.0001
+ctrader,standard,volume,HYG.US,0.0001
+ctrader,standard,volume,IBM,0.0001
+ctrader,standard,volume,IEMG.US,0.0001
+ctrader,standard,volume,IJR.US,0.0001
+ctrader,standard,volume,INTC,0.0001
+ctrader,standard,volume,IOTUSD,0.0001
+ctrader,standard,volume,IVV.US,0.0001
+ctrader,standard,volume,IVW.US,0.0001
+ctrader,standard,volume,IWM.US,0.0001
+ctrader,standard,volume,JNJ,0.0001
+ctrader,standard,volume,JP_225,0.00001
+ctrader,standard,volume,JPM,0.0001
+ctrader,standard,volume,Jump 10 Index,0.000005
+ctrader,standard,volume,Jump 100 Index,0.00005
+ctrader,standard,volume,Jump 25 Index,0.0000125
+ctrader,standard,volume,Jump 50 Index,0.000025
+ctrader,standard,volume,Jump 75 Index,0.0000375
+ctrader,standard,volume,KO,0.0001
+ctrader,standard,volume,LHAG,0.0001
+ctrader,standard,volume,LNKUSD,0.0001
+ctrader,standard,volume,LQD.US,0.0001
+ctrader,standard,volume,LTCUSD,0.0001
+ctrader,standard,volume,MA,0.0001
+ctrader,standard,volume,MCD,0.0001
+ctrader,standard,volume,META,0.0001
+ctrader,standard,volume,MKRUSD,0.0001
+ctrader,standard,volume,MRNA,0.0001
+ctrader,standard,volume,MSFT,0.0001
+ctrader,standard,volume,MTCUSD,0.0001
+ctrader,standard,volume,NED_25,0.00001
+ctrader,standard,volume,NEOUSD,0.0001
+ctrader,standard,volume,NFLX,0.0001
+ctrader,standard,volume,NKE,0.0001
+ctrader,standard,volume,NVDA,0.0001
+ctrader,standard,volume,NZDCAD,0.00002
+ctrader,standard,volume,NZDJPY,0.00002
+ctrader,standard,volume,NZDUSD,0.00002
+ctrader,standard,volume,OMGUSD,0.0001
+ctrader,standard,volume,PEP,0.0001
+ctrader,standard,volume,PFE,0.0001
+ctrader,standard,volume,PG,0.0001
+ctrader,standard,volume,PSHG,0.0001
+ctrader,standard,volume,PUMG,0.0001
+ctrader,standard,volume,PYPL,0.0001
+ctrader,standard,volume,QID.US,0.0001
+ctrader,standard,volume,Range Break 100 Index,0.000005
+ctrader,standard,volume,Range Break 200 Index,0.0000025
+ctrader,standard,volume,SDS.US,0.0001
+ctrader,standard,volume,SLV.US,0.0001
+ctrader,standard,volume,SOLUSD,0.0001
+ctrader,standard,volume,SONY,0.0001
+ctrader,standard,volume,SPXS.US,0.0001
+ctrader,standard,volume,SPY.US,0.0001
+ctrader,standard,volume,Step Index,0.000001
+ctrader,standard,volume,TBT.US,0.0001
+ctrader,standard,volume,TEVA,0.0001
+ctrader,standard,volume,TQQQ.US,0.0001
+ctrader,standard,volume,TRXUSD,0.0001
+ctrader,standard,volume,TSLA,0.0001
+ctrader,standard,volume,UBER,0.0001
+ctrader,standard,volume,UK_100,0.00001
+ctrader,standard,volume,UNG.US,0.0001
+ctrader,standard,volume,UNIUSD,0.0001
+ctrader,standard,volume,US_100,0.00001
+ctrader,standard,volume,US_30,0.00001
+ctrader,standard,volume,US_500,0.00001
+ctrader,standard,volume,USD Basket,0.000015
+ctrader,standard,volume,USDCAD,0.00002
+ctrader,standard,volume,USDCHF,0.00002
+ctrader,standard,volume,USDCHF DFX 10 Index,0
+ctrader,standard,volume,USDCHF DFX 20 Index,0
+ctrader,standard,volume,USDCNH,0.00002
+ctrader,standard,volume,USDJPY,0.00002
+ctrader,standard,volume,USDJPY DFX 10 Index,0
+ctrader,standard,volume,USDJPY DFX 20 Index,0
+ctrader,standard,volume,USDMXN,0.00002
+ctrader,standard,volume,USDNOK,0.00002
+ctrader,standard,volume,USDPLN,0.00002
+ctrader,standard,volume,USDSEK,0.00002
+ctrader,standard,volume,USDZAR,0.00002
+ctrader,standard,volume,V,0.0001
+ctrader,standard,volume,VEA.US,0.0001
+ctrader,standard,volume,VNQ.US,0.0001
+ctrader,standard,volume,Volatility 10 (1s) Index,0.0000075
+ctrader,standard,volume,Volatility 10 Index,0.0000075
+ctrader,standard,volume,Volatility 100 (1s) Index,0.000075
+ctrader,standard,volume,Volatility 100 Index,0.000075
+ctrader,standard,volume,Volatility 150 (1s) Index,0.000075
+ctrader,standard,volume,Volatility 200 (1s) Index,0
+ctrader,standard,volume,Volatility 25 (1s) Index,0.0000175
+ctrader,standard,volume,Volatility 25 Index,0.0000175
+ctrader,standard,volume,Volatility 250 (1s) Index,0.000125
+ctrader,standard,volume,Volatility 300 (1s) Index,0
+ctrader,standard,volume,Volatility 50 (1s) Index,0.0000375
+ctrader,standard,volume,Volatility 50 Index,0.0000375
+ctrader,standard,volume,Volatility 75 (1s) Index,0.00005
+ctrader,standard,volume,Volatility 75 Index,0.00005
+ctrader,standard,volume,VOO.US,0.0001
+ctrader,standard,volume,VTI.US,0.0001
+ctrader,standard,volume,VWO.US,0.0001
+ctrader,standard,volume,WMT,0.0001
+ctrader,standard,volume,WTI_OIL,0.00005
+ctrader,standard,volume,XAGEUR,0.000015
+ctrader,standard,volume,XAGUSD,0.000015
+ctrader,standard,volume,XALUSD,0.000015
+ctrader,standard,volume,XAUEUR,0.000015
+ctrader,standard,volume,XAUUSD,0.000015
+ctrader,standard,volume,XCUUSD,0.000015
+ctrader,standard,volume,XLE.US,0.0001
+ctrader,standard,volume,XLF.US,0.0001
+ctrader,standard,volume,XLK.US,0.0001
+ctrader,standard,volume,XLMUSD,0.0001
+ctrader,standard,volume,XMRUSD,0.0001
+ctrader,standard,volume,XNIUSD,0.000015
+ctrader,standard,volume,XPBUSD,0.000015
+ctrader,standard,volume,XPDUSD,0.000015
+ctrader,standard,volume,XPTUSD,0.000015
+ctrader,standard,volume,XRPUSD,0.0001
+ctrader,standard,volume,XTZUSD,0.0001
+ctrader,standard,volume,XZNUSD,0.000015
+ctrader,standard,volume,ZECUSD,0.0001
+ctrader,standard,volume,ZM,0.0001
