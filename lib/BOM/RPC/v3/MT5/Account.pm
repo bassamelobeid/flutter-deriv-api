@@ -1875,26 +1875,6 @@ async_rpc "mt5_password_reset",
         {message => localize("To reset your [_1] password, please use the [_2] API.", $password_type, $new_api)});
     };
 
-sub _send_email {
-    my %args = @_;
-    my ($loginid, $mt5_id, $amount, $action, $error, $acc_type) = @args{qw(loginid mt5_id amount action error account_type)};
-    my $brand = Brands->new(name => request()->brand);
-    my $message =
-        $action eq 'deposit'
-        ? "Error happened when doing MT5 deposit after withdrawal from client account:"
-        : "Error happened when doing deposit to client account after withdrawal from MT5 account:";
-
-    return BOM::Platform::Email::send_email({
-        from                  => $brand->emails('system'),
-        to                    => $brand->emails('payments'),
-        subject               => "MT5 $action error",
-        message               => [$message, "Client login id: $loginid", "MT5 login: $mt5_id", "Amount: $amount", "error: $error"],
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        template_loginid      => ucfirst $acc_type . ' ' . $loginid =~ s/${\BOM::User->MT5_REGEX}//r,
-    });
-}
-
 async_rpc "mt5_deposit",
     category => 'mt5',
     sub {
@@ -2625,19 +2605,6 @@ sub _fetch_mt5_lc {
     return undef unless $landing_company;
 
     return $landing_company;
-}
-
-sub _mt5_has_open_positions {
-    my $login = shift;
-
-    return BOM::MT5::User::Async::get_open_positions_count($login)->then(
-        sub {
-            my ($response) = @_;
-            return create_error_future('CannotGetOpenPositions')
-                if (ref $response eq 'HASH' and $response->{error});
-
-            return Future->done($response->{total} ? 1 : 0);
-        })->catch($error_handler);
 }
 
 =head2 _record_mt5_transfer

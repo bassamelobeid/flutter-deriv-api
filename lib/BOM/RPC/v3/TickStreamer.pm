@@ -122,23 +122,6 @@ rpc ticks_history => sub {
         ($args->{granularity}) ? (granularity => $args->{granularity}) : ()};
 };
 
-sub _ticks {
-    my $args = shift;
-
-    my $ul    = $args->{ul};
-    my $start = $args->{start};
-    my $end   = $args->{end};
-    my $count = $args->{count};
-
-    my $ticks = $ul->feed_api->ticks_start_end_with_limit_for_charting({
-        start_time => $start,
-        end_time   => $end,
-        limit      => $count,
-    });
-
-    return [map { {time => $_->epoch, price => $ul->pipsized_value($_->quote)} } reverse @$ticks];
-}
-
 sub _candles {
     my $args = shift;
 

@@ -892,12 +892,6 @@ sub _process_pa_transfer_error {
     return $rpc_error;
 }
 
-sub _get_json_error {
-    my $error = shift;
-    $error = $1 if $error =~ /ERROR:  (.+)/;
-    return decode_json($error);
-}
-
 =head2 _get_available_payment_agents
 
 Returns a hash reference containing authenticated payment agents available for the input search criteria.
@@ -2143,40 +2137,6 @@ sub validate_amount {
     my ($int, $precision) = Math::BigFloat->new($amount)->length();
     return localize('Invalid amount. Amount provided can not have more than [_1] decimal places.', $num_of_decimals)
         if ($precision > $num_of_decimals);
-
-    return undef;
-}
-
-sub _validate_paymentagent_limits {
-    my (%args)   = @_;
-    my $currency = $args{currency};
-    my $min_max  = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
-
-    my $amount    = $args{amount};
-    my $error_sub = $args{error_sub};
-    my $min       = $args{payment_agent}->min_withdrawal // $min_max->{minimum};
-    my $max       = $args{payment_agent}->max_withdrawal // $min_max->{maximum};
-
-    return $error_sub->(
-        localize(
-            'Invalid amount. Minimum is [_1], maximum is [_2].',
-            formatnumber('amount', $currency, $min),
-            formatnumber('amount', $currency, $max))) if ($amount < $min || $amount > $max);
-
-    return undef;
-}
-
-sub _check_facility_availability {
-    my (%args) = @_;
-
-    # Check global status via the chronicle database
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-
-    if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents)
-    {
-        return $args{error_sub}->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
-    }
 
     return undef;
 }

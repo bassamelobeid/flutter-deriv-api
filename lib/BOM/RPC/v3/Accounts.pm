@@ -2388,11 +2388,6 @@ rpc get_self_exclusion => sub {
     return _get_self_exclusion_details($client);
 };
 
-sub _contains_any {
-    my ($hash, @keys) = (@_);
-    scalar grep { exists $hash->{$_} } @keys;
-}
-
 sub _find_updated_fields {
     my $params = shift;
     my ($client, $args) = @{$params}{qw/client args/};
