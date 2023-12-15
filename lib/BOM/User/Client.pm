@@ -2616,9 +2616,17 @@ Returns the advertiser info or dies with error code.
 
 sub p2p_advertiser_create {
     my ($self, %param) = @_;
-    my $name = trim($param{name});
+    my $name        = trim($param{name});
+    my $poa_setting = BOM::Config::Runtime->instance->app_config->payments->p2p->poa;
 
     die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
+    if ((
+               ($poa_setting->enabled  && none { $self->residence eq $_ } $poa_setting->countries_excludes->@*)
+            or (!$poa_setting->enabled && any { $self->residence eq $_ } $poa_setting->countries_includes->@*))
+        and (not($self->fully_authenticated and $self->status->age_verification)))
+    {
+        die +{error_code => 'AuthenticationRequired'};
+    }
 
     die +{error_code => 'AdvertiserNameRequired'} unless $name;
     die +{error_code => 'AdvertiserNameTaken'} if $self->_p2p_advertisers(unique_name => $name)->[0];

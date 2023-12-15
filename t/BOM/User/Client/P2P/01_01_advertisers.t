@@ -70,6 +70,64 @@ subtest 'advertiser Registration' => sub {
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
 };
 
+subtest 'advertiser in POA mandetory countries' => sub {
+
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(1);
+    cmp_deeply(
+        exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required if POA enabled globally'
+    );
+
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(0);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_includes([$client->residence]);
+    cmp_deeply(
+        exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required if POA disabled globally but country is mandetory'
+    );
+
+    ok !$client->status->age_verification, "client has not basic verification";
+    ok !$client->fully_authenticated,      "client has not full authenticated";
+
+    $client->status->set('age_verification', 'system', 'testing');
+    ok $client->status->age_verification, "client has basic verification";
+    cmp_deeply(
+        exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required both not only POI if user is in POA mandetory country'
+    );
+
+    $client->status->clear_age_verification;
+    $client->set_authentication('ID_ONLINE', {status => 'pass'});
+
+    ok !$client->status->age_verification, "client has not basic verification";
+    ok $client->fully_authenticated,       "client has full authenticated";
+
+    cmp_deeply(
+        exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required both not only POA if user is in POA mandetory country'
+    );
+
+    $client->status->set('age_verification', 'system', 'testing');
+    ok $client->p2p_advertiser_create(name => 'advertiser POA'), 'create advertiser who has POA and POI verified is ok';
+
+    my $client_new = BOM::Test::Helper::Client::create_client();
+    $client_new->account('USD');
+
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(1);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_excludes([$client_new->residence]);
+    ok $client_new->p2p_advertiser_create(name => 'advertiser POA 2'), 'create advertiser in country which is excluded is ok';
+
+    ## Set Config as default for rest of the test
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(0);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_includes([]);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_excludes([]);
+};
+
 subtest 'advertiser basic and full verification' => sub {
 
     my $client = BOM::Test::Helper::Client::create_client();
