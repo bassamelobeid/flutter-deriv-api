@@ -158,11 +158,7 @@ async sub verify_identity {
 
         my $request_start = [Time::HiRes::gettimeofday];
 
-        my $config = BOM::Config::Services->config('identity_verification');
-
-        my $api_base_url = sprintf('http://%s:%s', $config->{host}, $config->{port});
-
-        my $req_body = encode_json_utf8 {
+        my $body = +{
             document => {
                 issuing_country => $document->{issuing_country},
                 type            => $document->{document_type},
@@ -183,6 +179,8 @@ async sub verify_identity {
                 city      => $client->address_city,
             }};
 
+        my $req_body = encode_json_utf8 $body;
+
         $idv_model->update_document_check({
             document_id  => $document->{id},
             status       => IDV_DOCUMENT_STATUS->{pending},
@@ -191,9 +189,7 @@ async sub verify_identity {
             request_body => $req_body
         });
 
-        # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
-        await $loop->later;
-        await _http()->POST("$api_base_url/v1/idv", $req_body, (content_type => 'application/json'));
+        BOM::Platform::Event::Emitter::emit('idv_verification', $body);
 
         DataDog::DogStatsd::Helper::stats_timing(
             'event.identity_verification.callout.timing',
@@ -217,19 +213,6 @@ async sub verify_identity {
             });
 
             $log->error('Identity Verification Microservice responded an error to our request for verify document: %d', $payload->status);
-        } elsif ($e =~ /\bconnection refused\b/i) {
-
-            # Give back a submission attempt
-            $idv_model->decr_submissions();
-
-            $log->error('Identity Verification Microservice is refusing connections');
-
-            $idv_model->update_document_check({
-                document_id => $document->{id},
-                status      => IDV_DOCUMENT_STATUS->{failed},
-                messages    => [IDV_MESSAGES->{CONNECTION_REFUSED}],
-                provider    => $provider,
-            });
         } else {
             $idv_model->update_document_check({
                 document_id => $document->{id},
@@ -541,6 +524,13 @@ async sub idv_mismatch_lookback {
         await idv_refuted({$args->%*, messages => $messages, errors => $rules_result->errors});
     }
 
+    BOM::Platform::Event::Emitter::emit(
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        });
+
     return undef;
 }
 
@@ -710,115 +700,43 @@ sub _get_provider {
 
 =head2 idv_webhook_relay
 
-Relay the IDV request from the webhook to our idv microservice
+Relay the IDV request from the webhook to our idv microservice.
+
+It takes the following:
 
 =over 4
 
-=item * C<webhook_response> - the response from the webhook
+=item * C<$args> - a hashref response from the webhook, including: headers and data
 
 =back
 
-Returns an array includes (status, request + response, status message).
+Returns C<undef>.
 
 =cut
 
 async sub idv_webhook_relay {
     my $args = shift;
 
-    my $config = BOM::Config::Services->config('identity_verification');
-
-    my $api_base_url = sprintf('http://%s:%s', $config->{host}, $config->{port});
-
-    my ($response, $idv_retry_response, $decoded_response, $webhook_response, $login_id, $status, $report, $response_body, $request_body);
-
-    my $status_message = [];
-
-    my $url = "$api_base_url/v1/idv/webhook";
-
     # make header comparison case insensitive
     my $headers_lc = {map { lc($_) => $args->{headers}->{$_} } keys $args->{headers}->%*};
 
     try {
-        # if 'x-retry-attempts' present in header, it means that it came from the IDV retry mechanism
-        if ($headers_lc->{'x-retry-attempts'}) {
-            my $retry_attempts = $headers_lc->{'x-retry-attempts'};
-            $log->debugf("Got IDV webhook with attempt number: $retry_attempts");
-            $idv_retry_response = $args->{data}->{json};
-
-        }
-        # if 'x-request-id' present in header, it means that it came from MetaMap IDV provider
-        elsif ($headers_lc->{'x-request-id'}) {
-            # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
-            await $loop->later;
-            delete $args->{headers}->{'Content-Length'};
-
-            $response = (
-                await _http()->POST(
-                    $url,
-                    encode_json_utf8($args->{data}->{json}),
-                    (
-                        content_type => 'application/json',
-                        headers      => $args->{headers})))->content;
-
-            $decoded_response = decode_json_utf8($response);
-            # further json encoding of this hashref should not convert to utf8 again, use `json_encode_text` instead
+        # does the monolith need to know about these?
+        if ($headers_lc->{'x-request-id'}) {
+            BOM::Platform::Event::Emitter::emit(
+                'idv_webhook',
+                {
+                    headers => $args->{headers},
+                    body    => $args->{data}->{json},
+                });
         } else {
             die 'no recognizable headers';
         }
-
-        $webhook_response = $idv_retry_response // $decoded_response;
-
-        # silently ignore invalid webhook requests
-        if (!defined $webhook_response->{req_echo}) {
-            DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.invalid_webhook_callback');
-            return;
-        }
-
-        $status         = $webhook_response->{status};
-        $status_message = $webhook_response->{messages};
-        $login_id       = $webhook_response->{req_echo}->{profile}->{id};
-        $report         = $webhook_response->{report};
-        $request_body   = $webhook_response->{request_body};
-        $response_body  = $webhook_response->{response_body};
-
-        await verify_process({
-            id            => $login_id,
-            status        => $status,
-            messages      => $status_message,
-            report        => $report        && ref($report)        ? $report        : {},
-            request_body  => $request_body  && ref($request_body)  ? $request_body  : {},
-            response_body => $response_body && ref($response_body) ? $response_body : {},
-        });
     } catch ($e) {
-        if (blessed($e) and $e->isa('Future::Exception')) {
-            my ($payload) = $e->details;
-            $response = $payload->content;
-
-            $webhook_response = eval { decode_json_utf8 $response } // {};
-
-            $status = IDV_DOCUMENT_STATUS->{failed};
-
-            $status_message = $log->errorf(
-                "Identity Verification Microservice responded an error to our request for passing the webhook response with code: %s, message: %s - %s",
-                $webhook_response->{code} // IDV_MESSAGES->{UNKNOWN},
-                $e->message, $webhook_response->{error} // IDV_MESSAGES->{UNKNOWN});
-        } elsif ($e =~ /\bconnection refused\b/i) {
-
-            # Update the status to failed as for it to not remain in perpetual 'pending' state
-            $status         = IDV_DOCUMENT_STATUS->{failed};
-            $status_message = IDV_MESSAGES->{CONNECTION_REFUSED};
-
-        } else {
-            $log->errorf('Unhandled IDV exception: %s', $e);
-        }
+        $log->errorf('Unhandled IDV exception: %s', $e);
     }
 
-    unless ($status) {
-        $status         = IDV_DOCUMENT_STATUS->{failed};
-        $status_message = IDV_MESSAGES->{UNAVAILABLE_MICROSERVICE};
-    }
-
-    return ($status, $webhook_response, $status_message);
+    return undef;
 
 }
 

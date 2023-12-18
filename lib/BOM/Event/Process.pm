@@ -70,6 +70,7 @@ my $action_mapping = {
         verify_address                              => \&BOM::Event::Actions::Client::verify_address,
         profile_change                              => \&BOM::Event::Actions::User::profile_change,
         social_responsibility_check                 => \&BOM::Event::Actions::Client::social_responsibility_check,
+        aml_high_risk_updated                       => \&BOM::Event::Actions::Client::aml_high_risk_updated,
         sync_onfido_details                         => \&BOM::Event::Actions::Client::sync_onfido_details,
         qualifying_payment_check                    => \&BOM::Event::Actions::Client::qualifying_payment_check,
         payment_deposit                             => \&BOM::Event::Actions::Client::payment_deposit,

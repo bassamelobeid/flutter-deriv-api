@@ -7,6 +7,7 @@ use Test::Warnings qw(warning);
 use Test::Fatal;
 use Test::MockModule;
 use Test::Deep;
+use Test::Exception;
 
 use WebService::Async::Segment::Customer;
 use Time::Moment;
@@ -491,6 +492,43 @@ subtest 'user profile change event' => sub {
 
         $mock_client->unmock_all;
     };
+};
+
+subtest 'update locks when client is set to high risk' => sub {
+    my $client_aml_risk = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $high_risk_user = BOM::User->create(
+        email          => 'riskclient@deriv.com',
+        password       => "hello",
+        email_verified => 1,
+    );
+
+    $high_risk_user->add_client($client_aml_risk);
+
+    my $args = {
+        loginid => $client_aml_risk->loginid,
+    };
+
+    throws_ok { BOM::Event::Actions::Client::aml_high_risk_updated({loginid => undef}) }
+    qr/No client login ID supplied/, 'Missing client id';
+
+    throws_ok { BOM::Event::Actions::Client::aml_high_risk_updated({loginid => "CR0"}) }
+    qr/Could not instantiate client for current login ID/, 'Invalid client id';
+
+    is($client_aml_risk->aml_risk_classification, 'low', "aml risk is low");
+
+    $client_aml_risk->aml_risk_classification('high');
+    $client_aml_risk->save;
+
+    is($client_aml_risk->aml_risk_classification, 'high', 'aml risk is high');
+
+    BOM::Event::Actions::Client::aml_high_risk_updated($args);
+
+    is $client_aml_risk->status->withdrawal_locked->{reason},     'Pending authentication or FA', 'lock applied on high risk';
+    is $client_aml_risk->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK',             'allow document upload on high risk';
+
 };
 
 subtest 'user profile change event track' => sub {

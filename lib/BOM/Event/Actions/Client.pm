@@ -74,7 +74,7 @@ use BOM::Platform::Client::AntiFraud;
 use BOM::Platform::Utility;
 use Digest::MD5 qw(md5_hex);
 use BOM::Event::Actions::Client::IdentityVerification;
-
+use BOM::User::Script::AMLClientsUpdate;
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
 
@@ -2465,6 +2465,30 @@ sub social_responsibility_check {
         }
     }
     BOM::Platform::Redis::release_lock($lock_key);
+    return undef;
+}
+
+=head2 aml_high_risk_updated
+
+Checks if a client has become AML HIGH risk and apply the corresponding locks.
+
+=cut
+
+sub aml_high_risk_updated {
+    my ($args) = @_;
+
+    my $loginid = $args->{loginid}
+        or die 'No client login ID supplied';
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die 'Could not instantiate client for current login ID';
+
+    return undef
+        unless (($client->aml_risk_classification eq 'high' && $client->landing_company->short ne 'maltainvest')
+        || ($client->aml_risk_classification eq 'standard' && $client->landing_company->short eq 'maltainvest'));
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client);
+
     return undef;
 }
 

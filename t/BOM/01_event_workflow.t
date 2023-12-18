@@ -114,7 +114,7 @@ subtest 'process - generic jobs' => sub {
             qw/email_statement sync_user_to_MT5
                 store_mt5_transaction new_mt5_signup anonymize_client bulk_anonymization auto_anonymize_candidates
                 document_upload ready_for_authentication client_verification
-                verify_address social_responsibility_check sync_onfido_details
+                verify_address aml_high_risk_updated social_responsibility_check sync_onfido_details
                 qualifying_payment_check
                 payment_deposit send_email
                 signup profile_change

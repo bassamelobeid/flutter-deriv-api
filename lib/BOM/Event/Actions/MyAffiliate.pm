@@ -41,7 +41,7 @@ It takes the following arguments:
 
 =back
 
-Retunrs a L<Future> which resolvs to C<undef>
+Returns a L<Future> which resolvs to C<undef>
 
 =cut
 
@@ -88,7 +88,7 @@ It takes the following arguments:
 
 =back
 
-Retunrs a L<Future> which resolves to C<undef>
+Returns a L<Future> which resolves to C<undef>
 
 =cut
 
@@ -167,7 +167,7 @@ It takes the following arguments:
 
 =back
 
-Retunrs a L<Future> which resolves to C<undef>
+Returns a L<Future> which resolves to C<undef>
 
 =cut
 

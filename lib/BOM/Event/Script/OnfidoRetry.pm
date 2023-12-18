@@ -27,12 +27,15 @@ Runs pending checks again.
 =cut
 
 async sub run {
+    my ($self, $args) = @_;
+    my $custom_limit = $args->{custom_limit} // 100;
+
     my $loop = IO::Async::Loop->new;
     $loop->add(my $services = BOM::Event::Services->new);
     my $onfido = $services->onfido();
     my $checks = BOM::Database::UserDB::rose_db()->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref('select id from users.get_in_progress_onfido_checks()', {Slice => {}});
+            $_->selectall_arrayref('select id from users.get_in_progress_onfido_checks(?::INT)', {Slice => {}}, $custom_limit);
         });
 
     for my $check ($checks->@*) {
