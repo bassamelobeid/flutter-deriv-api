@@ -1451,6 +1451,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
             } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth::has_authorisation(['Compliance'])) {
                 $cli->aml_risk_classification($input{$key});
                 _update_mt5_status($client);
+                BOM::Platform::Event::Emitter::emit('aml_high_risk_updated', {loginid => $client->loginid});
             } elsif ($key eq 'mifir_id'
                 and $cli->mifir_id eq ''
                 and $broker eq 'MF')
