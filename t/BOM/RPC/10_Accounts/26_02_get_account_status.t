@@ -528,7 +528,7 @@ subtest 'Proof of Ownership' => sub {
         },
         'Expected POO after fulfilling';
 
-    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate';
+    cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Needs to authenticate';
 
     $client->proof_of_ownership->reject($poo);
     $client->proof_of_ownership->_clear_full_list();
@@ -577,7 +577,7 @@ subtest 'Proof of Ownership' => sub {
         },
         'Expected POO after fulfilling again';
 
-    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate (pending)';
+    cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Needs to authenticate';
 
     $client->proof_of_ownership->verify($poo);
     $client->proof_of_ownership->_clear_full_list();
@@ -641,7 +641,7 @@ subtest 'Proof of Ownership' => sub {
         },
         'Expected POO after fulfilling again';
 
-    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate (pending)';
+    cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Needs to authenticate';
 
     $client->proof_of_ownership->reject($poo);
     $client->proof_of_ownership->_clear_full_list();
@@ -690,7 +690,7 @@ subtest 'Proof of Ownership' => sub {
         },
         'Expected POO after fulfilling again';
 
-    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate (pending)';
+    cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Needs to authenticate';
 
     $client->proof_of_ownership->verify($poo);
     $client->proof_of_ownership->_clear_full_list();
@@ -704,6 +704,207 @@ subtest 'Proof of Ownership' => sub {
         'Expected POO after verifying';
 
     cmp_bag $result->{authentication}->{needs_verification}, [], 'Does not need verification';
+
+    subtest 'many poo' => sub {
+        $client->proof_of_ownership->_clear_full_list();
+        my $poo1 = $client->proof_of_ownership->create({payment_service_provider => 'BIG',     trace_id => 100});
+        my $poo2 = $client->proof_of_ownership->create({payment_service_provider => 'HELLISH', trace_id => 100});
+        my $poo3 = $client->proof_of_ownership->create({payment_service_provider => 'PINCHO',  trace_id => 100});
+
+        $result = $c->tcall('get_account_status', {token => $token});
+
+        cmp_deeply $result->{authentication}->{ownership},
+            {
+            status   => 'none',
+            requests => [{
+                    payment_method     => 'BIG',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                },
+                {
+                    payment_method     => 'HELLISH',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                },
+                {
+                    payment_method     => 'PINCHO',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                }
+            ],
+            },
+            'Expected POO after adding 3';
+
+        cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Does need verification';
+
+        my $file_id1 = upload(
+            $client,
+            {
+                document_id => 111,
+                checksum    => 'checkitup1'
+            });
+
+        ok $file_id1, 'There is a document uploaded';
+
+        $poo1 = $client->proof_of_ownership->fulfill({
+                id                     => $poo1->{id},
+                payment_method_details => {
+                    name    => 'EL CARPINCHO',
+                    expdate => '12/28'
+                },
+                client_authentication_document_id => $file_id1,
+            });
+
+        $result = $c->tcall('get_account_status', {token => $token});
+
+        cmp_deeply $result->{authentication}->{ownership},
+            {
+            status   => 'pending',
+            requests => [{
+                    payment_method     => 'HELLISH',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                },
+                {
+                    payment_method     => 'PINCHO',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                }
+            ],
+            },
+            'Expected POO after uploading 1';
+
+        cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Does need verification';
+
+        $client->proof_of_ownership->verify($poo1);
+        $client->proof_of_ownership->_clear_full_list();
+
+        $result = $c->tcall('get_account_status', {token => $token});
+
+        cmp_deeply $result->{authentication}->{ownership},
+            {
+            status   => 'none',
+            requests => [{
+                    payment_method     => 'HELLISH',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                },
+                {
+                    payment_method     => 'PINCHO',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                }
+            ],
+            },
+            'Expected POO after verifying poo1';
+
+        cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Does need verification';
+
+        my $file_id2 = upload(
+            $client,
+            {
+                document_id => 222,
+                checksum    => 'checkitup2'
+            });
+
+        ok $file_id2, 'There is a document uploaded';
+
+        $poo2 = $client->proof_of_ownership->fulfill({
+                id                     => $poo2->{id},
+                payment_method_details => {
+                    name    => 'EL CARPINCHO',
+                    expdate => '12/28'
+                },
+                client_authentication_document_id => $file_id2,
+            });
+
+        $result = $c->tcall('get_account_status', {token => $token});
+
+        cmp_deeply $result->{authentication}->{ownership},
+            {
+            status   => 'pending',
+            requests => [{
+                    payment_method     => 'PINCHO',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                }
+            ],
+            },
+            'Expected POO after uploading poo2';
+
+        cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Does need verification';
+
+        $client->proof_of_ownership->verify($poo2);
+        $client->proof_of_ownership->_clear_full_list();
+
+        $result = $c->tcall('get_account_status', {token => $token});
+
+        cmp_deeply $result->{authentication}->{ownership},
+            {
+            status   => 'none',
+            requests => [{
+                    payment_method     => 'PINCHO',
+                    id                 => re('\d+'),
+                    creation_time      => re('.+'),
+                    documents_required => 1,
+                }
+            ],
+            },
+            'Expected POO after verifying poo2';
+
+        cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Does need verification';
+
+        my $file_id3 = upload(
+            $client,
+            {
+                document_id => 333,
+                checksum    => 'checkitup3'
+            });
+
+        ok $file_id3, 'There is a document uploaded';
+
+        $poo3 = $client->proof_of_ownership->fulfill({
+                id                     => $poo3->{id},
+                payment_method_details => {
+                    name    => 'EL CARPINCHO',
+                    expdate => '12/28'
+                },
+                client_authentication_document_id => $file_id3,
+            });
+
+        $result = $c->tcall('get_account_status', {token => $token});
+
+        cmp_deeply $result->{authentication}->{ownership},
+            {
+            status   => 'pending',
+            requests => [],
+            },
+            'Expected POO after uploading poo2';
+
+        cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Does need verification';
+
+        $client->proof_of_ownership->verify($poo3);
+        $client->proof_of_ownership->_clear_full_list();
+
+        $result = $c->tcall('get_account_status', {token => $token});
+
+        cmp_deeply $result->{authentication}->{ownership},
+            {
+            status   => 'verified',
+            requests => [],
+            },
+            'Expected POO after verifying poo3';
+
+        cmp_bag $result->{authentication}->{needs_verification}, [], 'Does not need verification';
+    };
 };
 
 subtest 'Proof of Income' => sub {
