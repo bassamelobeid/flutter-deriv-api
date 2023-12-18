@@ -65,6 +65,8 @@ my %event_stream_mapping = (
     derivez_inactive_notification       => 'BULK_EVENTS_STREAM',
     onfido_check_completed              => 'DOCUMENT_AUTHENTICATION_STREAM',
     monolith_hello                      => 'NODEJS_STREAM',
+    idv_webhook                         => 'NODEJS_STREAM',
+    idv_verification                    => 'NODEJS_STREAM',
 );
 
 my $config = LoadFile('/etc/rmg/redis-events.yml');
