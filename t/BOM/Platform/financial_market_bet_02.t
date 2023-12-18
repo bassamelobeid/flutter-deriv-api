@@ -17,6 +17,8 @@ use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::User::Password;
 
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
 use BOM::Test::Helper::Client qw( create_client top_up );
 
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
