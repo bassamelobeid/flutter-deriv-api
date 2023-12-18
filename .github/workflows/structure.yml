@@ -36,12 +36,10 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Code structure and syntax
-            run: make structure
+            run: make structure formatter='--formatter TAP::Formatter::JUnit'
           - 
             name: unit tests
-            run: |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make unit
+            run: make unit formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3

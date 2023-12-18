@@ -36,9 +36,7 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Accounts-related functionality
-            run: |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make accounts
+            run: make accounts formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3
@@ -72,9 +70,7 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Security handling
-            run: |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make security
+            run: make security formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3
@@ -108,9 +104,7 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Pricing
-            run: |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make pricing
+            run: make pricing formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3
@@ -144,9 +138,7 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Uncategorised tests
-            run: |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make misc
+            run: make misc formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3
@@ -180,9 +172,7 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Run P2P tests
-            run: |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make p2p
+            run: make p2p formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3
@@ -216,9 +206,7 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Schema tests
-            run: |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make schema
+            run: make schema formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3
@@ -252,9 +240,7 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Run subscription tests
-            run:  |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make subscriptions
+            run: make subscriptions formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3
@@ -288,9 +274,7 @@ jobs:
               repository: ${{ github.repository }}
           - 
             name: Run backends tests
-            run: |
-              echo '--formatter TAP::Formatter::JUnit' >> .proverc
-              make backends
+            run: make backends formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
             uses: actions/upload-artifact@v3

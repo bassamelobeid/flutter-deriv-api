@@ -10,31 +10,31 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 CHECK_VER = perl -MBinary::WebSocketAPI -e 'print join("\n", map { qq{requires "$$_", } .( $${$$_."::VERSION"} ? qq["== $${$$_."::VERSION"}"] : 0). q{;} } sort grep {!/^([a-z0-9:]|Binary::WebSocketAPI)/} map { s|/|::|g; s|\.pm$$||; $$_ } keys %INC) . "\n" ;'
 
 accounts:
-	@$(PROVE)  --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/accounts t/999_redis_keys.t
+	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/accounts t/999_redis_keys.t
 
 security:
-	@$(PROVE)  --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/security t/999_redis_keys.t
+	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/security t/999_redis_keys.t
 
 pricing:
-	@$(PROVE) --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/pricing t/999_redis_keys.t
+	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/pricing t/999_redis_keys.t
 
 misc:
-	@$(PROVE) --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/misc t/999_redis_keys.t
+	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/misc t/999_redis_keys.t
 
 p2p:
-	@$(PROVE) --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
+	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
 
 structure:
-	@$(PROVE) --norc t
+	@$(PROVE) --norc $(formatter) t
 
 schema:
-	@$(PROVE) --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
+	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
 
 subscriptions:
-	@$(PROVE)  /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
+	@$(PROVE) --norc $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
 
 backends:
-	@$(PROVE)  /home/git/regentmarkets/bom-websocket-tests/v3/backends
+	@$(PROVE) --norc $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/backends
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
@@ -59,15 +59,15 @@ doc: $(msc_graphs) $(dot_graphs)
 	dot -Tpng < $< > $@
 
 unit:
-	@$(PROVE) t/unit
+	@$(PROVE) --norc $(formatter) t/unit
 
 cover:
-	sed -i '/--exec/d' .serviceproverc
+	sed -i '/--exec/d' .proverc
 	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
 	$C $$(find t/ -type f | grep -v 00) t/unit/
 
 cover_websocket_tests:
-	$C --rc .serviceproverc /home/git/regentmarkets/bom-websocket-tests/v3/$(sub_test)
+	$C /home/git/regentmarkets/bom-websocket-tests/v3/$(sub_test)
 
 versions:
 	@$(CHECK_VER)
