@@ -73,6 +73,8 @@ $mock_config->mock(
         },
     });
 
+my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+
 subtest client_anonymization => sub {
     my $BRANDS = BOM::Platform::Context::request()->brand();
 
@@ -262,7 +264,7 @@ subtest client_anonymization_vrtc_with_siblings => sub {
     cmp_bag $df_partial, [], 'Nothing added to the DF queue';
 };
 
-subtest bulk_anonymization => sub {
+subtest anonymize_clients => sub {
     my $BRANDS = BOM::Platform::Context::request()->brand();
     my (@lines, @clients, @users);
     # Mock BOM::User module
@@ -283,11 +285,11 @@ subtest bulk_anonymization => sub {
         $users[$i]->add_client($clients[$i]);
         push @lines, [$clients[$i]->loginid];
     }
-    my $result = BOM::Event::Actions::Anonymization::bulk_anonymization()->get;
+    my $result = BOM::Event::Actions::Anonymization::anonymize_clients()->get;
     is $result, undef, "Return undef when client's list is not provided.";
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines})->get;
+    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines})->get;
     my $msg = mailbox_search(subject => qr/Anonymization report for/);
 
     # It should send an notification email to compliance dpo team
@@ -314,7 +316,7 @@ subtest bulk_anonymization => sub {
     $mock_s3_desk->mock('anonymize_user', sub { return Future->fail(0) });
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines})->get;
+    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines})->get;
     is($result, 1, 'Returns 1 after user anonymized.');
 
     $msg = mailbox_search(subject => qr/Anonymization report for/);
@@ -346,7 +348,7 @@ subtest bulk_anonymization => sub {
 
     $df_partial = [];
 
-    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines})->get;
+    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines})->get;
     is($result, 1, 'Returns 1 after user anonymized.');
 
     my $df_anon = [];
@@ -376,12 +378,11 @@ subtest bulk_anonymization => sub {
 subtest auto_anonymize_candidates => sub {
     my $collector_db = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
 
-    my @call_args;
-    my $mock_anonymizer = Test::MockModule->new('BOM::Event::Actions::Anonymization');
-    $mock_anonymizer->mock(_anonymize => sub { push @call_args, shift; return Future->done(1); });
+    my @emitted_data;
+    $mocked_emitter->mock(emit => sub { push @emitted_data, $_[1]->{data}->@* });
 
     is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
-    is scalar @call_args,                                                      0, 'Bulk anonymization is not called';
+    is scalar @emitted_data,                                                   0, 'Bulk anonymization is not called';
 
     $collector_db->run(
         ping => sub {
@@ -408,8 +409,8 @@ subtest auto_anonymize_candidates => sub {
         });
 
     is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
-    is scalar @call_args,                                                      2, 'Anonymization is called twice';
-    is_deeply \@call_args, [qw(CR101 MF101)],
+    is scalar @emitted_data,                                                   2, 'Anonymization is called twice';
+    is_deeply \@emitted_data, [qw(CR101 MF101)],
         'Loginids are correctly passed to the anonymization process - only one of siblings account (MF101, MF102) is processed';
 
     my $msg = mailbox_search(subject => qr/Auto\-anonymization canceled after complinace confirmation/);
@@ -426,13 +427,52 @@ subtest auto_anonymize_candidates => sub {
         })->@*;
     cmp_deeply scalar \@search_candidate, [qw/CR105 CR106/], 'The reset candidates are updated with new status and reason';
 
-    undef @call_args;
+    undef @emitted_data;
     BOM::Config::Runtime->instance->app_config->compliance->auto_anonymization_daily_limit(1);
     is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
-    is scalar @call_args,                                                      1, 'Anonymization is called twice';
-    is_deeply \@call_args, [qw(CR101)], 'Canidates are limited by the dynamic app config';
+    is scalar @emitted_data,                                                   1, 'Anonymization is called once';
+    is_deeply \@emitted_data, [qw(CR101)], 'Canidates are limited by the dynamic app config';
     BOM::Config::Runtime->instance->app_config->compliance->auto_anonymization_daily_limit(50);
 
+};
+
+subtest bulk_anonymization => sub {
+    my @emitted_events;
+    my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mocked_emitter->mock(emit => sub { push @emitted_events, {$_[0] => $_[1]}; });
+
+    my $mocked_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
+    $mocked_anonymization->mock(MAX_ANONYMIZATION_CHUNCK_SIZE => sub { return 2; });
+
+    subtest 'bulk_anonymization with invalid data' => sub {
+        my $args = {};
+
+        my $result = BOM::Event::Actions::Anonymization::bulk_anonymization($args)->get;
+
+        is scalar @emitted_events, 0,     'No events should be emitted when there is no data';
+        is $result,                undef, 'Returns undef when there is no data';
+    };
+
+    subtest 'Data to be processed in one event' => sub {
+        my $args = {'data' => ['CR101', 'MF101']};
+
+        BOM::Event::Actions::Anonymization::bulk_anonymization($args)->get;
+
+        my $expected_events = [{'anonymize_clients', {'data' => ['CR101', 'MF101']}},];
+
+        is_deeply(\@emitted_events, $expected_events, 'Correct events should be emitted for a small data set');
+    };
+
+    subtest 'Data to be processed in multiple events' => sub {
+        my $args = {'data' => ['CR101', 'MF101', 'CR102', 'MF102']};
+        undef @emitted_events;
+
+        BOM::Event::Actions::Anonymization::bulk_anonymization($args)->get;
+
+        my $expected_events = [{'anonymize_clients', {'data' => ['CR101', 'MF101']}}, {'anonymize_clients', {'data' => ['CR102', 'MF102']}},];
+
+        is_deeply(\@emitted_events, $expected_events, 'Correct events should be emitted for a large data set');
+    };
 };
 
 subtest users_clients_will_set_to_disabled_after_anonymization => sub {

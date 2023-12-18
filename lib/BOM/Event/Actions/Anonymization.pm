@@ -62,6 +62,14 @@ $loop->add(my $services = BOM::Event::Services->new);
     }
 }
 
+=head2 MAX_ANONYMIZATION_CHUNCK_SIZE
+
+The maximum number of clients to be anonymized in a single event.
+
+=cut
+
+sub MAX_ANONYMIZATION_CHUNCK_SIZE { return 20; }
+
 =head2 anonymize_client
 
 Removal of a client's personally identifiable information from Binary's systems.
@@ -93,7 +101,40 @@ async sub anonymize_client {
 
 =head2 bulk_anonymization
 
-Remove client's personally identifiable information (PII)
+Remove clients' personally identifiable information (PII) in bulk.
+
+This subroutine acts as a wrapper for the 'anonymize_clients' subroutine.
+It takes a large list of login IDs , splits them into smaller chunks, and emits a new event for each chunk.
+This is to prevents timeout issues or blocking the worker for long time when handling a large list of clients.
+
+
+=over 1
+
+=item * C<args> - A hash ref including data about loginids to be anonymized.
+
+=back
+
+Returns 1 on success.
+
+=cut
+
+async sub bulk_anonymization {
+    my $args = shift;
+
+    my $loginids_list = $args->{data};
+    return undef unless $loginids_list;
+
+    while (@$loginids_list) {
+        my @chunk = splice @$loginids_list, 0, MAX_ANONYMIZATION_CHUNCK_SIZE;
+        BOM::Platform::Event::Emitter::emit('anonymize_clients', {data => \@chunk});
+    }
+
+    return 1;
+}
+
+=head2 anonymize_clients
+
+Remove client's personally identifiable information (PII) for a list of clients.
 
 =over 1
 
@@ -105,7 +146,7 @@ Returns **1** on success.
 
 =cut
 
-async sub bulk_anonymization {
+async sub anonymize_clients {
     my $args = shift;
 
     my $data = $args->{data};

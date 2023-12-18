@@ -61,6 +61,7 @@ my $action_mapping = {
         mt5_inactive_account_closure_report         => \&BOM::Event::Actions::MT5::mt5_inactive_account_closure_report,
         anonymize_client                            => \&BOM::Event::Actions::Anonymization::anonymize_client,
         bulk_anonymization                          => \&BOM::Event::Actions::Anonymization::bulk_anonymization,
+        anonymize_clients                           => \&BOM::Event::Actions::Anonymization::anonymize_clients,
         bulk_client_status_update                   => \&BOM::Event::Actions::Client::bulk_client_status_update,
         auto_anonymize_candidates                   => \&BOM::Event::Actions::Anonymization::auto_anonymize_candidates,
         document_upload                             => \&BOM::Event::Actions::Client::document_upload,
