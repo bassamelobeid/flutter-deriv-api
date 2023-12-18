@@ -39,10 +39,6 @@ use constant TRANSACTION_HANDLERS => {
     },
 };
 
-my %currency_code_mapper = (
-    UST => 'USDT',
-);
-
 =head2 crypto_cashier_transaction_updated
 
 A crypto transaction has been updated.
@@ -135,7 +131,7 @@ sub withdrawal_handler {
             {
                 amount             => $txn_info->{amount},
                 loginid            => $txn_metadata->{loginid},
-                currency           => $currency_code_mapper{$txn_metadata->{currency_code}} // $txn_metadata->{currency_code},
+                currency           => $txn_metadata->{currency_code},
                 transaction_hash   => $txn_info->{transaction_hash},
                 transaction_url    => $txn_info->{transaction_url},
                 reference_no       => $txn_info->{id},
@@ -170,7 +166,7 @@ sub deposit_handler {
             {
                 loginid            => $txn_metadata->{loginid},
                 amount             => $txn_info->{amount},
-                currency           => $currency_code_mapper{$txn_metadata->{currency_code}} // $txn_metadata->{currency_code},
+                currency           => $txn_metadata->{currency_code},
                 transaction_hash   => $txn_info->{transaction_hash},
                 transaction_status => $txn_info->{status_code},
                 transaction_url    => $txn_info->{transaction_url},
@@ -204,7 +200,7 @@ sub withdrawal_rejected_handler {
             {
                 amount        => $txn_info->{amount},
                 loginid       => $txn_metadata->{loginid},
-                currency      => $currency_code_mapper{$txn_metadata->{currency_code}} // $txn_metadata->{currency_code},
+                currency      => $txn_metadata->{currency_code},
                 reference_no  => $txn_info->{id},
                 reject_code   => $txn_metadata->{reason_code},
                 reject_remark => (($txn_metadata->{reason} && $txn_metadata->{reason_code} eq 'other')) ? $txn_metadata->{reason} : '',
