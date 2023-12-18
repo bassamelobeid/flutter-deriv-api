@@ -295,7 +295,7 @@ subtest 'multi currency transfers' => sub {
         my $reader   = BOM::Config::Chronicle::get_chronicle_reader;
         my $calendar = Quant::Framework->new->trading_calendar($reader);
         my $exchange = Finance::Exchange->create_exchange('FOREX');
-        my $fiat_key = $calendar->is_open($exchange) ? 'fiat' : 'fiat_holidays';
+        my $fiat_key = $calendar->is_open($exchange) ? 'fiat' : 'fiat_weekend_holidays';
         my $available_hours =
             BOM::Config::Runtime->instance->app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.' . $fiat_key);
         $redis->hmset(
