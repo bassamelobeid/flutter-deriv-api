@@ -362,22 +362,20 @@ $(function() {
 // Parameters: Targeted form object
 /////////////////////////////////////////////////////////////////
 function getFormParams(form_obj) {
-    var params_arr = [];
+    var params = new URLSearchParams();
     if (!form_obj) return '';
     var elem = form_obj.elements;
 
-    var j = 0;
     for (var i = 0; i < elem.length; i++) {
         if (elem[i].name) {
             if (elem[i].nodeName == 'INPUT' && elem[i].type.match(/radio|checkbox/) && !elem[i].checked) {
                 continue; // skip if it is not checked
             }
-            params_arr[j] = elem[i].name + '=' + encodeURIComponent(elem[i].value);
-            j++;
+            params.append(elem[i].name, encodeURIComponent(elem[i].value));
         }
     }
 
-    return params_arr.join('&');
+    return params.toString();
 }
 
 /**
@@ -510,11 +508,9 @@ function getHistogramData(data, step) {
     }
 
     // Make the histo group into an array
-    for (x in histo) {
-        if (histo.hasOwnProperty((x))) {
-            arr.push([parseFloat(x), histo[x]]);
-        }
-    }
+    Object.keys(histo).forEach((x) => {
+        arr.push([parseFloat(x), histo[x]]);
+    });
 
     // Finally, sort the array
     arr.sort(function(a, b) {
