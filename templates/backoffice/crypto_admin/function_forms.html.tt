@@ -1,5 +1,5 @@
 [%
-    import_address_currencies = ['BTC', 'LTC', 'UST'];
+    import_address_currencies = ['BTC', 'LTC'];
     all_no_param_functions = {
         get_accounts             => 'All accounts',
         get_block_count          => 'Block count',
@@ -12,7 +12,6 @@
     };
     currency_no_param_functions = {
         BTC => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_blockchain_info', 'get_estimate_smartfee'],
-        UST => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_blockchain_info', 'get_estimate_smartfee'],
         ETH => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_accounts',        'get_gas_price',         'get_syncing'],
         tUSDT => ['get_wallet_balance'],
     };
@@ -59,13 +58,6 @@
                 { label => 'Min. confirmation', name => 'confirmations', type => 'number' },
             ],
         },
-        list_transactions => {
-            title    => 'List transactions',
-            elements => [
-                { label => 'Address', name => 'address', required => 1, size => 50 },
-                { label => 'Limit',   name => 'limit',   required => 1 },
-            ],
-        },
         list_unspent_utxo => {
             title    => 'List unspent UTXO', note => '<i>* Leave blank to get <b>all</b> unspent UTXO</i>',
             elements => [
@@ -87,7 +79,6 @@
     };
     currency_forms = {
         BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'bump_btc_transaction'],
-        UST => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'list_transactions'],
         ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt', 'bump_eth_transaction'],
     };
 %]
@@ -171,7 +162,7 @@
     </div>
 
     <div id="form_container">
-        [% FOREACH form_name IN currency_forms.$form_type.sort %]   
+        [% FOREACH form_name IN currency_forms.$form_type.sort %]
             [% IF form_name == 'bump_eth_transaction' %]
                 <div id="[% id %]" class="invisible">
                     <form action="[% controller_url %]" method="POST" name="get_eth_pending">
@@ -183,7 +174,7 @@
                 </div>
             [% ELSE %]
                 [% INCLUDE form id=form_name props=all_forms.$form_name %]
-            [% END %]    
+            [% END %]
         [% END %]
     </div>
 [% END %]
@@ -202,8 +193,8 @@
             el_ddl.value = el_ddl.querySelector(`option[value='\${form_id}']`) ? form_id : '';
         });
 
-        if(form_id == 'bump_eth_transaction') {        
-            document.forms.get_eth_pending.submit();      
+        if(form_id == 'bump_eth_transaction') {
+            document.forms.get_eth_pending.submit();
         }
     }
 

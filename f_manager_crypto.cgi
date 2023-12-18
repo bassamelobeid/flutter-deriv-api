@@ -83,7 +83,6 @@ my $action = request()->param('action');
 my $address = request()->param('address');
 # Show new addresses in recon?
 my $show_new_addresses = request()->param('include_new') // '';
-my $fee_recon          = request()->param('fee_recon');
 # view type is a filter option which is used to sort transactions
 # based on their status:it might be either pending, verified, rejected,
 # processing,performing_blockchain_txn, sent or error.
@@ -442,7 +441,6 @@ $actions->{reconcil} = sub {
             currency_code => $currency,
             date_start    => $start_date->date_yyyymmdd,
             date_end      => $end_date->date_yyyymmdd,
-            is_fee_recon  => $fee_recon,
             include_new   => $show_new_addresses,
         },
     };
@@ -569,8 +567,9 @@ $tt->process(
 
 Bar("$currency Actions");
 my @crypto_currencies =
-    map { {currency => $_, name => LandingCompany::Registry::get_currency_definition($_)->{name}} }
-    sort { $a cmp $b } LandingCompany::Registry::all_crypto_currencies();
+    map  { {currency => $_, name => LandingCompany::Registry::get_currency_definition($_)->{name}} }
+    sort { $a cmp $b }
+    grep { $_ ne 'UST' } LandingCompany::Registry::all_crypto_currencies();    # To be replaced by https://app.clickup.com/t/20696747/CRYPTO-399
 $tt->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
@@ -585,7 +584,6 @@ $tt->process(
         show_one_authorised       => $show_one_authorised,
         pending_withdrawal_amount => $pending_withdrawal_amount,
         include_new               => $show_new_addresses,
-        is_fee_recon              => $fee_recon,
         is_external               => $currency_info->{is_external},
         errors                    => [@errors],
     }) || die $tt->error() . "\n";
@@ -606,7 +604,7 @@ Returns error if there is an issue, otherwise C<undef>.
 sub validation_error_verify {
     my ($transaction_info, $currency, $staff) = @_;
 
-    my ($id, $loginid, $amount, $amount_usd) = @{$transaction_info}{qw/ id loginid amount amount_usd/};
+    my ($id, $loginid, $amount_usd) = @{$transaction_info}{qw/ id loginid amount_usd/};
     my $client = BOM::User::Client->new({loginid => $loginid});
 
     return "Error in verifying transaction id: $id. The client $loginid withdrawal is locked."

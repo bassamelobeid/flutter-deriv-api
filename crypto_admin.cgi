@@ -45,7 +45,8 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{
         </div>";
 }
 
-my @all_cryptos = LandingCompany::Registry::all_crypto_currencies();
+# To be replaced by https://app.clickup.com/t/20696747/CRYPTO-399
+my @all_cryptos = grep { $_ ne 'UST' } LandingCompany::Registry::all_crypto_currencies();
 my @batch_requests;
 
 foreach my $currency_code (@all_cryptos) {
@@ -598,15 +599,6 @@ sub _get_function_map {
             }
         }
 
-        if ($currency eq 'UST') {
-            unless (length $txn_hash == 64) {
-                return sub {
-                    $template_details->{response} = +{error => "Transaction hash wrong format"};
-                    _response_handler($template_details);
-                }
-            }
-        }
-
         my @key = $currency eq 'ETH' ? "blockchain_details" : "transaction_details";
         push @$batch_requests,
             {
@@ -624,12 +616,7 @@ sub _get_function_map {
             my $error = _error_handler($response_bodies, $req_type);
 
             unless ($error) {
-                if ($currency_code ne 'UST') {
-                    $template_details->{response} = $response_bodies->{$template_details->{req_type}}{$key[0]};
-                } else {
-                    my @txn_details = $response_bodies->{$template_details->{req_type}}{$key[0]};
-                    $template_details->{response} = \@txn_details;
-                }
+                $template_details->{response} = $response_bodies->{$template_details->{req_type}}{$key[0]};
             }
 
             $template_details->{response} = $error // $template_details->{response};
@@ -653,7 +640,7 @@ sub _get_function_map {
 
             unless ($error) {
                 my $balance = $response_bodies->{$template_details->{req_type}}{balance}{balances};
-                $template_details->{response} = $currency_code ne 'UST' ? $balance->{$currency_code} : $balance;
+                $template_details->{response} = $balance->{$currency_code};
             }
 
             $template_details->{response} = $error // $template_details->{response};
@@ -678,7 +665,7 @@ sub _get_function_map {
 
             unless ($error) {
                 my $main_address_balance = $response_bodies->{$template_details->{req_type}}{main_address_balance};
-                $template_details->{response} = $currency_code ne 'UST' ? $main_address_balance->{$currency_code} : $main_address_balance;
+                $template_details->{response} = $main_address_balance->{$currency_code};
             }
 
             $template_details->{response} = $error // $template_details->{response};
@@ -894,34 +881,6 @@ sub _get_function_map {
         };
     };
 
-    my $list_transactions = sub {
-        unless ($address && $limit) {
-            return sub {
-                $template_details->{response} = +{error => "Missing parameters entered for list transactions"};
-                _response_handler($template_details);
-            }
-        }
-
-        push @$batch_requests,
-            {
-            id     => 'list_transactions',
-            action => 'wallet/get_transaction_list',
-            body   => {
-                currency_code => $currency_code,
-                address       => $address,
-                count         => $limit,
-            },
-            };
-        return sub {
-            my ($response_bodies) = @_;
-
-            my $error = _error_handler($response_bodies, $req_type);
-
-            $template_details->{response} = $error // $response_bodies->{$template_details->{req_type}}{transaction_list};
-            _response_handler($template_details);
-        }
-    };
-
     my $get_gas_price = sub {
         push @$batch_requests,
             {
@@ -1053,21 +1012,6 @@ sub _get_function_map {
         bump_btc_transaction     => $bump_transaction,
         }
         if ($currency =~ /^(BTC|LTC)$/);
-
-    return +{
-        list_unspent_utxo        => $list_unspent_utxo,
-        get_estimate_smartfee    => $get_estimate_smartfee,
-        list_receivedby_address  => $list_receivedby_address,
-        get_block_count          => $get_block_count,
-        get_blockchain_info      => $get_blockchain_info,
-        get_wallet_balance       => $get_wallet_balance,
-        get_main_address_balance => $get_main_address_balance,
-        get_address_balance      => $get_address_balance,
-        list_transactions        => $list_transactions,
-        get_transaction          => $get_transaction,
-        import_address           => $import_address,
-        }
-        if $currency eq 'UST';
 
     return +{
         get_wallet_balance       => $get_wallet_balance,
