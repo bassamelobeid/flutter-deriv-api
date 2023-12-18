@@ -99,7 +99,8 @@ sub run {
     # massive upsert
     $user_db->run(
         fixup => sub {
-            $_->do('SELECT users.massive_poa_verified_date(?)', undef, encode_json(get_massive_arrayref($binary_user_ids)));
+            $_->do('SET statement_timeout = 0; SELECT users.massive_poa_verified_date(?)', undef,
+                encode_json(get_massive_arrayref($binary_user_ids)));
         });
 }
 

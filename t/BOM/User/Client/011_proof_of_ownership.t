@@ -275,7 +275,7 @@ subtest 'Full List' => sub {
 
 subtest 'status and needs_verification' => sub {
     is $client->proof_of_ownership->status, 'pending', 'Pending POO status';
-    ok !$client->proof_of_ownership->needs_verification, 'POO does not need verification (pending status)';
+    ok $client->proof_of_ownership->needs_verification, 'POO does need verification (pending status)';
 
     $file_id3 = upload(
         $client,
@@ -299,7 +299,7 @@ subtest 'status and needs_verification' => sub {
         });
 
     is $client->proof_of_ownership->status, 'pending', 'All the POOs have been uploaded';
-    ok !$client->proof_of_ownership->needs_verification, 'Does not need POO (pending)';
+    ok $client->proof_of_ownership->needs_verification, 'Needs verification (pending status)';
 
     is $client->proof_of_ownership->status([]),                                               'none',     'None status with empty list provided';
     is $client->proof_of_ownership->status([{status => 'pending'}]),                          'none',     'None status with pending item provided';
@@ -309,13 +309,13 @@ subtest 'status and needs_verification' => sub {
     is $client->proof_of_ownership->status([{status => 'rejected'}, {status => 'rejected'}]), 'rejected', 'all of them are rejected';
     is $client->proof_of_ownership->status([{status => 'verified'}, {status => 'verified'}]), 'verified', 'all of them are verified';
 
-    is $client->proof_of_ownership->needs_verification([]),                                                0, 'Not needed';
-    is $client->proof_of_ownership->needs_verification([{status => 'pending'}]),                           1, 'Needed';
-    is $client->proof_of_ownership->needs_verification([{status => 'pending'}, {status => 'verified'}]),   1, 'Needed';
-    is !$client->proof_of_ownership->needs_verification([{status => 'uploaded'}, {status => 'verified'}]), 1, 'Does not need POO (pending)';
-    is $client->proof_of_ownership->needs_verification([{status => 'pending'}, {status => 'rejected'}]),   1, 'Needed';
-    is $client->proof_of_ownership->needs_verification([{status => 'rejected'}, {status => 'rejected'}]),  1, 'Needed';
-    is $client->proof_of_ownership->needs_verification([{status => 'verified'}, {status => 'verified'}]),  0, 'Verified';
+    is $client->proof_of_ownership->needs_verification([]),                                               0, 'Not needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'pending'}]),                          1, 'Needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'pending'}, {status => 'verified'}]),  1, 'Needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'uploaded'}, {status => 'verified'}]), 1, 'Needs verification (pending)';
+    is $client->proof_of_ownership->needs_verification([{status => 'pending'}, {status => 'rejected'}]),  1, 'Needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'rejected'}, {status => 'rejected'}]), 1, 'Needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'verified'}, {status => 'verified'}]), 0, 'Verified';
 };
 
 subtest 'verify and reject' => sub {
@@ -347,7 +347,7 @@ subtest 'verify and reject' => sub {
     $client->proof_of_ownership->_clear_full_list();
     is $doc->status,                        'verified', 'Document is verified too';
     is $client->proof_of_ownership->status, 'pending',  'Pending POO status';
-    ok !$client->proof_of_ownership->needs_verification, 'POO does not need verification (pending status)';
+    ok $client->proof_of_ownership->needs_verification, 'POO does need verification (pending status)';
 
     my $file_id4 = upload(
         $client,

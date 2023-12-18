@@ -147,6 +147,8 @@ subtest 'POA Verified Date Populator' => sub {
     # POAVerifiedDatePopulator performs an update operation, so we need records to already be there
     BOM::User::Script::POAIssuancePopulator::run();
 
+    is get_timeout_setting(), 0, 'Statement timeout set to 0, there will be no timeout limit for SQL statements in the current session';
+
     # running it with limit 1 ensures the inner loop is hit multiple times
     # this is not the global limit but the limit per broker code hit
     BOM::User::Script::POAVerifiedDatePopulator::run({limit => 1});
@@ -241,6 +243,16 @@ sub add_client {
     $test_client->save;
 
     return ($test_client, $test_user);
+}
+
+sub get_timeout_setting {
+    my $user_db      = BOM::Database::UserDB::rose_db()->dbic;
+    my $timeout_info = $user_db->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT name, setting FROM pg_settings WHERE name = ?', undef, 'statement_timeout');
+        });
+
+    return $timeout_info->{setting};
 }
 
 done_testing;

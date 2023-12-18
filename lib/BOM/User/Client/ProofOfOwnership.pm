@@ -190,7 +190,7 @@ sub _normalize {
 
 Returns a flag which determines whether the client requires POO verification.
 
-Is not needed when current status is: I<verified> or I<pending> or empty POO list.
+Is not needed when current status is: I<verified> or empty POO list.
 
 A list can be optionally passed to avoid DB hit.
 
@@ -204,8 +204,6 @@ sub needs_verification {
     my $status = $self->status($list);
 
     return 0 unless @$list;
-
-    return 0 if $status eq 'pending';
 
     return 0 if $status eq 'verified';
 

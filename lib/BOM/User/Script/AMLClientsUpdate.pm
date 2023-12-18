@@ -180,38 +180,62 @@ sub update_aml_high_risk_clients_status {
 
     my $recent_high_risk_clients = _get_recent_high_risk_clients($clientdb);
     my @result;
+
     foreach my $client_info (@$recent_high_risk_clients) {
         my @loginid_list;
-        my $locked = 0;
+
         foreach my $client_loginid (split ',', $client_info->{login_ids}) {
             my $client = BOM::User::Client->new({loginid => $client_loginid});
 
-            # filter out authenticated and FA-completed clients
-            next if $client->fully_authenticated && $client->is_financial_assessment_complete && !$client->documents->expired;
-
-            # Set clients with risk classification = standard
-            if (LandingCompany::Registry->by_broker($landing_company)->short eq 'maltainvest') {
-                next if $client->aml_risk_classification ne 'standard';
-                $client->status->setnx('withdrawal_locked', 'system', 'FA needs to be completed');
-
-            } else {
-                # filter out clients with risk classification = High Risk Override
-                next if $client->aml_risk_classification ne 'high';
-
-                $client->status->setnx('withdrawal_locked', 'system', 'Pending authentication or FA');
-                $client->status->upsert('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
-
-            }
-
-            push @loginid_list, $client_loginid;
-            $locked = 1;
+            push @loginid_list, $client_loginid if update_locks_high_risk_change($client);
         }
-        my $client_info->{login_ids} = join ',', sort(@loginid_list);
 
-        push(@result, $client_info) if $locked;
+        if (@loginid_list) {
+            $client_info->{login_ids} = join ',', sort(@loginid_list);
+            push(@result, $client_info);
+        }
     }
 
     return \@result;
+}
+
+=head2 update_locks_high_risk_change
+
+Apply the corresponding locks for a client that becomes AML HIGH risk, depending on the landing company, authentication status
+and Financial Assessment completion.
+
+=over 4
+
+=item * C<client> Client instance.
+
+=back
+
+Returns 1 if the corresponding locks are applied or 0 if no locks are needed.
+
+=cut
+
+sub update_locks_high_risk_change {
+    my ($client) = @_;
+
+    # filter out clients with fully authenticated status, financial assessment completed and no expired documents
+    return 0 if $client->fully_authenticated && $client->is_financial_assessment_complete && !$client->documents->expired;
+
+    if ($client->landing_company->short eq 'maltainvest') {
+
+        # set clients with risk classification = standard for MF accounts
+        return 0 if $client->aml_risk_classification ne 'standard';
+        $client->status->setnx('withdrawal_locked', 'system', 'FA needs to be completed');
+
+    } else {
+        # filter out clients with risk classification = High Risk Override
+        return 0 if $client->aml_risk_classification ne 'high';
+
+        $client->status->setnx('withdrawal_locked', 'system', 'Pending authentication or FA');
+        $client->status->upsert('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
+
+    }
+
+    return 1;
 }
 
 =head2 _get_recent_high_risk_clients

@@ -194,8 +194,8 @@ subtest 'high aml risk client MF company' => sub {
     $expected_db_rows = [];
     my $aml_high_clients = $c->update_aml_high_risk_clients_status($landing_company);
     ok(!@$aml_high_clients, 'no client found having aml risk high.');
-    ok !$client_mf_1->status->withdrawal_locked,   'client is not withdrawal-locked';
-    ok !$client_cr->status->allow_document_upload, "client is not allow_document_upload";
+    ok !$client_mf_1->status->withdrawal_locked,     'client is not withdrawal-locked';
+    ok !$client_mf_1->status->allow_document_upload, "client is not allow_document_upload";
     clear_clients($client_mf_1);
 };
 
@@ -234,7 +234,7 @@ subtest 'aml risk becomes standard MF landing company' => sub {
     ok $client_mf_1->status->withdrawal_locked, "client is withdrawal_locked";
     ok $client_mf_2->status->withdrawal_locked, "sibling account is withdrawal_locked";
 
-    clear_clients($client_cr, $client_cr2);
+    clear_clients($client_mf_1, $client_mf_2);
 };
 
 subtest 'manual override high classifications are excluded' => sub {
@@ -243,7 +243,6 @@ subtest 'manual override high classifications are excluded' => sub {
     #no matter what client aml risk was previously, its latest should be high to be able to picked up
     $client_cr->aml_risk_classification('manual override - high');
     $client_cr->save;
-
     my $result = $c->update_aml_high_risk_clients_status($landing_company);
     is @$result, 0, 'Manual override high risk classification is filtered out';
 
@@ -298,6 +297,112 @@ subtest 'filter by authentication and financial_assessment' => sub {
     $mocked_documents->unmock_all;
 
     clear_clients($client_cr, $client_cr2);
+};
+
+subtest 'Update locks on high risk change' => sub {
+    $client_cr->aml_risk_classification('low');
+    $client_cr->save;
+
+    is($client_cr->aml_risk_classification, 'low', "aml risk is low");
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client_cr);
+
+    ok !$client_cr->status->withdrawal_locked,     'client is not withdrawal-locked on low risk';
+    ok !$client_cr->status->allow_document_upload, 'client is not allow_document_upload on low risk';
+
+    clear_clients($client_cr);
+
+    $client_cr->aml_risk_classification('standard');
+    $client_cr->save;
+
+    is($client_cr->aml_risk_classification, 'standard', "aml risk is standard");
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client_cr);
+
+    ok !$client_cr->status->withdrawal_locked,     'client is not withdrawal-locked on standard risk';
+    ok !$client_cr->status->allow_document_upload, 'client is not allow_document_upload on standard risk';
+
+    clear_clients($client_cr);
+
+    $client_cr->aml_risk_classification('high');
+    $client_cr->save;
+
+    is($client_cr->aml_risk_classification, 'high', 'aml risk is high');
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client_cr);
+
+    is $client_cr->status->withdrawal_locked->{reason},     'Pending authentication or FA', 'lock applied on high risk';
+    is $client_cr->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK',             'allow document upload on high risk';
+
+    clear_clients($client_cr);
+
+    $client_cr->aml_risk_classification('manual override - high');
+    $client_cr->save;
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client_cr);
+
+    ok !$client_cr->status->withdrawal_locked,     'client is not withdrawal_locked';
+    ok !$client_cr->status->allow_document_upload, 'client is not allow_document_upload';
+
+    clear_clients($client_cr);
+
+    $client_mf_1->aml_risk_classification('high');
+    $client_mf_1->save;
+
+    is($client_mf_1->aml_risk_classification, 'high', "aml risk is high");
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client_mf_1);
+
+    ok !$client_mf_1->status->withdrawal_locked,     'client is not withdrawal-locked';
+    ok !$client_mf_1->status->allow_document_upload, 'client is not allow_document_upload';
+
+    clear_clients($client_mf_1);
+
+    $client_mf_1->aml_risk_classification('standard');
+    $client_mf_1->save;
+
+    is($client_mf_1->aml_risk_classification, 'standard', 'aml risk is standard');
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client_mf_1);
+
+    ok $client_mf_1->status->withdrawal_locked, 'client is withdrawal_locked';
+    is $client_mf_1->status->withdrawal_locked->{reason}, 'FA needs to be completed', 'lock applied on standard risk for MF account';
+    ok !$client_mf_2->status->withdrawal_locked, 'sibling account is not withdrawal_locked';
+
+    clear_clients($client_mf_1);
+
+    $client_cr->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $client_cr->save();
+    ok $client_cr->fully_authenticated, 'The account is fully authenticated';
+
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $client_cr->financial_assessment({
+        data => encode_json_utf8($data),
+    });
+    $client_cr->save();
+
+    ok $client_cr->is_financial_assessment_complete, 'The account is FA completed';
+
+    $client_cr->aml_risk_classification('high');
+    $client_cr->save;
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client_cr);
+
+    ok !$client_cr->status->withdrawal_locked,     'client is not withdrawal_locked';
+    ok !$client_cr->status->allow_document_upload, 'client is not allow_document_upload';
+
+    my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $mocked_documents->mock('expired' => sub { return 1 });
+
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client_cr);
+
+    is $client_cr->status->withdrawal_locked->{reason},     'Pending authentication or FA', 'lock aplied with expired documents';
+    is $client_cr->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK',             'allow document upload with expired documents';
+
+    $mocked_documents->unmock_all;
+
+    clear_clients($client_cr);
+
 };
 
 subtest 'withdrawal lock auto removal after authentication and FA' => sub {
