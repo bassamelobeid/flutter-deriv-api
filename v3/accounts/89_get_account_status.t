@@ -302,7 +302,7 @@ subtest 'Proof of ownership' => sub {
         status   => 'pending',
         },
         'expected poo result for uploaded poo';
-    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [], 'does not need verification';
+    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [qw/ownership/], 'does need verification';
 
     # reject
 
