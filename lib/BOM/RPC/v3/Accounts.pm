@@ -701,7 +701,9 @@ rpc "profit_table",
     ## Remove useless and plus new
     my @transactions;
     foreach my $row (@{$data}) {
-        my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
+        my %trx              = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
+        my $contract_details = shortcode_to_parameters($row->{short_code}, $client->currency);
+
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
         $trx{payout}         = $row->{payout_price};
@@ -710,9 +712,14 @@ rpc "profit_table",
         $trx{app_id}         = BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time});
 
         if ($args->{description}) {
-            $trx{shortcode}     = $row->{short_code};
-            $trx{longcode}      = $res->{longcodes}->{$row->{short_code}} // localize('Could not retrieve contract details');
-            $trx{duration_type} = (shortcode_to_parameters($trx{shortcode}, $client->currency))->{duration_type};
+            $trx{shortcode}                  = $row->{short_code};
+            $trx{longcode}                   = $res->{longcodes}->{$row->{short_code}} // localize('Could not retrieve contract details');
+            $trx{underlying_symbol}          = $row->{underlying_symbol};
+            $trx{contract_type}              = $row->{bet_type};
+            $trx{duration_type}              = $contract_details->{duration_type};
+            $trx{multiplier}                 = $contract_details->{multiplier}   if $contract_details->{multiplier};
+            $trx{deal_cancellation_duration} = $contract_details->{cancellation} if $contract_details->{cancellation};
+            $trx{growth_rate}                = $contract_details->{growth_rate}  if $contract_details->{growth_rate};
         }
 
         push @transactions, \%trx;

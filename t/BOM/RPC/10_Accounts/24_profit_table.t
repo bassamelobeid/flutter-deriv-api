@@ -280,7 +280,7 @@ subtest 'profit table' => sub {
         'check authorization'
     );
 
-    #create a new transaction for test
+    #create a new transaction of type CALL for test
     my $contract_expired = {
         underlying   => $underlying,
         bet_type     => 'CALL',
@@ -305,7 +305,7 @@ subtest 'profit table' => sub {
     $txn->buy(skip_validation => 1);
 
     my $result = $c->tcall($method, {token => $token_with_txn});
-    is($result->{count}, 3, 'the new transaction is sold so _sell_expired_contracts is called');
+    is($result->{count}, 3, 'the CALL transaction is sold so _sell_expired_contracts is called');
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $test_client_2->loginid,
@@ -319,26 +319,28 @@ subtest 'profit table' => sub {
     my $args    = {};
     my $data    = $fmb_dm->get_sold_bets_of_account($args);
     my $expect0 = {
-        'sell_price'     => '100.00',
         'contract_id'    => $txn->contract_id,
         'transaction_id' => $txn->transaction_id,
-        'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
+        'payout'         => formatnumber('price', $test_client_2->currency, $txn->contract->payout),
         'buy_price'      => '100.00',
         'purchase_time'  => Date::Utility->new($data->[1]{purchase_time})->epoch,
-        'payout'         => formatnumber('price', $test_client_2->currency, $txn->contract->payout),
+        'sell_price'     => '100.00',
+        'sell_time'      => Date::Utility->new($data->[1]{sell_time})->epoch,
         'app_id'         => undef
     };
-    is_deeply($result->{transactions}[1], $expect0, 'result is correct');
-    $expect0->{longcode}      = 'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
-    $expect0->{shortcode}     = $data->[1]{short_code};
-    $expect0->{duration_type} = 'seconds';
-    $result                   = $c->tcall(
+    is_deeply($result->{transactions}[1], $expect0, 'result for CALL is correct');
+    $expect0->{longcode}          = 'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
+    $expect0->{shortcode}         = $data->[1]{short_code};
+    $expect0->{contract_type}     = $data->[1]{bet_type};
+    $expect0->{underlying_symbol} = 'R_50';
+    $expect0->{duration_type}     = 'seconds';
+    $result                       = $c->tcall(
         $method,
         {
             token => $token_with_txn,
             args  => {description => 1}});
 
-    is_deeply($result->{transactions}[1], $expect0, 'the result with description ok');
+    is_deeply($result->{transactions}[1], $expect0, 'the result for CALL with description ok');
     is(
         $c->tcall(
             $method,
@@ -359,6 +361,167 @@ subtest 'profit table' => sub {
         0,
         'result is correct for arg after'
     );
+
+    # create a new transaction of type MULTUP for test
+    $contract_expired = {
+        underlying   => $underlying,
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 110,
+        date_pricing => $now->epoch - 110,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        multiplier   => 20,
+    };
+
+    $txn = BOM::Transaction->new({
+        client              => $test_client_2,
+        contract_parameters => $contract_expired,
+        price               => 100,
+        amount_type         => 'stake',
+        purchase_date       => $now->epoch - 111,
+    });
+
+    $txn->buy(skip_validation => 1);
+    $txn->sell(skip_validation => 1);
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $token_with_txn,
+            args  => {description => 1}});
+    is($result->{count}, 4, 'the MULTUP transaction is sold so _sell_expired_contracts is called');
+
+    $data = $fmb_dm->get_sold_bets_of_account($args);
+
+    my $expect1 = {
+        'contract_id'       => $txn->contract_id,
+        'transaction_id'    => $data->[3]{txn_id},
+        'payout'            => formatnumber('price', $test_client_2->currency, $txn->contract->payout),
+        'buy_price'         => '100.00',
+        'purchase_time'     => Date::Utility->new($data->[3]{purchase_time})->epoch,
+        'sell_price'        => '100.00',
+        'sell_time'         => Date::Utility->new($data->[3]{sell_time})->epoch,
+        'underlying_symbol' => 'R_50',
+        'app_id'            => undef,
+        'shortcode'         => $data->[3]{short_code},
+        'longcode'          =>
+            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 50 Index, multiplied by 2000, minus commissions.",
+        'contract_type' => 'MULTUP',
+        'duration_type' => 'days',
+        'multiplier'    => '20'
+    };
+    is_deeply($result->{transactions}[3], $expect1, 'result for MULTUP is correct');
+
+    # create a new transaction of type MULTDOWN with deal cancellation for test
+    $contract_expired = {
+        underlying   => $underlying,
+        bet_type     => 'MULTDOWN',
+        currency     => 'USD',
+        stake        => 10,
+        date_start   => $now->epoch - 120,
+        date_pricing => $now->epoch - 120,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        multiplier   => 50,
+        cancellation => '30m'
+    };
+
+    $txn = BOM::Transaction->new({
+        client              => $test_client_2,
+        contract_parameters => $contract_expired,
+        price               => 10,
+        amount_type         => 'stake',
+        purchase_date       => $now->epoch - 121,
+    });
+
+    $txn->buy(skip_validation => 1);
+    $txn->sell(skip_validation => 1);
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $token_with_txn,
+            args  => {description => 1}});
+    is($result->{count}, 5, 'the MULTDOWN transaction is sold so _sell_expired_contracts is called');
+
+    $data = $fmb_dm->get_sold_bets_of_account($args);
+
+    my $expect2 = {
+        'contract_id'       => $txn->contract_id,
+        'transaction_id'    => $data->[4]{txn_id},
+        'payout'            => formatnumber('price', $test_client_2->currency, $txn->contract->payout),
+        'buy_price'         => '10.00',
+        'purchase_time'     => Date::Utility->new($data->[4]{purchase_time})->epoch,
+        'sell_price'        => '10.00',
+        'sell_time'         => Date::Utility->new($data->[4]{sell_time})->epoch,
+        'underlying_symbol' => 'R_50',
+        'app_id'            => undef,
+        'shortcode'         => $data->[4]{short_code},
+        'longcode'          =>
+            "If you select 'Down', your total profit/loss will be the percentage decrease in Volatility 50 Index, multiplied by 500, minus commissions.",
+        'contract_type'              => 'MULTDOWN',
+        'duration_type'              => 'days',
+        'multiplier'                 => '50',
+        'deal_cancellation_duration' => '30m'
+    };
+    is_deeply($result->{transactions}[4], $expect2, 'result for MULTDOWN is correct');
+
+    # create a new transaction of type ACCU for test
+    $contract_expired = {
+        underlying   => $underlying,
+        bet_type     => 'ACCU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 130,
+        date_pricing => $now->epoch - 130,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        growth_rate  => 0.05
+    };
+
+    $txn = BOM::Transaction->new({
+        client              => $test_client_2,
+        contract_parameters => $contract_expired,
+        price               => 100,
+        amount_type         => 'stake',
+        purchase_date       => $now->epoch - 131,
+    });
+
+    $txn->buy(skip_validation => 1);
+    $txn->sell(skip_validation => 1);
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $token_with_txn,
+            args  => {description => 1}});
+    is($result->{count}, 6, 'the ACCU transaction is sold so _sell_expired_contracts is called');
+
+    $data = $fmb_dm->get_sold_bets_of_account($args);
+
+    my $expect3 = {
+        'contract_id'       => $txn->contract_id,
+        'transaction_id'    => $data->[5]{txn_id},
+        'payout'            => formatnumber('price', $test_client_2->currency, $txn->contract->payout),
+        'buy_price'         => '100.00',
+        'purchase_time'     => Date::Utility->new($data->[5]{purchase_time})->epoch,
+        'sell_price'        => '100.00',
+        'sell_time'         => Date::Utility->new($data->[5]{sell_time})->epoch,
+        'underlying_symbol' => 'R_50',
+        'app_id'            => undef,
+        'shortcode'         => $data->[5]{short_code},
+        'longcode'          =>
+            'After the entry spot tick, your stake will grow continuously by 5% for every tick that the spot price remains within the ± 0.0246791267 % from the previous spot price.',
+        'contract_type' => 'ACCU',
+        'duration_type' => undef,
+        'growth_rate'   => 0.05
+    };
+    is_deeply($result->{transactions}[5], $expect3, 'result for ACCU is correct');
 
     #create a new transaction of type PUT for test
     $contract_expired = {
@@ -440,7 +603,7 @@ subtest 'profit table' => sub {
                     contract_type => [],
                 }}
         )->{count},
-        4,
+        7,
         'All contracts are returned if the given array is empty'
     );
 };
