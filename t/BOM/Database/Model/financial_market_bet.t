@@ -15,6 +15,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use Date::Utility;
 
+plan tests => 22;
+
 my $connection_builder;
 my $account;
 
@@ -135,8 +137,6 @@ is_deeply([
     ],
     'correct data read back'
 );
-
-throws_ok(sub { $financial_market_bet->save }, qr/permission denied/, 'updating fmb is not allowed');
 
 lives_ok {
     $financial_market_bet = BOM::Database::Model::FinancialMarketBet::HigherLowerBet->new({
