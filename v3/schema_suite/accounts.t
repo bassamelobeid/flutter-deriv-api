@@ -11,7 +11,7 @@ use utf8;
 use BOM::Test::Suite::DSL;
 
 use LandingCompany::Registry;
-
+use BOM::RPC::v3::Utility;
 my $suite = start(
     title             => "accounts.t",
     test_app          => 'Binary::WebSocketAPI',
@@ -63,17 +63,16 @@ test_sendrecv_params 'buy/test_send_multiplier_with_params.json', 'buy/test_rece
 
 # ADMIN SCOPE CALLS (GENERAL)
 test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test';
-test_sendrecv_params 'api_token/test_send.json',        'api_token/test_receive.json', $suite->get_stashed('api_token/api_token/tokens/0/token');
-test_sendrecv_params 'api_token/test_send_delete.json', 'api_token/test_receive_delete.json',
-    $suite->get_stashed('api_token/api_token/tokens/0/token');
-test_sendrecv_params 'app_register/test_send.json', 'app_register/test_receive.json';
-test_sendrecv_params 'app_get/test_send.json',      'app_get/test_receive.json',    $suite->get_stashed('app_register/app_register/app_id');
-test_sendrecv_params 'app_update/test_send.json',   'app_update/test_receive.json', $suite->get_stashed('app_register/app_register/app_id');
+my $token        = $suite->get_stashed('api_token/api_token/tokens/0/token');
+test_sendrecv_params 'api_token/test_send_delete.json', 'api_token/test_receive_delete.json', $token;
+test_sendrecv_params 'app_register/test_send.json',     'app_register/test_receive.json';
+test_sendrecv_params 'app_get/test_send.json',          'app_get/test_receive.json',    $suite->get_stashed('app_register/app_register/app_id');
+test_sendrecv_params 'app_update/test_send.json',       'app_update/test_receive.json', $suite->get_stashed('app_register/app_register/app_id');
 fail_test_sendrecv_params 'app_list/test_send.json', 'app_list/test_receive_to_fail.json', $suite->get_stashed('app_register/app_register/app_id');
 test_sendrecv_params 'app_delete/test_send.json', 'app_delete/test_receive.json', $suite->get_stashed('app_register/app_register/app_id'), '1';
 test_sendrecv_params 'app_list/test_send.json',   'app_list/test_receive.json',   $suite->get_stashed('app_register/app_register/app_id');
 test_sendrecv_params 'oauth_apps/test_send.json', 'oauth_apps/test_receive.json';
-test_sendrecv        'get_limits/test_send.json', 'get_limits/test_receive_vrtc.json';
+test_sendrecv 'get_limits/test_send.json', 'get_limits/test_receive_vrtc.json';
 
 # TESTS TO RETURN ERROR (VRTC)
 test_sendrecv 'set_settings/test_send.json',             'set_settings/test_receive_error.json';

@@ -94,24 +94,13 @@ sub get_proposal {
     return;
 }
 
-{
-    my %t;
-
-    sub get_token {
-        my @scopes = @_;
-        my $cnt    = keys %t;
-        my $res    = $t->await::api_token({
-                api_token        => 1,
-                new_token        => 'Test Token ' . $cnt,
-                new_token_scopes => [@scopes]});
-
-        for my $x (@{$res->{api_token}->{tokens}}) {
-            next if exists $t{$x->{token}};
-            $t{$x->{token}} = 1;
-            return $x->{token};
-        }
-        return;
-    }
+sub get_token {
+    my @scopes = @_;
+    my $res    = $t->await::api_token({
+            api_token        => 1,
+            new_token        => 'Test Token',
+            new_token_scopes => [@scopes]});
+    return $res->{api_token}->{tokens}->[-1]->{token};    # always return the last token
 }
 
 subtest "1st try: no tokens => invalid input", sub {
@@ -167,9 +156,11 @@ subtest "3rd try: the real thing => success", sub {
     # Here we trust that the function in bom-rpc works correctly. We
     # are not going to test all possible variations. In particular,
     # all the tokens used belong to the same account.
-    my @tokens = map { get_token 'trade' } (1, 2);
-    push @tokens, get_token 'read';    # generates an error
-    push @tokens, $token;              # add the login token as well
+    my @tokens;
+    push @tokens, get_token('trade');
+    push @tokens, get_token('trade');
+    push @tokens, get_token('read');    # generates an error
+    push @tokens, $token;               # add the login token as well
     get_proposal;
     my $res = $t->await::buy_contract_for_multiple_accounts({
         buy_contract_for_multiple_accounts => $proposal_id,
