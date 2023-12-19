@@ -39,6 +39,32 @@ sub save_token {
     return $res;
 }
 
+=head2 get_token_for_deletion
+
+Retrieves the token that matches the given hidden token for deletion.
+
+=over 4
+
+=item * C<$hidden_token> - The hidden token to match.
+
+=item * C<$loginid> - The user loginid to match for token.
+
+=back
+
+Returns the token to be deleted.
+
+=cut
+
+sub get_token_for_deletion {
+    my ($self, $hidden_token, $loginid) = @_;
+
+    my ($token_to_delete) = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("SELECT * FROM auth.get_token_for_loginid_by_4_rightmost_chars(?,?)", {Slice => {}}, $hidden_token, $loginid);
+        });
+    return $token_to_delete;
+}
+
 sub remove_by_token {
     my ($self, $token, $last_used) = @_;
 
