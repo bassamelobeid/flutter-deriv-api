@@ -21,7 +21,6 @@ use Digest::SHA     qw( hmac_sha256_hex );
 use Text::Trim      qw( trim );
 use JSON::MaybeUTF8 qw( decode_json_utf8 encode_json_utf8);
 use URI;
-
 use BOM::User::Client;
 use BOM::User::Utility;
 use BOM::User::FinancialAssessment
@@ -80,7 +79,6 @@ use constant DEFAULT_STATEMENT_LIMIT => 100;
 
 # Limit the number of Landing Companies provided as arguments for kyc_auth_status
 use constant LCS_ARGUMENT_LIMIT => 20;
-
 # Expected withdrawal processing times in days [min, max].
 use constant WITHDRAWAL_PROCESSING_TIMES => {
     bank_wire => [5, 10],
@@ -96,7 +94,7 @@ use constant WITHDRAWAL_PROCESSING_TIMES => {
 # other RPC calls which retrieve lists of accounts.
 use constant MT5_BALANCE_CALL_ENABLED => 0;
 use constant CHANGE_EMAIL_TOKEN_TTL   => 3600;
-
+use constant TOKEN_UNMASKED_CHARS     => 4;
 my $compliance_config = BOM::Config::Compliance->new;
 
 my $email_field_labels = {
@@ -2800,74 +2798,287 @@ sub send_self_exclusion_notification {
     return 0;
 }
 
+=head2 unmask_token
+
+the obfuscated token is processed against a client using db function to 
+return the unmasked token based on matched characters
+
+=over 4
+
+=item * C<$token> - The token to process.
+
+=item * C<$token_platform_api> - The platform API to use for getting a token for deletion.
+
+=item * C<$client> - The client associated with the token.
+
+=back
+
+Returns the unmasked token, or undef if the token contains no characters other than asterisks.
+
+=cut
+
+sub unmask_token {
+    my ($token, $token_platform_api, $client) = @_;
+
+    my $hidden_token = $token;
+    $hidden_token =~ tr/*//d;    # remove asterisk from token
+    my $unmasked_char_no = length($hidden_token);
+    return $unmasked_char_no > 0 ? $token_platform_api->get_token_for_deletion($hidden_token, $client->loginid) : undef;
+}
+
+=head1 remove_token_from_db
+
+This function deletes copiers associated with a token and then removes the token from db.
+
+=over 4
+
+=item * C<$client> - The client associated with the token.
+
+=item * C<$token> - The token to delete and remove.
+
+=item * C<$token_platform_api> - The platform API to use for removing the token.
+
+=back
+
+Returns nothing.
+
+=cut
+
+sub remove_token_from_db {
+    my ($client, $token, $token_platform_api) = @_;
+
+    BOM::Database::DataMapper::Copier->new({
+            broker_code => $client->broker_code,
+            operation   => 'write'
+        }
+    )->delete_copiers({
+        match_all => 1,
+        trader_id => $client->loginid,
+        token     => $token
+    });
+
+    $token_platform_api->remove_by_token($token, $client->loginid);
+}
+
+=head2 publish_and_emit_token_deletion
+
+send notification to cancel streaming and publish data in redis
+
+=over 4
+
+=item * C<$account_id> - The ID of the account associated with the token.
+
+=item * C<$token> - The token that was deleted.
+
+=item * C<$client> - The client associated with the token.
+
+=item * C<$token_details> - Details of the token that was deleted.
+
+=back
+
+Returns nothing.
+
+=cut
+
+sub publish_and_emit_token_deletion {
+    my ($account_id, $token, $client, $token_details) = @_;
+
+    if (defined $account_id) {
+        BOM::Config::Redis::redis_transaction_write()->publish(
+            'TXNUPDATE::transaction_' . $account_id,
+            Encode::encode_utf8(
+                $json->encode({
+                        error => {
+                            code       => "TokenDeleted",
+                            token      => $token,
+                            account_id => $account_id
+                        }})));
+    }
+    #if we add more streaming for authenticated calls in future, we need to add here as well
+    BOM::Platform::Event::Emitter::emit(
+        'api_token_deleted',
+        {
+            loginid => $client->loginid,
+            name    => $token_details->{display_name},
+            scopes  => $token_details->{scopes}});
+}
+
+=head2 delete_api_token
+
+The token passed in param is deleted from db and deleted event is raised 
+also the data is deleted from redis
+
+=over 4
+
+=item * C<$token> token value to be deleted 
+
+=item * C<$token_platform_api> - platform API object
+
+=item * C<$client> hash object of client.
+
+=item * C<$account_id> - client account id for which token is deleted 
+
+=back
+
+Returns array of hashref for all tokens against a client
+
+=cut
+
+sub delete_api_token {
+    my ($token, $token_platform_api, $client, $account_id) = @_;
+
+    if ($token =~ /\*/) {
+        $token = unmask_token($token, $token_platform_api, $client);
+    }
+
+    my $token_details = $token_platform_api->get_token_details($token) // {};
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidToken',
+            message_to_client => localize('No token found'),
+        }) unless (($token_details->{loginid} // '') eq $client->loginid);
+
+    remove_token_from_db($client, $token, $token_platform_api);
+
+    my $client_api_tokens = list_tokens($client, $token_platform_api);
+    $client_api_tokens->{delete_token} = 1;
+
+    publish_and_emit_token_deletion($account_id, $token, $client, $token_details);
+
+    return $client_api_tokens;
+}
+
+=head2 create_api_token
+
+the token is generated and inserted in to db 
+against client and event is emitted for token creation 
+also the data is added into redis 
+
+=over 4
+
+=item * C<$args> hash object maintaing keys fo all request param.
+
+=item * C<$client> hash object of client.
+
+=item * C<$client_ip> A hash containg event arguments.
+
+=item * C<$token_platform_api> - platform API object
+
+=item * C<$created_token> - new unobfuscated token 
+
+=back
+
+Returns array of hashref for all tokens against a client = $client_api_tokens
+
+=cut
+
+sub create_api_token {
+    my ($args, $client, $client_ip, $token_platform_api) = @_;
+
+    ## for old API calls (we'll make it required on v4)
+    my $scopes = $args->{new_token_scopes} || ['read', 'trading_information', 'trade', 'payments', 'admin'];
+    my $token =
+        $token_platform_api->create_token($client->loginid, $args->{new_token}, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
+    if (ref $token eq 'HASH' and my $error = $token->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'APITokenError',
+            message_to_client => $error,
+        });
+    }
+    my $created_token = $token;
+    BOM::Platform::Event::Emitter::emit(
+        'api_token_created',
+        {
+            loginid => $client->loginid,
+            name    => $args->{new_token},
+            scopes  => $scopes
+        });
+    my $client_api_tokens = list_tokens($client, $token_platform_api, $created_token);
+    $client_api_tokens->{new_token} = 1;
+
+    return $client_api_tokens;
+}
+
+=head2 list_tokens
+
+the tokens are hidden and the return in obfuscated form
+in token reasponse for all tokens against client
+
+=over 4
+
+=item * C<$client> hash object of client
+
+=item * C<$token_platform_api> - platform API object
+
+=item * C<$created_token> - new unobfuscated token for create api token or undef for delete and list api token request
+
+=back
+
+Returns array of hashref for all tokens against a client = $client_api_tokens
+
+=cut
+
+sub list_tokens {
+
+    my ($client, $token_platform_api, $created_token) = @_;
+    my $client_api_tokens;
+    $client_api_tokens->{tokens} = $token_platform_api->get_tokens_by_loginid($client->loginid);
+    for my $index (0 .. $#{$client_api_tokens->{tokens}}) {
+        my $token_obj = $client_api_tokens->{tokens}[$index];
+        my $token     = $token_obj->{token};
+        if (!defined $created_token || $token ne $created_token) {
+            $token_obj->{token} = BOM::RPC::v3::Utility::obfuscate_token($token, TOKEN_UNMASKED_CHARS);
+        }
+        $client_api_tokens->{tokens}[$index]{token} = $token_obj->{token};
+    }
+
+    return $client_api_tokens;
+}
+
+=head2 api_token
+
+the rpc call for api_token takes the following params
+and performs the creation, deletion and listing of tokens
+
+=over 4
+
+=item * args, which may contain the following keys:
+
+=over 4
+
+=item * $params
+
+=back
+
+=back
+
+Returns a hashref containing the client api tokens 
+
+=cut
+
 rpc api_token => sub {
     my $params = shift;
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
-    my $m = BOM::Platform::Token::API->new;
-    my $rtn;
-    if (my $token = $args->{delete_token}) {
-        my $token_details = $m->get_token_details($token) // {};
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidToken',
-                message_to_client => localize('No token found'),
-            }) unless (($token_details->{loginid} // '') eq $client->loginid);
-        # When a token is deleted from authdb, it need to be deleted from clientdb betonmarkets.copiers
-        BOM::Database::DataMapper::Copier->new({
-                broker_code => $client->broker_code,
-                operation   => 'write'
-            }
-        )->delete_copiers({
-            match_all => 1,
-            trader_id => $client->loginid,
-            token     => $token
-        });
-        $m->remove_by_token($token, $client->loginid);
-        $rtn->{delete_token} = 1;
-        # Send notification to cancel streaming, if we add more streaming
-        # for authenticated calls in future, we need to add here as well
-        if (defined $params->{account_id}) {
-            BOM::Config::Redis::redis_transaction_write()->publish(
-                'TXNUPDATE::transaction_' . $params->{account_id},
-                Encode::encode_utf8(
-                    $json->encode({
-                            error => {
-                                code       => "TokenDeleted",
-                                token      => $token,
-                                account_id => $params->{account_id}}})));
-        }
-        BOM::Platform::Event::Emitter::emit(
-            'api_token_deleted',
-            {
-                loginid => $client->loginid,
-                name    => $token_details->{display_name},
-                scopes  => $token_details->{scopes}});
-    }
-    if (my $display_name = $args->{new_token}) {
+    my $token_platform_api = BOM::Platform::Token::API->new;
 
-        ## For old API calls (we'll make it required on v4)
-        my $scopes = $args->{new_token_scopes} || ['read', 'trading_information', 'trade', 'payments', 'admin'];
-        my $token  = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
-
-        if (ref $token eq 'HASH' and my $error = $token->{error}) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'APITokenError',
-                message_to_client => $error,
-            });
+    try {
+        #delete_api_token
+        if ($args->{delete_token}) {
+            return delete_api_token($args->{delete_token}, $token_platform_api, $client, $params->{account_id});
         }
-        $rtn->{new_token} = 1;
-        BOM::Platform::Event::Emitter::emit(
-            'api_token_created',
-            {
-                loginid => $client->loginid,
-                name    => $display_name,
-                scopes  => $scopes
-            });
+        #create_token
+        if ($args->{new_token}) {
+            return create_api_token($args, $client, $client_ip, $token_platform_api);
+        }
+        #list_token
+        return list_tokens($client, $token_platform_api);
+
+    } catch {
+        log_exception();
+        return BOM::RPC::v3::Utility::client_error();
     }
 
-    $rtn->{tokens} = $m->get_tokens_by_loginid($client->loginid);
-
-    return $rtn;
 };
 
 async_rpc service_token => sub {

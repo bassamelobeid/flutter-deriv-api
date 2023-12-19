@@ -17,6 +17,7 @@ use BOM::Database::DataMapper::Copier;
 use BOM::Test::Helper        qw/create_test_user/;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Database::Model::AccessToken;
+use List::Util qw(all);
 
 my @emit_args;
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -35,94 +36,114 @@ my $client = create_test_user();
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $res = BOM::RPC::v3::Accounts::api_token({
-    client => $client,
-    args   => {},
-});
-is_deeply($res, {tokens => []}, 'empty token list');
-is scalar @emit_args, 0, 'no event emitted';
-
-$res = BOM::RPC::v3::Accounts::api_token({
+subtest 'empty_token_list' => sub {
+    my $res = BOM::RPC::v3::Accounts::api_token({
         client => $client,
-        args   => {
-            new_token        => 'Test Token',
-            new_token_scopes => ['read'],
-        },
+        args   => {},
     });
-ok $res->{new_token};
-is scalar(@{$res->{tokens}}), 1, '1 token created';
-my $test_token = $res->{tokens}->[0];
-is $test_token->{display_name}, 'Test Token';
-is $emit_args[0], 'api_token_created', 'correct event name';
-is_deeply $emit_args[1],
-    {
-    loginid => $client->loginid,
-    name    => 'Test Token',
-    scopes  => ['read'],
-    },
-    'event args are correct';
-undef @emit_args;
+    is_deeply($res, {tokens => []}, 'empty token list');
+    is scalar @emit_args, 0, 'no event emitted';
+};
 
-my $copiers_data_mapper = create_test_copier($client, $test_token->{token});
-my $traders_tokens      = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
-is scalar(@$traders_tokens), 1, 'get tokens in copiers table';
-
-# delete wrong token
-$res = BOM::RPC::v3::Accounts::api_token({
-    client => $client,
-    args   => {delete_token => "invalidtoken"},
-});
-is($res->{error}{message_to_client}, 'No token found', 'error message ok');
-
-my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-$res = BOM::RPC::v3::Accounts::api_token({
-        client => $client2,
-        args   => {
-            new_token        => 'Test Token',
-            new_token_scopes => ['read'],
+subtest 'create-token_and_copier_check' => sub {
+    my $res = BOM::RPC::v3::Accounts::api_token({
+            client => $client,
+            args   => {
+                new_token        => 'Test Token',
+                new_token_scopes => ['read'],
+            },
+        });
+    ok $res->{new_token};
+    is scalar(@{$res->{tokens}}), 1, '1 token created';
+    my $client_tokens = $res->{tokens};
+    my $test_token    = $client_tokens->[0];
+    is $test_token->{display_name}, 'Test Token';
+    is $emit_args[0], 'api_token_created', 'correct event name';
+    is_deeply $emit_args[1],
+        {
+        loginid => $client->loginid,
+        name    => 'Test Token',
+        scopes  => ['read'],
         },
-    });
+        'event args are correct';
+    undef @emit_args;
 
-ok($res->{tokens}->[0]{token}, 'test token created');
-$res = BOM::RPC::v3::Accounts::api_token({
-    client => $client,
-    args   => {delete_token => $res->{tokens}[0]{token}},
-});
-is($res->{error}{message_to_client}, 'No token found', 'error message ok');
+    my $copiers_data_mapper = create_test_copier($client, $test_token->{token});
+    my $traders_tokens      = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
+    is scalar(@$traders_tokens), 1, 'get tokens in copiers table';
 
-# delete token
-$res = BOM::RPC::v3::Accounts::api_token({
+    subtest 'token_param_and_event_check' => sub {
+        my $res = BOM::RPC::v3::Accounts::api_token({
+            client => $client,
+            args   => {delete_token => $test_token->{token}},
+        });
+        ok $res->{delete_token};
+        is_deeply($res->{tokens}, [], 'empty');
+        is $emit_args[0], 'api_token_deleted', 'correct event name';
+        is_deeply $emit_args[1],
+            {
+            loginid => $client->loginid,
+            name    => 'Test Token',
+            scopes  => ['read'],
+            },
+            'event args are correct';
+    };
+
+    subtest 'check_traders_token' => sub {
+        $traders_tokens = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
+        is_deeply $traders_tokens , [], 'traders tokens also deleted';
+    };
+
+};
+
+subtest 'delete_wrong_token' => sub {
+    my $res = BOM::RPC::v3::Accounts::api_token({
         client => $client,
-        args   => {
-            delete_token => $test_token->{token},
-        },
+        args   => {delete_token => "invalidtoken"},
     });
-ok $res->{delete_token};
-is_deeply($res->{tokens}, [], 'empty');
-is $emit_args[0], 'api_token_deleted', 'correct event name';
-is_deeply $emit_args[1],
-    {
-    loginid => $client->loginid,
-    name    => 'Test Token',
-    scopes  => ['read'],
-    },
-    'event args are correct';
+    is($res->{error}{message_to_client}, 'No token found', 'error message ok');
+};
 
-$traders_tokens = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
-is_deeply $traders_tokens , [], 'traders tokens also deleted';
+subtest 'invalid_token_delete_test' => sub {
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $res     = BOM::RPC::v3::Accounts::api_token({
+            client => $client2,
+            args   => {
+                new_token        => 'Test Token',
+                new_token_scopes => ['read'],
+            },
+        });
+
+    ok($res->{tokens}->[0]{token}, 'test token created');
+
+    my $platform_API_mock = Test::MockModule->new("BOM::Platform::Token::API");
+    # Mock get_token_for_deletion
+    $platform_API_mock->mock(
+        'get_token_for_deletion',
+        sub {
+            return $res->{tokens}->[0]{token};
+        });
+    $res = BOM::RPC::v3::Accounts::api_token({
+        client => $client,
+        args   => {delete_token => BOM::RPC::v3::Utility::obfuscate_token($res->{tokens}->[0]{token}, 4, $res->{tokens})},
+    });
+    is($res->{error}{message_to_client}, 'No token found', 'error message ok');
+
+};
 
 ## re-create
-$res = BOM::RPC::v3::Accounts::api_token({
-    client => $client,
-    args   => {new_token => '1'},
-});
-ok $res->{error}->{message_to_client} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
-
-$res = BOM::RPC::v3::Accounts::api_token({
-    client => $client,
-    args   => {new_token => '1' x 33},
-});
-ok $res->{error}->{message_to_client} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
+subtest 'invalid_token_name' => sub {
+    my $res = BOM::RPC::v3::Accounts::api_token({
+        client => $client,
+        args   => {new_token => '1'},
+    });
+    ok $res->{error}->{message_to_client} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
+    $res = BOM::RPC::v3::Accounts::api_token({
+        client => $client,
+        args   => {new_token => '1' x 33},
+    });
+    ok $res->{error}->{message_to_client} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
+};
 
 ## we default to all scopes for backwards
 # $res = BOM::RPC::v3::Accounts::api_token({
@@ -131,46 +152,91 @@ ok $res->{error}->{message_to_client} =~ /alphanumeric with space and dash/, 'al
 # });
 # ok $res->{error}->{message_to_client} =~ /new_token_scopes/, 'new_token_scopes is required';
 
-$res = BOM::RPC::v3::Accounts::api_token({
-        client => $client,
-        args   => {
-            new_token        => 'Test',
-            new_token_scopes => ['read', 'trade']
-        },
-    });
-is scalar(@{$res->{tokens}}), 1, '1 token created';
-$test_token = $res->{tokens}->[0];
-is $test_token->{display_name}, 'Test';
-ok !$test_token->{last_used}, 'last_used is null';
+subtest 'check_token_creation_with_scopes' => sub {
+    my $res = BOM::RPC::v3::Accounts::api_token({
+            client => $client,
+            args   => {
+                new_token        => 'Test',
+                new_token_scopes => ['read', 'trade']
+            },
+        });
+    is scalar(@{$res->{tokens}}), 1, '1 token created';
+    my $test_token = $res->{tokens}->[0];
+    is $test_token->{display_name}, 'Test';
+    ok !$test_token->{last_used}, 'last_used is null';
 
-## check scopes
-my @scopes = BOM::Platform::Token::API->new->get_scopes_by_access_token($test_token->{token});
-is_deeply([sort @scopes], ['read', 'trade'], 'right scopes');
-
-## check for valid ip
-$res = BOM::RPC::v3::Accounts::api_token({
-        client => $client,
-        args   => {
-            new_token                 => 'Test1',
-            new_token_scopes          => ['read', 'trade'],
-            valid_for_current_ip_only => 1,
-        },
-        client_ip => '1.1.1.1',
-    });
-is scalar(@{$res->{tokens}}), 2, '2nd token created';
-$test_token = $res->{tokens}->[1]->{token};
-
-my $params = {
-    language   => 'EN',
-    token      => $test_token,
-    token_type => 'api_token',
-    client_ip  => '1.1.1.1'
+    subtest 'check_scopes' => sub {
+        my @scopes = BOM::Platform::Token::API->new->get_scopes_by_access_token($test_token->{token});
+        is_deeply([sort @scopes], ['read', 'trade'], 'right scopes');
+    };
 };
-$c->call_ok('authorize', $params)->has_no_error;
 
-$params->{client_ip} = '1.2.1.1';
-$c->call_ok('authorize', $params)
-    ->has_error->error_message_is('Token is not valid for current ip address.', 'check invalid token as ip is different from registered one');
+subtest 'check_authorize_and_valid_ip' => sub {
+    # Create token
+    my $res = BOM::RPC::v3::Accounts::api_token({
+            client => $client,
+            args   => {
+                new_token                 => 'Test1',
+                new_token_scopes          => ['read', 'trade'],
+                valid_for_current_ip_only => 1,
+            },
+            client_ip => '1.1.1.1',
+        });
+    is scalar(@{$res->{tokens}}), 2, '2nd token created';
+    my $test_token = $res->{tokens}->[1]->{token};
+
+    # Authorize token with valid IP
+    my $params = {
+        language   => 'EN',
+        token      => $test_token,
+        token_type => 'api_token',
+        client_ip  => '1.1.1.1'
+    };
+    $c->call_ok('authorize', $params)->has_no_error;
+
+    # Authorize token with invalid IP
+    $params->{client_ip} = '1.2.1.1';
+    $c->call_ok('authorize', $params)
+        ->has_error->error_message_is('Token is not valid for current ip address.', 'check invalid token as ip is different from registered one');
+};
+
+subtest 'create_multiple_token' => sub {
+    my $token_names    = ['Token1', 'Token2', 'Token3'];
+    my $created_tokens = [];
+
+    foreach my $token_name (@$token_names) {
+        my $res = BOM::RPC::v3::Accounts::api_token({
+                client => $client,
+                args   => {
+                    new_token        => $token_name,
+                    new_token_scopes => ['read', 'trade'],
+                },
+            });
+
+        $created_tokens = $res;
+    }
+
+    my $last_token_index = $#{$created_tokens->{tokens}};
+    is is_obfuscated_token($created_tokens->{tokens}[$last_token_index]{token}), 0, "new created token is not obfuscated";
+
+    my $is_other_tokens_obfuscated = 1;
+
+    for my $i (0 .. $#{$created_tokens->{tokens}}) {
+        if ($i != $last_token_index && is_obfuscated_token($created_tokens->{tokens}[$last_token_index]{token})) {
+            $is_other_tokens_obfuscated = 0;
+            last;
+        }
+    }
+
+    ok $is_other_tokens_obfuscated, 'All tokens except the first one are obfuscated';
+};
+
+subtest 'obfuscate_token' => sub {
+    my $res            = BOM::RPC::v3::Accounts::api_token({client => $client});
+    my $token_list     = [map { $_->{'token'} } @{$res->{tokens}}];
+    my $all_obfuscated = all { is_obfuscated_token($_) } @$token_list;
+    ok($all_obfuscated, 'All tokens are obfuscated');
+};
 
 sub create_test_copier {
     my ($client, $test_token) = @_;
@@ -192,6 +258,12 @@ sub create_test_copier {
     });
 
     return $copiers_data_mapper;
+}
+
+sub is_obfuscated_token {
+    my $token = shift;
+
+    return $token =~ m/^(\*+)(.{4})$/ ? 1 : 0;
 }
 
 done_testing();

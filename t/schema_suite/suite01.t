@@ -70,10 +70,6 @@ test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_a
 
 # ADMIN SCOPE CALLS (GENERAL)
 test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', _get_stashed('authorize/stash/token'), 'test-rpc';
-test_sendrecv_params 'api_token/test_send.json', 'api_token/test_receive.json',
-    _get_stashed('authorize/stash/token'), _get_stashed('api_token/tokens/0/token'), 'test-rpc';
-test_sendrecv_params 'api_token/test_send_delete.json', 'api_token/test_receive_delete.json',
-    _get_stashed('authorize/stash/token'), _get_stashed('api_token/tokens/0/token');
 test_sendrecv_params 'app_register/test_send.json', 'app_register/test_receive.json', _get_stashed('authorize/stash/token');
 test_sendrecv_params 'app_get/test_send.json', 'app_get/test_receive.json',
     _get_stashed('authorize/stash/token'), _get_stashed('app_register/app_id');

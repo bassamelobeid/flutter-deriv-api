@@ -81,7 +81,8 @@ use constant {
 my $payment_limits = BOM::Config::payment_limits;
 
 rpc "cashier", sub {
-    my $params           = shift;
+    my $params = shift;
+    $log->infof("RPC params %s ", $params);
     my $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, ['compliance_checks']);
     return $validation_error if $validation_error;
 

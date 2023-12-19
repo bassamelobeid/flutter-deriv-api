@@ -54,7 +54,6 @@ use BOM::Config;
 use BOM::Rules::Engine;
 use BOM::TradingPlatform;
 use Time::Moment;
-
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(longcode log_exception get_verification_uri get_app_name request_email aggregate_ticks_history_metrics);
 
@@ -1695,4 +1694,28 @@ sub aggregate_ticks_history_metrics {
     }
 
     return ($duration_times_count, $relation);
+}
+
+=head2 obfuscate_token
+
+the token passed in param will be masked with asterisk * for the initial 
+characters leaving the ending unmasked character for hiding token information
+
+=over 4
+
+=item - $token: the token that requires obfuscation will be passed as param
+
+=item - $unmasked_char_no: default value is 4 otherwise no of chars in hidden token
+
+=back
+
+=cut
+
+sub obfuscate_token {
+    my ($token, $unmasked_char_no) = @_;
+
+    my $obfuscated_part = '*' x (length($token) - $unmasked_char_no);
+    my $unmasked_part   = substr($token, -$unmasked_char_no);
+    $token = $obfuscated_part . $unmasked_part;
+    return $token;
 }
