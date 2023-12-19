@@ -1,0 +1,14 @@
+name: 'Test Report'
+run-name: "Test Report for ${{ github.event.workflow.name }} #${{ github.event.workflow_run.run_number }}"
+on:
+  workflow_run:
+    workflows: ['Build workflow', 'Daily master test'] # runs after CI workflow
+    types:
+      - completed
+jobs:
+  report:
+    permissions:
+      contents: read
+      actions: read
+      checks: write  # create check runs
+    uses: regentmarkets/github-actions/.github/workflows/test_reporter.yml@master
