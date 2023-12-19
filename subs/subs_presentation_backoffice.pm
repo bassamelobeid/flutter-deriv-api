@@ -33,6 +33,7 @@ sub BrokerPresentation {
     print '<html>';
     print '<head>';
     print "<title>$title-$ENV{REMOTE_ADDR}</title>";
+    print '<link rel="icon" href=' . request()->url_for('images/favicon.png', undef, undef, {internal_static => 1}) . ' type="image/x-icon">';
     print '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
     print '<meta name="viewport" content="width=device-width, initial-scale=1">';
     print '<link rel="preconnect" href="https://fonts.gstatic.com">';
