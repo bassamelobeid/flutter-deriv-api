@@ -50,6 +50,7 @@ sub create_token {
     return {error => localize('Max 30 tokens are allowed.')}                        if $self->get_token_count_by_loginid($loginid) > 30;
 
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
+
     my $token = $self->generate_token(TOKEN_LENGTH);
 
     my $data = {
@@ -70,6 +71,18 @@ sub create_token {
     $self->save_token_details_to_redis($data) if $success->{token};
 
     return $success->{token};
+}
+
+=head2 get_token_for_deletion
+
+returns a string token value from db against a matched symbol token
+
+=cut
+
+sub get_token_for_deletion {
+    my ($self, $hidden_token, $loginid) = @_;
+
+    return $self->_db_model->get_token_for_deletion($hidden_token, $loginid);
 }
 
 =head2 get_client_details_from_token
