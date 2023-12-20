@@ -3232,6 +3232,82 @@ sub client_promo_codes_upload {
     return 1;
 }
 
+=head2 get_duplicate_dob_phone_number
+
+Get clients with the same DOB and phone number
+
+=over
+
+=item * C<client> - required. Client object.
+
+=back
+
+=cut
+
+sub get_duplicate_dob_phone_number {
+    my $client = shift or die 'Client was not given';
+
+    return unless $client->phone and $client->date_of_birth;
+
+    my @brokers = LandingCompany::Registry->all_broker_codes();
+
+    for my $broker (@brokers) {
+        my $dbic = BOM::Database::ClientDB->new({
+                broker_code  => $broker,
+                db_operation => 'replica',
+            })->db->dbic;
+
+        my $client = $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref(
+                    q{SELECT * FROM betonmarkets.check_duplicate_dob_phone(?, ?, ?)},
+                    {Slice => {}},
+                    $client->binary_user_id, $client->phone, $client->date_of_birth
+                );
+            });
+
+        return $client if $client;
+    }
+
+}
+
+=head2 check_duplicate_dob_phone
+
+Check if there are any clients with the same DOB and phone number and send email to the antifraud team after applying unwelcome status on the new client
+
+=over
+
+=item * C<client> - required. Client object.
+
+=back
+
+=cut
+
+async sub check_duplicate_dob_phone {
+
+    BOM::Config::Runtime->instance->app_config->check_for_update();
+    return unless BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone;
+
+    my $client = shift or die 'Client was not given';
+
+    my $duplicate_client = get_duplicate_dob_phone_number($client);
+
+    return unless $duplicate_client;
+
+    $client->status->setnx('unwelcome', 'system', 'Same DOB and phone number as client: ' . $duplicate_client->{loginid});
+    send_email({
+            from    => '<no-reply@deriv.com>',
+            to      => 'x-antifraud-alerts@deriv.com',
+            subject => 'Account created with same DOB and Phone',
+            message => [
+                sprintf(
+                    "New signup with loginID: %s, has matching DOB and phone number to the client:\n%s",
+                    $client->{loginid}, $duplicate_client->{loginid})
+            ],
+        });
+
+}
+
 =head2 signup
 
 It is triggered for each B<signup> event emitted.
@@ -3269,7 +3345,7 @@ async sub signup {
     };
 
     await check_email_for_fraud($client);
-
+    await check_duplicate_dob_phone($client);
     return 1;
 }
 

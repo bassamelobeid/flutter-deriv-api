@@ -3184,6 +3184,87 @@ subtest 'signup event' => sub {
         'verify_false_profile_info event is emitted';
 };
 
+subtest 'duplicate dob and phone' => sub {
+    # Data sent for virtual signup should be loginid, country and landing company. Other values are not defined for virtual
+    my $test_client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code      => 'CR',
+        email            => 'test24@bin.com',
+        first_name       => '',
+        last_name        => '',
+        date_of_birth    => '1994-05-01',
+        phone            => '+1234567890',
+        address_line_1   => '',
+        address_line_2   => '',
+        address_city     => '',
+        address_state    => '',
+        address_postcode => '',
+    });
+
+    my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code      => 'CH',
+        email            => 'test25@bin.com',
+        first_name       => '',
+        last_name        => '',
+        date_of_birth    => '1994-05-01',
+        phone            => '+1234567890',
+        address_line_1   => '',
+        address_line_2   => '',
+        address_city     => '',
+        address_state    => '',
+        address_postcode => '',
+    });
+
+    $test_client2->status->clear_unwelcome();
+
+    my $real_args = {
+        loginid    => $test_client2->loginid,
+        properties => {
+            type => 'real',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
+
+    subtest 'With config enabled' => sub {
+        mailbox_clear();
+
+        BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone(1);
+
+        is exception { $handler->($real_args) }, undef, 'Event processed successfully';
+        # clearing cache for the status
+        $test_client2->status->all();
+
+        ok $test_client2->status->unwelcome,           'Unwelcome status applied';
+        ok $test_client2->status->reason('unwelcome'), 'Same DOB and phone number as client: ' . $test_client1->{loginid};
+
+        $msg = mailbox_search(
+            subject => qr/Account created with same DOB and Phone/,
+        );
+
+        ok $msg, 'Email sent to anti-fraud';
+    };
+
+    subtest 'Without config enabled' => sub {
+        mailbox_clear();
+
+        $test_client2->status->clear_unwelcome();
+
+        BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone(0);
+        is exception { $handler->($real_args) }, undef, 'Event processed successfully';
+
+        # clearing cache for the status
+        $test_client2->status->all();
+
+        ok !$test_client2->status->unwelcome, 'Unwelcome status not applied';
+
+        $msg = mailbox_search(
+            subject => qr/Account created with same DOB and Phone/,
+        );
+
+        ok !$msg, 'Email not sent to anti-fraud';
+    };
+
+};
+
 subtest 'wallet signup event' => sub {
     my $virtual_wallet_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code      => 'VRW',
