@@ -2731,6 +2731,7 @@ sub get_dynamic_settings_list {
         payments             => 'Payments',
         crypto               => 'Cryptocurrency',
         compliance           => 'Compliance',
+        anti_fraud           => 'Anti-Fraud',
     };
 }
 

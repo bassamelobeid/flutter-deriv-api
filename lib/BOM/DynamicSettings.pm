@@ -51,7 +51,7 @@ use constant AUTHORISATIONS => {
     payment_agents       => ['IT'],
     terms_and_conditions => ['T&C'],
     internal_transfer    => ['PaymentInternalTransfer'],
-};
+    anti_fraud           => ['AntiFraud']};
 
 use constant P2P_ORDER_EXPIRE_OPTIONS => [900, 1800, 2700, 3600, 5400, 7200];
 
@@ -499,6 +499,10 @@ sub get_settings_by_group {
                 compliance.enhanced_due_diligence.auto_lock_threshold
                 compliance.auto_anonymization_daily_limit
                 compliance.npj_country_list
+            )
+        ],
+        anti_fraud => [qw(
+                anti_fraud.duplicate_dob_phone
             )
         ],
         # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
