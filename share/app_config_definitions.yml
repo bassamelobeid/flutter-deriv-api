@@ -1658,6 +1658,11 @@ system:
           isa: ArrayRef
           default: []
           global: 1
+        transfer_currency_pair:
+          description: "To suspend internal transfer on currency pairs across all platforms, the config will block the transfer bi-directionally ex: {\"currency_pairs\":[[\"USD\",\"ETH\"],[\"USD\",\"BTC\"]]}"
+          isa: json_string
+          default: '{"currency_pairs":[]}'
+          global: 1
         onfido:
           description: "Suspend Onfido"
           isa: Bool
