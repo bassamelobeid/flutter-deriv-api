@@ -25,6 +25,7 @@ use Math::BigFloat;
 use BOM::User qw( is_payment_agents_suspended_in_country );
 use LandingCompany::Registry;
 use BOM::User::Client::PaymentAgent;
+use BOM::User::Utility;
 use ExchangeRates::CurrencyConverter qw/convert_currency in_usd offer_to_clients/;
 use BOM::Config::CurrencyConfig;
 
@@ -1921,7 +1922,6 @@ sub _validate_transfer_between_accounts {
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
     return _transfer_between_accounts_error() if (not $client_from or not $client_to);
-
     my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
     my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
     # These rule are checking app settings; so they should be excluded from the rule engine
@@ -1930,6 +1930,8 @@ sub _validate_transfer_between_accounts {
         my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
         return _transfer_between_accounts_error(localize('Account transfers are not available between [_1] and [_2]', $from_currency, $to_currency))
             if first { $_ eq $from_currency or $_ eq $to_currency } @$disabled_for_transfer_currencies;
+        return _transfer_between_accounts_error(localize('Account transfers are not available between [_1] and [_2]', $from_currency, $to_currency))
+            if BOM::User::Utility::is_currency_pair_transfer_blocked($from_currency, $to_currency);
     }
     return _transfer_between_accounts_error(localize('Transfers between accounts are currently unavailable. Please try again later.'))
         if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts

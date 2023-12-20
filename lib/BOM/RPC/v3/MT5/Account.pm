@@ -42,6 +42,7 @@ use BOM::Platform::Email;
 use BOM::Platform::Event::Emitter;
 use BOM::Transaction;
 use BOM::User::FinancialAssessment qw(decode_fa);
+use BOM::User::Utility;
 use BOM::Config::MT5;
 use BOM::Config::Compliance;
 requires_auth('wallet', 'trading');
@@ -2473,6 +2474,12 @@ sub _mt5_validate_and_get_amount {
                         params        => [$source_currency, $mt5_currency]}
                 ) if first { $_ eq $source_currency or $_ eq $mt5_currency } @$disabled_for_transfer_currencies;
 
+                return create_error_future(
+                    'CurrencySuspended',
+                    {
+                        override_code => $error_code,
+                        params        => [$source_currency, $mt5_currency]}
+                ) if BOM::User::Utility::is_currency_pair_transfer_blocked($source_currency, $mt5_currency);
                 if ($action eq 'deposit') {
 
                     try {

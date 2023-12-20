@@ -1581,9 +1581,44 @@ subtest 'suspended currency transfers' => sub {
 
         $rpc_ct->call_ok('transfer_between_accounts', $params);
     };
-
     # reset the config
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["USD","BTC"]]}');
+    subtest 'it should stop transfers from suspended currency pairs' => sub {
+        $params->{token} = $token_cr_btc;
+        $params->{args}  = {
+            account_from => $client_cr_btc->loginid,
+            account_to   => $client_cr_usd->loginid,
+            currency     => "BTC",
+            amount       => 0.001
+        };
+
+        my $result =
+            $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
+            "Transfer from suspended currency not allowed - correct error code")
+            ->error_message_is('Account transfers are not available between BTC and USD',
+            'Transfer from suspended currency not allowed - correct error message');
+
+    };
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["BTC","USD"]]}');
+    subtest 'it should stop transfers from suspended currency pairs' => sub {
+        $params->{token} = $token_cr_btc;
+        $params->{args}  = {
+            account_from => $client_cr_btc->loginid,
+            account_to   => $client_cr_usd->loginid,
+            currency     => "BTC",
+            amount       => 0.001
+        };
+
+        my $result =
+            $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
+            "Transfer from suspended currency not allowed - correct error code")
+            ->error_message_is('Account transfers are not available between BTC and USD',
+            'Transfer from suspended currency not allowed - correct error message');
+
+    };
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[]}');
+
 };
 
 subtest 'MT5' => sub {
