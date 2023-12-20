@@ -15,7 +15,7 @@ use Format::Util::Numbers qw/formatnumber/;
 use Array::Utils          qw(:all);
 use Date::Utility;
 use Scalar::Util;
-use List::Util qw(any max none);
+use List::Util qw(any max none first);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
@@ -288,6 +288,7 @@ sub get_settings_by_group {
                 system.suspend.social_logins
                 system.suspend.logins
                 system.suspend.transfer_currencies
+                system.suspend.transfer_currency_pair
                 system.suspend.onfido
                 system.suspend.p2p
                 system.suspend.wallets
@@ -388,6 +389,7 @@ sub get_settings_by_group {
         ],
         internal_transfer => [qw(
                 system.suspend.transfer_currencies
+                system.suspend.transfer_currency_pair
                 system.suspend.transfer_between_accounts
                 payments.transfer_between_accounts.daily_cumulative_limit.enable
                 payments.transfer_between_accounts.daily_cumulative_limit.between_accounts
@@ -676,9 +678,37 @@ sub get_extra_validation {
         'compliance.fake_names.corporate_patterns'                   => \&_validate_corporate_patterns,
         'compliance.fake_names.accepted_consonant_names'             => \&_validate_accepted_consonant_names,
         'compliance.auto_anonymization_daily_limit'                  => \&_validate_positive_number,
+        'system.suspend.transfer_currency_pair'                      => \&_validate_currency_pair,
     };
 
     return $setting_validators->{$setting};
+}
+
+=head2 _validate_currency_pair
+
+validates the currency pair config supplied in the dynamic settings to check if it is valid
+
+=cut
+
+sub _validate_currency_pair {
+    my $input_string = shift;
+
+    my $json_config = JSON::MaybeXS->new->decode($input_string);
+
+    die " currency_pairs should be a valid key in the json config" unless $json_config->{'currency_pairs'};
+
+    foreach my $currency_pair ($json_config->{'currency_pairs'}->@*) {
+
+        die "is not valid  only two values need to be supplied " if @$currency_pair != 2;
+
+        die "both currencies can't have same value" if $currency_pair->[0] eq $currency_pair->[1];
+
+        if (my $invalid = first { !BOM::Config::CurrencyConfig::is_valid_currency($_) } @$currency_pair) {
+            die "$invalid is not a valid currency";
+        }
+    }
+    return 1;
+
 }
 
 =head2 _validate_corporate_patterns

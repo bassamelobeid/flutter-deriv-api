@@ -116,6 +116,44 @@ subtest '_validate_accepted_consonant_names' => sub {
     }
 };
 
+subtest '_validate_currency_pair' => sub {
+    my @test_cases = ({
+            value => "{}",
+            error => "currency_pairs should be a valid key in the json config"
+        },
+        {
+            value => "{\"currency_pairs\":[[\"USD\"]]}",
+            error => "is not valid  only two values need to be supplied"
+        },
+        {
+            value => "{\"currency_pairs\":[[\"USD\",\"USD\",\"USD\"]]}",
+            error => "is not valid  only two values need to be supplied"
+        },
+        {
+            value => "{\"currency_pairs\":[[\"USD\",\"USD\"]]}",
+            error => "both currencies can't have same value"
+        },
+        {
+            value => "{\"currency_pairs\":[[\"ASDASDASD\",\"USD\"]]}",
+            error => "is not a valid currency "
+        },
+        {
+            value => "{\"currency_pairs\":[[\"USD\",\"ASDASDASD\"]]}",
+            error => "is not a valid currency "
+        });
+    for my $case (@test_cases) {
+        my $value = $case->{value};
+        my $error = $case->{error};
+
+        if ($error) {
+            like exception { BOM::DynamicSettings::_validate_currency_pair($value) }, qr/$error/, "Correct error for value '$value'";
+        } else {
+            lives_ok { BOM::DynamicSettings::_validate_currency_pair($value) } "No error for value '$value'";
+        }
+    }
+
+};
+
 subtest '_validate_corporate_patterns' => sub {
     my @test_cases = ({
             value => [],
