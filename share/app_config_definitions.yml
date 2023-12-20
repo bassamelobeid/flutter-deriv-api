@@ -2307,3 +2307,12 @@ oauth:
           isa: ArrayRef
           default: ['127.0.0.1/32']
           global: 1
+anti_fraud:
+  description: "Anti Fraud configuration settings"
+  isa: section
+  contains:
+    duplicate_dob_phone:
+      description: "if enabled, when a client signs up with a 'Date of Birth' and 'Phone number' such that there exists another client with same 'Date of birth' and 'Phone number', then new client will have unwelcome status applied and anti-fraud will be notfied"
+      isa: Bool
+      default: 0
+      global: 1
