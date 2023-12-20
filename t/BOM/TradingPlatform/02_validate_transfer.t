@@ -10,6 +10,7 @@ use BOM::Test::Helper::Client;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
+use BOM::User::Utility;
 my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
 $mock_fees->mock(
     transfer_between_accounts_fees => sub {
@@ -120,6 +121,21 @@ subtest 'common' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
 };
 
+subtest 'check currency pair is disabled' => sub {
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["USD","EUR"]]}');
+    cmp_deeply(BOM::User::Utility::is_currency_pair_transfer_blocked("USD", "EUR"), ["USD", "EUR"], 'currency pair is disabled');
+
+    cmp_deeply(BOM::User::Utility::is_currency_pair_transfer_blocked("EUR", "USD"), ["USD", "EUR"], 'currency pair is disabled');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["EUR","USD"]]}');
+    cmp_deeply(BOM::User::Utility::is_currency_pair_transfer_blocked("EUR", "USD"), ["EUR", "USD"], 'currency pair is disabled');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[]}');
+    cmp_deeply(BOM::User::Utility::is_currency_pair_transfer_blocked("USD", "EUR"), undef, 'currency pair is not disabled');
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["EUR","BTC"],["LTC","BTC"]]}');
+    cmp_deeply(BOM::User::Utility::is_currency_pair_transfer_blocked("USD", "EUR"), undef, 'currency pair is not disabled');
+};
+
 subtest 'deposit' => sub {
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -194,6 +210,21 @@ subtest 'deposit' => sub {
         },
         'same currency'
     );
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["USD","EUR"]]}');
+
+    cmp_deeply(
+        exception {
+            $platform->validate_transfer(%args, platform_currency => 'EUR')
+        },
+        {
+            error_code => "PlatformTransferCurrencySuspended",
+            params     => ["USD"],
+        },
+        'currency pair suspended'
+    );
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[]}');
 
     cmp_deeply(
         exception {

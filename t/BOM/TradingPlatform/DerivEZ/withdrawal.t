@@ -287,7 +287,25 @@ subtest "can withdraw with exchange rate applied from usd to eth" => sub {
         from_account => 'EZR80000000',
         amount       => 5,
     );
-
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["USD","ETH"]]}');
+    cmp_deeply(
+        exception { $derivez->withdraw(%params) },
+        {
+            code   => "CurrencySuspended",
+            params => ["ETH", "USD"],
+        },
+        'currency pair is disabled'
+    );
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["ETH","USD"]]}');
+    cmp_deeply(
+        exception { $derivez->withdraw(%params) },
+        {
+            code   => "CurrencySuspended",
+            params => ["ETH", "USD"],
+        },
+        'currency pair is disabled'
+    );
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[]}');
     # Perform test
     cmp_deeply(exception { $derivez->withdraw(%params) }, undef, 'can withdraw from derivez to CR with ETH currency');
 

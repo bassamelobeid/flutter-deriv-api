@@ -20,9 +20,10 @@ use YAML::XS qw(LoadFile);
 use WebService::SendBird;
 use JSON::MaybeUTF8 qw(:v1);
 use Digest::SHA     qw(hmac_sha1_hex);
-use List::Util      qw (any uniq);
+use List::Util      qw (any first uniq);
 use POSIX           qw( floor );
 use Math::BigFloat;
+use JSON::MaybeXS;
 use Text::Trim qw( trim );
 
 use BOM::Platform::Context qw(request);
@@ -487,6 +488,36 @@ sub notify_submission_of_documents_for_pending_payout {
                 email => $client->email,
                 date  => $due_date->date_ddmmyyyy,
             }});
+}
+
+=head2 is_currency_pair_transfer_blocked
+
+will check if the currency pair is blocked or not
+
+=over
+
+=item * C<from_currency> - currency code which is being transferred from
+
+=item * C<to_currency> - currency code which is being transferred to
+
+=back
+
+=cut
+
+sub is_currency_pair_transfer_blocked {
+    my @param                       = @_;
+    my $app_config                  = BOM::Config::Runtime->instance->app_config;
+    my $transfer_currency_pair_json = $app_config->system->suspend->transfer_currency_pair;
+    return 0 unless defined $transfer_currency_pair_json;
+
+    my $transfer_currency_pair = decode_json($transfer_currency_pair_json);
+    return 0 unless defined $transfer_currency_pair->{'currency_pairs'};
+    return first {
+        my $pair = $_;
+        ($pair->[0] eq $param[0] and $pair->[1] eq $param[1])
+            or ($pair->[1] eq $param[0] and $pair->[0] eq $param[1])
+    } @{$transfer_currency_pair->{'currency_pairs'}};
+
 }
 
 =head2 trim_immutable_client_fields

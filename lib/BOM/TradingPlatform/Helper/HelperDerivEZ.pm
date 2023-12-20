@@ -4,6 +4,7 @@ use strict;
 use warnings;
 no indirect;
 
+use JSON::MaybeXS;
 use Digest::SHA            qw(sha384_hex);
 use BOM::Platform::Context qw (localize request);
 use LandingCompany::Registry;
@@ -21,6 +22,7 @@ use Log::Any                         qw($log);
 use BOM::User::FinancialAssessment;
 use Scalar::Util qw( looks_like_number );
 use Math::BigFloat;
+use BOM::User::Utility;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(
@@ -1021,7 +1023,10 @@ sub derivez_validate_and_get_amount {
                     code   => 'CurrencySuspended',
                     params => [$client_currency, $user_derivez_currency]}
                     if first { $_ eq $client_currency or $_ eq $user_derivez_currency } @$disabled_for_transfer_currencies;
-
+                die +{
+                    code   => 'CurrencySuspended',
+                    params => [$client_currency, $user_derivez_currency]}
+                    if BOM::User::Utility::is_currency_pair_transfer_blocked($user_derivez_currency, $client_currency);
                 if ($action eq 'deposit') {
                     try {
                         ($derivez_transfer_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =

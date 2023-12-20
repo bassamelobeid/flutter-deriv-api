@@ -28,6 +28,7 @@ the rest of our system.
 use Syntax::Keyword::Try;
 use BOM::TradingPlatform::DXTrader;
 use BOM::TradingPlatform::MT5;
+use BOM::User::Utility;
 use BOM::TradingPlatform::DerivEZ;
 use BOM::TradingPlatform::CTrader;
 use BOM::Config::Runtime;
@@ -242,6 +243,14 @@ sub validate_transfer {
     my $local_currency = $self->client->account->currency_code;
 
     if (my $suspended_currency = first { $_ eq $local_currency or $_ eq $platform_currency } $app_config->system->suspend->transfer_currencies->@*) {
+        die +{
+            error_code => 'PlatformTransferCurrencySuspended',
+            params     => [$suspended_currency],
+        };
+    }
+
+    if (my $suspended_currency = BOM::User::Utility::is_currency_pair_transfer_blocked($local_currency, $platform_currency)) {
+        $suspended_currency = @$suspended_currency[0];
         die +{
             error_code => 'PlatformTransferCurrencySuspended',
             params     => [$suspended_currency],
