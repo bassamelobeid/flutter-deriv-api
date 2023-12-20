@@ -371,7 +371,7 @@ function getFormParams(form_obj) {
             if (elem[i].nodeName == 'INPUT' && elem[i].type.match(/radio|checkbox/) && !elem[i].checked) {
                 continue; // skip if it is not checked
             }
-            params.append(elem[i].name, encodeURIComponent(elem[i].value));
+            params.append(elem[i].name, elem[i].value);
         }
     }
 
