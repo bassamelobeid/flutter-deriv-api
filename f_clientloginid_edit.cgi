@@ -57,13 +57,6 @@ use feature 'switch';
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
-use constant MANUAL_TIN_APPROVED_VALUES => (
-    "Approved0000",  "001000000",   "00000010",       "CHE-000.000.000", 'APPR000000VED',    "00000000000000000000",
-    "00000000",      "00000",       "100000",         "00000000A",       "0000000000001",    "10000000",
-    "0000000A",      "000000A000A", "GHA-00000000-0", "APPRO0000A",      "APPROV00A00A000A", "000000000000000",
-    "A000000000",    "A000000A",    "A00000000A",     "20000000000",     "000000000",        "000000000000",
-    "0000000000000", "0000000000",  "000000",         "00000000"
-);
 # Once a day we have zombie apocalipsis at backoffice production
 # https://trello.com/c/sNvAuYNn/76-backoffice-memory-leak
 # We have 30 seconds time out at Cloudflare,
@@ -1470,22 +1463,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                     and not $input{tin_not_available});
                 $cli->tax_identification_number($input{tax_identification_number});
             } elsif ($key eq 'tin_not_available') {
-                if ($input{tin_not_available}) {
-                    my $country     = request()->brand->countries_instance();
-                    my $residence   = $cli->tax_residence || $cli->residence;
-                    my $tin_formats = $country->get_tin_format($residence);
-                    if ($tin_formats) {
-                        for my $tin_format (@$tin_formats) {
-                            my $valid_tin = first { $_ =~ m/$tin_format/ } MANUAL_TIN_APPROVED_VALUES;
-                            if ($valid_tin) {
-                                $cli->tax_identification_number($valid_tin);
-                                last;
-                            }
-                        }
-                    } else {
-                        $cli->tax_identification_number(shift MANUAL_TIN_APPROVED_VALUES);
-                    }
-                }
+                $cli->tax_identification_number("Approved000") if $input{tin_not_available};
             }
         }
         _update_mt5_status($cli);
