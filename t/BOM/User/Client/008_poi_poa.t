@@ -3404,8 +3404,11 @@ subtest 'ignore age verification' => sub {
 
 subtest 'Onfido status, under fully auth while having mismatch status' => sub {
     my $age_verification;
+    my $mismatch;
     my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
-    $mocked_status->mock('age_verification', sub { return $age_verification; });
+    $mocked_status->mock('age_verification',  sub { return $age_verification; });
+    $mocked_status->mock('poi_name_mismatch', sub { return $mismatch; });
+    $mocked_status->mock('poi_dob_mismatch',  sub { return $mismatch; });
 
     my $fully_authenticated;
     my $mocked_client = Test::MockModule->new('BOM::User::Client');
@@ -3447,11 +3450,19 @@ subtest 'Onfido status, under fully auth while having mismatch status' => sub {
     is $test_client->get_onfido_status, 'rejected', 'Even though all is clear without age verification, this is kept as rejected';
 
     $age_verification    = {reason => 'fully authenticated at bo'};
+    $mismatch            = 1;
     $fully_authenticated = 1;
 
-    is $test_client->get_onfido_status, 'rejected', 'verification at bo does not change onfido status';
+    is $test_client->get_onfido_status, 'rejected', 'manual verification at bo does not changes onfido status if mismatch exists';
+
+    $age_verification    = {reason => 'fully authenticated at bo'};
+    $mismatch            = 0;
+    $fully_authenticated = 1;
+
+    is $test_client->get_onfido_status, 'verified', 'manual verification at bo changes onfido status if no mismatch exists';
 
     $age_verification    = {reason => 'onfido authenticated'};
+    $mismatch            = 1;
     $fully_authenticated = 1;
 
     is $test_client->get_onfido_status, 'verified', 'had the verification been done by Onfido, the status would be verified';

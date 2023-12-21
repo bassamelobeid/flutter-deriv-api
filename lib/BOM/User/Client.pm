@@ -8048,6 +8048,9 @@ sub get_onfido_status {
         my $reason = $self->status->reason('age_verification');
         return 'verified' if $reason && $reason =~ /onfido/i;
 
+        # in case client was manually fully auth from BO we check if there is no mismatch to return verified
+        return 'verified' if $self->fully_authenticated && !$self->status->poi_name_mismatch && !$self->status->poi_dob_mismatch;
+
         return 'rejected';
     }
 
