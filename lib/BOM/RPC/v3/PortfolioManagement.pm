@@ -162,8 +162,8 @@ rpc proposal_open_contract => sub {
     my $response = {};
 
     if ($params->{args}->{subscribe} && (!defined $contract_id || defined $poc_parameters_all->{$contract_id})) {
-        # subscription channel for either all open contracts ('*'), or a specific open contract.
-        $response->{channel} = join '::', 'CONTRACT_PRICE', $landing_company, $account_id, ($contract_id // '*');
+        # subscription channel for either all open contracts (without contract_id part), or a specific open contract.
+        $response->{channel} = join '::', 'CONTRACT_PRICE', $landing_company, $account_id, ($contract_id // ());
     }
 
     for my $poc_parameters (values %$poc_parameters_all) {
