@@ -37,9 +37,9 @@
                },
                "scopes" : {
                   "minItem" : 1,
-                  "maxItem" : 4,
+                  "maxItem" : 5,
                   "items" : {
-                     "pattern" : "^(read|trade|payments|admin)$",
+                     "pattern" : "^(read|trade|trading_information|payments|admin)$",
                      "type" : "string"
                   },
                   "type" : "array"
