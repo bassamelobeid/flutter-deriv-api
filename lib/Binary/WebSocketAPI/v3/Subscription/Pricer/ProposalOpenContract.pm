@@ -27,8 +27,9 @@ sub do_handle_message {
     unless ($results = $self->_is_response_or_self_invalid($type, $message)) {
         $message->{id} = $self->uuid;
 
-        # forget if the contract is sold and we are not subscribed to all open contracts (CONTRACT_PRICE::<landing_company>::<account_id>::*).
-        if ($message->{is_sold} && !($self->channel =~ m/\*/)) {
+        # forget if the contract is sold and we are subscribed to that specific
+        # open contract (CONTRACT_PRICE::<landing_company>::<account_id>::<contract_id>).
+        if ($message->{is_sold} && scalar(split /::/, $self->channel) == 4) {
             $self->unregister;
         }
 

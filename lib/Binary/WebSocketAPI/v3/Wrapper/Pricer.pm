@@ -113,7 +113,7 @@ sub proposal_open_contract {
     if (defined $channel) {
         # $channel could be in either
         #   - CONTRACT_PRICE::<landing_company>::<account_id>::<contract_id> or
-        #   - CONTRACT_PRICE::<landing_company>::<account_id>::*
+        #   - CONTRACT_PRICE::<landing_company>::<account_id>
         # In the second case, $subscription subscribes to all open contracts.
         my $subscription = Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract->new(
             c           => $c,
