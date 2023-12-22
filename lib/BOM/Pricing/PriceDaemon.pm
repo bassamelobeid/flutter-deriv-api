@@ -227,9 +227,16 @@ sub run {
             if ($response->{longcode}) {
                 $response->{longcode} = localize($response->{longcode});
             }
-            # On websocket the client is subscribing to proposal open contract with "CONTRACT_PRICE::<landing_company>::<account_id>::<contract_id>" as the key
-            my $redis_channel     = join '::', ('CONTRACT_PRICE', $params->{landing_company}, $params->{account_id}, $params->{contract_id});
-            my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
+            # On websocket the client is subscribing either to the specific
+            # proposal open contract updates on
+            # "CONTRACT_PRICE::<landing_company>::<account_id>::<contract_id>"
+            # channel or to updates for all open contracts on
+            # "CONTRACT_PRICE::<landing_company>::<account_id>" channel
+            my $encoded_response  = encode_json_utf8($response);
+            my $redis_channel     = join '::', ('CONTRACT_PRICE', $params->{landing_company}, $params->{account_id});
+            my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, $encoded_response);
+            $redis_channel .= '::' . $params->{contract_id};
+            $subscribers_count += $redis_pricer_subscription->publish($redis_channel, $encoded_response);
             stats_histogram('pricer_daemon.subscribers_per_poc', $subscribers_count, {tags => $self->tags});
 
             # delete the job if no-one is subscribed, or the contract is sold
