@@ -8321,10 +8321,12 @@ sub p2p_withdrawable_balance {
 
     my $balance = $self->account->balance;
     my $config  = BOM::Config::Runtime->instance->app_config->payments;
-    my $limit   = $config->p2p_withdrawal_limit;
+    my $limit   = $config->p2p_withdrawal_limit;                          # this setting is a percentage
 
-    return $balance if $limit >= 100;                                                      # setting is a percentage
-    return $balance unless BOM::Config::P2P::available_countries()->{$self->residence};    # banned countries can withdraw p2p deposits
+    if ($limit >= 100 || $self->p2p_is_advertiser_blocked || !BOM::Config::P2P::available_countries()->{$self->residence}) {
+        return $balance;
+        # permanently banned P2P advertiser or advertisers from P2P banned countries can withdraw p2p deposits
+    }
 
     my $lookback = $config->p2p_deposits_lookback;
 
@@ -9075,7 +9077,9 @@ sub allow_paymentagent_withdrawal {
     my $start = Time::HiRes::time;
 
     my $summary_of_deposits = $self->get_summary_of_deposits($from_time);
-    $summary_of_deposits->{has_p2p} = 0 unless BOM::Config::P2P::available_countries()->{$self->residence};
+    if ($self->p2p_is_advertiser_blocked || !BOM::Config::P2P::available_countries()->{$self->residence}) {
+        $summary_of_deposits->{has_p2p} = 0;
+    }
 
     my $elapsed = Time::HiRes::time - $start;
     stats_timing('bom_rpc.allow_payment_agent_withdraw.timing', $elapsed);

@@ -34,6 +34,11 @@ populate_exchange_rates_db($db, $rates);
 
 BOM::Config::Runtime->instance->app_config->payments->pa_sum_deposits_limit(200);
 
+BOM::Test::Helper::P2P::create_escrow;
+BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $config = BOM::Config::Runtime->instance->app_config->payments;
+
 my $agent_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => 'pa@test.com',
@@ -389,9 +394,6 @@ subtest 'Crypto' => sub {
 
 subtest 'P2P restricted country withdrawal' => sub {
 
-    BOM::Test::Helper::P2P::create_escrow;
-    BOM::Test::Helper::P2P::bypass_sendbird();
-    my $config     = BOM::Config::Runtime->instance->app_config->payments;
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
     my $client     = BOM::Test::Helper::P2P::create_advertiser(balance => 500);
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
@@ -413,13 +415,43 @@ subtest 'P2P restricted country withdrawal' => sub {
     BOM::Config::Runtime->instance->app_config->payments->pa_sum_deposits_limit(99);
 
     is $advertiser->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod',
-        'If Deposit is from p2p and resident is not banned he can withdraw only from p2p';
+        "If deposit is from P2P and advertiser's residence is not retricted from P2P, he can only withdraw via P2P";
 
     $config->p2p->restricted_countries(['ng']);
     $advertiser->residence('ng');
 
-    is $advertiser->allow_paymentagent_withdrawal, undef, 'can withdraw as PA if p2p deposited and country residence is banned';
+    is $advertiser->allow_paymentagent_withdrawal, undef, "can withdraw P2P deposit as PA if advertiser's residence is banned from P2P";
 
+};
+
+subtest 'P2P withdrawal for permanently banned advertiser' => sub {
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $client     = BOM::Test::Helper::P2P::create_advertiser(balance => 500);
+    my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
+        client           => $advertiser,
+        type             => 'buy',
+        max_order_amount => 100,
+        amount           => 100,
+    );
+
+    my (undef, $order) = BOM::Test::Helper::P2P::create_order(
+        client    => $client,
+        advert_id => $ad->{id},
+        amount    => 100
+    );
+
+    $advertiser->p2p_order_confirm(id => $order->{id});
+    $client->p2p_order_confirm(id => $order->{id});
+
+    BOM::Config::Runtime->instance->app_config->payments->pa_sum_deposits_limit(99);
+
+    is $advertiser->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod',
+        'If Deposit is from P2P and advertiser is not permananently banned, he can only withdraw via P2P';
+
+    BOM::Test::Helper::P2P::set_advertiser_is_enabled($advertiser, 0);
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    is $advertiser->allow_paymentagent_withdrawal, undef, "can withdraw P2P deposit as PA if advertiser is permanently banned from P2P";
 };
 
 done_testing();

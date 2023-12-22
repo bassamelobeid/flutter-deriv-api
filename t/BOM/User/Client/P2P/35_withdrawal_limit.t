@@ -64,6 +64,14 @@ subtest 'positive p2p and reversible, balance more than p2p+reversible' => sub {
     cmp_ok $advertiser->p2p_withdrawable_balance, '==', 0, 'zero available when other country banned';
     $config->p2p->restricted_countries([]);
 
+    BOM::Test::Helper::P2P::set_advertiser_is_enabled($advertiser, 0);
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    cmp_ok $advertiser->p2p_withdrawable_balance, '==', $advertiser->account->balance, 'full balance availble when advertiser is banned from P2P';
+
+    BOM::Test::Helper::P2P::set_advertiser_is_enabled($advertiser, 1);
+    delete $advertiser->{_p2p_advertiser_cached};
+
     $advertiser->payment_doughflow(
         currency          => $advertiser->currency,
         remark            => 'x',
