@@ -118,13 +118,13 @@
         [% END %]
         [% IF order.advert_payment_method_names %]
         <tr>
-            <td>Payment methods (visible at order creation)</td>
+            <td>Order Payment methods (visible at order creation)</td>
             <td>[% order.advert_payment_method_names %]</td>
         </tr>        
         [% END %]
         [% IF !order.buy_confirm_pms.keys.empty %]
         <tr>
-            <td>Payment methods (visible at buyer confirm)</td>
+            <td>Order Payment methods (visible at buyer confirm)</td>
             <td>
                 [% FOR pm IN order.buy_confirm_pms.values %]
                     <table class="small" style="table-layout:fixed;width:100%;overflow-wrap: break-word;[% IF loop.count>1 %]margin-top:12px;[% END %]">
