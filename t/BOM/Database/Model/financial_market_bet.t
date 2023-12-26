@@ -5,6 +5,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::FailWarnings -allow_from => [qw/BOM::Database::Rose::DB/];
+use Test::Warnings;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBetOpen;
