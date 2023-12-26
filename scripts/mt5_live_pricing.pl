@@ -20,6 +20,7 @@ my $mt5_redis_config_file  = '/etc/rmg/redis-mt5user.yml';
 my $feed_redis_config_file = '/etc/rmg/redis-feed.yml';
 my $firebase_config        = '/etc/rmg/firebase.yml';
 my $max_connection;
+my $refresh_config;
 
 GetOptions(
     'mt5_redis_config=s'  => \$mt5_redis_config_file,
@@ -27,6 +28,7 @@ GetOptions(
     'mt5_config=s'        => \$mt5_config_file,
     'firebase_config=s'   => \$firebase_config,
     'max_connection=s'    => \$max_connection,
+    'refresh-config!'     => \$refresh_config,
 );
 
 while (1) {
@@ -44,7 +46,12 @@ while (1) {
 
         $loop->add($live_pricing);
 
-        $live_pricing->run->get();
+        if ($refresh_config) {
+            $live_pricing->initialise_config(1)->get();
+            last;
+        } else {
+            $live_pricing->run->get();
+        }
 
         $loop->remove($live_pricing);
     } catch ($e) {

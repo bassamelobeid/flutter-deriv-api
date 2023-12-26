@@ -40,7 +40,7 @@ use Log::Any               qw($log), formatter => sub {
 use BOM::MT5::User::Async;
 use BOM::Config;
 use HTTP::Tiny;
-use DataDog::DogStatsd::Helper qw(stats_timing);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 =head2 DEFAULT_MAX_CONNECTION
 
@@ -54,9 +54,13 @@ MTR string
 
 Represents the number of seconds in a day
 
-=head2 MT5_MIDCACHE
+=head2 START_DAY_PRICE_KEY_PREFIX
 
 Redis key prefix to cache daily mid price
+
+=head2 MT5_MIDCACHE_LEGACY
+
+Redis key prefix to cache daily mid price (legacy, provided by AssetListing service)
 
 =head2 MARKET_MAPPER
 
@@ -66,12 +70,18 @@ A hash reference to map market string from MT5 to its display name
 
 A hash reference to map string to its abbreviation for cost optimisation on firebase
 
+=head2 REGIONS
+
+A list of regions. Region is defined as an equivalence class of users with respect to what instruments they receive data for
+
 =cut
 
-use constant DEFAULT_MAX_CONNECTION => 20;
-use constant MTR_PREFIX             => 'MTR';
-use constant SECONDS_IN_DAY         => 86400;
-use constant MT5_MIDCACHE           => 'MT5::MIDCACHE::';
+use constant DEFAULT_MAX_CONNECTION     => 20;
+use constant MTR_PREFIX                 => 'MTR';
+use constant SECONDS_IN_DAY             => 86400;
+use constant MT5_MIDCACHE_LEGACY        => 'MT5::MIDCACHE::';
+use constant START_DAY_PRICE_KEY_PREFIX => 'LivePricing::StartDayPrice::';
+use constant REGIONS                    => qw(eu row);
 use constant MARKET_MAPPER => {
     'Crypto'              => 'cryptocurrency',
     'Crypto Crypto_cross' => 'cryptocurrency',
@@ -237,9 +247,9 @@ async sub process_tick {
             my $new_ask    = $tick->{ask} + $conf->{point} * ($conf->{spread_diff} / 2 + $conf->{spread_diff_balance});
             my $new_mid    = ($new_ask + $new_bid) / 2;
             my $spread     = $new_ask - $new_bid;
-            my $cached_mid = await $self->{mt5_redis}->get(MT5_MIDCACHE . $tick->{symbol});
+            my $cached_mid = await $self->get_start_day_price($tick->{symbol}, $new_mid);
 
-            my $daily_percentage_change = defined $cached_mid ? ($new_mid - $cached_mid) / $cached_mid * 100 : 0;
+            my $daily_percentage_change = ($new_mid - $cached_mid) / $cached_mid * 100;
             my $rounded_dpc             = roundnear(0.01, $daily_percentage_change);
             my $dpc_prefix              = $rounded_dpc < 0 ? '-' : $rounded_dpc > 0 ? '+' : '';
             my $formatted_dpc           = $dpc_prefix . abs($rounded_dpc) . '%';
@@ -275,6 +285,29 @@ async sub process_tick {
     } catch ($e) {
         $log->debugf("fail to process tick with %s", $e);
     }
+}
+
+=head2 get_start_day_price
+
+Gets the price of the symbol for the beginning of the current day.
+
+=cut
+
+async sub get_start_day_price {
+    my ($self, $symbol_name, $new_value) = @_;
+
+    if (my $price = await $self->{mt5_redis}->get(START_DAY_PRICE_KEY_PREFIX . $symbol_name)) {
+        return $price;
+    }
+    if (my $price = await $self->{mt5_redis}->get(MT5_MIDCACHE_LEGACY . $symbol_name)) {
+        return $price;
+    }
+
+    my $price          = $new_value;
+    my $next_day_epoch = (int(time / SECONDS_IN_DAY) + 1) * SECONDS_IN_DAY;
+    await $self->{mt5_redis}->set(START_DAY_PRICE_KEY_PREFIX . $symbol_name, $new_value, EXAT => $next_day_epoch);
+    stats_inc('mt5.live_pricing.base_price_update', {tags => ['symbol:' . $symbol_name]});
+    return $price;
 }
 
 =head2 update_price
@@ -370,37 +403,57 @@ Initialise instrument configuration from MT5 settings.
 =cut
 
 async sub initialise_config {
-    my $self = shift;
+    my ($self, $no_cache_read) = @_;
 
     my $retry_delay = 10;    # Delay in seconds between retries
 
     while (1) {
         try {
             # This will need to be configuration in the backoffice
-            my $live_pricing = BOM::Config::Runtime->instance->app_config->quants->live_pricing_config;
             my $config;
             my $available_region;
-            foreach my $region (qw(eu row)) {
-                $log->debugf("initializing config for region: %s", $region);
-                my $symbols_config = decode_json_utf8($live_pricing->$region->symbols // '[]');
-                unless ($symbols_config->@*) {
-                    $log->debugf("Undefined symbols config for region: %s", $region);
-                    next;
-                }
 
-                foreach my $c ($symbols_config->@*) {
-                    my $mt5_group           = $c->{group};
-                    my $group_symbol_config = await $self->_get_group_symbol_config($mt5_group);
-                    foreach my $symbol_config ($c->{symbols}->@*) {
-                        my $symbol = $symbol_config->{symbol};
-                        unless (defined $group_symbol_config->{$symbol}) {
-                            $log->debugf("group symbol config not found for group %s and %s", $mt5_group, $symbol);
-                            next;
+            unless ($no_cache_read) {
+                try {
+                    $config           = decode_json_utf8(await $self->{mt5_redis}->get('LivePricing::Config'));
+                    $available_region = decode_json_utf8(await $self->{mt5_redis}->get('LivePricing::AvailableRegion'));
+                } catch ($e) {
+                    # Swallow all errors
+                }
+            }
+
+            unless ($config && $available_region) {
+                # Do not append -- only create new one!
+                $config           = undef;
+                $available_region = undef;
+
+                my $live_pricing = BOM::Config::Runtime->instance->app_config->quants->live_pricing_config;
+                foreach my $region (REGIONS) {
+                    $log->debugf("initializing config for region: %s", $region);
+                    my $symbols_config = decode_json_utf8($live_pricing->$region->symbols // '[]');
+                    unless ($symbols_config->@*) {
+                        $log->debugf("Undefined symbols config for region: %s", $region);
+                        next;
+                    }
+
+                    foreach my $c ($symbols_config->@*) {
+                        my $mt5_group           = $c->{group};
+                        my $group_symbol_config = await $self->_get_group_symbol_config($mt5_group);
+                        foreach my $symbol_config ($c->{symbols}->@*) {
+                            my $symbol = $symbol_config->{symbol};
+                            unless (defined $group_symbol_config->{$symbol}) {
+                                $log->debugf("group symbol config not found for group %s and %s", $mt5_group, $symbol);
+                                next;
+                            }
+                            $config->{$region}{$symbol} //= {$group_symbol_config->{$symbol}->%*, $symbol_config->%*};
+                            push $available_region->{$symbol}->@*, $region;
                         }
-                        $config->{$region}{$symbol} //= {$group_symbol_config->{$symbol}->%*, $symbol_config->%*};
-                        push $available_region->{$symbol}->@*, $region;
                     }
                 }
+
+                my $exat = time + 30 * SECONDS_IN_DAY;
+                await $self->{mt5_redis}->set('LivePricing::Config',          encode_json_utf8($config),           EXAT => $exat);
+                await $self->{mt5_redis}->set('LivePricing::AvailableRegion', encode_json_utf8($available_region), EXAT => $exat);
             }
 
             # init previous ticks
@@ -456,7 +509,13 @@ async sub _get_group_symbol_config {
         return undef;
     }
 
-    my $group_info = await BOM::MT5::User::Async::get_group($mt5_group);
+    my $asyncer = async sub {
+        my $fn = shift;
+        $self->loop->loop_once(0);
+        await $fn->(@_);
+    };
+
+    my $group_info = await $asyncer->(\&BOM::MT5::User::Async::get_group, $mt5_group);
 
     unless ($group_info->{symbols}) {
         $log->debugf("No symbols for group: %s", $mt5_group);
@@ -465,10 +524,13 @@ async sub _get_group_symbol_config {
 
     my $config;
     foreach my $symbol ($group_info->{symbols}->@*) {
+        # This logic is not generally correct as it doesn't support template-like paths.
+        # But in current environment there are no such, thus we implement it with that "hidden knowledge" in mind.
+        # The example for template-like path: "Forex Major\*,Forex Minor\*"
         my @paths      = split /\\/, $symbol->{path};
         my $mt5_symbol = $paths[-1];
 
-        my $conf = await BOM::MT5::User::Async::get_symbol($manager_login, $mt5_symbol);
+        my $conf = await $asyncer->(\&BOM::MT5::User::Async::get_symbol, $manager_login, $mt5_symbol);
         # we want to store the config in deriv symbol because ticks are streamed in deriv symbol
         $config->{$mt5_symbol} = {
             spread_diff         => $symbol->{spreadDiff},
