@@ -42,11 +42,11 @@ sub _build__connection_parameters {
     return {
         database       => $self->_db_name,
         driver         => 'Pg',
-        host           => 'localhost',
+        host           => $ENV{DB_TEST_HOST} // 'localhost',
         port           => $ENV{DB_TEST_PORT} // '5433',
         user           => 'postgres',
         password       => 'mRX1E3Mi00oS8LG',
-        pgbouncer_port => '6433',
+        pgbouncer_port => $ENV{BOMDB_PORT} // '6433',
     };
 }
 
@@ -312,7 +312,8 @@ sub _create_table_for_date {
 
     if ($table_present->[0] < 1) {
         my $port = $ENV{DB_TEST_PORT} // '5433';
-        my $dbh  = DBI->connect("dbi:Pg:dbname=feed;host=localhost;port=$port", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
+        my $host = $ENV{DB_TEST_HOST} // 'localhost';
+        my $dbh  = DBI->connect("dbi:Pg:dbname=feed;host=$host;port=$port", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
 
         # This operation is bound to raise an warning about how index was created.
         # We can ignore it.

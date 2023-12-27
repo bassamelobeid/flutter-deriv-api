@@ -19,11 +19,11 @@ sub _build__connection_parameters {
         database       => $self->_db_name,
         domain         => 'TEST',
         driver         => 'Pg',
-        host           => 'localhost',
+        host           => $ENV{DB_TEST_HOST} // 'localhost',
         port           => $ENV{DB_TEST_PORT} // '5436',
         user           => 'postgres',
         password       => 'mRX1E3Mi00oS8LG',
-        pgbouncer_port => '6432',
+        pgbouncer_port => $ENV{BOMDB_PORT} // '6432',
     };
 }
 
