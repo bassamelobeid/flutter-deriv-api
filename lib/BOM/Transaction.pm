@@ -408,8 +408,7 @@ sub BUILDARGS {
     return $args;
 }
 
-my %known_errors;              # forward declaration
-sub sell_expired_contracts;    # forward declaration
+my %known_errors;    # forward declaration
 
 sub stats_start {
     my $self = shift;
@@ -1370,6 +1369,31 @@ sub batch_buy {
     return;
 }
 
+# _extract_contract_specifics_for_sell extracts from the contract attributes
+# specific to the type of the contract that should be stored in the database
+# during sell. Accepts two parameters the contract and a reference to the hash
+# to which the extracted attributes should be added, the later reference needs
+# to have C<id> attribute set to the contract if in the database
+sub _extract_contract_specifics_for_sell {
+    my ($contract, $params) = @_;
+
+    $params->{absolute_barrier} = $contract->barrier->as_absolute
+        if $contract->category_code eq 'asian' and $contract->is_after_settlement;
+    $params->{bid_spread} = $contract->sell_commission if $contract->can('sell_commission');
+
+    # we need to verify child table for certain contracts to avoid cases where a contract
+    # is sold while it is being updated via a difference process.
+    if ($contract->category_code =~ /^(multiplier|accumulator|turbos)$/) {
+        $params->{verify_child} = _get_info_to_verify_child($params->{id}, $contract);
+    }
+    if ($contract->category_code eq 'multiplier') {
+        $params->{hit_type} = $contract->hit_type;
+    }
+    if ($contract->category_code eq "accumulator") {
+        $params->{tick_final_count} = $contract->tick_count_after_entry;
+    }
+}
+
 sub prepare_bet_data_for_sell {
     my $self     = shift;
     my $contract = shift || $self->contract;
@@ -1384,25 +1408,14 @@ sub prepare_bet_data_for_sell {
         sell_price => scalar $self->price,
         sell_time  => scalar $contract->date_pricing->db_timestamp,
         quantity   => 1,
-        $contract->category_code eq 'asian' && $contract->is_after_settlement
-        ? (absolute_barrier => scalar $contract->barrier->as_absolute)
-        : (),
     };
 
     if ($contract->can('cancellation')) {
         $bet_params->{is_cancelled} = $self->action_type eq 'cancel' ? 1 : 0;
     }
 
-    $bet_params->{bid_spread} = $contract->sell_commission if $contract->can('sell_commission');
+    _extract_contract_specifics_for_sell($contract, $bet_params);
 
-    # we need to verify child table for multiplier and accumulator to avoid cases where a contract
-    # is sold while it is being updated via a difference process.
-    if ($contract->category_code =~ /^(multiplier|accumulator|turbos)$/) {
-        $bet_params->{verify_child} = _get_info_to_verify_child($self->contract_id, $contract);
-    }
-    if ($contract->category_code eq "accumulator") {
-        $bet_params->{tick_final_count} = $contract->tick_count_after_entry;
-    }
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -2288,11 +2301,10 @@ my %source_to_sell_type = (
 );
 
 sub sell_expired_contracts {
-    my $args          = shift;
-    my $client        = $args->{client};
-    my $source        = $args->{source};
-    my $contract_ids  = $args->{contract_ids};
-    my $collect_stats = $args->{collect_stats};
+    my $args         = shift;
+    my $client       = $args->{client};
+    my $source       = $args->{source};
+    my $contract_ids = $args->{contract_ids};
 
     my $currency = $client->currency;
     my $loginid  = $client->loginid;
@@ -2326,125 +2338,23 @@ sub sell_expired_contracts {
     my @bets_to_sell;
     my @quants_bet_variables;
     my @transdata;
-    my %stats_attempt;
-    my %stats_failure;
+    my $stats = {
+        attempt => {},
+        failure => {},
+    };
 
     for my $bet (@$bets) {
-        my $contract;
-        my $failure = {fmb_id => $bet->{id}};
-        try {
-            my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
-            if ($bet->{bet_class} =~ /^(multiplier|accumulator|turbos)$/) {
-                # for multiplier and accumulator, we need to combine information on the child table to complete a contract
-                $bet_params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
-            }
-            $contract = produce_contract($bet_params);
-        } catch {
-            $failure->{reason} = 'Could not instantiate contract object';
-            push @{$result->{failures}}, $failure;
-            next;
-        }
-
-        # if contract is not expired, don't bother to do anything
-        next unless $contract->is_expired;
-        my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code}
-            or warn "No logging class found for contract type " . $contract->code;
-        $logging_class //= 'INVALID';
-        $stats_attempt{$logging_class}++;
-
-        my $valid = $contract->is_valid_to_sell;
-        BOM::Transaction::Utility::report_validation_stats($contract, 'sell', $valid);
-
-        try {
-            if ($valid) {
-                @{$bet}{qw/sell_price sell_time is_expired/} =
-                    ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
-                $bet->{absolute_barrier} = $contract->barrier->as_absolute
-                    if $contract->category_code eq 'asian' and $contract->is_after_settlement;
-
-                if ($contract->category_code eq 'multiplier') {
-                    $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
-                    $bet->{hit_type}     = $contract->hit_type;
-                }
-
-                if ($contract->category_code =~ /^(accumulator|turbos)$/) {
-                    $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
-                    $bet->{bid_spread}   = $contract->sell_commission
-                        if ($contract->can('sell_commission') and $contract->category_code eq 'accumulator');
-                }
-                if ($contract->category_code eq 'accumulator') {
-                    $bet->{tick_final_count} = $contract->tick_count_after_entry;
-                }
-
-                $bet->{quantity} = 1;
-                push @bets_to_sell, $bet;
-                push @transdata,
-                    {
-                    staff_loginid => 'AUTOSELL',
-                    source        => $source,
-                    };
-
-                # price_slippage will not happen to expired contract, hence not needed.
-                push @quants_bet_variables,
-                    BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                        data_object_params => _build_pricing_comment({
-                                contract => $contract,
-                                action   => 'autosell_expired_contract',
-                            }
-                        )->[1],
-                    });
-
-                # collect stats about expiryd process they should be removed later
-                # expiryd only send one contract id so it's safe to return single value.
-                # this a hack that should be removed later when examination is done.
-                if ($collect_stats) {
-                    $result->{contract_expiry_epoch} = $contract->exit_tick->epoch if $contract->exit_tick;
-                    $result->{contract_expiry_epoch} = $contract->hit_tick->epoch  if $contract->is_path_dependent and $contract->hit_tick;
-                    $result->{bet_type}              = $bet->bet_type;
-                    $result->{expiry_type}           = $contract->expiry_type;
-                }
-
-            } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
-                # for virtual, if can't settle bet due to missing market data, sell contract with buy price
-                @{$bet}{qw/sell_price sell_time is_expired/} = ($bet->{buy_price}, $now->db_timestamp, $contract->is_expired);
-                $bet->{quantity} = 1;
-                push @bets_to_sell, $bet;
-                push @transdata,
-                    {
-                    staff_loginid => 'AUTOSELL',
-                    source        => $source,
-                    };
-                #empty list for virtual
-                push @quants_bet_variables,
-                    BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                        data_object_params => {},
-                    });
-            } else {
-                my $cpve = $contract->primary_validation_error;
-                if ($cpve) {
-                    my ($error_msg, $reason) =
-                         !($contract->is_expired and $contract->is_valid_to_sell)
-                        ? ('NotExpired', 'not expired')
-                        : (_normalize_error($cpve), $cpve->message);
-                    $stats_failure{$logging_class}{$error_msg}++;
-                    $failure->{reason} = $reason;
-                } else {
-                    $failure->{reason} = "Unknown failure in sell_expired_contracts, shortcode: " . $contract->shortcode;
-                    warn 'validation error missing when contract is invalid to sell, shortcode['
-                        . $contract->shortcode
-                        . '] pricing time ['
-                        . $contract->date_pricing->datetime . ']';
-                }
-                push @{$result->{failures}}, $failure;
-            }
-        } catch ($err) {
-            if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
-                # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
-                # live pricing condition was not ok and get_for_period was called for
-                # Data::Chronicle::Reader without dbic
-                $err .= "Data::Chronicle::Reader get_for_period call without dbic: Details: contract shortcode: " . $contract->shortcode . "\n";
-            }
-            warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $err;    # log it
+        my $sell_info = _prepare_expired_contract_for_sell($bet, $client, $now, $stats);
+        if ($sell_info->{failure}) {
+            push @{$result->{failures}}, $sell_info->{failure};
+        } elsif ($sell_info->{bet}) {
+            push @bets_to_sell,         $sell_info->{bet};
+            push @quants_bet_variables, $sell_info->{quants_bet_variables};
+            push @transdata,
+                {
+                staff_loginid => 'AUTOSELL',
+                source        => $source,
+                };
         }
     }
 
@@ -2454,14 +2364,14 @@ sub sell_expired_contracts {
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
     my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
 
-    for my $class (keys %stats_attempt) {
-        stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});
+    for my $class (keys %{$stats->{attempt}}) {
+        stats_count("transaction.sell.attempt", $stats->{attempt}{$class}, {tags => [@tags, "contract_class:$class"]});
     }
-    for my $class (keys %stats_failure) {
-        for my $reason (keys %{$stats_failure{$class}}) {
+    for my $class (keys %{$stats->{failure}}) {
+        for my $reason (keys %{$stats->{failure}{$class}}) {
             stats_count(
                 "transaction.sell.failure",
-                $stats_failure{$class}{$reason},
+                $stats->{failure}{$class}{$reason},
                 {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error($reason)]});
         }
     }
@@ -2482,13 +2392,29 @@ sub sell_expired_contracts {
     my $sold;
     try {
         $sold = $fmb_helper->batch_sell_bet;
-        for (@$sold) {
-            my $item           = $_;
-            my $bet            = first { $_->{id} eq $item->{fmb}{id} } @bets_to_sell;
+    } catch ($e) {
+        my $bet_count = scalar @$bets;
+        my $message   = ref $e eq 'ARRAY' ? "@$e" : "$e";
+        warn($message . " (bet_count = $bet_count)");
+    }
+
+    $sold //= [];
+    $result->{skip_contract}       = @$bets - @$sold;
+    $result->{number_of_sold_bets} = 0 + @$sold;
+    $result->{total_credited}      = 0;
+    my $total_losses = 0;
+    my %stats_success;
+    my %missed;
+
+    my %sold_contracts = map { $_->{fmb}->{id} => $_ } @{$sold // []};
+    for my $bet (@bets_to_sell) {
+        if ($sold_contracts{$bet->{id}}) {
+            my $item           = $sold_contracts{$bet->{id}};
+            my $fmb            = $item->{fmb};
             my $poc_parameters = BOM::Transaction::Utility::build_poc_parameters(
                 $client,
                 {
-                    $item->{fmb}->%*,
+                    $fmb->%*,
                     buy_transaction_id  => $item->{buy_txn_id},
                     sell_transaction_id => $item->{txn}{id}});
             if ($bet->{bet_class} =~ /^(multiplier|accumulator|turbos)$/) {
@@ -2501,92 +2427,144 @@ sub sell_expired_contracts {
             BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
 
             if ($bet->{bet_class} eq 'multiplier') {
-
                 my $multiplier_hit_type = {
                     loginid     => $client->loginid,
                     contract_id => $bet->{id},
                     hit_type    => $bet->{hit_type},
                     sell_price  => $bet->{sell_price},
                     currency    => $currency,
-                    profit      => formatnumber('price', $currency, $bet->{sell_price} - $bet->{buy_price})};
-
+                    profit      => formatnumber('price', $currency, $bet->{sell_price} - $bet->{buy_price}),
+                };
                 BOM::Platform::Event::Emitter::emit('multiplier_hit_type', $multiplier_hit_type);
             }
-        }
-        my @not_sold = grep {
-            my $id = $_;
-            !grep { $id eq $_->{fmb}{id} } @$sold
-        } map { $_->{id} } @bets_to_sell;
-        BOM::Transaction::Utility::update_poc_parameters_ttl($_, $client) for (@not_sold);
-    } catch ($e) {
-        my $bet_count = scalar @$bets;
-        my $message   = ref $e eq 'ARRAY' ? "@$e" : "$e";
-        warn($message . " (bet_count = $bet_count)");
-        $sold = [];
-    }
+            $result->{total_credited} += $item->{txn}->{amount};
+            $total_losses += $fmb->{sell_price} + 0 ? 0 : $fmb->{buy_price};
+            $stats_success{$fmb->{bet_class}}->[0]++;
 
-    if (not $sold or @bets_to_sell > @$sold) {
-        # We missed some, let's figure out which ones they are.
-        my %sold_fmbs = map { $_->{fmb}->{id} => 1 } @{$sold // []};
-        my %missed;
-        foreach my $bet (@bets_to_sell) {
-            next if $sold_fmbs{$bet->{id}};    # Was not missed.
+            BOM::Transaction::CompanyLimits->new(
+                contract_data   => $fmb,
+                currency        => $currency,
+                landing_company => $client->landing_company,
+            )->add_sells($client);
+        } else {
+            BOM::Transaction::Utility::update_poc_parameters_ttl($bet->{id}, $client);
             $missed{$bet->{bet_class}}++;
             push @{$result->{failures}},
                 {
                 fmb_id => $bet->{id},
-                reason => _normalize_error("TransactionFailure")};
-        }
-        foreach my $class (keys %missed) {
-            stats_count("transaction.sell.failure", $missed{$class},
-                {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error("TransactionFailure")]});
-
+                reason => _normalize_error("TransactionFailure"),
+                };
         }
     }
 
-    return $result unless $sold and @$sold;    # nothing has been sold
+    foreach my $class (keys %missed) {
+        stats_count("transaction.sell.failure", $missed{$class},
+            {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error("TransactionFailure")]});
 
-    my $skip_contract  = @$bets - @$sold;
-    my $total_credited = 0;
-    my %stats_success;
-
-    my $total_losses = 0;
-
-    my $sr_check_required =
-        $client->landing_company->social_responsibility_check && $client->landing_company->social_responsibility_check eq 'required';
-
-    for my $t (@$sold) {
-
-        my $fmb = $t->{fmb};
-
-        $total_credited += $t->{txn}->{amount};
-        $stats_success{$fmb->{bet_class}}->[0]++;
-        $stats_success{$fmb->{bet_class}}->[1] += $t->{txn}->{amount};
-
-        if ($sr_check_required) {
-            $total_losses += $fmb->{sell_price} + 0 ? 0 : $fmb->{buy_price};
-        }
-
-        BOM::Transaction::CompanyLimits->new(
-            contract_data   => $fmb,
-            currency        => $currency,
-            landing_company => $client->landing_company,
-        )->add_sells($client);
     }
 
-    $client->increment_social_responsibility_values({
+    return $result unless @$sold;    # nothing has been sold
+
+    my $sr_check = $client->landing_company->social_responsibility_check // '';
+    if ($sr_check eq 'required') {
+        $client->increment_social_responsibility_values({
             losses => $total_losses,
-        }) if $sr_check_required;
-
+        });
+    }
     for my $class (keys %stats_success) {
         stats_count("transaction.sell.success", $stats_success{$class}->[0], {tags => [@tags, "contract_class:$class"]});
     }
 
-    $result->{skip_contract}       = $skip_contract;
-    $result->{total_credited}      = $total_credited;
-    $result->{number_of_sold_bets} = 0 + @$sold;
-
     return $result;
+}
+
+# _prepare_expired_contract_for_sell checks if the contract is valid to sell
+# and prepares the data for database transaction
+sub _prepare_expired_contract_for_sell {
+    my ($bet, $client, $now, $stats) = @_;
+
+    my $contract;
+    my $failure = {fmb_id => $bet->{id}};
+    try {
+        my $bet_params = shortcode_to_parameters($bet->{short_code}, $client->currency);
+        if ($bet->{bet_class} =~ /^(multiplier|accumulator|turbos)$/) {
+            # for multiplier and accumulator, we need to combine information on the child table to complete a contract
+            $bet_params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
+        }
+        $contract = produce_contract($bet_params);
+    } catch {
+        $failure->{reason} = 'Could not instantiate contract object';
+        return {failure => $failure};
+    }
+
+    # if contract is not expired, don't bother to do anything
+    return unless $contract->is_expired;
+    my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code}
+        or warn "No logging class found for contract type " . $contract->code;
+    $logging_class //= 'INVALID';
+    $stats->{attempt}{$logging_class}++;
+
+    my $valid = $contract->is_valid_to_sell;
+    BOM::Transaction::Utility::report_validation_stats($contract, 'sell', $valid);
+
+    try {
+        if ($valid) {
+            @{$bet}{qw/sell_price sell_time is_expired/} =
+                ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
+            $bet->{quantity} = 1;
+            _extract_contract_specifics_for_sell($contract, $bet);
+
+            return {
+                bet                  => $bet,
+                quants_bet_variables => BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                        data_object_params => _build_pricing_comment({
+                                contract => $contract,
+                                action   => 'autosell_expired_contract',
+                            }
+                        )->[1],
+                    }
+                ),
+            };
+        } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
+            # for virtual, if can't settle bet due to missing market data, sell contract with buy price
+            @{$bet}{qw/sell_price sell_time is_expired/} = ($bet->{buy_price}, $now->db_timestamp, $contract->is_expired);
+            $bet->{quantity} = 1;
+            return {
+                bet                  => $bet,
+                quants_bet_variables => BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                        data_object_params => {},
+                    }
+                ),
+            };
+        } else {
+            my $cpve = $contract->primary_validation_error;
+            if ($cpve) {
+                my ($error_msg, $reason) =
+                     !($contract->is_expired and $contract->is_valid_to_sell)
+                    ? ('NotExpired', 'not expired')
+                    : (_normalize_error($cpve), $cpve->message);
+                $stats->{failure}{$logging_class}{$error_msg}++;
+                $failure->{reason} = $reason;
+            } else {
+                $failure->{reason} = "Unknown failure in sell_expired_contracts, shortcode: " . $contract->shortcode;
+                warn 'validation error missing when contract is invalid to sell, shortcode['
+                    . $contract->shortcode
+                    . '] pricing time ['
+                    . $contract->date_pricing->datetime . ']';
+            }
+            return {
+                failure => $failure,
+            };
+        }
+    } catch ($err) {
+        if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
+            # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
+            # live pricing condition was not ok and get_for_period was called for
+            # Data::Chronicle::Reader without dbic
+            $err .= "Data::Chronicle::Reader get_for_period call without dbic: Details: contract shortcode: " . $contract->shortcode . "\n";
+        }
+        warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $err;    # log it
+    }
 }
 
 sub report {

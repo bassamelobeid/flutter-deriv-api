@@ -104,10 +104,6 @@ sub set_poc_parameters {
         $default_expiry = min($default_expiry, int($ttl));
     }
 
-    if ($default_expiry <= 0) {
-        warn "CONTRACT_PARAMS is not set for $redis_key because of invalid TTL";
-    }
-
     my %hash = (
         price_daemon_cmd => 'bid',
         %$poc_parameters,
