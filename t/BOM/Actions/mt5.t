@@ -21,6 +21,7 @@ use BOM::Platform::Context qw(localize request);
 use BOM::Event::Process;
 use BOM::Test::Email   qw(mailbox_clear mailbox_search);
 use BOM::User::Utility qw(parse_mt5_group);
+use JSON::MaybeXS      qw(encode_json);
 use BOM::Config::Runtime;
 use Clone 'clone';
 
@@ -3515,7 +3516,7 @@ subtest 'mt5_archive_accounts' => sub {
 
     subtest 'Not found' => sub {
 
-        $mocked_actions->mock('_get_mt5_account', sub { return []; });
+        $mocked_actions->mock('_get_mt5_account', sub { undef });
         like exception { $action_handler->($args)->get; }, qr/Must provide list of MT5 loginids/, 'correct exception when loginids are missing';
 
         $args   = {loginids => ['MTR90000']};
@@ -3529,7 +3530,7 @@ subtest 'mt5_archive_accounts' => sub {
                     email_content_is_html => 1,
                     from                  => 'system@deriv.com',
                     message               => [
-                        "<p>MT5 Archival request result<p>\n    <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>",
+                        "<p>MT5 Archival request result</p>\n    <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>",
                         "<tr><td>MTR90000</td><td>Not Archived</td><td>Unknown</td><td>Account not found</td></tr>",
                         "</table>"
                     ],
@@ -3556,7 +3557,7 @@ subtest 'mt5_archive_accounts' => sub {
                     email_content_is_html => 1,
                     from                  => 'system@deriv.com',
                     message               => [
-                        "<p>MT5 Archival request result<p>\n    <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>",
+                        "<p>MT5 Archival request result</p>\n    <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>",
                         "<tr><td>MTR90000</td><td>Not Archived</td><td>Undefined</td><td>Account already archived</td></tr>",
                         "</table>"
                     ],
@@ -3597,7 +3598,7 @@ subtest 'mt5_archive_accounts' => sub {
                     'to'      => 'x-trading-ops@deriv.com',
                     'subject' => 'MT5 Archival request result ',
                     'message' => [
-                        '<p>MT5 Archival request result<p>
+                        '<p>MT5 Archival request result</p>
     <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>',
                         '<tr><td>MTR90000</td><td>Not Archived</td><td>real\\p01_ts02\\some_bvi_group</td><td>IB main account</td></tr>',
                         '<tr><td>MTR90001</td><td>Not Archived</td><td>Undefined</td><td>IB technical account</td></tr>',
@@ -3648,7 +3649,7 @@ subtest 'mt5_archive_accounts' => sub {
                     'to'      => 'x-trading-ops@deriv.com',
                     'subject' => 'MT5 Archival request result ',
                     'message' => [
-                        '<p>MT5 Archival request result<p>
+                        '<p>MT5 Archival request result</p>
     <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>',
                         '<tr><td>MTR90000</td><td>Archived</td><td>real\\p01_ts02\\some_bvi_group</td><td>Archived successfully, account had zero balance</td></tr>',
                         '<tr><td>MTR90001</td><td>Archived</td><td>real\\p01_ts02\\some_vanuatu_group</td><td>[2023-07-25T09:38:48.819049Z] Transfer from MT5 login: MTR90001 to binary account CR10000 USD 100</td></tr>',
@@ -4151,6 +4152,123 @@ subtest 'mt5_svg_migration_requested' => sub {
     $mocked_user->unmock_all;
     $mocked_mt5_async->unmock_all;
     $mocked_emitter->unmock_all;
+};
+
+subtest 'mt5_archive_accounts' => sub {
+    my $user = BOM::User->create(
+        email          => 'test@test.test',
+        password       => 'supahsus',
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test@test.test',
+    });
+
+    my $action_handler   = BOM::Event::Process->new(category => 'generic')->actions->{mt5_archive_accounts};
+    my $emitter_mock     = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $mt5_actions_mock = Test::MockModule->new('BOM::Event::Actions::MT5');
+    my $mocked_user      = Test::MockModule->new('BOM::User');
+    my $mocked_mt5       = Test::MockModule->new('BOM::MT5::User::Async');
+    my $time_mock        = Test::MockModule->new('Time::Moment');
+
+    my $get_mt5_account_from_db_values = {
+        'MTR1000001' => undef,                                                                    # Account found
+        'MTR1000002' => [1, 'archived',             encode_json({group => 'some_svg_group'})],    # Account already archived
+        'MTR1000003' => [2, '',                     encode_json({group => 'some_svg_group'})],    # Account has open orders or positions
+        'MTR1000004' => [3, '',                     encode_json({group => 'some_svg_group'})],    # Account has a negative balance
+        'MTR1000005' => [4, '',                     encode_json({group => 'some_svg_group'})],    # No active CR account found to withdraw
+        'MTR1000006' => [5, 'proof_failed',         encode_json({group => 'some_svg_group'})],    # User not found
+        'MTR1000007' => [6, 'verification_pending', encode_json({group => 'some_svg_group'})],    # Failed to perform withdrawal
+        'MTR1000008' => [7, 'poa_failed',           encode_json({group => 'some_bvi_group'})],    # Archived successfully, account had zero balance
+        'MTR1000009' => [8, '', encode_json({group => 'some_svg_group'})],    # [%s] Transfer from MT5 login: %s to binary account %s %s %s
+    };
+
+    $mt5_actions_mock->mock(
+        '_get_mt5_account',
+        sub {
+            my $arg     = shift;
+            my $loginid = $arg->{loginid};
+            return $get_mt5_account_from_db_values->{$loginid};
+        });
+
+    $mocked_mt5->mock('get_open_orders_count', sub { Future->done({total => 0}); })->mock(
+        'get_open_positions_count',
+        sub {
+            my $loginid = shift;
+            return Future->fail({code  => 'NotFound'}) if $loginid eq 'MTR1000006';
+            return Future->done({total => 1})          if $loginid eq 'MTR1000003';
+            Future->done({total => 0});
+        }
+    )->mock(
+        'get_user',
+        sub {
+            my $loginid = shift;
+            return Future->done({balance => -0.01}) if $loginid eq 'MTR1000004';
+            return Future->done({balance => 0.01})  if $loginid eq 'MTR1000005' or $loginid eq 'MTR1000007' or $loginid eq 'MTR1000009';
+            return Future->done({balance => 0.0});
+        });
+
+    my $first_disabled_account = 0;
+    $mocked_user->mock('new', sub { $user })->mock('bom_real_loginids', sub { ['CR10000'] })->mock(
+        'accounts_by_category',
+        sub {
+            $first_disabled_account++;
+            my $client = BOM::User::Client->new({loginid => 'CR10000'});
+            $client->account('USD');
+            return {($first_disabled_account == 1 ? 'disabled' : 'enabled') => [$client]};
+        });
+
+    # mock get_group
+    $mocked_mt5->mock('get_group', sub { Future->done({currency => 'USD'}); })
+        ->mock('withdrawal',
+        sub { my $args = shift; return Future->done({error => 1}) if $args->{login} eq 'MTR1000007'; Future->done({status => 1}) });
+
+    my @archive_params;
+    $mt5_actions_mock->mock('_archive_mt5_account', sub { push @archive_params, \@_; Future->done(1); });
+
+    my $email_params;
+    $emitter_mock->mock('emit', sub { $email_params = [@_]; });
+
+    my $args = {
+        loginids    => ['MTR1000001', 'MTR1000002', 'MTR1000003', 'MTR1000004', 'MTR1000005', 'MTR1000006', 'MTR1000007', 'MTR1000008', 'MTR1000009'],
+        email_to    => 'compops@compops.com',
+        email_title => 'TESTING MT5 Archival request result',
+    };
+
+    $time_mock->mock('now', sub { Time::Moment->from_string('2023-10-23T14:33:32.579880Z'); });
+    my $result = $action_handler->($args)->get;
+
+    cmp_deeply $email_params, [
+        'send_email',
+        {
+            'from'                  => 'system@deriv.com',
+            'to'                    => 'compops@compops.com',
+            'email_content_is_html' => 1,
+            'subject'               => 'TESTING MT5 Archival request result',
+            'message'               => [
+                '<p>MT5 Archival request result</p>
+    <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>',
+                '<tr><td>MTR1000001</td><td>Not Archived</td><td>Unknown</td><td>Account not found</td></tr>',
+                '<tr><td>MTR1000002</td><td>Not Archived</td><td>some_svg_group</td><td>Account already archived</td></tr>',
+                '<tr><td>MTR1000003</td><td>Not Archived</td><td>some_svg_group</td><td>Account has open orders or positions</td></tr>',
+                '<tr><td>MTR1000004</td><td>Not Archived</td><td>some_svg_group</td><td>The account has a negative balance</td></tr>',
+                '<tr><td>MTR1000005</td><td>Not Archived</td><td>some_svg_group</td><td>No active CR account found to withdraw</td></tr>',
+                '<tr><td>MTR1000006</td><td>Not Archived</td><td>some_svg_group</td><td>Can\'t check MT5 orders and positions, account doesn\'t exist on MT5</td></tr>',
+                '<tr><td>MTR1000007</td><td>Not Archived</td><td>some_svg_group</td><td>Failed to perform withdrawal</td></tr>',
+                '<tr><td>MTR1000008</td><td>Archived</td><td>some_bvi_group</td><td>Archived successfully, account had zero balance</td></tr>',
+                '<tr><td>MTR1000009</td><td>Archived</td><td>some_svg_group</td><td>[2023-10-23T14:33:32.579880Z] Transfer from MT5 login: MTR1000009 to binary account CR10000 USD 0.01</td></tr>',
+                '</table>'
+            ]}
+        ],
+        'correct email params';
+
+    $emitter_mock->unmock_all;
+    $mt5_actions_mock->unmock_all;
+    $mocked_user->unmock_all;
+    $mocked_mt5->unmock_all;
+    $time_mock->unmock_all;
 };
 
 # Testing the mt5_deposit_retry function

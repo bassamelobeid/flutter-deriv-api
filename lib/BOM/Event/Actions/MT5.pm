@@ -1826,17 +1826,18 @@ Archives MT5 Accounts
 =cut
 
 async sub mt5_archive_accounts {
-    my $args = shift;
-
+    my $args     = shift;
     my $loginids = $args->{loginids};
     die 'Must provide list of MT5 loginids' unless $loginids and @$loginids;
 
-    my $staff_name = $args->{staff_name} // 'quants';
-    my $user_db    = BOM::Database::UserDB::rose_db();
+    my $email_title = $args->{email_title};
+    my $email_to    = $args->{email_to};
+    my $user_db     = BOM::Database::UserDB::rose_db();
+    my $staff_name  = $args->{staff_name} // 'quants';
     my @email_content;
     my $archive_failed_row;
 
-    push @email_content, '<p>MT5 Archival request result<p>
+    push @email_content, '<p>MT5 Archival request result</p>
     <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>';
 
     foreach my $loginid (@$loginids) {
@@ -1846,8 +1847,7 @@ async sub mt5_archive_accounts {
 
         try {
             my $account = _get_mt5_account({db => $user_db, loginid => $loginid});
-
-            unless (@$account) {
+            unless ($account) {
                 push @email_content, sprintf($archive_failed_row, 'Unknown', 'Account not found');
                 next;
             }
@@ -1910,7 +1910,7 @@ async sub mt5_archive_accounts {
 
                 $client = $user->accounts_by_category([$user->bom_real_loginids])->{enabled}->[0];
                 unless ($client) {
-                    push @email_content, sprintf($archive_failed_row, $group, 'CR account for the withdrawal process not found');
+                    push @email_content, sprintf($archive_failed_row, $group, 'No active CR account found to withdraw');
                     next;
                 }
 
@@ -1982,9 +1982,17 @@ async sub mt5_archive_accounts {
             next;
         }
 
-        my $archival_result = await _archive_mt5_account({mt5_prefix_id => $loginid, mt5_user => $mt5_user, bom_user => $user});
-        unless ($archival_result) {
-            push @email_content, sprintf($archive_failed_row, $group, 'Performed withdrawal but failed to archive ' . $withdrawal_result_message);
+        try {
+            my $archival_result = await _archive_mt5_account({mt5_prefix_id => $loginid, mt5_user => $mt5_user, bom_user => $user});
+            unless ($archival_result) {
+                push @email_content, sprintf($archive_failed_row, $group, 'Performed withdrawal but failed to archive' . $withdrawal_result_message);
+                next;
+            }
+        } catch ($e) {
+            $log->errorf("MT5 archival for %s failed: [%s]", $loginid, $e);
+            my $error_message =
+                ($withdrawal_result_message ? 'Performed withdrawal but failed to archive. ' . $withdrawal_result_message : 'Failed to archive');
+            push @email_content, "<tr><td>$loginid</td><td>Not Archived</td><td>$group</td><td>$error_message</td></tr>";
             next;
         }
 
@@ -2000,8 +2008,8 @@ async sub mt5_archive_accounts {
         'send_email',
         {
             from                  => $brand->emails('system'),
-            to                    => $brand->emails('quants'),
-            subject               => 'MT5 Archival request result ',
+            to                    => $email_to    || $brand->emails('quants'),
+            subject               => $email_title || 'MT5 Archival request result ',
             email_content_is_html => 1,
             message               => \@email_content,
         });
