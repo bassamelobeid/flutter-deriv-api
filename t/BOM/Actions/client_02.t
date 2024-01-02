@@ -30,6 +30,17 @@ BEGIN {
 }
 
 subtest 'POA updated' => sub {
+    my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions      = {};
+    $mocked_emitter->mock(
+        'emit',
+        sub {
+            my $args = {@_};
+
+            $emissions = {$emissions->%*, $args->%*};
+
+            return undef;
+        });
 
     sub grab_poa_dates {
         my ($user) = @_;
@@ -81,14 +92,26 @@ subtest 'POA updated' => sub {
 
     ok $exception =~ /Could not instantiate client for login ID/, 'Expected exception when bogus loginid is supplied';
 
+    $emissions = {};
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
         })->get;
 
     cmp_deeply grab_poa_dates($user), [], 'Undef date would be a delete operation';
+    cmp_deeply $emissions,
+        {
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        }
+        },
+        'sync_mt5_accounts_status emitted';
 
     $best_issue_date    = '2020-10-10';
     $best_verified_date = '2021-10-10';
+    $emissions          = {};
+
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
         })->get;
@@ -102,8 +125,20 @@ subtest 'POA updated' => sub {
         ],
         'Insert operation';
 
+    cmp_deeply $emissions,
+        {
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        }
+        },
+        'sync_mt5_accounts_status emitted';
+
     $best_issue_date    = '2023-10-10';
     $best_verified_date = '2024-10-10';
+    $emissions          = {};
+
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
         })->get;
@@ -117,15 +152,49 @@ subtest 'POA updated' => sub {
         ],
         'Update operation';
 
+    cmp_deeply $emissions,
+        {
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        }
+        },
+        'sync_mt5_accounts_status emitted';
+
     $best_verified_date = undef;
+    $emissions          = {};
+
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
         })->get;
 
     cmp_deeply grab_poa_dates($user), [], 'Delete operation';
+    cmp_deeply $emissions,
+        {
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        }
+        },
+        'sync_mt5_accounts_status emitted';
+
+    $mocked_emitter->unmock_all;
 };
 
 subtest 'POI updated' => sub {
+    my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions      = {};
+    $mocked_emitter->mock(
+        'emit',
+        sub {
+            my $args = {@_};
+
+            $emissions = {$emissions->%*, $args->%*};
+
+            return undef;
+        });
 
     sub grab_expiration_date {
         my ($user) = @_;
@@ -176,17 +245,37 @@ subtest 'POI updated' => sub {
 
     ok $exception =~ /Could not instantiate client for login ID/, 'Expected exception when bogus loginid is supplied';
 
+    $emissions = {};
     BOM::Event::Actions::Client::poi_updated({
             loginid => $client->loginid,
         })->get;
 
+    cmp_deeply $emissions,
+        {
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        }
+        },
+        'sync_mt5_accounts_status emitted';
     cmp_deeply grab_expiration_date($user), [], 'Undef date would be a delete operation';
 
     $best_expiration_date = '2020-10-10';
+    $emissions            = {};
     BOM::Event::Actions::Client::poi_updated({
             loginid => $client->loginid,
         })->get;
 
+    cmp_deeply $emissions,
+        {
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        }
+        },
+        'sync_mt5_accounts_status emitted';
     cmp_deeply grab_expiration_date($user),
         [{
             binary_user_id         => $user->id,
@@ -197,10 +286,20 @@ subtest 'POI updated' => sub {
         'Insert operation';
 
     $best_expiration_date = '2023-10-10';
+    $emissions            = {};
     BOM::Event::Actions::Client::poi_updated({
             loginid => $client->loginid,
         })->get;
 
+    cmp_deeply $emissions,
+        {
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        }
+        },
+        'sync_mt5_accounts_status emitted';
     cmp_deeply grab_expiration_date($user),
         [{
             binary_user_id         => $user->id,
@@ -211,11 +310,23 @@ subtest 'POI updated' => sub {
         'Update operation';
 
     $best_expiration_date = undef;
+    $emissions            = {};
     BOM::Event::Actions::Client::poi_updated({
             loginid => $client->loginid,
         })->get;
 
+    cmp_deeply $emissions,
+        {
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        }
+        },
+        'sync_mt5_accounts_status emitted';
     cmp_deeply grab_expiration_date($user), [], 'Delete operation';
+
+    $mocked_emitter->unmock_all;
 };
 
 subtest 'underage_client_detected' => sub {

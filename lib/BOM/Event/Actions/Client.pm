@@ -668,6 +668,13 @@ async sub poa_updated {
             });
     }
 
+    BOM::Platform::Event::Emitter::emit(
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        });
+
     return undef;
 }
 
@@ -708,6 +715,13 @@ async sub poi_updated {
                 $_->do('SELECT * FROM users.delete_poi_expiration(?::BIGINT)', undef, $client->binary_user_id);
             });
     }
+
+    BOM::Platform::Event::Emitter::emit(
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+            client_loginid => $client->loginid
+        });
 
     return undef;
 }
