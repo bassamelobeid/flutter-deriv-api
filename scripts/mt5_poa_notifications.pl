@@ -8,6 +8,8 @@
 use strict;
 use warnings;
 use BOM::MT5::Script::StatusUpdate;
+use Log::Any qw($log);
+use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'debug';
 
 my $verification_status = BOM::MT5::Script::StatusUpdate->new;
 $verification_status->send_warning_emails;

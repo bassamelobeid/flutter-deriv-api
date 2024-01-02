@@ -93,8 +93,10 @@ my @test_pending_users = (
 my $status_update_mock = Test::MockModule->new('BOM::MT5::Script::StatusUpdate');
 my $date_mock          = Test::MockModule->new('Date::Utility');
 my $client_mock        = Test::MockModule->new('BOM::User::Client');
-my $emitter_mock       = Test::MockModule->new('BOM::MT5::User::Async');
+my $mt5_async_user     = Test::MockModule->new('BOM::MT5::User::Async');
 my $currency_mock      = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+my $emitter_mock       = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my $emissions          = [];
 
 # Returns 2022-11-3 12:45
 $date_mock->mock(
@@ -146,7 +148,6 @@ subtest 'grace_period_actions' => sub {
             return +{
                 client      => $test_client,
                 user        => $user,
-                cr_currency => 'USD',
                 bom_loginid => $test_client->loginid
             };
         });
@@ -258,12 +259,12 @@ subtest 'restrict_client_and_send_email' => async sub {
     $status_update_mock->redefine(
         'update_loginid_status',
         sub {
-            return 1;
+            undef;
         }
     )->redefine(
         'change_account_color',
         sub {
-            return 1;
+            undef;
         }
     )->redefine(
         'get_mt5_accounts_under_same_jurisdiction',
@@ -320,173 +321,33 @@ subtest 'disable_users_actions' => async sub {
             return +{
                 client      => $test_client,
                 user        => 1,
-                cr_currency => 'EUR',
                 bom_loginid => $test_client->loginid
             };
-        }
-    )->redefine(
-        'check_activity_and_process_client',
-        async sub {
-            $params = $_[1];
-        }
-    )->redefine(
-        'check_for_verified_poa_and_update_status',
+        });
+
+    $emitter_mock->mock(
+        'emit',
         sub {
-            return 0;
+            push $emissions->@*, {@_};
         });
 
     my $verification_status = BOM::MT5::Script::StatusUpdate->new;
     $verification_status->disable_users_actions;
 
-    is $params->{loginid},        'MTR100000007',                        'correct loginid parameter passed';
-    is $params->{cr_currency},    'EUR',                                 'correct cr_currency parameter passed';
-    is $params->{group},          'real\p01_ts01\financial\bvi_std_usd', 'correct group parameter passed';
-    is $params->{bom_loginid},    $test_client->loginid,                 'correct bom_loginid parameter passed';
-    is $params->{binary_user_id}, '10000007',                            'correct binary_user_id parameter passed';
-    ok $params->{user}, 'user parameter passed';
+    cmp_deeply $emissions,
+        [{
+            mt5_archive_accounts => {
+                loginids    => ['MTR100000007'],
+                email_title => 'CRON update_mt5_trading_rights_and_status: Report for 2022-11-03',
+                email_to    => Brands->new()->emails('compliance_ops')}}
+        ],
+        'expected emissions';
 
     is ref($gather_params), 'HASH', 'parameters passed to gather_users';
     if (ref($gather_params) eq 'HASH') {
         ok $gather_params->{newest_created_at}, 'date passed';
         ok $gather_params->{statuses},          'statuses passed';
     }
-
-    $status_update_mock->unmock_all;
-
-};
-
-subtest 'check_activity_and_process_client' => async sub {
-
-    $emitter_mock->mock(
-        'get_open_orders_count',
-        sub {
-            return Future->done({total => 0});
-        }
-    )->mock(
-        'get_open_positions_count',
-        sub {
-            return Future->done({total => 0});
-        });
-
-    $status_update_mock->redefine(
-        'withdraw_and_archive',
-        async sub {
-            return +{result => 1};
-        });
-
-    my $verification_status = BOM::MT5::Script::StatusUpdate->new;
-    my $response            = await $verification_status->check_activity_and_process_client({loginid => 'MTR1000001'});
-    is ref $response, 'HASH', 'response should be a hashref';
-    if (ref $response eq 'HASH') {
-        is $response->{result}, 1, 'result okay';
-    }
-
-    $emitter_mock->mock(
-        'get_open_positions_count',
-        sub {
-            return Future->done({total => 1});
-        });
-
-    $response = await $verification_status->check_activity_and_process_client({loginid => 'MTR1000001'});
-    is ref $response, 'HASH', 'response should be a hashref';
-    if (ref $response eq 'HASH') {
-        is $response->{send_to_compops}, 1, 'dont archive and send email to compops';
-    }
-
-    $status_update_mock->unmock_all;
-
-};
-
-subtest 'withdraw_and_archive' => async sub {
-
-    my $mt5_balance = 1000;
-    my $params;
-
-    # Setup a test user
-    my $test_client = create_client('CR');
-    $test_client->email('test@test.ts');
-    $test_client->set_default_account('EUR');
-    $test_client->binary_user_id(1);
-    $test_client->save;
-
-    $params->{loginid}        = 'MTR1000001';
-    $params->{cr_currency}    = 'EUR';
-    $params->{group}          = 'real\p01_ts01\financial\vanuatu_std_usd';
-    $params->{user}           = 1;
-    $params->{bom_loginid}    = 'CR1000001';
-    $params->{binary_user_id} = '1000001';
-    $params->{client}         = $test_client;
-    my $withdrawal_amount;
-
-    $emitter_mock->mock(
-        'get_user',
-        sub {
-            return Future->done({balance => $mt5_balance});
-        }
-    )->mock(
-        'get_group',
-        sub {
-            return Future->done({currency => 'USD'});
-        }
-    )->mock(
-        'withdrawal',
-        sub {
-            $withdrawal_amount = shift;
-            return Future->done({status => 1});
-        }
-    )->mock(
-        'user_archive',
-        sub {
-            return Future->done({status => 1});
-        });
-
-    my $update_status_params;
-
-    $currency_mock->redefine(
-        'in_usd',
-        sub {
-            my $price         = shift;
-            my $from_currency = shift;
-            return $price;
-        });
-
-    my %client_args;
-    $client_mock->mock(
-        'payment_mt5_transfer',
-        sub {
-            my $self;
-            ($self, %client_args) = @_;
-        }
-    )->mock(
-        'payment_id',
-        sub {
-            return '777';
-        });
-
-    my $record_transfer_params;
-    $status_update_mock->redefine(
-        'update_loginid_status',
-        sub {
-            $update_status_params = $_[1];
-            return 1;
-        }
-    )->redefine(
-        'record_mt5_transfer',
-        sub {
-            my $self;
-            ($self, $record_transfer_params) = @_;
-            return +{result => 1};
-        });
-
-    my $verification_status = BOM::MT5::Script::StatusUpdate->new;
-    my $response            = await $verification_status->withdraw_and_archive($params);
-
-    is $response->{result},                       1,                  'correct withdrawal and archiving';
-    is $update_status_params->{to_status},        'archived',         'correct status to archive user';
-    is $withdrawal_amount->{amount},              $mt5_balance,       'correct withdrawal amount';
-    is $client_args{amount} + 0,                  $mt5_balance,       'correct transfer amount';
-    is $record_transfer_params->{payment_id},     '777',              'correct payment id to store payment';
-    is $record_transfer_params->{mt5_account_id}, $params->{loginid}, 'correct loginid to store payment';
 
     $status_update_mock->unmock_all;
 
@@ -555,7 +416,6 @@ subtest 'send_warning_emails' => sub {
             return +{
                 client      => $test_client,
                 user        => 1,                      # in the script this will be BOM::User object
-                cr_currency => 'USD',
                 bom_loginid => $test_client->loginid
             };
         }
@@ -682,7 +542,6 @@ subtest 'send_reminder_emails' => sub {
             return +{
                 client      => $test_client,
                 user        => 1,                                    # in the script this will be BOM::User object
-                cr_currency => 'USD',
                 bom_loginid => $bom_loginids[$loginids_counter++]    # in the script it will be $client->loginid
             };
         }
@@ -826,7 +685,6 @@ subtest 'sync_status_actions' => sub {
             return +{
                 client      => $test_client,
                 user        => $binary_user_id,
-                cr_currency => 'USD',
                 bom_loginid => $test_client->loginid
             };
         });
@@ -906,13 +764,13 @@ subtest 'sync_status_actions' => sub {
             [{
                 sync_mt5_accounts_status => {
                     binary_user_id => 10000007,
-                    client_loginid => 'CR10005'
+                    client_loginid => $test_client->loginid
                 }
             },
             {
                 sync_mt5_accounts_status => {
                     binary_user_id => 10000008,
-                    client_loginid => 'CR10005'
+                    client_loginid => $test_client->loginid
                 }}
             ],
             'Event emitted once per binary user id';

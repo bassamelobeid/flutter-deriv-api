@@ -152,7 +152,7 @@ Changes MT5 account color
 
 =back
 
-Returns 1 for success or a hashref with error field describing the failure
+Returns undef for success or a hashref with error field describing the failure
 
 =cut
 
@@ -183,8 +183,7 @@ Changes the status of the client in user.loginid table
 
 =back
 
-Returns the status of the operation from BOM::Platform::Event::Emitter
-or a hashref with error field describing the failure
+Returns undef for success or a hashref with error field describing the failure
 
 =cut
 
@@ -229,9 +228,7 @@ or 0 in case if the email was not sent
 
         my $email_type   = $params->{email_type};
         my $email_params = $params->{email_params};
-
-        return return $self->return_error("send_email_to_client", "No parameters passed") unless ($email_type and $emails->{$email_type});
-        $self->dd_log_info('send_email_to_client', 'Sending email: ' . pp($params));
+        return $self->return_error("send_email_to_client", "No parameters passed") unless $email_type and $emails->{$email_type};
         return BOM::Platform::Event::Emitter::emit($email_type => $email_params);
     }
 
@@ -294,56 +291,34 @@ Returns a hashref with the following fields:
 user (BOM::User object)
 client (BOM::User::Client object)
 bom_loginid 
-cr_currency 
 
 =cut
 
     method load_all_user_data ($binary_user_id) {
 
         return $self->return_error("load_all_user_data", "No parameters passed") unless ($binary_user_id);
-        $self->dd_log_info('load_all_user_data', "Loading user data for user with binary_user_id: $binary_user_id");
+        my ($user, $bom_loginid, $client);
 
-        # prefer fiat currencies
-        my %fiat_currencies = (
-            'USD' => 1,
-            'EUR' => 1,
-            'AUD' => 1,
-            'GBP' => 1
-        );
-
-        my ($user, $bom_loginid, $client, $cr_currency);
         try {
             $user = BOM::User->new((id => $binary_user_id));
-            my @bom_real_loginids = $user->bom_real_loginids;
-
-            foreach my $loginid (@bom_real_loginids) {
-                my $bom_client = BOM::User::Client->new({loginid => $loginid});
-
-                # active accounts only
-                if ($bom_client->is_available) {
-
-                    if ($fiat_currencies{$bom_client->currency}) {
-                        $client      = $bom_client;
-                        $bom_loginid = $client->loginid;
-                        $cr_currency = $client->currency;
-                        last;
-                    }
-
-                    $client      = $bom_client;
-                    $bom_loginid = $client->loginid;
-                    $cr_currency = $client->currency;
-                }
+            my $clients = $user->accounts_by_category([$user->bom_real_loginids]);
+            $client = $clients->{enabled}->[0];
+            if ($client) {
+                $bom_loginid = $client->loginid;
+            } else {
+                $self->dd_log_info('load_all_user_data', "No active CR account found for user with binary_user_id: $binary_user_id");
+                $client      = $clients->{disabled}->[0];
+                $bom_loginid = $client->loginid;
+                $self->dd_log_info('load_all_user_data', "Found disabled CR account $bom_loginid for user with binary_user_id: $binary_user_id");
             }
-
         } catch ($e) {
-            return $self->return_error("load_all_user_data", "Cant load user data: $e")
+            return $self->return_error("load_all_user_data", "Cant load user data: $e");
         }
 
         return +{
             user        => $user,
             bom_loginid => $bom_loginid,
             client      => $client,
-            cr_currency => $cr_currency
         };
 
     }
@@ -415,160 +390,6 @@ Returns 1 if succeed, hashref with error field otherwise
         }
     }
 
-=head2 withdraw_and_archive
-
-Withdraws the balance of the MT5 client to his CR account, archives the MT5 account
-
-It gets the currency of the group and of the cr accounts, converts currency if needed,
-withdraws the balance of the MTR account, transfers them to a CR account and records the payment 
-
-=over 4
-
-=item * C<$params> Hashref that contains binary_user_id, loginid, cr_currency, group, user, client fields
-
-=back
-
-Returns a hashref with result => 1 if succeed, hashref with error field otherwise
-
-=cut
-
-    async method withdraw_and_archive($params) {
-        return $self->return_error("withdraw_and_archive", "No parameters passed") unless ($params);
-
-        my $loginid        = $params->{loginid};
-        my $cr_currency    = $params->{cr_currency};
-        my $group          = $params->{group};
-        my $client         = $params->{client};
-        my $bom_loginid    = $params->{bom_loginid};
-        my $binary_user_id = $params->{binary_user_id};
-
-        try {
-            # Get user to check balance
-            my $mt_user = await BOM::MT5::User::Async::get_user($loginid);
-
-            # Check balance and withdraw
-            if ($mt_user->{balance} and $mt_user->{balance} > 0) {
-
-                $self->dd_log_info('withdraw_and_archive', "Withdrawing and archiving $loginid");
-
-                my $group_currency = await BOM::MT5::User::Async::get_group($group);
-                $group_currency = $group_currency->{currency};
-
-                my $transfer_amount =
-                    $group_currency ne $cr_currency
-                    ? convert_currency($mt_user->{balance}, $group_currency, $cr_currency)
-                    : $mt_user->{balance};
-
-                $transfer_amount = financialrounding('price', $cr_currency, $transfer_amount);
-
-                my $withdraw_response = await BOM::MT5::User::Async::withdrawal({
-                    login   => $loginid,
-                    amount  => $mt_user->{balance},
-                    comment => $loginid . '_' . $bom_loginid,
-                });
-
-                $self->dd_log_info('withdraw_and_archive', "Withdraw for $loginid successful");
-                if ($withdraw_response->{status}) {
-
-                    my ($txn) = $client->payment_mt5_transfer(
-
-                        currency => $cr_currency,
-                        amount   => $transfer_amount,
-                        remark   => "Transfer from MT5 account "
-                            . $loginid . " to "
-                            . $bom_loginid . " "
-                            . $cr_currency
-                            . $mt_user->{balance} . " to "
-                            . $group_currency
-                            . $transfer_amount,
-                        staff  => 'quant',
-                        fees   => 0,
-                        source => 1
-
-                    );
-
-                    my $storing_payment_result = $self->record_mt5_transfer({
-                        dbic           => $client->db->dbic,
-                        payment_id     => $txn->payment_id,
-                        mt5_amount     => $mt_user->{balance},
-                        mt5_account_id => $loginid,
-                        mt5_currency   => $group_currency
-                    });
-
-                    if ($storing_payment_result->{result}) {
-                        $self->dd_log_info(
-                            "withdraw_and_archive",
-                            sprintf(
-                                "[%s] Transfer from MT5 login: %s to binary account %s %s %s",
-                                Time::Moment->now, $loginid, $bom_loginid, $group_currency, $mt_user->{balance}));
-                    }
-
-                } else {
-                    return $self->return_error("withdraw_and_archive", "The script ran into an error while withdrawing poa_failed client $loginid");
-                }
-
-            }
-
-            # Archive client
-            my $archive_response = await BOM::MT5::User::Async::user_archive($loginid);
-            return $self->return_error("withdraw_and_archive", "Failed to archive $loginid client")
-                unless ($archive_response->{status});
-
-            $self->dd_log_info("withdraw_and_archive",
-                "Client $loginid is archived due to poa verification failed and " . DISABLE_ACCOUNT_DAYS . " days of inactivity");
-
-            $self->update_loginid_status({binary_user_id => $binary_user_id, loginid => $loginid, to_status => 'archived'});
-            $self->dd_log_info('withdraw_and_archive', "Archived $loginid");
-
-            return {result => 1};
-
-        } catch ($e) {
-            return $self->return_error("withdraw_and_archive",
-                "The script ran into an error while withdrawing and archiving poa_failed client $loginid: $e");
-        }
-
-    }
-
-=head2 check_activity_and_process_client
-
-Checks for open orders and open positions and proceeds to withdraw balance and archive the MT5 client
-In case of open order or positions no action on the account is made, the loginid and the group of these accounts 
-will be sent to compops via email
-
-=over 4
-
-=item * C<$params> Hashref that contains binary_user_id, loginid, cr_currency, group, user, client fields
-
-=back
-
-Returns a hashref with send_to_compops => 1 in case of open orders or positions,
-or hashref with the status of the withdraw_and_archive
-or error field otherwise
-
-=cut
-
-    async method check_activity_and_process_client($params) {
-        return $self->return_error("check_activity_and_process_client", "No parameters passed") unless ($params);
-
-        my $loginid = $params->{loginid};
-        try {
-            my $open_orders    = await BOM::MT5::User::Async::get_open_orders_count($loginid);
-            my $open_positions = await BOM::MT5::User::Async::get_open_positions_count($loginid);
-
-            if ($open_orders->{total} or $open_positions->{total}) {
-                $self->dd_log_info('check_activity_and_process_client', "Client $loginid has open orders or positions, sending to x-compops");
-                return +{send_to_compops => 1};
-            } else {
-                return await $self->withdraw_and_archive($params);
-            }
-        } catch ($e) {
-            return $self->return_error("check_activity_and_process_client",
-                "The script ran into an error while checking activity of a poa_failed client $loginid:" . pp($e));
-        }
-        return +{};
-
-    }
-
 =head2 restrict_client_and_send_email
 
 Sets MT5 account color to RED, change status to poa_failed, send email informing about the restriction of trading rights
@@ -577,7 +398,7 @@ and the error will be logged
 
 =over 4
 
-=item * C<$params> Hashref that contains binary_user_id, loginid, cr_currency, group, user, client fields
+=item * C<$params> Hashref that contains binary_user_id, loginid, group, user, client fields
 
 =back
 
@@ -611,13 +432,13 @@ or error field otherwise
 
                 $color_change_response = $self->change_account_color({loginid => $mt5_account, color => COLOR_RED});
                 $self->return_error("restrict_client_and_send_email", "Failed to change color for $mt5_account")
-                    unless ($color_change_response);
+                    if ($color_change_response);
 
                 $status_update_response = $self->update_loginid_status({%$params, to_status => 'poa_failed'});
                 $self->return_error("restrict_client_and_send_email", "Failed to change status for $mt5_account")
                     if ($status_update_response);
 
-                if ($color_change_response and $status_update_response) {
+                unless ($color_change_response or $status_update_response) {
 
                     $self->dd_log_info("restrict_client_and_send_email",
                         "Client $mt5_account is restricted for $landing_company groups due to poa submit expiry")
@@ -631,7 +452,7 @@ or error field otherwise
                     $self->return_error("restrict_client_and_send_email", "The account $mt5_account is restricted but failed to send the email");
                 }
 
-                $account_restricted = $color_change_response && $status_update_response;
+                $account_restricted = !($color_change_response or $status_update_response);
             } catch ($e) {
                 $self->return_error("restrict_client_and_send_email",
                     "The script ran into an error while changing color and updating status for poa pending/rejected client $mt5_account: $e");
@@ -668,7 +489,8 @@ Returns a hashref with error field with the description of the failure
 
     method return_error ($method, $error_message) {
         stats_event("StatusUpdate.$method", "Error: $error_message", {alert_type => 'error'});
-        return {error => 1};
+        $log->error("StatusUpdate.$method: " . "Error: $error_message");
+        return {error => "Technical issue"};
     }
 
 =head2 dd_log_info
@@ -689,7 +511,7 @@ Does not return any value
 
     method dd_log_info ($method, $info) {
         stats_event("StatusUpdate.$method", "Info: $info", {alert_type => 'info'});
-        return;
+        $log->debugf("StatusUpdate %s: %s", $method, $info);
     }
 
 =head2 gather_users
@@ -793,6 +615,7 @@ Does not takes or returns any parameters
                 if (   ($group =~ m{bvi} and $creation_stamp->days_since_epoch < $bvi_expiration_timestamp->days_since_epoch)
                     or ($group =~ m{vanuatu} and $creation_stamp->days_since_epoch < $vanuatu_expiration_timestamp->days_since_epoch))
                 {
+                    $log->debug("Client $loginid is within grace period");
                     $parsed_binary_user_id{$binary_user_id} = 1 if ($self->restrict_client_and_send_email({%$mt5_client, %$user_data}));
                 }
 
@@ -814,9 +637,8 @@ Does not takes or returns any parameters
 =cut
 
     method disable_users_actions {
-        my @bvi_clients_to_compops;
-        my @vanuatu_clients_to_compops;
 
+        my @clients_to_archive;
         my @combined = $self->gather_users({
             newest_created_at => $now->minus_time_interval(DISABLE_ACCOUNT_DAYS . 'd'),
             statuses          => ['poa_failed'],
@@ -828,81 +650,35 @@ Does not takes or returns any parameters
                 . " accounts form the DB with status ['poa_failed'] with the newest created at: "
                 . $now->minus_time_interval(DISABLE_ACCOUNT_DAYS . 'd')->datetime_ddmmmyy_hhmmss_TZ);
 
-        my $loginid;
-
         foreach my $data (@combined) {
-            try {
 
-                my $mt5_client = $self->parse_user($data);
-                $self->dd_log_info('disable_users_actions', 'Parsed client: ' . pp($mt5_client));
+            my $mt5_client = $self->parse_user($data);
+            next if ($mt5_client->{error} or $parsed_mt5_account{$mt5_client->{loginid}});
+            my $loginid        = $mt5_client->{loginid} // 'undef';
+            my $creation_stamp = $mt5_client->{creation_stamp};
+            my $user_data      = $self->load_all_user_data($mt5_client->{binary_user_id});
+            my $group          = $mt5_client->{group};
+            my $client         = $user_data->{client};
 
-                next if ($mt5_client->{error});
-                $loginid = $mt5_client->{loginid} // 'undef';
-                my $creation_stamp = $mt5_client->{creation_stamp};
+            next if $self->check_for_verified_poa_and_update_status({client => $client, loginid => $loginid, mt5_client => $mt5_client});
+            if ($group =~ m/(bvi|vanuatu)/) {
+                my $expiration_days = $1 eq 'bvi' ? BVI_EXPIRATION_DAYS : VANUATU_EXPIRATION_DAYS;
 
-                my $user_data = $self->load_all_user_data($mt5_client->{binary_user_id});
-                my $group     = $mt5_client->{group};
-                my $client    = $user_data->{client};
-
-                next if $self->check_for_verified_poa_and_update_status({client => $client, loginid => $loginid, mt5_client => $mt5_client});
-                if ($group =~ m/(bvi|vanuatu)/) {
-                    my $expiration_days = $1 eq 'bvi' ? BVI_EXPIRATION_DAYS : VANUATU_EXPIRATION_DAYS;
-
-                    if ($creation_stamp->days_since_epoch + $expiration_days + DISABLE_ACCOUNT_DAYS <= $now->days_since_epoch) {
-                        if (not defined $user_data->{client}
-                            or $self->check_activity_and_process_client({%$mt5_client, %$user_data})->get->{send_to_compops})
-                        {
-                            my $client_info = "<tr><td>$loginid</td><td>$group</td></tr>";
-
-                            if ($1 eq 'bvi') {
-                                push @bvi_clients_to_compops, $client_info;
-                            } else {
-                                push @vanuatu_clients_to_compops, $client_info;
-                            }
-                        }
-                    }
+                if ($creation_stamp->days_since_epoch + $expiration_days + DISABLE_ACCOUNT_DAYS <= $now->days_since_epoch) {
+                    push @clients_to_archive, $loginid;
+                    $parsed_mt5_account{$loginid} = 1;
                 }
-
-            } catch ($e) {
-                $self->return_error("disable_users_actions", "The script ran into an error while processing poa failed client $loginid: $e");
             }
         }
 
-        my @lines;
-
-        if (scalar(@bvi_clients_to_compops)) {
-            push @lines, "<p>Active MT5 BVI clients with poa failed:<p>", '<table border=1>';
-            push @lines, '<tr><th>Loginid</th><th>Group</th></tr>';
-            push(@lines, @bvi_clients_to_compops);
-            push @lines, '</table>';
-        }
-
-        if (scalar(@vanuatu_clients_to_compops)) {
-            push @lines, "<p>Active MT5 Vanuatu clients with poa failed:<p>", '<table border=1>';
-            push @lines, '<tr><th>Loginid</th><th>Group</th></tr>';
-            push(@lines, @vanuatu_clients_to_compops);
-            push @lines, '</table>';
-        }
-
-        if (scalar(@lines)) {
-            $self->dd_log_info('disable_users_actions',
-                      "Sending "
-                    . scalar(@bvi_clients_to_compops)
-                    . " bvi clients and "
-                    . scalar(@vanuatu_clients_to_compops)
-                    . " vanuatu clients to x-compops");
-
-            my $brand = Brands->new();
-            BOM::Platform::Event::Emitter::emit(
-                'send_email',
-                {
-                    from                  => $brand->emails('system'),
-                    to                    => $brand->emails('compliance_ops'),
-                    subject               => 'CRON update_mt5_trading_rights_and_status: Report for ' . $now->date,
-                    email_content_is_html => 1,
-                    message               => \@lines,
-                });
-        }
+        my $brand = Brands->new();
+        BOM::Platform::Event::Emitter::emit(
+            'mt5_archive_accounts',
+            {
+                loginids    => \@clients_to_archive,
+                email_to    => $brand->emails('compliance_ops'),
+                email_title => 'CRON update_mt5_trading_rights_and_status: Report for ' . $now->date,
+            }) if @clients_to_archive;
 
     }
 
@@ -948,23 +724,28 @@ Does not takes or returns any parameters
 
         my %processed_binary_user;
         foreach my $data (@combined) {
-            my $mt5_client = $self->parse_user($data);
-            next if ($mt5_client->{error});
-            my $binary_user_id = $mt5_client->{binary_user_id};
-            next if $processed_binary_user{$binary_user_id};
+            try {
+                my $mt5_client = $self->parse_user($data);
+                next if ($mt5_client->{error});
+                my ($binary_user_id, $loginid) = ($mt5_client->{binary_user_id}, $mt5_client->{loginid});
+                next if $processed_binary_user{$binary_user_id} or $parsed_mt5_account{$loginid};
 
-            my $user_data = $self->load_all_user_data($binary_user_id);
-            my $client    = $user_data->{client};
+                my $user_data = $self->load_all_user_data($binary_user_id);
+                my $client    = $user_data->{client};
 
-            unless ($processed_binary_user{$binary_user_id}) {
-                BOM::Platform::Event::Emitter::emit(
-                    'sync_mt5_accounts_status',
-                    {
-                        binary_user_id => $client->binary_user_id,
-                        client_loginid => $client->loginid
-                    });
+                unless ($processed_binary_user{$binary_user_id}) {
+                    BOM::Platform::Event::Emitter::emit(
+                        'sync_mt5_accounts_status',
+                        {
+                            binary_user_id => $client->binary_user_id,
+                            client_loginid => $client->loginid
+                        });
 
-                $processed_binary_user{$binary_user_id} = 1;
+                    $processed_binary_user{$binary_user_id} = 1;
+                }
+
+            } catch ($e) {
+                $self->return_error("sync_status_actions", "The script ran into an error while processing poa_failed client: " . pp($e));
             }
         }
 
