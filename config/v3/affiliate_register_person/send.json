@@ -199,7 +199,7 @@
         "website_url": {
             "description": "Social media URL of the affiliate trying to register.",
             "type": "string",
-            "pattern": "^[0-9A-Za-z.-]{5,250}$",
+            "pattern": "^[\\w_@./:#&+-]*$",
             "sensitive": 1
         },
         "whatsapp_number": {
