@@ -8,7 +8,6 @@ use Math::CDF qw( qnorm );
 
 use List::Util            qw(max min);
 use List::MoreUtils       qw(uniq);
-use POSIX                 qw(ceil floor);
 use Format::Util::Numbers qw/roundnear roundcommon/;
 use Math::Round           qw(round);
 use BOM::Config::Runtime;
@@ -101,7 +100,7 @@ sub intraday_strike_price_choices {
     }
 
     @strike_price_choices = uniq(@strike_price_choices);
-    @strike_price_choices = sort { $a <=> $b } @strike_price_choices;
+    @strike_price_choices = sort { $b <=> $a } @strike_price_choices;
 
     return \@strike_price_choices;
 }
