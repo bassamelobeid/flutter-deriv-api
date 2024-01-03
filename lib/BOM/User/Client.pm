@@ -47,6 +47,7 @@ use BOM::User::FinancialAssessment;
 use BOM::User::SocialResponsibility;
 use BOM::User::Utility qw(p2p_exchange_rate p2p_rate_rounding);
 use BOM::User::Wallet;
+use BOM::User::InterDBTransfer;
 use BOM::Database::UserDB;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::OAuth;
@@ -6800,7 +6801,8 @@ sub payment_account_transfer {
         $to_amount = $amount;
     }
 
-    $to_amount = financialrounding('amount', $to_curr, $to_amount);
+    $to_amount   = financialrounding('amount', $to_curr, $to_amount);
+    $txn_details = Encode::encode_utf8($json->encode($txn_details)) if $txn_details;
 
     my $emit_transfer_event = sub {
         my $args = shift;
@@ -6828,13 +6830,11 @@ sub payment_account_transfer {
             });
     };
 
-    my $dbic = $fmClient->db->dbic;
     unless ($inter_db_transfer) {
         # here we rely on ->set_default_account above
         # which makes sure the `write` database is used.
         my $response;
-
-        $txn_details = Encode::encode_utf8($json->encode($txn_details)) if $txn_details;
+        my $dbic = $fmClient->db->dbic;
 
         my $records = $dbic->run(
             # Error handling for code below is tricky; it returns a string for normal DB  errors,
@@ -6860,46 +6860,31 @@ sub payment_account_transfer {
         return $response;
     }
 
-    # TODO: Interclient transfers ("Transfer Between Accounts") lacks
-    #       atomicity and is unsafe; we could potentially debit from one
-    #       account and fail to credit into the other. We need to
-    #       investigate a safe implementation or drop it altogether.
-    my ($fmTrx) = $fmAccount->add_payment_transaction({
-            amount               => -$amount,
-            payment_gateway_code => $gateway_code,
-            payment_type_code    => 'internal_transfer',
-            status               => 'OK',
-            staff_loginid        => $fmStaff,
-            remark               => $fmRemark,
-            account_id           => $fmAccount->id,
-            staff_loginid        => $fmStaff,
-            source               => $source,
-            transfer_fees        => $fees,
-        },
-        undef,
-        $txn_details
+    # At this point it's an inter-db transfer
+    my $tx = BOM::User::InterDBTransfer::transfer(
+        from_dbic            => $fmClient->db->dbic,
+        from_db              => $fmClient->broker_code,
+        from_account_id      => $fmAccount->id,
+        from_currency        => $from_curr,
+        from_amount          => -$amount,
+        from_fees            => $fees,
+        from_staff           => $fmStaff,
+        from_remark          => $fmRemark,
+        to_db                => $toClient->broker_code,
+        to_dbic              => $toClient->db->dbic,
+        to_account_id        => $toAccount->id,
+        to_currency          => $to_curr,
+        to_amount            => $to_amount,
+        to_staff             => $toStaff,
+        to_remark            => $toRemark,
+        payment_gateway_code => $gateway_code,
+        source               => $source,
+        details              => $txn_details,
     );
 
-    # Enforce list context for consistency with the above - for some reason
-    # we don't do anything with the result though
-    (undef) = $toAccount->add_payment_transaction({
-            amount               => $to_amount,
-            payment_gateway_code => $gateway_code,
-            payment_type_code    => 'internal_transfer',
-            status               => 'OK',
-            staff_loginid        => $toStaff,
-            remark               => $toRemark,
-            account_id           => $toAccount->id,
-            staff_loginid        => $toStaff,
-            source               => $source,
-        },
-        undef,
-        $txn_details
-    );
+    $emit_transfer_event->({id => $tx->{transaction_id}, transaction_time => $tx->{transaction_time}});
 
-    $emit_transfer_event->($fmTrx);
-
-    return {transaction_id => $fmTrx->transaction_id};
+    return {transaction_id => $tx->{transaction_id}};
 }
 
 sub payment_doughflow {
