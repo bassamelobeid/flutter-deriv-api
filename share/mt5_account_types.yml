@@ -133,14 +133,6 @@ demo\p01_ts02\synthetic\svg_std_usd:
   sub_account_category: ''
   server: p01_ts02
 
-demo\p01_ts02\financial\bvi_stp_usd:
-  account_type: demo
-  landing_company_short: bvi
-  market_type: financial
-  sub_account_type: financial_stp
-  sub_account_category: stp
-  server: p01_ts02
-  
 demo\p01_ts02\synthetic\bvi_std_usd: 
   account_type: demo
   landing_company_short: bvi
@@ -206,14 +198,6 @@ demo\p01_ts03\synthetic\svg_std_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
-  server: p01_ts03
-
-demo\p01_ts03\financial\bvi_stp_usd:
-  account_type: demo
-  landing_company_short: bvi
-  market_type: financial
-  sub_account_type: financial_stp
-  sub_account_category: stp
   server: p01_ts03
 
 # Real trade server
