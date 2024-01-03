@@ -2707,7 +2707,7 @@ sub _validate_client {
     } else {
         # for other actions we won't enforce the expired check
         return ('ExpiredDocuments', request()->brand->emails('support'))
-            if $client_obj->documents->expired($mt5_lc->documents_expiration_check_required());
+            if $client_obj->documents->expired($mt5_lc->poi_expiration_check_required());
     }
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;

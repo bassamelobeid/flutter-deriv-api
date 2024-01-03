@@ -1026,23 +1026,23 @@ rpc get_account_status => sub {
         push(@$status, 'password_reset_required') unless $client->status->migrated_universal_password;
     }
 
-    my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5(has_mt5_regulated_account => $has_mt5_regulated_account);
-    my $is_verification_required          = $client->is_verification_required(
+    my $is_poi_expiration_check_required = $client->is_poi_expiration_check_required_mt5(has_mt5_regulated_account => $has_mt5_regulated_account);
+    my $is_verification_required         = $client->is_verification_required(
         check_authentication_status => 1,
         has_mt5_regulated_account   => $has_mt5_regulated_account,
         risk_aml                    => $was_locked_for_high_risk ? 'high' : $risk_aml,
         risk_sr                     => $risk_sr
     );
     my $authentication = _get_authentication(
-        client                            => $client,
-        onfido_suspended                  => $onfido_suspended,
-        is_document_expiry_check_required => $is_document_expiry_check_required,
-        is_verification_required          => $is_verification_required,
-        risk_aml                          => $was_locked_for_high_risk ? 'high' : $risk_aml,
-        risk_sr                           => $risk_sr
+        client                           => $client,
+        onfido_suspended                 => $onfido_suspended,
+        is_poi_expiration_check_required => $is_poi_expiration_check_required,
+        is_verification_required         => $is_verification_required,
+        risk_aml                         => $was_locked_for_high_risk ? 'high' : $risk_aml,
+        risk_sr                          => $risk_sr
     );
 
-    if ($is_document_expiry_check_required) {
+    if ($is_poi_expiration_check_required) {
         if ($authentication->{identity}{status} eq 'expired') {
             push(@$status, 'document_expired');
         }
@@ -1382,7 +1382,7 @@ It takes the following named params:
 
 =item * L<onfido_suspended> flag for onfido suspended/available
 
-=item * C<is_document_expiry_check_required> indicates if `expired` status is allowed for the given client
+=item * C<is_poi_expiration_check_required> indicates if `expired` status is allowed for the given client
 
 =back
 

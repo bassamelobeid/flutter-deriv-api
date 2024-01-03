@@ -1064,10 +1064,10 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         # force to reload documents
         undef $Alice->{documents};
 
-        $mock_user_client->mock('is_document_expiry_check_required', sub { 1; });
+        $mock_user_client->mock('is_poi_expiration_check_required', sub { 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Your identity documents have expired/, $test);
-        $mock_user_client->unmock('is_document_expiry_check_required');
+        $mock_user_client->unmock('is_poi_expiration_check_required');
 
         $test = 'Withdraw fails if payment agent status = disabled';
         my $clientdbh   = $Alice->dbh;
@@ -1103,10 +1103,10 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $auth_document_args->{expiration_date} = '1999-02-24';
         ($doc) = $Bob->add_client_authentication_document($auth_document_args);
         $Bob->save;
-        $mock_user_client->mock('is_document_expiry_check_required', sub { 1; });
+        $mock_user_client->mock('is_poi_expiration_check_required', sub { 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/documents have expired/, $test);
-        $mock_user_client->unmock('is_document_expiry_check_required');
+        $mock_user_client->unmock('is_poi_expiration_check_required');
         $sth_doc_exp->execute('2999-02-25', $Bob_id);
         ## Need Rose to pick the DB changes up
         $Bob  = BOM::User::Client->new({loginid => $Bob_id});

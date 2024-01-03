@@ -1372,7 +1372,7 @@ subtest 'backtest from onfido rejected to manual expired' => sub {
         },
     };
 
-    $client_mock->mock('is_document_expiry_check_required', sub { return 1 });
+    $client_mock->mock('is_poi_expiration_check_required', sub { return 1 });
 
     $result = $c->tcall('get_account_status', {token => $token});
 
