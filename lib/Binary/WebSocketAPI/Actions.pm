@@ -673,7 +673,7 @@ sub actions_config {
             },
         ],
         ['trading_platform_product_listing'],
-        ['trading_platform_available_accounts'],
+        ['trading_platform_available_accounts', {stash_params => [qw/ token /]}],
         ['trading_platform_accounts'],
         ['trading_platform_new_account'],
         ['trading_platform_deposit',    {stash_params => [qw/ token_type /]}],

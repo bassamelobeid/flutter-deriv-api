@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
     "title": "Trading Platform: Asset Listing (response)",
     "description": "Get list of Trading Platform assets for client.",
     "type": "object",
@@ -12,52 +12,18 @@
             "title": "trading_platform_asset_listing",
             "description": "Containing Trading asset objects.",
             "type": "object",
+            "unevaluatedProperties": false,
             "patternProperties": {
                 "^(mt5)": {
                     "description": "Platform asset listing.",
                     "type": "object",
-                    "additionalProperties": false,
+                    "unevaluatedProperties": false,
                     "properties": {
                         "assets": {
                             "description": "MT5 assets.",
                             "type": "array",
                             "items": {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "properties": {
-                                    "ask": {
-                                        "description": "Ask price of asset.",
-                                        "type": "number"
-                                    },
-                                    "bid": {
-                                        "description": "Bid price of asset.",
-                                        "type": "number"
-                                    },
-                                    "day_percentage_change": {
-                                        "description": "1 day percentage change of price.",
-                                        "type": "string"
-                                    },
-                                    "display_order": {
-                                        "description": "Display order of asset.",
-                                        "type": "number"
-                                    },
-                                    "market": {
-                                        "description": "Market type of asset.",
-                                        "type": "string"
-                                    },
-                                    "shortcode": {
-                                        "description": "The asset shortcode.",
-                                        "type": "string"
-                                    },
-                                    "spread": {
-                                        "description": "Spread of asset.",
-                                        "type": "number"
-                                    },
-                                    "symbol": {
-                                        "description": "Asset symbol.",
-                                        "type": "string"
-                                    }
-                                }
+                                "$ref": "#/$defs/asset"
                             }
                         }
                     }
@@ -96,6 +62,394 @@
         "req_id": {
             "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
             "type": "integer"
+        }
+    },
+    "$defs": {
+        "account_type": {
+            "description": "Platform-dependent (account category dependent) account type as described in https://wikijs.deriv.cloud/en/Backend/architecture/proposal/account-types#account-categories-account-types-and-groups",
+            "type": "string",
+            "examples": [
+                "demo",
+                "financial",
+                "gaming",
+                "real"
+            ]
+        },
+        "asset": {
+            "$comment": "None of fields are mandatory as any of them could be filtered out by API call input 'requested_fields' argument",
+            "type": "object",
+            "unevaluatedProperties": false,
+            "properties": {
+                "account_type": {
+                    "$ref": "#/$defs/account_type",
+                    "description": "Account type, which this asset corresponds to. One of account types provided as input or default one if none were provided"
+                },
+                "ask": {
+                    "description": "Ask price of asset.",
+                    "type": "number"
+                },
+                "asset_class": {
+                    "description": "Class of asset.",
+                    "type": "string",
+                    "examples": [
+                        "Derived Indices"
+                    ]
+                },
+                "base_currency": {
+                    "$ref": "#/$defs/currency_code",
+                    "description": "Asset base currency."
+                },
+                "bid": {
+                    "description": "Bid price of asset.",
+                    "type": "number"
+                },
+                "calc_mode": {
+                    "description": "???",
+                    "type": "string",
+                    "enum": [
+                        "forex",
+                        "futures",
+                        "cfd",
+                        "cfd index",
+                        "cfd leverage",
+                        "forex no leverage"
+                    ]
+                },
+                "category": {
+                    "description": "Categories are intended for additional marking of financial instruments",
+                    "type": "string",
+                    "examples": [
+                        "Crash Boom Indices"
+                    ]
+                },
+                "contract_size": {
+                    "description": "Traded amount in one lot.",
+                    "type": "number"
+                },
+                "country": {
+                    "$comment": "TODO: Define a ref for country, and provide examples.",
+                    "description": "Instrument origin country.",
+                    "type": "string"
+                },
+                "day_percentage_change": {
+                    "description": "1 day percentage change of price.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Brief description of the asset.",
+                    "type": "string"
+                },
+                "digits": {
+                    "description": "The number of decimal places in the price.",
+                    "type": "number",
+                    "multipleOf": 1
+                },
+                "display_order": {
+                    "$comment": "display_order should correspond to the position in assets array",
+                    "description": "Display order of asset.",
+                    "deprecated": true,
+                    "type": "number"
+                },
+                "industry": {
+                    "description": "???",
+                    "type": "string"
+                },
+                "isin": {
+                    "description": "International Securities Identification Number (ISIN) of the asset.",
+                    "type": "string"
+                },
+                "landing_company_short": {
+                    "$ref": "#/$defs/landing_company_short",
+                    "description": "Landing company shortcode, which the asset corresponds to. One landing company shortcodes provided as input or inferred from region"
+                },
+                "margin_call_margin_level": {
+                    "$comment": "MT5: Margin Call level could be expressed in absolute money terms. Such assets are filtered out from output",
+                    "description": "Margin Call level in percentage terms",
+                    "type": "number"
+                },
+                "margin_currency": {
+                    "$ref": "#/$defs/currency_code",
+                    "description": "Name of the margin currency of the asset."
+                },
+                "margin_free_mode": {
+                    "description": "???",
+                    "type": "string",
+                    "enum": [
+                        "not use pl",
+                        "use pl",
+                        "use profit",
+                        "use loss"
+                    ]
+                },
+                "margin_initial": {
+                    "$comment": "MT5: Is applicable only for futures calculation mode. Which is not Deriv case for now. Thus should always be zero.",
+                    "description": "Initial margin of futures asset. Applicable only for futures.",
+                    "type": "number"
+                },
+                "margin_mode": {
+                    "$comment": "Of course this whole machinery should be properly described in subject domain definition documentation. But not here",
+                    "description": "Margin mode designates the set of formulas that should be used to calculate the requred margin.",
+                    "type": "string",
+                    "enum": [
+                        "retail",
+                        "exchange discount",
+                        "retail hedged"
+                    ]
+                },
+                "margin_rate_long": {
+                    "description": "Margin rate for Buy orders. The final size of the initial margin for orders of the specified type previously calculated according to the symbol calculation type and converted to deposit currency is multiplied by this rate. (??? Clafirication required)",
+                    "type": "number"
+                },
+                "margin_rate_short": {
+                    "description": "Margin rate for Sell orders. The final size of the initial margin for orders of the specified type previously calculated according to the symbol calculation type and converted to deposit currency is multiplied by this rate. (??? Clafirication required)",
+                    "type": "number"
+                },
+                "market": {
+                    "$ref": "#/$defs/market",
+                    "description": "Market of asset."
+                },
+                "market_type": {
+                    "$ref": "#/$defs/market_type",
+                    "description": "Market type the asset corresponds to. One of market types provided as input or default one if none were provided."
+                },
+                "platform": {
+                    "$comment": "Despite platform is used as a grouping key, it is also a part of domain entity, thus it presents here too.",
+                    "$ref": "#/$defs/platform",
+                    "description": "Trading platform on which the asset is available."
+                },
+                "profit_currency": {
+                    "$ref": "#/$defs/currency_code",
+                    "description": "Profit currency of the asset."
+                },
+                "sector": {
+                    "description": "???",
+                    "type": "string"
+                },
+                "shortcode": {
+                    "description": "The asset shortcode.",
+                    "type": "string"
+                },
+                "spread": {
+                    "description": "Symbol spread size.",
+                    "type": "number"
+                },
+                "stop_loss_min_distance": {
+                    "$comment": "??? From what current price? Bid/Ask/Mid?",
+                    "description": "Minimum distance in points from current price to set stop loss.",
+                    "type": "number"
+                },
+                "stop_out_margin_level": {
+                    "$comment": "MT5: Stop Out level could be expressed in absolute money terms. Such assets are filtered out from output",
+                    "description": "Stop Out level in percentage terms",
+                    "type": "number"
+                },
+                "sub_account_category": {
+                    "$ref": "#/$defs/sub_account_category",
+                    "description": "Account subcategory the asset corresponds to. One of account subcategories provided as input or default one if none were provided."
+                },
+                "sub_account_type": {
+                    "$ref": "#/$defs/sub_account_type",
+                    "description": "Account subtype the asset corresponds to. One of account subtypes provided as input or default one if none were provided."
+                },
+                "subcategory": {
+                    "$ref": "#/$defs/subcategory",
+                    "description": "Instrument subcategory inside market."
+                },
+                "swap_mode": {
+                    "description": "???",
+                    "type": "string",
+                    "enum": [
+                        "disabled",
+                        "by points",
+                        "by symbol currency",
+                        "by margin currency",
+                        "by group currency",
+                        "by interest current",
+                        "by interest open",
+                        "reopen by close price",
+                        "reopen by bid",
+                        "by profit currency"
+                    ]
+                },
+                "swap_rate_long": {
+                    "description": "Base swap rate for long positions. Should be multiplied by one of swap_rate_per_weekday values to get actual swap rate.",
+                    "type": "number"
+                },
+                "swap_rate_per_weekday": {
+                    "description": "Weekday (Sunday through Saturday) to swap rate mapping",
+                    "type": "array",
+                    "items": {
+                        "description": "Base swap rate for a weekday. Should be multiplied by one of swap_rate_long/swap_rate_short values to get actual swap rate.",
+                        "type": "number"
+                    },
+                    "maxItems": 7,
+                    "minItems": 7
+                },
+                "swap_rate_short": {
+                    "description": "Base swap rate for short positions. Should be multiplied by one of swap_rate_per_weekday values to get actual swap rate.",
+                    "type": "number"
+                },
+                "symbol": {
+                    "description": "Asset name.",
+                    "type": "string"
+                },
+                "take_profit_min_distance": {
+                    "$comment": "??? From what current price? Bid/Ask/Mid?",
+                    "description": "Minimum distance in points from current price to set take profit.",
+                    "type": "number"
+                },
+                "trade_mode": {
+                    "description": "???",
+                    "type": "string",
+                    "enum": [
+                        "disabled",
+                        "long only",
+                        "short only",
+                        "close only",
+                        "full"
+                    ]
+                },
+                "trading_sessions_info": {
+                    "description": "Periods of time per weekday (Sunday through Saturday), when trading session is open",
+                    "type": "array",
+                    "items": {
+                        "description": "Periods of time when trading session is open",
+                        "type": "array",
+                        "items": {
+                            "description": "Single trading session",
+                            "type": "object",
+                            "unevaluatedProperties": false,
+                            "required": [
+                                "close_after",
+                                "open_at"
+                            ],
+                            "properties": {
+                                "close_after": {
+                                    "description": "Inclusive last second of trading session within the day",
+                                    "type": "string",
+                                    "examples": [
+                                        "23:59:59"
+                                    ]
+                                },
+                                "open": {
+                                    "description": "Inclusive first second of trading session within the day",
+                                    "type": "string",
+                                    "examples": [
+                                        "00:00:00",
+                                        "09:00:00"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "maxItems": 7,
+                    "minItems": 7
+                },
+                "volume_limit": {
+                    "description": "The maximum allowed aggregate volume in lots of open positions and pending orders for a symbol in one direction.",
+                    "type": "number"
+                },
+                "volume_max": {
+                    "description": "Maximum volume in lots for single trading operation.",
+                    "type": "number"
+                },
+                "volume_min": {
+                    "description": "Minimum volume in lots for single trading operation.",
+                    "type": "number"
+                },
+                "volume_step": {
+                    "description": "Minimum amount at which trading operation volume in lots could be changed.",
+                    "type": "number"
+                }
+            }
+        },
+        "currency_code": {
+            "type": "string",
+            "examples": [
+                "EUR",
+                "USD"
+            ]
+        },
+        "landing_company_short": {
+            "description": "Short code of landing company. Denotes jurisdiction under which all operations are performed.",
+            "type": "string",
+            "examples": [
+                "bvi",
+                "labuan",
+                "maltainvest",
+                "seychelles",
+                "svg",
+                "vanuatu"
+            ]
+        },
+        "market": {
+            "description": "Market of asset.",
+            "type": "string",
+            "examples": [
+                "commodities",
+                "crypto",
+                "cryptocurrency",
+                "derived",
+                "forex",
+                "indices",
+                "stocks"
+            ]
+        },
+        "market_type": {
+            "description": "Market type of asset.",
+            "type": "string",
+            "examples": [
+                "all",
+                "financial",
+                "synthetic"
+            ]
+        },
+        "platform": {
+            "$comment": "'mt5' is not the only one possible value, but it is the only supported value in this API call",
+            "description": "Trading platform name. This entity also carries semantics of account_category, which defines the domain of 'account_type' field values",
+            "type": "string",
+            "enum": [
+                "mt5"
+            ]
+        },
+        "sub_account_category": {
+            "description": "Subcategory as defined in mt5_account_types.yml. It is subject for schema change for other trading platform, but currently this call supports only MT5.",
+            "type": "string",
+            "examples": [
+                "",
+                "stp",
+                "swap_free",
+                "swap_free_high_risk"
+            ]
+        },
+        "sub_account_type": {
+            "description": "Subtype as defined in mt5_account_types.yml. It is subject for schema change for other trading platform, but currently this call supports only MT5.",
+            "type": "string",
+            "default": "standard",
+            "examples": [
+                "derivez",
+                "financial",
+                "financial_stp"
+            ]
+        },
+        "subcategory": {
+            "$comment": "Despite examples list is rather long, it is not full -- don't let deciede yourself",
+            "description": "Instrument subcategory inside market.",
+            "type": "string",
+            "examples": [
+                "Major",
+                "Minor",
+                "Exotic",
+                "Basket Indices",
+                "Volatility Indices",
+                "Major Cryptocurrencies",
+                "Altcoins",
+                "Stablecoins",
+                "Metals",
+                "Energies",
+                "Equities",
+                "Indices"
+            ]
         }
     }
 }

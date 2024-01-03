@@ -2,6 +2,7 @@ package Binary::WebSocketAPI::v3::Subscription::AssetListing;
 
 use strict;
 use warnings;
+use Math::Cartesian::Product;
 no indirect;
 
 =head1 NAME
@@ -11,10 +12,10 @@ Binary::WebSocketAPI::v3::Subscription::AssetListing - The class that handle ass
 =head1 SYNOPSIS
 
     my $worker = Binary::WebSocketAPI::v3::Subscription::AssetListing->new(
-        c          => $c,
-        type       => $type,
-        args       => $args,
-        symbol     => $symbol,
+        c               => $c,
+        type            => $type,
+        args            => $args,
+        normalized_args => $normalized_args,
     );
 
     $worker->subscribe($callback);  # do subscribe and execute a callback after subscribed.
@@ -41,11 +42,11 @@ use namespace::clean;
 
 =head1 ATTRIBUTES
 
-=head2 symbol
+=head2 normalized_args
 
 =cut
 
-has symbol => (
+has normalized_args => (
     is       => 'ro',
     required => 1,
 );
@@ -75,7 +76,7 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription/channel>
 
 =cut
 
-sub _build_channel { return 'asset_listing::' . shift->symbol }
+sub _build_channel { return 'asset_listing' }
 
 =head2 _unique_key
 
@@ -86,29 +87,13 @@ unique index of the subscription objects.
 
 sub _unique_key {
     my $self = shift;
-    my $key  = $self->symbol;
-    $key .= ";" . $self->args->{req_id} if $self->args->{req_id};
-
-    return $key;
-}
-
-=head2 _localize_symbol
-
-This method is used to localize the symbol name
-
-=cut
-
-sub _localize_symbol {
-    my ($self, $payload) = @_;
-    my $response = {};
-
-    my $assets = $payload->{mt5}->{assets};
-
-    $_->{symbol} = $self->c->l($_->{symbol}) for $assets->@*;
-
-    $response->{mt5} = {assets => $assets};
-
-    return $response;
+    local *_norm = sub {
+        my $in = $_;
+        return join ',', sort map { _norm($_) } $in->@*                if (ref $in eq 'ARRAY');
+        return join '|', map      { _norm($in->$_) } sort keys $in->%* if (ref $in eq 'HASH');
+        return $in;
+    };
+    return _norm($self->normalized_args);
 }
 
 =head2 handle_message
@@ -118,19 +103,30 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription/handle_message>
 =cut
 
 sub handle_message {
-    my ($self, $payload) = @_;
+    my ($self, undef) = @_;
 
-    my $type             = 'trading_platform_asset_listing';
-    my $c                = $self->c;
-    my $localize_payload = $self->_localize_symbol($payload);
+    my $type = $self->type;
+    my $c    = $self->c;
 
-    my $results = {
-        msg_type     => $type,
-        $type        => {$localize_payload->%*,},
-        subscription => {id => $self->uuid},
-    };
-
-    $c->send({json => $results}, {args => $self->args});
+    # The message doesn't contain any meaningful information,
+    # thus we just drop it and call RPC once again,
+    # to delegate all the request handling logic to it.
+    $c->call_rpc({
+            method      => $type,
+            msg_type    => $type,
+            args        => $self->normalized_args,
+            call_params => {
+                token    => $c->stash('token'),
+                language => $c->stash('language'),
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
+                $req_storage->{args}          = $self->args;
+                $api_response->{subscription} = {id => $self->uuid};
+                $c->send({json => $api_response}, $req_storage);
+                return $api_response;
+            }
+        });
     return;
 }
 
