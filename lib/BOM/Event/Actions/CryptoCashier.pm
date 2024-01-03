@@ -165,7 +165,7 @@ sub deposit_handler {
             'crypto_deposit_email',
             {
                 loginid            => $txn_metadata->{loginid},
-                amount             => $txn_info->{amount},
+                amount             => $txn_info->{client_amount} // $txn_info->{amount},
                 currency           => $txn_metadata->{currency_code},
                 transaction_hash   => $txn_info->{transaction_hash},
                 transaction_status => $txn_info->{status_code},
