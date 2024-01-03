@@ -345,9 +345,9 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status expired for uploaded files' => sub {
-            $mocked_client->mock('fully_authenticated',               sub { return 0 });
-            $mocked_client->mock('latest_poi_by',                     sub { return @latest_poi_by });
-            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+            $mocked_client->mock('fully_authenticated',              sub { return 0 });
+            $mocked_client->mock('latest_poi_by',                    sub { return @latest_poi_by });
+            $mocked_client->mock('is_poi_expiration_check_required', sub { return 1 });
             @latest_poi_by = ('manual');
 
             $uploaded = {
@@ -507,9 +507,9 @@ subtest 'get_poi_status' => sub {
         subtest 'POI status rejected - fully authenticated or age verified' => sub {
             $test_client_cr->status->clear_age_verification;
             my $authenticated = 1;
-            $mocked_client->mock('fully_authenticated',               sub { return $authenticated });
-            $mocked_client->mock('latest_poi_by',                     sub { return 'onfido' });
-            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+            $mocked_client->mock('fully_authenticated',              sub { return $authenticated });
+            $mocked_client->mock('latest_poi_by',                    sub { return 'onfido' });
+            $mocked_client->mock('is_poi_expiration_check_required', sub { return 1 });
 
             my $authenticated_test_scenarios = sub {
                 $uploaded = {
@@ -559,9 +559,9 @@ subtest 'get_poi_status' => sub {
         subtest 'POI status suspected - fully authenticated or age verified' => sub {
             $test_client_cr->status->clear_age_verification;
             my $authenticated = 1;
-            $mocked_client->mock('fully_authenticated',               sub { return $authenticated });
-            $mocked_client->mock('latest_poi_by',                     sub { return 'onfido' });
-            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+            $mocked_client->mock('fully_authenticated',              sub { return $authenticated });
+            $mocked_client->mock('latest_poi_by',                    sub { return 'onfido' });
+            $mocked_client->mock('is_poi_expiration_check_required', sub { return 1 });
 
             my $authenticated_test_scenarios = sub {
                 $uploaded = {
@@ -613,10 +613,10 @@ subtest 'get_poi_status' => sub {
             $test_client_cr->status->clear_age_verification;
             my $authenticated = 1;
             my $idv_status;
-            $mocked_client->mock('fully_authenticated',               sub { return $authenticated });
-            $mocked_client->mock('latest_poi_by',                     sub { return 'idv' });
-            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
-            $mocked_client->mock('get_idv_status',                    sub { return $idv_status });
+            $mocked_client->mock('fully_authenticated',              sub { return $authenticated });
+            $mocked_client->mock('latest_poi_by',                    sub { return 'idv' });
+            $mocked_client->mock('is_poi_expiration_check_required', sub { return 1 });
+            $mocked_client->mock('get_idv_status',                   sub { return $idv_status });
 
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'clear';
@@ -640,7 +640,7 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status reject - POI name mismatch' => sub {
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('is_poi_expiration_check_required_mt5', sub { return 1 });
             $uploaded               = {proof_of_identity => {documents => {}}};
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'clear';
@@ -656,7 +656,7 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status reject - POI dob mismatch' => sub {
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('is_poi_expiration_check_required_mt5', sub { return 1 });
             $uploaded               = {proof_of_identity => {documents => {}}};
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'clear';
@@ -781,7 +781,7 @@ subtest 'get_poi_status' => sub {
                 },
             };
 
-            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+            $mocked_client->mock('is_poi_expiration_check_required', sub { return 1 });
             is $test_client_cr->get_poi_status,        'expired',  'poi status = expired';
             is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
             is $test_client_cr->get_manual_poi_status, 'expired',  'manual status = expired';
@@ -884,7 +884,7 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status expired' => sub {
-            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+            $mocked_client->mock('is_poi_expiration_check_required', sub { return 1 });
 
             $uploaded = {
                 proof_of_identity => {
@@ -1555,7 +1555,7 @@ subtest 'needs_poi_verification' => sub {
     };
 };
 
-subtest 'is_document_expiry_check_required' => sub {
+subtest 'is_poi_expiration_check_required' => sub {
     subtest 'Unregulated account' => sub {
         my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
@@ -1569,21 +1569,24 @@ subtest 'is_document_expiry_check_required' => sub {
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         $mocked_client->mock('fully_authenticated', sub { return 0 });
-        ok !$test_client_cr->landing_company->documents_expiration_check_required, 'Unregulated landing company does require expiration check';
-        ok $test_client_cr->aml_risk_classification ne 'high',                     'Account aml risk is not high';
+        ok !$test_client_cr->landing_company->poi_expiration_check_required, 'Unregulated landing company does not require POI expiration check';
+        ok $test_client_cr->landing_company->poa_outdated_check_required,    'Unregulated landing company require poa outdated check';
+        ok $test_client_cr->aml_risk_classification ne 'high',               'Account aml risk is not high';
         # Now we are sure execution flow reaches our new fully_authenticated condition
-        ok !$test_client_cr->fully_authenticated,               'Account is not fully authenticated';
-        ok !$test_client_cr->is_document_expiry_check_required, "Not fully authenticated CR account doesn't have to check documents expiry";
+        ok !$test_client_cr->fully_authenticated,              'Account is not fully authenticated';
+        ok !$test_client_cr->is_poi_expiration_check_required, "Not fully authenticated CR account doesn't have to check POI documents expiry";
+        ok $test_client_cr->is_poa_outdated_check_required,    'Not fully authenticated CR account have to check outdated POA';
 
         $mocked_client->mock('fully_authenticated', sub { return 1 });
 
-        ok $test_client_cr->fully_authenticated,                'Account is fully authenticated';
-        ok !$test_client_cr->is_document_expiry_check_required, "Fully authenticated CR account does not have to check documents expiry";
+        ok $test_client_cr->fully_authenticated,               'Account is fully authenticated';
+        ok !$test_client_cr->is_poi_expiration_check_required, "Fully authenticated CR account does not have to check documents expiry";
+        ok $test_client_cr->is_poa_outdated_check_required,    'Fully authenticated CR account have to check outdated POA';
         $mocked_client->unmock_all;
     };
 
     subtest 'Regulated account' => sub {
-        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
         });
         my $user = BOM::User->create(
@@ -1591,18 +1594,28 @@ subtest 'is_document_expiry_check_required' => sub {
             password       => BOM::User::Password::hashpw('asdf12345'),
             email_verified => 1,
         );
-        $user->add_client($test_client_cr);
+        $user->add_client($test_client_mf);
 
-        my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+        my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         $mocked_client->mock('fully_authenticated', sub { return 0 });
-        ok $test_client_cr->landing_company->documents_expiration_check_required, 'Regulated company does require expiration check';
-        ok $test_client_cr->aml_risk_classification ne 'high',                    'Account aml risk is not high';
-        ok !$test_client_cr->fully_authenticated,                                 'Account is not fully authenticated';
-        ok $test_client_cr->is_document_expiry_check_required, "Not fully authenticated regulated account does have to check documents expiry";
+        ok $test_client_mf->landing_company->poi_expiration_check_required, 'Regulated company does require POI expiration check';
+        ok !$test_client_mf->landing_company->poa_outdated_check_required,  'Regulated landing company does not require POA outdated check';
+        ok $test_client_mf->aml_risk_classification ne 'high',              'Account aml risk is not high';
+        ok !$test_client_mf->fully_authenticated,                           'Account is not fully authenticated';
+        ok $test_client_mf->is_poi_expiration_check_required, "Not fully authenticated regulated account does have to check POI documents expiry";
+        ok !$test_client_mf->is_poa_outdated_check_required,  'Regulated landing company does not require POA outdated check';
 
         $mocked_client->mock('fully_authenticated', sub { return 1 });
-        ok $test_client_cr->fully_authenticated,               'Account is fully authenticated';
-        ok $test_client_cr->is_document_expiry_check_required, "Regulated account does have to check documents expiry";
+        ok $test_client_mf->fully_authenticated,              'Account is fully authenticated';
+        ok $test_client_mf->is_poi_expiration_check_required, "Regulated account does have to check documents POI expiry";
+        ok !$test_client_mf->is_poa_outdated_check_required,  'Regulated landing company does not require POA outdated check';
+
+        $test_client_mf->aml_risk_classification('high');
+
+        ok $test_client_mf->aml_risk_classification eq 'high', 'Account aml risk is equal to high';
+        ok $test_client_mf->is_poi_expiration_check_required,  "Regulated account does have to check POI documents expiry";
+        ok $test_client_mf->is_poa_outdated_check_required,    'Regulated landing company does require POA outdated check';
+
         $mocked_client->unmock_all;
     };
 };
@@ -1882,7 +1895,7 @@ subtest 'Onfido status' => sub {
         });
 
     my $docs;
-    my $is_document_expiry_check_required;
+    my $is_poi_expiration_check_required;
 
     my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
     $mocked_documents->mock(
@@ -1895,9 +1908,9 @@ subtest 'Onfido status' => sub {
                 }};
         });
     $mocked_client->mock(
-        'is_document_expiry_check_required',
+        'is_poi_expiration_check_required',
         sub {
-            return $is_document_expiry_check_required;
+            return $is_poi_expiration_check_required;
         });
     $mocked_client->mock(
         'latest_poi_by',
@@ -1925,11 +1938,11 @@ subtest 'Onfido status' => sub {
             status                 => 'pending'
         },
         {
-            is_supported_country              => 1,
-            is_document_expiry_check_required => 1,
-            onfido_document_status            => 'complete',
-            onfido_check_result               => 'clear',
-            docs                              => {
+            is_supported_country             => 1,
+            is_poi_expiration_check_required => 1,
+            onfido_document_status           => 'complete',
+            onfido_check_result              => 'clear',
+            docs                             => {
                 is_expired => 1,
             },
             status => 'expired'
@@ -2023,11 +2036,11 @@ subtest 'Onfido status' => sub {
             status                 => 'none'
         },
         {
-            is_supported_country              => 0,
-            is_document_expiry_check_required => 1,
-            onfido_document_status            => 'complete',
-            onfido_check_result               => 'clear',
-            docs                              => {
+            is_supported_country             => 0,
+            is_poi_expiration_check_required => 1,
+            onfido_document_status           => 'complete',
+            onfido_check_result              => 'clear',
+            docs                             => {
                 is_expired => 1,
             },
             status => 'expired'
@@ -2112,12 +2125,12 @@ subtest 'Onfido status' => sub {
         my $incr;
 
         (
-            $is_supported_country, $onfido_document_status, $onfido_check_result,               $onfido_sub_result,
-            $docs,                 $status,                 $is_document_expiry_check_required, $pending_flag,
+            $is_supported_country, $onfido_document_status, $onfido_check_result,              $onfido_sub_result,
+            $docs,                 $status,                 $is_poi_expiration_check_required, $pending_flag,
             $age_verification,     $incr
             )
             = @{$test}{
-            qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_document_expiry_check_required pending_flag age_verification incr/
+            qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_poi_expiration_check_required pending_flag age_verification incr/
             };
 
         if ($incr) {
@@ -2160,15 +2173,15 @@ subtest 'Manual POI status' => sub {
     my $mocked_client = Test::MockModule->new('BOM::User::Client');
     my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
     my $age_verification;
-    my $is_document_expiry_check_required;
+    my $is_poi_expiration_check_required;
     my $idv;
     my $onfido;
     my $ignore_age_verification;
 
     $mocked_client->mock(
-        'is_document_expiry_check_required',
+        'is_poi_expiration_check_required',
         sub {
-            return $is_document_expiry_check_required;
+            return $is_poi_expiration_check_required;
         });
     $mocked_client->mock(
         'get_idv_status',
@@ -2240,7 +2253,7 @@ subtest 'Manual POI status' => sub {
             documents  => {
                 test => {},
             },
-            is_document_expiry_check_required => 1,
+            is_poi_expiration_check_required => 1,
         },
         {
             age_verification => 1,
@@ -2303,11 +2316,11 @@ subtest 'Manual POI status' => sub {
         my $status;
 
         (
-            $is_expired, $is_pending, $age_verification, $status,                  $is_document_expiry_check_required,
+            $is_expired, $is_pending, $age_verification, $status,                  $is_poi_expiration_check_required,
             $onfido,     $idv,        $documents,        $ignore_age_verification, $verified
             )
             = @{$test}
-            {qw/is_expired is_pending age_verification status is_document_expiry_check_required onfido idv documents ignore_age_verification verified/
+            {qw/is_expired is_pending age_verification status is_poi_expiration_check_required onfido idv documents ignore_age_verification verified/
             };
 
         is $test_client->get_manual_poi_status, $status, "Got the expected status=$status";
@@ -3070,13 +3083,13 @@ subtest 'fully auth at BO scenario' => sub {
     my $is_pending = 0;
     my $fully_authenticated;
     my $age_verification;
-    my $is_document_expiry_check_required;
+    my $is_poi_expiration_check_required;
     my $documents = {};
 
     my $mocked_client = Test::MockModule->new('BOM::User::Client');
-    $mocked_client->mock('latest_poi_by',                     sub { return @latest_poi_by });
-    $mocked_client->mock('fully_authenticated',               sub { return $fully_authenticated });
-    $mocked_client->mock('is_document_expiry_check_required', sub { return $is_document_expiry_check_required });
+    $mocked_client->mock('latest_poi_by',                    sub { return @latest_poi_by });
+    $mocked_client->mock('fully_authenticated',              sub { return $fully_authenticated });
+    $mocked_client->mock('is_poi_expiration_check_required', sub { return $is_poi_expiration_check_required });
 
     my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
     $mocked_status->mock('age_verification', sub { return $age_verification });
@@ -3138,11 +3151,11 @@ subtest 'fully auth at BO scenario' => sub {
 
     # important to test!
     # expired flow
-    $documents                         = $expirable_doc;
-    $is_expired                        = 1;
-    $is_document_expiry_check_required = 1;
-    $fully_authenticated               = 1;
-    $age_verification                  = {
+    $documents                        = $expirable_doc;
+    $is_expired                       = 1;
+    $is_poi_expiration_check_required = 1;
+    $fully_authenticated              = 1;
+    $age_verification                 = {
         staff_name => 'system',
         reason     => 'why not'
     };
@@ -3152,12 +3165,12 @@ subtest 'fully auth at BO scenario' => sub {
     is $test_client->get_manual_poi_status, 'expired', 'Expired status';
 
     # the client uploads a non expired document
-    $documents                         = $expirable_doc;
-    $is_expired                        = 1;
-    $is_pending                        = 1;
-    $is_document_expiry_check_required = 1;
-    $fully_authenticated               = 1;
-    $age_verification                  = {
+    $documents                        = $expirable_doc;
+    $is_expired                       = 1;
+    $is_pending                       = 1;
+    $is_poi_expiration_check_required = 1;
+    $fully_authenticated              = 1;
+    $age_verification                 = {
         staff_name => 'system',
         reason     => 'why not'
     };
@@ -3167,12 +3180,12 @@ subtest 'fully auth at BO scenario' => sub {
     is $test_client->get_manual_poi_status, 'pending', 'Pending status';
 
     # document is verified
-    $documents                         = $expirable_doc;
-    $is_expired                        = 0;
-    $is_pending                        = 0;
-    $is_document_expiry_check_required = 1;
-    $fully_authenticated               = 1;
-    $age_verification                  = {
+    $documents                        = $expirable_doc;
+    $is_expired                       = 0;
+    $is_pending                       = 0;
+    $is_poi_expiration_check_required = 1;
+    $fully_authenticated              = 1;
+    $age_verification                 = {
         staff_name => 'system',
         reason     => 'why not'
     };

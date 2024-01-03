@@ -728,7 +728,7 @@ It returns the computed flag.
 sub valid {
     my ($self, $type, $enforce) = @_;
 
-    my $is_document_expiry_check_required = $enforce // $self->client->is_document_expiry_check_required();
+    my $is_poi_expiration_check_required = $enforce // $self->client->is_poi_expiration_check_required();
 
     # If type is specified disregard the other types
     my @types = grep { exists $self->uploaded->{$_}{documents} } $type ? ($type) : (keys $self->uploaded->%*);
@@ -737,7 +737,7 @@ sub valid {
     return 0 unless @types;
 
     # small optimization
-    return 1 unless $is_document_expiry_check_required;
+    return 1 unless $is_poi_expiration_check_required;
 
     # Note `is_expired` is calculated from the max expiration timestamp found for POI
     # Other type of documents take the min expiration timestamp found

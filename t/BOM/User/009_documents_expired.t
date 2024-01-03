@@ -430,7 +430,7 @@ subtest 'has valid documents' => sub {
 
     subtest 'expiry check required' => sub {
         $mock_client->mock(
-            'is_document_expiry_check_required',
+            'is_poi_expiration_check_required',
             sub {
                 return 1;
             });
@@ -479,7 +479,7 @@ subtest 'has valid documents' => sub {
 
     subtest 'expiry check not required' => sub {
         $mock_client->mock(
-            'is_document_expiry_check_required',
+            'is_poi_expiration_check_required',
             sub {
                 return 0;
             });
@@ -987,7 +987,7 @@ subtest 'Payment Agent has expired documents' => sub {
     my $pa;
 
     $mock_lc->mock(
-        'documents_expiration_check_required',
+        'poi_expiration_check_required',
         sub {
             return 0;
         });
@@ -1012,24 +1012,24 @@ subtest 'Payment Agent has expired documents' => sub {
 
     $risk = 'low';
     $pa   = 1;
-    ok $client_cr->is_document_expiry_check_required, 'Expire check required for PA low risk';
+    ok $client_cr->is_poi_expiration_check_required, 'Expire check required for PA low risk';
 
     $risk = 'high';
     $pa   = 1;
-    ok $client_cr->is_document_expiry_check_required, 'Expire check required for PA high risk';
+    ok $client_cr->is_poi_expiration_check_required, 'Expire check required for PA high risk';
 
     $risk = 'low';
     $pa   = 0;
-    ok !$client_cr->is_document_expiry_check_required, 'Expire check not required for non PA low risk';
+    ok !$client_cr->is_poi_expiration_check_required, 'Expire check not required for non PA low risk';
 
     $risk = 'high';
     $pa   = 0;
-    ok $client_cr->is_document_expiry_check_required, 'Expire check required for non PA high risk';
+    ok $client_cr->is_poi_expiration_check_required, 'Expire check required for non PA high risk';
 
     $risk                      = 'low';
     $pa                        = 0;
     $has_mt5_regulated_account = 1;
-    ok $client_cr->is_document_expiry_check_required, 'Expire check required while having mt5 regulated account';
+    ok $client_cr->is_poi_expiration_check_required, 'Expire check required while having mt5 regulated account';
     $has_mt5_regulated_account = 0;
 
     subtest 'Documents' => sub {
@@ -1073,7 +1073,7 @@ subtest 'Payment Agent has expired documents' => sub {
 subtest 'Lifetime Valid Documents' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(
-        'is_document_expiry_check_required',
+        'is_poi_expiration_check_required',
         sub {
             return 1;
         });
@@ -1267,14 +1267,14 @@ subtest 'expiry check required mt5' => sub {
     my $cli_mock  = Test::MockModule->new(ref($client_cr));
     my $user_mock = Test::MockModule->new(ref($user_client1));
 
-    my $is_document_expiry_check_required;
+    my $is_poi_expiration_check_required;
     my $has_mt5_regulated_account;
     my %args = ();
 
     $cli_mock->mock(
-        'is_document_expiry_check_required',
+        'is_poi_expiration_check_required',
         sub {
-            return $is_document_expiry_check_required;
+            return $is_poi_expiration_check_required;
         });
 
     $user_mock->mock(
@@ -1283,30 +1283,30 @@ subtest 'expiry check required mt5' => sub {
             return $has_mt5_regulated_account;
         });
 
-    $is_document_expiry_check_required = 0;
-    $has_mt5_regulated_account         = 0;
-    $args{has_mt5_regulated_account}   = 0;
-    ok !$client_cr->is_document_expiry_check_required_mt5(%args), 'Not required';
+    $is_poi_expiration_check_required = 0;
+    $has_mt5_regulated_account        = 0;
+    $args{has_mt5_regulated_account}  = 0;
+    ok !$client_cr->is_poi_expiration_check_required_mt5(%args), 'Not required';
 
-    $is_document_expiry_check_required = 1;
-    $has_mt5_regulated_account         = 0;
-    $args{has_mt5_regulated_account}   = 0;
-    ok $client_cr->is_document_expiry_check_required_mt5(%args), 'Check required';
+    $is_poi_expiration_check_required = 1;
+    $has_mt5_regulated_account        = 0;
+    $args{has_mt5_regulated_account}  = 0;
+    ok $client_cr->is_poi_expiration_check_required_mt5(%args), 'Check required';
 
-    $is_document_expiry_check_required = 0;
-    $has_mt5_regulated_account         = 1;
-    $args{has_mt5_regulated_account}   = 0;
-    ok !$client_cr->is_document_expiry_check_required_mt5(%args), 'Check not required';
+    $is_poi_expiration_check_required = 0;
+    $has_mt5_regulated_account        = 1;
+    $args{has_mt5_regulated_account}  = 0;
+    ok !$client_cr->is_poi_expiration_check_required_mt5(%args), 'Check not required';
 
-    $is_document_expiry_check_required = 0;
-    $has_mt5_regulated_account         = 1;
-    $args{has_mt5_regulated_account}   = undef;
-    ok $client_cr->is_document_expiry_check_required_mt5(%args), 'Check required';
+    $is_poi_expiration_check_required = 0;
+    $has_mt5_regulated_account        = 1;
+    $args{has_mt5_regulated_account}  = undef;
+    ok $client_cr->is_poi_expiration_check_required_mt5(%args), 'Check required';
 
-    $is_document_expiry_check_required = 0;
-    $has_mt5_regulated_account         = 0;
-    $args{has_mt5_regulated_account}   = 1;
-    ok $client_cr->is_document_expiry_check_required_mt5(%args), 'Check required';
+    $is_poi_expiration_check_required = 0;
+    $has_mt5_regulated_account        = 0;
+    $args{has_mt5_regulated_account}  = 1;
+    ok $client_cr->is_poi_expiration_check_required_mt5(%args), 'Check required';
 
     $user_mock->unmock_all;
     $cli_mock->unmock_all;
@@ -1325,7 +1325,7 @@ subtest 'client IDV+Photo scenario: photo document type should not expire' => su
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(
-        'is_document_expiry_check_required',
+        'is_poi_expiration_check_required',
         sub {
             return 1;
         });

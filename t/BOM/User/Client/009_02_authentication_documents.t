@@ -1201,6 +1201,67 @@ subtest 'POA state machine' => sub {
     is $client->get_poa_status, 'verified', 'POA status = verified';
 };
 
+subtest 'POA state machine MF account' => sub {
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    my $user = BOM::User->create(
+        email    => $client_mf->loginid . '@binary.com',
+        password => 'RandomPassword1234'
+    );
+
+    $user->add_client($client_mf);
+    $client_mf->binary_user_id($user->id);
+    $client_mf->user($user);
+    $client_mf->save;
+
+    is $client_mf->get_poa_status, 'none', 'POA status = none';
+
+    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin)';
+    my $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client_mf->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'z33z', 'none', 'front', 'bo');
+
+    my $id1 = $sth_doc_new->fetch()->[0];
+
+    $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    my $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client_mf->documents->_clear_uploaded;
+    is $client_mf->get_poa_status, 'pending', 'POA status = pending';
+
+    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'rejected\'::status_type)';
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client_mf->documents->_clear_uploaded;
+    is $client_mf->get_poa_status, 'rejected', 'POA status = rejected';
+
+    $client_mf->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client_mf->documents->_clear_uploaded;
+    is $client_mf->get_poa_status, 'verified', 'POA status = verified';
+
+    $SQL = "UPDATE betonmarkets.client_authentication_document SET verified_date=NOW() - INTERVAL '1 year' - INTERVAL '1 day' WHERE id = ?";
+    $client_mf->aml_risk_classification('low');
+    $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+
+    $client_mf->documents->_clear_uploaded;
+
+    is $client_mf->get_poa_status, 'verified', 'POA status = verified - verified_date is older than 1 year';
+
+    $client_mf->aml_risk_classification('high');
+    $client_mf->documents->_clear_uploaded;
+
+    is $client_mf->get_poa_status, 'expired', 'POA status = expired - verified_date is older than 1 year and high risk';
+
+};
+
 subtest 'to_be_expired' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -1654,13 +1715,13 @@ subtest 'stash' => sub {
             document_type   => 'passport',
             status          => 'uploaded',
             issuing_country => 'br',
-            client_loginid  => 'MF90000000',
+            client_loginid  => $mf->loginid,
             file_name       => re('front'),
             document_id     => '123'
         },
         {
             file_name       => re('back'),
-            client_loginid  => 'MF90000000',
+            client_loginid  => $mf->loginid,
             document_id     => '123',
             issuing_country => 'br',
             status          => 'uploaded',
@@ -1739,7 +1800,7 @@ subtest 'stash' => sub {
             origin          => 'client',
             document_id     => '123',
             file_name       => re('front'),
-            client_loginid  => 'MF90000000',
+            client_loginid  => $mf->loginid,
             issuing_country => 'br'
         },
         {
@@ -1748,7 +1809,7 @@ subtest 'stash' => sub {
             origin          => 'client',
             document_id     => '123',
             file_name       => re('back'),
-            client_loginid  => 'MF90000000',
+            client_loginid  => $mf->loginid,
             issuing_country => 'br'
         },
         ],
@@ -1775,7 +1836,7 @@ subtest 'stash' => sub {
             origin          => 'client',
             document_id     => '123',
             file_name       => re('front'),
-            client_loginid  => 'MF90000000',
+            client_loginid  => $mf->loginid,
             issuing_country => 'br'
         },
         {
@@ -1784,7 +1845,7 @@ subtest 'stash' => sub {
             origin          => 'client',
             document_id     => '123',
             file_name       => re('back'),
-            client_loginid  => 'MF90000000',
+            client_loginid  => $mf->loginid,
             issuing_country => 'br'
         },
         ],

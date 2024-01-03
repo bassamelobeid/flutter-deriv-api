@@ -1278,7 +1278,7 @@ sub _validate_client {
     die +{
         code   => 'ExpiredDocuments',
         params => request()->brand->emails('support')}
-        if ($mt5_lc->documents_expiration_check_required() and not $client_obj->documents->valid());
+        if ($mt5_lc->poi_expiration_check_required() and not $client_obj->documents->valid());
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
 

@@ -1975,18 +1975,18 @@ sub is_verification_required {
     return 0;
 }
 
-=head2 is_document_expiry_check_required
+=head2 is_poi_expiration_check_required
 
-Check if we need to validate for expired documents.
+Check if we need to validate for poi expired documents.
 
 =cut
 
-sub is_document_expiry_check_required {
+sub is_poi_expiration_check_required {
     my $self = shift;
 
     return 1 if $self->user->has_mt5_regulated_account(use_mt5_conf => 1);
 
-    return 1 if $self->landing_company->documents_expiration_check_required();
+    return 1 if $self->landing_company->poi_expiration_check_required;
 
     return 1 if ($self->aml_risk_classification // '') eq 'high';
 
@@ -1997,11 +1997,27 @@ sub is_document_expiry_check_required {
     return 0;
 }
 
-=head2 is_document_expiry_check_required_mt5
+=head2 is_poa_outdated_check_required 
+
+Check if we need to validate for poa outdated documents.
+
+=cut
+
+sub is_poa_outdated_check_required {
+    my $self = shift;
+
+    return 1 if $self->landing_company->poa_outdated_check_required;
+
+    return 1 if ($self->aml_risk_classification // '') eq 'high';
+
+    return 0;
+}
+
+=head2 is_poi_expiration_check_required_mt5
 
 Check if we need to validate for expired documents
 
-In addition to is_document_expiry_check_required it
+In addition to is_poi_expiration_check_required it
 checks if user has mt5 regulated account
 
 Separate sub is needed as don't want to block normal
@@ -2009,10 +2025,10 @@ cashier for client if they have mt5 regulated accounts
 
 =cut
 
-sub is_document_expiry_check_required_mt5 {
+sub is_poi_expiration_check_required_mt5 {
     my ($self, %args) = @_;
 
-    return 1 if $self->is_document_expiry_check_required();
+    return 1 if $self->is_poi_expiration_check_required();
 
     return 1 if $args{has_mt5_regulated_account} // $self->user->has_mt5_regulated_account(use_mt5_conf => 1);
 
@@ -7853,7 +7869,8 @@ sub get_poa_status {
     my $risk = $self->aml_risk_classification // '';
 
     if ($self->fully_authenticated({ignore_idv => $risk eq 'high'})) {
-        return 'expired' if $is_outdated;
+
+        return 'expired' if $is_outdated && $self->is_poa_outdated_check_required();
 
         return 'verified';
     }
