@@ -93,9 +93,9 @@ subtest 'Age Verified' => sub {
             $doc->load;
 
             ok $client->documents->valid, "Documents are always valid if expiration check is not required"
-                unless $client->is_document_expiry_check_required;
+                unless $client->is_poi_expiration_check_required;
             ok !$client->documents->valid, "Documents that are expired are not valid if expiration check is required"
-                if $client->is_document_expiry_check_required;
+                if $client->is_poi_expiration_check_required;
         };
     }
 };

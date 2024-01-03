@@ -228,7 +228,7 @@ subtest 'Cashier validation common' => sub {
     $res = BOM::Platform::Client::CashierValidation::validate(%args, action => 'deposit');
     is $res->{error}->{code}, undef, 'Correct error code for expired documents but expired check not required';
 
-    $mock_client->mock(is_document_expiry_check_required => sub { note "mocked Client->is_document_expiry_check_required returning true"; 1 });
+    $mock_client->mock(is_poi_expiration_check_required => sub { note "mocked Client->is_poi_expiration_check_required returning true"; 1 });
 
     $res = BOM::Platform::Client::CashierValidation::validate(%args, action => 'deposit');
     is $res->{error}->{code}, 'CashierForwardError', 'Correct error code for expired documents with expired check required';
