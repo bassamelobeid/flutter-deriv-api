@@ -166,27 +166,35 @@ Returns asset listing for trading platform
 rpc trading_platform_asset_listing => auth => [],
     sub {
     my $params = shift;
-
-    my $client = $params->{client};
     my $args   = $params->{args};
+    my $limit  = $args->{limit};
 
     my $resp = {};
     try {
-        my $platform = BOM::TradingPlatform->new(
-            platform => $args->{platform},
-            client   => $client,
-        );
+        foreach my $platform_name ($args->{platform}->@*) {
+            my $platform = BOM::TradingPlatform->new(
+                platform => $platform_name,
+            );
 
-        my $platform_assets = $platform->get_assets($args->{type} // '', $args->{region} // 'row',);
+            my $platform_assets = $platform->get_assets(
+                server                => $args->{server},
+                account_type          => $args->{account_type},
+                landing_company_short => $args->{landing_company_short},
+                market_type           => $args->{market_type},
+                sub_account_type      => $args->{sub_account_type},
+                sub_account_category  => $args->{sub_account_category},
+                filter_by             => $args->{filter_by},
+                requested_fields      => $args->{requested_fields},
+                limit                 => $limit,
+            );
 
-        # Translating from BOM::TradingPlatform data model to RPC data model
-        my @output_fields = qw(symbol bid ask spread day_percentage_change display_order market shortcode);
-        my @output_assets = map {
-            my $obj = $_;
-            +{map { $_ => $obj->{$_} } @output_fields}
-        } $platform_assets->@*;
+            $resp->{$platform_name}->{assets} = $platform_assets;
 
-        $resp->{$args->{platform}}->{assets} = \@output_assets;
+            if (defined $limit) {
+                $limit -= scalar $platform_assets->@*;
+                # Do not break iteration to create keys in response for all requested platforms
+            }
+        }
 
         return $resp;
 
@@ -195,27 +203,30 @@ rpc trading_platform_asset_listing => auth => [],
     }
     };
 
-rpc trading_platform_available_accounts => sub {
-    my $params = shift;
-
-    my $client = $params->{client};
-
+rpc trading_platform_available_accounts => auth => [],
+    sub {
+    my $params       = shift;
+    my $args         = $params->{args};
+    my $client       = $params->{client};
+    my $platform     = $args->{platform}     // '';
+    my $country_code = $args->{country_code} // ($client ? $client->{residence} : undef) // $params->{country_code};
+    my $user         = $client ? $client->user : undef;
     try {
         my $platform = BOM::TradingPlatform->new(
-            platform    => $params->{args}{platform},
+            platform    => $platform,
             client      => $client,
-            user        => $client->user,
+            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $client),
         );
 
         return $platform->available_accounts({
-            country_code => $client->residence,
+            country_code => $country_code,
             brand        => request()->brand,
         });
     } catch ($e) {
         handle_error($e);
     }
-};
+    };
 
 =head2 trading_platform_new_account
 

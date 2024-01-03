@@ -672,6 +672,9 @@ subtest 'landing_company call' => sub {
 };
 
 subtest 'trading_platform_available_accounts' => sub {
+    $c->call_ok('trading_platform_available_accounts', {})
+        ->has_no_system_error->has_error->error_code_is('TradingPlatformError', 'platform must be specified');
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', residence => 'id'});
 
     BOM::User->create(
@@ -679,9 +682,6 @@ subtest 'trading_platform_available_accounts' => sub {
         password => 'test'
     )->add_client($client);
     $client->account('USD');
-
-    $c->call_ok('trading_platform_available_accounts', {})->has_no_system_error->has_error->error_code_is('InvalidToken', 'must be logged in');
-
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     # Try without a dx client

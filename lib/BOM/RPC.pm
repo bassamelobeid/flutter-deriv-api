@@ -106,10 +106,12 @@ sub wrap_rpc_sub {
             return $verify_app_res if $verify_app_res->{error};
         }
 
-        my $result_auth = _check_authorization($def, $params);
-        return $result_auth->{error} if $result_auth->{status} == 0;
-        $params->{client} = $result_auth->{result}{client};
-        $params->{app_id} = $result_auth->{result}{app_id};
+        try {
+            _populate_client($def, $params);
+            _check_authorization($def, $params);
+        } catch ($e) {
+            return $e;
+        }
 
         my $auth_timing = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -226,62 +228,76 @@ On success return the client object and the app_id.
 sub _check_authorization {
     my ($def, $params) = @_;
 
-    return {status => 1} if !($def->auth and $def->auth->@*);
+    return if !($def->auth && $def->auth->@*);
+    my @auth = $def->auth->@*;
+
+    my $client = $params->{client};
+
+    die BOM::RPC::v3::Utility::invalid_token_error() unless $params->{token_details};
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        die $auth_error;
+    }
+
+    die BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize('This resource cannot be accessed by this account type.')})
+        unless (BOM::Config::Runtime->instance->app_config->system->suspend->wallets
+        or ($client->can_trade and any { $_ eq 'trading' } @auth)
+        or ($client->is_wallet and any { $_ eq 'wallet' } @auth));
+
+    unless (BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+        unless ((any { $_ eq 'trading' } @auth) || (any { $_ eq 'wallet' } @auth)) {
+            die BOM::RPC::v3::Utility::create_error({
+                    code              => 'PermissionDenied',
+                    message_to_client => localize('This resource cannot be accessed by this account type.')});
+        }
+    }
+
+    return;
+}
+
+=head2 _populate_client
+
+    _populate_client($def, $params)
+
+Ensures $params->{client} of type C<BOM::User::Client> and $params->{app_id} exist
+in cases when they could be inferred from input params. Dies with an error if any.
+Return value is unspecified.
+
+=cut
+
+sub _populate_client {
+    my ($def, $params) = @_;
 
     my $db_operation = $def->is_readonly ? 'replica' : 'write';
 
-    my $client = $params->{client};
-    my $app_id = $params->{app_id};
-
-    if ($client) {
+    if (my $client = $params->{client}) {
         # If there is a $client object but is not a Valid BOM::User::Client we return an error
         unless (blessed $client && $client->isa('BOM::User::Client')) {
-            return {
-                status => 0,
-                error  => BOM::RPC::v3::Utility::create_error({
-                        code              => 'InvalidRequest',
-                        message_to_client => localize("Invalid request.")})};
+            die BOM::RPC::v3::Utility::create_error({
+                    code              => 'InvalidRequest',
+                    message_to_client => localize("Invalid request.")});
         }
         $client->set_db($db_operation);
-    } else {
-        # If there is no $client, we continue with our auth check
-        my $token_details = $params->{token_details};
-        return {
-            status => 0,
-            error  => BOM::RPC::v3::Utility::invalid_token_error()}
+        return;
+    }
+
+    if (my $token_details = $params->{token_details}) {
+        die BOM::RPC::v3::Utility::invalid_token_error()
             unless $token_details and exists $token_details->{loginid};
 
-        $client = BOM::User::Client->get_client_instance($token_details->{loginid}, $db_operation);
+        my $client = BOM::User::Client->get_client_instance($token_details->{loginid}, $db_operation);
 
-        if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-            return {
-                status => 0,
-                error  => $auth_error
-            };
-        }
-
-        unless (BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
-            my @auth = $def->auth->@*;
-            unless (($client->can_trade and any { $_ eq 'trading' } @auth) or ($client->is_wallet and any { $_ eq 'wallet' } @auth)) {
-                return {
-                    status => 0,
-                    error  => BOM::RPC::v3::Utility::create_error({
-                            code              => 'PermissionDenied',
-                            message_to_client => localize('This resource cannot be accessed by this account type.')})};
-            }
-        }
-
-        $app_id = $token_details->{app_id};
+        $params->{client} = $client;
+        $params->{app_id} = $token_details->{app_id};
+        return;
     }
-    return {
-        status => 1,
-        result => {
-            client => $client,
-            app_id => $app_id
-        }};
+
+    # Add additional implementations here, if needed
 }
 
-=head2 _get_token_by_loginid {
+=head2 _get_token_by_loginid
 
     $token = _get_token_by_loginid($params)
 
