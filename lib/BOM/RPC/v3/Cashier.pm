@@ -760,25 +760,9 @@ rpc paymentagent_transfer => sub {
         );
     } catch ($e) {
         log_exception();
-        $error = $e;
-    }
-
-    if ($error) {
-        if (ref $error ne 'ARRAY') {
-            return $error_sub->(localize("Sorry, an error occurred whilst processing your request."));
-        }
-
-        my ($error_code, $error_msg) = @$error;
-
-        if ($error_code eq 'BI101') {
-            return $error_sub->(localize('Your account balance is insufficient for this transaction.'));
-        } elsif ($error_code eq 'BI102') {
-            # too many attempts
-            return $error_sub->(localize('Request too frequent. Please try again later.'));
-        } else {
-            $log->fatalf('Unexpected DB error: %s', $error);
-            return $error_sub->(localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'), $error_msg);
-        }
+        my $error_message = _payment_account_transfer_error($e)
+            // localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
+        return $error_sub->($error_message);
     }
 
     BOM::User::Client::PaymentNotificationQueue->add(
@@ -1118,27 +1102,9 @@ rpc paymentagent_withdraw => sub {
         );
     } catch ($e) {
         log_exception();
-        $error = $e;
-    }
-
-    if ($error) {
-        if (ref $error ne 'ARRAY') {
-            return $error_sub->(localize("Sorry, an error occurred whilst processing your request."));
-        }
-
-        my ($error_code, $error_msg) = @$error;
-
-        my $full_error_msg = "Paymentagent Withdraw failed to $paymentagent_loginid [$error_msg]";
-
-        if ($error_code eq 'BI101') {
-            return $error_sub->(localize('Your account balance is insufficient for this transaction.'));
-        } elsif ($error_code eq 'BI102') {
-            # too many attempts
-            return $error_sub->(localize('Request too frequent. Please try again later.'));
-        } else {
-            $log->fatalf('Unexpected DB error: %s', $error);
-            return $error_sub->(localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'), $error_msg);
-        }
+        my $error_message = _payment_account_transfer_error($e)
+            // localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
+        return $error_sub->($error_message);
     }
 
     BOM::User::Client::PaymentNotificationQueue->add(
@@ -1717,14 +1683,6 @@ rpc transfer_between_accounts => sub {
             {
                 regex   => qr/Please authenticate your account/,
                 message => 'Please authenticate your account.',
-            },
-            {
-                regex   => qr/BI101/,
-                message => 'The sending account has insufficient funds for this transaction.',
-            },
-            {
-                regex   => qr/BI102/,
-                message => 'Request too frequent. Please try again later.',
             }];
 
         foreach ($message_mapping->@*) {
@@ -1850,10 +1808,9 @@ rpc transfer_between_accounts => sub {
             txn_details       => \%txn_details,
         );
     } catch ($e) {
-        my $err_str = (ref $e eq 'ARRAY') ? "@$e" : $e;
-        my $err     = "$err_msg Account Transfer failed [$err_str]";
         log_exception();
-        return $error_audit_sub->($err);
+        my $error_messsage = _payment_account_transfer_error($e) // '';
+        return $error_audit_sub->('', $error_messsage);
     }
     BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]", $loginid_from);
 
@@ -1905,9 +1862,48 @@ rpc topup_virtual => sub {
     };
 };
 
+=head2 _payment_account_transfer_error
+
+Converts errors raised by BOM::User::Client::payment_account_transfer() to error message
+
+=over 4
+
+=item * $error
+
+=back
+
+Returns localized error message or undef.
+
+=cut
+
+sub _payment_account_transfer_error {
+    (my $error) = shift;
+
+    if (ref $error eq 'ARRAY') {
+        my $error_code = $error->[0] // '';
+        if ($error_code eq 'BI101') {
+            return localize('Your account balance is insufficient for this transaction.');
+        } elsif ($error_code eq 'BI102') {
+            return localize('Request too frequent. Please try again later.');
+        }
+    } elsif (ref $error eq 'HASH') {
+        my $error_code = $error->{error_code} // '';
+        if ($error_code eq 'TransferReceiveFailed') {
+            return localize(
+                'We have deducted [_1] [_2] from your account. Your funds may be temporarily unavailable until the transaction is complete.',
+                $error->{params}->@*,
+            );
+        } elsif ($error_code eq 'TransferRevertFailed') {
+            return localize('We were unable to complete your transfer due to an unexpected error. Please contact us via live chat for assistance.');
+        }
+        # for TransferReverted we just return generic failure message
+    }
+}
+
 sub _transfer_between_accounts_error {
     my ($message_to_client, $message, $override_code) = @_;
     my $error_code = (any { ($override_code // '') eq $_ } TRANSFER_OVERRIDE_ERROR_CODES->@*) ? $override_code : 'TransferBetweenAccountsError';
+
     return BOM::RPC::v3::Utility::create_error({
         code              => $error_code,
         message_to_client => ($message_to_client // localize('Transfers between accounts are not available for your account.')),
