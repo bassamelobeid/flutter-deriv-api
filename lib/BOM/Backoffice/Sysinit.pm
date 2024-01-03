@@ -120,6 +120,7 @@ my $permissions = {
     'f_dailyturnoverreport.cgi'   => ['AccountsLimited', 'AccountsAdmin', 'Quants', 'IT', 'Marketing'],
     'f_quant_query.cgi'           => ['Quants',          'CS'],
     'f_dynamic_settings.cgi'      => ['Quants',          'IT'],    # it has extra internal logic inside
+    'f_resync_service.cgi'        => ['Quants',          'IT'],
     'crypto_dynamic_settings.cgi' => ['IT'],
     'f_idv_dashboard.cgi'         => ['CS', 'Compliance', 'CostControl', 'IDV'],
 

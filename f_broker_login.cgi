@@ -177,6 +177,20 @@ if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {
     </div>~;
 }
 
+# DerivX Sync Service
+print qq~
+<div class="card">
+    <div class="card__label toggle">
+        DerivX Resync Service
+    </div>
+    <div class="card__content">
+        <h3>DerivX Resync Service</h3>
+        <form action="~ . request()->url_for('backoffice/f_resync_service.cgi') . qq~" method="get">
+            <input type="submit" class="btn btn--primary" value="Start">
+        </form>
+    </div>
+</div>~;
+
 # App management
 if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
     print qq~
