@@ -63,7 +63,7 @@ sub check {
     if (    $cur->{type}
         and $cur->{type} eq "object"
         and defined $cur->{properties}
-        and ($cur->{additionalProperties} // $cur->{unevaluatedProperties} // 1))
+        and not(defined $cur->{additionalProperties} and not $cur->{additionalProperties}))
     {
         push @els, $e;
     }
