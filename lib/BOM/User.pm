@@ -229,10 +229,6 @@ sub broker_code_details {
             platform => 'dtrade',
             virtual  => 1
         },
-        VRCH => {
-            platform => 'dtrade',
-            virtual  => 1
-        },
         VRTU => {
             platform => 'dtrade',
             virtual  => 1
@@ -242,7 +238,6 @@ sub broker_code_details {
         MLT => {platform => 'dtrade'},
         MX  => {platform => 'dtrade'},
         JP  => {platform => 'dtrade'},
-        CH  => {platform => 'dtrade'},
         AFF => {platform => 'dtrade'},
         VRW => {
             platform => 'dwallet',

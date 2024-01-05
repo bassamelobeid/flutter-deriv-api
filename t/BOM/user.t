@@ -493,45 +493,6 @@ subtest 'MT5 logins' => sub {
     ok $_->loginid !~ /^MT[DR]?\d+$/, 'should not include MT logins-' . $_->loginid for ($user->clients);
 };
 
-subtest 'Champion fx users' => sub {
-    my ($email_ch, $client_vrch, $client_ch, $vrch_loginid, $ch_loginid, $user_ch) = ('champion@binary.com');
-    lives_ok {
-        $client_vrch = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRCH',
-        });
-        $client_ch = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CH',
-        });
-
-        $client_vrch->email($email_ch);
-        $client_vrch->save;
-
-        $client_ch->email($email_ch);
-        $client_ch->save;
-
-        $vrch_loginid = $client_vrch->loginid;
-        like $vrch_loginid, qr/^VRCH/, "Correct virtual loginid";
-        $ch_loginid = $client_ch->loginid;
-        like $ch_loginid, qr/^CH/, "Correct real loginid";
-    }
-    'creating clients';
-
-    lives_ok {
-        $user_ch = BOM::User->create(
-            email    => $email_ch,
-            password => $hash_pwd
-        );
-
-        $user_ch->add_client($client_vrch);
-    }
-    'create user with loginid';
-
-    subtest 'test attributes' => sub {
-        is $user_ch->{email},    $email_ch, 'email ok';
-        is $user_ch->{password}, $hash_pwd, 'password ok';
-    };
-};
-
 subtest 'MirrorBinaryUserId' => sub {
     use YAML::XS qw/LoadFile/;
     use BOM::User::Script::MirrorBinaryUserId;
@@ -543,10 +504,10 @@ subtest 'MirrorBinaryUserId' => sub {
     }
     'setup';
 
-    # at this point we have 9 rows in the queue: 2x VRTC, 7x CR, 2x MT and 1x VRCH
+    # at this point we have 8 rows in the queue: 2x VRTC, 7x CR, 2x MT
     my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
     # dependent on clients created by previous tests
-    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 18, 'got expected number of queue entries';
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 17, 'got expected number of queue entries';
 
     BOM::User::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';

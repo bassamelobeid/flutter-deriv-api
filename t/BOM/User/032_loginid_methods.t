@@ -32,14 +32,6 @@ my @loginids = ({
         loginid => 'VRTJ002',
     },
     {
-        loginid      => 'VRCH001',
-        platform     => 'dtrade',
-        account_type => 'demo',
-    },
-    {
-        loginid => 'VRCH002',
-    },
-    {
         loginid      => 'VRTU001',
         platform     => 'dtrade',
         account_type => 'demo',
@@ -92,14 +84,6 @@ my @loginids = ({
     },
     {
         loginid => 'JP002',
-    },
-    {
-        loginid      => 'CH001',
-        platform     => 'dtrade',
-        account_type => 'real',
-    },
-    {
-        loginid => 'CH002',
     },
     {
         loginid      => 'AFF001',
@@ -269,8 +253,8 @@ ok((List::Util::all { defined $_->{account_type} }, values $user->loginid_detail
 cmp_deeply(
     [$user->bom_loginids],
     bag(
-        qw(VRTC001 VRTC002 VRTC003 VRTJ001 VRTJ002 VRCH001 VRCH002 VRTU001 VRTU002
-            CR001 CR002 CR003 MF001 MF002 MLT001 MLT002 MX001 MX002 JP001 JP002 CH001 CH002 AFF001 AFF002
+        qw(VRTC001 VRTC002 VRTC003 VRTJ001 VRTJ002 VRTU001 VRTU002
+            CR001 CR002 CR003 MF001 MF002 MLT001 MLT002 MX001 MX002 JP001 JP002 AFF001 AFF002
             VRW001 VRW002 CRW001 CRW002 CRA001 CRA002 MFW001 MFW002)
     ),
     'bom_loginids'
@@ -279,14 +263,14 @@ cmp_deeply(
 cmp_deeply(
     [$user->bom_real_loginids],
     bag(
-        qw(CR001 CR002 CR003 MF001 MF002 MLT001 MLT002 MX001 MX002 JP001 JP002 CH001 CH002 AFF001 AFF002
+        qw(CR001 CR002 CR003 MF001 MF002 MLT001 MLT002 MX001 MX002 JP001 JP002 AFF001 AFF002
             CRW001 CRW002 CRA001 CRA002 MFW001 MFW002)
     ),
     'bom_real_loginids'
 );
 
 my @orig        = @loginids;
-my @vr_loginids = qw(VRTC001 VRTC002 VRTC003 VRTJ001 VRTJ002 VRCH001 VRCH002 VRTU001 VRTU002);
+my @vr_loginids = qw(VRTC001 VRTC002 VRTC003 VRTJ001 VRTJ002 VRTU001 VRTU002);
 for my $vr_loginid (@vr_loginids) {
     delete $user->{loginid_details};
     # make sure bom vr login is chosen when it's the only one amongst all other types of accounts
