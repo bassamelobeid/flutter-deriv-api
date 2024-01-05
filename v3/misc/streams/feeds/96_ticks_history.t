@@ -94,7 +94,73 @@ subtest 'call_ticks_history' => sub {
         is $res->{msg_type},      'ticks_history',  'Result type should be history';
         is $res->{error}->{code}, 'MarketIsClosed', 'The market is presently closed';
     }
+};
 
+subtest 'ticks_history subscription unique key scenarios' => sub {
+    sleep 1;
+
+    # start with a clean state
+    my $res = $t->await::forget_all({forget_all => 'ticks'});
+    $res = $t->await::forget_all({forget_all => 'candles'});
+
+    my $start = $test_date->minus_time_interval('7h');
+    my $end   = $start->plus_time_interval('1m');
+    $req_storage = {
+        ticks_history => 'frxUSDJPY',
+        end           => $end->epoch,
+        start         => $start->epoch,
+        style         => 'ticks',
+        subscribe     => 1,
+        req_id        => 1
+    };
+
+    my $underlying = create_underlying('frxUSDJPY');
+    my $calendar   = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
+    my $is_open    = $calendar->is_open_at($underlying->exchange, $test_date);
+
+    $t->send_ok({json => $req_storage});
+    $t   = $t->message_ok;
+    $res = decode_json_utf8($t->message->[1]);
+
+    # If it is not open, this call will return error message.
+    if ($is_open) {
+        test_schema('ticks_history', $res);
+        is $res->{msg_type}, 'history', 'Result type should be history';
+        ok $res->{subscription}->{id}, 'Subscription id is set';
+
+        my $initial_subscription_id = $res->{subscription}->{id};
+
+        $req_storage->{count}  = 10;
+        $req_storage->{req_id} = 2;
+
+        subtest 'different req_id' => sub {
+            $t->send_ok({json => $req_storage});
+
+            $t   = $t->message_ok;
+            $res = decode_json_utf8($t->message->[1]);
+            is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed error even if req_id is different';
+        };
+
+        subtest 'different granularity' => sub {
+            $req_storage->{granularity} = 120;
+            $t->send_ok({json => $req_storage});
+
+            $t   = $t->message_ok;
+            $res = decode_json_utf8($t->message->[1]);
+
+            test_schema('ticks_history', $res);
+            is $res->{msg_type}, 'history', 'Result type should be history';
+            ok $res->{subscription}->{id}, 'Subscription id is set';
+
+            isnt $initial_subscription_id, $res->{subscription}->{id}, 'got different subscription ids';
+        };
+
+        $res = $t->await::forget_all({forget_all => 'ticks'});
+        is scalar(@{$res->{forget_all}}), 2, 'total of two active subscription';
+    } else {
+        is $res->{msg_type},      'ticks_history',  'Result type should be history';
+        is $res->{error}->{code}, 'MarketIsClosed', 'The market is presently closed';
+    }
 };
 
 done_testing();

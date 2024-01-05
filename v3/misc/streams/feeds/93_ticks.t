@@ -56,7 +56,7 @@ unless ($pid) {
     Test::Warnings->import(':no_end_test');
 
     sleep 1;
-    for (1 .. 4) {
+    for (1 .. 7) {
         _create_tick(700 + $_, 'R_50');
         _create_tick(700 + $_, 'R_100');
         sleep 1;
@@ -65,7 +65,6 @@ unless ($pid) {
 }
 
 subtest 'ticks' => sub {
-
     # Should pass even if subscribe is a string, not integer
     $t->send_ok({
             json => {
@@ -92,8 +91,8 @@ subtest 'ticks' => sub {
 
     $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code},    'AlreadySubscribed',                  'Should return already subscribed error';
-    is $res->{error}->{message}, 'You are already subscribed to R_50', 'Should return already subscribed error';
+    is $res->{error}->{code},    'AlreadySubscribed',                  'Should return already subscribed error code';
+    is $res->{error}->{message}, 'You are already subscribed to R_50', 'Should return already subscribed error message';
 
     my $res = $t->await::forget_all({forget_all => 'ticks'});
     $t->send_ok({
@@ -106,7 +105,6 @@ subtest 'ticks' => sub {
 };
 
 subtest 'ticks_forget_one_sub' => sub {
-
     sleep 1;
     my $res = $t->await::forget_all({forget_all => 'ticks'});
 
@@ -150,7 +148,6 @@ subtest 'ticks_forget_one_sub' => sub {
 };
 
 subtest 'ticks_history_fail_rpc' => sub {
-
     my $res               = $t->await::forget_all({forget_all => 'ticks'});
     my $origin_return_obj = MojoX::JSON::RPC::Client::ReturnObject->can("new");
     my @return_obj_params;
@@ -214,6 +211,33 @@ subtest 'ticks_history_fail_rpc' => sub {
 
     cmp_ok $res->{msg_type}, 'eq', 'history', "Received tick history error when RPC failed";
 
+};
+
+subtest 'ticks subscription with different req_id' => sub {
+    sleep 1;
+    # start with a clean state
+    my $res = $t->await::forget_all({forget_all => 'ticks'});
+    $res = $t->await::forget_all({forget_all => 'candles'});
+
+    $t->send_ok({
+            json => {
+                ticks     => 'R_50',
+                subscribe => 1,
+                req_id    => 1
+            }})->message_ok;
+
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, undef, 'Should pass validation though string';
+
+    ok my $id = $res->{tick}->{id}, 'There is a subscription id';
+    is $res->{subscription}->{id}, $id, 'The same subscription->id';
+
+    $t->send_ok({json => {ticks => 'R_50', subscribe => 1, req_id => 2}})->message_ok;
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, 'AlreadySubscribed', 'Should return already subscribed error even with different req_id';
+
+    $res = $t->await::forget_all({forget_all => 'ticks'});
+    is scalar(@{$res->{forget_all}}), 1, 'total of one active subscription only';
 };
 
 $t->finish_ok;
