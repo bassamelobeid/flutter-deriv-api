@@ -92,6 +92,7 @@ sub wrap_rpc_sub {
         $params->{token_details} = $token_instance->get_client_details_from_token($params->{token});
         # set request log context for RPC methods
         set_request_logger_context($params->{token_details}, $log_context);
+        $params->{correlation_id} = $log_context->{correlation_id} if defined $log_context->{correlation_id};
         set_current_context($params);
 
         if (exists $params->{server_name}) {
