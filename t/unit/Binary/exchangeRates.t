@@ -20,7 +20,7 @@ my $worker = new_ok(
         type   => 'mytype',
         symbol => 'abc',
         c      => $c,
-        args   => {},
+        args   => {req_id => 1},
     ]);
 
 lives_ok { $worker->register } 'register ok';
@@ -41,6 +41,20 @@ my $send_data = $worker->c->{send_data}->{json};
 is $send_data->{'subscription'}->{id}, $worker->uuid,    'subscription id matches';
 is $send_data->{'msg_type'},           'exchange_rates', 'msg_type matches';
 is_deeply $send_data->{'exchange_rates'}, {data => 'test message'}, 'send_data matches';
+
+my $worker_two = new_ok(
+    'Binary::WebSocketAPI::v3::Subscription::ExchangeRates' => [
+        type   => 'mytype',
+        symbol => 'abc',
+        c      => $c,
+        args   => {req_id => 2},
+    ]);
+
+lives_ok { $worker_two->register } 'register ok';
+
+is $worker_two->_unique_key(), $worker->_unique_key(), 'key matches irrespective of different req_id';
+
 lives_ok { $worker->unregister } 'unregister ok';
+lives_ok { $worker_two->unregister } 'unregister second worker ok';
 
 done_testing();

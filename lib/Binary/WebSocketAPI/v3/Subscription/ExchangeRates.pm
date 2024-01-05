@@ -88,9 +88,8 @@ unique index of the subscription objects.
 
 sub _unique_key {
     my $self = shift;
-    my $key  = $self->symbol . ";" . $self->type;
-    $key .= ";" . $self->args->{req_id} if $self->args->{req_id};
-    return $key;
+
+    return $self->symbol . ";" . $self->type;
 }
 
 =head2 handle_message

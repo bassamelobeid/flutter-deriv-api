@@ -86,10 +86,8 @@ unique index of the subscription objects.
 
 sub _unique_key {
     my $self = shift;
-    my $key  = $self->symbol;
-    $key .= ";" . $self->args->{req_id} if $self->args->{req_id};
 
-    return $key;
+    return $self->symbol;
 }
 
 =head2 _localize_symbol

@@ -28,6 +28,7 @@ my $json = JSON::MaybeXS->new;
 use constant {
     DEPLOY_NOTIFICATION_STATUS  => 'updating',
     DEPLOY_NOTIFICATION_MESSAGE => 'release_due',
+    DEFAULT_GRANULARITY         => 60,
 };
 
 =head2 get_status_msg
@@ -236,7 +237,13 @@ sub ticks {
                     my ($c, $api_response, $req_storage) = @_;
 
                     $c->stash->{pip_size}->{$symbol} = $api_response->{stash}->{"${symbol}_display_decimals"};
-                    $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage->{args});
+                    $req_storage->{id} = _feed_channel_subscribe(
+                        controller => $c,
+                        symbol     => $req_storage->{symbol},
+                        type       => 'tick',
+                        arguments  => $req_storage->{args},
+                        msg_type   => 'ticks',
+                    );
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
@@ -275,7 +282,7 @@ sub ticks_history {
         $publish = 'tick';
     } elsif ($style eq 'candles') {
         # Default missing and 0 cases to 60 (one-minute candles)
-        $args->{granularity} //= 60;
+        $args->{granularity} //= DEFAULT_GRANULARITY;
         # The granularity parameter is documented as only being relevant for candles, so we limit the error check
         # to the candles case
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'))
@@ -324,6 +331,7 @@ sub ticks_history {
                         args       => $args,
                         symbol     => $args->{ticks_history},
                         cache_only => 0,
+                        msg_type   => 'ticks_history',
                     )->already_registered;
                     my $cache = $real_worker ? $real_worker->cache : undef;
                     # check for cached data
@@ -392,7 +400,17 @@ sub ticks_history {
 
     # subscribe first with flag of cache_only passed as 1 to indicate to cache the feed data
     if ($args->{subscribe}) {
-        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $args, $callback, 1)) {
+        if (
+            not _feed_channel_subscribe(
+                controller => $c,
+                symbol     => $args->{ticks_history},
+                type       => $publish,
+                arguments  => $args,
+                callback   => $callback,
+                cache      => 1,
+                msg_type   => 'ticks_history',
+            ))
+        {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
     } else {
@@ -403,19 +421,21 @@ sub ticks_history {
 }
 
 sub _feed_channel_subscribe {
-    my ($c, $symbol, $type, $args, $callback, $cache_only) = @_;
+    my (%args) = @_;
+
     my $worker = Binary::WebSocketAPI::v3::Subscription::Feed->new(
-        c          => $c,
-        type       => $type,
-        args       => $args,
-        symbol     => $symbol,
-        cache_only => $cache_only || 0,
+        c          => $args{controller},
+        type       => $args{type},
+        args       => $args{arguments},
+        symbol     => $args{symbol},
+        cache_only => $args{cache} || 0,
+        msg_type   => $args{msg_type},
     );
 
     return if ($worker->already_registered);
     $worker->register;
     my $uuid = $worker->uuid();
-    $worker->subscribe($callback);
+    $worker->subscribe($args{callback});
     return $uuid;
 }
 

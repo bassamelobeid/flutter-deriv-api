@@ -16,6 +16,7 @@ Binary::WebSocketAPI::v3::Subscription::Feed - The class that handle feed channe
         args       => $args,
         symbol     => $symbol,
         cache_only => $cache_only || 0,
+        msg_type   => $msg_type,
     );
 
     $worker->subscribe($callback);  # do subscribe and execute a callback after subscribed.
@@ -87,6 +88,18 @@ has cache_only => (
     required => 1,
 );
 
+=head2 msg_type
+
+Type of message (example: name of the API request, like ticks)
+used in determining unique key
+
+=cut
+
+has msg_type => (
+    is       => 'ro',
+    required => 1,
+);
+
 =head2 subscription_manager
 
 Please refer to L<Binary::WebSocketAPI::v3::Subscription/subscription_manager>
@@ -114,8 +127,11 @@ unique index of the subscription objects.
 
 sub _unique_key {
     my $self = shift;
-    my $key  = $self->symbol . ";" . $self->type;
-    $key .= ";" . $self->args->{req_id} if $self->args->{req_id};
+
+    my $key = $self->symbol . ";" . $self->type;
+    $key .= ";" . $self->args->{granularity} if $self->args->{granularity};
+    $key .= ";" . $self->msg_type            if $self->msg_type;
+
     return $key;
 }
 
@@ -162,7 +178,6 @@ sub handle_message {
             bid    => 0 + $payload->{bid},
             ask    => 0 + $payload->{ask},
         };
-
     } else {
         $msg_type = 'ohlc';
         my ($open, $high, $low, $close) = _parse_ohlc_data_for_type($payload->{ohlc}, $type);
