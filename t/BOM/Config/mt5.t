@@ -489,6 +489,19 @@ subtest 'server by country' => sub {
                         'supported_accounts' => ['gaming'],
                         'environment'        => 'Deriv-Server',
                         'disabled'           => 0
+                    },
+                    {
+                        'recommended' => 0,
+                        'id'          => 'p03_ts01',
+                        'geolocation' => {
+                            'sequence' => 3,
+                            'region'   => 'Asia',
+                            'location' => 'Hong Kong',
+                            group      => 'asia_synthetic'
+                        },
+                        'supported_accounts' => ['gaming'],
+                        'environment'        => 'Deriv-Server-03',
+                        'disabled'           => 1
                     }]}};
 
         my $result = $mt5->server_by_country(

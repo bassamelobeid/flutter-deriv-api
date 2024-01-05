@@ -1848,6 +1848,11 @@ system:
                       isa: Num
                       default: 100
                       global: 1
+                    p03_ts01:
+                      description: "Weight for real p03_ts01"
+                      isa: Num
+                      default: 0
+                      global: 1
                 africa_derivez:
                   description: "Real trade server load balancer configuration for africa derivez"
                   isa: section
@@ -2123,12 +2128,12 @@ system:
                     deposits:
                       description: "Suspend MT5 deposits on p03_ts01"
                       isa: Bool
-                      default: 1
+                      default: 0
                       global: 1
                     withdrawals:
                       description: "Suspend MT5 withdrawals on p03_ts01"
                       isa: Bool
-                      default: 1
+                      default: 0
                       global: 1
         sync_user_with_mt5:
           description: "Configuration for sync user with mt5 process"

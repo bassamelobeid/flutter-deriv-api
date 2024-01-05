@@ -424,6 +424,7 @@ real:
       servers:
         standard:
           - 'p01_ts03'
+          - 'p03_ts01'
     financial:
       servers:
         standard:
