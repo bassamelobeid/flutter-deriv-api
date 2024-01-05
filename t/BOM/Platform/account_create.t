@@ -343,9 +343,8 @@ subtest 'create account' => sub {
 
     subtest virtual_company_for_brand => sub {
         my %expected = (
-            binary   => 'virtual',
-            deriv    => 'virtual',
-            champion => 'champion-virtual',
+            binary => 'virtual',
+            deriv  => 'virtual',
         );
 
         for my $brand_name (sort keys %expected) {

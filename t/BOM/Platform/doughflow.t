@@ -73,7 +73,7 @@ my @all_broker_codes      = LandingCompany::Registry->all_broker_codes;
 for my $broker (@all_broker_codes) {
     my $lc = LandingCompany::Registry->by_broker($broker);
 
-    next if $lc->short =~ /virtual|champion/;
+    next if $lc->short =~ /virtual/;
 
     my @currencies = get_fiat_currencies($lc->legal_allowed_currencies);
     for my $currency (@currencies) {
@@ -89,7 +89,7 @@ subtest 'doughflow deriv sportsbook landing company consistency except for DSL' 
     for my $broker (@all_broker_codes) {
         my $lc = LandingCompany::Registry->by_broker($broker);
 
-        next if $lc->short =~ /virtual|champion|samoa|dsl/;
+        next if $lc->short =~ /virtual|samoa|dsl/;
 
         my $sportsbook = BOM::Platform::Doughflow::get_sportsbook_name_for($lc->short);
         next unless $sportsbook;

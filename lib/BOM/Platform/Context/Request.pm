@@ -95,8 +95,7 @@ sub _build_brand_name {
     return Brands->new(app_id => $self->app_id)->name if $self->param('app_id');
 
     if (my $domain = $self->domain_name) {
-        # webtrader.champion-fx.com -> champion, visit this regex
-        # when we add new brand
+        # visit this regex when we add new brand
         ($domain) = ($domain =~ /\.([a-z]+).*?\./);
         # for qa return deriv
         return Brands::DEFAULT_BRAND unless defined $domain;

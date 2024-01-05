@@ -40,7 +40,7 @@ subtest 'Send email notification when global limit is crossed' => sub {
         binary_user_id  => 1,
         client_loginid  => "CR90000000",
         current_amount  => 60,
-        landing_company => "champion",
+        landing_company => "svg",
         limit_amount    => 50,
         threshold       => 0.5,
         type            => "global_financial_potential_loss"
@@ -76,7 +76,7 @@ subtest 'Send email notification when user limit is more than or equal to new cl
         binary_user_id  => 1,
         client_loginid  => "CR90000000",
         current_amount  => 110,
-        landing_company => "champion",
+        landing_company => "svg",
         limit_amount    => 50,
         threshold       => 0.5,
         type            => "user_financial_potential_loss"
@@ -97,7 +97,7 @@ subtest 'Skip sending email when user limit is less than new clients limit' => s
         binary_user_id  => 1,
         client_loginid  => "CR90000000",
         current_amount  => 60,
-        landing_company => "champion",
+        landing_company => "svg",
         limit_amount    => 50,
         type            => "user_financial_potential_loss"
     };
