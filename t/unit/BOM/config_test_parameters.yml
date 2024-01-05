@@ -67,7 +67,6 @@
         site_id: ''
       doughflow:
         binary: ''
-        champion: ''
         deriv: ''
         environment: ''
         passcode: ''
@@ -218,13 +217,11 @@
           for_days: ''
           limit_for_days: ''
       withdrawal_limits:
-        champion: &withdrawal_limit
+        iom: &withdrawal_limit
           currency: ''
           for_days: ''
-          lifetime_limit_for_authenticated: ''
           limit_for_days: ''
           limit_for_days_for_authenticated: ''
-        iom: *withdrawal_limit
         malta: *withdrawal_limit
         maltainvest: *withdrawal_limit
         samoa: *withdrawal_limit
@@ -682,8 +679,6 @@
     expected_config:
       global_settings: *redis_config
       per_landing_company:
-        champion: *redis_config
-        champion-virtual: *redis_config
         dsl: *redis_config
         iom: *redis_config
         malta: *redis_config

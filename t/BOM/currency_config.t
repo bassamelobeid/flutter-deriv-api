@@ -67,20 +67,14 @@ subtest 'get_mt5_transfer_limit_by_brand' => sub {
             currency => 'USD',
             amount   => 2500
         },
-        derivcrypto => {
-            currency => 'BTC',
-            amount   => 0.25
-        }};
+    };
 
     my $mt5_min_limit = {
         default => {
             currency => 'USD',
             amount   => 1
         },
-        derivcrypto => {
-            currency => 'BTC',
-            amount   => 0.00008
-        }};
+    };
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
@@ -89,16 +83,6 @@ subtest 'get_mt5_transfer_limit_by_brand' => sub {
         'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 0,
         'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 0,
     });
-
-    my $expected_config_for_derivCrypto = {
-        maximum => {
-            currency => 'BTC',
-            amount   => 0.25
-        },
-        minimum => {
-            currency => 'BTC',
-            amount   => 0.00008
-        }};
 
     my $expected_default_config = {
         maximum => {
@@ -110,9 +94,6 @@ subtest 'get_mt5_transfer_limit_by_brand' => sub {
             amount   => 1
         }};
 
-    my $derivCrypto_config = BOM::Config::CurrencyConfig::get_mt5_transfer_limit_by_brand('derivcrypto');
-    is_deeply $derivCrypto_config, $expected_config_for_derivCrypto, 'Correct config for derivcrypto';
-
     my $default_config = BOM::Config::CurrencyConfig::get_mt5_transfer_limit_by_brand();
     is_deeply $default_config, $expected_default_config, 'Correct default config';
 
@@ -122,9 +103,6 @@ subtest 'get_mt5_transfer_limit_by_brand' => sub {
         'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
         'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 150000
     });
-
-    $derivCrypto_config = BOM::Config::CurrencyConfig::get_mt5_transfer_limit_by_brand('derivcrypto');
-    is_deeply $derivCrypto_config, $expected_config_for_derivCrypto, 'Correct config for derivcrypto - should not be affected by total daily limit';
 
     $expected_default_config = {
         maximum => {
@@ -145,20 +123,14 @@ subtest 'mt5_transfer_limits' => sub {
             currency => 'USD',
             amount   => 2500
         },
-        derivcrypto => {
-            currency => 'BTC',
-            amount   => 0.25
-        }};
+    };
 
     my $mt5_min_limit = {
         default => {
             currency => 'USD',
             amount   => 1
         },
-        derivcrypto => {
-            currency => 'BTC',
-            amount   => 0.00008
-        }};
+    };
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
@@ -215,20 +187,14 @@ subtest 'get_dxtrade_transfer_limit_by_brand' => sub {
             currency => 'USD',
             amount   => 2500
         },
-        derivcrypto => {
-            currency => 'DOGE',
-            amount   => 42069
-        }};
+    };
 
     my $dxtrade_min_limit = {
         default => {
             currency => 'USD',
             amount   => 1
         },
-        derivcrypto => {
-            currency => 'DOGE',
-            amount   => 1
-        }};
+    };
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
@@ -237,16 +203,6 @@ subtest 'get_dxtrade_transfer_limit_by_brand' => sub {
         'payments.transfer_between_accounts.daily_cumulative_limit.enable'  => 0,
         'payments.transfer_between_accounts.daily_cumulative_limit.dxtrade' => 0,
     });
-
-    my $expected_config_for_derivCrypto = {
-        maximum => {
-            currency => 'DOGE',
-            amount   => 42069
-        },
-        minimum => {
-            currency => 'DOGE',
-            amount   => 1
-        }};
 
     my $expected_default_config = {
         maximum => {
@@ -258,9 +214,6 @@ subtest 'get_dxtrade_transfer_limit_by_brand' => sub {
             amount   => 1
         }};
 
-    my $derivCrypto_config = BOM::Config::CurrencyConfig::get_platform_transfer_limit_by_brand('dxtrade', 'derivcrypto');
-    is_deeply $derivCrypto_config, $expected_config_for_derivCrypto, 'Correct config for derivcrypto';
-
     my $default_config = BOM::Config::CurrencyConfig::get_platform_transfer_limit_by_brand('dxtrade');
     is_deeply $default_config, $expected_default_config, 'Correct default config';
 
@@ -270,9 +223,6 @@ subtest 'get_dxtrade_transfer_limit_by_brand' => sub {
         'payments.transfer_between_accounts.daily_cumulative_limit.enable'  => 1,
         'payments.transfer_between_accounts.daily_cumulative_limit.dxtrade' => 25000,
     });
-
-    $derivCrypto_config = BOM::Config::CurrencyConfig::get_platform_transfer_limit_by_brand('dxtrade', 'derivcrypto');
-    is_deeply $derivCrypto_config, $expected_config_for_derivCrypto, 'Correct config for derivcrypto - should not be affected by total limit';
 
     $expected_default_config = {
         maximum => {
@@ -295,20 +245,14 @@ subtest 'dxtrade_transfer_limits' => sub {
             currency => 'USD',
             amount   => 2500
         },
-        derivcrypto => {
-            currency => 'DOGE',
-            amount   => 42069
-        }};
+    };
 
     my $dxtrade_min_limit = {
         default => {
             currency => 'USD',
             amount   => 1
         },
-        derivcrypto => {
-            currency => 'DOGE',
-            amount   => 1
-        }};
+    };
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({

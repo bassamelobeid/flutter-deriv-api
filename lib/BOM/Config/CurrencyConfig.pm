@@ -348,7 +348,7 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 
 =over 4
 
-=item * C<brand> - The requester brand name (e.g. derivcrypto, binary, ....) (optional)
+=item * C<brand> - The requester brand name (e.g. binary, ....) (optional)
 
 =back
 
@@ -367,7 +367,7 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 
 =over 4
 
-=item * C<brand> - The requester brand name (e.g. derivcrypto, binary, ....) (optional)
+=item * C<brand> - The requester brand name (e.g. binary, ....) (optional)
 
 =back
 
@@ -386,7 +386,7 @@ Returns the default config when C<brand> is undefined or we didn't find any conf
 
 =over 4
 
-=item * C<brand> - The brand name (e.g. derivcrypto, binary, ....) (optional)
+=item * C<brand> - The brand name (e.g. binary, ....) (optional)
 
 =back
 
@@ -406,7 +406,7 @@ Trading Platform transfer limits for specific platform/brand.
 
 =item * C<trading_platform> - The trading platform dxtrade, MT5.
 
-=item * C<brand> - The requester brand name (e.g. derivcrypto, binary, ....) (optional)
+=item * C<brand> - The requester brand name (e.g. binary, ....) (optional)
 
 =back
 
@@ -446,7 +446,7 @@ Returns the default config when C<brand> is undefined or we didn't find any conf
 
 =over 4
 
-=item * C<brand> - The brand name (e.g. derivcrypto, binary, ....) (optional)
+=item * C<brand> - The brand name (e.g. binary, ....) (optional)
 
 =back
 
