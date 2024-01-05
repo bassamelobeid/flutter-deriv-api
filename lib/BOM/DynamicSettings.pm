@@ -308,6 +308,7 @@ sub get_settings_by_group {
                 system.mt5.load_balance.real.africa_derivez.p02_ts01
                 system.mt5.load_balance.real.africa_synthetic.p01_ts02
                 system.mt5.load_balance.real.asia_synthetic.p01_ts03
+                system.mt5.load_balance.real.asia_synthetic.p03_ts01
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
@@ -335,6 +336,9 @@ sub get_settings_by_group {
                 system.mt5.suspend.real.p02_ts02.all
                 system.mt5.suspend.real.p02_ts02.deposits
                 system.mt5.suspend.real.p02_ts02.withdrawals
+                system.mt5.suspend.real.p03_ts01.all
+                system.mt5.suspend.real.p03_ts01.deposits
+                system.mt5.suspend.real.p03_ts01.withdrawals
                 system.suspend.payout_freezing_funds
                 system.suspend.universal_password
                 system.dxtrade.suspend.all
