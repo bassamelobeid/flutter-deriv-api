@@ -421,12 +421,19 @@ subtest 'trading_servers' => sub {
             residence    => $test_client->residence,
             market_type  => 'synthetic',
         )->get;
-        is scalar(@$response),                      1,           'Correct number of servers for country';
+
+        is scalar(@$response),                      2,           'Correct number of servers for country';
         is $response->[0]->{id},                    'p01_ts03',  'correct id for the server';
         is $response->[0]->{recommended},           1,           'correct recommended';
         is $response->[0]->{geolocation}{region},   'Asia',      'correct region for the server';
         is $response->[0]->{geolocation}{location}, 'Singapore', 'correct location for the server';
         is $response->[0]->{geolocation}{sequence}, '1',         'correct sequence for the server';
+
+        is $response->[1]->{id},                    'p03_ts01',  'correct id for the server';
+        is $response->[1]->{recommended},           0,           'correct recommended';
+        is $response->[1]->{geolocation}{region},   'Asia',      'correct region for the server';
+        is $response->[1]->{geolocation}{location}, 'Hong Kong', 'correct location for the server';
+        is $response->[1]->{geolocation}{sequence}, '3',         'correct sequence for the server';
     };
 
     $email       = 'sample+3@binary.com';
