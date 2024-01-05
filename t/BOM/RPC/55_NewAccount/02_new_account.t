@@ -886,6 +886,18 @@ subtest $method => sub {
             );
         delete $params->{args}->{phone};
 
+        $params->{args}->{employment_status} = 'Employed';
+        delete $params->{args}->{employment_industry};
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('IncompleteFinancialAssessment', 'financial assessment should be complete')
+            ->error_message_is('The financial assessment is not complete');
+
+        # employement_industry and occupation should default to unemployed if employment_status is unemployed/self-employed
+        $params->{args}->{employment_status} = 'Unemployed';
+        delete $params->{args}->{employment_industry};
+        delete $params->{args}->{occupation};
+
         $params->{args}->{citizen}   = 'de';
         $params->{args}->{residence} = 'de';
         $client->residence('de');

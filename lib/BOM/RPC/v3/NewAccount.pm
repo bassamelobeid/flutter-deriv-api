@@ -251,6 +251,11 @@ rpc new_account_maltainvest => annotate_db_calls(
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
         unless $account_type->is_supported(request()->brand, $client->residence, $company);
 
+    if ($args->{employment_status} && ($args->{employment_status} eq 'Unemployed' || $args->{employment_status} eq 'Self-Employed')) {
+        $args->{employment_industry} //= 'Unemployed';
+        $args->{occupation}          //= 'Unemployed';
+    }
+
     my $broker = $account_type->get_single_broker_code($company);
 
     my $response = create_new_real_account(
