@@ -39,7 +39,7 @@ jobs:
             run: make accounts formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
             if: success() || failure()
             with:
               name: test-results
@@ -73,7 +73,7 @@ jobs:
             run: make security formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
             if: success() || failure()
             with:
               name: test-results
@@ -107,7 +107,7 @@ jobs:
             run: make pricing formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
             if: success() || failure()
             with:
               name: test-results
@@ -141,7 +141,7 @@ jobs:
             run: make misc formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
             if: success() || failure()
             with:
               name: test-results
@@ -175,7 +175,7 @@ jobs:
             run: make p2p formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
             if: success() || failure()
             with:
               name: test-results
@@ -209,7 +209,7 @@ jobs:
             run: make schema formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
             if: success() || failure()
             with:
               name: test-results
@@ -243,7 +243,7 @@ jobs:
             run: make subscriptions formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
             if: success() || failure()
             with:
               name: test-results
@@ -277,7 +277,7 @@ jobs:
             run: make backends formatter='--formatter TAP::Formatter::JUnit'
           - 
             name : Upload test results
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
             if: success() || failure()
             with:
               name: test-results
