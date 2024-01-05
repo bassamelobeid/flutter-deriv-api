@@ -67,7 +67,7 @@ jobs:
           make test1
       - 
         name : Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
         if: always()
         with:
           name: test-results
@@ -104,7 +104,7 @@ jobs:
           make test2
       - 
         name : Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
         if: always()
         with:
           name: test-results
@@ -139,7 +139,7 @@ jobs:
           make json_schemas
       - 
         name : Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
         if: always()
         with:
           name: test-results
