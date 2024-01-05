@@ -34,7 +34,7 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_product_contract
       - name: Upload Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
         if: always()
         with:
           name: test-results
@@ -65,7 +65,7 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_validation
       - name: Upload Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
         if: always()
         with:
           name: test-results
@@ -96,7 +96,7 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make memory_test
       - name: Upload Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
         if: always()
         with:
           name: test-results
@@ -170,7 +170,7 @@ jobs:
         run: make unit_test_offerings
         if: always()
       - name: Upload Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
         if: always()
         with:
           name: test-results
