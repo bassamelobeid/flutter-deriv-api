@@ -145,7 +145,7 @@ sub _redis_uri {
     $uri->scheme('redis');
     $uri->host($config->{host});
     $uri->port($config->{port});
-    $uri->userinfo($config->{password}) if $config->{password};
+    $uri->userinfo(':' . $config->{password}) if $config->{password};
 
     return $uri;
 }
