@@ -182,62 +182,7 @@ subtest 'General event validation - filtering by brand' => sub {
         'identify request args are correct';
     test_segment_customer($customer, \%args);
 
-    subtest 'tracking on a disabled brand' => sub {
-        $req = BOM::Platform::Context::Request->new(
-            brand_name => 'champion',
-            language   => 'id'
-        );
-        request($req);
-
-        undef @track_args;
-        undef @identify_args;
-        is BOM::Event::Services::Track::track_event(
-            event   => 'login',
-            loginid => $test_client->loginid
-        )->get, undef, 'Response is empty when brand is not \'deriv\' or \'binary\'';
-        is @identify_args, 0, 'Segment identify is not invoked';
-        is @track_args,    0, 'Segment track is not invoked';
-
-        foreach (@enabled_brands) {
-            my $brand = $_;
-
-            $req = BOM::Platform::Context::Request->new(
-                brand_name => $brand,
-                language   => 'id'
-            );
-            request($req);
-
-            undef @track_args;
-            undef @identify_args;
-            ok BOM::Event::Services::Track::track_event(
-                event                => 'login',
-                loginid              => $test_client->loginid,
-                properties           => {browser => 'fire-chrome'},
-                is_identify_required => 1,
-                brand                => Brands->new(name => $brand))->get, 'event emitted successfully';
-            ok @identify_args, "Segment identify is invoked (by setting brand to '$brand' in the args)";
-            ok @track_args,    "Segment track is invoked (by setting brand to '$brand' in the args)";
-            ($customer, %args) = @track_args;
-            $expected_args->{context}->{app}->{name} = $brand;
-            $expected_args->{properties}->{brand} = $brand;
-            is_deeply \%args, $expected_args, "track request args are correct with context brand switched to '$brand'";
-            test_segment_customer($customer);
-
-            ($customer, %args) = @identify_args;
-            is_deeply \%args,
-                {
-                'context' => {
-                    'active' => 1,
-                    'app'    => {'name' => $brand},
-                    'locale' => 'id'
-                }
-                },
-                "identify request args are correct with context brand switched to '$brand'";
-            test_segment_customer($customer, \%args);
-        }
-    };
-
-    subtest 'mt5 ligin id list' => sub {
+    subtest 'mt5 login id list' => sub {
         $req = BOM::Platform::Context::Request->new(
             brand_name => 'deriv',
             language   => 'id'

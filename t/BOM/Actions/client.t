@@ -3201,7 +3201,7 @@ subtest 'duplicate dob and phone' => sub {
     });
 
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code      => 'CH',
+        broker_code      => 'MF',
         email            => 'test25@bin.com',
         first_name       => '',
         last_name        => '',
