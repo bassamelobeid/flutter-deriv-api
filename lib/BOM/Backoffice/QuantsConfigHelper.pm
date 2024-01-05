@@ -398,7 +398,7 @@ sub get_config_input {
 
     if ($key eq 'landing_company') {
         my $lc = LandingCompany::Registry::get_loaded_landing_companies();
-        return [map { $lc->{$_}->{short} } grep { $lc->{$_}->{short} !~ /virtual|vanuatu|champion/i } keys %$lc];
+        return [map { $lc->{$_}->{short} } grep { $lc->{$_}->{short} !~ /virtual|vanuatu/i } keys %$lc];
     }
 
     my $lc       = LandingCompany::Registry->get_default_company;            # to get everything in the offerings list.
