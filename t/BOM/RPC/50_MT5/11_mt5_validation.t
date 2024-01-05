@@ -291,7 +291,7 @@ subtest 'new account' => sub {
     $token           = $m->create_token($test_client->loginid, 'test token 2');
     $params->{token} = $token;
 
-    $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed', 'Only svg, malta, maltainvest and champion fx clients allowed.');
+    $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed', 'Only svg, malta, maltainvest clients allowed.');
 
     SKIP: {
         skip "Unable to Retrieve files from PHP MT5 Server Yet";
