@@ -15,3 +15,4 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ github.repository }}
+      runner: self-hosted
