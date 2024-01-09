@@ -13,17 +13,22 @@ my $brand_countries_obj = Brands::Countries->new();
 my $document_types      = {};
 
 for my $country_config (values $brand_countries_obj->get_idv_config->%*) {
-    for my $document_type (keys $country_config->{document_types}->%*) {
-        $document_types->{$document_type} //= $country_config->{document_types}->{$document_type}->{display_name};
+    foreach my $document_type_key (keys $country_config->{document_types}->%*) {
+        my $document_type = $document_type_key;
+        my $display_name  = $country_config->{document_types}->{$document_type_key}->{display_name};
+
+        push @{$document_types->{$document_type} //= []}, $display_name
+            unless grep { $_ eq $display_name } @{$document_types->{$document_type}};
     }
 }
 
 subtest 'Get Filters data' => sub {
     my $filter_data = BOM::Backoffice::IdentityVerification::get_filter_data;
     my $idv_config  = BOM::Config::identity_verification();
+
     cmp_deeply $filter_data, +{
         document_types => +{
-            map { ($_ => $document_types->{$_}) }
+            map { ($_ => bag(@{$document_types->{$_}})) }
                 qw/
                 alien_card
                 cpf
@@ -41,7 +46,7 @@ subtest 'Get Filters data' => sub {
                 nik
                 /
         },
-        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx cl pe vn id/},
+        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx uy cr cl pe vn id/},
         providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) } qw/zaig smile_identity derivative_wealth data_zoo metamap/},
         statuses  => +{map { ($_ => $idv_config->{statuses}->{$_}) } qw/pending failed refuted verified/},
         messages  => $idv_config->{messages},

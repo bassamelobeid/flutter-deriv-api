@@ -38,14 +38,18 @@ sub get_filter_data {
 
     $countries = +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } keys $config->%*};
 
-    $document_types = +{
-        map {
-            my $country_config = $config->{$_};
+    $document_types = +{};
+    foreach my $country_key (keys $config->%*) {
+        my $country_config = $config->{$country_key};
+        foreach my $document_type_key (keys $country_config->{document_types}->%*) {
+            my $document_type = $document_type_key;
+            my $display_name  = $country_config->{document_types}->{$document_type_key}->{display_name};
 
-            (map { ($_ => $country_config->{document_types}->{$_}->{display_name}) } keys $country_config->{document_types}->%*);
-
-        } keys $config->%*
-    };
+            unless (grep { $_ eq $display_name } @{$document_types->{$document_type}}) {
+                push @{$document_types->{$document_type}}, $display_name;
+            }
+        }
+    }
 
     my $idv_config = BOM::Config::identity_verification();
 
