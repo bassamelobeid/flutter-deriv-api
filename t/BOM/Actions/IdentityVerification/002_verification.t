@@ -362,10 +362,11 @@ subtest 'address verified' => sub {
 
     is $updates, 2, 'update document triggered twice correctly';
 
-    ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is removed correctly';
-    ok $client->status->age_verification,   'age verified correctly';
-    ok $client->fully_authenticated(),      'client is fully authenticated';
-    is $client->get_authentication('IDV')->{status}, 'pass', 'PoA with IDV';
+    ok !$client->status->poi_name_mismatch,                      'poi_name_mismatch is removed correctly';
+    ok $client->status->age_verification,                        'age verified correctly';
+    ok $client->fully_authenticated(),                           'client is fully authenticated - no mt5 lc';
+    ok $client->fully_authenticated({landing_company => 'bvi'}), 'fully auth with mt5 lc';
+    is $client->get_authentication('IDV_ADDRESS')->{status}, 'pass', 'IDV with address';
     ok !$client->status->unwelcome, 'client unwelcome is removed';
 
     is $mock_idv_status, 'verified', 'verify_identity returns `verified` status';
@@ -461,9 +462,10 @@ subtest 'verify_process - apply side effects' => sub {
         'Expected emissions for an IDV verify process';
 
     cmp_deeply($encoding, $expected_json, 'Expected JSON usage');
-    ok $client->status->age_verification, 'age verified correctly';
-    ok $client->fully_authenticated(),    'client is fully authenticated';
-    is $client->get_authentication('IDV')->{status}, 'pass', 'PoA with IDV';
+    ok $client->status->age_verification,                        'age verified correctly';
+    ok $client->fully_authenticated(),                           'client is not fully authenticated - no mt5 lc';
+    ok $client->fully_authenticated({landing_company => 'bvi'}), 'fully auth with mt5 lc';
+    is $client->get_authentication('IDV_ADDRESS')->{status}, 'pass', 'IDV with address';
 
     my $doc = $idv_model->get_last_updated_document();
     cmp_deeply $doc->{status_messages}, encode_json_utf8(['ADDRESS_VERIFIED']), 'expected messages stored';
@@ -2055,7 +2057,8 @@ subtest 'pictures collected from IDV' => sub {
         is $doc1->{issuing_country}, 'br',       'issuing country is correctly popualted';
 
         is $client->authentication_status, 'idv_photo', 'Auth status is idv photo';
-        ok $client->fully_authenticated, 'Fully auth';
+        ok $client->fully_authenticated,                             'Fully auth - no mt5 lc';
+        ok $client->fully_authenticated({landing_company => 'bvi'}), 'fully auth with mt5 lc';
 
         $client->aml_risk_classification('high');
         $client->save;
@@ -2989,7 +2992,8 @@ subtest 'IDV lookback' => sub {
             'full_name' => 'The Chosen One',
             'birthdate' => '1989-10-10'
         },
-        'provider' => 'metamap'
+        'provider' => 'metamap',
+        'pictures' => undef
         },
         'expected arguments for lookback call';
 
@@ -3052,6 +3056,7 @@ subtest 'IDV lookback' => sub {
         'response'     => '{"resposne": "get"}',
         'id'           => re('\d+'),
         'provider'     => 'metamap',
+        'photo_id'     => [],
         'request'      => '{"request": "set"}',
         'requested_at' => ignore(),
         'responded_at' => ignore(),
@@ -3115,6 +3120,7 @@ subtest 'IDV lookback' => sub {
         'response'     => '{"resposne": "get"}',
         'id'           => re('\d+'),
         'provider'     => 'metamap',
+        'photo_id'     => [],
         'request'      => '{"request": "set"}',
         'requested_at' => ignore(),
         'responded_at' => ignore(),
@@ -3179,6 +3185,7 @@ subtest 'IDV lookback' => sub {
         'response'     => '{"resposne": "get"}',
         'id'           => re('\d+'),
         'provider'     => 'metamap',
+        'photo_id'     => [],
         'request'      => '{"request": "set"}',
         'requested_at' => ignore(),
         'responded_at' => ignore(),

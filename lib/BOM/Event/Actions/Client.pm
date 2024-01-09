@@ -1411,10 +1411,12 @@ async sub check_idv_rules {
     my @required_data   = grep { defined $_ } @{$report_decoded}{@required_fields};
     return 1 unless scalar @required_fields == scalar @required_data;
 
+    $idv_document_check->{report} = $report_decoded;
     my $response_body = eval { decode_json_text($idv_document_check->{response}  // '{}') } // {};
     my $request_body  = eval { decode_json_text($idv_document_check->{request}   // '{}') } // {};
     my $messages      = eval { decode_json_text($idv_document->{status_messages} // '[]') } // [];
     my $provider      = $idv_document_check->{provider};
+    my $pictures      = $idv_document_check->{photo_id};
 
     if ($report_decoded) {
         await BOM::Event::Actions::Client::IdentityVerification::idv_mismatch_lookback({
@@ -1423,6 +1425,7 @@ async sub check_idv_rules {
             document      => $idv_document,
             report        => $report_decoded,
             provider      => $provider,
+            pictures      => scalar @$pictures ? $pictures : undef,
             response_body => $response_body,
             request_body  => $request_body,
         });

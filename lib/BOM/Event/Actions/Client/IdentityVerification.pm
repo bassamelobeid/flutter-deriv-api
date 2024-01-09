@@ -348,7 +348,7 @@ async sub idv_verified {
     $client->propagate_clear_status('poi_dob_mismatch');
 
     if (any { $_ eq IDV_MESSAGES->{ADDRESS_VERIFIED} } @$messages) {
-        $client->set_authentication('IDV', {status => IDV_DOCUMENT_STATUS->{pass}});
+        $client->set_authentication('IDV_ADDRESS', {status => IDV_DOCUMENT_STATUS->{pass}});
         $client->status->clear_unwelcome;
     } elsif ($pictures && scalar @$pictures) {
         $client->set_authentication('IDV_PHOTO', {status => IDV_DOCUMENT_STATUS->{pass}});
