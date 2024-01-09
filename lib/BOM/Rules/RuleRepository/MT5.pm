@@ -46,9 +46,12 @@ rule 'mt5_account.account_poa_status_allowed' => {
             ($mt5_jurisdiction) = $loginid_details{$mt5_id}->{attributes}->{group} =~ m/(bvi|vanuatu)/g;
         }
 
-        my $poa_status = $client->get_poa_status();
+        my $poa_status = $client->get_poa_status(undef, $mt5_jurisdiction);
         return 1 if $poa_status eq 'verified';
-        return 1 if $poa_status eq 'expired' and $client->risk_level_aml ne 'high' and $client->fully_authenticated;
+        return 1
+            if $poa_status eq 'expired'
+            and $client->risk_level_aml ne 'high'
+            and $client->fully_authenticated({landing_company => $mt5_jurisdiction});
 
         if (defined $mt5_jurisdiction) {
             return 1 unless exists JURISDICTION_DAYS_LIMIT()->{$mt5_jurisdiction};
