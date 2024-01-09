@@ -1425,8 +1425,23 @@ subtest 'IDV Validated account' => sub {
     cmp_deeply $result->{authentication},
         +{
         'needs_verification' => ['income'],
-        'document'           => {'status' => 'none'},
-        'identity'           => {
+        'document'           => {
+            status                 => "none",
+            authenticated_with_idv => {
+                dsl             => 0,
+                malta           => 0,
+                labuan          => 0,
+                virtual         => 0,
+                bvi             => 0,
+                samoa           => 0,
+                svg             => 0,
+                'samoa-virtual' => 0,
+                maltainvest     => 0,
+                iom             => 0,
+                vanuatu         => 0,
+            },
+        },
+        'identity' => {
             'services' => {
                 'onfido' => {
                     'status'               => 'none',
@@ -1464,8 +1479,23 @@ subtest 'IDV Validated account' => sub {
 
     cmp_deeply $result->{authentication}, +{
         'needs_verification' => ['identity', 'income'],
-        'document'           => {'status' => 'none'},
-        'identity'           => {
+        'document'           => {
+            status                 => "none",
+            authenticated_with_idv => {
+                dsl             => 0,
+                malta           => 0,
+                labuan          => 0,
+                virtual         => 0,
+                bvi             => 0,
+                samoa           => 0,
+                svg             => 0,
+                'samoa-virtual' => 0,
+                maltainvest     => 0,
+                iom             => 0,
+                vanuatu         => 0,
+            },
+        },
+        'identity' => {
             'services' => {
                 'onfido' => {
                     'status'               => 'none',
@@ -1534,8 +1564,23 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
     cmp_deeply $result->{authentication},
         +{
         'needs_verification' => ['income'],
-        'document'           => {'status' => 'none'},
-        'identity'           => {
+        'document'           => {
+            status                 => "none",
+            authenticated_with_idv => {
+                dsl             => 0,
+                malta           => 0,
+                labuan          => 0,
+                virtual         => 0,
+                bvi             => 0,
+                samoa           => 0,
+                svg             => 0,
+                'samoa-virtual' => 0,
+                maltainvest     => 0,
+                iom             => 0,
+                vanuatu         => 0,
+            },
+        },
+        'identity' => {
             'services' => {
                 'onfido' => {
                     'status'               => 'none',
@@ -1575,8 +1620,23 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
     cmp_deeply $result->{authentication},
         +{
         'needs_verification' => bag(qw/income document identity/),
-        'document'           => {'status' => 'none'},
-        'identity'           => {
+        'document'           => {
+            status                 => "none",
+            authenticated_with_idv => {
+                dsl             => 0,
+                malta           => 0,
+                labuan          => 0,
+                virtual         => 0,
+                bvi             => 0,
+                samoa           => 0,
+                svg             => 0,
+                'samoa-virtual' => 0,
+                maltainvest     => 0,
+                iom             => 0,
+                vanuatu         => 0,
+            },
+        },
+        'identity' => {
             'services' => {
                 'onfido' => {
                     'status'               => 'none',
@@ -1629,8 +1689,23 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
     cmp_deeply $result->{authentication},
         +{
         'needs_verification' => bag(qw/income document/),
-        'document'           => {'status' => 'none'},
-        'identity'           => {
+        'document'           => {
+            status                 => "none",
+            authenticated_with_idv => {
+                dsl             => 0,
+                malta           => 0,
+                labuan          => 0,
+                virtual         => 0,
+                bvi             => 0,
+                samoa           => 0,
+                svg             => 0,
+                'samoa-virtual' => 0,
+                maltainvest     => 0,
+                iom             => 0,
+                vanuatu         => 0,
+            },
+        },
+        'identity' => {
             'services' => {
                 'onfido' => {
                     'status'               => 'none',
@@ -1685,8 +1760,23 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
     cmp_deeply $result->{authentication},
         +{
         'needs_verification' => bag(qw/income document/),
-        'document'           => {'status' => 'none'},
-        'identity'           => {
+        'document'           => {
+            status                 => "none",
+            authenticated_with_idv => {
+                dsl             => 0,
+                malta           => 0,
+                labuan          => 0,
+                virtual         => 0,
+                bvi             => 0,
+                samoa           => 0,
+                svg             => 0,
+                'samoa-virtual' => 0,
+                maltainvest     => 0,
+                iom             => 0,
+                vanuatu         => 0,
+            },
+        },
+        'identity' => {
             'services' => {
                 'onfido' => {
                     'status'               => 'none',

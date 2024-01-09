@@ -978,7 +978,14 @@ rpc get_account_status => sub {
     push(@$status, 'poa_expiring_soon') if $client->documents->poa_outdated_look_ahead();
 
     my $age_verif_client = $duplicated // $client;
-    push(@$status, 'authenticated_with_idv_photoid') if $client->poa_authenticated_with_idv;
+    # build the structure that details the idv authentication status for each mt5 jurisdiction
+    my $lc = [map { $_->short } LandingCompany::Registry->get_all];
+
+    my $authenticated_with_idv = +{};
+
+    for ($lc->@*) {
+        $authenticated_with_idv->{$_} = $client->poa_authenticated_with_idv({landing_company => $_}) ? 1 : 0;
+    }
 
     push(@$status, 'idv_revoked') if BOM::User::IdentityVerification::is_idv_revoked($idv_client);
 
@@ -1088,6 +1095,9 @@ rpc get_account_status => sub {
 
     # Applicable to svg and non-high risk countries only Check if the client is has not filled any of the information
     push(@$status, 'mt5_additional_kyc_required') if $client->is_mt5_additional_kyc_required();
+
+    # We need to add the status of idv authentication for each mt5 jurisdiction
+    $authentication->{document}->{authenticated_with_idv} = $authenticated_with_idv;
 
     return {
         status                        => [sort(uniq(@$status))],

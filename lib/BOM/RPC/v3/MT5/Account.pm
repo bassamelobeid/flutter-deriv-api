@@ -948,10 +948,11 @@ async_rpc "mt5_new_account",
     my %mt5_compliance_requirements = map { ($_ => 1) } $compliance_requirements->{mt5}->@*;
 
     if ($account_type ne 'demo' && $mt5_compliance_requirements{fully_authenticated}) {
-        # the LC may allow fully authenticated with idv + photo
+        # the LC may allow fully authenticated with idv
         # otherwise a poa based auth is required
         my $mt5_lc       = LandingCompany::Registry->by_name($landing_company_short);
-        my $requires_poa = not $mt5_lc->fully_authenticated_with_idv_photoid;
+        my @idv_auth     = ($mt5_lc->idv_auth_methods // [])->@*;
+        my $requires_poa = scalar @idv_auth ? 0 : 1;
 
         # always check for expired docs if the LC requires so
         if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
@@ -959,7 +960,7 @@ async_rpc "mt5_new_account",
             return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
         }
 
-        if (!$client->fully_authenticated({ignore_idv => $requires_poa})) {
+        if (!$client->fully_authenticated({ignore_idv => $requires_poa, landing_company => $landing_company_short})) {
             if (any { $landing_company_short eq $_ } qw/bvi vanuatu labuan maltainvest/) {
                 try {
                     $rule_engine->verify_action(
@@ -2896,10 +2897,11 @@ sub _eligible_to_migrate {
     }
 
     # Step 2: Check eligibility based on POI status
-    return unless $client->get_poi_status eq 'verified';    # Not eligible if POI is not verified
+    return unless $client->get_poi_status({landing_company => $landing_company_short}) eq 'verified';    # Not eligible if POI is not verified
 
     # Step 3: Check eligibility based on POA status
-    return 'bvi' if $client->poa_authenticated_with_idv;    # Eligible for 'bvi' if POA is authenticated with IDV
+    return 'bvi'
+        if $client->poa_authenticated_with_idv({landing_company => $landing_company_short});    # Eligible for 'bvi' if POA is authenticated with IDV
 
     if ($client->get_poa_status eq 'verified') {
         my $current_epoch  = Date::Utility->new->truncate_to_day;
@@ -2909,7 +2911,7 @@ sub _eligible_to_migrate {
         return (($current_epoch->epoch - $document_epoch->epoch) <= SIX_MONTHS_IN_SECONDS) ? 'vanuatu' : 'bvi' if $document_epoch;
     }
 
-    return 'bvi';                                           # Default to 'bvi' if none of the above conditions are met
+    return 'bvi';    # Default to 'bvi' if none of the above conditions are met
 }
 
 =head2 _is_mt5_ib

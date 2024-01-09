@@ -1712,7 +1712,14 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
             $landing_company_mock->mock(
                 short => sub {
                     $counter++;
-                    return 'lc';
+                    return $landing_company_mock->original('short')->(@_);
+                });
+
+            my $doc_mock = Test::MockModule->new('BOM::User::Client');
+            $doc_mock->mock(
+                'get_poa_status',
+                sub {
+                    return 'none';
                 });
 
             my $result = $c->tcall($method, $params);
@@ -1722,6 +1729,7 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
             is $counter, $LCS_ARGUMENT_LIMIT * $n_landing_companies, 'expected number of comparison in loop for arguments limited to 20 lcs';
 
             $landing_company_mock->unmock_all();
+            $doc_mock->unmock_all;
         };
     };
 

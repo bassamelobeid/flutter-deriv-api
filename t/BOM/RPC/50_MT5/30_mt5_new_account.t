@@ -413,8 +413,8 @@ subtest 'MT5 account opening under idv photoid allowed landing company' => sub {
         $test_client->save;
 
         $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
-        ok $test_client->fully_authenticated,                     'Fully authenticated';
-        ok !$test_client->fully_authenticated({ignore_idv => 1}), 'Not poa fully authenticated';
+        ok $test_client->fully_authenticated({landing_company => 'bvi'}),                       'Fully authenticated';
+        ok !$test_client->fully_authenticated({ignore_idv     => 1, landing_company => 'bvi'}), 'Not poa fully authenticated';
 
         my $method = 'mt5_new_account';
         my $params = {
@@ -480,8 +480,8 @@ subtest 'MT5 account opening under idv photoid allowed landing company' => sub {
         $test_client->save;
 
         $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
-        ok !$test_client->fully_authenticated,                    'Not fully authenticated';
-        ok !$test_client->fully_authenticated({ignore_idv => 1}), 'Not poa fully authenticated';
+        ok !$test_client->fully_authenticated({landing_company => 'bvi'}),                       'Not fully authenticated';
+        ok !$test_client->fully_authenticated({ignore_idv      => 1, landing_company => 'bvi'}), 'Not poa fully authenticated';
 
         my $token  = $m->create_token($test_client->loginid, 'test token');
         my $method = 'mt5_new_account';
@@ -1910,10 +1910,16 @@ subtest 'TIN not mandatory with NPJ country config' => sub {
     });
 
     $c->call_ok($method, $client_params)
-        ->has_error->error_code_is('ASK_FIX_DETAILS', 'Account not created wihout TIN for residence ke in vanuatu NPJ');
+        ->has_error->error_code_is('ASK_FIX_DETAILS', 'Account not created without TIN for residence ke in vanuatu NPJ');
 
     $client_params->{args}->{company} = 'bvi';
-    $c->call_ok($method, $client_params)->has_no_error('BVI does not require TIN at signup even without NPJ');
+    $c->call_ok($method, $client_params)->has_error->error_code_is('TINDetailsMandatory', 'TIN is still required for residence ke even without NPJ');
+
+    $client_params->{args}->{country} = 'af';
+    $test_client->tax_residence('af');
+    $test_client->residence('af');
+    $test_client->save;
+    $c->call_ok($method, $client_params)->has_no_error('BVI does not require TIN at signup even without NPJ for af residence');
 
 };
 

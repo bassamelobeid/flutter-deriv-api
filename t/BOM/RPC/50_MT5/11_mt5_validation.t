@@ -400,6 +400,19 @@ subtest 'CR account types - low risk' => sub {
     $client->account_opening_reason('Speculative');
     $client->save();
 
+    $error = create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp'
+        },
+        'TINDetailsMandatory',
+        'TIN is required for financial_stp financial account'
+    );
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    $client->save();
+
     create_mt5_account->(
         $c, $token, $client,
         {

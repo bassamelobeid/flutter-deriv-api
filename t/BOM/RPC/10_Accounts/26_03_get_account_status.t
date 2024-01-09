@@ -77,7 +77,22 @@ subtest 'check legacy cfd_score' => sub {
                     history => [],
                     latest  => undef
                 },
-                document => {status => "verified"},
+                document => {
+                    status                 => "verified",
+                    authenticated_with_idv => {
+                        dsl             => 0,
+                        malta           => 0,
+                        labuan          => 0,
+                        virtual         => 0,
+                        bvi             => 0,
+                        samoa           => 0,
+                        svg             => 0,
+                        'samoa-virtual' => 0,
+                        maltainvest     => 0,
+                        iom             => 0,
+                        vanuatu         => 0,
+                    },
+                },
                 identity => {
                     services => {
                         idv => {
@@ -142,7 +157,22 @@ subtest 'check legacy cfd_score' => sub {
                     history => [],
                     latest  => undef
                 },
-                document => {status => "verified"},
+                document => {
+                    status                 => "verified",
+                    authenticated_with_idv => {
+                        dsl             => 0,
+                        malta           => 0,
+                        labuan          => 0,
+                        virtual         => 0,
+                        bvi             => 0,
+                        samoa           => 0,
+                        svg             => 0,
+                        'samoa-virtual' => 0,
+                        maltainvest     => 0,
+                        iom             => 0,
+                        vanuatu         => 0,
+                    },
+                },
                 identity => {
                     services => {
                         idv => {
@@ -190,7 +220,7 @@ subtest 'check legacy cfd_score' => sub {
     );
 };
 
-subtest 'IDV + Photo ID' => sub {
+subtest 'Fully Auth with IDV' => sub {
     my $client_mock = Test::MockModule->new('BOM::User::Client');
 
     my $is_idv_validated = 1;
@@ -212,7 +242,7 @@ subtest 'IDV + Photo ID' => sub {
         broker_code => 'CR',
     });
     my $user = BOM::User->create(
-        email    => 'test+idvphotoid@binary.com',
+        email    => 'test+idvauth@binary.com',
         password => 'Abcd1234'
     );
     $user->add_client($client);
@@ -224,11 +254,10 @@ subtest 'IDV + Photo ID' => sub {
     cmp_deeply $result,
         +{
         status => [
-            'allow_document_upload',          'authenticated',
-            'authenticated_with_idv_photoid', 'cashier_locked',
-            'dxtrade_password_not_set',       'financial_information_not_complete',
-            'mt5_additional_kyc_required',    'mt5_password_not_set',
-            'trading_experience_not_complete'
+            'allow_document_upload',              'authenticated',
+            'cashier_locked',                     'dxtrade_password_not_set',
+            'financial_information_not_complete', 'mt5_additional_kyc_required',
+            'mt5_password_not_set',               'trading_experience_not_complete'
         ],
         p2p_poa_required => 0,
         p2p_status       => 'none',
@@ -264,7 +293,22 @@ subtest 'IDV + Photo ID' => sub {
             },
             needs_verification => [],
             income             => {'status' => 'none'},
-            document           => {'status' => 'verified'}
+            document           => {
+                status                 => 'verified',
+                authenticated_with_idv => {
+                    dsl             => 0,
+                    malta           => 0,
+                    labuan          => 0,
+                    virtual         => 0,
+                    bvi             => 1,
+                    samoa           => 0,
+                    svg             => 1,
+                    'samoa-virtual' => 0,
+                    maltainvest     => 0,
+                    iom             => 0,
+                    vanuatu         => 0,
+                },
+            }
         },
         currency_config => {
             USD => {
@@ -276,7 +320,7 @@ subtest 'IDV + Photo ID' => sub {
         prompt_client_to_authenticate => 0,
         risk_classification           => 'low'
         },
-        'expected response for IDV photoid authenticated';
+        'expected response for IDV fully authenticated';
 
     ## client becomes high risk
     $client->aml_risk_classification('high');
@@ -326,7 +370,22 @@ subtest 'IDV + Photo ID' => sub {
             },
             needs_verification => [qw/document identity/],
             income             => {'status' => 'none'},
-            document           => {'status' => 'none'}
+            document           => {
+                status                 => 'none',
+                authenticated_with_idv => {
+                    dsl             => 0,
+                    malta           => 0,
+                    labuan          => 0,
+                    virtual         => 0,
+                    bvi             => 0,
+                    samoa           => 0,
+                    svg             => 0,
+                    'samoa-virtual' => 0,
+                    maltainvest     => 0,
+                    iom             => 0,
+                    vanuatu         => 0,
+                },
+            }
         },
         currency_config => {
             USD => {
@@ -338,7 +397,7 @@ subtest 'IDV + Photo ID' => sub {
         prompt_client_to_authenticate => 1,
         risk_classification           => 'high'
         },
-        'expected response for IDV photoid authenticated under high risk scenario';
+        'expected response for IDV authenticated under high risk scenario';
 };
 
 subtest 'expired docs account' => sub {
@@ -949,7 +1008,21 @@ subtest "suspended onfido" => sub {
             },
             needs_verification => [],
             income             => {'status' => 'none'},
-            document           => {'status' => 'none'}
+            document           => {
+                'status'               => 'none',
+                authenticated_with_idv => {
+                    dsl             => 0,
+                    malta           => 0,
+                    labuan          => 0,
+                    virtual         => 0,
+                    bvi             => 0,
+                    samoa           => 0,
+                    svg             => 0,
+                    'samoa-virtual' => 0,
+                    maltainvest     => 0,
+                    iom             => 0,
+                    vanuatu         => 0,
+                }}
         },
         currency_config => {
             USD => {
@@ -1008,7 +1081,21 @@ subtest "suspended onfido" => sub {
             },
             needs_verification => [],
             income             => {'status' => 'none'},
-            document           => {'status' => 'none'}
+            document           => {
+                'status'               => 'none',
+                authenticated_with_idv => {
+                    dsl             => 0,
+                    malta           => 0,
+                    labuan          => 0,
+                    virtual         => 0,
+                    bvi             => 0,
+                    samoa           => 0,
+                    svg             => 0,
+                    'samoa-virtual' => 0,
+                    maltainvest     => 0,
+                    iom             => 0,
+                    vanuatu         => 0,
+                }}
         },
         currency_config => {
             USD => {

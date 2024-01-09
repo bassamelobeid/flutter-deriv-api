@@ -51,7 +51,12 @@ subtest 'residence_list' => sub {
             },
             text       => 'China',
             phone_idd  => '86',
-            tin_format => ['^\d{17}[Xx\d]$', '^[CcWwHhMmTt]\d{16}[xX\d]$', '^[Jj]\d{14}$', '^(\d{15}|\d{18})$', '^\d{8}\w{10}$'],
+            tin_format => [
+                '^\d{18}$',             '^\d{17}[Xx]$',         '^[Cc]\d{17}$',         '^[Cc]\d{16}[A-Za-z]$',
+                '^[Ww]\d{17}$',         '^[Ww]\d{16}[A-Za-z]$', '^[Jj]\d{14}$',         '^[Hh]\d{17}$',
+                '^[Hh]\d{16}[A-Za-z]$', '^[Mm]\d{17}$',         '^[Mm]\d{16}[A-Za-z]$', '^[Tt]\d{17}$',
+                '^[Tt]\d{16}[A-Za-z]$'
+            ],
         },
         'cn is correct'
     );
@@ -88,7 +93,7 @@ subtest 'residence_list' => sub {
             },
             text       => 'Nigeria',
             phone_idd  => '234',
-            tin_format => ['^\d{10}$', '^\d{8}$', '^[A-Za-z]\\d{4,8}$', '^\\d{11}$', '^\\d{12}$'],
+            tin_format => ['^\d{8}[-]?0001$', '^\d{10}$'],
         },
         'ng is correct'
     );
@@ -146,7 +151,7 @@ subtest 'residence_list' => sub {
             },
             text       => 'India',
             phone_idd  => '91',
-            tin_format => ['^[a-zA-Z]{5}\d{4}[a-zA-Z]$'],
+            tin_format => ['^[A-Za-z]{3}P[A-Za-z]\d{4}[A-Za-z]$'],
         },
         'in is correct'
     );
@@ -180,8 +185,9 @@ subtest 'residence_list' => sub {
                     },
                 }
             },
-            text      => 'Uganda',
-            phone_idd => '256',
+            text       => 'Uganda',
+            phone_idd  => '256',
+            tin_format => ['^\d+$'],
         },
         'ug is correct'
     );
@@ -189,7 +195,7 @@ subtest 'residence_list' => sub {
     is_deeply(
         $index->{id},
         {
-            tin_format => ['^\\d{15}$'],
+            tin_format => ['^\d{15,16}$'],
             identity   => {
                 services => {
                     onfido => {

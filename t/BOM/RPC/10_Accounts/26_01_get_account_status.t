@@ -517,7 +517,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -581,7 +594,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -644,7 +670,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "verified",
+                            status                 => "verified",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "verified",
@@ -706,7 +745,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "verified",
+                            status                 => "verified",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "expired",
@@ -783,7 +835,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "verified",
+                            status                 => "verified",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status      => "verified",
@@ -887,7 +952,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '1',
                         authentication                => {
                             document => {
-                                status => "none",
+                                status                 => "none",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status      => "expired",
@@ -965,7 +1043,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -1022,7 +1113,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -1125,7 +1229,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -1193,7 +1310,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "verified",
@@ -1295,7 +1425,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status => "none",
+                                status                 => "none",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status      => "expired",
@@ -1420,7 +1563,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status => "verified",
+                                status                 => "verified",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status      => "expired",
@@ -1491,7 +1647,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -1558,7 +1727,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "verified",
@@ -1620,7 +1802,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "verified",
+                            status                 => "verified",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "verified",
@@ -1686,7 +1881,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -1760,7 +1968,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status => "none",
+                                status                 => "none",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status   => "none",
@@ -1824,7 +2045,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status => "none",
+                                status                 => "none",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status   => "none",
@@ -1894,7 +2128,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -1965,7 +2212,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -2035,7 +2295,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -2146,7 +2419,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '1',
                         authentication                => {
                             document => {
-                                status => "none",
+                                status                 => "none",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status      => "expired",
@@ -2226,7 +2512,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -2305,7 +2604,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "verified",
@@ -2377,7 +2689,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status => "verified",
+                            status                 => "verified",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "verified",
@@ -2492,7 +2817,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '1',
                         authentication                => {
                             document => {
-                                status => "none",
+                                status                 => "none",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status      => "expired",
@@ -2590,7 +2928,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status => "verified",
+                                status                 => "verified",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status   => "verified",
@@ -2684,7 +3035,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status => "verified",
+                                status                 => "verified",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status      => "expired",
@@ -2766,7 +3130,20 @@ subtest 'get account status' => sub {
                 my $method_response = $c->tcall($method, {token => $token});
                 my $expected_result = {
                     document => {
-                        status => "verified",
+                        status                 => "verified",
+                        authenticated_with_idv => {
+                            dsl             => 0,
+                            malta           => 0,
+                            labuan          => 0,
+                            virtual         => 0,
+                            bvi             => 0,
+                            samoa           => 0,
+                            svg             => 0,
+                            'samoa-virtual' => 0,
+                            maltainvest     => 0,
+                            iom             => 0,
+                            vanuatu         => 0,
+                        },
                     },
                     identity => {
                         status      => "expired",
@@ -2852,7 +3229,20 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => 0,
                         authentication                => {
                             document => {
-                                status => "none",
+                                status                 => "none",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             identity => {
                                 status   => "verified",
@@ -2955,7 +3345,20 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             document => {
-                                status => "none",
+                                status                 => "none",
+                                authenticated_with_idv => {
+                                    dsl             => 0,
+                                    malta           => 0,
+                                    labuan          => 0,
+                                    virtual         => 0,
+                                    bvi             => 0,
+                                    samoa           => 0,
+                                    svg             => 0,
+                                    'samoa-virtual' => 0,
+                                    maltainvest     => 0,
+                                    iom             => 0,
+                                    vanuatu         => 0,
+                                },
                             },
                             ownership => {
                                 status   => 'none',
@@ -3004,7 +3407,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => 0,
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -3181,7 +3597,20 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => 0,
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                 => "none",
+                            authenticated_with_idv => {
+                                dsl             => 0,
+                                malta           => 0,
+                                labuan          => 0,
+                                virtual         => 0,
+                                bvi             => 0,
+                                samoa           => 0,
+                                svg             => 0,
+                                'samoa-virtual' => 0,
+                                maltainvest     => 0,
+                                iom             => 0,
+                                vanuatu         => 0,
+                            },
                         },
                         identity => {
                             status   => "none",
@@ -3279,7 +3708,20 @@ subtest "Test onfido is_country_supported" => sub {
             prompt_client_to_authenticate => '0',
             authentication                => {
                 document => {
-                    status => "none",
+                    status                 => "none",
+                    authenticated_with_idv => {
+                        dsl             => 0,
+                        malta           => 0,
+                        labuan          => 0,
+                        virtual         => 0,
+                        bvi             => 0,
+                        samoa           => 0,
+                        svg             => 0,
+                        'samoa-virtual' => 0,
+                        maltainvest     => 0,
+                        iom             => 0,
+                        vanuatu         => 0,
+                    },
                 },
                 identity => {
                     status   => "none",
@@ -3338,7 +3780,20 @@ subtest "Test onfido is_country_supported" => sub {
             prompt_client_to_authenticate => '0',
             authentication                => {
                 document => {
-                    status => "none",
+                    status                 => "none",
+                    authenticated_with_idv => {
+                        dsl             => 0,
+                        malta           => 0,
+                        labuan          => 0,
+                        virtual         => 0,
+                        bvi             => 0,
+                        samoa           => 0,
+                        svg             => 0,
+                        'samoa-virtual' => 0,
+                        maltainvest     => 0,
+                        iom             => 0,
+                        vanuatu         => 0,
+                    },
                 },
                 identity => {
                     status   => "none",
@@ -3773,7 +4228,22 @@ subtest 'Social identity provider' => sub {
                     count   => 0,
                     history => []
                 },
-                document => {'status' => 'none'}
+                document => {
+                    status                 => 'none',
+                    authenticated_with_idv => {
+                        dsl             => 0,
+                        malta           => 0,
+                        labuan          => 0,
+                        virtual         => 0,
+                        bvi             => 0,
+                        samoa           => 0,
+                        svg             => 0,
+                        'samoa-virtual' => 0,
+                        maltainvest     => 0,
+                        iom             => 0,
+                        vanuatu         => 0,
+                    },
+                }
             },
         },
         'has social_identity_provider as google'
