@@ -198,54 +198,148 @@ subtest 'set_authentication_and_status' => sub {
     is $client_cr1->authentication_status(), 'idv_photo', 'expected auth status';
     is $client_cr1->get_idv_status(),        'verified',  'IDV_PHOTO authentication returns idv status verified';
 
-    subtest 'IDV + Photo' => sub {
+    subtest 'IDV Fully Auth' => sub {
         my $tests = [{
-                idv_photoid_lc      => 1,
-                authentication      => 'IDV_PHOTO',
+                authentication      => 'IDV_ADDRESS',
                 status              => 'pass',
-                high_risk           => 0,
-                fully_authenticated => 1,
+                high_risk           => 1,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv address high risk',
             },
             {
-                idv_photoid_lc      => 1,
+                authentication      => 'IDV_ADDRESS',
+                status              => 'pass',
+                high_risk           => 0,
+                ignore_idv          => 1,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv address ignore idv',
+            },
+            {
+                authentication      => 'IDV_ADDRESS',
+                status              => 'pending',
+                high_risk           => 0,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv address pending status',
+            },
+            {
+                authentication      => 'IDV_ADDRESS',
+                status              => 'pass',
+                high_risk           => 0,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv address unsupported lc'
+            },
+            {
+                authentication      => 'IDV_ADDRESS',
+                status              => 'pass',
+                high_risk           => 0,
+                lc                  => 'bvi',
+                auth_with_idv       => 1,
+                fully_authenticated => 1,
+                case                => 'idv address pass'
+            },
+            {
+                authentication      => 'IDV_PHOTO',
+                status              => 'pass',
+                high_risk           => 1,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv photo high risk',
+            },
+            {
                 authentication      => 'IDV_PHOTO',
                 status              => 'pass',
                 high_risk           => 0,
                 ignore_idv          => 1,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
                 fully_authenticated => 0,
+                case                => 'idv photo ignore idv',
             },
             {
-                idv_photoid_lc      => 0,
-                authentication      => 'IDV_PHOTO',
-                status              => 'pass',
-                high_risk           => 0,
-                fully_authenticated => 0,
-            },
-            {
-                idv_photoid_lc      => 1,
-                authentication      => 'DUBIOUS_METHOD',
-                status              => 'pass',
-                high_risk           => 0,
-                fully_authenticated => 0,
-            },
-            {
-                idv_photoid_lc      => 1,
                 authentication      => 'IDV_PHOTO',
                 status              => 'pending',
                 high_risk           => 0,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
                 fully_authenticated => 0,
+                case                => 'idv photo pending status',
             },
             {
-                idv_photoid_lc      => 1,
                 authentication      => 'IDV_PHOTO',
                 status              => 'pass',
-                high_risk           => 1,
+                high_risk           => 0,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
                 fully_authenticated => 0,
+                case                => 'idv photo unsupported lc'
             },
-        ];
+            {
+                authentication      => 'IDV_PHOTO',
+                status              => 'pass',
+                high_risk           => 0,
+                lc                  => 'bvi',
+                auth_with_idv       => 1,
+                fully_authenticated => 1,
+                case                => 'idv photo pass'
+            },
+            {
+                authentication      => 'IDV',
+                status              => 'pass',
+                high_risk           => 1,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv high risk',
+            },
+            {
+                authentication      => 'IDV',
+                status              => 'pass',
+                high_risk           => 0,
+                ignore_idv          => 1,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv poa ignore idv',
+            },
+            {
+                authentication      => 'IDV',
+                status              => 'pending',
+                high_risk           => 0,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv poa pending status',
+            },
+            {
+                authentication      => 'IDV',
+                status              => 'pass',
+                high_risk           => 0,
+                lc                  => 'maltainvest',
+                auth_with_idv       => 0,
+                fully_authenticated => 0,
+                case                => 'idv poa unsupported lc'
+            },
+            {
+                authentication      => 'IDV',
+                status              => 'pass',
+                high_risk           => 0,
+                lc                  => 'labuan',
+                auth_with_idv       => 1,
+                fully_authenticated => 1,
+                case                => 'idv poa pass'
+            }];
         for my $test ($tests->@*) {
-            my ($idv_photoid_lc, $authentication, $status, $high_risk, $ignore_idv, $fully_authenticated) =
-                @{$test}{qw/idv_photoid_lc authentication status high_risk ignore_idv fully_authenticated/};
+            my ($authentication, $status, $high_risk, $ignore_idv, $lc, $auth_with_idv, $fully_authenticated, $case) =
+                @{$test}{qw/authentication status high_risk ignore_idv lc auth_with_idv fully_authenticated case/};
 
             $_->delete for @{$client_cr1->client_authentication_method};
             $client_cr1->set_authentication($authentication, {status => $status}, 'testing script');
@@ -257,105 +351,20 @@ subtest 'set_authentication_and_status' => sub {
                     return $high_risk;
                 });
 
-            my $lc_mock = Test::MockModule->new('LandingCompany');
-            $lc_mock->mock(
-                'fully_authenticated_with_idv_photoid',
-                sub {
-                    return $idv_photoid_lc;
-                });
-
             $client_cr1 = BOM::User::Client->new({loginid => $client_cr1->loginid});
             # we need xand (xnor amirite?) so we will use these auxiliar vars to store the booleans
-            my $x = $client_cr1->fully_authenticated({ignore_idv => $ignore_idv}) ? 1 : 0;
-            my $y = $fully_authenticated                                          ? 1 : 0;
+            my $x = $client_cr1->fully_authenticated({ignore_idv => $ignore_idv, landing_company => $lc}) ? 1 : 0;
+            my $y = $fully_authenticated                                                                  ? 1 : 0;
 
-            is $x,                                   $y,     'Expected fully auth result';
-            is $client_cr1->get_manual_poi_status(), 'none', 'manual POI status should remain none regardless';
+            is $x,                                                                $y,             "Expected fully auth result for: $case";
+            is $client_cr1->poa_authenticated_with_idv({landing_company => $lc}), $auth_with_idv, 'Expected poa authenticated with IDV result';
+            is $client_cr1->get_manual_poi_status(),                              'none',         'manual POI status should remain none regardless';
 
             $client_mock->unmock_all;
-            $lc_mock->unmock_all;
 
         }
     };
 
-    subtest 'IDV' => sub {
-        my $tests = [{
-                authentication      => 'IDV',
-                status              => 'pass',
-                fully_authenticated => 1,
-                auth_with_idv       => 1,
-            },
-            {
-                authentication      => 'IDV',
-                status              => 'pass',
-                ignore_idv          => 1,
-                fully_authenticated => 0,
-                auth_with_idv       => 1,
-            },
-            {
-                authentication      => 'IDV',
-                status              => 'pass',
-                fully_authenticated => 1,
-                auth_with_idv       => 1,
-            },
-            {
-                authentication      => 'DUBIOUS_METHOD',
-                status              => 'pass',
-                fully_authenticated => 0,
-                auth_with_idv       => 0,
-            },
-            {
-                authentication      => 'IDV',
-                status              => 'pending',
-                fully_authenticated => 0,
-                auth_with_idv       => 0,
-            },
-            {
-                authentication      => 'IDV',
-                status              => 'pass',
-                fully_authenticated => 0,
-                aml_risk            => 'high',
-                auth_with_idv       => 0,
-            },
-            {
-                authentication      => 'IDV',
-                status              => 'pass',
-                fully_authenticated => 0,
-                sr_risk             => 'high',
-                auth_with_idv       => 0,
-            },
-        ];
-
-        for my $test ($tests->@*) {
-            my $client_mock = Test::MockModule->new(ref($client_cr1));
-            $client_mock->mock(
-                'risk_level_sr',
-                sub {
-                    return $test->{sr_risk} // 'low';
-                });
-            $client_mock->mock(
-                'risk_level_aml',
-                sub {
-                    return $test->{aml_risk} // 'low';
-                });
-
-            my ($authentication, $status, $ignore_idv, $fully_authenticated, $auth_with_idv) =
-                @{$test}{qw/authentication status ignore_idv fully_authenticated auth_with_idv/};
-
-            $_->delete for @{$client_cr1->client_authentication_method};
-            $client_cr1->set_authentication($authentication, {status => $status}, 'testing script');
-
-            $client_cr1 = BOM::User::Client->new({loginid => $client_cr1->loginid});
-            my $x = $client_cr1->fully_authenticated({ignore_idv => $ignore_idv}) ? 1 : 0;
-            my $y = $fully_authenticated                                          ? 1 : 0;
-
-            is $x, $y, 'Expected fully auth result';
-
-            is $client_cr1->poa_authenticated_with_idv, $auth_with_idv, 'Expected poa authenticated with IDV';
-
-            is $client_cr1->get_manual_poi_status(), 'none', 'manual POI status should remain none regardless';
-        }
-    };
 };
 
 subtest 'set_staff_name' => sub {

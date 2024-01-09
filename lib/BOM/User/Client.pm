@@ -546,6 +546,11 @@ sub set_authentication_and_status {
         $address_verified = 1;
     }
 
+    if ($client_authentication eq 'IDV_ADDRESS') {
+        $self->set_authentication('IDV_ADDRESS', {status => 'pass'}, $staff);
+        $address_verified = 1;
+    }
+
     if ($client_authentication eq 'IDV_PHOTO') {
         $self->set_authentication('IDV_PHOTO', {status => 'pass'}, $staff);
     }
@@ -841,7 +846,8 @@ sub set_financial_assessment {
 
 For reference a client is termed fully authenticated with following parameters :
 
-CR - POI + POA
+CR - POI + POA / POI + Address from IDV / POI + Photo from IDV - (for low risk)
+CR - POI + POA + Selfie in Onfido - (for high risk)
 MX - Prove ID / (POI + POA)
 MLT - POI + POA
 MF - POI + POA + Selfie in Onfido
@@ -851,6 +857,8 @@ It takes a hashref of params:
 =over 4
 
 =item * C<ignore_idv> - strict check for ID_DOCUMENT ID_NOTARIZED ID_ONLINE, poa-less scenarios are skipped.
+
+=item * C<landing_company> - account jurisdiction for idv authentication check.
 
 =back
 
@@ -872,38 +880,59 @@ sub fully_authenticated {
 
     return 0 if $args->{ignore_idv};
 
-    return $self->poa_authenticated_with_idv;
+    return $self->poa_authenticated_with_idv($args);
 }
 
 =head2 poa_authenticated_with_idv
 
-Determines if the client was authenticated by IDV+PhotoID and the risk conditions are also met.
+Determines if the client was authenticated by IDV based on the allowed authentication options for their landing company 
+and that the risk conditions are also met.
+
+=over 4
+
+=item * C<landing_company> - account jurisdiction for idv authentication check.
+
+=back
 
 Returns C<0> or C<1>.
 
 =cut 
 
 sub poa_authenticated_with_idv {
-    my ($self) = @_;
+    my ($self, $args) = @_;
 
-    # idv cannot fully auth high risk clients
+    my $lc = $args->{landing_company} ? LandingCompany::Registry->by_name($args->{landing_company}) : $self->landing_company;
+
+    # idv cannot fully auth high risk cr clients
 
     return 0 if $self->is_high_risk;
 
-    # Some LC can get fully auth if IDV_PHOTO
+    # Some LC can get fully auth if their IDV submission returns an additional address
+
+    my $idv_address = $self->get_authentication('IDV_ADDRESS');
+
+    return 1
+        if (any { $_ eq 'idv_address' } $lc->idv_auth_methods->@*)
+        && $idv_address
+        && $idv_address->status eq 'pass';
+
+    # Some LC can get fully auth if their IDV submission returns an additional photo
 
     my $idv_photo = $self->get_authentication('IDV_PHOTO');
 
     return 1
-        if $self->landing_company->fully_authenticated_with_idv_photoid
-        and $idv_photo
-        and $idv_photo->status eq 'pass';
+        if (any { $_ eq 'idv_photo' } $lc->idv_auth_methods->@*)
+        && $idv_photo
+        && $idv_photo->status eq 'pass';
 
-    # some providers might verify the address of a client
+    # IDV can also auth if there is a valid POA submission
 
-    my $idv = $self->get_authentication('IDV');
+    my $idv_poa = $self->get_authentication('IDV');
 
-    return 1 if $idv and $idv->status eq 'pass';
+    return 1
+        if (any { $_ eq 'idv' } $lc->idv_auth_methods->@*)
+        && $idv_poa
+        && $idv_poa->status eq 'pass';
 
     return 0;
 }
@@ -931,6 +960,10 @@ sub authentication_status {
     my $idv_photo = $self->get_authentication('IDV_PHOTO');
 
     return 'idv_photo' if $idv_photo and $idv_photo->status eq 'pass';
+
+    my $idv_address = $self->get_authentication('IDV_ADDRESS');
+
+    return 'idv_address' if $idv_address and $idv_address->status eq 'pass';
 
     my $idv = $self->get_authentication('IDV');
 
@@ -7834,6 +7867,8 @@ It takes the following params:
 
 =item * C<documents> hashref containing the client documents by type (optional)
 
+=item * C<lc> - mt5 account jurisdiction for idv authentication check (optional)
+
 =back
 
 Returns,
@@ -7842,9 +7877,11 @@ Returns,
 =cut
 
 sub get_poa_status {
-    my ($self, $documents) = @_;
+    my ($self, $documents, $lc) = @_;
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents->uploaded();
+
+    $lc //= $self->landing_company->short;
 
     my ($is_poa_pending, $is_rejected, $is_outdated) =
         @{$documents->{proof_of_address}}{qw/is_pending is_rejected is_outdated/};
@@ -7853,8 +7890,7 @@ sub get_poa_status {
 
     my $risk = $self->aml_risk_classification // '';
 
-    if ($self->fully_authenticated({ignore_idv => $risk eq 'high'})) {
-
+    if ($self->fully_authenticated({ignore_idv => $risk eq 'high', landing_company => $lc})) {
         return 'expired' if $is_outdated && $self->is_poa_outdated_check_required();
 
         return 'verified';
@@ -7907,7 +7943,7 @@ sub get_poi_status {
     return 'pending' if $status eq 'pending';
 
     my $ignore_age_verification = $self->ignore_age_verification($args);
-    if (!$ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
+    if (!$ignore_age_verification && ($self->fully_authenticated({landing_company => $args->{landing_company}}) || $self->status->age_verification)) {
         my $expired;
 
         $expired = $self->documents->expired(undef) if $poi_by eq 'manual';

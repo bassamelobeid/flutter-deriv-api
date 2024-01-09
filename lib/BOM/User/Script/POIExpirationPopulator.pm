@@ -44,7 +44,7 @@ Returns C<undef>
 =cut
 
 sub run {
-    my @broker_codes = LandingCompany::Registry->all_real_broker_codes();
+    my @broker_codes = qw/CR MF/;
 
     my $poi_types          = BOM::User::Client::AuthenticationDocuments::Config::poi_types();
     my $user_db            = BOM::Database::UserDB::rose_db()->dbic;
@@ -84,8 +84,11 @@ sub run {
             $binary_user_ids = get_best_date(
                 $binary_user_ids,
                 +{
-                    map  { ($_->{binary_user_id} => Date::Utility->new($_->{expiration_date})) }
-                    grep { !$lifetime_valid_ids->{$_->{binary_user_id}} } $expirations->@*
+                    map { ($_->{binary_user_id} => Date::Utility->new($_->{expiration_date})) }
+                        grep {
+                        eval { Date::Utility->new($_->{expiration_date}) }
+                        }
+                        grep { !$lifetime_valid_ids->{$_->{binary_user_id}} } $expirations->@*
                 });
 
             $offset  += $limit;

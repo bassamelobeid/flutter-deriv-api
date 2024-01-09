@@ -187,6 +187,10 @@ my ($cli4, $u4) = add_client({
     email       => 'test4@test.com',
     broker_code => 'CR',
 });
+my ($cli5) = add_client({
+    email       => 'test5@test.com',
+    broker_code => 'CR',
+});
 
 my $now = Date::Utility->new();
 
@@ -249,6 +253,20 @@ subtest 'POI Expiration Populator' => sub {
             checksum                   => '999-4',
             status                     => 'verified',
             expiration_date            => $now->date_yyyymmdd,
+            document_id                => 'doc4',
+            status                     => 'verified',
+        });
+    add_document(
+        $cli5,
+        {
+            file_name                  => 'test4.png',
+            document_type              => 'passport',
+            document_format            => 'png',
+            document_path              => '/tmp/test4.png',
+            authentication_method_code => 'ID_DOCUMENT',
+            checksum                   => '999-4',
+            status                     => 'verified',
+            expiration_date            => '293697-04-27',     # Not even god knows where this one came from
             document_id                => 'doc4',
             status                     => 'verified',
         });

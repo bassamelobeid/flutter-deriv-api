@@ -310,7 +310,8 @@ sub seed {
         push @loginids, $client->loginid;
     }
 
-    cmp_deeply [map { +{id => $pivot + $_, provider => $provider, report => '{"portal_id": "dummy"}', request => '{}', response => '{}',} }
+    cmp_deeply [
+        map { +{id => $pivot + $_, provider => $provider, report => '{"portal_id": "dummy"}', request => '{}', response => '{}', photo_id => [],} }
             (1 .. $n)], [@seeds], "database seeded with $n checks";
 
     return @loginids;

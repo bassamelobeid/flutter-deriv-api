@@ -137,7 +137,7 @@ subtest 'Manipulating IDV' => sub {
 
         $client = BOM::User::Client->new({loginid => $client->loginid});
 
-        ok $client->fully_authenticated, 'Fully auth';
+        ok $client->fully_authenticated({landing_company => 'bvi'}), 'Fully auth';
 
         my $cam = $client->db->dbic->run(
             fixup => sub {
