@@ -45,7 +45,7 @@ test_sendrecv_params 'copytrading_statistics/test_send.json', 'copytrading_stati
     $suite->get_stashed('authorize/authorize/loginid');
 
 test_sendrecv_params 'api_token/test_send_create_read.json', 'api_token/test_receive_create_read.json', 'test';
-my $token        = $suite->get_stashed('api_token/api_token/tokens/0/token');
+my $token = $suite->get_stashed('api_token/api_token/tokens/0/token');
 
 # SET ALLOW_COPIERS FLAG
 test_sendrecv_params 'set_settings/test_send.json', 'set_settings/test_receive.json';

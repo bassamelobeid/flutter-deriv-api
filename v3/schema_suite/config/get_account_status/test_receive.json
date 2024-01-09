@@ -110,6 +110,88 @@
                                   "suspected"
                               ]
                            },
+                           "authenticated_with_idv":{
+                              "type":"object",
+                              "properties": {
+                                  "maltainvest":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "virtual":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "dsl":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "bvi":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "vanuatu":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "samoa-virtual":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "malta":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "samoa":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "iom":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "labuan":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  },
+                                  "svg":{
+                                      "type": "integer",
+                                      "enum": [
+                                          0,
+                                          1
+                                      ]
+                                  }
+                              }
+                          },
                            "expiry_date" : {
                                "type" : "integer"
                            }
