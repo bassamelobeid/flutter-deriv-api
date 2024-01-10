@@ -10,6 +10,7 @@ use BOM::RPC::Registry '-dsl';
 use BOM::User::WalletMigration;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
+use BOM::Config::Runtime;
 
 requires_auth('trading', 'wallet');
 
@@ -34,6 +35,7 @@ my %ERROR_MAP = do {
         MigrationAlreadyFinished      => localize('Wallet migration is already finished.'),
         MigrationNotFailed            => localize('Migration is not in failed state.'),
         UserIsNotEligibleForMigration => localize('Your account is not ready for wallet migration.'),
+        MigrationSuspended            => localize('Wallet migration is not available.'),
     );
 };
 
@@ -82,6 +84,8 @@ rpc wallet_migration => sub {
 
             return +{state => $state};
         } elsif ($action eq 'start') {
+            die {error_code => 'MigrationSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->wallet_migration;
+
             $migration->start;
             return +{state => 'in_progress'};
         } elsif ($action eq 'reset') {

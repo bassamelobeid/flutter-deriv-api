@@ -14,7 +14,9 @@ my $rpc         = Test::BOM::RPC::QueueClient->new();
 
 $ENV{LOG_DETAILED_EXCEPTION} = 1;
 
-BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+my $app_config = BOM::Config::Runtime->instance->app_config;
+$app_config->system->suspend->wallets(0);
+$app_config->system->suspend->wallet_migration(0);
 
 my $user_counter = 1;
 
@@ -224,7 +226,22 @@ subtest 'Start migration' => sub {
 
     my $vr_token = $token_model->create_token($client_virtual->loginid, 'test token');
 
+    $app_config->system->suspend->wallet_migration(1);
+
     my $res = $rpc->tcall(
+        wallet_migration => +{
+            source => 1,
+            token  => $vr_token,
+            args   => {
+                wallet_migration => 'start',
+            },
+        });
+
+    is $res->{error}{code}, 'MigrationSuspended', 'MigrationSuspended error when migration is suspended';
+
+    $app_config->system->suspend->wallet_migration(0);
+
+    $res = $rpc->tcall(
         wallet_migration => +{
             source => 1,
             token  => $vr_token,
