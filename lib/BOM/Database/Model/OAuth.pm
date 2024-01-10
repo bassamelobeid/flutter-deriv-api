@@ -348,7 +348,7 @@ sub create_app {
         });
     $result->{scopes} = __parse_array($result->{scopes});
     $result->{app_id} = $result->{id};
-    delete @$result{qw(binary_user_id stamp id bypass_verification secret)};
+    delete @$result{qw(binary_user_id stamp created_at id bypass_verification secret)};
     return $result;
 }
 
