@@ -315,6 +315,13 @@ sub generate_trading_times {
             push @{$market->{submarkets}}, $submarket;
             $submarket->{name} = localize($sbm->{name});
             for my $ul (@{$sbm->{underlyings}}) {
+                # localizing $ul->{events} for date & descrip
+                # since we are already caching this data, I think it will be ok to executed nested for loops here.
+                if (@{$ul->{events}}) {
+                    for my $hash_ref (@{$ul->{events}}) {
+                        $_ = localize($_) for values %$hash_ref;
+                    }
+                }
                 push @{$submarket->{symbols}},
                     {
                     name         => localize($ul->{name}),
