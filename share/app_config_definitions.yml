@@ -1683,6 +1683,11 @@ system:
           isa: Bool
           default: 1
           global: 1
+        wallet_migration:
+          description: "Suspend initiation of wallet migration via the API"
+          isa: Bool
+          default: 1
+          global: 1
         idv:
           description: "Suspend all IDV identity verification"
           isa: Bool
