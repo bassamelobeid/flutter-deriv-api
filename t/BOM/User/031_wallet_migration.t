@@ -20,10 +20,12 @@ use BOM::User::WalletMigration;
 
 use BOM::Config::Runtime;
 
-plan tests => 9;
+plan tests => 10;
 
 BOM::Test::Helper::MT5::mock_server();
 BOM::Test::Helper::CTrader::mock_server();
+
+my $app_config = BOM::Config::Runtime->instance->app_config;
 
 subtest 'Constructor: new' => sub {
     my ($user) = create_user();
@@ -55,7 +57,6 @@ subtest 'Constructor: new' => sub {
 };
 
 subtest 'State check' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
     my ($user, $client_virtual) = create_user();
 
     my $migration_mock = Test::MockModule->new('BOM::User::WalletMigration');
@@ -92,7 +93,8 @@ subtest 'State check' => sub {
 };
 
 subtest 'Eligibility check' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
+    $app_config->system->suspend->wallets(1);
+    $app_config->system->suspend->wallet_migration(1);
 
     my ($user) = create_user();
 
@@ -103,25 +105,36 @@ subtest 'Eligibility check' => sub {
 
     ok(!$migration->is_eligible, 'Should return false if client is not eligible for migration');
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+    $app_config->system->suspend->wallets(0);
+    $app_config->system->suspend->wallet_migration(0);
 
-    my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
     $cr_usd->set_default_account('USD');
     $user->add_client($cr_usd);
 
-    my $countries_mock = Test::MockModule->new('Brands::Countries');
-    $countries_mock->mock(
-        wallet_companies_for_country => sub {
-            (undef, undef, my $type) = @_;
-            my %mock_data = (
-                virtual => [qw(virtual)],
-                real    => [qw(svg)],
-            );
-
-            return $mock_data{$type} // [];
-        });
-
     ok($migration->is_eligible, 'Should return true if client is eligible for migration');
+};
+
+subtest 'Force migration' => sub {
+    my ($user) = create_user();
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    my $err = exception { $migration->start() };
+    is($err->{error_code}, 'UserIsNotEligibleForMigration', 'start() throws has error when not eligible');
+
+    is exception { $migration->start(force => 1) }, undef, 'no error when force=1 is provided to start()';
+    is($migration->state, 'in_progress', 'state is in_progress');
+
+    is exception { $migration->process() }, undef, 'process() has no error';
+
+    is($migration->state, 'failed', 'state is failed');
 };
 
 subtest 'Wallet creation' => sub {
@@ -143,6 +156,7 @@ subtest 'Wallet creation' => sub {
 
     my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
+        residence   => 'aq',
     });
 
     $user->add_client($client_cr);
@@ -154,7 +168,7 @@ subtest 'Wallet creation' => sub {
     is($doughflow_wallet->account->currency_code, 'USD',                       'Should create a DF wallet with USD currency');
     is($doughflow_wallet->account_type,           'doughflow',                 'Should create a DF wallet with doughflow account type');
     is($doughflow_wallet->landing_company->short, 'svg',                       'Should create a DF wallet with svg landing company');
-    is($doughflow_wallet->residence,              $client_virtual->residence,  'Should DF a DF wallet with the same residence as client');
+    is($doughflow_wallet->residence,              $client_virtual->residence,  'Should create a DF wallet with the same residence as client');
     is($doughflow_wallet->first_name,             $client_virtual->first_name, 'Should create a DF wallet with the same first name as client');
 
     my $crypto_wallet =
@@ -164,7 +178,7 @@ subtest 'Wallet creation' => sub {
     is($crypto_wallet->account->currency_code, 'BTC',                       'Should create a DF wallet with USD currency');
     is($crypto_wallet->account_type,           'crypto',                    'Should create a DF wallet with doughflow account type');
     is($crypto_wallet->landing_company->short, 'svg',                       'Should create a DF wallet with svg landing company');
-    is($crypto_wallet->residence,              $client_virtual->residence,  'Should DF a DF wallet with the same residence as client');
+    is($crypto_wallet->residence,              $client_virtual->residence,  'Should create a DF wallet with the same residence as client');
     is($crypto_wallet->first_name,             $client_virtual->first_name, 'Should create a DF wallet with the same first name as client');
 };
 
@@ -1390,6 +1404,7 @@ sub create_user {
 
     my $client_virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
+        residence   => 'aq',
     });
 
     $client_virtual->set_default_account('USD');

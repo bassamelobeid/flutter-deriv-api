@@ -21,7 +21,7 @@ use BOM::User::Wallet;
 use BOM::User::Client;
 
 use Carp       qw(croak);
-use List::Util qw(any);
+use List::Util qw(any none uniq);
 
 use constant {
     MIGRATION_KEY_PREFIX          => 'WALLET::MIGRATION::IN_PROGRESS::',
@@ -79,6 +79,7 @@ Returns a new instance of the class.
 
 has $user;
 has $app_id;
+has %clients;
 
 BUILD(%args) {
 
@@ -139,6 +140,14 @@ method state (%args) {
 
 The C<start> method initiates a migration process for a user. It performs several checks and then starts the migration if the conditions are met.
 
+Takes the following arguments as named parameters:
+
+=over
+
+=item * C<force> - if true will start migration even when not eligible.
+
+=back
+
 Returns 1 on successful initiation of the migration process.
 
 The method may throw the following exceptions:
@@ -161,12 +170,12 @@ Thrown if the user is not eligible for migration.
 
 =cut
 
-method start {
+method start (%args) {
     my $state = $self->state(no_cache => 1);
 
-    die {error_code => 'MigrationAlreadyInProgress'} if $state eq 'in_progress';
-    die {error_code => 'MigrationAlreadyFinished'}   if $state eq 'migrated';
-    die {error_code => 'UserIsNotEligibleForMigration'} unless $state eq 'eligible';
+    die {error_code => 'MigrationAlreadyInProgress'}    if $state eq 'in_progress';
+    die {error_code => 'MigrationAlreadyFinished'}      if $state eq 'migrated';
+    die {error_code => 'UserIsNotEligibleForMigration'} if $state ne 'eligible' && !$args{force};
 
     my $is_success = $self->redis_rw->set(
         MIGRATION_KEY_PREFIX . $user->id, 1,
@@ -184,7 +193,6 @@ method start {
         });
 
     return 1;
-
 }
 
 =head2 process
@@ -498,161 +506,224 @@ A return value of 1 indicates eligibility, while 0 indicates ineligibility.
 =cut
 
 method is_eligible (%args) {
-    # Check if wallet feature is enabled
-    return 0 if BOM::Config::Runtime->instance->app_config->system->suspend->wallets;
+    my @failed_checks = $self->eligibility_checks(%args, fail_fast => 1);
+    return @failed_checks ? 0 : 1;
+}
+
+=head2 eligibility_checks
+
+Checks if user is eligible for migration.
+
+Takes the following arguments as named parameters:
+
+=over
+
+=item * C<no_cache> - if true will ignore previous cached eligibility status.
+
+=item * C<fail_fast> - if true will return only the first failed check.
+
+=back
+
+Returns a list of failed checks.
+
+=cut
+
+method eligibility_checks (%args) {
+
+    # the order of these checks is chosen to minimize the number of client objects instantiated.
+    my @checks = qw(
+        no_virtual_account
+        no_real_account
+        invalid_join_date
+        has_non_svg_real_account
+        no_svg_usd_account
+        currency_not_set
+        unsupported_country
+        registered_p2p
+        registered_pa
+        has_used_pa
+    );
+
+    my @failed_checks;
+    push @failed_checks, 'wallets_suspended'          if BOM::Config::Runtime->instance->app_config->system->suspend->wallets;
+    push @failed_checks, 'wallet_migration_suspended' if BOM::Config::Runtime->instance->app_config->system->suspend->wallet_migration;
+    return @failed_checks if @failed_checks && $args{fail_fast};
 
     unless ($args{no_cache}) {
         my $cached_result = $self->redis->get(ELIGIBLE_CACHE_KEY_PREFIX . $user->id);
-
-        return $cached_result if defined $cached_result;
+        return $cached_result ? () : ('cached_ineligible') if defined $cached_result;
     }
 
-    my $is_eligible = ($self->check_eligibility_for_user && $self->check_eligibility_for_real_dtrade_accounts) ? 1 : 0;
+    for my $check (@checks) {
+        my $method = "_check_$check";
+        push @failed_checks, $check if $self->$method;
+        last if @failed_checks && $args{fail_fast};
+    }
 
-    $self->redis_rw->set(ELIGIBLE_CACHE_KEY_PREFIX . $user->id, $is_eligible, EX => ELIGIBLE_CACHE_TTL);
+    $self->redis_rw->set(ELIGIBLE_CACHE_KEY_PREFIX . $user->id, @failed_checks ? 0 : 1, EX => ELIGIBLE_CACHE_TTL);
 
-    return $is_eligible;
+    return @failed_checks;
 }
 
-=head2 check_eligibility_for_user
+=head2 _check_no_virtual_account
 
-The C<check_eligibility_for_user> method checks if the user is eligible for wallet migration.
-
-Returns a boolean value indicating whether the user is eligible for wallet migration.
+Returns true if the user has no virtual account.
 
 =cut
 
-method check_eligibility_for_user () {
-    # Start with checks on user level to minimize number of db calls
-    # and fail fast based on information which we already have
-    my @accounts = values $user->loginid_details->%*;
+method _check_no_virtual_account {
+    return none { $_->{platform} eq 'dtrade' && $_->{is_virtual} } values $user->loginid_details->%*;
+}
 
-    # clients without virtual account are not eligible for now
-    return 0 unless any { $_->{platform} eq 'dtrade' && $_->{is_virtual} } @accounts;
+=head2 _check_no_real_account
 
-    my @real_dtrade_accounts = grep { $_->{platform} eq 'dtrade' && !$_->{is_virtual} } @accounts;
+Returns true if the user has no real account.
 
-    return 0 unless @real_dtrade_accounts;
+=cut
 
-    # MF client out of scope for now
-    return 0 if any { $_->{platform} eq 'dtrade' && $_->{loginid} =~ /^MF/ } @real_dtrade_accounts;
+method _check_no_real_account {
+    return none { $_->{platform} eq 'dtrade' && !$_->{is_virtual} } values $user->loginid_details->%*;
+}
 
+=head2 _check_has_non_svg_real_account
+
+Returns true if the user has a non-SVG real account.
+
+=cut
+
+method _check_has_non_svg_real_account {
+    return any { $_->{platform} eq 'dtrade' && !$_->{is_virtual} && $_->{loginid} !~ /^CR/ } values $user->loginid_details->%*;
+}
+
+=head2 _check_no_svg_usd_account
+
+Returns true if the user has no SVG account with USD currency.
+
+=cut
+
+method _check_no_svg_usd_account {
+
+    for my $loginid ($user->bom_real_loginids) {
+        my $client = $self->get_client_instance($loginid);
+
+        return 0 if $client->landing_company->short eq 'svg' && $client->default_account && $client->default_account->currency_code eq 'USD';
+    }
     return 1;
 }
 
-=head2 check_eligibility_for_real_dtrade_accounts
+=head2 _check_currency_not_set
 
-The C<check_eligibility_for_real_dtrade_accounts> method checks if the user's dtrade accounts eligible for wallet migration.
-
-Returns a boolean value indicating whether the user has eligible accounts for wallet migration.
+Returns true if the user has any real account with currency not set.
 
 =cut
 
-method check_eligibility_for_real_dtrade_accounts () {
-    my ($has_eligible_country, $has_eligible_usd_account);
+method _check_currency_not_set {
 
     for my $loginid ($user->bom_real_loginids) {
-        my $client = BOM::User::Client->get_client_instance($loginid);
+        my $client = $self->get_client_instance($loginid);
 
-        return 0 unless $client->landing_company->short eq 'svg';
+        return 1 if !$client->default_account;
+    }
+    return 0;
+}
 
-        next if $client->is_wallet;
+=head2 _check_unsupported_country
 
-        unless ($has_eligible_country) {
-            my $country = $client->residence;
-            return 0 unless $country;
+Returns true if client has a residence with no wallet landing companies, MF landing companies, or no residence.
 
-            return 0 unless $self->check_eligibility_for_country($country);
+=cut
 
-            $has_eligible_country = 1;
+method _check_unsupported_country {
+
+    my @residences;
+    for my $loginid ($user->bom_loginids) {
+        my $client = $self->get_client_instance($loginid);
+        push @residences, $client->residence if $client->residence;
+    }
+
+    return 1 unless @residences;
+
+    my $countries = Brands->new()->countries_instance;
+
+    for my $residence (uniq @residences) {
+        for my $wallet_type (qw/real virtual/) {
+            my $wallet_companies = $countries->wallet_companies_for_country($residence, $wallet_type) // [];
+
+            return 1 unless $wallet_companies->@*;
+
+            # MF supported countries corrently out of scope for now
+            return 1 if any { $_ eq 'maltainvest' } $wallet_companies->@*;
         }
+    }
+    return 0;
+}
 
-        my $acc = $client->default_account;
+=head2 _check_registered_p2p
 
-        # If client has currency selected
-        return 0 unless $acc;
+Returns true if any real account is registered on P2P.
 
-        return 0 if $client->payment_agent;
+=cut
 
+method _check_registered_p2p {
+
+    for my $loginid ($user->bom_real_loginids) {
+        my $client = $self->get_client_instance($loginid);
+        return 1 if $client->_p2p_advertiser_cached;
+    }
+}
+
+=head2 _check_registered_pa
+
+Returns true if any real account is a registered PA.
+
+=cut
+
+method _check_registered_pa {
+
+    for my $loginid ($user->bom_real_loginids) {
+        my $client = $self->get_client_instance($loginid);
+        return 1 if $client->payment_agent;
+    }
+}
+
+=head2 _check_invalid_join_date
+
+Returns true if the client's join date is more recent than ELIGIBILITY_THRESHOLD_IN_DAYS.
+For now, join date is based on SVG USD real account, 0 will be returned if user has no such account.
+
+=cut
+
+method _check_invalid_join_date {
+
+    for my $loginid ($user->bom_real_loginids) {
+        my $client = $self->get_client_instance($loginid);
+
+        if ($client->landing_company->short eq 'svg' && $client->default_account && $client->default_account->currency_code eq 'USD') {
+            my $days_since_signup = (time - Date::Utility->new($client->date_joined)->epoch) / (24 * 60 * 60);
+            return $days_since_signup < ELIGIBILITY_THRESHOLD_IN_DAYS ? 1 : 0;
+        }
+    }
+}
+
+=head2 _check_has_used_pa
+
+Returns true if any real account has any payment agent transactions.
+
+=cut
+
+method _check_has_used_pa {
+
+    for my $loginid ($user->bom_real_loginids) {
+        my $client = $self->get_client_instance($loginid);
+        next unless $client->default_account;
         my ($pa_net) = $client->db->dbic->run(
             fixup => sub {
                 return $_->selectrow_array('SELECT payment.aggregate_payments_by_type(?, ?, ?)',
-                    undef, $acc->id, 'payment_agent_transfer', ELIGIBILITY_THRESHOLD_IN_DAYS);
+                    undef, $client->account->id, 'payment_agent_transfer', ELIGIBILITY_THRESHOLD_IN_DAYS);
             });
 
-        return 0 if defined $pa_net;
-
-        if ($acc->currency_code eq 'USD') {
-            return 0 unless $self->check_eligibility_for_usd_dtrade_account($client);
-            $has_eligible_usd_account = 1;
-        }
+        return 1 if defined $pa_net;
     }
-
-    # No migration if client doesn't have fiat usd account
-    return 0 unless $has_eligible_usd_account;
-
-    return 1;
-}
-
-=head2 check_eligibility_for_usd_dtrade_account
-
-This method checks if a USD DTrade account is eligible for migration. 
-It performs a series of checks on the account's age, payment agent net, and P2P advertiser status to determine 
-if the account meets the criteria for migration.
-
-Arguments:
-
-=over 4
-
-=item * C<$client_usd>: The client object associated with the USD account.
-
-=back
-
-Returns a boolean value indicating whether the USD account is eligible for migration.
-
-=cut
-
-method check_eligibility_for_usd_dtrade_account ($client_usd) {
-    # No migration who is younger than 90 days
-    my $days_since_signup = (time - Date::Utility->new($client_usd->date_joined)->epoch) / (24 * 60 * 60);
-    return 0 if $days_since_signup < ELIGIBILITY_THRESHOLD_IN_DAYS;
-
-    # probably stupid idea to use private method over here
-    # but it provides exactly check we need
-    return 0 if $client_usd->_p2p_advertiser_cached;
-
-    return 1;
-}
-
-=head2 check_eligibility_for_country
-
-This method checks if the wallet migration can be is available in a given country. 
-
-Arguments:
-
-=over 4
-
-=item * C<$country>: The country for which the check is being performed.
-
-=back
-
-Returns a boolean value indicating whether the wallet migration is available in the given country.
-
-=cut
-
-method check_eligibility_for_country ($country) {
-    # Check that we launched wallet at client residence country
-    my $countries = Brands->new()->countries_instance;
-    for my $wallet_type (qw/real virtual/) {
-        my $wallet_complanies = $countries->wallet_companies_for_country($country, $wallet_type) // [];
-
-        return 0 unless $wallet_complanies->@*;
-
-        # MF supported countries corrently out of scope for now
-        return 0 if any { $_ eq 'maltainvest' } $wallet_complanies->@*;
-    }
-
-    return 1;
 }
 
 =head2 wallet_params_for
@@ -793,6 +864,16 @@ method priority_for ($loginid) {
     }
 
     return $account_info->{is_virtual} ? 4 : 2;
+}
+
+=head2 get_client_instance
+
+Returns client instance for the provided loginid, using cache when possible.
+
+=cut
+
+method get_client_instance ($loginid) {
+    return $clients{$loginid} //= BOM::User::Client->get_client_instance($loginid);
 }
 
 1;

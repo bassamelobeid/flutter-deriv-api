@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::MockModule;
 use Test::Deep;
 use Test::Fatal;
 use Test::Warnings;
@@ -12,71 +11,64 @@ use BOM::MT5::User::Async;
 use BOM::Rules::Engine;
 use BOM::TradingPlatform;
 use BOM::Test::Script::DevExperts;
+use BOM::Config::Runtime;
+use BOM::Test::Helper::P2P;
 
 use BOM::User::WalletMigration;
 
-use BOM::Config::Runtime;
-
-use BOM::Test::Helper::P2P;
-
-plan tests => 6;
+plan tests => 10;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
-subtest 'Eligibility check' => sub {
-    # TODO: This is place holder for future tests when we'll start adding logic to this method
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
+my $app_config = BOM::Config::Runtime->instance->app_config;
+$app_config->system->suspend->wallets(0);
+$app_config->system->suspend->wallet_migration(0);
 
+subtest 'Suspend runtime settings' => sub {
     my ($user) = create_user();
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $client_cr->set_default_account('USD');
+    $user->add_client($client_cr);
 
     my $migration = BOM::User::WalletMigration->new(
         user   => $user,
         app_id => 1,
     );
 
-    ok(!$migration->is_eligible, 'Should return false if client is not eligible for migration');
+    ok $migration->is_eligible(no_cache => 1), 'User is eligible at first';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'no failed checks';
 
+    $app_config->system->suspend->wallets(1);
+    ok !$migration->is_eligible(no_cache => 1), 'User not eligible when wallets suspended';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['wallets_suspended'], 'failed checks is wallets_suspended';
+
+    $app_config->system->suspend->wallets(0);
+    $app_config->system->suspend->wallet_migration(1);
+
+    ok !$migration->is_eligible(no_cache => 1), 'User not eligible when migration suspended';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['wallet_migration_suspended'], 'failed checks is wallet_migration_suspended';
+
+    $app_config->system->suspend->wallet_migration(0);
 };
 
-subtest 'check_eligibility_for_country' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
-
-    my $countries_mock = Test::MockModule->new('Brands::Countries');
-    $countries_mock->mock(
-        wallet_companies_for_country => sub {
-            (undef, my $country_code, my $type) = @_;
-            my %mock_data = (
-                id => {
-                    virtual => [qw(virtual)],
-                    real    => [qw(svg)],
-                },
-                es => {
-                    virtual => [qw(virtual)],
-                    real    => [qw(maltainvest)],
-                },
-                za => {
-                    virtual => [qw(virtual)],
-                    real    => [qw(maltainvest svg)],
-                },
-                my => {
-                    virtual => [qw(virtual)],
-                    real    => [],
-                },
-            );
-
-            return $mock_data{$country_code}{$type} // [];
-        });
-
-    my ($user) = create_user();
-    my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
-        app_id => 1,
-    );
-
-    # Should be eligible for all svg enbled countries countries as part of phase 1
+subtest 'Country eligibility' => sub {
+    # Only available for aq (antarctica) for now
     my @test_cases = ({
-            country => 'id',
+            country => 'aq',
             result  => 1
+        },
+        {
+            country => '',
+            result  => 0
+        },
+        {
+            country => 'id',
+            result  => 0
         },
         {
             country => 'es',
@@ -97,281 +89,339 @@ subtest 'check_eligibility_for_country' => sub {
     );
 
     ok(@test_cases > 0, 'Should have at least one test case');
+
     for my $test_case (@test_cases) {
-        is($migration->check_eligibility_for_country($test_case->{country}),
-            $test_case->{result}, 'Should return correct result for country ' . $test_case->{country});
+        my ($user) = create_user($test_case->{country});
+
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            residence   => $test_case->{country},
+        });
+
+        $client_cr->set_default_account('USD');
+        $user->add_client($client_cr);
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        is $migration->is_eligible(no_cache => 1) // 0, $test_case->{result},
+            'Eligibility for ' . ($test_case->{country} || 'none') . ' is ' . $test_case->{result};
+        my $checks = $test_case->{result} ? [] : ['unsupported_country'];
+        cmp_deeply [$migration->eligibility_checks(no_cache => 1)], $checks, 'Failed checks for ' . ($test_case->{country} || 'none');
     }
+
+    subtest 'multiple residences, one invalid' => sub {
+        my ($user) = create_user();
+
+        my $client_aq = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            residence   => 'aq',
+        });
+        $client_aq->set_default_account('USD');
+        $user->add_client($client_aq);
+
+        my $client_id = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            residence   => 'id',
+        });
+        $client_id->set_default_account('BTC');
+        $user->add_client($client_id);
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['unsupported_country'], 'fail if one country is invalid';
+    };
+
+    subtest 'multiple residences, one empty' => sub {
+        my ($user) = create_user();
+
+        my $client_aq = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            residence   => 'aq',
+        });
+        $client_aq->set_default_account('USD');
+        $user->add_client($client_aq);
+
+        my $client_none = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            residence   => '',
+        });
+        $client_none->set_default_account('BTC');
+        $user->add_client($client_none);
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'no fail for an empty country and valid one';
+    };
 };
 
-subtest check_eligibility_for_usd_dtrade_account => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
-
-    my ($user, $client_virtual) = create_user();
+subtest 'checks for SVG USD real account and non MF' => sub {
+    my ($user) = create_user();
 
     my $migration = BOM::User::WalletMigration->new(
         user   => $user,
         app_id => 1,
     );
 
-    my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    ok !$migration->is_eligible(no_cache => 1), 'No real account not eligible';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], bag(qw(no_real_account no_svg_usd_account)), 'Failed checks for no real account';
+
+    my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
-        date_joined => Date::Utility->new->datetime_yyyymmdd_hhmmss,
+        residence   => 'aq',
     });
 
-    $cr_usd->set_default_account('USD');
-    $user->add_client($cr_usd);
+    $client_btc->set_default_account('BTC');
+    $user->add_client($client_btc);
 
-    my $res = $migration->check_eligibility_for_usd_dtrade_account($cr_usd);
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible with only crypto';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['no_svg_usd_account'], 'Failed checks with only crypto';
 
-    ok(!$res, 'The client that joined us less than 3 months ago should not be eligible for migration');
+    my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
 
-    my $date_before_threshold = time - (60 * 60 * 24 * BOM::User::WalletMigration::ELIGIBILITY_THRESHOLD_IN_DAYS + 1);
-    $cr_usd->date_joined(Date::Utility->new($date_before_threshold)->datetime_yyyymmdd_hhmmss);
-    $cr_usd->save();
+    $user->add_client($client_usd);
+    $client_usd->set_default_account('USD');
 
-    $res = $migration->check_eligibility_for_usd_dtrade_account($cr_usd);
+    # reset cached clients
+    $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
 
-    ok($res, 'The client that joined us more than 3 months ago should be eligible for migration');
+    ok $migration->is_eligible(no_cache => 1), 'Eligible with USD real account';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks with USD real account';
 
-    $cr_usd->p2p_advertiser_create(name => 'TestAdvertiserForWalletMigration');
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+        residence   => 'aq',
+    });
 
-    $res = $migration->check_eligibility_for_usd_dtrade_account($cr_usd);
+    $client_mf->set_default_account('USD');
+    $user->add_client($client_mf);
 
-    ok(!$res, 'The client that created P2P advertiser should not be eligible for migration');
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible with MF account';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['has_non_svg_real_account'], 'Failed checks with MF real account';
 };
 
-subtest check_eligibility_for_real_dtrade_accounts => sub {
-    my $countries_mock = Test::MockModule->new('Brands::Countries');
-    $countries_mock->mock(
-        wallet_companies_for_country => sub {
-            (undef, my $country_code, my $type) = @_;
-            my %mock_data = (
-                id => {
-                    virtual => [qw(virtual)],
-                    real    => [qw(svg)],
-                });
+subtest 'currency not set' => sub {
 
-            return $mock_data{$country_code}{$type} // [];
-        });
+    my ($user) = create_user();
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
-
-    subtest 'Checking eligibility for USD account' => sub {
-        my ($user, $client_virtual) = create_user();
-
-        my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
-            app_id => 1,
-        );
-
-        my $res = $migration->check_eligibility_for_real_dtrade_accounts();
-
-        ok(!$res, 'The client that has no real dtrade accounts should not be eligible for migration');
-
-        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id',
-            date_joined => Date::Utility->new->datetime_yyyymmdd_hhmmss,
-        });
-
-        $cr_usd->set_default_account('USD');
-        $user->add_client($cr_usd);
-
-        $res = $migration->check_eligibility_for_real_dtrade_accounts();
-
-        ok(!$res, 'The client that has joined less than 90 days ago should be not eligible for migration');
-
-        my $date_before_threshold = time - (60 * 60 * 24 * BOM::User::WalletMigration::ELIGIBILITY_THRESHOLD_IN_DAYS + 1);
-        $cr_usd->date_joined(Date::Utility->new($date_before_threshold)->datetime_yyyymmdd_hhmmss);
-        $cr_usd->save();
-
-        $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok($res, 'The client that has joined more than 90 days ago should be eligible for migration');
-
-    };
-
-    subtest 'Checking eligibility for USD+BTC account' => sub {
-        my ($user, $client_virtual) = create_user();
-
-        my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
-            app_id => 1,
-        );
-
-        my $cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id'
-        });
-
-        $cr_btc->set_default_account('BTC');
-        $user->add_client($cr_btc);
-
-        my $res = $migration->check_eligibility_for_real_dtrade_accounts();
-
-        ok(!$res, 'The clients with just BTC account should be not eligible for migration');
-
-        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id',
-        });
-
-        $cr_usd->set_default_account('USD');
-        $user->add_client($cr_usd);
-
-        $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok($res, 'The clients with just BTC account should be not eligible for migration');
-    };
-
-    subtest 'Checking eligibility if client has payment agent transactions' => sub {
-        my ($user, $client_virtual) = create_user();
-
-        my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
-            app_id => 1,
-        );
-
-        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id',
-        });
-
-        $cr_usd->set_default_account('USD');
-        $user->add_client($cr_usd);
-
-        my $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok($res, 'The clients is eligible with no payment agent transactions');
-
-        $cr_usd->default_account->add_payment_transaction({
-                amount               => 1,
-                payment_gateway_code => 'payment_agent_transfer',
-                payment_type_code    => 'internal_transfer',
-                status               => 'OK',
-                staff_loginid        => $cr_usd->loginid,
-                remark               => 'test',
-                account_id           => $cr_usd->default_account->id,
-                source               => 1,
-            },
-            undef,
-            {});
-
-        $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok(!$res, 'The clients is not eligible with payment agent transactions');
-
-        $cr_usd->default_account->add_payment_transaction({
-                amount               => -1,
-                payment_gateway_code => 'payment_agent_transfer',
-                payment_type_code    => 'internal_transfer',
-                status               => 'OK',
-                staff_loginid        => $cr_usd->loginid,
-                remark               => 'test',
-                account_id           => $cr_usd->default_account->id,
-                source               => 1,
-            },
-            undef,
-            {});
-
-        $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok(!$res, 'The clients is not eligible with payment agent transactions that has net amount 0');
-    };
-
-    subtest 'Checking eligibility if all clients has currency selected' => sub {
-        my ($user, $client_virtual) = create_user();
-
-        my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
-            app_id => 1,
-        );
-
-        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id',
-        });
-
-        $cr_usd->set_default_account('USD');
-        $user->add_client($cr_usd);
-
-        my $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok($res, 'The clients is eligible with just USD account');
-
-        my $cr_no_currency = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id'
-        });
-
-        $user->add_client($cr_no_currency);
-
-        $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok(!$res, 'The clients is not eligible with no currency selected');
-
-        $cr_no_currency->set_default_account('ETH');
-
-        $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok($res, 'After selecting currency the client is eligible');
-    };
-
-    subtest 'Checking eligibility if the client is a payment agent' => sub {
-        my ($user, $client_virtual) = create_user();
-
-        my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
-            app_id => 1,
-        );
-
-        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id',
-        });
-
-        $cr_usd->set_default_account('USD');
-        $user->add_client($cr_usd);
-
-        my $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok($res, 'The clients is eligible with just USD account');
-
-        $cr_usd->payment_agent({
-            payment_agent_name    => 'Joe 3',
-            email                 => 'joe@example.com',
-            information           => 'Test Info',
-            summary               => 'Test Summary',
-            commission_deposit    => 0,
-            commission_withdrawal => 0,
-            status                => 'authorized',
-            currency_code         => 'USD',
-            is_listed             => 'f',
-        });
-        $cr_usd->save();
-
-        $res = $migration->check_eligibility_for_real_dtrade_accounts();
-        ok(!$res, 'If client is a payment agent it should not be eligible for migration');
-    };
-};
-
-subtest 'check_eligibility_for_user' => sub {
-    my ($user, $client_virtual) = create_user();
     my $migration = BOM::User::WalletMigration->new(
         user   => $user,
         app_id => 1,
     );
 
-    my $res = $migration->check_eligibility_for_user();
-
-    ok(!$res, 'The client that has no real dtrade accounts should not be eligible for migration');
-
-    my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
-        residence   => 'id',
+        residence   => 'aq',
     });
 
-    $user->add_client($cr_usd);
+    $user->add_client($client1);
 
-    $res = $migration->check_eligibility_for_user();
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible with no currency set';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], bag('currency_not_set', 'no_svg_usd_account'),
+        'Failed checks is currency_not_set and no_svg_usd_account';
 
-    ok($res, 'The client that has real dtrade accounts should be eligible for migration');
+    $client1->set_default_account('USD');
+
+    # reset client cache
+    $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    ok $migration->is_eligible(no_cache => 1), 'Eligible after setting currency';
+
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $user->add_client($client2);
+
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible after adding sibling with no currency set';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['currency_not_set'], 'Failed checks is currency_not_set';
+
+};
+
+subtest 'EUR account' => sub {
+    my ($user) = create_user();
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    my $client_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $client_eur->set_default_account('EUR');
+    $user->add_client($client_eur);
+
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible with EUR account';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['no_svg_usd_account'], 'Failed checks with EUR account';
+};
+
+subtest 'p2p' => sub {
+    my ($user) = create_user();
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $client->set_default_account('USD');
+    $user->add_client($client);
+
+    ok $migration->is_eligible(no_cache => 1), 'Eligible at first';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
+
+    $client->p2p_advertiser_create(name => 'x');
+
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible after registering for p2p';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['registered_p2p'], 'Failed checks is registered_p2p';
+};
+
+subtest 'payment agent' => sub {
+    my ($user) = create_user();
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $client->set_default_account('USD');
+    $user->add_client($client);
+
+    ok $migration->is_eligible(no_cache => 1), 'Eligible at first';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
+
+    $client->payment_agent({
+        payment_agent_name    => 'Joe 3',
+        email                 => 'joe@example.com',
+        information           => 'Test Info',
+        summary               => 'Test Summary',
+        commission_deposit    => 0,
+        commission_withdrawal => 0,
+        status                => 'authorized',
+        currency_code         => 'USD',
+        is_listed             => 'f',
+    });
+    $client->save();
+
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible after becoming pa';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['registered_pa'], 'Failed checks is registered_pa';
+};
+
+subtest 'join date' => sub {
+    my ($user, $vr_client) = create_user();
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $client->set_default_account('USD');
+    $user->add_client($client);
+
+    $client->date_joined(Date::Utility->new->minus_time_interval('89d')->db_timestamp);
+    $client->save;
+
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligibile with recent join date';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['invalid_join_date'], 'Failed checks is invalid_join_date';
+
+    $client->date_joined(Date::Utility->new->minus_time_interval('90d')->db_timestamp);
+    $client->save;
+
+    # reset client cache
+    $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    ok $migration->is_eligible(no_cache => 1), 'Eligibile with 90 day join date';
+};
+
+subtest 'payment agent transactions' => sub {
+    my ($user) = create_user();
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $client->set_default_account('USD');
+    $user->add_client($client);
+
+    ok $migration->is_eligible(no_cache => 1), 'Eligible at first';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
+
+    $client->default_account->add_payment_transaction({
+        amount               => 1,
+        payment_gateway_code => 'payment_agent_transfer',
+        payment_type_code    => 'internal_transfer',
+        status               => 'OK',
+        staff_loginid        => $client->loginid,
+        remark               => 'test',
+        source               => 1,
+    });
+
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible with pa transfer';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['has_used_pa'], 'Failed checks is has_used_pa';
+
+    $client->default_account->add_payment_transaction({
+        amount               => -1,
+        payment_gateway_code => 'payment_agent_transfer',
+        payment_type_code    => 'internal_transfer',
+        status               => 'OK',
+        staff_loginid        => $client->loginid,
+        remark               => 'test',
+        source               => 1,
+    });
+
+    ok !$migration->is_eligible(no_cache => 1), 'Not eligible with net zero pa transactions';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['has_used_pa'], 'Failed checks is has_used_pa';
 };
 
 my $user_counter = 1;
 
 sub create_user {
+    my $residence = shift;
+
     my $user = BOM::User->create(
         email    => 'testuser' . $user_counter++ . '@example.com',
         password => '123',
@@ -379,6 +429,7 @@ sub create_user {
 
     my $client_virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
+        residence   => $residence // 'aq',
     });
 
     $client_virtual->set_default_account('USD');
