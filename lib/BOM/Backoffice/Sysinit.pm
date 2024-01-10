@@ -185,6 +185,7 @@ my $permissions = {
     'quant/callputspread_barrier_multiplier/callputspread_barrier_multiplier_controller.cgi' => ['Quants'],
     'compliance_dashboard.cgi'                                                               => ['Compliance', 'IT'],
     'payment_agent_tier_manage.cgi'                                                          => ['Compliance'],
+    'wallet_migration.cgi'                                                                   => ['CS'],
 };
 
 sub init {

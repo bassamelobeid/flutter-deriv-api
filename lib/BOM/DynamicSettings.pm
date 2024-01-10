@@ -292,6 +292,7 @@ sub get_settings_by_group {
                 system.suspend.onfido
                 system.suspend.p2p
                 system.suspend.wallets
+                system.suspend.wallet_migration
                 system.suspend.idv
                 system.suspend.idv_countries
                 system.suspend.idv_providers

@@ -154,6 +154,19 @@ if (BOM::Backoffice::Auth::has_authorisation(['CS', 'MarketingReadOnly', 'Accoun
 }
 
 if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {
+    # WALLETS
+    print qq~<div class="card">
+        <div class="card__label toggle">
+            Wallets
+        </div>
+        <div class="card__content">
+            <h3>Wallet migration</h3>
+            <form action="~ . request()->url_for('backoffice/wallet_migration.cgi', {broker => $broker}) . qq~" method="get">
+                <input type="submit" class="btn btn--primary" value="Wallet migration">
+            </form>
+        </div>
+    </div>~;
+
     # INVESTIGATIVE TOOLS
     print qq~
     <div class="card">
