@@ -125,8 +125,6 @@ sub _get_ask {
     return $response if $response;
 
     try {
-        $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
-
         if ($args_copy->{token_details} and exists $args_copy->{token_details}->{loginid}) {
             my $client = BOM::User::Client->new({
                 loginid      => $args_copy->{token_details}->{loginid},
@@ -158,18 +156,9 @@ sub _get_ask {
                 code              => $code,
                 $details ? (details => $details) : (),
             });
-
-            # proposal_array streaming could get error on a first call
-            # but later could produce valid contract dependant on volatility moves
-            # so we need to store contract_parameters and longcode to use them later
-            if ($code eq 'ContractBuyValidationError') {
-                my $longcode =
-                    eval { $contract->longcode } || '';    # if we can't get the longcode that's fine, we still want to return the original error
-                $response->{contract_parameters} = $contract_parameters;
-                $response->{longcode}            = $longcode;
-            }
         } else {
             # We think this contract is valid to buy
+            $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
             my $ask_price = formatnumber('price', $contract->currency, $contract->ask_price);
 
             $response = {
