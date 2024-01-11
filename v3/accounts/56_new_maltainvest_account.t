@@ -837,8 +837,10 @@ subtest 'gb account' => sub {
 sub create_vr_account {
     my $args   = shift;
     my $params = {
-        details        => {account_type => 'binary'},
-        email_verified => 1,
+        details => {
+            account_type   => 'binary',
+            email_verified => 1
+        },
     };
 
     @{$params->{details}}{keys %$args} = values %$args;

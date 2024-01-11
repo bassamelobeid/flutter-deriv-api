@@ -137,8 +137,8 @@ sub create_vr_account {
                 client_password => $args->{client_password},
                 residence       => $args->{residence},
                 account_type    => 'binary',
+                email_verified  => 1,
             },
-            email_verified => 1
         });
 
     return ($acc->{client}, $acc->{user});

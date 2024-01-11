@@ -7,7 +7,6 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request reconnect/;
 use BOM::Platform::Token;
 use BOM::Config::Redis;
-use List::Util qw(first);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 
@@ -158,7 +157,7 @@ my $create_vr2 = {
 
 my $email2 = 'test2@binary.com';
 
-subtest 'create Virtual account wihtout consent flag' => sub {
+subtest 'create Virtual account without consent flag' => sub {
     my $res = $t->await::verify_email({
         verify_email => $email2,
         type         => 'account_opening'
@@ -251,6 +250,7 @@ subtest 'create virtual wallet' => sub {
         cmp_ok($res->{new_account_virtual}->{balance}, '==', '10000', 'got balance');
 
     }
+    $mock_countries->unmock_all;
 };
 
 subtest 'insufficient data' => sub {
@@ -260,25 +260,6 @@ subtest 'insufficient data' => sub {
     is($res->{error}->{code},       'InputValidationFailed', 'insufficient input');
     is($res->{new_account_virtual}, undef,                   'NO account created');
 };
-
-sub _get_token {
-    my ($email) = @_;
-    my $redis   = BOM::Config::Redis::redis_replicated_read();
-    my $tokens  = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
-
-    my $code;
-    my $json = JSON::MaybeXS->new;
-    foreach my $key (@{$tokens}) {
-        my $value = $json->decode(Encode::decode_utf8($redis->get($key)));
-
-        if ($value->{email} eq $email) {
-            $key =~ /^VERIFICATION_TOKEN::(\w+)$/;
-            $code = $1;
-            last;
-        }
-    }
-    return $code;
-}
 
 my $create_vr3 = {
     new_account_virtual => 1,
@@ -291,7 +272,7 @@ my $create_vr3 = {
 
 my $email3 = 'test3@binary.com';
 
-subtest 'create Virtual account wihtout affiliate token for spain' => sub {
+subtest 'create Virtual account without affiliate token for spain' => sub {
     my $res = $t->await::verify_email({
         verify_email => $email3,
         type         => 'account_opening'
@@ -321,6 +302,25 @@ subtest 'create Virtual account wihtout affiliate token for spain' => sub {
     my $user = BOM::User->new(email => $email3);
     ok !$user->email_consent, 'Email consent flag not set';
 };
+
+sub _get_token {
+    my ($email) = @_;
+    my $redis   = BOM::Config::Redis::redis_replicated_read();
+    my $tokens  = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
+
+    my $code;
+    my $json = JSON::MaybeXS->new;
+    foreach my $key (@{$tokens}) {
+        my $value = $json->decode(Encode::decode_utf8($redis->get($key)));
+
+        if ($value->{email} eq $email) {
+            $key =~ /^VERIFICATION_TOKEN::(\w+)$/;
+            $code = $1;
+            last;
+        }
+    }
+    return $code;
+}
 
 $t->finish_ok;
 
