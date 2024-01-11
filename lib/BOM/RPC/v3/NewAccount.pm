@@ -508,6 +508,10 @@ sub create_virtual_account {
     my $is_affiliate = ($args->{account_opening_reason} // '' eq 'affiliate') ? 1 : 0;
     my ($error);
 
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->check_for_update();
+    my $is_email_verification_suspended = $app_config->email_verification->suspend->virtual_accounts;
+
     if ($args->{token_details} and not $args->{verification_code}) {
         # To create a second virtual account, check for token; password is redundant
         for my $field (qw( client_password )) {
@@ -523,19 +527,25 @@ sub create_virtual_account {
         $args->{residence} = $user->get_default_client->residence;
     } else {
         # To create a new user, check for client_password, residence and verification_code
+        # For signup without email verification, check for client_password, residence and email
         # These required fields were excluded from JSON schema, we need to handle it here
-        for my $field (qw( client_password residence verification_code )) {
+        my @required_fields = ('client_password', 'residence', ($is_email_verification_suspended ? 'email' : 'verification_code'));
+
+        for my $field (@required_fields) {
+            next if $args->{$field};
             die +{
                 code    => 'InputValidationFailed',
-                details => {field => $field}} unless ($args->{$field});
+                details => {field => $field}};
         }
 
         my $verification_code = $args->{verification_code};
-        $args->{email} = BOM::Platform::Token->new({token => $verification_code})->email unless $args->{email};
+        $args->{email} = BOM::Platform::Token->new({token => $verification_code})->email unless ($is_email_verification_suspended || $args->{email});
 
         $args->{account_created_for} //= 'account_opening';
-        $error = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $args->{email}, $args->{account_created_for}, $is_affiliate)
-            ->{error};
+        $error =
+            BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $args->{email}, $args->{account_created_for}, $is_affiliate)
+            ->{error}
+            unless $is_email_verification_suspended;
         die $error if $error;
 
         $error = BOM::RPC::v3::Utility::check_password({
@@ -561,6 +571,7 @@ sub create_virtual_account {
             residence       => $args->{residence},
             source          => $args->{source},
             account_type    => $args->{account_type},
+            email_verified  => $is_email_verification_suspended ? 0 : 1,
         },
         utm_data               => {},
         account_opening_reason => $args->{account_opening_reason} // '',

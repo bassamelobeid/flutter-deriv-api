@@ -154,7 +154,7 @@ subtest $method => sub {
         utm_fbcl_id      => 6,
         utm_adrollclk_id => 7,
     };
-    # $params->{args}->{utm_ad_id} = $expected_utm_data->{utm_ad_id};
+
     map { $params->{args}->{$_} = $expected_utm_data->{$_} } keys %$expected_utm_data;
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
@@ -389,6 +389,42 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
+    };
+
+    subtest 'signup suspended email verification' => sub {
+        $params->{args} = {};
+        BOM::Config::Runtime->instance->app_config->email_verification->suspend->virtual_accounts(1);
+
+        my $email = 'suspended_email_verification' . rand(999) . '@deriv.com';
+
+        $params->{args}->{residence}         = 'id';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+        $params->{args}->{client_password} = '1234Abcd!';
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InputValidationFailed',
+            'If signup with suspended email verification enabled, it should return error.')
+            ->error_message_is('This field is required.', 'If signup with suspended email verification enabled, it should return error_message.')
+            ->error_details_is({field => 'email'},
+            'If signup with suspended email verification enabled, it should return detail with missing field.');
+
+        $params->{args}->{verification_code} = 'big cat wrong code';
+        $params->{args}->{client_password}   = '1234Abcd!';
+        $params->{args}->{email}             = $email;
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If email verification is suspended - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
+
+        my $user = BOM::User->new(email => $email);
+        ok !$user->email_verified, 'If signup when suspended email verification, user is not email verified.';
+
+        BOM::Config::Runtime->instance->app_config->email_verification->suspend->virtual_accounts(0);
     };
 };
 
