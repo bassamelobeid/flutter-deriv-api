@@ -2331,3 +2331,16 @@ anti_fraud:
       isa: Bool
       default: 0
       global: 1
+email_verification:
+  description: "Settings for email verification configuration"
+  isa: section
+  contains:
+    suspend:
+      description: "Suspend email verification"
+      isa: section
+      contains:
+        virtual_accounts:
+          description: "Suspend email verification for creating virtual accounts"
+          isa: Bool
+          default: 0
+          global: 1
