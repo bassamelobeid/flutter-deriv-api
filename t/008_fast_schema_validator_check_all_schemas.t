@@ -59,6 +59,7 @@ my $unsupported_schemas = {
     'verify_email/send.json'                           => 1,
     'verify_email_cellxpert/send.json'                 => 1,
     'website_status/receive.json'                      => 1,
+    'website_config/receive.json'                      => 1,
 };
 
 sub prepare_from_file_error {

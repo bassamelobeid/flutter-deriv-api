@@ -66,7 +66,13 @@ sub actions_config {
         ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
-        ['crypto_config',  {stash_params       => [qw/ token account_tokens /]}],
+        [
+            'website_config',
+            {
+                category => 'account',
+            }
+        ],
+        ['crypto_config', {stash_params => [qw/ token account_tokens /]}],
         [
             'crypto_estimations',
             {
