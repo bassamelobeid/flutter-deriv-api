@@ -41,13 +41,15 @@ my $user         = BOM::User->create(
     password => BOM::User::Password::hashpw('jskjd8292922'));
 $user->add_client($test_client);
 
-my $res = BOM::RPC::v3::Static::website_status({country_code => ''});
-is $res->{terms_conditions_version}, 'Version 1';
+my $res_ws = BOM::RPC::v3::Static::website_status({country_code => ''});
+my $res_wc = BOM::RPC::v3::Static::website_config({country_code => ''});
+is $res_ws->{terms_conditions_version}, 'Version 1';
+is $res_wc->{terms_conditions_version}, 'Version 1';
 
 # cleanup
 BOM::Platform::Token::API->new->remove_by_loginid($test_loginid);
 
-$res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
+my $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
@@ -59,9 +61,14 @@ is $res->{client_tnc_status}, 'Version 1', 'version 1';
 # switch to version 2
 $version = 2;
 
-$res = BOM::RPC::v3::Static::website_status({country_code => ''});
-is $res->{terms_conditions_version}, 'Version 2', 'version 2';
-is_deeply $res->{supported_languages}, BOM::Config::Runtime->instance->app_config->cgi->supported_languages, 'Correct supported languages';
+$res_ws = BOM::RPC::v3::Static::website_status({country_code => ''});
+$res_wc = BOM::RPC::v3::Static::website_config({country_code => ''});
+is $res_ws->{terms_conditions_version}, 'Version 2', 'version 2';
+is $res_wc->{terms_conditions_version}, 'Version 2';
+is_deeply $res_ws->{supported_languages}, BOM::Config::Runtime->instance->app_config->cgi->supported_languages,
+    'Correct supported languages from website status';
+is_deeply $res_wc->{supported_languages}, BOM::Config::Runtime->instance->app_config->cgi->supported_languages,
+    'Correct supported languages from website config';
 
 $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};

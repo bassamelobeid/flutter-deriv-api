@@ -275,10 +275,16 @@ subtest 'states_list' => sub {
 
 subtest 'currencies_config.transfer_between_accounts' => sub {
 
-    my $params = {
+    my $params_website_status = {
         language     => 'EN',
         country_code => 'id',
         args         => {website_status => 1},
+    };
+
+    my $params_website_config = {
+        language     => 'EN',
+        country_code => 'id',
+        args         => {website_config => 1},
     };
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -286,48 +292,84 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
 
     $app_config->set({'payments.transfer_between_accounts.fees.by_currency' => encode_json({'BTC_USD_all' => 5.1, 'BTC_USD_ng' => 5.2})});
 
-    my $result = $c->call_ok('website_status' => $params)->has_no_system_error->has_no_error->result;
+    my $result_ws = $c->call_ok('website_status' => $params_website_status)->has_no_system_error->has_no_error->result;
+    my $result_wc = $c->call_ok('website_config' => $params_website_config)->has_no_system_error->has_no_error->result;
 
     my @all_currencies          = keys %{LandingCompany::Registry->by_name('svg')->legal_allowed_currencies};
     my $currency_limits         = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
     my $currency_limits_mt5     = BOM::Config::CurrencyConfig::platform_transfer_limits('MT5');
     my $currency_limits_dxtrade = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade');
 
-    is(
-        $currency_limits->{$_}->{min},
-        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits}->{min},
-        "Transfer between account minimum is correct for $_"
-    ) for @all_currencies;
+    for my $currency (@all_currencies) {
+        is(
+            $currency_limits->{$currency}->{min},
+            $result_ws->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits}->{min},
+            "Transfer between account minimum is correct for $currency in website_status"
+        );
 
-    is(
-        $currency_limits->{$_}->{max},
-        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits}->{max},
-        "Transfer between account maximum is correct for $_"
-    ) for @all_currencies;
+        is(
+            $currency_limits->{$currency}->{min},
+            $result_wc->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits}->{min},
+            "Transfer between account minimum is correct for $currency in website_config"
+        );
+        is(
+            $currency_limits->{$currency}->{max},
+            $result_ws->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits}->{max},
+            "Transfer between account maximum is correct for $currency in website_status"
+        );
 
-    is(
-        $currency_limits_mt5->{$_}->{min},
-        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits_mt5}->{min},
-        "MT5 transfer between account minimum is correct for $_"
-    ) for @all_currencies;
+        is(
+            $currency_limits->{$currency}->{max},
+            $result_wc->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits}->{max},
+            "Transfer between account maximum is correct for $currency in website_config"
+        );
 
-    is(
-        $currency_limits_mt5->{$_}->{max},
-        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits_mt5}->{max},
-        "Mt5 transfer between account maximum is correct for $_"
-    ) for @all_currencies;
+        is(
+            $currency_limits_mt5->{$currency}->{min},
+            $result_ws->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits_mt5}->{min},
+            "MT5 transfer between account minimum is correct for $currency in website_status"
+        );
+        is(
+            $currency_limits_mt5->{$currency}->{min},
+            $result_wc->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits_mt5}->{min},
+            "MT5 transfer between account minimum is correct for $currency in website_config"
+        );
 
-    is(
-        $currency_limits_dxtrade->{$_}->{min},
-        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits_dxtrade}->{min},
-        "dxtrade transfer between account minimum is correct for $_"
-    ) for @all_currencies;
+        is(
+            $currency_limits_mt5->{$currency}->{max},
+            $result_ws->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits_mt5}->{max},
+            "Mt5 transfer between account maximum is correct for $currency in website_status"
+        );
 
-    is(
-        $currency_limits_dxtrade->{$_}->{max},
-        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits_dxtrade}->{max},
-        "dxtrade transfer between account maximum is correct for $_"
-    ) for @all_currencies;
+        is(
+            $currency_limits_mt5->{$currency}->{max},
+            $result_wc->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits_mt5}->{max},
+            "Mt5 transfer between account maximum is correct for $currency in website_config"
+        );
+
+        is(
+            $currency_limits_dxtrade->{$currency}->{min},
+            $result_ws->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits_dxtrade}->{min},
+            "dxtrade transfer between account minimum is correct for $currency in website_status"
+        );
+        is(
+            $currency_limits_dxtrade->{$currency}->{min},
+            $result_wc->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits_dxtrade}->{min},
+            "dxtrade transfer between account minimum is correct for $currency in website_config"
+        );
+
+        is(
+            $currency_limits_dxtrade->{$currency}->{max},
+            $result_ws->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits_dxtrade}->{max},
+            "dxtrade transfer between account maximum is correct for $currency in website_status"
+        );
+        is(
+            $currency_limits_dxtrade->{$currency}->{max},
+            $result_wc->{currencies_config}->{$currency}->{transfer_between_accounts}->{limits_dxtrade}->{max},
+            "dxtrade transfer between account maximum is correct for $currency in website_config"
+        );
+
+    }
 
     my $currency_fees = BOM::Config::CurrencyConfig::transfer_between_accounts_fees('id');
 
@@ -335,21 +377,37 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
         cmp_ok(
             $currency_fees->{$currency}->{$_} // -1,
             '==',
-            $result->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
-            "Transfer between account fee is correct for ${currency}_$_ in country id"
+            $result_ws->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
+            "Transfer between account fee is correct for ${currency}_$_ in country id in website_status"
+        ) for @all_currencies;
+
+        cmp_ok(
+            $currency_fees->{$currency}->{$_} // -1,
+            '==',
+            $result_wc->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
+            "Transfer between account fee is correct for ${currency}_$_ in country id in website_config"
         ) for @all_currencies;
     }
 
-    $params->{country_code} = 'ng';
-    $result                 = $c->call_ok('website_status' => $params)->result;
-    $currency_fees          = BOM::Config::CurrencyConfig::transfer_between_accounts_fees('ng');
+    $params_website_config->{country_code} = 'ng';
+    $params_website_status->{country_code} = 'ng';
+    $result_ws                             = $c->call_ok('website_status' => $params_website_status)->result;
+    $result_wc                             = $c->call_ok('website_config' => $params_website_config)->result;
+    $currency_fees                         = BOM::Config::CurrencyConfig::transfer_between_accounts_fees('ng');
 
     for my $currency (@all_currencies) {
         cmp_ok(
             $currency_fees->{$currency}->{$_} // -1,
             '==',
-            $result->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
-            "Transfer between account fee is correct for ${currency}_$_ in country ng"
+            $result_ws->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
+            "Transfer between account fee is correct for ${currency}_$_ in country ng in website_status"
+        ) for @all_currencies;
+
+        cmp_ok(
+            $currency_fees->{$currency}->{$_} // -1,
+            '==',
+            $result_wc->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
+            "Transfer between account fee is correct for ${currency}_$_ in country ng in website_config"
         ) for @all_currencies;
     }
 };
@@ -636,22 +694,32 @@ subtest 'payment_agents config' => sub {
         initial_deposit_per_country => decode_json($config->payment_agents->initial_deposit_per_country),
     };
 
-    my %params = (
+    my %params_website_status = (
         website_status => {
             language => 'EN',
             args     => {website_status => 1}});
 
-    cmp_deeply($c->call_ok(%params)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
+    my %params_website_config = (
+        website_config => {
+            language => 'EN',
+            args     => {website_config => 1}});
+
+    cmp_deeply($c->call_ok(%params_website_status)->result->{payment_agents},
+        $payment_agents_config, 'expected results from runtime config from website status');
+    cmp_deeply($c->call_ok(%params_website_config)->result->{payment_agents},
+        $payment_agents_config, 'expected results from runtime config from website config');
 
     $payment_agents_config->{initial_deposit_per_country}->{br} = 10000;
     $config->payment_agents->initial_deposit_per_country(encode_json($payment_agents_config->{initial_deposit_per_country}));
-    cmp_deeply($c->call_ok(%params)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
+    cmp_deeply($c->call_ok(%params_website_status)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
+    cmp_deeply($c->call_ok(%params_website_config)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
 
     $payment_agents_config->{initial_deposit_per_country}->{default} = 20000;
     $payment_agents_config->{initial_deposit_per_country}->{ec}      = 200;
     delete $payment_agents_config->{initial_deposit_per_country}->{br};
     $config->payment_agents->initial_deposit_per_country(encode_json($payment_agents_config->{initial_deposit_per_country}));
-    cmp_deeply($c->call_ok(%params)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
+    cmp_deeply($c->call_ok(%params_website_status)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
+    cmp_deeply($c->call_ok(%params_website_config)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
 };
 
 subtest 'broker_codes' => sub {
@@ -662,6 +730,27 @@ subtest 'broker_codes' => sub {
             args     => {website_status => 1}});
 
     cmp_deeply($c->call_ok(%params)->result->{broker_codes}, $config, 'expected results from runtime config');
+};
+
+subtest 'optional_verification_feature_flag' => sub {
+    my $expected_feature_flags = ['signup_with_optional_email_verification'];
+    my $app_config             = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    ok($app_config->get('email_verification.suspend.virtual_accounts') eq 0, "Feature flag for optional email verification is disabled by default");
+
+    $app_config->set({'email_verification.suspend.virtual_accounts' => 1});
+    my %params = (
+        website_config => {
+            language => 'EN',
+            args     => {website_config => 1}});
+
+    my $res = $c->call_ok(%params)->result;
+    cmp_deeply($res->{feature_flags}->@*, @$expected_feature_flags, 'Feature flag is enabled and shown in RPC response');
+
+    $app_config->set({'email_verification.suspend.virtual_accounts' => 0});
+    $res = $c->call_ok(%params)->result;
+    ok(!scalar($res->{feature_flags}->@*), 'Feature flag is disabled and not shown in RPC response');
 };
 
 done_testing();

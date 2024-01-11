@@ -411,4 +411,64 @@ rpc website_status => sub {
     return $result;
 };
 
+=head2 website_config
+
+An RPC subroutine that retrieves and returns the website configuration based on the provided country code. Along with feature flags, it also returns the supported currencies, payment agents, and supported languages.
+
+Takes a single C<$params>.
+
+=over 4
+
+=item * C<$params> - a HASH reference containing the following keys:
+
+=over 4
+
+=item * C<country_code> - a 2-letter country code
+
+=back
+
+=back
+
+Returns a HASH containing the following keys:
+
+=over 4
+
+=item * C<feature_flags> - an array of feature flags
+
+=item * C<currencies_config> - a HASH containing the supported currencies
+
+=item * C<payment_agents> - a HASH containing the payment agents
+
+=item * C<supported_languages> - an array of supported languages
+
+=item * C<terms_conditions_version> - the terms and conditions version
+
+=back
+
+=cut
+
+rpc website_config => sub {
+    my $params = shift;
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update;
+
+    my $country = $params->{country_code};
+    my @feature_flags;
+    push @feature_flags, 'signup_with_optional_email_verification' if $app_config->email_verification->suspend->virtual_accounts;
+    my $terms_conditions_versions = decode_json($app_config->cgi->terms_conditions_versions)->{request()->brand->name};
+
+    my $result = {
+        feature_flags     => \@feature_flags,
+        currencies_config => _currencies_config($country),
+        payment_agents    => {
+            initial_deposit_per_country => decode_json($app_config->payment_agents->initial_deposit_per_country),
+        },
+        supported_languages      => $app_config->cgi->supported_languages,
+        terms_conditions_version => $terms_conditions_versions // '',
+    };
+
+    return $result;
+};
+
 1;
