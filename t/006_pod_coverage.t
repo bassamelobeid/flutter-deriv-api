@@ -16,6 +16,7 @@ my $allowed_naked_packages = {
     'BOM::OAuth::Common'                => 3,
     'BOM::OAuth::SocialLoginClient'     => 3,
     'BOM::OAuth::SocialLoginController' => 1,
+    'BOM::Transport::RedisAPI'          => 2,
 };
 
 my $ignored_packages = ['BOM::OAuth::SingleSignOn',];
