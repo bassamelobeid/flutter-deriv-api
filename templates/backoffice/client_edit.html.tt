@@ -1202,10 +1202,9 @@ function update_age_verification(auth_status) {
     var age_verification_element = document.getElementById('age_verification');
     age_verification_element.value = (auth_status == 'ID_DOCUMENT' || auth_status == 'ID_NOTARIZED' || auth_status == 'ID_ONLINE') ? 'yes' : age_verification_status;
 
-    if ((auth_status == 'IDV_PHOTO' || auth_status == 'IDV') && [% idv_status != 'verified' %]) {
-        alert('Client is not IDV verified. \nCannot grant "Authenticated with IDV + _" status.');
-        var id_authentication = document.querySelector('select[name="client_authentication"]');
-        id_authentication.value = "";
+    if ((auth_status == 'IDV_PHOTO' || auth_status == 'IDV') && [% is_idv_validated ? 0 : 1 %]){
+        alert("Client has no IDV POI verified! \nShould not grant Authenticated with IDV");
+        return false
     }
 
     if (age_verification_element.value !== age_verification_status) {

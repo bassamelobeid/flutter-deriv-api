@@ -808,6 +808,7 @@ SQL
         is_npj                   => $is_npj,
         onfido_pdf_url           => $onfido_pdf_url,
         onfido_suspended         => BOM::Config::Runtime->instance->app_config->system->suspend->onfido,
+        is_idv_validated         => $client->is_idv_validated,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
