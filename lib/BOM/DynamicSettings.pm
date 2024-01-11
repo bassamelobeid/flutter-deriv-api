@@ -359,6 +359,7 @@ sub get_settings_by_group {
                 system.ctrader.suspend.deposits
                 system.ctrader.suspend.withdrawals
                 system.ctrader.suspend.user_exceptions
+                email_verification.suspend.virtual_accounts
             )
         ],
         quant => [qw(
