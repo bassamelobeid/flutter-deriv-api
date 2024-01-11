@@ -38,6 +38,7 @@ test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_
 test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_details/test_receive_error.json", 'unknown';
 
 test_sendrecv 'website_status/test_send.json',           'website_status/test_receive.json';
+test_sendrecv 'website_config/test_send.json',           'website_config/test_receive.json';
 test_sendrecv 'website_status/test_send_subscribe.json', 'website_status/test_receive_subscribe.json';
 
 test_sendrecv 'payout_currencies/test_send.json', 'payout_currencies/test_receive_no_login.json';
