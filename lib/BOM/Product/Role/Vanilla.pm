@@ -16,6 +16,7 @@ use Math::Util::CalculatedValue;
 use Syntax::Keyword::Try;
 use BOM::Config::Quants qw(minimum_stake_limit);
 use Quant::Framework::Spread::InterpolatedSpread;
+use Machine::Epsilon;
 
 =head2 ADDED_CURRENCY_PRECISION
 
@@ -209,6 +210,14 @@ We need to use entry tick to calculate this figure.
 
 sub _build_number_of_contracts {
     my $self = shift;
+
+    # if the probability is negligibly small return an error
+    my $epsilon = machine_epsilon();
+    if (abs($self->initial_ask_probability->amount) < $epsilon) {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidNonBinaryPrice',
+        );
+    }
 
     # we want payout per pip for financials
     my $number_of_contracts     = $self->_user_input_stake / $self->initial_ask_probability->amount;

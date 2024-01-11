@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 21;
+use Test::More tests => 22;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -85,6 +85,12 @@ subtest 'basic produce_contract' => sub {
     # Refer Vanillalongcall.pm for the formula
     is sprintf("%.5f", $c->bid_probability->amount), '439.92626', 'correct bid probability';
     is sprintf("%.5f", $c->ask_probability->amount), '480.86832', 'correct ask probability';
+};
+
+subtest 'barrier too far' => sub {
+    local $args->{barrier} = '1240000.00';
+    my $c = produce_contract($args);
+    throws_ok { $c->number_of_contracts } "BOM::Product::Exception", "too big barrier throws valid exception";
 };
 
 subtest 'number of contracts' => sub {
