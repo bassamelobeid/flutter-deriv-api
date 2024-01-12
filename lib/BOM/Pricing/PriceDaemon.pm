@@ -124,6 +124,8 @@ sub run {
     my @queues = map { $_ . "_p0" } @{$args{queues}};
     push @queues, @{$args{queues}};
     LOOP: while ($self->is_running) {
+        my $r = BOM::Platform::Context::Request->new({language => 'EN'});
+        request($r);
         my $key;
         try {
             $key = $redis_pricer->brpop(@queues, 0)
@@ -258,18 +260,18 @@ sub run {
                 request($r);
                 my $redis_channel       = $pricer_args . "::" . $subchannel;
                 my $contract_parameters = $self->_deserialize_contract_parameters($subchannel);
-                my $adjusted_response   = $response;
+                my $adjusted_response   = {%$response};
 
-                if ($response->{longcode}) {
-                    $adjusted_response->{longcode} = localize($response->{longcode});
-                }
                 # for non-binary where we expect theo_price to be present
                 if (defined $response->{theo_price}) {
-                    $adjusted_response = BOM::Pricing::v3::Utility::non_binary_price_adjustment($contract_parameters, {%$response});
+                    $adjusted_response = BOM::Pricing::v3::Utility::non_binary_price_adjustment($contract_parameters, $adjusted_response);
                 }
                 # for binary contracts where we expect theo_probability to be present
                 elsif (defined $response->{theo_probability}) {
-                    $adjusted_response = BOM::Pricing::v3::Utility::binary_price_adjustment($contract_parameters, {%$response});
+                    $adjusted_response = BOM::Pricing::v3::Utility::binary_price_adjustment($contract_parameters, $adjusted_response);
+                }
+                if ($response->{longcode}) {
+                    $adjusted_response->{longcode} = localize($response->{longcode});
                 }
 
                 my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($adjusted_response));
