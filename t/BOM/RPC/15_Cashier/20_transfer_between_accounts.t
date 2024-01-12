@@ -1918,6 +1918,32 @@ subtest 'MT5' => sub {
         );
     };
 
+    subtest 'transfers using an account less than minimum fee' => sub {
+        my $app_config = BOM::Config::Runtime->instance->app_config();
+
+        $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+        $app_config->set({
+                'payments.transfer_between_accounts.minimum.MT5' => '{"default":{"currency":"USD","amount":0.01}}',
+
+        });
+        $params->{args} = {
+            currency     => 'BTC',
+            amount       => 0.00000228,
+            account_from => $test_client_btc->loginid,
+            account_to   => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'}};
+
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_message_is(
+            "The minimum amount for transfers is 0.00000250 BTC after conversion fees are deducted. Please adjust the amount.",
+            'amount not allowed and the amount is not in scientific mode');
+
+        $app_config->set({
+            'payments.transfer_between_accounts.minimum.MT5' => '{"default":{"currency":"USD","amount":1}}',
+        });
+
+    };
+
     subtest 'transfer between virtual wallet and demo account is allowed' => sub {
         my $test_wallet_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRW',
@@ -1935,6 +1961,7 @@ subtest 'MT5' => sub {
         $params->{args}{account_from} = $test_client_vr->loginid;
         $params->{args}{account_to}   = 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'};
         $params->{args}{amount}       = 180;
+        $params->{args}{currency}     = 'USD';
         $params->{token_type}         = 'api_token';
 
         $rpc_ct->call_ok('transfer_between_accounts', $params)
@@ -2418,6 +2445,13 @@ subtest 'cumulative_limits limits' => sub {
         sub {
             return 0;
         });
+
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+    $app_config->set({
+            'payments.transfer_between_accounts.maximum.MT5' => '{"default":{"currency":"USD","amount":2500}}',
+
+    });
 
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
 

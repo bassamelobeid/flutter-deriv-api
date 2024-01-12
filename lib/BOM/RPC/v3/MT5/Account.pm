@@ -2538,13 +2538,14 @@ sub _mt5_validate_and_get_amount {
                         override_code => $error_code,
                         params        => [$client_currency, $mt5_currency]}) if ($err =~ /No transfer fee/);
 
+                # convert it to a normal form string without exponent
                 # Lower than min_unit in the receiving currency. The lower-bounds are not uptodate, otherwise we should not accept the amount in sending currency.
                 # To update them, transfer_between_accounts_fees is called again with force_refresh on.
                 return create_error_future(
                     'AmountNotAllowed',
                     {
                         override_code => $error_code,
-                        params        => [$mt5_transfer_limits->{$source_currency}->{min}, $source_currency]}
+                        params        => [formatnumber('price', $source_currency, $mt5_transfer_limits->{$source_currency}->{min}), $source_currency]}
                 ) if ($err =~ /The amount .* is below the minimum allowed amount/);
 
                 #default error:
