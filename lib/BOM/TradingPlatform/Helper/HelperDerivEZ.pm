@@ -1050,11 +1050,12 @@ sub derivez_validate_and_get_amount {
                             code   => 'NoTransferFee',
                             params => [$client_currency, $user_derivez_currency]} if ($e =~ /No transfer fee/);
 
+                        # convert it to a normal form string without exponent
                         # Lower than min_unit in the receiving currency. The lower-bounds are not up to date, otherwise we should not accept the amount in sending currency.
                         # To update them, transfer_between_accounts_fees is called again with force_refresh on.
                         die +{
                             code   => 'AmountNotAllowed',
-                            params => [$min_transfer_limit, $amount_currency]}
+                            params => [formatnumber('price', $amount_currency, $min_transfer_limit), $amount_currency]}
                             if ($e =~ /The amount .* is below the minimum allowed amount/);
 
                         # Default error:
@@ -1086,11 +1087,12 @@ sub derivez_validate_and_get_amount {
                             code   => 'NoTransferFee',
                             params => [$client_currency, $user_derivez_currency]} if ($e =~ /No transfer fee/);
 
+                        # convert it to a normal form string without exponent
                         # Lower than min_unit in the receiving currency. The lower-bounds are not up to date, otherwise we should not accept the amount in sending currency.
                         # To update them, transfer_between_accounts_fees is called again with force_refresh on.
                         die +{
                             code   => 'AmountNotAllowed',
-                            params => [$min_transfer_limit, $amount_currency]}
+                            params => [formatnumber('price', $amount_currency, $min_transfer_limit), $amount_currency]}
                             if ($e =~ /The amount .* is below the minimum allowed amount/);
 
                         # Default error:
