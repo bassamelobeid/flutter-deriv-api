@@ -35,10 +35,14 @@ subtest "Test different input types" => sub {
         'Barrier must be at least 10 pips away from the spot.', 'Correct translation for basic string with parameters';
     is BOM::Platform::Context::localize(['Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.', 10]),
         'Barrier must be at least 10 pips away from the spot.', 'Correct translation for array ref with string and simple params';
-    is BOM::Platform::Context::localize(
-        ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-05-13'], ['entry spot']]),
+    my $longcode =
+        ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-05-13'], ['entry spot']];
+    is BOM::Platform::Context::localize($longcode),
         'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-05-13.',
         'Correct translation for array ref with string and nested params';
+    my $same_longcode =
+        ['Win payout if [_3] is strictly lower than [_6] at [_5].', 'USD', '166.27', 'GBP/USD', [], ['close on [_1]', '2016-05-13'], ['entry spot']];
+    cmp_deeply($longcode, $same_longcode, "localize kept input unchanged");
 };
 
 sub test_language_file {

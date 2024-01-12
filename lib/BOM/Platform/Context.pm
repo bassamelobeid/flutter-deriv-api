@@ -100,13 +100,14 @@ sub localize {
 
     try {
         if (ref $content eq 'ARRAY') {
-            return '' unless scalar @$content;
+            my $len = @$content;
+            return '' unless $len;
 
             # first one is always text string
-            push @texts, shift @$content;
+            push @texts, $content->[0];
 
             # followed by parameters
-            foreach my $elm (@$content) {
+            foreach my $elm ($content->@[1 .. $len - 1]) {
                 # some params also need localization (longcode)
                 if (ref $elm eq 'ARRAY' and scalar @$elm) {
                     push @texts, $lh->maketext(@$elm);
