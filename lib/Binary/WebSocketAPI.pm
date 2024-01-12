@@ -344,11 +344,13 @@ sub startup {
     my $backend_rpc_redis = redis_rpc();
     $WS_BACKENDS = {
         rpc_redis => {
-            type                     => 'consumer_groups',
-            redis                    => $backend_rpc_redis,
-            timeout                  => $app->config->{rpc_queue_response_timeout},
-            category_timeout_config  => $category_timeout_config,
-            queue_separation_enabled => $app->config->{rpc_queue_separation_enabled},
+            type                    => 'consumer_groups',
+            redis                   => $backend_rpc_redis,
+            timeout                 => $app->config->{rpc_queue_response_timeout},
+            category_timeout_config => $category_timeout_config,
+            # we set it 1 all the time as our proxy plugin expects this flag
+            # https://github.com/binary-com/perl-Mojo-WebSocketProxy-Backend-ConsumerGroups/blob/b179c239727e036c9e7fca8435cb975cb55f3e0e/lib/Mojo/WebSocketProxy/Backend/ConsumerGroups.pm#L144
+            queue_separation_enabled => 1,
         },
     };
 
