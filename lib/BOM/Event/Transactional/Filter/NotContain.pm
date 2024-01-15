@@ -2,9 +2,9 @@ use Object::Pad;
 
 class BOM::Event::Transactional::Filter::NotContain;
 
-has $property_name;
-has $property_value;
-has $key = 'not_contain';
+field $property_name;
+field $property_value;
+field $key = 'not_contain';
 
 =head2 BUILD
 

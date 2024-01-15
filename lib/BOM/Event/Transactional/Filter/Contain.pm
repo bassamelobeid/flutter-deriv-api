@@ -2,9 +2,9 @@ use Object::Pad;
 
 class BOM::Event::Transactional::Filter::Contain;
 
-has $property_name;
-has $property_value;
-has $key = 'contains';
+field $property_name;
+field $property_value;
+field $key = 'contains';
 
 =head2 BUILD
 

@@ -2,9 +2,9 @@ use Object::Pad;
 
 class BOM::Event::Transactional::Filter::Exist;
 
-has $property_name;
-has $property_value;
-has $key = 'exists';
+field $property_name;
+field $property_value;
+field $key = 'exists';
 
 =head2 BUILD
 

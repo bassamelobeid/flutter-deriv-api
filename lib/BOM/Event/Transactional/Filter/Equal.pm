@@ -2,9 +2,9 @@ use Object::Pad;
 
 class BOM::Event::Transactional::Filter::Equal;
 
-has $property_name;
-has $property_value;
-has $key = 'is';
+field $property_name;
+field $property_value;
+field $key = 'is';
 
 =head2 BUILD
 

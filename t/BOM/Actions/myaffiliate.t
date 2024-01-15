@@ -12,7 +12,7 @@ use BOM::User;
 use BOM::Event::Actions::MyAffiliate;
 use BOM::Event::Utility qw(exception_logged);
 use BOM::User::Password;
-use Future;
+use Future::AsyncAwait;
 
 my $email    = 'abc' . rand . '@binary.com';
 my $hash_pwd = BOM::User::Password::hashpw('test');

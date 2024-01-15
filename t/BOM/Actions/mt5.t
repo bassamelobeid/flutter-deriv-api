@@ -7,6 +7,7 @@ use Test::Fatal;
 use Test::MockTime qw(:all);
 use Time::Moment;
 use Clone 'clone';
+use Future::AsyncAwait;
 
 use Log::Any::Test;
 use Log::Any                                   qw($log);

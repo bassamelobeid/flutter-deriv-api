@@ -38,8 +38,8 @@ use BOM::Event::Transactional::Filter::Exist;
 
 use constant CONFIG_PATH => "/home/git/regentmarkets/bom-events/config/transactional/";
 
-has $map;
-has @filters = (
+field $map;
+field @filters = (
     BOM::Event::Transactional::Filter::Equal->new, BOM::Event::Transactional::Filter::Contain->new,
     BOM::Event::Transactional::Filter::Exist->new, BOM::Event::Transactional::Filter::NotContain->new
 );
