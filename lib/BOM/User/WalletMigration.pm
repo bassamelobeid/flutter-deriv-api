@@ -77,9 +77,9 @@ Returns a new instance of the class.
 
 =cut
 
-has $user;
-has $app_id;
-has %clients;
+field $user;
+field $app_id;
+field %clients;
 
 BUILD(%args) {
 

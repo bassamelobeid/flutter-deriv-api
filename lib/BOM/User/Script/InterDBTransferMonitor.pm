@@ -17,7 +17,7 @@ use constant {
     PROCESS_LIMIT         => 50,                             # max number of items to process per tick, type & broker
 };
 
-has %dbs;
+field %dbs;
 
 =head2 new
 
