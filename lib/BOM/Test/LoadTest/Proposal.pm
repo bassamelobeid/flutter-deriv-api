@@ -74,13 +74,13 @@ Returns a L<LoadTest::Proposal> Object.
 
 =cut
 
-has %args;
-has $json;
-has $active_symbols;
-has %subs;
-has $contracts_for :writer;
-has $multipliers;
-has $loop;
+field %args;
+field $json;
+field $active_symbols;
+field %subs;
+field $contracts_for : writer;
+field $multipliers;
+field $loop;
 
 BUILD {
     (%args) = @_;
@@ -282,7 +282,7 @@ method durations ($min, $max) {
     #
     my $duration_unit = 'm';    #default duration unit
 
-    if ($min_unit eq 's') {     # The only unit max can be has to be minutes or larger.
+    if ($min_unit eq 's') {     # The only unit max can be field to be minutes or larger.
         $min_unit   = 'm';
         $min_amount = 1;
     } elsif ($min_unit eq 't' and $max_unit eq 's') {    # Only thing that can be smaller than a second is a tick

@@ -34,8 +34,8 @@ use constant HTML_HEAD =>
 use constant HTML_FOOT => "</td></tr></table>";
 use constant PATH      => "/usr/share/nginx/html/events/";
 
-has $port;
-has $server;
+field $port;
+field $server;
 
 =head2 configure_unknown
 
