@@ -23,7 +23,7 @@ Returns the name of account category
 
 =cut
 
-has $name : reader;
+field $name : reader;
 
 =head2 broker_codes
 
@@ -31,7 +31,7 @@ Returns a hash-ref containing the broker codes per landing company.
 
 =cut
 
-has $broker_codes : reader;
+field $broker_codes : reader;
 
 =head2 platform
 
@@ -39,7 +39,7 @@ Platform defined at category level
 
 =cut
 
-has $platform : reader;
+field $platform : reader;
 
 =head2 account_types
 
@@ -47,7 +47,7 @@ Returns account types included in the current category as a hash ref of name:L<B
 
 =cut
 
-has $account_types : reader;
+field $account_types : reader;
 
 =head2 brands
 
@@ -55,7 +55,7 @@ Returns a list of brands that the account type is available for
 
 =cut
 
-has $brands : reader;
+field $brands : reader;
 
 =head2 groups
 
@@ -63,7 +63,7 @@ Returns groups (roles) of the account category. These groups are shared among al
 
 =cut
 
-has $groups : reader;
+field $groups : reader;
 
 =head1 METHODS
 

@@ -32,7 +32,7 @@ Return the name of the account type group (role)
 
 =cut
 
-has $name : reader;
+field $name : reader;
 
 =head2 services
 
@@ -40,7 +40,7 @@ Returns the list of services available for the current group
 
 =cut
 
-has $services : reader;
+field $services : reader;
 
 =head2 services_lookup
 
@@ -50,7 +50,7 @@ Note: It's created for speeding up service lookups needed within internal method
 
 =cut
 
-has $services_lookup : reader;
+field $services_lookup : reader;
 
 =head2 supports_service
 

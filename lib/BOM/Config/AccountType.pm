@@ -28,7 +28,7 @@ Returns the name of account type
 
 =cut
 
-has $name : reader;
+field $name : reader;
 
 =head2 category
 
@@ -36,7 +36,7 @@ Returns the category of account type
 
 =cut
 
-has $category : reader;
+field $category : reader;
 
 =head2 groups
 
@@ -44,7 +44,7 @@ Returns groups (roles) of account type
 
 =cut
 
-has $groups : reader;
+field $groups : reader;
 
 =head2 services
 
@@ -52,7 +52,7 @@ Returns services accessible to account type
 
 =cut
 
-has $services : reader;
+field $services : reader;
 
 =head2 services_lookup
 
@@ -62,7 +62,7 @@ Note: It's created for speeding up service lookups needed within internal method
 
 =cut
 
-has $services_lookup : reader;
+field $services_lookup : reader;
 
 =head2 linkable_to_different_currency
 
@@ -70,7 +70,7 @@ A boolean flag that tells if the account type can be linked to a wallet with a d
 
 =cut
 
-has $linkable_to_different_currency : reader;
+field $linkable_to_different_currency : reader;
 
 =head2 linkable_wallet_types
 
@@ -78,7 +78,7 @@ Returns a list of wallet types linkable to the account type. The value I<all> in
 
 =cut
 
-has $linkable_wallet_types : reader;
+field $linkable_wallet_types : reader;
 
 =head2 currencies
 
@@ -87,7 +87,7 @@ Returns the currencies allowed for the account type. The list is empty if there 
 
 =cut
 
-has $currencies : reader;
+field $currencies : reader;
 
 =head2 currency_types
 
@@ -95,7 +95,7 @@ Returns the currency types allowed for the account type. The list is empty if th
 
 =cut
 
-has $currency_types : reader;
+field $currency_types : reader;
 
 =head2 currencies_by_landing_company
 
@@ -103,7 +103,7 @@ Returns a hash-ref of available currencies per landing company. It's a combinati
 
 =cut
 
-has $currencies_by_landing_company : reader;
+field $currencies_by_landing_company : reader;
 
 =head2 type_broker_codes
 
@@ -111,7 +111,7 @@ Returns a hash-ref of account type's broker codes per landing company. It's usua
 
 =cut
 
-has $type_broker_codes : reader;
+field $type_broker_codes : reader;
 
 =head2 type_platform
 
@@ -119,7 +119,7 @@ Return platform defined at account type level
 
 =cut
 
-has $type_platform : reader;
+field $type_platform : reader;
 
 =head2 regulations
 
@@ -127,7 +127,7 @@ Return list of supported regulations by account type
 
 =cut
 
-has $regulations : reader;
+field $regulations : reader;
 
 =head2 transfers
 
@@ -135,7 +135,7 @@ Returns type of transfer supported by the account
 
 =cut
 
-has $transfers : reader;
+field $transfers : reader;
 
 =head2 is_cashier
 
@@ -143,7 +143,7 @@ Returns type of transfer supported by the account
 
 =cut
 
-has $is_cashier : reader = 0;
+field $is_cashier : reader = 0;
 
 =head2 is_enabled
 
@@ -151,7 +151,7 @@ Returns status of the account type
 
 =cut
 
-has $is_enabled : reader = 0;
+field $is_enabled : reader = 0;
 
 =head1 METHODS
 
