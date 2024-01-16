@@ -10,9 +10,9 @@ use JSON::MaybeUTF8 qw(:v1);
 use constant OK_STATUS_CODE          => 200;
 use constant BAD_REQUEST_STATUS_CODE => 400;
 
-has $http;
-has $host;
-has $port;
+field $http;
+field $host;
+field $port;
 
 BUILD {
     my %args = @_;
