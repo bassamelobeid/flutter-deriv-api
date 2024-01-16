@@ -46,7 +46,7 @@ Instance of BOM::User::ClientRegistry class.
 =cut
 
 class BOM::User::ExecutionContext {
-    field $user_registry;      # Instance of BOM::User::UserRegistry class.
+    field $user_registry;    # Instance of BOM::User::UserRegistry class.
     field $client_registry;    # Instance of BOM::User::ClientRegistry class.
 
     # Constructor method for the class.
