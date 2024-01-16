@@ -149,6 +149,15 @@ rpc "buy",
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
 
     my $landing_company = $client->landing_company->short;
+
+    # temporarily disabling 1(s) indices for accumulator on Real accounts for ROW
+    my $symbol        = $contract_parameters->{symbol};
+    my $contract_type = $contract_parameters->{contract_type};
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'ContractCreationFailure',
+            message_to_client => BOM::Platform::Context::localize("Cannot create contract")}
+    ) if ($contract_type eq "ACCU" && $symbol =~ /1HZ.*V$/ && $landing_company =~ /svg/);
+
     $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $landing_company;
 
