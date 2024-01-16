@@ -703,18 +703,20 @@ Called by p2p daemon every minute.
 
 sub update_local_currencies {
 
-    my @currencies;
+    my %unique_currencies;
 
     # if we ever support multiple brokers in P2P, this will need reworking
     for my $broker (map { $_->broker_codes->@* } grep { $_->p2p_available } LandingCompany::Registry::get_all) {
         my $clientdb = BOM::Database::ClientDB->new({broker_code => uc $broker, operation => 'backoffice_replica'});
-        push @currencies, $clientdb->db->dbic->run(
+        my @currency = $clientdb->db->dbic->run(
             fixup => sub {
                 $_->selectcol_arrayref('SELECT * FROM p2p.active_local_currencies()');
             })->@*;
+        @unique_currencies{@currency} = () if @currency;
     }
+    delete $unique_currencies{'AAD'};
 
-    BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', join ',', uniq sort grep { $_ ne 'AAD' } @currencies);
+    BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', join ',', keys %unique_currencies);
 }
 
 =head2 track_p2p_order_event
