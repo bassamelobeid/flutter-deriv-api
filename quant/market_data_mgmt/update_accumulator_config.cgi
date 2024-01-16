@@ -512,6 +512,7 @@ sub validate_growth_rate_cap {
         my $growth_rate_value     = $growth_rate->{$key};
         my $growth_rate_value_cap = $growth_rate_cap->{$key};
 
+        next unless defined $growth_rate_value;
         die "Max $type for $key should be betweeen 1 and  $growth_rate_value_cap."
             if $growth_rate_value > $growth_rate_value_cap || $growth_rate_value < 1;
     }
