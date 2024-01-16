@@ -161,7 +161,7 @@ sub on_min {
 
     $self->update_local_currencies;
 
-    stats_timing('p2p.daemon.processing_time_sec', 1000 * tv_interval($start_tv));
+    stats_timing('p2p.daemon.processing_time_min', 1000 * tv_interval($start_tv));
 }
 
 =head2 process_expired_orders
