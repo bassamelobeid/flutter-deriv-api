@@ -230,9 +230,12 @@ subtest 'payops event email' => sub {
         event      => 'payops_event_email',
         properties => {
             email          => 'ingrid@test.com',
+            phone          => '+15417543010',
             email_template => 'test',
             subject        => 'testing with client login id',
             contents       => 'Testing CR',
+            country        => 'id',
+            language       => 'EN',
             properties     => {
                 test => 1,
                 abc  => 'abc'
@@ -241,6 +244,7 @@ subtest 'payops event email' => sub {
         loginid => $client->loginid,
         },
         'Expected track event triggered';
+
 };
 
 done_testing();

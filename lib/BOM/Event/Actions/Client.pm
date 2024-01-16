@@ -4572,12 +4572,16 @@ async sub payops_event_email {
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     die 'No client here' unless $client;
-    my $template   = $args->{template};
-    my $properties = $args->{properties};
-    my $contents   = $args->{contents};
+    my $template     = $args->{template};
+    my $properties   = $args->{properties};
+    my $contents     = $args->{contents};
+    my $phone_number = $client->phone;
+    my $language     = uc(request->language // 'en');
 
     my $recipient = $client->email;
     die 'No client email found' unless $recipient;
+    my $country = $client->residence;
+    die 'No residence country found' unless $country;
 
     return BOM::Event::Services::Track::track_event(
         event      => $event_name,
@@ -4585,6 +4589,9 @@ async sub payops_event_email {
             properties     => $properties,
             subject        => $subject,
             email          => $recipient,
+            phone          => $phone_number,
+            country        => $country,
+            language       => $language,
             contents       => $contents,
             email_template => $template,
         },
