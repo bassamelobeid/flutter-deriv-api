@@ -13,12 +13,10 @@ my $brand_countries_obj = Brands::Countries->new();
 my $document_types      = {};
 
 for my $country_config (values $brand_countries_obj->get_idv_config->%*) {
-    foreach my $document_type_key (keys $country_config->{document_types}->%*) {
-        my $document_type = $document_type_key;
-        my $display_name  = $country_config->{document_types}->{$document_type_key}->{display_name};
-
-        push @{$document_types->{$document_type} //= []}, $display_name
-            unless grep { $_ eq $display_name } @{$document_types->{$document_type}};
+    for my $document_type (keys $country_config->{document_types}->%*) {
+        my $display_name =
+            ($document_type eq 'national_id') ? 'National ID Number' : $country_config->{document_types}->{$document_type}->{display_name};
+        $document_types->{$document_type} //= $display_name;
     }
 }
 
@@ -28,7 +26,7 @@ subtest 'Get Filters data' => sub {
 
     cmp_deeply $filter_data, +{
         document_types => +{
-            map { ($_ => bag(@{$document_types->{$_}})) }
+            map { ($_ => $document_types->{$_}) }
                 qw/
                 alien_card
                 cpf
