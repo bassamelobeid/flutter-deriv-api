@@ -82,6 +82,7 @@ subtest 'by landing company' => sub {
     subtest 'svg' => sub {
         $args->{landing_company_name} = 'svg';
         my %expected = (
+            'accumulator'   => 1,
             'asian'         => 2,
             'callput'       => 14,
             'callputequal'  => 8,

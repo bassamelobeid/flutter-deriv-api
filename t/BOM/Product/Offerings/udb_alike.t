@@ -50,8 +50,6 @@ subtest 'Sets match' => sub {
         while (my ($po, $udb_method) = each(%po_to_udb_method)) {
             my @result     = $offerings_obj->values_for_key($po);
             my @udb_result = $udb->$udb_method;
-            #no accumulator and vanilla for SVG for initial launch
-            @udb_result = grep { $_ ne 'accumulator' } @udb_result if $po eq 'contract_category';
 
             if (defined $non_offerings->{$udb_method}) {
                 my @tmp_result = @udb_result;
