@@ -31,7 +31,6 @@ use Date::Utility;
 use BOM::Config::Redis;
 use Log::Any               ();
 use BOM::Platform::Context qw (localize);
-
 use constant {
     NAMESPACE       => 'TOKEN',
     NAMESPACE_BY_ID => 'TOKENS_BY_ID',
@@ -167,7 +166,6 @@ sub get_token_details {
     return \%details unless keys %details;
 
     $details{scopes} = decode_json_utf8($details{scopes}) if $details{scopes};
-
     my $now          = time;
     my $last_updated = $last_updated_epoch{$key} // 0;
 
@@ -196,6 +194,7 @@ sub get_scopes_by_access_token {
 
 Returns all API tokens belong to the provided loginid.
 
+
 This could be slow if loginid has a lot of tokens. Use with caution!
 
 =cut
@@ -204,8 +203,23 @@ sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
     my $tokens = $self->_redis_read->hkeys($self->_make_key_by_id($loginid));
-
     return [sort { $a->{display_name} cmp $b->{display_name} } map { _cleanup($self->get_token_details($_)) } @$tokens];
+}
+
+=head2 find_masked_token_in_redis
+
+In case a token is not in db and is still in redis
+
+we will check in redis and return token value from redis
+
+=cut
+
+sub find_masked_token_in_redis {
+    my ($self, $loginid, $masked_token) = @_;
+
+    my $tokens          = $self->_redis_read->hkeys($self->_make_key_by_id($loginid));
+    my $token_to_remove = (grep { /$masked_token$/ } @$tokens)[0];
+    return $token_to_remove;
 }
 
 =head2 get_token_count_by_loginid
@@ -225,7 +239,6 @@ sub save_token_details_to_redis {
 
     my $token  = $data->{token};
     my $writer = $self->_redis_write;
-
     $data->{scopes}        = encode_json_utf8($data->{scopes})                 if $data->{scopes} and ref $data->{scopes} eq 'ARRAY';
     $data->{creation_time} = Date::Utility->new($data->{creation_time})->epoch if $data->{creation_time};
     $data->{last_used}     = Date::Utility->new($data->{last_used})->epoch     if $data->{last_used};
@@ -280,17 +293,14 @@ sub remove_by_token {
 
     my $key_by_id     = $self->_make_key_by_id($loginid);
     my $token_details = $self->get_token_details($token);
-
-    my $redis = $self->_redis_write;
+    my $redis         = $self->_redis_write;
 
     $redis->multi;
     $redis->del($self->_make_key($token));
     $redis->hdel($key_by_id, $token);
     $redis->exec;
-
     #remove token from database happens after redis since it is the source of truth
     $self->_db_model->remove_by_token($token, ($token_details->{last_used} ? Date::Utility->new($token_details->{last_used})->db_timestamp : ''));
-
     return 1;
 }
 
