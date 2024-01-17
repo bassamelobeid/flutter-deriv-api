@@ -7,6 +7,7 @@ use Date::Utility;
 use List::Util qw(uniq any none);
 use Convert::Base32;
 use Format::Util::Numbers qw/formatnumber/;
+use YAML::XS              qw(LoadFile);
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Annotations qw(annotate_db_calls);
@@ -19,6 +20,7 @@ use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::Config::Runtime;
 use BOM::Config::AccountType::Registry;
+use JSON::WebToken qw(encode_jwt);
 use BOM::User::ExecutionContext;
 
 use LandingCompany::Registry;
@@ -820,5 +822,52 @@ sub valid_shared_token {
 
     return 1;
 }
+
+=head2 jtoken_create
+
+Generates a JWT Token (JToken) to use for authenticating the nodejs RPC worker and to
+get client details available in the nodejs service.
+Before generating the token needs to be authorized with RPC authorize.
+The token is valid for 60 seconds
+
+=over 4
+
+=item * - C<params> - RPC params
+
+=item * - C<client> - client object
+
+=back
+
+=cut
+
+rpc(
+    "jtoken_create",
+    auth => ['trading', 'wallet'],
+    sub {
+        my $params = shift;
+        my $client = $params->{client};
+
+        my $client_details = {
+            loginid        => $client->loginid,
+            email          => $client->email,
+            country        => $client->residence,
+            is_virtual     => ($client->is_virtual ? 1 : 0),
+            broker         => $client->broker,
+            binary_user_id => $client->binary_user_id,
+        };
+
+        my $common_claims = {
+            sub => $client->binary_user_id,
+            exp => time + 600,
+        };
+
+        my %claims = (%$common_claims, $client_details->%*);
+
+        # TODO: ES256 (private/public key) is not supported yet in the module we use. For now use HS256.
+        my $secret = BOM::Config::aes_keys()->{jtoken_secret}{1};
+        my $jtoken = encode_jwt \%claims, $secret, 'HS256';
+
+        return $jtoken;
+    });
 
 1;
