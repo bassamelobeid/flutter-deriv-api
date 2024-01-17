@@ -3580,6 +3580,11 @@ rpc set_financial_assessment => sub {
         }
     }
 
+    my $employment_status = $financial_assessment->{employment_status};
+    if ($employment_status && ($employment_status eq 'Unemployed' || $employment_status eq 'Self-Employed')) {
+        $financial_assessment->{occupation} //= 'Unemployed';
+    }
+
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
     try {

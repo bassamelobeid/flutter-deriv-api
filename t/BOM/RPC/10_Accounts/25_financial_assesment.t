@@ -431,4 +431,75 @@ subtest 'MF duplicated account' => sub {
     };
 };
 
+$method = 'set_financial_assessment';
+subtest 'set financial assessment with occupation handled with default values' => sub {
+    my @broker_codes = ('CR', 'MF');
+    for my $broker_code (@broker_codes) {
+        my $email    = 'default_unemployed' . $broker_code . '@deriv.com';
+        my $password = 'secret_pwd';
+
+        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => $broker_code});
+
+        $test_client->email($email);
+        $test_client->save;
+
+        my $user = BOM::User->create(
+            email    => $email,
+            password => $hash_pwd
+        );
+        $user->add_client($test_client);
+
+        my $token = $m->create_token($test_client->loginid, 'test token');
+
+        my $args = {
+            "set_financial_assessment" => 1,
+            "financial_information"    => {
+                "employment_industry" => "Finance",
+                "education_level"     => "Secondary",
+                "income_source"       => "Self-Employed",
+                "net_income"          => '$25,000 - $50,000',
+                "estimated_worth"     => '$100,000 - $250,000',
+                "employment_status"   => "Unemployed",
+                "source_of_wealth"    => "Company Ownership",
+                "account_turnover"    => 'Less than $25,000',
+            },
+            "trading_experience_regulated" => {
+                "risk_tolerance"                           => "Yes",
+                "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+                "cfd_experience"                           => "Less than a year",
+                "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+                "trading_experience_financial_instruments" => "Less than a year",
+                "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+                "cfd_trading_definition"                   => "Speculate on the price movement.",
+                "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+                "leverage_trading_high_risk_stop_loss" => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+                "required_initial_margin"              => "When opening a Leveraged CFD trade.",
+            }};
+
+        $c->tcall(
+            $method,
+            {
+                args  => $args,
+                token => $token
+            });
+
+        my $result = $c->tcall('get_financial_assessment', {token => $token});
+        is $result->{employment_status}, 'Unemployed', 'Employment Status Unemployed';
+        is $result->{occupation},        'Unemployed', "Occupation defaulted to Unemployed for Employment Status Unemployed for $broker_code";
+
+        $args->{financial_information}->{employment_status} = "Self-Employed";
+
+        $c->tcall(
+            $method,
+            {
+                args  => $args,
+                token => $token
+            });
+
+        $result = $c->tcall('get_financial_assessment', {token => $token});
+        is $result->{employment_status}, 'Self-Employed', 'Employment Status Self-Employed';
+        is $result->{occupation},        'Unemployed',    "Occupation defaulted to Unemployed for Employment Status Self-Employed for $broker_code";
+    }
+};
+
 done_testing();
