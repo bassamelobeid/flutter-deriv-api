@@ -283,6 +283,10 @@ my @TRANSACTIONAL_EVENTS = qw(
     crypto_withdrawal_locked_email
     authenticated_with_scans
     underage_account_closed
+    p2p_archived_ad
+    mt5_inactive_account_closed
+    crypto_withdrawal_sent_email
+    trading_platform_account_created
 );
 
 my $loop = IO::Async::Loop->new;

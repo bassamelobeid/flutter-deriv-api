@@ -5533,6 +5533,44 @@ subtest 'crypto_withdrawal_email transactional' => sub {
         ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     };
 
+    subtest 'crypto_withdrawal_email transaction_status - SENT' => sub {
+        undef @track_args;
+        undef @transactional_args;
+
+        BOM::Event::Actions::Client::crypto_withdrawal_email({
+                loginid            => $client->loginid,
+                amount             => '2',
+                currency           => 'ETH',
+                transaction_hash   => '0xjkdf483jfh834ekjh834kdk48',
+                transaction_url    => 'https://sepolia.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
+                live_chat_url      => 'https://deriv.com/en/?is_livechat_open=true',
+                transaction_status => 'SENT',
+                reference_no       => 1,
+                title              => 'Your ETH withdrawal is successful',
+            })->get;
+
+        my ($customer, %args) = @track_args;
+
+        ok @transactional_args, 'CIO transactional is invoked';
+        is $args{event}, 'track_crypto_withdrawal_sent_email', "got correct event name";
+
+        cmp_deeply $args{properties},
+            {
+            'loginid'          => $client->loginid,
+            'brand'            => 'deriv',
+            'currency'         => 'ETH',
+            'lang'             => 'EN',
+            'amount'           => '2',
+            'transaction_hash' => '0xjkdf483jfh834ekjh834kdk48',
+            'transaction_url'  => 'https://sepolia.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
+            'live_chat_url'    => 'https://deriv.com/en/?is_livechat_open=true',
+            'title'            => 'Your ETH withdrawal is successful',
+            },
+            'event properties are ok';
+
+        is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+        ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    };
     subtest 'crypto_withdrawal_email transaction_status - cancelled' => sub {
         undef @track_args;
         undef @transactional_args;

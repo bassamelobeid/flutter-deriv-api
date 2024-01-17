@@ -16,3 +16,21 @@ account_reactivated:
   - account_reactivated:
       new_campaign:
         exists: 1
+p2p_archived_ad:
+  - p2p_archived_ad:
+      loginid:
+        exists: 1
+      adverts:
+        exists: 1
+trading_platform_account_created:
+  - trading_platform_account_created:
+      loginid:
+        exists: 1
+      account_type:
+        exists: 1
+      market_type:
+        exists: 1
+      account_id:
+        exists: 1
+      platform:
+        is: dxtrade

@@ -32,7 +32,7 @@ use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
 
-my (@identify_args, @track_args);
+my (@identify_args, @track_args, @transactional_args);
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
     'identify' => sub {
@@ -64,6 +64,13 @@ $user->add_loginid('MT1000');
 
 my $mocked_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
 $mocked_mt5->mock('update_user', sub { Future->done({}) });
+
+my $mock_cio = Test::MockModule->new('WebService::Async::CustomerIO');
+$mock_cio->redefine(
+    'send_transactional' => sub {
+        @transactional_args = @_;
+        return Future->done(1);
+    });
 
 my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my @emitter_args;
@@ -603,6 +610,67 @@ subtest 'mt5 inactive account closed' => sub {
         },
         },
         'track event properties correct';
+};
+
+subtest 'mt5 inactive account closed - transactional email' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        app_id     => $app_id,
+        language   => 'ES',
+    );
+    request($req);
+
+    my $args = {
+        email        => '',
+        transferred  => 'CR12345',
+        mt5_accounts => [{
+                login => 'MT900000',
+                type  => 'demo financial',
+                name  => 'Bob Doe',
+            },
+            {
+                login => 'MT900002',
+                type  => 'real financial',
+                name  => 'Bob Doe',
+            }
+        ],
+    };
+
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{mt5_inactive_account_closed};
+
+    like exception { $action_handler->($args) }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
+    undef @transactional_args;
+    undef @track_args;
+
+    $args->{email} = $test_client->{email};
+    my $result = $action_handler->($args)->get;
+    ok $result, 'Success event result';
+
+    my (undef, %tracked) = $track_args[0]->@*;
+
+    is_deeply \%tracked,
+        {
+        event   => 'track_mt5_inactive_account_closed',
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'ES',
+        },
+        properties => {
+            name          => 'Bob Doe',
+            mt5_accounts  => $args->{mt5_accounts},
+            brand         => 'deriv',
+            lang          => 'ES',
+            loginid       => $test_client->loginid,
+            live_chat_url => request->brand->live_chat_url({language => 'ES'}),
+        },
+        },
+        'track event properties correct';
+
+    my ($transactional_customer, $transactional_args) = @transactional_args;
+    is $transactional_args->{transactional_message_id}, 'mt5_inactive_account_closed', 'Transactional email id is correct';
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
 };
 
 subtest 'mt5 account closure report' => sub {
