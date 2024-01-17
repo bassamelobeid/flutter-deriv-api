@@ -98,7 +98,7 @@ subtest 'ticks_history' => sub {
     $params->{args}->{ticks_history} = 'wrong';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
-        ->error_message_is('Symbol wrong is invalid.', 'It should return error if there is wrong symbol param');
+        ->error_message_is('Symbol wrong invalid.', 'It should return error if there is wrong symbol param');
 
     $params->{args}->{subscribe} = '1';
     set_fixed_time(Date::Utility->new('2016-07-24')->epoch);

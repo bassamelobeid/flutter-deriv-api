@@ -82,16 +82,6 @@ We don't want to expose ticks/ticks_history API to too much symbols, so we only 
 sub is_symbol_offered {
     my $symbol = shift;
 
-    try {
-        my $ul = Finance::Underlying->by_symbol($symbol);
-        return undef if $ul->is_generated;
-    } catch {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidSymbol',
-            message_to_client => localize("Symbol [_1] is invalid.", $symbol),
-        });
-    }
-
     my $config        = BOM::Config::Runtime->instance->get_offerings_config;
     my $offerings_obj = LandingCompany::Registry->get_default_company()->basic_offerings($config);
     unless ($symbol && $offerings_obj->offerings->{$symbol}) {

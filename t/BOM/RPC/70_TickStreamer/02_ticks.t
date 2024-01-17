@@ -22,7 +22,8 @@ $rpc_ct = BOM::Test::RPC::QueueClient->new();
 
 my $instance                = BOM::Config::Runtime->instance;
 my $mocked_offerings_config = Test::MockModule->new(ref $instance);
-$mocked_offerings_config->mock('get_offerings_config' => sub { return {'suspend_underlying_symbols' => ['LGTM']} });
+$mocked_offerings_config->mock(
+    'get_offerings_config' => sub { return {'suspend_underlying_symbols' => ['LGTM'], loaded_revision => 0, action => 'buy'} });
 
 subtest 'validate_ticks' => sub {
     $rpc_ct->call_ok($method, $params)
@@ -32,7 +33,7 @@ subtest 'validate_ticks' => sub {
     $params->{symbol} = 'wrong';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
-        ->error_message_is('Symbol wrong is invalid.', 'It should return error if there is wrong symbol param');
+        ->error_message_is('Symbol wrong invalid.', 'It should return error if there is wrong symbol param');
 
     $params->{symbol} = 'LGTM';
     $rpc_ct->call_ok($method, $params)
