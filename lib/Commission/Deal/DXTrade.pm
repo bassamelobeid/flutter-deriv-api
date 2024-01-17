@@ -10,7 +10,7 @@ Commission::Deal::DXTrade - Place holder class for an order from DerivX platform
 =head1 SYNOPSIS
 
  use Commission::Deal::DXTrade;
- my $dx_deal = Commission::Deal::DXTrader->new(
+ my $dx_deal = Commission::Deal::DXTrade->new(
     account => 'default:DXD123',
     positionCode => 123,
     symbol => 'EURUSD',

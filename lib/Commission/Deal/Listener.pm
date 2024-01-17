@@ -35,10 +35,11 @@ use Database::Async::Engine::PostgreSQL;
 use Syntax::Keyword::Try;
 
 use JSON::MaybeXS qw(decode_json);
-use YAML::XS qw(LoadFile);
+use YAML::XS      qw(LoadFile);
 use Commission::Deal::DXTrade;
 use Date::Utility;
-use Log::Any qw($log);
+use Log::Any                   qw($log);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 =head2 new
 
@@ -136,8 +137,11 @@ Runs the listener
 async sub start {
     my $self = shift;
 
+    $log->infof('Starting listener for %s', $self->{provider});
     await $self->_load_client_map();
+    $log->infof('Client map loaded');
     await $self->_load_symbols_map();
+    $log->infof('Symbols map loaded');
 
     my $redis = $self->{redis};
     my $group = $self->{redis_consumer_group};
@@ -227,6 +231,7 @@ async sub _load_symbols_map {
     foreach my $symbol (keys %symbols) {
         my $instrument_data = decode_json($symbols{$symbol});
         $symbols_map{$symbol} = $instrument_data->{currency};
+        stats_inc('bom.commission.deal_listener.symbols_loaded.count');
     }
 
     $self->{_symbols_map} = \%symbols_map;
@@ -249,6 +254,7 @@ async sub _update_client_map {
         $self->{_client_map}{$payload{account_id}} = 1;
         $log->debugf("%s added to client map", $payload{account_id});
         await $self->{redis}->xack($update_stream, $self->{redis_consumer_group}, $id);
+        stats_inc('bom.commission.deal_listener.update_client_map.count');
     }
 }
 
@@ -267,19 +273,30 @@ async sub _process_deals {
         my %payload = $data->[1]->@*;
         $log->debugf("processing stream id %s with payload %s", $id, \%payload);
         my $dx_deal = Commission::Deal::DXTrade->new(%payload);
-        # for deals from test accounts or from unaffiliated clients, we want to just acknowledge them but not saving them
-        if (not $dx_deal->is_valid or $dx_deal->is_test_account or not $self->{_client_map}->{$dx_deal->loginid}) {
-            my $reason = $dx_deal->is_test_account ? 'test account' : 'unaffiliated client';
-            $log->debugf("skipping deal [%s] for stream id [%s], reason [%s]", $dx_deal->deal_id, $id, $reason);
-            await $self->{redis}->xack($self->{redis_stream}, $self->{redis_consumer_group}, $id);
-            next;
-        }
 
-        if (my $deal_id = await $self->_insert_into_db($id, $dx_deal)) {
-            $log->debugf("deal [%s] for stream id %s saved", $deal_id, $id);
+        try {
+
+            # for deals from test accounts or from unaffiliated clients, we want to just acknowledge them but not saving them
+            if (not $dx_deal->is_valid or $dx_deal->is_test_account or not $self->{_client_map}->{$dx_deal->loginid}) {
+                my $reason = $dx_deal->is_test_account ? 'test account' : 'unaffiliated client';
+                $log->debugf("skipping deal [%s] for stream id [%s], reason [%s]", $dx_deal->deal_id, $id, $reason);
+                await $self->{redis}->xack($self->{redis_stream}, $self->{redis_consumer_group}, $id);
+                next;
+            }
+
+            await $self->_insert_into_db($dx_deal);
+            $log->debugf("deal [%s] for stream id %s saved", $dx_deal->deal_id, $id);
             await $self->{redis}->xack($self->{redis_stream}, $self->{redis_consumer_group}, $id);
             $number_of_deals_processed++;
+            stats_inc('bom.commission.deal_listener.process_deals.successful.count',
+                {tags => ["info:Successfull processing of $number_of_deals_processed deals"]});
+
+        } catch ($e) {
+            my $error_message = ref $e ? $e->message : $e;
+            $log->warnf("exception thrown when processing deal for deal %s . [%s]", $dx_deal->deal_id, $error_message);
+            stats_inc('bom.commission.deal_listener.process_deals.failed.count', {tags => ["error:$error_message"]});
         }
+
     }
 
     return $number_of_deals_processed;
@@ -292,7 +309,7 @@ Saves deal into commission db
 =cut
 
 async sub _insert_into_db {
-    my ($self, $stream_id, $deal) = @_;
+    my ($self, $deal) = @_;
 
     my $deal_id;
     try {
@@ -310,6 +327,7 @@ async sub _insert_into_db {
                 $deal->deal_id, $self->{provider}, $deal->loginid, $deal->account_type, $deal->underlying_symbol,
                 $deal->volume,  $deal->spread,     $deal->price,   $currency,           $deal->transaction_time
             )->single;
+            $log->debugf(($deal_id ? "Deal [%s] saved" : "Deal [%s] already exist"), $deal->deal_id);
         } else {
             $log->errorf("quoted currency is undefined for %s", $deal->underlying_symbol);
         }
@@ -321,7 +339,7 @@ async sub _insert_into_db {
         await $self->_reconnect();
     }
 
-    return $deal_id;
+    return $deal->deal_id;
 }
 
 =head2 _check_pending_data_from_stream
@@ -397,6 +415,8 @@ async sub _reconnect {
     }
 
     $self->add_child($self->{dbic} = Database::Async->new(%parameters));
+
+    stats_inc('bom.commission.deal_listener.db_reconnected.count');
 }
 
 1;
