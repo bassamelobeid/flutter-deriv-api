@@ -421,6 +421,7 @@ sub create_virtual_account {
         residence         => $user_details->{residence},
         source            => $user_details->{source},
         account_type      => 'binary',
+        email_verified    => 1,
     };
 
     $details->{$_} = $user_details->{$_}

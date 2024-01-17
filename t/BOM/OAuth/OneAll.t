@@ -247,6 +247,46 @@ subtest "anonymize_user" => sub {
     is $result, 0, 'Failed to delete the user data';
 };
 
+subtest "social signup email verification check" => sub {
+    #Social signup email should be verified with optinal email verification flag on
+    BOM::Config::Runtime->instance->app_config->email_verification->suspend->virtual_accounts(1);
+    $t = Test::Mojo->new('t::BOM::OAuth::OneAll');
+    my ($signup_device, $residence, $email, $brand, $myaffiliates_token);
+
+    #Test case 1: valid residence
+    $signup_device = 'mobile';
+    $residence     = 'id';
+    $email         = 'test' . rand(999) . '@binary.com';
+    $t->ua->on(
+        start => sub {
+            my ($ua, $tx) = @_;
+            $tx->req->headers->header('X-Client-Country' => $residence);
+        });
+
+    $t->get_ok("/callback?email=$email&signup_device=$signup_device")->status_is(200)->json_is(
+        json => {
+            'residence'     => $residence,
+            'signup_device' => $signup_device
+        });
+
+    my $user = BOM::User->new(email => $email);
+    ok($user->email_verified, "User is email verified even when feature flag for optional email verification is turned on");
+
+    #Social Signup email should be verfied even when feature flag is off
+    BOM::Config::Runtime->instance->app_config->email_verification->suspend->virtual_accounts(0);
+
+    $email = 'test' . rand(999) . '@binary.com';
+    $t->get_ok("/callback?email=$email&signup_device=$signup_device")->status_is(200)->json_is(
+        json => {
+            'residence'     => $residence,
+            'signup_device' => $signup_device
+        });
+
+    $user = BOM::User->new(email => $email);
+    ok($user->email_verified, "User is email verified even when feature flag for optional email verification is turned off");
+
+};
+
 done_testing();
 
 1;
