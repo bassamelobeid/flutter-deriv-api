@@ -3023,9 +3023,8 @@ async sub payment_deposit {
     my $high_risk_settings = $pm_config->high_risk($payment_type);
 
     if ($high_risk_settings) {
-        my $high_risk_pm = $pm_config->high_risk_group($payment_type);
-        my $record       = BOM::User::PaymentRecord->new(user_id => $client->binary_user_id);
-        my %payment      = (
+        my $record  = BOM::User::PaymentRecord->new(user_id => $client->binary_user_id);
+        my %payment = (
             id => $account_identifier,
             pm => $payment_method,
             pp => $payment_processor,
@@ -3033,17 +3032,6 @@ async sub payment_deposit {
         );
 
         $record->add_payment(%payment);
-
-        my $antifraud = BOM::Platform::Client::AntiFraud->new(client => $client);
-
-        if ($antifraud->df_total_payments_by_payment_type($payment_type)) {
-            await on_user_payment_accounts_limit_reached(
-                loginid        => $client->loginid,
-                limit          => $client->payment_accounts_limit($high_risk_settings->{limit}),
-                payment_type   => $high_risk_pm,
-                binary_user_id => $client->binary_user_id,
-            );
-        }
     }
 
     BOM::Platform::Event::Emitter::emit('check_name_changes_after_first_deposit', {loginid => $client->loginid});
@@ -3061,31 +3049,6 @@ sub track_payment_deposit {
     my ($args) = @_;
 
     return BOM::Event::Services::Track::payment_deposit($args);
-}
-
-=head2 on_user_payment_accounts_limit_reached
-
-Send an email to x-antifraud-alerts@deriv.com warn about the limit that has been reached for the user
-
-=cut
-
-async sub on_user_payment_accounts_limit_reached {
-    my %args = @_;
-
-    my $key = join '::', +PAYMENT_ACCOUNT_LIMIT_REACHED_KEY, 'PaymentType', $args{payment_type};
-
-    return undef if await _redis_replicated_write()->hget($key, $args{binary_user_id});
-
-    await _redis_replicated_write()->hset($key, $args{binary_user_id}, 1);
-
-    send_email({
-            from    => '<no-reply@deriv.com>',
-            to      => 'x-antifraud-alerts@deriv.com',
-            subject => sprintf('Allowed limit on %s reached by %s', $args{payment_type}, $args{loginid}),
-            message => [
-                sprintf("The maximum allowed limit on %s per user of %d has been reached by %s.", $args{payment_type}, $args{limit}, $args{loginid})
-            ],
-        });
 }
 
 =head2 withdrawal_limit_reached
