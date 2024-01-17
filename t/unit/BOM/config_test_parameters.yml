@@ -29,6 +29,7 @@
       password_remote: *aes_keys_common
       payment_agent: *aes_keys_common
       web_secret: *aes_keys_common
+      jtoken_secret: *aes_keys_common
   name: aes_keys.yml
 - args:
     array_test:
