@@ -23,6 +23,8 @@ use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying_db);
 use Bloomberg::VolSurfaces::BVOL;
 
+use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
+
 has update_for => (
     is       => 'ro',
     required => 1,
@@ -97,11 +99,12 @@ sub process_volsurface {
         my $system_symbol = $self->bloomberg_symbol_mapping->{$underlying_symbol};
 
         next if (not $system_symbol);
-        if ($data->{$underlying_symbol}->{error}) {
+        if (my $error = $data->{$underlying_symbol}->{error}) {
             $self->report->{$system_symbol} = {
                 success => 0,
-                reason  => $data->{$underlying_symbol}->{error},
+                reason  => $error,
             };
+            stats_event('market_data.volsurface.error', $error, {tags => ["symbol:$system_symbol"]});
             next;
         }
         my $underlying_raw_data = $data->{$underlying_symbol};
@@ -114,6 +117,7 @@ sub process_volsurface {
             surface       => \%surface_data,
             creation_date => $data->{$underlying_symbol}->{volupdate_time},
         };
+        stats_inc('market_data.volsurface.processed', {tags => ["symbol:$system_symbol"]});
     }
 
     return $vol_surface;
@@ -122,6 +126,9 @@ sub process_volsurface {
 sub run {
     my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
+
+    my $class = ref $self;
+    stats_inc('market_data.run.start', {tags => ["class:$class"]});
 
     my $calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
 

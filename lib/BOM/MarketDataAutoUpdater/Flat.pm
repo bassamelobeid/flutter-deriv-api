@@ -18,7 +18,8 @@ use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
 use Date::Utility;
 use BOM::Config::Chronicle;
-use BOM::MarketData qw(create_underlying create_underlying_db);
+use BOM::MarketData            qw(create_underlying create_underlying_db);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 =head2 symbols_for_delta
 
@@ -76,6 +77,9 @@ Constructs delta/moneyness surface data for the list of instruments and save the
 
 sub run {
     my $self = shift;
+
+    my $class = ref $self;
+    stats_inc('market_data.run.start', {tags => ["class:$class"]});
 
     my $now    = Date::Utility->new;
     my @tenors = qw(1 7 40 90 180 360);

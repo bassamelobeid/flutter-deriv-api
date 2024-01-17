@@ -8,6 +8,8 @@ use Email::Stuffer;
 use Cache::RedisDB;
 use Brands;
 
+use DataDog::DogStatsd::Helper qw(stats_gauge);
+
 use constant MIN_TIME_BETWEEN_EMAILS => 3600;
 
 has report => (
@@ -50,12 +52,16 @@ sub run {
             }
         }
     }
+    my $number_failures = scalar @failures - 1;
+    my $number_errors   = scalar @errors - 1;
+    my $number_success  = scalar @successes - 1;
+
+    my $class = ref $self;
+    stats_gauge('market_data.run.success', $number_success,  {tags => ["class:$class"]});
+    stats_gauge('market_data.run.failure', $number_failures, {tags => ["class:$class"]});
 
     # we want to send email whenever there's update to any symbols or after an hour.
     return if (scalar(@successes) == 1 or time - $vol_email_frequency < MIN_TIME_BETWEEN_EMAILS);
-
-    my $number_failures = scalar @failures - 1;
-    my $number_errors   = scalar @errors - 1;
 
     if ($number_failures > 0 or $number_errors > 0) {
         Cache::RedisDB->set_nw(@keys_in_redis, time);

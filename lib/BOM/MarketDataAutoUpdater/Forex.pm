@@ -16,6 +16,7 @@ extends 'BOM::MarketDataAutoUpdater';
 use Bloomberg::FileDownloader;
 use Bloomberg::VolSurfaces::BVOL;
 use Bloomberg::VolSurfaces::BBDL;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 use Date::Utility;
 use File::Find::Rule;
 use List::Util qw( first );
@@ -149,6 +150,9 @@ sub _build_symbol_with_non_atm_offering {
 
 sub run {
     my $self = shift;
+
+    my $class = ref $self;
+    stats_inc('market_data.run.start', {tags => ["class:$class"]});
 
     my @quanto_currencies = create_underlying_db->get_symbols_for(
         market      => ['forex', 'commodities',],

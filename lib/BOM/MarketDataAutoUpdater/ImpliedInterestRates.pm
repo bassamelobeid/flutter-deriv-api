@@ -19,6 +19,7 @@ use Quant::Framework;
 use Quant::Framework::ExpiryConventions;
 use BOM::Config::Chronicle;
 use LandingCompany::Registry;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use constant EXTERNAL_FIAT_CURRENCIES => qw(
     JPY NZD CAD CHF PLN NOK MXN SEK
@@ -111,6 +112,9 @@ sub _get_forward_rates {
 
 sub run {
     my $self = shift;
+
+    my $class = ref $self;
+    stats_inc('market_data.run.start', {tags => ["class:$class"]});
 
     my $report        = $self->report;
     my $forward_rates = $self->_get_forward_rates();

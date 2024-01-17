@@ -8,7 +8,7 @@ use Bloomberg::FileDownloader;
 use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::Config::Runtime;
 use Date::Utility;
-use DataDog::DogStatsd::Helper qw(stats_gauge);
+use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use JSON::MaybeXS;
 use Path::Tiny;
 use BOM::Config::Chronicle;
@@ -30,6 +30,9 @@ use constant {
 
 sub run {
     my $self = shift;
+
+    my $class = ref $self;
+    stats_inc('market_data.run.start', {tags => ["class:$class"]});
 
     # forex-factory is disabled because it was unrelabile. we are only using bloomberg economic events.
     my $ff                 = [];

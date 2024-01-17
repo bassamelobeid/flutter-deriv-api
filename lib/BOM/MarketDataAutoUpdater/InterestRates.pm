@@ -15,6 +15,7 @@ use Format::Util::Numbers qw(roundcommon);
 use Bloomberg::CurrencyConfig;
 use Quant::Framework::InterestRate;
 use LandingCompany::Registry;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 has file => (
     is         => 'ro',
@@ -28,6 +29,9 @@ sub _build_file {
 
 sub run {
     my $self = shift;
+
+    my $class = ref $self;
+    stats_inc('market_data.run.start', {tags => ["class:$class"]});
 
     my $file   = $self->file;
     my $csv    = Text::CSV::Slurp->load(file => $file);
