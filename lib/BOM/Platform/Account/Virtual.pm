@@ -99,7 +99,7 @@ sub create_account {
         $user = BOM::User->create(
             email             => $email,
             password          => $password,
-            email_verified    => $details->{email_verified},
+            email_verified    => $details->{email_verified} // 1,
             has_social_signup => $has_social_signup,
             email_consent     => $email_consent,
             $source             ? (app_id             => $source)             : (),

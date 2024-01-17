@@ -6,7 +6,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Array::Utils;
 
-use Test::More (tests => 9);
+use Test::More (tests => 10);
 use Test::Exception;
 use Test::Fatal;
 use Test::Warn;
@@ -869,6 +869,44 @@ subtest 'Sibling Status Sync upon creation' => sub {
 
 };
 
+subtest 'email verification for virtual accounts' => sub {
+    my $vr_details = {
+        test => [{
+                account_type     => 'binary',
+                email            => 'foo+test1@binary.com',
+                client_password  => 'foobar',
+                residence        => 'id',                     # Indonesia
+                address_state    => 'BA',
+                salutation       => 'Ms',
+                email_consent    => 1,
+                lc_email_consent => 1,
+                email_verified   => 0,
+            },
+            {
+                account_type     => 'binary',
+                email            => 'foo+test2@binary.com',
+                client_password  => 'foobar',
+                residence        => 'id',                     # Indonesia
+                address_state    => 'BA',
+                salutation       => 'Ms',
+                email_consent    => 1,
+                lc_email_consent => 1,
+            }
+        ],
+    };
+
+    my $vr_acc = create_vr_acc($vr_details->{test}->[0]);
+    my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+
+    ok !$user->email_verified, 'email not verified as it should be overriden if email_verified field is passed to create acc function';
+
+    $vr_acc = create_vr_acc($vr_details->{test}->[1]);
+    ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+
+    ok $user->email_verified, 'email verified as if email_verified field is not passed should default to value 1';
+
+};
+
 sub create_vr_acc {
     my $args = shift;
     return BOM::Platform::Account::Virtual::create_account({
@@ -880,6 +918,7 @@ sub create_vr_acc {
                 has_social_signup  => $args->{social_signup},
                 myaffiliates_token => $args->{myaffiliates_token},
                 email_consent      => $args->{email_consent},
+                email_verified     => $args->{email_verified},
             }});
 }
 
