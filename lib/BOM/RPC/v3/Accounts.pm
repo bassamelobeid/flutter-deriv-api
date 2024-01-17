@@ -2833,7 +2833,11 @@ sub unmask_token {
     my $hidden_token = $token;
     $hidden_token =~ tr/*//d;    # remove asterisk from token
     my $unmasked_char_no = length($hidden_token);
-    return $unmasked_char_no > 0 ? $token_platform_api->get_token_for_deletion($hidden_token, $client->loginid) : undef;
+    my $unmasked_token   = $unmasked_char_no > 0 ? $token_platform_api->get_token_for_deletion($hidden_token, $client->loginid) : undef;
+
+    #fetch token from redis if not found in db
+    $unmasked_token = $token_platform_api->find_masked_token_in_redis($client->loginid, $hidden_token) unless defined $unmasked_token;
+    return $unmasked_token;
 }
 
 =head1 remove_token_from_db
@@ -2942,9 +2946,8 @@ sub delete_api_token {
     }
 
     my $token_details = $token_platform_api->get_token_details($token) // {};
-
     return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidToken',
+            code              => 'APITokenError',
             message_to_client => localize('No token found'),
         }) unless (($token_details->{loginid} // '') eq $client->loginid);
 
