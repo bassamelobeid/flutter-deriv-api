@@ -73,16 +73,24 @@ sub spot_min_max {
         my $end      = $args->{end_epoch};
         my $key_spot = $self->_make_key($symbol, $use_decimate, 1);
 
-        my @quotes = sort { $a <=> $b } map {
-            my ($quote, undef) = split SPOT_SEPARATOR;
-            $quote
-        } @{$self->redis_read->zrangebyscore($key_spot, $start, $end)};
+        my @quotes =
+            map { my ($quote, undef) = split SPOT_SEPARATOR; $quote } @{$self->tick_by_tick_redis_read->zrangebyscore($key_spot, $start, $end)};
 
-        return [$quotes[0], $quotes[-1]];
+        my $min_quote = $quotes[0];
+        my $max_quote = $quotes[0];
+
+        foreach my $q (@quotes) {
+            $max_quote = $q if $q > $max_quote;
+            $min_quote = $q if $q < $min_quote;
+        }
+
+        return [$min_quote, $max_quote];
     }
+
     $args->{min_max} = 1;
     my $ticks  = $self->get($args);
     my @quotes = map { $_->{quote} } @$ticks;
+
     return [min(@quotes), max(@quotes)];
 }
 
