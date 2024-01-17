@@ -17,6 +17,7 @@ use Mojo::IOLoop;
 use Net::Address::IP::Local;
 use Mojo::WebSocketProxy::Backend::ConsumerGroups;
 use Path::Tiny;
+use MIME::Base64 qw(decode_base64);
 
 #  module is loaded on server start and shared across connections
 #  %schema_cache is added onto as each unique request type is received.
@@ -651,6 +652,109 @@ sub add_log_config {
     my ($c, $req_storage) = @_;
     $req_storage->{call_params}->{logging} = \%Binary::WebSocketAPI::RPC_LOGGING;
     return;
+}
+
+=head2 add_jtoken_to_stash
+
+Adds a jtoken to the stash if it is not already there or if it is expired.
+jtoken is used for authentication of microservices.
+
+=over 4
+
+=item * C<$c> a L<Mojo::WebSocketProxy::Dispatcher>
+
+=item * C<$req_storage> hashref - request storage hashref
+
+=back
+
+=cut
+
+sub add_jtoken_to_stash {
+    my ($c, $req_storage) = @_;
+
+    # If jtoken is already on the stash and valid, then no need to add it again.
+    if ($c->stash('jtoken') && _is_valid_jtoken($c->stash('jtoken'))) {
+        $c->forward($req_storage);
+        return;
+    }
+
+    my $jtoken_f = $c->loop->new_future;
+    $jtoken_f->on_ready(
+        sub {
+            my ($res) = @_;
+            $c->stash('jtoken', $res->result);
+            return $c->forward($req_storage);
+        });
+
+    generate_jtoken($c, $jtoken_f);
+    return;
+}
+
+=head2 generate_jtoken
+
+Generates a jtoken by making an RPC call.
+
+=over 4
+
+=item * C<$c> a L<Mojo::WebSocketProxy::Dispatcher>
+
+=item * C<$jtoken_f> Future to handle the response
+
+=back
+
+=cut
+
+sub generate_jtoken {
+    my ($c, $jtoken_f) = @_;
+
+    # Directly calling the RPC here will skip the hooks. Check if the category is valid (e.g. qa has only general stream)
+    my $category = $Binary::WebSocketAPI::RPC_ACTIVE_QUEUES{'accounts'} ? 'accounts' : undef;
+
+    $c->call_rpc({
+            args        => {jtoken_create => 1},
+            method      => 'jtoken_create',
+            category    => $category,
+            call_params => {
+                token          => $c->stash('token'),
+                account_tokens => $c->stash('account_tokens'),
+                loginid        => $c->stash('loginid'),
+            },
+            response => sub {
+                my ($rpc_response) = @_;
+                $jtoken_f->done($rpc_response);
+                return undef;
+            }
+        });
+    return;
+}
+
+=head2 _is_valid_jtoken
+
+Description:  Checks if the jtoken on the stash is valid or not.
+
+=over 4
+
+=item * C<$jtoken> string - jtoken to check
+
+=back
+
+Returns a Boolean 1  if valid or 0 if not.
+
+=cut
+
+sub _is_valid_jtoken {
+    my ($jtoken) = @_;
+
+    # payload is the middle part of the jtoken. It is base64 encoded. It contains the expiry time. We can decode it and check if it is expired.
+    if ($jtoken && $jtoken =~ m/\.(.*)\./) {
+        my $payload = decode_base64($1);
+        if ($payload && $payload =~ m/"exp":(\d+)/) {
+            # token is considered valid if it expires in more than 5 seconds from now.
+            return 1 if $1 > time + 5;
+        }
+    }
+
+    return 0;
 }
 
 sub add_brand {

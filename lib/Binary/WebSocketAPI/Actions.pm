@@ -84,6 +84,7 @@ sub actions_config {
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token account_tokens landing_company_name /]}],
         ['landing_company'],
+        ['jtoken_create'],
         ['landing_company_details'],
         [
             'balance',
@@ -101,7 +102,6 @@ sub actions_config {
                 category => 'mt5_hybrid',
             }
         ],
-
         ['request_report'],
         [
             'account_statistics',
