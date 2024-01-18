@@ -1852,6 +1852,492 @@ subtest 'stash' => sub {
         'Expected stash';
 };
 
+subtest 'POI bundle' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email          => 'thebundle@poi.com',
+        password       => "hello",
+        email_verified => 1,
+    );
+
+    my $user_mock = Test::MockModule->new(ref($user));
+    $user_mock->mock(
+        'get_default_client',
+        sub {
+            return $client;
+        });
+    my $documents_mock = Test::MockModule->new(ref($client->documents));
+    my $stash          = [];
+    $documents_mock->mock(
+        'stash',
+        sub {
+            my @args = @_;
+
+            cmp_deeply [@args], [ignore(), 'uploaded', 'client', ['national_identity_card', 'driving_licence', 'passport', 'selfie_with_id']],
+                'expected stash requested';
+
+            return $stash;
+        });
+
+    subtest 'empty stash' => sub {
+        $stash = [];
+
+        is $client->documents->pending_poi_bundle(), undef, 'Empty stash returns undef';
+    };
+
+    subtest 'only selfie' => sub {
+        $stash = [
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'br',
+                })];
+
+        is $client->documents->pending_poi_bundle(), undef, 'No valid bundle return undef';
+    };
+
+    my $two_sided = [qw/national_identity_card driving_licence/];
+    my $sides     = [qw/front back/];
+
+    subtest 'two sided documents' => sub {
+        subtest 'only one side' => sub {
+            for my $document_type ($two_sided->@*) {
+                subtest $document_type => sub {
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                issuing_country => 'br',
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.2_front.jpg",
+                                id              => 2,
+                            }
+                        ),
+                    ];
+
+                    is $client->documents->pending_poi_bundle(), undef, 'No valid bundle return undef';
+
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                issuing_country => 'br',
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.2_front.jpg",
+                                id              => 2,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.3_front.jpg",
+                                id              => 4,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.4_front.jpg",
+                                id              => 4,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.5_front.jpg",
+                                id              => 5,
+                            }
+                        ),
+                    ];
+
+                    is $client->documents->pending_poi_bundle(), undef, 'No valid bundle return undef';
+                };
+            }
+
+            subtest 'mixings' => sub {
+                my $i = 1;
+
+                for my $side ($sides->@*) {
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                issuing_country => 'br',
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        map {
+                            $i++;
+
+                            build_document({
+                                    document_type   => $_,
+                                    issuing_country => 'br',
+                                    file_name       => "CR1.$_.$i\_$side.jpg",
+                                    id              => $i,
+                                })
+                        } $two_sided->@*,
+                    ];
+
+                    is $client->documents->pending_poi_bundle(), undef, 'No valid bundle return undef';
+                }
+
+                my @sides = $sides->@*;
+
+                $stash = [
+                    build_document({
+                            document_type   => 'selfie_with_id',
+                            issuing_country => 'br',
+                            file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                            id              => 1,
+                        }
+                    ),
+                    map {
+                        my $side = shift @sides;
+                        $i++;
+
+                        build_document({
+                                document_type   => $_,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$_.$i\_$side.jpg",
+                                id              => $i,
+                            })
+                    } $two_sided->@*,
+                ];
+
+                @sides = reverse $sides->@*;
+
+                $stash = [
+                    build_document({
+                            document_type   => 'selfie_with_id',
+                            issuing_country => 'br',
+                            file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                            id              => 1,
+                        }
+                    ),
+                    map {
+                        my $side = shift @sides;
+                        $i++;
+
+                        build_document({
+                                document_type   => $_,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$_.$i\_$side.jpg",
+                                id              => $i,
+                            })
+                    } $two_sided->@*,
+                ];
+
+                is $client->documents->pending_poi_bundle(), undef, 'No valid bundle return undef';
+
+                # some permutations
+
+                for my $document_type ($two_sided->@*) {
+                    for my $side ($sides->@*) {
+                        $stash = [
+                            build_document({
+                                    document_type   => 'selfie_with_id',
+                                    issuing_country => 'br',
+                                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                    id              => 1,
+                                }
+                            ),
+                            build_document({
+                                    document_type   => $document_type,
+                                    issuing_country => 'br',
+                                    file_name       => "CR1.$document_type.2_$side.jpg",
+                                    id              => 2,
+                                }
+                            ),
+                            build_document({
+                                    document_type   => $document_type,
+                                    issuing_country => 'br',
+                                    file_name       => "CR1.$document_type.3_$side.jpg",
+                                    id              => 3,
+                                }
+                            ),
+                        ];
+
+                        is $client->documents->pending_poi_bundle(), undef, 'No valid bundle return undef';
+                    }
+                }
+            };
+
+            subtest 'valid bundle' => sub {
+                for my $document_type ($two_sided->@*) {
+                    subtest $document_type => sub {
+                        my $i = 1;
+
+                        $stash = [
+                            build_document({
+                                    document_type   => 'selfie_with_id',
+                                    issuing_country => 'br',
+                                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                    id              => 1,
+                                }
+                            ),
+                            map {
+                                $i++;
+
+                                build_document({
+                                        document_type   => $document_type,
+                                        issuing_country => 'br',
+                                        file_name       => "CR1.$document_type.$i\_$_.jpg",
+                                        id              => $i,
+                                    })
+                            } $sides->@*,
+                        ];
+
+                        my @stash = $stash->@*;
+
+                        cmp_deeply $client->documents->pending_poi_bundle(),
+                            {
+                            selfie    => shift @stash,
+                            documents => [reverse @stash],
+                            },
+                            'Expected bundle returned';
+
+                        $i = 3;
+
+                        $stash = [
+                            build_document({
+                                    document_type   => 'selfie_with_id',
+                                    issuing_country => 'br',
+                                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                    id              => 1,
+                                }
+                            ),
+                            map {
+                                $i--;
+
+                                build_document({
+                                        document_type   => $document_type,
+                                        issuing_country => 'br',
+                                        file_name       => "CR1.$document_type.$i\_$_.jpg",
+                                        id              => $i,
+                                    })
+                            } $sides->@*,
+                        ];
+
+                        @stash = $stash->@*;
+
+                        cmp_deeply $client->documents->pending_poi_bundle(),
+                            {
+                            selfie    => shift @stash,
+                            documents => [@stash],
+                            },
+                            'Expected bundle returned';
+                    }
+                }
+            };
+        };
+    };
+
+    my $one_sided = [qw/passport/];
+
+    subtest 'one sided documents' => sub {
+        for my $document_type ($one_sided->@*) {
+            # generally speaking, we don't care about the side for passports, this will be `front` always
+            for my $side ($sides->@*) {
+                subtest $document_type => sub {
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                issuing_country => 'br',
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                issuing_country => 'br',
+                                file_name       => "CR1.$document_type.2_$side.jpg",
+                                id              => 2,
+                            }
+                        ),
+                    ];
+
+                    my @stash = $stash->@*;
+
+                    cmp_deeply $client->documents->pending_poi_bundle(),
+                        {
+                        selfie    => shift @stash,
+                        documents => [@stash],
+                        },
+                        'Expected bundle returned';
+                }
+            }
+        }
+    };
+
+    subtest 'ties' => sub {
+        $stash = [
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'br',
+                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                    id              => 1,
+                }
+            ),
+            build_document({
+                    document_type   => 'national_identity_card',
+                    issuing_country => 'br',
+                    file_name       => "CR1.national_identity_card.4_front.jpg",
+                    id              => 4,
+                }
+            ),
+            build_document({
+                    document_type   => 'national_identity_card',
+                    issuing_country => 'br',
+                    file_name       => "CR1.national_identity_card.3_back.jpg",
+                    id              => 3,
+                }
+            ),
+            build_document({
+                    document_type   => 'passport',
+                    issuing_country => 'br',
+                    file_name       => "CR1.passport.10_front.jpg",
+                    id              => 10,
+                }
+            ),
+        ];
+
+        my @stash = $stash->@*;
+
+        cmp_deeply $client->documents->pending_poi_bundle(),
+            {
+            selfie    => shift @stash,
+            documents => [$stash[2]],
+            },
+            'Expected bundle returned (passport)';
+
+        $stash = [
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'br',
+                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                    id              => 1,
+                }
+            ),
+            build_document({
+                    document_type   => 'national_identity_card',
+                    issuing_country => 'br',
+                    file_name       => "CR1.national_identity_card.4_front.jpg",
+                    id              => 4,
+                }
+            ),
+            build_document({
+                    document_type   => 'national_identity_card',
+                    issuing_country => 'br',
+                    file_name       => "CR1.national_identity_card.3_back.jpg",
+                    id              => 3,
+                }
+            ),
+            build_document({
+                    document_type   => 'passport',
+                    issuing_country => 'br',
+                    file_name       => "CR1.passport.10_front.jpg",
+                    id              => 2,
+                }
+            ),
+        ];
+
+        @stash = $stash->@*;
+
+        cmp_deeply $client->documents->pending_poi_bundle(),
+            {
+            selfie    => shift @stash,
+            documents => [$stash[0], $stash[1]],
+            },
+            'Expected bundle returned (national_identity_card)';
+    };
+
+    subtest 'Onfido supported countries' => sub {
+        $stash = [
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'ru',
+                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                    id              => 1,
+                }
+            ),
+            build_document({
+                    document_type   => 'passport',
+                    issuing_country => 'ru',
+                    file_name       => "CR1.passport.2_front.jpg",
+                    id              => 2,
+                }
+            ),
+        ];
+
+        cmp_deeply $client->documents->pending_poi_bundle({
+                onfido_country => 1,
+            }
+            ),
+            undef, 'Expected undef for ru';
+
+        $stash = [
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'ru',
+                    file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                    id              => 1,
+                }
+            ),
+            build_document({
+                    document_type   => 'passport',
+                    issuing_country => 'ru',
+                    file_name       => "CR1.passport.2_front.jpg",
+                    id              => 2,
+                }
+            ),
+            build_document({
+                    document_type   => 'selfie_with_id',
+                    issuing_country => 'co',
+                    file_name       => 'CR1.selfie_with_id.3_photo.jpg',
+                    id              => 3,
+                }
+            ),
+            build_document({
+                    document_type   => 'passport',
+                    issuing_country => 'co',
+                    file_name       => "CR1.passport.4_front.jpg",
+                    id              => 4,
+                }
+            ),
+        ];
+
+        cmp_deeply $client->documents->pending_poi_bundle({
+                onfido_country => 1,
+            }
+            ),
+            {
+            selfie    => $stash->[2],
+            documents => [$stash->[3]],
+            },
+            'Expected bundle returned for co';
+    };
+
+    $documents_mock->unmock_all;
+    $user_mock->unmock_all;
+};
+
+sub build_document {
+    my $args = shift;
+
+    return (bless $args, 'BOM::Database::AutoGenerated::Rose::ClientAuthenticationDocument');
+}
+
 sub upload {
     my ($client, $document_id, $type, $status, $checksum, $origin, $side, $upload_date, $country) = @_;
 

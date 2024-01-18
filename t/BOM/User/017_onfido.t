@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 18;
 use Test::MockTime qw( :all );
 use Test::Exception;
 use Test::NoWarnings;
@@ -938,6 +938,58 @@ subtest 'get consider reasons' => sub {
         is $test_client->first_name,                                                   'Elian Angel',      'first name updated';
         is $test_client->last_name,                                                    'valenzuela turro', 'last name not updated';
 
+        #case when first name or last name have more than 50 characters
+
+        $test_client->first_name('this is a big name');
+        $test_client->last_name('and this is a big last name');
+
+        $properties = {
+            first_name => 'this is a truly super duper ultra big very large and long name',
+            last_name  => 'and this is a big last name',
+        };
+
+        is length($properties->{first_name}) > 50, 1, 'first name is longer than 50 characters';
+        is length($properties->{last_name}) < 50,  1, 'last name is within 50 characters';
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 1,             'executed successfully';
+        is $test_client->first_name,              'This Is A Truly Super Duper Ultra Big Very Large', 'first name updated';
+        is length($test_client->first_name) < 50, 1,                                                  'first name was successfully trimmed';
+        is $test_client->last_name,               'and this is a big last name',                      'last name not updated';
+        is length($test_client->last_name) < 50,  1,                                                  'last name was not trimmed';
+
+        $properties = {
+            first_name => 'this is a big name',
+            last_name  => 'and this is the same super long and suspiciously big last name',
+        };
+
+        is length($properties->{first_name}) < 50, 1, 'first name is within 50 characters';
+        is length($properties->{last_name}) > 50,  1, 'last name is longer than 50 characters';
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 1,                    'executed successfully';
+        is $test_client->first_name,                                                   'This Is A Big Name', 'first name not updated';
+        is length($test_client->first_name) < 50,                                      1,                    'first name was not trimmed';
+        is $test_client->last_name,              'And This Is The Same Super Long And Suspiciously',         'last name updated';
+        is length($test_client->last_name) < 50, 1,                                                          'last name  was successfully trimmed';
+
+        #case when both first name and last name have more than 50 characters
+
+        $test_client->first_name('this is a big name');
+        $test_client->last_name('and this is a big last name');
+
+        $properties = {
+            first_name => 'this is a truly super duper ultra big very large and long name',
+            last_name  => 'and this is the same super long and suspiciously big last name',
+        };
+
+        is length($properties->{first_name}) > 50, 1, 'first name is longer than 50 characters';
+        is length($properties->{last_name}) > 50,  1, 'last name is longer than 50 characters';
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 1,             'executed successfully';
+        is $test_client->first_name,              'This Is A Truly Super Duper Ultra Big Very Large', 'first name updated';
+        is length($test_client->first_name) < 50, 1,                                                  'first name was successfully trimmed';
+        is $test_client->last_name,               'And This Is The Same Super Long And Suspiciously', 'last name updated';
+        is length($test_client->last_name) < 50,  1,                                                  'last name was successfully trimmed';
+
     };
 
     subtest 'Get our own rules reasons (Name Mismatch)' => sub {
@@ -1321,18 +1373,105 @@ subtest 'is face similarity check required' => sub {
     ok $mf_client->is_face_similarity_required, 'Face check required for MF accounts';
 };
 
+subtest 'is onfido disallowed' => sub {
+    my $user_cr = BOM::User->create(
+        email    => 'onfido_disallowed@deriv.com',
+        password => 'secret_pwd',
+    );
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user_cr->id,
+    });
+    $user_cr->add_client($client_cr);
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $latest_poi_by;
+    $client_mock->mock(
+        'latest_poi_by',
+        sub {
+            return 'idv';
+        });
+
+    my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+    $idv_mock->mock(
+        'get_last_updated_document',
+        sub {
+            return {
+                status          => 'verified',
+                status_messages => '[]',
+                document_type   => 'passport',
+            };
+        });
+
+    my $lc_mock = Test::MockModule->new('LandingCompany');
+    my $allowed_poi_providers;
+    $lc_mock->mock(
+        'allowed_poi_providers',
+        sub {
+            return $allowed_poi_providers;
+        });
+
+    my $short;
+
+    $short                 = 'svg';
+    $allowed_poi_providers = ['idv'];
+    ok BOM::User::Onfido::is_onfido_disallowed({client => $client_cr, landing_company => $short}),
+        'Disallowed if onfido not allowed for lc (provided as argument)';
+    ok BOM::User::Onfido::is_onfido_disallowed({client => $client_cr}), 'Disallowed if onfido not allowed for lc (default from client)';
+    $lc_mock->unmock_all;
+
+    $client_cr->status->set('unwelcome', 'test', 'test');
+    ok BOM::User::Onfido::is_onfido_disallowed({client => $client_cr}), 'Disallowed for unwelcome clients';
+    $client_cr->status->clear_unwelcome();
+
+    $client_cr->status->set('age_verification', 'test', 'test');
+    $client_cr->aml_risk_classification('low');
+    ok BOM::User::Onfido::is_onfido_disallowed({client => $client_cr}), 'Disallowed if client poi status is verified (idv verified)';
+    ok BOM::User::Onfido::is_onfido_disallowed({client => $client_cr, landing_company => $short}),
+        'Disallowed if client poi status is verified (idv verified)';
+
+    $short = 'maltainvest';
+    ok !BOM::User::Onfido::is_onfido_disallowed({client => $client_cr, landing_company => $short}),
+        'Allowed if client poi status is not verified (idv verified but not allowed for maltainvest lc)';
+
+    $client_cr->aml_risk_classification('high');
+    ok !BOM::User::Onfido::is_onfido_disallowed({client => $client_cr}), 'Allowed if client poi status is not verified (idv verified but high risk)';
+
+    $client_cr->status->clear_age_verification();
+    ok !BOM::User::Onfido::is_onfido_disallowed({client => $client_cr}), 'Allowed for non age verified clients';
+
+    $idv_mock->unmock_all;
+    $client_mock->unmock_all;
+};
+
 subtest 'is available' => sub {
     my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    my $config_mock = Test::MockModule->new('BOM::Config::Onfido');
+
+    $onfido_mock->mock(is_onfido_disallowed => 1);
+
+    ok !BOM::User::Onfido::is_available({client => $test_client}), 'onfido is not available if onfido is disallowed';
+
+    $onfido_mock->mock(is_onfido_disallowed => 0);
+    $config_mock->mock(is_country_supported => 0);
+
+    ok !BOM::User::Onfido::is_available({client => $test_client, country => 'aq'}), 'onfido is not available if country is not supported';
 
     $onfido_mock->mock(submissions_left => 1);
 
-    ok BOM::User::Onfido::is_available($test_client), 'onfido is available if submissions left';
+    ok BOM::User::Onfido::is_available({client => $test_client}), 'onfido is available if submissions left and country not provided';
 
-    $onfido_mock->mock(submissions_left => 0);
+    $config_mock->mock(is_country_supported => 1);
+    $onfido_mock->mock(submissions_left     => 0);
 
-    ok !BOM::User::Onfido::is_available($test_client), 'onfido is not available if no submissions left';
+    ok !BOM::User::Onfido::is_available({client => $test_client, country => 'co'}), 'onfido is not available if no submissions left';
+
+    $onfido_mock->mock(submissions_left => 1);
+
+    ok BOM::User::Onfido::is_available({client => $test_client, country => 'co'}), 'onfido is available if submissions left and country supported';
 
     $onfido_mock->unmock_all();
+    $config_mock->unmock_all();
 };
 
 subtest 'suspended uploads' => sub {

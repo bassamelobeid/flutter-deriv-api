@@ -1283,10 +1283,23 @@ subtest 'is available' => sub {
     my $client_mock = Test::MockModule->new('BOM::User::Client');
     # mocks idv_status
 
+    my $utility_mock = Test::MockModule->new('BOM::Platform::Utility');
+    # mocks has_idv
+
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $user_cr->id);
 
     my $test_cases = [{
             idv_submissions_left => 1,
+            expected             => 1,
+        },
+        {
+            has_idv  => 0,
+            expected => 0,
+        },
+        {
+            has_idv              => 1,
+            idv_submissions_left => 1,
+            idv_status           => 'none',
             expected             => 1,
         },
         {
@@ -1321,17 +1334,102 @@ subtest 'is available' => sub {
         }];
 
     for my $test_case ($test_cases->@*) {
-        $client_mock->mock(get_idv_status => $test_case->{idv_status});
+        $client_mock->mock(get_idv_status => $test_case->{idv_status} // 'none');
 
-        $idv_mock->mock(submissions_left            => $test_case->{idv_submissions_left});
-        $idv_mock->mock(has_expired_document_chance => $test_case->{idv_expired_document_chance});
-        $idv_mock->mock(is_idv_disallowed           => $test_case->{idv_disallowed});
+        $utility_mock->mock(has_idv => $test_case->{has_idv} // 1);
+        $idv_mock->mock(submissions_left            => $test_case->{idv_submissions_left}        // 0);
+        $idv_mock->mock(has_expired_document_chance => $test_case->{idv_expired_document_chance} // 0);
+        $idv_mock->mock(is_idv_disallowed           => $test_case->{idv_disallowed}              // 0);
 
         cmp_deeply($idv_model->is_available({client => $client_cr}), $test_case->{expected}, 'expected availability');
     }
 
     $client_mock->unmock_all;
     $idv_mock->unmock_all;
+};
+
+subtest 'supported documents' => sub {
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $user_cr = BOM::User->create(
+        email    => 'supported_documents@deriv.com',
+        password => 'secret_pwd'
+    );
+
+    $user_cr->add_client($client_cr);
+
+    my $utility_mock = Test::MockModule->new('BOM::Platform::Utility');
+
+    my $countries_mock = Test::MockModule->new('Brands::Countries');
+
+    my $format         = '^123$';
+    my $country_config = {
+        ke => {
+            config => {
+                idv => {
+                    document_types => {
+                        national_id => {
+                            display_name => 'National ID Number',
+                            format       => $format,
+                        },
+                        passport => {
+                            display_name => 'Passport',
+                            format       => $format,
+                            additional   => {
+                                display_name => 'File Number',
+                                format       => $format,
+                            }
+                        },
+                        drivers_license => {
+                            display_name => 'Drivers License',
+                            format       => $format,
+                            other        => 'big cat'
+                        }}}
+            },
+            is_idv_supported => 1,
+        }};
+    $countries_mock->mock('countries_list', sub { return $country_config });
+
+    my $expected_documents = $country_config->{ke}->{config}->{idv}->{document_types};
+    delete $expected_documents->{drivers_license}->{other};
+
+    my $test_cases = [{
+            title        => 'country code not provided',
+            country_code => undef,
+            expected     => {}
+        },
+        {
+            title        => 'invalid country code',
+            country_code => 'xx',
+            expected     => {}
+        },
+        {
+            title        => 'idv not supported for country code',
+            country_code => 'py',
+            expected     => {}
+        },
+        {
+            title        => 'valid country code, no idv',
+            country_code => 'ke',
+            has_idv      => 0,
+            expected     => {}
+        },
+        {
+            title        => 'valid country code',
+            country_code => 'ke',
+            expected     => $expected_documents
+        }];
+
+    for my $test_case ($test_cases->@*) {
+        $utility_mock->mock(has_idv => $test_case->{has_idv} // 1);
+        my $country_code = $test_case->{country_code};
+        cmp_deeply BOM::User::IdentityVerification::supported_documents($country_code), $test_case->{expected}, $test_case->{title};
+    }
+
+    $utility_mock->unmock_all;
+    $countries_mock->unmock_all;
 };
 
 done_testing();

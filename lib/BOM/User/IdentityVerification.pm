@@ -17,7 +17,8 @@ use Syntax::Keyword::Try;
 use Log::Any   qw($log);
 use List::Util qw(any);
 
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context qw(request localize);
+use BOM::Platform::Utility;
 use BOM::Config::Redis;
 use BOM::Database::UserDB;
 use Moo;
@@ -580,7 +581,7 @@ Checks whether client allowed to verify identity via IDV based on some business 
 
 =back
 
-Returns bool
+Returns 1 if IDV is disallowed, 0 otherwise.
 
 =cut
 
@@ -788,13 +789,15 @@ It takes the following params as a hashref:
 
 =item * C<landing_company> (optional) landing company. Default: client's landing company.
 
+=item * C<country> (optional) 2-letter country code.
+
 =back
 
 Returns,
     1 if IDV is available for the client
     0 if IDV is not available for the client
 
-IDV is available for the client if IDV is not disallowed and:
+IDV is available for the client if the IDV service is available, IDV is not disallowed, and:
     - has IDV submissions left or
     - has no IDV submissions left, IDV status is 'expired', and 
         has document expired chance
@@ -803,7 +806,15 @@ IDV is available for the client if IDV is not disallowed and:
 
 sub is_available {
     my ($self, $args) = @_;
-    my $client = $args->{client};
+    my $client       = $args->{client};
+    my $country_code = $args->{country};
+
+    my $countries_instance = Brands::Countries->new();
+    my $idv_config         = $countries_instance->get_idv_config($country_code) // {};
+
+    return 0 unless !$country_code || BOM::Platform::Utility::has_idv(
+        country  => $country_code,
+        provider => $idv_config->{provider});
 
     my $has_submissions_left = $self->submissions_left() > 0;
 
@@ -811,7 +822,7 @@ sub is_available {
     $expired_document_chance = $self->has_expired_document_chance() ? 1 : 0
         if !$has_submissions_left && $client->get_idv_status() eq 'expired';
 
-    my $idv_disallowed = BOM::User::IdentityVerification::is_idv_disallowed($args);
+    my $idv_disallowed = is_idv_disallowed($args);
 
     my $is_available = ($has_submissions_left || $expired_document_chance) && !$idv_disallowed;
 
@@ -850,6 +861,52 @@ sub validate_date_format {
     $date_string = undef unless $eval_result;
 
     return $date_string;
+}
+
+=head2 supported_documents
+
+Gets the supported IDV document types for the provided country.
+
+It takes the following parameter:
+
+=over 4
+
+=item * C<country> 2-letter country code.
+
+=back
+
+Returns a hashref containing the information for each document type:
+
+=over 4
+
+=item * C<display_name> - document type display name.
+
+=item * C<format> - document type number format.
+
+=item * C<additional> (optional) document type additional information.
+
+=back
+
+=cut
+
+sub supported_documents {
+    my $country_code = shift;
+
+    my $countries_instance = Brands::Countries->new();
+    my $idv_config         = $countries_instance->get_idv_config($country_code) // {};
+    my $idv_docs_supported = $idv_config->{document_types}                      // {};
+
+    return +{
+        map {
+            (
+                $_ => {
+                    display_name => localize($idv_docs_supported->{$_}->{display_name}),
+                    format       => $idv_docs_supported->{$_}->{format},
+                    $idv_docs_supported->{$_}->{additional} ? (additional => $idv_docs_supported->{$_}->{additional}) : (),
+                })
+        } grep { !$idv_docs_supported->{$_}->{disabled} && BOM::Platform::Utility::has_idv(country => $country_code, document_type => $_) }
+            keys $idv_docs_supported->%*
+    };
 }
 
 1;

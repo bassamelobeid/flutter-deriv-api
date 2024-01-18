@@ -1523,4 +1523,112 @@ sub is_upload_available {
     return $is_available;
 }
 
+=head2 pending_poi_bundle
+
+Obtains a bundle of pending POI documents. A proper bundle will contain a selfie picture and also both sides (both and back),
+if the document type requires it, some documents type are single sided like passports, for those one picture is enough.
+
+It takes the following params as hashref:
+
+=over 4
+
+=item C<onfido_country> - (optional) check for Onfido supported issuing countries only
+
+=back
+
+Returns a stash of documents as hashref, containing:
+
+=over 4
+
+=item C<selfie> - id of the selfie
+
+=item C<documents> - arrayref of document ids
+
+=back
+
+Or C<undef> if there is no complete bundle.
+
+=cut
+
+sub pending_poi_bundle {
+    my ($self, $args) = @_;
+    my $client         = $self->client;
+    my $onfido_country = $args->{onfido_country};
+
+    # this sorting will ensure (not 100% though but pretty close) that the documents being processed are related to each other in sequence
+    my $stash = [sort { $b->id <=> $a->id }
+            $client->documents->stash('uploaded', 'client', ['national_identity_card', 'driving_licence', 'passport', 'selfie_with_id'])->@*];
+
+    # having the stash of POI potential documents
+    # we need to find a valid cluster of documents:
+    #  - passport + selfie_with_id
+    #  - driving_licence (front and back) + selfie_with_id
+    #  - national_identity_card (front and back) + selfie_with_id
+
+    my $stack = {};
+    my $selfie;
+
+    # extract the selfie (easy)
+    # and the candidate documents (hard)
+
+    for my $document ($stash->@*) {
+        next unless !$onfido_country || BOM::Config::Onfido::is_country_supported($document->issuing_country);
+
+        my $type = $document->document_type;
+
+        if ($type eq 'selfie_with_id') {
+            $selfie = $document unless $selfie;
+            next;
+        }
+
+        my $side = $document->file_name =~ /_front\./ ? 'front' : 'back';
+
+        # index by document id (numbers) + country + type, so we stack related documents
+
+        my $index = join '-', $document->document_id, $document->issuing_country, $type;
+
+        $stack->{$index} //= {};
+
+        # index again (2nd dimension) by its side (front/back), as some document types are 2 sided
+
+        $stack->{$index}->{$side} = $document unless $stack->{$index}->{$side};
+    }
+
+    return undef unless $selfie;
+
+    # observe the 2 dimensional stack built,
+    # for passport we need 1 document
+    # the rest of the documents types would require 2
+    # if some stack matches the criteria we just found our candidates, bravo!
+    my $documents;
+    my $highest;
+
+    for (keys $stack->%*) {
+        my $docs = $stack->{$_};
+
+        my ($first, $second) = sort { $b->id <=> $a->id } values $docs->%*;
+
+        my $type = $first->document_type;
+
+        if ($type eq 'passport') {
+            $documents = [$first->id, $first] if $first && (!defined $highest || $first->id > $highest);
+        } else {
+            $documents = [$first->id, $first, $second] if $first && $second && (!defined $highest || $first->id > $highest);
+        }
+
+        $highest = $documents->[0] if $documents;    # carry only the highest id found
+    }
+
+    return undef unless $documents;
+
+    # now get the documents without the first element (highest id)
+    my @documents = $documents->@*;
+    shift @documents;
+
+    return {
+        selfie    => $selfie,
+        documents => [@documents],
+    };
+}
+
 1;

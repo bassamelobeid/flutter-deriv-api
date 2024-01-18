@@ -15,7 +15,7 @@ use Date::Utility;
 use JSON::MaybeUTF8            qw(decode_json_utf8 encode_json_utf8);
 use Locale::Codes::Country     qw(country_code2code);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::Util                 qw(first uniq all);
+use List::Util                 qw(any first uniq all);
 use BOM::Config::Redis;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Utility;
@@ -56,83 +56,12 @@ Returns an hashref with C<selfie> and C<documents> (arrayref), or C<undef> if th
 =cut
 
 sub candidate_documents {
-    my $user   = shift;
+    my ($user) = @_;
     my $client = $user->get_default_client;
 
-    # this sorting will ensure (not 100% though but pretty close) that the documents being processed are related to each other in sequence
-    my $stash = [sort { $b->id <=> $a->id }
-            $client->documents->stash('uploaded', 'client', ['national_identity_card', 'driving_licence', 'passport', 'selfie_with_id'])->@*];
-
-    # having the stash of Onfido potential documents
-    # we need to find a valid cluster of documents:
-    #  - passport + selfie_with_id
-    #  - driving_licence (front and back) + selfie_with_id
-    #  - national_identity_card (front and back) + selfie_with_id
-
-    my $stack = {};
-    my $selfie;
-
-    # extract the selfie (easy)
-    # and the candidate documents (hard)
-
-    for my $document ($stash->@*) {
-        next unless BOM::Config::Onfido::is_country_supported($document->issuing_country);
-
-        my $type = $document->document_type;
-
-        if ($type eq 'selfie_with_id') {
-            $selfie = $document unless $selfie;
-            next;
-        }
-
-        my $side = $document->file_name =~ /_front\./ ? 'front' : 'back';
-
-        # index by document id (numbers) + country + type, so we stack related documents
-
-        my $index = join '-', $document->document_id, $document->issuing_country, $type;
-
-        $stack->{$index} //= {};
-
-        # index again (2nd dimension) by its side (front/back), as some document types are 2 sided
-
-        $stack->{$index}->{$side} = $document unless $stack->{$index}->{$side};
-    }
-
-    return undef unless $selfie;
-
-    # observe the 2 dimensional stack built,
-    # for passport we need 1 document
-    # the rest of the documents types would require 2
-    # if some stack matches the criteria we just found our candidates, bravo!
-    my $documents;
-    my $highest;
-
-    for (keys $stack->%*) {
-        my $docs = $stack->{$_};
-
-        my ($first, $second) = sort { $b->id <=> $a->id } values $docs->%*;
-
-        my $type = $first->document_type;
-
-        if ($type eq 'passport') {
-            $documents = [$first->id, $first] if $first && (!defined $highest || $first->id > $highest);
-        } else {
-            $documents = [$first->id, $first, $second] if $first && $second && (!defined $highest || $first->id > $highest);
-        }
-
-        $highest = $documents->[0] if $documents;    # carry only the highest id found
-    }
-
-    return undef unless $documents;
-
-    # now get the documents without the first element (highest id)
-    my @documents = $documents->@*;
-    shift @documents;
-
-    return {
-        selfie    => $selfie,
-        documents => [@documents],
-    };
+    return $client->documents->pending_poi_bundle({
+        onfido_country => 1,
+    });
 }
 
 =head2 suspended_upload
@@ -969,6 +898,7 @@ sub reported_properties {
 
 Compares the client document's detected properties, from the last Onfido check,
 with the client's first name and last name and updates this data if there are any differences.
+In case the first or last name are longer than 50 characters we find the last space within the first 50 characters and then trim the name to avoid errors retrieving the report
 
 =over 4
 
@@ -992,10 +922,20 @@ sub update_full_name_from_reported_properties {
     my $last_name_report  = lc($properties->{last_name});
 
     if ($first_name_client ne $first_name_report) {
+        if (length($first_name_report) > 50) {
+            my $last_space_index = rindex(substr($first_name_report, 0, 50), ' ');
+            $first_name_report = substr($first_name_report, 0, $last_space_index) if $last_space_index != -1;
+        }
+
         $client->first_name(join(" ", map { ucfirst($_) } split(/\s+/, $first_name_report)));
     }
 
     if ($last_name_client ne $last_name_report) {
+        if (length($last_name_report) > 50) {
+            my $last_space_index = rindex(substr($last_name_report, 0, 50), ' ');
+            $last_name_report = substr($last_name_report, 0, $last_space_index) if $last_space_index != -1;
+        }
+
         $client->last_name(join(" ", map { ucfirst($_) } split(/\s+/, $last_name_report)));
     }
     $client->save;
@@ -1174,11 +1114,13 @@ sub applicant_info {
 
 Checks if Onfido service is available for the client
 
-It takes the following param:
+It takes the following params as a hashref:
 
 =over 4
 
-=item * L<BOM::User::Client> the client
+=item * C<client> a L<BOM::User::Client> instance.
+
+=item * C<country> (optional) 2-letter country code.
 
 =back
 
@@ -1187,15 +1129,113 @@ Returns,
     0 if Onfido is not available for the client
 
 
-Onfido is available for the client if:
+Onfido is available for the client if the Onfido service is enabled and:
     - has Onfido submissions left
 
 =cut
 
 sub is_available {
-    my ($client) = @_;
+    my $args         = shift;
+    my $client       = $args->{client};
+    my $country_code = $args->{country};
+
+    return 0 if is_onfido_disallowed($args);
+
+    return 0 unless !$country_code || BOM::Config::Onfido::is_country_supported($country_code);
 
     return BOM::User::Onfido::submissions_left($client) > 0;
+}
+
+=head2 supported_documents
+
+Gets the supported Onfido document types for the provided country.
+
+It takes the following parameter:
+
+=over 4
+
+=item * C<country> 2-letter country code.
+
+=back
+
+Returns a hashref containing the information for each document type:
+
+=over 4
+
+=item * C<display_name> - document type display name.
+
+=back
+
+=cut
+
+sub supported_documents {
+    my $country_code = shift;
+
+    return {map { _onfido_doc_type($_) } BOM::Config::Onfido::supported_documents_for_country($country_code)->@*};
+}
+
+=head2 _onfido_doc_type
+
+Process the Onfido doc types given into the hash form expected by the api schema response,
+since Onfido config provides a flat list of doc types it's somewhat complicated to give it
+the conforming structure.
+
+It takes the following parameter:
+
+=over 4
+
+=item * C<$doc_type> - the given onfido doc type
+
+=back
+
+Returns a single element hash as:
+
+( $snake_case_key => {
+    display_name => $doc_type,
+})
+
+=cut
+
+sub _onfido_doc_type {
+    my ($doc_type) = $_;
+    my $snake_case_key = lc $doc_type =~ s/\s+/_/rg;
+
+    return (
+        $snake_case_key => {
+            display_name => $doc_type,
+        });
+}
+
+=head2 is_onfido_disallowed
+
+Checks whether client is allowed to verify their identity via Onfido based on some business rules.
+
+=over 4
+
+=item * C<client> a L<BOM::User::Client> instance.
+
+=item * C<landing_company> (optional) landing company. Default: client's landing company.
+
+=back
+
+Returns 1 if Onfido is disallowed, 0 otherwise.
+
+=cut
+
+sub is_onfido_disallowed {
+    my $args = shift;
+    my ($client, $landing_company) = @{$args}{qw/client landing_company/};
+
+    my $lc = $landing_company ? LandingCompany::Registry->by_name($landing_company) : $client->landing_company;
+
+    return 1 unless any { $_ eq 'onfido' } $lc->allowed_poi_providers->@*;
+
+    return 1 if $client->status->unwelcome;
+
+    my $poi_status = $args->{landing_company} ? $client->get_poi_status_jurisdiction($args) : $client->get_poi_status($args);
+    return 1 if $client->status->age_verification && $poi_status eq 'verified';
+
+    return 0;
 }
 
 1;
