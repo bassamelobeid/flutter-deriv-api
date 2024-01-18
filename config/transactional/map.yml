@@ -22,15 +22,3 @@ p2p_archived_ad:
         exists: 1
       adverts:
         exists: 1
-trading_platform_account_created:
-  - trading_platform_account_created:
-      loginid:
-        exists: 1
-      account_type:
-        exists: 1
-      market_type:
-        exists: 1
-      account_id:
-        exists: 1
-      platform:
-        is: dxtrade
