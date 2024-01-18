@@ -649,7 +649,7 @@ subtest 'labuan withdrawal' => sub {
     $expired_enforced  = undef;
     $outdated_poa      = 1;
     $expired_documents = 0;
-    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your proof of address document is outdated./);
     ok $expired_enforced, 'Expired docs';
 
     $expired_enforced  = undef;
@@ -1133,7 +1133,7 @@ subtest 'bvi withdrawal' => sub {
     $expired_enforced  = undef;
     $outdated_poa      = 1;
     $expired_documents = 0;
-    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your proof of address document is outdated/);
     ok $expired_enforced, 'Expired check was enforced';
 
     $expired_enforced  = undef;
@@ -1407,7 +1407,7 @@ subtest 'vanuatu withdrawal' => sub {
     $expired_enforced  = undef;
     $outdated_poa      = 1;
     $expired_documents = 0;
-    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your identity documents have expired./);
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')->error_message_like(qr/Your proof of address document is outdated./);
     ok $expired_enforced, 'Expired check was enforced';
 
     $expired_enforced  = undef;

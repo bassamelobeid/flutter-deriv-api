@@ -199,9 +199,70 @@ sub validate_input {
 
     my $error = validate_expiration_date($args->{expiration_date}) // validate_id_and_exp_date({$args->%*, client => $client})
         // validate_proof_of_ownership({%$args{qw/proof_of_ownership document_type/}, %$params{qw/client/}})
-        // validate_issuing_country({$args->%*, client => $client});
+        // validate_issuing_country({$args->%*, client => $client}) // validate_poa_status({$args->%*, client => $client})
+        // validate_poi_status({$args->%*, client => $client});
 
     return $error;
+}
+
+=head2 validate_poi_status
+
+Only applies to POI documents, it will return an error if the current POI status is pending and a complete bundle of POI documents
+are uploaded.
+
+It takes the following params as hashref:
+
+=over 4
+
+=item * - C<client> - the L<BOM::User::Client> instance
+
+=item * - C<document_type> - a I<string> representing the document type being uploaded
+
+=back
+
+Returns a C<string> representing an error or I<undef> if there was no error found.
+
+=cut
+
+sub validate_poi_status {
+    my ($args) = @_;
+    my ($client, $document_type) = @{$args}{qw/client document_type/};
+
+    return undef unless $document_type && any { $_ eq $args->{document_type} } $client->documents->poi_types->@*;
+
+    return 'poi_pending' if $client->documents->pending_poi_bundle();
+
+    return undef;
+}
+
+=head2 validate_poa_status
+
+Only applies to POA documents, will return an error if the current POA status is pending.
+
+
+It takes the following params as hashref:
+
+=over 4
+
+=item * - C<client> - the L<BOM::User::Client> instance
+
+=item * - C<document_type> - a I<string> representing the document type being uploaded
+
+=back
+
+Returns a C<string> representing an error or I<undef> if there was no error found.
+
+=cut
+
+sub validate_poa_status {
+    my ($args) = @_;
+    my ($client, $document_type) = @{$args}{qw/client document_type/};
+
+    return undef unless $document_type && any { $_ eq $args->{document_type} } $client->documents->poa_types->@*;
+
+    return 'poa_pending' if $client->get_poa_status() eq 'pending';
+
+    return undef;
 }
 
 =head2 validate_issuing_country
@@ -347,7 +408,9 @@ sub create_upload_error {
         missing_proof_of_ownership_id      => {message => localize('You must specify the proof of ownership id')},
         invalid_proof_of_ownership_id      => {message => localize('The proof of ownership id provided is not valid')},
         missing_proof_of_ownership_details => {message => localize('You must specify the proof of ownership details')},
-        missing_issuing_country            => {message => localize('Issuing country is mandatory for proof of identity')}};
+        missing_issuing_country            => {message => localize('Issuing country is mandatory for proof of identity')},
+        poa_pending                        => {message => localize('POA document is already uploaded and pending for review')},
+        poi_pending                        => {message => localize('POI documents are already uploaded and pending for review')}};
 
     my ($error_code, $message);
     ($error_code, $message) = ($errors->{$reason}->{error_code}, $errors->{$reason}->{message}) if $reason;

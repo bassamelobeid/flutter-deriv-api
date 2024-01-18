@@ -302,7 +302,7 @@ subtest 'kyc authorization status' => sub {
             my $expected_response = {
                 identity => {
                     last_rejected      => {},
-                    available_services => ['onfido', 'manual'],
+                    available_services => ['manual'],
                     service            => 'manual',
                     status             => 'verified',
                 },
@@ -1266,21 +1266,21 @@ subtest 'kyc authorization status' => sub {
                 $latest_poi_by = 'idv';
                 $client_cr->status->set('age_verification', 'system', 'test');
 
-                my $expected_response_object = {
+                my $expected_response = {
                     last_rejected      => {},
-                    available_services => ['onfido', 'manual'],
+                    available_services => ['manual'],
                     service            => 'idv',
                     status             => 'verified',
                 };
 
                 my $token_cr = $m->create_token($client_cr->loginid, 'test token');
                 my $result   = $c->tcall($method, {token => $token_cr});
-                cmp_deeply $result->{identity}, $expected_response_object, 'expected response object for idv verified';
+                cmp_deeply $result->{identity}, $expected_response, 'expected response object for idv verified';
 
                 $client_cr->aml_risk_classification('high');
                 $client_cr->save;
 
-                $expected_response_object = {
+                $expected_response = {
                     last_rejected      => {},
                     available_services => ['onfido', 'manual'],
                     service            => 'idv',
@@ -1288,7 +1288,7 @@ subtest 'kyc authorization status' => sub {
                 };
 
                 $result = $c->tcall($method, {token => $token_cr});
-                cmp_deeply $result->{identity}, $expected_response_object, 'expected response object for high risk client';
+                cmp_deeply $result->{identity}, $expected_response, 'expected response object for high risk client';
 
                 $latest_poi_by      = 'manual';
                 $documents_uploaded = {
@@ -1299,7 +1299,7 @@ subtest 'kyc authorization status' => sub {
                                 test => 1,
                             }}}};
 
-                $expected_response_object = {
+                $expected_response = {
                     last_rejected      => {},
                     available_services => ['onfido', 'manual'],
                     service            => 'manual',
@@ -1307,7 +1307,7 @@ subtest 'kyc authorization status' => sub {
                 };
 
                 $result = $c->tcall($method, {token => $token_cr});
-                cmp_deeply $result->{identity}, $expected_response_object, 'expected response object for manual pending';
+                cmp_deeply $result->{identity}, $expected_response, 'expected response object for manual pending';
 
                 $documents_uploaded = {
                     proof_of_identity => {
@@ -1324,15 +1324,15 @@ subtest 'kyc authorization status' => sub {
                         reason     => 'test'
                     });
 
-                $expected_response_object = {
+                $expected_response = {
                     last_rejected      => {},
-                    available_services => ['onfido', 'manual'],
+                    available_services => ['manual'],
                     service            => 'manual',
                     status             => 'verified',
                 };
 
                 $result = $c->tcall($method, {token => $token_cr});
-                cmp_deeply $result->{identity}, $expected_response_object, 'expected response object for manual verified';
+                cmp_deeply $result->{identity}, $expected_response, 'expected response object for manual verified';
 
                 $client_mock->unmock_all;
                 $status_mock->unmock_all;
@@ -1364,7 +1364,7 @@ subtest 'kyc authorization status' => sub {
                     });
                 $idv_mock->mock(submissions_left => 0);
 
-                my $expected_response_object = {
+                my $expected_response = {
                     last_rejected      => {rejected_reasons => ['NameMismatch']},
                     available_services => ['onfido', 'manual'],
                     service            => 'idv',
@@ -1373,7 +1373,7 @@ subtest 'kyc authorization status' => sub {
 
                 my $token_cr = $m->create_token($client_cr->loginid, 'test token');
                 my $result   = $c->tcall($method, {token => $token_cr});
-                cmp_deeply $result->{identity}, $expected_response_object, 'expected response object for idv rejected, no submissions left';
+                cmp_deeply $result->{identity}, $expected_response, 'expected response object for idv rejected, no submissions left';
 
                 $client_mock->mock(latest_poi_by => 'onfido');
 
@@ -1396,15 +1396,15 @@ subtest 'kyc authorization status' => sub {
                         reason     => 'test'
                     });
 
-                $expected_response_object = {
+                $expected_response = {
                     last_rejected      => {},
-                    available_services => ['onfido', 'manual'],
+                    available_services => ['manual'],
                     service            => 'onfido',
                     status             => 'verified',
                 };
 
                 $result = $c->tcall($method, {token => $token_cr});
-                cmp_deeply $result->{identity}, $expected_response_object, 'expected response object for onfido verfied';
+                cmp_deeply $result->{identity}, $expected_response, 'expected response object for onfido verfied';
 
                 $client_mock->unmock_all;
                 $status_mock->unmock_all;
@@ -1439,7 +1439,7 @@ subtest 'kyc authorization status' => sub {
                     });
                 $onfido_mock->mock(get_consider_reasons => ['data_comparison.first_name']);
 
-                my $expected_response_object = {
+                my $expected_response = {
                     last_rejected      => {rejected_reasons => ['DataComparisonName']},
                     available_services => ['idv', 'onfido', 'manual'],
                     service            => 'onfido',
@@ -1448,7 +1448,7 @@ subtest 'kyc authorization status' => sub {
 
                 my $token_cr = $m->create_token($client_cr->loginid, 'test token');
                 my $result   = $c->tcall($method, {token => $token_cr});
-                cmp_deeply $result->{identity}, $expected_response_object, 'expected response object for onfido rejected';
+                cmp_deeply $result->{identity}, $expected_response, 'expected response object for onfido rejected';
 
                 $onfido_mock->mock(
                     get_latest_check => {
@@ -1468,15 +1468,15 @@ subtest 'kyc authorization status' => sub {
                         reason     => 'test'
                     });
 
-                $expected_response_object = {
+                $expected_response = {
                     last_rejected      => {},
-                    available_services => ['onfido', 'manual'],
+                    available_services => ['manual'],
                     service            => 'onfido',
                     status             => 'verified',
                 };
 
                 $result = $c->tcall($method, {token => $token_cr});
-                cmp_deeply $result->{identity}, $expected_response_object, 'expected response object for onfido verified to correct failed attempt';
+                cmp_deeply $result->{identity}, $expected_response, 'expected response object for onfido verified to correct failed attempt';
 
                 $client_mock->unmock_all;
                 $status_mock->unmock_all;
@@ -1838,7 +1838,7 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     status             => 'verified',
                     service            => 'idv',
                     last_rejected      => {},
-                    available_services => ['onfido', 'manual']
+                    available_services => ['manual']
                 },
                 address => {status => 'none'},
             },
@@ -1847,7 +1847,7 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     status             => 'verified',
                     service            => 'idv',
                     last_rejected      => {},
-                    available_services => ['onfido', 'manual']
+                    available_services => ['manual']
                 },
                 address => {status => 'none'},
             },
@@ -1866,6 +1866,360 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
         $idv_mock->unmock_all;
         $onfido_mock->unmock_all;
         $status_mock->unmock_all;
+    };
+};
+
+subtest 'kyc authorization status, country provided as argument' => sub {
+    subtest 'test 0' => sub {
+        my $user_cr = BOM::User->create(
+            email    => 'kyc_country_test0@deriv.com',
+            password => 'secret_pwd'
+        );
+
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+
+        $user_cr->add_client($client_cr);
+
+        my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+        my $args   = {country => 'ke'};
+        my $params = {
+            token => $token_cr,
+            args  => $args
+        };
+
+        my $result = $c->tcall($method, $params);
+        is $result->{error}, undef, 'Call has no errors when country argument is provided';
+    };
+
+    subtest 'argument validations' => sub {
+        subtest 'should handle invalid arguments and not throw' => sub {
+            my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+
+            my $user_cr = BOM::User->create(
+                email    => 'kyc_country_invalid_arg@deriv.com',
+                password => 'secret_pwd'
+            );
+
+            $user_cr->add_client($client_cr);
+
+            my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+            my $args   = {country => 'xx'};
+            my $params = {
+                token => $token_cr,
+                args  => $args
+            };
+
+            my $expected_response = {
+                identity => {
+                    status             => 'none',
+                    service            => 'none',
+                    last_rejected      => {},
+                    available_services => []
+                },
+                address => {status => 'none'}};
+
+            my $result = $c->tcall($method, $params);
+            is $result->{error}, undef, 'call did not throw error for invalid arguments';
+            cmp_deeply($result, $expected_response, 'expected response object for invalid argument');
+        };
+    };
+
+    subtest 'should show supported documents only for the relevant available services' => sub {
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+
+        my $user_cr = BOM::User->create(
+            email    => 'kyc_poi_supported_documents@deriv.com',
+            password => 'secret_pwd'
+        );
+
+        $user_cr->add_client($client_cr);
+
+        my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+        my $accounts_mock = Test::MockModule->new('BOM::RPC::v3::Accounts');
+
+        my $format = '^123$';
+
+        my $idv_mock                = Test::MockModule->new('BOM::User::IdentityVerification');
+        my $idv_supported_documents = {
+            national_id => {
+                display_name => 'National ID Number',
+                format       => $format,
+            }};
+
+        my $onfido_mock                = Test::MockModule->new('BOM::User::Onfido');
+        my $onfido_supported_documents = {
+            passport => {
+                display_name => 'Passport',
+                format       => $format,
+            }};
+
+        my $test_cases = [{
+                available_services           => ['idv', 'onfido', 'manual'],
+                expected_supported_documents => {
+                    idv    => $idv_supported_documents,
+                    onfido => $onfido_supported_documents
+                }
+            },
+            {
+                available_services           => ['onfido', 'manual'],
+                expected_supported_documents => {onfido => $onfido_supported_documents}
+            },
+            {
+                available_services           => ['idv', 'manual'],
+                expected_supported_documents => {idv => $idv_supported_documents}
+            },
+            {
+                available_services           => ['idv', 'onfido'],
+                expected_supported_documents => {
+                    idv    => $idv_supported_documents,
+                    onfido => $onfido_supported_documents
+                }
+            },
+            {
+                available_services           => ['idv'],
+                expected_supported_documents => {
+                    idv => $idv_supported_documents,
+                }
+            },
+            {
+                available_services           => ['onfido'],
+                expected_supported_documents => {
+                    onfido => $onfido_supported_documents,
+                }
+            },
+            {
+                available_services           => ['manual'],
+                expected_supported_documents => undef
+            },
+        ];
+
+        my $args   = {country => 'ke'};
+        my $params = {
+            token => $token_cr,
+            args  => $args
+        };
+
+        for my $test_case ($test_cases->@*) {
+            $accounts_mock->mock(_get_available_services => $test_case->{available_services});
+            $idv_mock->mock(supported_documents => $idv_supported_documents);
+            $onfido_mock->mock(supported_documents => $onfido_supported_documents);
+
+            my $result = $c->tcall($method, $params);
+
+            cmp_deeply($result->{identity}->{supported_documents}, $test_case->{expected_supported_documents}, 'expected supported documents');
+        }
+
+        $accounts_mock->unmock_all;
+        $idv_mock->unmock_all;
+        $onfido_mock->unmock_all;
+    };
+
+    subtest 'returns correct information per countries\' configuration' => sub {
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+
+        my $user_cr = BOM::User->create(
+            email    => 'kyc_correct_countries@deriv.com',
+            password => 'secret_pwd'
+        );
+
+        $user_cr->add_client($client_cr);
+
+        my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+        my $accounts_mock = Test::MockModule->new('BOM::RPC::v3::Accounts');
+
+        my $args   = {country => 'ke'};
+        my $params = {
+            token => $token_cr,
+            args  => $args
+        };
+
+        my $expected_response = {
+            address  => {status => 'none'},
+            identity => {
+                service             => 'none',
+                supported_documents => {
+                    onfido => {
+                        passport               => {display_name => 'Passport'},
+                        national_identity_card => {display_name => 'National Identity Card'},
+                        driving_licence        => {display_name => 'Driving Licence'}
+                    },
+                    idv => {
+                        national_id => {
+                            display_name => 'National ID Number',
+                            format       => '^[0-9]{1,9}$'
+                        },
+                        passport => {
+                            display_name => 'Passport',
+                            format       => '^[A-Z0-9]{7,9}$'
+                        },
+                        alien_card => {
+                            format       => '^[0-9]{6,9}$',
+                            display_name => 'Alien Card'
+                        }}
+                },
+                last_rejected      => {},
+                available_services => ['idv', 'onfido', 'manual'],
+                status             => 'none'
+            }};
+
+        my $result = $c->tcall($method, $params);
+        cmp_deeply $result, $expected_response, 'expected response object';
+    };
+};
+
+subtest 'kyc authorization status, country and landing companies provided as argument' => sub {
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $user = BOM::User->create(
+        email    => 'kyc_many_args@deriv.com',
+        password => 'secret_pwd'
+    );
+
+    $user->add_client($client_cr);
+
+    my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+    my $args = {
+        landing_companies => ['virtual', 'svg', 'maltainvest'],
+        country           => 'ar'
+    };
+    my $params = {
+        token => $token_cr,
+        args  => $args
+    };
+
+    my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+    $idv_mock->mock(
+        get_last_updated_document => {
+            id           => 1,
+            status       => 'pending',
+            requested_at => '2020-01-01 00:00:01',
+            submitted_at => '2020-01-01 00:00:01'
+        });
+
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    $onfido_mock->mock(
+        get_latest_check => {
+            report_document_status     => 'complete',
+            report_document_sub_result => 'suspected',
+            user_check                 => {
+                result     => 'consider',
+                created_at => '2020-01-01 00:00:00'
+            }});
+    $onfido_mock->mock(get_consider_reasons => ['data_comparison.first_name']);
+
+    my $expected_response = {
+        virtual => {
+            identity => {
+                status             => 'none',
+                service            => 'none',
+                last_rejected      => {},
+                available_services => []
+            },
+            address => {status => 'none'}
+        },
+        svg => {
+            identity => {
+                status              => 'pending',
+                service             => 'idv',
+                supported_documents => {
+                    onfido => {
+                        driving_licence        => {display_name => 'Driving Licence'},
+                        passport               => {display_name => 'Passport'},
+                        national_identity_card => {display_name => 'National Identity Card'},
+                        residence_permit       => {display_name => 'Residence Permit'}
+                    },
+                    idv => {
+                        dni => {
+                            format       => '^\\d{7,8}$',
+                            display_name => 'Documento Nacional de Identidad'
+                        }}
+                },
+                last_rejected      => {},
+                available_services => ['idv', 'onfido', 'manual']
+            },
+            address => {status => 'none'},
+        },
+        maltainvest => {
+            identity => {
+                status              => 'suspected',
+                service             => 'onfido',
+                supported_documents => {
+                    onfido => {
+                        driving_licence        => {display_name => 'Driving Licence'},
+                        passport               => {display_name => 'Passport'},
+                        national_identity_card => {display_name => 'National Identity Card'},
+                        residence_permit       => {display_name => 'Residence Permit'}}
+                },
+                last_rejected      => {rejected_reasons => ['DataComparisonName']},
+                available_services => ['onfido', 'manual']
+            },
+            address => {status => 'none'}}};
+
+    my $result = $c->tcall($method, $params);
+    cmp_deeply $result, $expected_response, 'expected response object for lcs and country as argument';
+
+    $idv_mock->unmock_all;
+    $onfido_mock->unmock_all;
+
+    subtest 'garbage inputs' => sub {
+        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+
+        my $user = BOM::User->create(
+            email    => 'kyc_garbage_inputs@deriv.com',
+            password => 'secret_pwd'
+        );
+
+        $user->add_client($client_cr);
+
+        my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+        my $args = {
+            landing_companies => ['svg', 'big cat', 'maltainvest'],
+            country           => 'xx'
+        };
+        my $params = {
+            token => $token_cr,
+            args  => $args
+        };
+
+        my $result            = $c->tcall($method, $params);
+        my $expected_response = {
+            maltainvest => {
+                address  => {status => 'none'},
+                identity => {
+                    available_services => [],
+                    service            => 'none',
+                    last_rejected      => {},
+                    status             => 'none'
+                }
+            },
+            svg => {
+                identity => {
+                    status             => 'none',
+                    last_rejected      => {},
+                    service            => 'none',
+                    available_services => []
+                },
+                address => {status => 'none'}}};
+
+        cmp_deeply $result, $expected_response, 'expected response object for garbage inputs';
     };
 };
 

@@ -8,6 +8,7 @@ use Test::Fatal;
 use Test::Deep                                 qw/cmp_deeply/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use List::Util                   qw( all any );
 use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
@@ -30,6 +31,16 @@ $virtual_client->save;
 my $real_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+
+my $user = BOM::User->create(
+    email    => $real_client->loginid . '@binary.com',
+    password => 'Abcd1234'
+);
+
+$user->add_client($real_client);
+$real_client->binary_user_id($user->id);
+$real_client->user($user);
+$real_client->save;
 
 #########################################################
 ## Setup tokens
@@ -685,6 +696,231 @@ subtest 'Proof of ownership upload' => sub {
     my ($doc_id) = @{$poo->{documents}};
     is $doc_id,                                $document->id, 'POO has been bound to the document';
     is $poo->{payment_method_details}->{some}, 'thing',       'Detail succesfully attached';
+};
+
+subtest 'POA is pending' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+    });
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    my $user = BOM::User->create(
+        email          => 'pending.poa@binary.com',
+        password       => BOM::User::Password::hashpw('ASDF2222'),
+        email_verified => 1,
+    );
+    $user->add_client($client);
+
+    my $result = $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                document_id       => '14214',
+                document_type     => 'utility_bill',
+                document_format   => 'png',
+                expected_checksum => '235323532',
+                expiration_date   => '2099-01-01',
+            }})->has_no_error->result;
+
+    my $file_id = $result->{file_id};
+
+    $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                file_id => $file_id,
+                status  => 'success',
+            }})->has_no_error->result;
+
+    my ($document) = $client->client_authentication_document;
+    ok $document, 'there is a document';
+
+    $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                document_id       => '14214',
+                document_type     => 'utility_bill',
+                document_format   => 'png',
+                expected_checksum => '235323532',
+                expiration_date   => '2099-01-01',
+            }}
+    )->has_error->error_message_is('POA document is already uploaded and pending for review', 'error message is correct')
+        ->error_code_is('UploadDenied', 'error code is correct');
+
+    is $client->get_poa_status, 'pending', 'pending POA';
+    $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
+    $document->status('rejected');
+    $document->save;
+
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+    is $client->get_poa_status, 'rejected', 'rejected POA';
+    $result = $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                document_id       => '3432143',
+                document_type     => 'utility_bill',
+                document_format   => 'png',
+                expected_checksum => '352532',
+                expiration_date   => '2099-01-01',
+            }})->has_no_error->result;
+
+    $file_id = $result->{file_id};
+
+    $result = $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                file_id => $file_id,
+                status  => 'success',
+            }})->has_no_error->result;
+
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+    is $client->get_poa_status, 'pending', 'pending POA';
+};
+
+subtest 'POI is pending' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+    });
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    my $user = BOM::User->create(
+        email          => 'pending.poi@binary.com',
+        password       => BOM::User::Password::hashpw('ASDF2222'),
+        email_verified => 1,
+    );
+    $user->add_client($client);
+
+    my $result = $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                document_id              => '14214',
+                document_type            => 'national_identity_card',
+                document_format          => 'png',
+                document_issuing_country => 'co',
+                expected_checksum        => '23523532',
+                expiration_date          => '2099-01-01',
+                page_type                => 'front',
+            }})->has_no_error->result;
+
+    my $file_id = $result->{file_id};
+
+    $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                file_id => $file_id,
+                status  => 'success',
+            }})->has_no_error->result;
+
+    $result = $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                document_id              => '14214',
+                document_type            => 'national_identity_card',
+                document_format          => 'png',
+                document_issuing_country => 'co',
+                expected_checksum        => '2352353255',
+                expiration_date          => '2099-01-01',
+                page_type                => 'back',
+            }})->has_no_error->result;
+
+    $file_id = $result->{file_id};
+
+    $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                file_id => $file_id,
+                status  => 'success',
+            }})->has_no_error->result;
+
+    $result = $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                document_type            => 'selfie_with_id',
+                document_issuing_country => 'co',
+                document_format          => 'png',
+                expected_checksum        => '35345345323',
+            }})->has_no_error->result;
+
+    $file_id = $result->{file_id};
+
+    $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                file_id => $file_id,
+                status  => 'success',
+            }})->has_no_error->result;
+
+    my $documents = $client->client_authentication_document;
+
+    ok $client->documents->pending_poi_bundle(), 'there is a complete pending POI bundle';
+
+    $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                document_id              => '23532532',
+                document_type            => 'passport',
+                document_format          => 'png',
+                document_issuing_country => 'br',
+                expected_checksum        => '2365325325',
+                expiration_date          => '2099-01-01',
+            }}
+    )->has_error->error_message_is('POI documents are already uploaded and pending for review', 'error message is correct')
+        ->error_code_is('UploadDenied', 'error code is correct');
+
+    for my $doc ($documents->@*) {
+        $doc->status('rejected');
+        $doc->save;
+    }
+
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+    ok !$client->documents->pending_poi_bundle(), 'there is no pending POI bundle';
+
+    $result = $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                document_id              => '23532532',
+                document_type            => 'passport',
+                document_format          => 'png',
+                document_issuing_country => 'br',
+                expected_checksum        => '2365325325',
+                expiration_date          => '2099-01-01',
+            }})->has_no_error->result;
+
+    $file_id = $result->{file_id};
+
+    $c->call_ok(
+        'document_upload',
+        {
+            token => $token,
+            args  => {
+                file_id => $file_id,
+                status  => 'success',
+            }})->has_no_error->result;
+
 };
 
 #########################################################

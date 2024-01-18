@@ -2705,7 +2705,7 @@ sub _validate_client {
         # if the client has regulated mt5 we will enforce the expiration check
         return ('ExpiredDocuments', request()->brand->emails('support')) if $client_obj->documents->expired($has_regulated_mt5);
 
-        return ('ExpiredDocuments', request()->brand->emails('support')) if $has_regulated_mt5 && $client_obj->documents->outdated();
+        return ('OutdatedDocuments', request()->brand->emails('support')) if $has_regulated_mt5 && $client_obj->documents->outdated();
     } else {
         # for other actions we won't enforce the expired check
         return ('ExpiredDocuments', request()->brand->emails('support'))

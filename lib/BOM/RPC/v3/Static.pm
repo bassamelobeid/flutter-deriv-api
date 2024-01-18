@@ -98,21 +98,7 @@ rpc residence_list => sub {
             identity => {
                 services => {
                     idv => {
-                        documents_supported => +{
-                            map {
-                                (
-                                    $_ => {
-                                        display_name => localize($idv_docs_supported->{$_}->{display_name}),
-                                        format       => $idv_docs_supported->{$_}->{format},
-                                        $idv_docs_supported->{$_}->{additional} ? (additional => $idv_docs_supported->{$_}->{additional}) : (),
-                                    })
-                            } grep {
-                                !$idv_docs_supported->{$_}->{disabled} && BOM::Platform::Utility::has_idv(
-                                    country       => $country_code,
-                                    document_type => $_
-                                )
-                            } keys $idv_docs_supported->%*
-                        },
+                        documents_supported  => BOM::User::IdentityVerification::supported_documents($country_code),
                         is_country_supported => BOM::Platform::Utility::has_idv(
                             country  => $country_code,
                             provider => $idv_config->{provider}
@@ -120,12 +106,12 @@ rpc residence_list => sub {
                         has_visual_sample => $has_visual_sample
                     },
                     onfido => {
-                        documents_supported =>
-                            +{map { _onfido_doc_type($_) } BOM::Config::Onfido::supported_documents_for_country($country_code)->@*},
+                        documents_supported  => BOM::User::Onfido::supported_documents($country_code),
                         is_country_supported => (!$onfido_suspended && BOM::Config::Onfido::is_country_supported($country_code)) ? 1 : 0,
                     }
                 },
             }};
+
         if ($countries_instance->restricted_country($country_code)
             || !$countries_instance->is_signup_allowed($country_code))
         {
@@ -138,38 +124,6 @@ rpc residence_list => sub {
 
     return $residence_countries_list;
 };
-
-=head2 _onfido_doc_type
-
-Process the Onfido doc types given into the hash form expected by the api schema response,
-since Onfido config provides a flat list of doc types is somewhat complicated to give it
-the conforming structure.
-
-It takes the following parameter:
-
-=over 4
-
-=item * C<$doc_type> - the given onfido doc type
-
-=back
-
-Returns a single element hash as:
-
-( $snake_case_key => {
-    display_name => $doc_type,
-})
-
-=cut
-
-sub _onfido_doc_type {
-    my ($doc_type) = $_;
-    my $snake_case_key = lc $doc_type =~ s/\s+/_/rg;
-
-    return (
-        $snake_case_key => {
-            display_name => $doc_type,
-        });
-}
 
 =head2 states_list
 

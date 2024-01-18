@@ -1119,16 +1119,20 @@ Gets the KYC (POI and POA) authentication object for the given client.
 
 =over
 
-It takes the following argument:
+It takes the following arguments:
 
 =over 4
 
 =item * C<landing_company> - (optional) landing company. Default: client's landing company.
 
+=item * C<country> - (optional) 2-letter country code.
+
 =back
 
     If landing_company argument is provided, it returns a nested structure where KYC authentication
     status is grouped by landing company.
+
+    If country argument is provided, it returns the supported document types per available service for that country.
 
 =back
 
@@ -1138,11 +1142,14 @@ rpc kyc_auth_status => sub {
     my $params            = shift;
     my $client            = $params->{client};
     my $landing_companies = $params->{args}->{landing_companies};
+    my $country_code      = $params->{args}->{country};
 
     my @uniq_landing_companies = uniq @{$landing_companies};
     splice @uniq_landing_companies, LCS_ARGUMENT_LIMIT if @uniq_landing_companies > LCS_ARGUMENT_LIMIT;
 
-    my $kyc_args = {client => $client};
+    my $args = {
+        client => $client,
+        ($country_code ? (country => $country_code) : ())};
 
     my $kyc_authentication_object;
     my $kyc_jurisdiction_authentication_object;
@@ -1155,13 +1162,13 @@ rpc kyc_auth_status => sub {
             my $is_valid = grep { $_ eq $landing_company } map { $_->short } @all_lcs;
             next unless $is_valid;
 
-            $kyc_args->{landing_company} = $landing_company;
+            $args->{landing_company} = $landing_company;
 
-            $kyc_jurisdiction_authentication_object->{$landing_company} = _get_kyc_authentication($kyc_args);
+            $kyc_jurisdiction_authentication_object->{$landing_company} = _get_kyc_authentication($args);
         }
     }
 
-    my $kyc_auth_status = $kyc_jurisdiction_authentication_object // _get_kyc_authentication($kyc_args);
+    my $kyc_auth_status = $kyc_jurisdiction_authentication_object // _get_kyc_authentication($args);
     return $kyc_auth_status;
 };
 
@@ -1177,6 +1184,8 @@ It takes the following parameters as hashref:
 
 =item * C<landing_company> - (optional) landing company. Default: client's landing company.
 
+=item * C<country> - (optional) 2-letter country code.
+
 =back
 
 =cut
@@ -1185,6 +1194,7 @@ sub _get_kyc_authentication {
     my $args            = shift;
     my $client          = $args->{client};
     my $landing_company = $args->{landing_company};
+    my $country_code    = $args->{country};
 
     my $kyc_authentication_object = {
         identity => {
@@ -1205,13 +1215,13 @@ sub _get_kyc_authentication {
 
     return $kyc_authentication_object if $landing_company && $landing_company eq 'virtual';
 
-    my $kyc_args = {
-        client          => $duplicated // $client,
-        landing_company => $landing_company
-    };
+    my $countries_instance = request()->brand->countries_instance();
+    return $kyc_authentication_object if $country_code && !$countries_instance->countries_list->{$country_code};
 
-    $kyc_authentication_object->{identity} = _get_kyc_authentication_poi($kyc_args);
-    $kyc_authentication_object->{address}  = _get_authentication_poa($kyc_args);
+    $args->{client} = $duplicated // $client;
+
+    $kyc_authentication_object->{identity} = _get_kyc_authentication_poi($args);
+    $kyc_authentication_object->{address}  = _get_authentication_poa($args);
 
     return $kyc_authentication_object;
 }
@@ -1227,6 +1237,8 @@ It takes the following parameters as hashref:
 =item * C<client> a L<BOM::User::Client> instance.
 
 =item * C<landing_company> (optional) landing company. Default: client's landing company.
+
+=item * C<country> - (optional) 2-letter country code.
 
 =back
 
@@ -1263,12 +1275,51 @@ sub _get_kyc_authentication_poi {
 
     my $available_services = _get_available_services($args);
 
+    $args->{available_services} = $available_services;
+    my $supported_documents = {};
+    $supported_documents = _get_supported_documents($args) if ($available_services && $args->{country});
+
     return {
         last_rejected      => $last_rejected,
         available_services => $available_services,
-        service            => $latest_poi_by //= 'none',
-        status             => $poi_status,
+        ($supported_documents->%* ? (supported_documents => $supported_documents) : ()),
+        service => $latest_poi_by //= 'none',
+        status  => $poi_status,
     };
+}
+
+=head2 _get_supported_documents
+
+Builds a nested structure per available service of the supported document types for the provided country.
+
+It takes the following parameters as hashref:
+
+=over 4
+
+=item * C<country> - 2-letter country code.
+
+=item * C<available_services> - an arrayref containing the available services for a client.
+
+=back
+
+=cut
+
+sub _get_supported_documents {
+    my $args               = shift;
+    my $country_code       = $args->{country};
+    my $available_services = $args->{available_services};
+
+    my $idv_available    = any { $_ eq 'idv' } @$available_services;
+    my $onfido_available = any { $_ eq 'onfido' } @$available_services;
+
+    my %supported_documents;
+
+    $supported_documents{idv} = BOM::User::IdentityVerification::supported_documents($country_code)
+        if $idv_available;
+    $supported_documents{onfido} = BOM::User::Onfido::supported_documents($country_code)
+        if $onfido_available;
+
+    return \%supported_documents;
 }
 
 =head2 _get_last_rejected
@@ -1373,7 +1424,7 @@ sub _get_available_services {
 
     push @$available_services, 'idv' if $idv_model->is_available($args);
 
-    push @$available_services, 'onfido' if BOM::User::Onfido::is_available($client);
+    push @$available_services, 'onfido' if BOM::User::Onfido::is_available($args);
 
     push @$available_services, 'manual' if $client->documents->is_upload_available;
 
