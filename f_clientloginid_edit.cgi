@@ -402,7 +402,7 @@ if ($input{document_list}) {
                             next;
                         }
 
-                        if (Date::Utility->new($to_update_value)->is_before(Date::Utility->new->minus_time_interval('1y'))) {
+                        if (eval { Date::Utility->new($to_update_value)->is_before(Date::Utility->new->minus_time_interval('1y')) }) {
                             $full_msg .=
                                 "<div class=\"notify notify--warning\"><b>ERROR: $file_name is too old, it must have been issued within the last 12 months.</div>";
                             $field_error = 1;
@@ -708,7 +708,7 @@ if ($input{whattodo} eq 'uploadID') {
             print qq[<p class="notify notify--warning">Issue date "$issue_date" is not a valid date.</p>];
             code_exit_BO(qq[<p><a class="link"href="$self_href">&laquo; Return to client details<a/></p>]);
         } elsif ($issue_date
-            && Date::Utility->new($issue_date)->is_before(Date::Utility->new->minus_time_interval('1y')))
+            && eval { Date::Utility->new($issue_date)->is_before(Date::Utility->new->minus_time_interval('1y')) })
         {
             print
                 qq[<p class="notify notify--warning">ERROR: Issue date "$issue_date" is too old, it must have been issued within the last 12 months.</p>];
@@ -1365,10 +1365,15 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
                 if ($document_field =~ /^(expiration_date|issue_date)$/) {
                     try {
-                        $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
+                        if ($val ne (eval { Date::Utility->new($val)->date_yyyymmdd } // '')) {
+                            print qq[<p class="notify notify--warning">Issue date "$val" is not a valid date.</p>];
+                            code_exit_BO(qq[<p><a class="link"href="$self_href">&laquo; Return to client details<a/></p>]);
+
+                        }
+                        $new_value = eval { Date::Utility->new($val)->date_yyyymmdd } if $val ne 'clear';
 
                         if ($document_field =~ /issue_date/ && $issuance eq 'issuance_date') {
-                            if (Date::Utility->new($val)->is_before(Date::Utility->new->minus_time_interval('1y'))) {
+                            if (eval { Date::Utility->new($val)->is_before(Date::Utility->new->minus_time_interval('1y')) }) {
                                 print
                                     qq{<p class="notify notify--warning">ERROR: POA issue date is too old $val, it must have been issued within the last 12 months.</p>};
                                 next CLIENT_KEY;
