@@ -41,6 +41,45 @@
                         "available_services": {
                            "type": "array"
                         },
+                        "supported_documents": {
+                           "type": "object",
+                           "properties": {
+                              "idv": {
+                                 "type": "object",
+                                 "additionalProperties": {
+                                    "properties": {
+                                       "display_name": {
+                                          "type": "string"
+                                       },
+                                       "format": {
+                                          "type": "string"
+                                       },
+                                       "additional": {
+                                          "type": "object",
+                                          "properties": {
+                                              "display_name": {
+                                                  "type": "string"
+                                              },
+                                              "format": {
+                                                  "type": "string"
+                                              }
+                                          }
+                                       }
+                                    }
+                                 }
+                              },
+                              "onfido": {
+                                 "type": "object",
+                                 "additionalProperties": {
+                                    "properties": {
+                                       "display_name": {
+                                          "type": "string"
+                                       }
+                                    }
+                                 }
+                              }
+                           }
+                        },
                         "service": {
                            "type": "string"
                         },
@@ -104,6 +143,45 @@
                            },
                            "status": {
                               "type": "string"
+                           },
+                           "supported_documents": {
+                              "type": "object",
+                              "properties": {
+                                 "idv": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                       "properties": {
+                                          "display_name": {
+                                             "type": "string"
+                                          },
+                                          "format": {
+                                             "type": "string"
+                                          },
+                                          "additional": {
+                                             "type": "object",
+                                             "properties": {
+                                                 "display_name": {
+                                                     "type": "string"
+                                                 },
+                                                 "format": {
+                                                     "type": "string"
+                                                 }
+                                             }
+                                          }
+                                       }
+                                    }
+                                 },
+                                 "onfido": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                       "properties": {
+                                          "display_name": {
+                                             "type": "string"
+                                          }
+                                       }
+                                    }
+                                 }
+                              }
                            }
                         }
                      },

@@ -103,9 +103,38 @@ subtest 'IDV attempts' => sub {
         },
     };
 
+    my $expected_response_object_country = {
+        identity => {
+            last_rejected => {
+                rejected_reasons => ['UnexpectedError'],
+                document_type    => 'national_id'
+            },
+            available_services  => ['idv', 'onfido', 'manual'],
+            service             => 'idv',
+            status              => 'rejected',
+            supported_documents => {
+                idv => {
+                    national_id => {
+                        display_name => 'National ID Number',
+                        format       => '^[0-9]{8,9}[a-zA-Z]{1}[0-9]{2}$'
+                    }
+                },
+                onfido => {
+                    national_identity_card => {display_name => 'National Identity Card'},
+                    passport               => {display_name => 'Passport'}}}
+        },
+        address => {
+            status => 'none',
+        },
+    };
+
     my $res = $t->await::kyc_auth_status({kyc_auth_status => 1});
     test_schema('kyc_auth_status', $res);
     cmp_deeply $res->{kyc_auth_status}, $expected_response_object, 'Expected response object';
+
+    $res = $t->await::kyc_auth_status({kyc_auth_status => 1, country => "zw"});
+    test_schema('kyc_auth_status', $res);
+    cmp_deeply $res->{kyc_auth_status}, $expected_response_object_country, 'Expected response object';
 
     my $doc_id_2;
     lives_ok {
@@ -130,7 +159,7 @@ subtest 'IDV attempts' => sub {
     $expected_response_object = {
         identity => {
             last_rejected      => {},
-            available_services => ['onfido', 'manual'],
+            available_services => ['manual'],
             service            => 'idv',
             status             => 'verified',
         },
@@ -140,6 +169,10 @@ subtest 'IDV attempts' => sub {
     };
 
     $res = $t->await::kyc_auth_status({kyc_auth_status => 1});
+    test_schema('kyc_auth_status', $res);
+    cmp_deeply $res->{kyc_auth_status}, $expected_response_object, 'Expected response object';
+
+    $res = $t->await::kyc_auth_status({kyc_auth_status => 1, country => "zw"});
     test_schema('kyc_auth_status', $res);
     cmp_deeply $res->{kyc_auth_status}, $expected_response_object, 'Expected response object';
 };
