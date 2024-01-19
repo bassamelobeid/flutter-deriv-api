@@ -211,6 +211,7 @@
     [% END %]
 
     [% IF order.status == 'Disputed' and can_dispute %]
+
         <br>
         <h3>Order under dispute</h3>
         
@@ -218,7 +219,7 @@
         <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id, disputer_loginid => order.disputer_loginid }) %]" method="post">
         <input type="hidden" name="disputer" value="[% order.disputer_loginid %]">
             
-        <table style="background:LightCoral;" cellpadding=5>
+        <table id="dispute_table" style="background:LightCoral;" cellpadding=5>
         <tr>
             <td><b>Dispute raised by</b></td>
             <td>[% order.disputer_loginid %] ([% order.disputer_role %])</td>
@@ -230,25 +231,47 @@
         <tr>
             <td><b>Fraud case</b></td>
             <td>        
-                <select name="fraud" style="width: 70px;">
+                <select name="fraud"  id="fraud" onchange="setBackgroundColor(this.value)" style="width: 70px;">
                     <option value="1" selected>Yes</option>
                     <option value="0">No</option>
                 </select>
             </td>
         </tr>
         </table>
-        
         <p>Resolve in favour of:</p>
         <div class="row">
-            <button class="btn btn--primary" type="submit" name="action" value="refund" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will be refunded to [% order.seller %] and order status will change to \'dispute-refunded\'. This will be counted as buyer fraud. This is irreversible.');">SELLER</button>
+            <button class="btn btn--primary" type="submit" name="action" value="refund" onclick="return confirm(getResolveDisputeMessage({fraud_party: 'buyer', user: '[% order.seller %]', action: 'refunded'}));">SELLER</button>
             This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to seller [% order.seller %]. A fraud incident will be recorded against [% order.buyer %] if 'Fraud Case' is 'yes'.
         </div>
         <div class="row">
-            <button class="btn btn--primary" type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'dispute-completed\'. This will be counted as seller fraud. This is irreversible.');">BUYER</button>
+            <button class="btn btn--primary" type="submit" name="action" value="complete" onclick="return confirm(getResolveDisputeMessage({fraud_party: 'seller', user: '[% order.buyer %]', action: 'credited'}));">BUYER</button>
             This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to buyer [% order.buyer %]. A fraud incident will be recorded against [% order.seller %] if 'Fraud Case' is 'yes'.
         </div>
         </form>
         </td></tr></table>
+          <script>
+
+           function setBackgroundColor(flag) {
+               const disputeTable = document.getElementById('dispute_table');
+               disputeTable.style.backgroundColor = flag === "1" ? "LightCoral" : "White";
+            }
+
+            function getResolveDisputeMessage({fraud_party, user, action}) {
+                const is_fraud = document.getElementById('fraud').value;
+                const status = action === 'refunded' ? 'dispute-refunded' : 'dispute-completed';
+                const fraud_message = is_fraud === "1" ? 'This will be counted as ' + fraud_party + ' fraud. ' : '';
+                const confirm_message = 'Are you sure? [% order.account_currency %] [% order.amount %] will be '
+                   + action
+                   + ' to '
+                   + user
+                   + ' and order status will change to '
+                   + "'" + status + "'. "
+                   + fraud_message
+                   + 'This action is irreversible.';
+                return confirm_message;
+            }
+
+        </script>
     [% END %]
 
     <br>
