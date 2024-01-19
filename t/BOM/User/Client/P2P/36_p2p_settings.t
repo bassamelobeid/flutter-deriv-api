@@ -90,6 +90,11 @@ subtest 'p2p_settings' => sub {
             disabled              => 0,
             maximum_advert_amount => 15,
         },
+        counterparty_term_steps => {
+            completion_rate => [10,  33,  99],
+            join_days       => [9,   27,  88],
+            rating          => [2.3, 3.6, 4.7],
+        },
     );
 
     $p2p_config->available(1);
@@ -126,6 +131,9 @@ subtest 'p2p_settings' => sub {
                 }}));
     $p2p_config->block_trade->enabled(1);
     $p2p_config->block_trade->maximum_advert(15);
+    $p2p_config->advert_counterparty_terms->completion_rate_steps($vals{counterparty_term_steps}{completion_rate});
+    $p2p_config->advert_counterparty_terms->join_days_steps($vals{counterparty_term_steps}{join_days});
+    $p2p_config->advert_counterparty_terms->rating_steps($vals{counterparty_term_steps}{rating});
 
     cmp_deeply(
         exception {

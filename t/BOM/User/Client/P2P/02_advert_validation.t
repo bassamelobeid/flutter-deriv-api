@@ -19,6 +19,7 @@ BOM::Test::Helper::P2P::populate_trade_band_db();
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->payment_methods_enabled(1);
 $config->block_trade->enabled(1);
+$config->restricted_countries([]);
 
 my %params = (
     is_active        => 1,
@@ -1209,6 +1210,53 @@ subtest $method => sub {
         },
         undef,
         'Valid names'
+    );
+};
+
+$method = '_validate_advert_counterparty_terms';
+subtest $method => sub {
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+
+    $config->restricted_countries(['id', 'ke']);
+
+    cmp_deeply(
+        exception {
+            $advertiser->$method(%params, eligible_countries => ['za', 'ke', 'ng']);
+        },
+        {
+            error_code     => 'InvalidCountry',
+            message_params => ['ke']
+        },
+        'Restricted country'
+    );
+
+    is(
+        exception {
+            $advertiser->$method(%params, eligible_countries => ['ng', 'br']);
+        },
+        undef,
+        'Unrestricted country'
+    );
+
+    $config->restricted_countries([]);
+
+    cmp_deeply(
+        exception {
+            $advertiser->$method(%params, eligible_countries => ['ng', 'br', 'xx', 'ke']);
+        },
+        {
+            error_code     => 'InvalidCountry',
+            message_params => ['xx']
+        },
+        'Invalid country'
+    );
+
+    is(
+        exception {
+            $advertiser->$method(%params, eligible_countries => ['ng', 'br', 'za', 'ke']);
+        },
+        undef,
+        'Valid countries'
     );
 };
 

@@ -499,6 +499,7 @@ subtest 'Creating advert' => sub {
     delete $expected_advert->@{@sensitive_fields};
     $expected_advert->{advertiser_details}{is_blocked}     = $expected_advert->{advertiser_details}{is_favourite} = 0;
     $expected_advert->{advertiser_details}{is_recommended} = undef;
+    $expected_advert->{is_eligible}                        = 1;
 
     cmp_deeply($test_client_cr->p2p_advert_list, [$expected_advert], "p2p_advert_list returns less fields for client");
 
@@ -1081,6 +1082,7 @@ subtest 'subscriptions' => sub {
     delete $advert->@{@sensitive_fields};
     $advert->{advertiser_details}{is_blocked}     = $advert->{advertiser_details}{is_favourite} = 0;
     $advert->{advertiser_details}{is_recommended} = undef;
+    $advert->{is_eligible}                        = 1;
 
     cmp_deeply($resp, {%$advert, %$expected_response}, 'response for other client subscribing to ad');
 

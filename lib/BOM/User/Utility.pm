@@ -241,9 +241,11 @@ sub p2p_on_advert_view {
     # client specific fields will be stored in redis as field/loginid. advertiser_ fields are ones that are within advertiser_details in the ad structure.
     my %fields = (
         common => [
-            qw(order_expiry_period payment_method payment_method_names is_active local_currency rate min_order_amount_limit max_order_amount_limit rate_offset effective_rate)
+            qw(order_expiry_period payment_method payment_method_names is_active local_currency rate min_order_amount_limit max_order_amount_limit rate_offset effective_rate min_completion_rate min_rating min_join_days eligible_countries)
         ],
-        client            => [qw(is_visible payment_info contact_info active_orders amount remaining_amount min_order_amount max_order_amount)],
+        client => [
+            qw(is_visible visibility_status payment_info contact_info active_orders amount remaining_amount min_order_amount max_order_amount is_eligible eligibility_status)
+        ],
         advertiser_common => [qw(total_completion_rate rating_average recommended_average)],
         advertiser_client => [qw(is_favourite is_blocked is_recommended)],
     );
@@ -382,7 +384,11 @@ sub get_p2p_settings {
             disabled              => $p2p_config->block_trade->enabled ? 0 : 1,
             maximum_advert_amount => $p2p_config->block_trade->maximum_advert,
         },
-
+        counterparty_term_steps => {
+            completion_rate => $p2p_config->advert_counterparty_terms->completion_rate_steps,
+            join_days       => $p2p_config->advert_counterparty_terms->join_days_steps,
+            rating          => $p2p_config->advert_counterparty_terms->rating_steps,
+        },
     };
 
     return $result;

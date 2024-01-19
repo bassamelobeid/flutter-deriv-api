@@ -2649,8 +2649,8 @@ use constant {
         PP022 => 'OrderNotConfirmedPending',
         PP023 => 'OrderConfirmCompleted',
         PP024 => 'OrderReviewExists',
-        PP025 => 'AdvertiserExist'
-
+        PP025 => 'AdvertiserExist',
+        PP026 => 'AdvertCounterpartyIneligible',
     },
 };
 
@@ -3056,6 +3056,7 @@ sub p2p_advert_create {
     $self->_validate_cross_border_availability if $param{local_currency} ne uc($self->local_currency);
     $self->_validate_block_trade_availability  if $param{block_trade};
     $self->_validate_advert(%param);
+    %param = $self->_process_advert_params(%param);
 
     my $market_rate = p2p_exchange_rate($param{local_currency})->{quote};
     die +{error_code => 'AdvertFloatRateNotAllowed'} if $param{rate_type} eq 'float' and not $market_rate;
@@ -3063,10 +3064,11 @@ sub p2p_advert_create {
     my ($id) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 @param{
-                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids payment_method_names rate_type block_trade order_expiry_period/
+                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info
+                        payment_method_ids payment_method_names rate_type block_trade order_expiry_period min_completion_rate min_rating min_join_days eligible_countries/
                 });
         });
 
@@ -3251,13 +3253,14 @@ sub p2p_advert_update {
 
     $advert->{remaining_amount} = delete $advert->{remaining};    # named differently in api vs db function
 
-    my %changed_fields = map { (exists $advert->{$_} and ($advert->{$_} // '') ne $param{$_}) ? ($_ => 1) : () } keys %param;
+    my %changed_fields = map { (exists $advert->{$_} and ($advert->{$_} // '') ne ($param{$_} // '')) ? ($_ => 1) : () } keys %param;
 
     # return current advert details if nothing changed
     return $self->p2p_advert_info(id => $id)
         if not $param{delete}
         and not $param{payment_method_ids}
         and not $param{payment_method_names}
+        and not $param{eligible_countries}
         and not %changed_fields;
 
     # upgrade of legacy ads
@@ -3274,6 +3277,14 @@ sub p2p_advert_update {
 
     $param{old} = $advert;
     $self->_validate_advert(%$advert, %param) unless $param{delete};
+    %param = $self->_process_advert_params(%param);
+
+    # set special values used by p2p.advert_update_v2 to set nulls in db when undef or empty array is sent in api request
+    for my $field (qw(min_completion_rate min_rating min_join_days)) {
+        $param{$field} = -1 if exists $param{$field} && !defined $param{$field};
+    }
+    $param{eligible_countries} = ['clear']
+        if exists $param{eligible_countries} && (!defined $param{eligible_countries} || $param{eligible_countries}->@* == 0);
 
     if ($param{is_active} and not $advert->{is_active}) {
         # reset archive date, cron will recreate it
@@ -3285,10 +3296,11 @@ sub p2p_advert_update {
         fixup => sub {
             my $dbh = shift;
             return $dbh->selectrow_hashref(
-                'SELECT * FROM p2p.advert_update_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_update_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $id,
                 @param{
-                    qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount rate min_order_amount max_order_amount rate_type order_expiry_period/
+                    qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount
+                        rate min_order_amount max_order_amount rate_type order_expiry_period min_completion_rate min_rating min_join_days eligible_countries/
                 });
         });
     $self->_p2p_db_error_handler($updated_advert);
@@ -3376,6 +3388,9 @@ sub p2p_order_create {
     die +{error_code => 'InvalidAdvertOwn'}      if $advert->{advertiser_loginid} eq $self->loginid;
     die +{error_code => 'AdvertiserBlocked'}     if $advert->{advertiser_blocked};
     die +{error_code => 'InvalidAdvertForOrder'} if $advert->{client_blocked};
+    die +{error_code => 'AdvertCounterpartyIneligible'}
+        if any { $advert->{$_} }
+        qw (client_ineligible_completion_rate client_ineligible_rating client_ineligible_join_date client_ineligible_country);
 
     my $advert_type = $advert->{type};
 
@@ -4464,6 +4479,21 @@ sub _validate_block_trade_availability {
     die +{error_code => 'BlockTradeDisabled'} unless BOM::Config::Runtime->instance->app_config->payments->p2p->block_trade->enabled;
 }
 
+=head2 _process_advert_params
+
+Common processing of ad params for p2p_advert_create and p2p_advert_update.
+
+=cut
+
+sub _process_advert_params {
+    my ($self, %param) = @_;
+
+    $param{min_completion_rate} = $param{min_completion_rate} / 100     if $param{min_completion_rate};
+    $param{eligible_countries}  = [sort $param{eligible_countries}->@*] if $param{eligible_countries};
+
+    return %param;
+}
+
 =head2 _p2p_advertisers
 
 Returns a list of advertisers filtered by id and/or loginid.
@@ -4573,13 +4603,13 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
                         client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
                         use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map country_payment_methods
-                        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback block_trade/
+                        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback block_trade hide_ineligible/
                 });
         }) // [];
 }
@@ -4651,6 +4681,7 @@ sub _validate_advert {
     $self->_validate_advert_payment_method_ids(%param);
     $self->_validate_advert_payment_method_names(%param);
     $self->_validate_advert_payment_contact_info(%param);
+    $self->_validate_advert_counterparty_terms(%param);
 }
 
 =head2 _validate_advert_amount
@@ -4965,6 +4996,25 @@ sub _validate_advert_payment_method_names {
         die +{
             error_code     => 'InvalidPaymentMethod',
             message_params => [$invalid_method]};
+    }
+}
+
+=head2 _validate_advert_counterparty_terms
+
+Validate fields for advert terms.
+
+=cut
+
+sub _validate_advert_counterparty_terms {
+    my ($self, %param) = @_;
+
+    if ($param{eligible_countries} && $param{eligible_countries}->@*) {
+        my %p2p_countries = BOM::Config::P2P::available_countries()->%*;
+        if (my $invalid_country = first { !$p2p_countries{$_} } $param{eligible_countries}->@*) {
+            die +{
+                error_code     => 'InvalidCountry',
+                message_params => [$invalid_country]};
+        }
     }
 }
 
@@ -5391,6 +5441,12 @@ sub _advert_details {
             max_order_amount_limit         => $advert->{max_order_amount_actual},
             max_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
             block_trade                    => $advert->{block_trade},
+
+            defined $advert->{min_completion_rate} ? (min_completion_rate => sprintf('%.1f', $advert->{min_completion_rate} * 100)) : (),
+            defined $advert->{min_rating}          ? (min_rating          => sprintf('%.2f', $advert->{min_rating}))                : (),
+            defined $advert->{min_join_days}       ? (min_join_days       => $advert->{min_join_days})                              : (),
+            defined $advert->{eligible_countries}  ? (eligible_countries  => $advert->{eligible_countries})                         : (),
+
             # to match p2p_advert_list params, plus checking if advertiser blocked
             is_visible => (
                         $advert->{is_active}
@@ -5398,9 +5454,10 @@ sub _advert_details {
                     and $advert->{advertiser_is_approved}
                     and $advert->{advertiser_is_listed}
                     and not $advert->{advertiser_blocked}
-                    and not $advert->{is_deleted}
-                ) ? 1
+                    and not $advert->{is_deleted})
+            ? 1
             : 0,
+
             advertiser_details => {
                 id                    => $advert->{advertiser_id},
                 name                  => $advert->{advertiser_name},
@@ -5488,6 +5545,12 @@ sub _advert_details {
                 push @reasons, 'advertiser_block_trade_ineligible' if $advert->{block_trade} and not $advert->{advertiser_can_block_trade};
                 $result->{visibility_status} = \@reasons;
             }
+        } else {
+            push $result->{eligibility_status}->@*, 'completion_rate' if $advert->{client_ineligible_completion_rate};
+            push $result->{eligibility_status}->@*, 'country'         if $advert->{client_ineligible_country};
+            push $result->{eligibility_status}->@*, 'join_date'       if $advert->{client_ineligible_join_date};
+            push $result->{eligibility_status}->@*, 'rating_average'  if $advert->{client_ineligible_rating};
+            $result->{is_eligible} = $result->{eligibility_status} ? 0 : 1;
         }
 
         push @results, $result;
