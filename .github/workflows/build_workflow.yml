@@ -15,6 +15,7 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ github.repository }}
+      runner: self-hosted 
   # Temporarily comment out dependent job
   # dependent:
   #   needs: core_unit_syntax_diff
