@@ -35,7 +35,8 @@
       "config": {
          "required": [
             "tin_format",
-            "tin_format_description"
+            "tin_format_description",
+            "mifir"
          ],
          "properties": {
             "tin_format": {
@@ -43,6 +44,9 @@
             },
             "tin_format_description": {
                "type": "string"
+            },
+            "mifir": {
+               "type": "object"
             }
          },
          "type": "object",
