@@ -27,6 +27,7 @@ use Encode;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use POSIX                      qw(ceil);
 use JSON::MaybeUTF8            qw(encode_json_utf8 encode_json_text);
+use Finance::MIFIR::CONCAT     qw(mifir_concat);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
@@ -564,6 +565,7 @@ sub set_authentication_and_status {
         $self->set_authentication('ID_DOCUMENT', {status => 'pass'}, $staff);
         BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $self->loginid});
         $address_verified = 1;
+        $self->update_mifir_id_concat();
     }
 
     if ($client_authentication eq 'ID_ONLINE') {
@@ -618,6 +620,27 @@ sub _notify_cs_about_authenticated_mf {
             . ' client. Please check the financial assessment, Tax Identification Number and MIFIR information. MF client is: '
             . $loginid)->send();
 
+}
+
+=head2 update_mifir_id_concat
+
+Update MIFIR ID for a client using concat
+
+=cut
+
+sub update_mifir_id_concat {
+    my $self         = shift;
+    my $mifir_concat = request()->brand->countries_instance->is_mifir_concat_allowed($self->citizen);
+    if ($mifir_concat and not defined($self->mifir_id)) {
+        $self->mifir_id(
+            mifir_concat({
+                    cc         => $self->citizen,
+                    date       => $self->date_of_birth,
+                    first_name => $self->first_name,
+                    last_name  => $self->last_name,
+                }));
+        $self->save;
+    }
 }
 
 =head2 risk_level_aml

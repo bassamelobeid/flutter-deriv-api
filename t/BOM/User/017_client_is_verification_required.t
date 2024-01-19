@@ -76,6 +76,7 @@ $mock_lc->mock('skip_authentication', sub { 0 });
 $client_mx->set_authentication_and_status('ID_DOCUMENT', 'test');
 
 is($client_mx->is_verification_required(), 0, 'authentication is not required if age verified and fully auth');
+ok($client_mx->mifir_id, 'mifir id is set');
 
 $mock_lc->unmock_all;
 $client_mx->status->clear_age_verification;
@@ -163,4 +164,31 @@ $mock_lc->mock(
 
 is($client_mf->is_verification_required(has_mt5_regulated_account => 1),
     1, 'return 1 because it has mt5 regulated account except for maltainvest irrespective of deposit');
+
+subtest 'update mifir id' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test',
+    )->add_client($client);
+
+    is(defined($client->mifir_id), "", 'mifir id is not set');
+    $client->update_mifir_id_concat();
+    ok($client->mifir_id, 'mifir id is set');
+    is($client->mifir_id, 'AT19780623BRAD#PITT#', 'mifir id is correct');
+    $client->first_name('Grad');
+    $client->update_mifir_id_concat();
+    is($client->mifir_id, 'AT19780623BRAD#PITT#', 'mifir id is not changed if already set');
+    $client->mifir_id(undef);
+    $client->citizen('us');
+    $client->update_mifir_id_concat();
+    is($client->mifir_id, undef, 'mifir id is not changed if citizenship is not part of eu set');
+    $client->citizen('za');
+    $client->set_authentication_and_status('ID_DOCUMENT', 'test');
+    is($client->mifir_id, 'ZA19780623GRAD#PITT#', 'mifir id is set for diel  if not already set');
+
+};
 done_testing();
