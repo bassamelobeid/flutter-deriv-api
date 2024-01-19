@@ -582,6 +582,25 @@ payments:
               isa: ArrayRef
               global: 1
               default: []
+        advert_counterparty_terms:
+          description: 'Settings for advert counterparty terms'
+          isa: section
+          contains:
+            completion_rate_steps:
+              description: 'Front end ranges for minimum completion rate (0 - 100).'
+              isa: ArrayRef
+              global: 1
+              default: [50,70,90]
+            join_days_steps:
+              description: 'Front end ranges for minimum join days.'
+              isa: ArrayRef
+              global: 1
+              default: [15,30,60]
+            rating_steps:
+              description: 'Front end ranges for minimum rating (1.00 - 5.00).'
+              isa: ArrayRef
+              global: 1
+              default: [3,4,4.5]
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
