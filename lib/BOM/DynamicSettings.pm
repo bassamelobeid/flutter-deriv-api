@@ -133,8 +133,8 @@ sub save_settings {
                         : Data::Compare->new($new_value,                             $old_value);
 
                     if (not $compare->Cmp) {
-                        my $extra_validation = get_extra_validation($s);
-                        $extra_validation->($new_value, $old_value, $s)     if $extra_validation;
+                        my @extra_validations = get_extra_validations($s);
+                        $_->($new_value, $old_value, $s) for @extra_validations;
                         send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
                         $values_to_set->{$s} = $new_value;
                         push @changed_keys, $s;
@@ -569,6 +569,9 @@ sub get_settings_by_group {
                 payments.p2p.cross_border_ads_restricted_countries
                 payments.p2p.fiat_deposit_restricted_countries
                 payments.p2p.fiat_deposit_restricted_lookback
+                payments.p2p.advert_counterparty_terms.completion_rate_steps
+                payments.p2p.advert_counterparty_terms.join_days_steps
+                payments.p2p.advert_counterparty_terms.rating_steps
             )]};
 
     my $settings;
@@ -660,34 +663,38 @@ sub parse_and_refine_setting {
 #       - an optional second argument (the old value)
 #       - an optional third argument (configuration key being validated)
 #       - If there is a problem die with a message describing the issue.
-sub get_extra_validation {
+sub get_extra_validations {
     my $setting = shift;
     state $setting_validators = {
-        'cgi.terms_conditions_versions'                              => \&_validate_tnc_string,
-        'payments.transfer_between_accounts.minimum.default'         => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.minimum.MT5'             => \&_validate_transfer_trading_platform,
-        'payments.transfer_between_accounts.minimum.dxtrade'         => \&_validate_transfer_trading_platform,
-        'payments.p2p.limits.maximum_advert'                         => \&_validate_positive_number,
-        'payments.p2p.limits.maximum_order'                          => \&_validate_positive_number,
-        'payments.p2p.restricted_countries'                          => \&_validate_countries,
-        'payments.p2p.cross_border_ads_restricted_countries'         => \&_validate_countries,
-        'payments.p2p.transaction_verification_countries'            => \&_validate_countries,
-        'payments.p2p.fiat_deposit_restricted_countries'             => \&_validate_countries,
-        'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
-        'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
-        'payments.transfer_between_accounts.limits.dxtrade'          => \&_validate_positive_number,
-        'payments.transfer_between_accounts.maximum.default'         => \&_validate_positive_number,
-        'payments.p2p.order_timeout'                                 => \&_validate_order_expiry_period,
-        'payments.transfer_between_accounts.maximum.MT5'             => \&_validate_transfer_trading_platform,
-        'payments.transfer_between_accounts.maximum.dxtrade'         => \&_validate_transfer_trading_platform,
-        'payments.payment_limits'                                    => \&_validate_payment_min_by_staff,
-        'compliance.fake_names.corporate_patterns'                   => \&_validate_corporate_patterns,
-        'compliance.fake_names.accepted_consonant_names'             => \&_validate_accepted_consonant_names,
-        'compliance.auto_anonymization_daily_limit'                  => \&_validate_positive_number,
-        'system.suspend.transfer_currency_pair'                      => \&_validate_currency_pair,
+        'cgi.terms_conditions_versions'                                => \&_validate_tnc_string,
+        'payments.transfer_between_accounts.minimum.default'           => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.minimum.MT5'               => \&_validate_transfer_trading_platform,
+        'payments.transfer_between_accounts.minimum.dxtrade'           => \&_validate_transfer_trading_platform,
+        'payments.p2p.limits.maximum_advert'                           => \&_validate_positive_number,
+        'payments.p2p.limits.maximum_order'                            => \&_validate_positive_number,
+        'payments.p2p.restricted_countries'                            => \&_validate_countries,
+        'payments.p2p.cross_border_ads_restricted_countries'           => \&_validate_countries,
+        'payments.p2p.transaction_verification_countries'              => \&_validate_countries,
+        'payments.p2p.fiat_deposit_restricted_countries'               => \&_validate_countries,
+        'payments.transfer_between_accounts.limits.between_accounts'   => \&_validate_positive_number,
+        'payments.transfer_between_accounts.limits.MT5'                => \&_validate_positive_number,
+        'payments.transfer_between_accounts.limits.dxtrade'            => \&_validate_positive_number,
+        'payments.transfer_between_accounts.maximum.default'           => \&_validate_positive_number,
+        'payments.p2p.order_timeout'                                   => \&_validate_order_expiry_period,
+        'payments.transfer_between_accounts.maximum.MT5'               => \&_validate_transfer_trading_platform,
+        'payments.transfer_between_accounts.maximum.dxtrade'           => \&_validate_transfer_trading_platform,
+        'payments.payment_limits'                                      => \&_validate_payment_min_by_staff,
+        'compliance.fake_names.corporate_patterns'                     => \&_validate_corporate_patterns,
+        'compliance.fake_names.accepted_consonant_names'               => \&_validate_accepted_consonant_names,
+        'compliance.auto_anonymization_daily_limit'                    => \&_validate_positive_number,
+        'system.suspend.transfer_currency_pair'                        => \&_validate_currency_pair,
+        'payments.p2p.advert_counterparty_terms.completion_rate_steps' => \&_validate_positive_number,
+        'payments.p2p.advert_counterparty_terms.join_days_steps'       => [\&_validate_positive_number, \&_validate_whole_number],
+        'payments.p2p.advert_counterparty_terms.rating_steps'          => \&_validate_positive_number,
     };
 
-    return $setting_validators->{$setting};
+    my $validations = $setting_validators->{$setting} or return ();
+    return ref $validations eq 'ARRAY' ? @$validations : ($validations);
 }
 
 =head2 _validate_currency_pair
@@ -761,9 +768,31 @@ Validates the amount to be a positive valid number.
 =cut
 
 sub _validate_positive_number {
-    my $input_data = shift;
-    die "Invalid numerical value $input_data"    unless Scalar::Util::looks_like_number($input_data);
-    die "$input_data is less than or equal to 0" unless $input_data > 0;
+    my $values = shift;
+    $values = [$values] unless ref $values eq 'ARRAY';
+
+    for my $value (@$values) {
+        die "Invalid numerical value $value"    unless Scalar::Util::looks_like_number($value);
+        die "$value is less than or equal to 0" unless $value > 0;
+    }
+
+    return;
+}
+
+=head2 _validate_whole_number
+
+Validates the amount does not contain any decimal places or decimal point - only numbers are allowed.
+
+=cut
+
+sub _validate_whole_number {
+    my $values = shift;
+    $values = [$values] unless ref $values eq 'ARRAY';
+
+    for my $value (@$values) {
+        die "$value is not a whole number" if $value =~ /[^0-9]/;
+    }
+
     return;
 }
 
