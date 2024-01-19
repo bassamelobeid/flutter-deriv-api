@@ -212,6 +212,8 @@ our %ERROR_MAP = do {
         BlockTradeDisabled            => localize('Block trading is currently unavailable. Please try again later.'),
         AuthenticationRequired        => localize('Submit your proof of address and identity before signing up for Deriv P2P.'),
         InvalidOrderExpiryPeriod      => localize('Invalid order expiry period provided.'),
+        InvalidCountry                => localize('[_1] is not a valid country code or a country where P2P is offered.'),
+        AdvertCounterpartyIneligible  => localize("You do not meet the advertiser's requirements for placing an order on this advert."),
     );
 };
 
