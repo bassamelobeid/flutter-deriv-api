@@ -204,6 +204,48 @@ sub set_advertiser_created_time_by_day {
     return 1;
 }
 
+=head2 set_advertiser_completion_rate
+
+Sets advertiser completion rate to a value of 0-1 or undef
+
+=cut
+
+sub set_advertiser_completion_rate {
+    my ($advertiser, $rate) = @_;
+
+    my ($total, $success) = defined $rate ? (1000, sprintf('%.0f', 1000 * $rate)) : (undef, undef);
+
+    $advertiser->db->dbic->dbh->do(
+        'INSERT INTO p2p.p2p_advertiser_totals (advertiser_id, complete_total, complete_success) VALUES (?,?,?) 
+        ON CONFLICT (advertiser_id) DO UPDATE SET complete_total = EXCLUDED.complete_total, complete_success = EXCLUDED.complete_success',
+        undef, $advertiser->_p2p_advertiser_cached->{id}, $total, $success
+    );
+
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    return 1;
+}
+
+=head2 set_advertiser_rating_average
+
+Sets advertiser rating average to a value of 1-5 or undef
+
+=cut
+
+sub set_advertiser_rating_average {
+    my ($advertiser, $average) = @_;
+
+    $advertiser->db->dbic->dbh->do(
+        'INSERT INTO p2p.p2p_advertiser_totals (advertiser_id, rating_average) VALUES (?,?) 
+        ON CONFLICT (advertiser_id) DO UPDATE SET rating_average = EXCLUDED.rating_average',
+        undef, $advertiser->_p2p_advertiser_cached->{id}, $average
+    );
+
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    return 1;
+}
+
 sub set_order_status {
     my ($client, $order_id, $new_status) = @_;
 
