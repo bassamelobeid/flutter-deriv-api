@@ -357,7 +357,7 @@ subtest 'create advert (sell)' => sub {
         # Fields that are only visible when viewing a different advertiser
         $expected{advertiser_details}->{is_blocked}     = $expected{advertiser_details}->{is_favourite} = 0;
         $expected{advertiser_details}->{is_recommended} = undef;
-        note explain $resp->{p2p_advert_info};
+        $expected{is_eligible} = 1;
 
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
     };

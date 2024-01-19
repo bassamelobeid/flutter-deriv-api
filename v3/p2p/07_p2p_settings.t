@@ -52,6 +52,11 @@ my %vals = (
     block_trade                 => {
         disabled              => 0,
         maximum_advert_amount => 15
+    },
+    counterparty_term_steps => {
+        completion_rate => [50, 70, 90],
+        join_days       => [30, 20, 10],
+        rating          => [2,  3,  4],
     });
 
 $app_config->set({'payments.p2p.available'                             => 1});
@@ -77,6 +82,10 @@ $app_config->set({'payments.p2p.order_timeout'                         => $vals{
 $app_config->set({'payments.p2p.review_period'                         => $vals{review_period}});
 $app_config->set({'payments.p2p.feature_level'                         => $vals{feature_level}});
 $app_config->set({'payments.p2p.block_trade.maximum_advert'            => $vals{block_trade}->{maximum_advert_amount}});
+
+$app_config->set({'payments.p2p.advert_counterparty_terms.completion_rate_steps' => $vals{counterparty_term_steps}{completion_rate}});
+$app_config->set({'payments.p2p.advert_counterparty_terms.join_days_steps'       => $vals{counterparty_term_steps}{join_days}});
+$app_config->set({'payments.p2p.advert_counterparty_terms.rating_steps'          => $vals{counterparty_term_steps}{rating}});
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
