@@ -7,13 +7,17 @@ jobs:
   syntax_unit:
     uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
     secrets: inherit
+    with:
+      runner: self-hosted
   core:
     uses: regentmarkets/github-actions/.github/workflows/core.yml@master
     secrets: inherit
+    with:
+      runner: self-hosted
   publish_test_results:
     needs: [ core , syntax_unit ]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - 
         name: Upload results to TestSpace
