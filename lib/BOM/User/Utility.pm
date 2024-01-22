@@ -274,8 +274,10 @@ sub p2p_on_advert_view {
                 my %new_ad_copy;
                 $new_ad_copy{$_} = $new_ad->{$_}                     // '' for ($fields{common}->@*,            $fields{client}->@*);
                 $new_ad_copy{$_} = $new_ad->{advertiser_details}{$_} // '' for ($fields{advertiser_common}->@*, $fields{advertiser_client}->@*);
+                $new_ad_copy{$_} = join(',', sort $new_ad_copy{$_}->@*) for grep { ref $new_ad_copy{$_} eq 'ARRAY' } keys %new_ad_copy;
 
                 my $cur_ad = $state->{$id};
+
                 if (   not $cur_ad
                     or any     { ($cur_ad->{$_}           // '') ne $new_ad_copy{$_} } ($fields{common}->@*, $fields{advertiser_common}->@*)
                         or any { ($cur_ad->{$_}{$loginid} // '') ne $new_ad_copy{$_} } ($fields{client}->@*, $fields{advertiser_client}->@*))
@@ -304,9 +306,8 @@ sub p2p_on_advert_view {
         for my $loginid (keys $new_state->{$id}->%*) {
             for my $field (keys $new_state->{$id}{$loginid}->%*) {
                 my $val = $new_state->{$id}{$loginid}{$field};
-                $val                            = join(',', sort @$val) if ref $val eq 'ARRAY';
-                $state->{$id}{$field}           = $val                  if any { $_ eq $field } ($fields{common}->@*, $fields{advertiser_common}->@*);
-                $state->{$id}{$field}{$loginid} = $val                  if any { $_ eq $field } ($fields{client}->@*, $fields{advertiser_client}->@*);
+                $state->{$id}{$field}           = $val if any { $_ eq $field } ($fields{common}->@*, $fields{advertiser_common}->@*);
+                $state->{$id}{$field}{$loginid} = $val if any { $_ eq $field } ($fields{client}->@*, $fields{advertiser_client}->@*);
             }
         }
     }
