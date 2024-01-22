@@ -5,7 +5,7 @@ on:
     - cron: '35 20 * * *'
 jobs:
   syntax_unit:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     container:
       image: ${{ vars.DEBIAN_CI }}
       credentials:
@@ -31,3 +31,5 @@ jobs:
   core:
     uses: regentmarkets/github-actions/.github/workflows/core.yml@master
     secrets: inherit
+    with:
+      runner: self-hosted
