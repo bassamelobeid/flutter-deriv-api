@@ -1666,7 +1666,7 @@ sub _get_authentication_poi {
     my $last_rejected  = [];
 
     if ($poi_rejected || $rejected_rules) {
-        $last_rejected = _get_last_rejected($params)->{rejected_reasons};
+        $last_rejected = _get_last_rejected($params)->{rejected_reasons} // [];
     }
 
     my $idv_details = _get_idv_service_detail($client);

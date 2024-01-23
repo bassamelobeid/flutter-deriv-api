@@ -398,6 +398,92 @@ subtest 'Fully Auth with IDV' => sub {
         risk_classification           => 'high'
         },
         'expected response for IDV authenticated under high risk scenario';
+
+    $client_mock->unmock_all;
+};
+
+subtest 'poi/idv status rejected for diel acc check latest_poi_by' => sub {
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $mock_status = 'rejected';
+
+    $client_mock->mock(
+        'get_idv_status',
+        sub {
+            return $mock_status;
+        });
+
+    $client_mock->mock(
+        'get_poi_status',
+        sub {
+            return $mock_status;
+        });
+
+    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+idv+diel@deriv.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($cr_client);
+    $user->add_client($mf_client);
+
+    $cr_client->status->set('age_verification', 'system', 'idv');
+
+    my $token_cr = $m->create_token($cr_client->loginid, 'test token');
+    my $token_mf = $m->create_token($mf_client->loginid, 'test token');
+    my $result   = $c->tcall('get_account_status', {token => $token_cr});
+
+    cmp_deeply $result->{authentication}->{identity},
+        +{
+        status   => 'rejected',
+        services => {
+            onfido => {
+                is_country_supported => 1,
+                reported_properties  => {},
+                last_rejected        => [],
+                status               => 'none',
+                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                country_code         => 'IDN',
+                submissions_left     => 1
+            },
+            idv => {
+                status              => 'rejected',
+                last_rejected       => [],
+                reported_properties => {},
+                submissions_left    => 3
+            },
+            manual => {status => 'none'}}
+        },
+        'expected response for IDV verified for CR acc';
+
+    $result = $c->tcall('get_account_status', {token => $token_mf});
+
+    cmp_deeply $result->{authentication}->{identity},
+        +{
+        status   => 'rejected',
+        services => {
+            onfido => {
+                is_country_supported => 1,
+                reported_properties  => {},
+                last_rejected        => [],
+                status               => 'none',
+                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                country_code         => 'IDN',
+                submissions_left     => 1
+            },
+            idv => {
+                status              => 'rejected',
+                last_rejected       => [],
+                reported_properties => {},
+                submissions_left    => 3
+            },
+            manual => {status => 'none'}}
+        },
+        'expected response for IDV verified for MF acc';
 };
 
 subtest 'expired docs account' => sub {
