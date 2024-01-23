@@ -2173,6 +2173,105 @@ system:
               isa: Num
               default: 5000
               global: 1
+        white_label_download_links:
+          description: "Configuration for MT5 white label download links"
+          isa: section
+          contains:
+            bvi:
+              description: "White label download links for Deriv (BVI) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22631/mt5/derivbvi5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
+                  global: 1
+            labuan:
+              description: "White label download links for Deriv (FX) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22680/mt5/derivfx5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                  global: 1
+            maltainvest:
+              description: "White label download links for Deriv Investments (Europe) Limited"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22632/mt5/derivmt5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
+                  global: 1
+            svg:
+              description: "White label download links for Deriv (SVG) LLC"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22698/mt5/derivsvg5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                  global: 1
+            vanuatu:
+              description: "White label download links for Deriv (V) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22628/mt5/derivvu5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
+                  global: 1
     dxtrade:
       description: "Configuration for DXTrade"
       isa: section
