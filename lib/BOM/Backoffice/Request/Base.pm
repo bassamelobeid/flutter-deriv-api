@@ -6,6 +6,7 @@ use Mojo::URL;
 use Encode;
 use Sys::Hostname;
 use Plack::App::CGIBin::Streaming::Request;
+use HTML::Entities;
 
 use LandingCompany::Registry;
 use Brands;
@@ -158,11 +159,11 @@ sub _build_params {
             my @values = @{$params->{$param}};
             $params->{$param} = [];
             foreach my $value (@values) {
-                $value = Encode::decode('UTF-8', $value);
+                $value = encode_entities(Encode::decode('UTF-8', $value), '<>&');
                 push @{$params->{$param}}, $value;
             }
         } else {
-            $params->{$param} = Encode::decode('UTF-8', $params->{$param});
+            $params->{$param} = encode_entities(Encode::decode('UTF-8', $params->{$param}), '<>&');
         }
     }
 

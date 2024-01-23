@@ -5,6 +5,7 @@ use Encode;
 use BOM::Backoffice::Form;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Auth    qw(get_staff_nickname);
+use HTML::Entities;
 
 subtest 'Unicode requests' => sub {
 
@@ -25,7 +26,7 @@ subtest 'Unicode requests' => sub {
     $mock_request->mock('http_method', sub { return ''; });
 
     my %output = %{request()->params};
-    cmp_ok $output{$_}, 'eq', $input{$_} for (keys %input);
+    cmp_ok $output{$_}, 'eq', encode_entities($input{$_}, '<>&') for (keys %input);
 };
 
 subtest 'get_csrf_token' => sub {
