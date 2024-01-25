@@ -14,7 +14,7 @@ use curry;
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| ws_redis_master redis_pricer redis_feed_master redis_transaction |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| ws_redis_master redis_pricer redis_feed redis_transaction |;
 
 use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
@@ -131,7 +131,7 @@ sub register {
             };
         });
 
-    for my $redis_name (qw(ws_redis_master redis_pricer redis_pricer_subscription redis_feed_master redis_transaction)) {
+    for my $redis_name (qw(ws_redis_master redis_pricer redis_pricer_subscription redis_feed redis_transaction)) {
         $app->helper(
             $redis_name => sub {
                 return Binary::WebSocketAPI::v3::Instance::Redis->$redis_name;
