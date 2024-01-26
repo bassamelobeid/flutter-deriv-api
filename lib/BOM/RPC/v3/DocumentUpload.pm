@@ -377,10 +377,15 @@ sub validate_expiration_date {
 
     return if not $expiration_date;
 
-    my $current_date = Date::Utility->new;
-    my $parsed_date  = Date::Utility->new($expiration_date);
+    try {
+        my $current_date = Date::Utility->new;
+        my $parsed_date  = Date::Utility->new($expiration_date);
 
-    return 'already_expired' if not $parsed_date->is_after($current_date);
+        return 'already_expired' unless $parsed_date->is_after($current_date);
+    } catch {
+        # Date Utility failed, so we cannot tell if the date is expired
+        return 'invalid_exp_date';
+    }
 
     return;
 }
@@ -393,6 +398,7 @@ sub create_upload_error {
     state $default_error_msg  = localize('Sorry, an error occurred while processing your request.');
     state $errors             = {
         virtual                      => {message => localize("Virtual accounts don't require document uploads.")},
+        invalid_exp_date             => {message => localize("Invalid expiration date")},
         already_expired              => {message => localize('Expiration date cannot be less than or equal to current date.')},
         missing_exp_date             => {message => localize('Expiration date is required.')},
         missing_doc_id               => {message => localize('Document ID is required.')},

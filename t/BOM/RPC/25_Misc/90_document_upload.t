@@ -100,6 +100,21 @@ subtest 'Error for doc expiration date in the past' => sub {
     );
 };
 
+subtest 'Error for invalid expiration date in the future' => sub {
+    my $custom_params = {args => {expiration_date => '3000-01-01'}};
+    call_and_check_error($custom_params, 'Invalid expiration date', 'expected message for unparseable date');
+};
+
+subtest 'Error for doc invalid expiration date in the past' => sub {
+    my $custom_params = {args => {expiration_date => '0111-01-01'}};
+    call_and_check_error($custom_params, 'Invalid expiration date', 'expected message for unparseable date');
+};
+
+subtest 'Error for doc invalid expiration date, pure garbage' => sub {
+    my $custom_params = {args => {expiration_date => 'foobar'}};
+    call_and_check_error($custom_params, 'Invalid expiration date', 'expected message for unparseable date');
+};
+
 subtest 'Error for over-size file' => sub {
     my $custom_params = {args => {file_size => MAX_FILE_SIZE + 1}};
     call_and_check_error($custom_params, 'Maximum file size reached. Maximum allowed is ' . MAX_FILE_SIZE, 'over-size file is denied');
