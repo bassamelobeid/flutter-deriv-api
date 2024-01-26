@@ -244,6 +244,8 @@ subtest 'buy turbos options', sub {
             is $chld->{'take_profit_order_date'},   undef,             'take_profit_order_date is undef';
             is $chld->{'ask_spread'},               0.102916418596081, 'ask_spread is charged for buy';
             is $chld->{'bid_spread'},               undef,             'bid_spread is undef';
+            is $chld->{entry_spot},                 '100',             'correct entry spot price';
+            is $chld->{barrier},                    '78.00',           'correct strike price (normalized)';
         };
 
     }
@@ -310,6 +312,8 @@ subtest 'sell a bet', sub {
             is $chld->{'take_profit_order_date'},   undef,             'take_profit_order_date is undef';
             is $chld->{'ask_spread'},               0.102916418596081, 'ask_spread is charged for buy';
             is $chld->{'bid_spread'},               0.102916418596081, 'bid_spread is charged for manual sell';
+            is $chld->{entry_spot},                 '100',             'correct entry spot price';
+            is $chld->{barrier},                    '78.00',           'correct strike price (normalized)';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
@@ -402,6 +406,8 @@ subtest 'buy turbos with take profit', sub {
             is $chld->{'take_profit_order_date'},   $fmb->{start_time}, 'take_profit_order_date is correct';
             is $chld->{'ask_spread'},               0.102916418596081,  'ask_spread is charged for buy';
             is $chld->{'bid_spread'},               undef,              'bid_spread is undef';
+            is $chld->{entry_spot},                 '100',              'correct entry spot price';
+            is $chld->{barrier},                    '78.00',            'correct strike price (normalized)';
         };
 
     }
@@ -473,6 +479,8 @@ subtest 'sell a bet with take profit', sub {
             is $chld->{'take_profit_order_date'},   $fmb->{start_time}, 'take_profit_order_date is correct';
             is $chld->{'ask_spread'},               0.102916418596081,  'ask_spread is charged for buy';
             is $chld->{'bid_spread'},               0.102916418596081,  'bid_spread is charged for manual sell';
+            is $chld->{entry_spot},                 '100',              'correct entry spot price';
+            is $chld->{barrier},                    '78.00',            'correct strike price (normalized)';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
