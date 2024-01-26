@@ -426,7 +426,7 @@ if ($r->param('save_vanilla_fx_per_symbol_config')) {
         die "bs markup must be a number"               unless looks_like_number($bs_markup);
 
         die 'risk profile is incorrect'
-            unless ($risk_profile ~~ ['low_risk', 'medium_risk', 'moderate_risk', 'high_risk', 'extreme_risk']);
+            unless grep { $_ eq $risk_profile } ('low_risk', 'medium_risk', 'moderate_risk', 'high_risk', 'extreme_risk');
 
         my $vanilla_config = decode_json_utf8($app_config->get("quants.vanilla.fx_per_symbol_config.$symbol"));
 
