@@ -37,10 +37,11 @@ Excludes suspend_buy symbols
 sub get_symbols_for_submarket {
     my ($self, $market, $submarket) = @_;
 
-    my %suspended_offerings     = map { $_ => 1 } BOM::Config::Runtime->instance->get_offerings_config->{suspend_underlying_symbols}->@*;
-    my @offerings_for_submarket = map { $_->{symbol} } grep { $_->{submarket} eq $submarket->name } Finance::Underlying->all_underlyings();
-
-    return grep { not $suspended_offerings{$_} } @offerings_for_submarket;
+    return $self->offerings->query({
+            market    => $market->name,
+            submarket => $submarket->name
+        },
+        ['underlying_symbol']);
 
 }
 
