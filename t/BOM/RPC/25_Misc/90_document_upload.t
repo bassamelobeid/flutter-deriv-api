@@ -772,7 +772,7 @@ subtest 'POA is pending' => sub {
 
     $file_id = $result->{file_id};
 
-    $result = $c->call_ok(
+    $c->call_ok(
         'document_upload',
         {
             token => $token,
@@ -783,6 +783,51 @@ subtest 'POA is pending' => sub {
 
     $client = BOM::User::Client->new({loginid => $client->loginid});
     is $client->get_poa_status, 'pending', 'pending POA';
+
+    subtest 'skip allow poa resubmission' => sub {
+        $c->call_ok(
+            'document_upload',
+            {
+                token => $token,
+                args  => {
+                    document_id       => '2353253',
+                    document_type     => 'utility_bill',
+                    document_format   => 'png',
+                    expected_checksum => '2532523',
+                    expiration_date   => '2099-01-01',
+                }}
+        )->has_error->error_message_is('POA document is already uploaded and pending for review', 'error message is correct')
+            ->error_code_is('UploadDenied', 'error code is correct');
+
+        $client->status->set('allow_poa_resubmission', 'test', 'test');
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+        is $client->get_poa_status, 'pending', 'pending POA';
+        ok $client->status->allow_poa_resubmission, 'allow POA resubmission is enabled';
+
+        $result = $c->call_ok(
+            'document_upload',
+            {
+                token => $token,
+                args  => {
+                    document_id       => '2353253',
+                    document_type     => 'utility_bill',
+                    document_format   => 'png',
+                    expected_checksum => '2532523',
+                    expiration_date   => '2099-01-01',
+                }})->has_no_error->result;
+
+        $file_id = $result->{file_id};
+
+        $c->call_ok(
+            'document_upload',
+            {
+                token => $token,
+                args  => {
+                    file_id => $file_id,
+                    status  => 'success',
+                }})->has_no_error;
+    };
 };
 
 subtest 'POI is pending' => sub {

@@ -260,6 +260,8 @@ sub validate_poa_status {
 
     return undef unless $document_type && any { $_ eq $args->{document_type} } $client->documents->poa_types->@*;
 
+    return undef if $client->status->allow_poa_resubmission;
+
     return 'poa_pending' if $client->get_poa_status() eq 'pending';
 
     return undef;
