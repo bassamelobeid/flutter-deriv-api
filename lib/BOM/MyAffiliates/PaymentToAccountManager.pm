@@ -218,7 +218,9 @@ sub _get_csv_line_from_txn {
         die 'Could not extract month from transaction. Full transaction details: ' . Dumper($transaction);
     }
 
-    my $comment = 'Payment from Deriv Services Ltd ' . $month_str;
+    my $company = $client->landing_company->name // 'Deriv (SVG) LLC';
+
+    my $comment = 'Payment from ' . $company . ' ' . $month_str;
 
     # got everything, so lets make the CSV line:
     my $csv = Text::CSV->new;

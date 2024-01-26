@@ -107,11 +107,30 @@ subtest '_get_csv_line_from_txn' => sub {
         "OCCURRED" => "2022-12-09"
     };
     $mock_client = Test::MockObject->new();
-    $mock_client->mock("currency", sub { "SGD" });
+    my $landing_company_mock = Test::MockObject->new();
+    $landing_company_mock->mock("name", sub { "Deriv (SVG) LLC" });
+    $mock_client->mock("landing_company", sub { return $landing_company_mock; });
+    $mock_client->mock("currency",        sub { "SGD" });
+    $mock_client->mock("broker_code",     sub { "CR" });
     $mock_db_mapper = Test::MockObject->new();
     $mock_db_mapper->mock("get_monthly_exchange_rate", sub { return [[10]] });
-    $expected = 'CR15609,credit,affiliate_reward,SGD,1.00,"Payment from Deriv Services Ltd Dec 2022"';
+    $expected = 'CR15609,credit,affiliate_reward,SGD,1.00,"Payment from Deriv (SVG) LLC Dec 2022"';
     my $output = BOM::MyAffiliates::PaymentToAccountManager::_get_csv_line_from_txn($input);
+    is($output, $expected, "CSV generated for non US currency");
+
+    $mock_client          = {};
+    $landing_company_mock = {};
+
+    $landing_company_mock = Test::MockObject->new();
+    $landing_company_mock->mock("name", sub { "Deriv Investments (Europe) Limited" });
+    $mock_client = Test::MockObject->new();
+    $mock_client->mock("landing_company", sub { return $landing_company_mock; });
+    $mock_client->mock("currency",        sub { "EUR" });
+    $mock_client->mock("broker_code",     sub { "MF" });
+    $mock_db_mapper = Test::MockObject->new();
+    $mock_db_mapper->mock("get_monthly_exchange_rate", sub { return [[10]] });
+    $expected = 'CR15609,credit,affiliate_reward,EUR,1.00,"Payment from Deriv Investments (Europe) Limited Dec 2022"';
+    $output   = BOM::MyAffiliates::PaymentToAccountManager::_get_csv_line_from_txn($input);
     is($output, $expected, "CSV generated for non US currency");
 };
 
