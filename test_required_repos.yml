@@ -18,3 +18,4 @@
 - regentmarkets/bom-postgres-feeddb
 - regentmarkets/bom-postgres-userdb
 - regentmarkets/bom-postgres-commissiondb
+- regentmarkets/bom-postgres-ethdb

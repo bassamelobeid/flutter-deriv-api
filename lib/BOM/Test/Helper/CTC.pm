@@ -66,7 +66,7 @@ sub set_pending {
 
     $trace_id //= "trace_id_" . time . "_" . rand(1e9);
 
-    my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
+    my $dbic = BOM::CTC::Database->new()->dbic();
     # since we are using bom-events for subscription we need to set
     # the transaction to pending manually here.
     try {
