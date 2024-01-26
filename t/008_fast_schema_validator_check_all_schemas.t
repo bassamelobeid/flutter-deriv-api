@@ -59,6 +59,9 @@ my $unsupported_schemas = {
     'verify_email/send.json'                           => 1,
     'verify_email_cellxpert/send.json'                 => 1,
     'website_status/receive.json'                      => 1,
+    'passkeys_register_options/receive.json'           => 1,
+    'passkeys_register/send.json'                      => 1,
+    'passkeys_login/receive.json'                      => 1,
     'website_config/receive.json'                      => 1,
 };
 

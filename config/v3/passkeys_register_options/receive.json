@@ -1,0 +1,209 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Passkeys register options (response)",
+    "description": "Return public key register options.",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "passkeys_register_options": {
+            "title": "passkeys_register_options",
+            "description": "Wrapper of the response.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "publicKey": {
+                    "title": "publicKey",
+                    "description": "Wrapper of the options.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "attestation": {
+                            "title": "attestation",
+                            "description": "The attestation settings, weather the authenticator will attest the respone on no. Default is direct.",
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "indirect",
+                                "direct"
+                            ]
+                        },
+                        "authenticatorSelection": {
+                            "title": "authenticatorSelection",
+                            "description": "Settings to control authenticator behavior and selection.",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "authenticatorAttachment": {
+                                    "title": "authenticatorAttachment",
+                                    "description": "Whether to allow cross platform authenticators (QR) or only the ones installed on the device itself.",
+                                    "type": "string",
+                                    "enum": [
+                                        "platform",
+                                        "cross-platform"
+                                    ]
+                                },
+                                "requireResidentKey": {
+                                    "title": "requireResidentKey",
+                                    "description": "Ask the auth to save the passkey on the device. this will allow seamless login without the need to enter the user name. will be true always",
+                                    "type": "boolean"
+                                },
+                                "userVerification": {
+                                    "title": "userVerification",
+                                    "description": "Ask the user to enter thier authentication method (PIN, fingerprint, etc). Default is required.",
+                                    "type": "string",
+                                    "enum": [
+                                        "required",
+                                        "preferred",
+                                        "discouraged"
+                                    ]
+                                }
+                            }
+                        },
+                        "challenge": {
+                            "title": "challenge",
+                            "description": "Random string to be signed by the authenticator. will be byte array base64 encoded.",
+                            "type": "string"
+                        },
+                        "excludeCredentials": {
+                            "title": "excludeCredentials",
+                            "description": "List of already registered credentials to avoid re-registering.",
+                            "type": "array",
+                            "items": {
+                                "title": "excludeCredentials",
+                                "description": "Wrapper of the credential.",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "id": {
+                                        "title": "id",
+                                        "description": "The credential id. base64 encoded.",
+                                        "type": "string"
+                                    },
+                                    "transports": {
+                                        "title": "transports",
+                                        "description": "The transports supported by the authenticator.",
+                                        "type": "array",
+                                        "items": {
+                                            "title": "transports",
+                                            "description": "The transport supported by the authenticator.",
+                                            "type": "string",
+                                            "enum": [
+                                                "usb",
+                                                "nfc",
+                                                "ble",
+                                                "smart-card",
+                                                "hybrid",
+                                                "internal"
+                                            ]
+                                        }
+                                    },
+                                    "type": {
+                                        "title": "type",
+                                        "description": "Will be always public-key.",
+                                        "type": "string",
+                                        "enum": [
+                                            "public-key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "extensions": {
+                            "title": "extensions",
+                            "description": "Empty for now",
+                            "type": "object",
+                            "additionalProperties": false
+                        },
+                        "pubKeyCredParams": {
+                            "title": "pubKeyCredParams",
+                            "description": "Supported public key algorithms.",
+                            "type": "array",
+                            "items": {
+                                "title": "pubKeyCredParams",
+                                "description": "PubKeyCredParams.",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "alg": {
+                                        "title": "alg",
+                                        "description": "Algorithm",
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "title": "type",
+                                        "description": "Type",
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "rp": {
+                            "title": "rp",
+                            "description": "The relying party info.",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "id": {
+                                    "title": "id",
+                                    "description": "Relying party id.",
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "title": "name",
+                                    "description": "Relying party name.",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "timeout": {
+                            "title": "timeout",
+                            "description": "Time before expiring the cermony in milliseconds.",
+                            "type": "integer"
+                        },
+                        "user": {
+                            "title": "user",
+                            "description": "The user info",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "displayName": {
+                                    "title": "displayName",
+                                    "description": "Display name of the user. will be email",
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "title": "id",
+                                    "description": "Binary user id",
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "title": "name",
+                                    "description": "Name of the user, will be email",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "passkeys_register_options"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

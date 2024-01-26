@@ -671,6 +671,60 @@ sub actions_config {
                 category => 'p2p',
             },
         ],
+        [
+            'passkeys_list',
+            {
+                category           => 'passkeys',
+                stash_params       => [qw/ jtoken /],
+                instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
+            }
+        ],
+        [
+            'passkeys_login',
+            {
+                category => 'passkeys',
+            }
+        ],
+        [
+            'passkeys_options',
+            {
+                category           => 'passkeys',
+                stash_params       => [qw/ jtoken /],
+                instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
+            }
+        ],
+        [
+            'passkeys_register_options',
+            {
+                category           => 'passkeys',
+                stash_params       => [qw/ jtoken /],
+                instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
+            }
+        ],
+        [
+            'passkeys_register',
+            {
+                category           => 'passkeys',
+                stash_params       => [qw/ jtoken /],
+                instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
+            }
+        ],
+        [
+            'passkeys_rename',
+            {
+                category           => 'passkeys',
+                stash_params       => [qw/ jtoken /],
+                instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
+            }
+        ],
+        [
+            'passkeys_revoke',
+            {
+                category           => 'passkeys',
+                stash_params       => [qw/ jtoken /],
+                instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
+            }
+        ],
         ['trading_platform_asset_listing', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::trading_platform_asset_listing}],
         [
             'p2p_advertiser_list',

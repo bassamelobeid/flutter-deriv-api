@@ -1,0 +1,47 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Passkeys login (response)",
+    "description": "Return info on passkeys user when successful",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "passkeys_login": {
+            "title": "passkeys_login",
+            "description": "Wrapper of the response.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "binary_user_id": {
+                    "description": "The user id.",
+                    "type": "integer"
+                },
+                "email": {
+                    "description": "The email address of the user.",
+                    "type": "string"
+                },
+                "verified": {
+                    "description": "The Passkeys login status",
+                    "type": "boolean"
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "passkeys_login"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

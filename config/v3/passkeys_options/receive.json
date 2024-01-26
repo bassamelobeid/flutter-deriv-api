@@ -1,0 +1,118 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Passkeys options (response)",
+    "description": "Return public key authenticate options .",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "passkeys_options": {
+            "title": "passkeys_options",
+            "description": "Wrapper of the response.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "publicKey": {
+                    "title": "publicKey",
+                    "description": "Wrapper of the options.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "allowCredentials": {
+                            "title": "allowCredentials",
+                            "description": "List of credentials that are already registered. Only listed credentials are allowed to authenticate.",
+                            "type": "array",
+                            "items": {
+                                "title": "allowCredentials",
+                                "description": "credential details",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "id": {
+                                        "title": "id",
+                                        "description": "The credential id. base64 encoded.",
+                                        "type": "string"
+                                    },
+                                    "transports": {
+                                        "title": "transports",
+                                        "description": "The transports supported by the authenticator.",
+                                        "type": "array",
+                                        "items": {
+                                            "title": "transports",
+                                            "description": "The transport supported by the authenticator.",
+                                            "type": "string",
+                                            "enum": [
+                                                "usb",
+                                                "nfc",
+                                                "ble",
+                                                "smart-card",
+                                                "hybrid",
+                                                "internal"
+                                            ]
+                                        }
+                                    },
+                                    "type": {
+                                        "title": "type",
+                                        "description": "Will be always public-key.",
+                                        "type": "string",
+                                        "enum": [
+                                            "public-key"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "challenge": {
+                            "title": "challenge",
+                            "description": "Random string to be signed by the authenticator. will be byte array base64 encoded.",
+                            "type": "string"
+                        },
+                        "extensions": {
+                            "title": "extensions",
+                            "description": "Empty for now",
+                            "type": "object",
+                            "additionalProperties": false
+                        },
+                        "rpId": {
+                            "title": "rpid",
+                            "description": "Relying party id.",
+                            "type": "string"
+                        },
+                        "timeout": {
+                            "title": "timeout",
+                            "description": "Time before expiring the ceremony in milliseconds.",
+                            "type": "integer"
+                        },
+                        "userVerification": {
+                            "title": "userVerification",
+                            "description": "Ask the user to enter thier authentication method (PIN, fingerprint, etc). Default is discouraged.",
+                            "type": "string",
+                            "enum": [
+                                "required",
+                                "preferred",
+                                "discouraged"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "passkeys_options"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "passkeys_register": 1,
+    "name": "example key",
+    "publicKeyCredential": {
+        "type": "public-key",
+        "authenticatorAttachment": "cross-platform",
+        "clientExtensionResults": {},
+        "id": "eBbO4ZEpWgx",
+        "rawId": "eBbO4ZEpWgx",
+        "response": {
+            "attestationObject": "o2NmbXRkbm9uZWd",
+            "authenticatorData": "Jqtm2RKeBGKJGK3-",
+            "clientDataJSON": "eyJ0eXBlIjoid2ViYX",
+            "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0",
+            "publicKeyAlgorithm": -7,
+            "transports": [
+                "nfc",
+                "usb"
+            ]
+        }
+    }
+}

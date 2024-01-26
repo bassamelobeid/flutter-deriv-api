@@ -1,0 +1,16 @@
+{
+    "passkeys_login": "1",
+    "publicKeyCredential": {
+        "type": "public-key",
+        "authenticatorAttachment": "cross-platform",
+        "clientExtensionResults": {},
+        "id": "gvse-HnSGCOdC1Xc-8dtRV6sZrNjCRAHtDgBnI27UOTBFmr_8XbncOicM2KpQcq9",
+        "rawId": "gvse-HnSGCOdC1Xc-8dtRV6sZrNjCRAHtDgBnI27UOTBFmr_8XbncOicM2KpQcq9",
+        "response": {
+            "authenticatorData": "foEpQMVj02u9iNAMR7u5IBHnRekKzPCx1zXg41dR2rAFAAAAFQ",
+            "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoicXBNUnFRN0U3Y0hNTkFXZk9CUkJrSnI3SnVoRzdFcGg1U2duYk5zUzdzNCIsIm9yaWdpbiI6Imh0dHBzOi8vcWExNjMuZGVyaXYuZGV2IiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ",
+            "signature": "MEQCIHWE3nevc4899tlQuAzUXGltSC5e4-F8k3fMWeQVU6NkAiB7d7ne-ILXrwxFpqhNAMiRamWhon4fxLLHLm3uve2Qvg",
+            "userHandle": "3"
+        }
+    }
+}

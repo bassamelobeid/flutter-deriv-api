@@ -1,0 +1,115 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Passkeys register (request)",
+    "description": "Register a passkey for the user using the public key returned from the authenticator.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "passkeys_register"
+    ],
+    "properties": {
+        "passkeys_register": {
+            "description": "Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "name": {
+            "description": "The name of the passkey.",
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1
+        },
+        "publicKeyCredential": {
+            "description": "The public key credential returned from the authenticator.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "clientExtensionResults",
+                "id",
+                "response",
+                "type"
+            ],
+            "properties": {
+                "authenticatorAttachment": {
+                    "description": "The authenticator attachment.",
+                    "type": "string"
+                },
+                "clientExtensionResults": {
+                    "description": "The client extension results.",
+                    "type": "object"
+                },
+                "id": {
+                    "description": "The credential id. base64 encoded",
+                    "type": "string"
+                },
+                "rawId": {
+                    "description": "The raw credential id. base64 encoded should match id. (Optional)",
+                    "type": "string"
+                },
+                "response": {
+                    "description": "The response from the authenticator.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "attestationObject",
+                        "clientDataJSON",
+                        "transports"
+                    ],
+                    "properties": {
+                        "attestationObject": {
+                            "description": "The attestation object. base64 encoded",
+                            "type": "string"
+                        },
+                        "authenticatorData": {
+                            "description": "The authenticator data. base64 encoded (Optional)",
+                            "type": "string"
+                        },
+                        "clientDataJSON": {
+                            "description": "The client data json. base64 encoded",
+                            "type": "string"
+                        },
+                        "publicKey": {
+                            "description": "The public key. base64 encoded (Optional)",
+                            "type": "string"
+                        },
+                        "publicKeyAlgorithm": {
+                            "description": "The public key algorithm. (Optional)",
+                            "type": "integer"
+                        },
+                        "transports": {
+                            "description": "The transports.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "type": {
+                    "description": "The type of the credential.",
+                    "type": "string"
+                }
+            }
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}
