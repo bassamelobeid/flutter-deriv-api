@@ -11,6 +11,7 @@ use Path::Tiny;
 use YAML::XS;
 use Dir::Self;
 use BOM::Config::Redis;
+use Date::Utility;
 
 use constant POA_ADDRES_MISMATCH_TTL  => 604_800;
 use constant POA_ADDRESS_MISMATCH_KEY => 'POA_ADDRESS_MISMATCH::';
@@ -205,33 +206,39 @@ sub _build_uploaded {
                         $has_lifetime_valid->{$category_key}            = 1;
                     } else {
                         if (my $issue_date = $single_document->issue_date) {
-                            my $issue_du = Date::Utility->new($issue_date);
-                            $documents{$category_key}->{best_issue_date} //= $issue_du;
-                            $documents{$category_key}->{best_issue_date} = $issue_du
-                                if $documents{$category_key}->{best_issue_date}->is_before($issue_du);
+                            my $issue_du = eval { Date::Utility->new($issue_date) };
+
+                            if ($issue_du) {
+                                $documents{$category_key}->{best_issue_date} //= $issue_du;
+                                $documents{$category_key}->{best_issue_date} = $issue_du
+                                    if $documents{$category_key}->{best_issue_date}->is_before($issue_du);
+                            }
                         }
                         if (my $verified_date = $single_document->verified_date) {
-                            my $now                   = Date::Utility->new;
-                            my $verification_validity = Date::Utility->new($verified_date)->plus_time_interval($ttl);
+                            my $now         = Date::Utility->new;
+                            my $verified_du = eval { Date::Utility->new($verified_date) };
 
-                            my $days_outdated = $now->days_between($verification_validity);
-                            # we exploit the fact that days between can produce a negative number
-                            # we will carry the smaller negative number (best issuance date)
+                            if ($verified_du) {
+                                my $verification_validity = $verified_du->plus_time_interval($ttl);
+                                my $days_outdated         = $now->days_between($verification_validity);
+                                # we exploit the fact that days between can produce a negative number
+                                # we will carry the smaller negative number (best issuance date)
 
-                            $documents{$category_key}->{to_be_outdated} //= $days_outdated if $days_outdated <= 0;
-                            $documents{$category_key}->{to_be_outdated} = $days_outdated
-                                if $days_outdated <= 0 && $days_outdated < $documents{$category_key}->{to_be_outdated};
+                                $documents{$category_key}->{to_be_outdated} //= $days_outdated if $days_outdated <= 0;
+                                $documents{$category_key}->{to_be_outdated} = $days_outdated
+                                    if $days_outdated <= 0 && $days_outdated < $documents{$category_key}->{to_be_outdated};
 
-                            $days_outdated = 0 if $days_outdated < 0;
+                                $days_outdated = 0 if $days_outdated < 0;
 
-                            $documents{$category_key}->{is_outdated} //= $days_outdated;
-                            # the less days outdated the better
-                            $documents{$category_key}->{is_outdated} = $days_outdated if $days_outdated < $documents{$category_key}->{is_outdated};
+                                $documents{$category_key}->{is_outdated} //= $days_outdated;
+                                # the less days outdated the better
+                                $documents{$category_key}->{is_outdated} = $days_outdated
+                                    if $days_outdated < $documents{$category_key}->{is_outdated};
 
-                            my $verified_du = Date::Utility->new($verified_date);
-                            $documents{$category_key}->{best_verified_date} //= $verified_du;
-                            $documents{$category_key}->{best_verified_date} = $verified_du
-                                if $documents{$category_key}->{best_verified_date}->is_before($verified_du);
+                                $documents{$category_key}->{best_verified_date} //= $verified_du;
+                                $documents{$category_key}->{best_verified_date} = $verified_du
+                                    if $documents{$category_key}->{best_verified_date}->is_before($verified_du);
+                            }
                         }
                     }
                 } elsif ($doc_status eq 'uploaded') {

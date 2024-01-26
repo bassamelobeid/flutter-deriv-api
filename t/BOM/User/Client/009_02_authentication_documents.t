@@ -193,12 +193,14 @@ subtest 'Outdated documents' => sub {
     my $SQL_3          = 'UPDATE betonmarkets.client_authentication_document SET verified_date = ? WHERE id = ?';
     my $sth_doc_update = $dbh->prepare($SQL_3);
 
+    my $SQL_4                = 'UPDATE betonmarkets.client_authentication_document SET issue_date = ? WHERE id = ?';
+    my $sth_doc_update_issue = $dbh->prepare($SQL_4);
+
     subtest 'No POA docs' => sub {
         $client->documents->_clear_uploaded;
         ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
         is $client->documents->to_be_outdated('proof_of_address'), undef, 'Not getting outdated';
     };
-
     subtest 'No best date' => sub {
         $best_date = undef;
         $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'awe4', 'none', 'front', $best_date, 'bo');
@@ -211,6 +213,16 @@ subtest 'Outdated documents' => sub {
         is $client->documents->to_be_outdated('proof_of_address'), undef, 'Not getting outdated';
         ok !$client->documents->outdated('proof_of_address'),                         'PoA is not outdated';
         ok !$client->documents->best_poa_date('proof_of_address', 'best_issue_date'), 'undef best issue date';
+
+        subtest 'Invalid date' => sub {
+            $client->documents->_clear_uploaded;
+            $sth_doc_update->execute('3000-01-01', $id1);          # is simply treated as undef
+            $sth_doc_update_issue->execute('0999-01-01', $id1);    # is simply treated as undef
+            is $client->documents->to_be_outdated('proof_of_address'), undef, 'Not getting outdated';
+            ok !$client->documents->outdated('proof_of_address'), 'PoA is not outdated';
+            ok !$client->documents->best_poa_date('proof_of_address', 'best_verified_date'), 'undef best verified date';
+            ok !$client->documents->best_poa_date('proof_of_address', 'best_issue_date'),    'undef best issue date';
+        };
     };
 
     subtest 'With outdated best date +100' => sub {
@@ -2332,6 +2344,71 @@ subtest 'POI bundle' => sub {
     $user_mock->unmock_all;
 };
 
+subtest 'uploaded building on invalid dates' => sub {
+    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+
+    my $user = BOM::User->create(
+        email    => 'building+on+invalid+dates@binary.com',
+        password => 'Abcd1234'
+    );
+
+    $user->add_client($cr);
+    $user->add_client($vr);
+
+    $cr->binary_user_id($user->id);
+    $cr->user($user);
+    $cr->save;
+
+    $vr->binary_user_id($user->id);
+    $vr->user($user);
+    $vr->save;
+
+    my $id1 = upload($cr, '123123134', 'national_identity_card', 'uploaded', 'invalid123', 'client', 'front', '2020-10-10', 'br');
+    my $id2 = upload($cr, '123124412', 'utility_bill', 'verified', 'invalid135', 'client', 'back', '2020-10-10', 'br', '3000-10-10', '0999-01-01');
+
+    my $cr_loginid = $cr->loginid;
+
+    cmp_deeply $cr->documents->uploaded,
+        {
+        proof_of_identity => {
+            documents => {
+                "$cr_loginid.national_identity_card.$id1\_front.PNG" => {
+                    format      => 'PNG',
+                    type        => 'national_identity_card',
+                    id          => '123123134',
+                    status      => 'uploaded',
+                    expiry_date => undef
+                }
+            },
+            is_pending  => 1,
+            is_uploaded => 1
+        },
+        proof_of_address => {
+            documents => {
+                "$cr_loginid.utility_bill.$id2\_back.PNG" => {
+                    id          => '123124412',
+                    type        => 'utility_bill',
+                    format      => 'PNG',
+                    status      => 'verified',
+                    expiry_date => undef
+                }
+            },
+            is_verified => 1,
+            is_pending  => 0,
+        }
+        },
+        'Expected uploaded documents';
+
+    my ($poa) = $cr->find_client_authentication_document(query => [id => $id2]);
+    is $poa->verified_date->ymd, '0999-01-01', 'expected issue date';
+    is $poa->issue_date->ymd,    '3000-10-10', 'expected verified date';
+};
+
 sub build_document {
     my $args = shift;
 
@@ -2339,7 +2416,7 @@ sub build_document {
 }
 
 sub upload {
-    my ($client, $document_id, $type, $status, $checksum, $origin, $side, $upload_date, $country) = @_;
+    my ($client, $document_id, $type, $status, $checksum, $origin, $side, $upload_date, $country, $issue_date, $verified_date) = @_;
 
     my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,NULL,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin, ?)';
     my $sth_doc_new = $dbh->prepare($SQL);
@@ -2358,6 +2435,20 @@ sub upload {
 
     my $sth_doc_upd = $dbh->prepare($SQL);
     $sth_doc_upd->execute($upload_date, $id1);
+
+    if ($issue_date) {
+        $SQL = 'UPDATE betonmarkets.client_authentication_document SET issue_date = ? WHERE id = ?';
+
+        $sth_doc_upd = $dbh->prepare($SQL);
+        $sth_doc_upd->execute($issue_date, $id1);
+    }
+
+    if ($verified_date) {
+        $SQL = 'UPDATE betonmarkets.client_authentication_document SET verified_date = ? WHERE id = ?';
+
+        $sth_doc_upd = $dbh->prepare($SQL);
+        $sth_doc_upd->execute($verified_date, $id1);
+    }
 
     return $id1;
 }
