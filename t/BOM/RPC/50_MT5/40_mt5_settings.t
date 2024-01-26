@@ -110,6 +110,7 @@ subtest 'login list' => sub {
 
     my @accounts = map { $_->{login} } @{$c->result};
     note explain $c->result;
+    is($c->result->[0]->{landing_company},       'Deriv (SVG) LLC',                           "broker_name result");
     is($c->result->[0]->{landing_company_short}, 'svg',                                       "landing_company_short result");
     is($c->result->[0]->{market_type},           'synthetic',                                 "market_type result");
     is($c->result->[0]->{sub_account_type},      'financial',                                 "sub_account_type result");

@@ -153,7 +153,7 @@ async_rpc "mt5_login_list",
             @logins = map {
                 _filter_settings(
                     $_,
-                    qw(account_type balance country currency display_balance email group landing_company_short),
+                    qw(account_type balance country currency display_balance email group landing_company landing_company_short),
                     qw(leverage login name market_type sub_account_type sub_account_category server server_info),
                     qw(status webtrader_url),
                 )
