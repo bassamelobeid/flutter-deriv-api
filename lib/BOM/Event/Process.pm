@@ -140,6 +140,7 @@ my $action_mapping = {
         app_updated                                      => \&BOM::Event::Actions::App::app_updated,
         email_subscription                               => \&BOM::Event::Actions::App::email_subscription,
         account_opening_new                              => \&BOM::Event::Actions::Client::account_opening_new,
+        account_verification                             => \&BOM::Event::Actions::Client::account_verification,
         account_closure                                  => \&BOM::Event::Actions::Client::track_account_closure,
         account_reactivated                              => \&BOM::Event::Actions::Client::track_account_reactivated,
         api_token_created                                => \&BOM::Event::Actions::Client::api_token_created,

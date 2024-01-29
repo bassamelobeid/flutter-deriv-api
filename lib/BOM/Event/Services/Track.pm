@@ -147,6 +147,7 @@ my %EVENT_PROPERTIES = (
     account_with_false_info_locked    => [qw(email authentication_url profile_url is_name_change)],
     underage_account_closed           => [qw(tnc_approval)],
     account_opening_new               => [qw(first_name verification_url code email live_chat_url)],
+    account_verification              => [qw(first_name verification_url code email live_chat_url)],
     account_opening_existing          => [qw(loginid email live_chat_url login_url password_reset_url)],
     self_tagging_affiliates           => [qw(email live_chat_url)],
     request_payment_withdraw          => [qw(loginid email live_chat_url verification_url code paymentagent)],
@@ -241,14 +242,14 @@ my @COMMON_EVENT_METHODS = qw(
     shared_payment_method_email_notification
 );
 
-# list of events that will be forwarded directly to cio as tranasctional emails
+# list of events that will be forwarded directly to cio as transactional emails
 my @TRANSACTIONAL_EVENTS = qw(
     pa_withdraw_confirm
     request_change_email
-
     request_payment_withdraw
     unknown_login
     account_opening_new
+    account_verification
     reset_password_request
     pa_transfer_confirm
     reset_password_confirmation

@@ -232,7 +232,7 @@ subtest 'process - tracking jobs' => sub {
                 payment_withdrawal payment_withdrawal_reversal reset_password_request reset_password_confirmation
                 request_change_email confirm_change_email verify_change_email account_reactivated
                 login transfer_between_accounts set_financial_assessment payment_deposit
-                account_closure profile_change account_opening_new trading_platform_account_created
+                account_closure profile_change account_opening_new account_verification trading_platform_account_created
                 trading_platform_password_reset_request trading_platform_investor_password_reset_request
                 trading_platform_password_changed trading_platform_password_change_failed
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed

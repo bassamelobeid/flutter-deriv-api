@@ -4102,6 +4102,29 @@ sub link_affiliate_client {
     return;
 }
 
+=head2 account_verification
+
+It is triggered for each B<account_verification> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub account_verification {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        anonymous  => 1,
+        event      => 'account_verification',
+        properties => $args,
+    );
+}
+
 =head2 account_opening_new
 
 It is triggered for each B<account_opening_new> event emitted, delivering it to Segment.
