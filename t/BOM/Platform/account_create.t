@@ -368,6 +368,31 @@ subtest 'create account' => sub {
         ok !BOM::Platform::Account::Virtual::_virtual_company_for_brand('INVALID_BRAND'), 'Invalid brand';
     };
 
+    subtest 'email verified parameter' => sub {
+        my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email        => 'not_email_verified1@binary.com',
+                    account_type => 'binary'
+                }});
+        ok $vr_acc_n->{user}->email_verified, 'User is email verified when email_verified detail is not provided as default is 1';
+
+        $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email          => 'also_not_email_verified2@binary.com',
+                    email_verified => 0,
+                    account_type   => 'binary'
+                }});
+        ok !$vr_acc_n->{user}->email_verified, 'User is not email verified when email_verified=0 detail is provided';
+
+        $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email          => 'email_verifie3d@binary.com',
+                    email_verified => 1,
+                    account_type   => 'binary'
+                }});
+        ok $vr_acc_n->{user}->email_verified, 'User is email verified when email_verified=1 detail is provided';
+    };
+
     subtest date_first_contact => sub {
         my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
