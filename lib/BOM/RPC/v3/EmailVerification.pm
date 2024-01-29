@@ -137,6 +137,20 @@ sub email_verification {
                 },
             };
         },
+        account_verification => sub {
+            return {
+                template_args => {
+                    name  => $name,
+                    title => localize('Verify your email'),
+                    (
+                        $verification_uri
+                        ? (verification_url => _build_verification_url('verify_account', $args))
+                        : ()
+                    ),
+                    %common_args,
+                },
+            };
+        },
         self_tagging_affiliates => sub {
             return {
                 template_args => {

@@ -16,7 +16,6 @@ use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Test::Helper::Client;
 
 use BOM::Test::RPC::QueueClient;
-use Data::Dumper;
 
 use utf8;
 
@@ -192,6 +191,87 @@ subtest 'Account opening request with email does not exist' => sub {
         'https://www.binary.com/en/redirect.html?action=signup&lang=EN&code=' . $emitted[1]->{code} . '&utm_medium=email',
         'verification_url is set';
     is $emitted[1]->{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
+};
+
+subtest 'Email verification for user that signed up during optional email verification flow' => sub {
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
+
+    my $type = 'account_verification';
+
+    $params[1]->{args}                                 = {};
+    $params[1]->{args}->{type}                         = $type;
+    $params[1]->{args}->{url_parameters}->{utm_medium} = 'email';
+    $params[1]->{server_name}                          = 'deriv.com';
+    $params[1]->{link}                                 = 'deriv.com/some_url';
+
+    for my $feature_flag (1, 0) {
+        # Regardless of feature flag status, one can always ask for account_verification
+        BOM::Config::Runtime->instance->app_config->email_verification->suspend->virtual_accounts($feature_flag);
+
+        my $email = 'account_verification' . $feature_flag . rand(999) . '@deriv.com';
+        $params[1]->{args}->{verify_email} = $email;
+
+        subtest 'Email verification for non existing user' => sub {
+            $rpc_ct->call_ok(@params)
+                ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+            is scalar @emitted, 0, 'no email as user does not exist';
+            @emitted = ();
+        };
+
+        subtest 'Email verification unverified existing user' => sub {
+            my $args = {
+                details => {
+                    email           => $email,
+                    client_password => 'secret_pwd',
+                    residence       => 'au',
+                    account_type    => 'binary',
+                    email_verified  => 0,
+                },
+            };
+            my $acc = BOM::Platform::Account::Virtual::create_account($args);
+            my ($vr_client, $user) = ($acc->{client}, $acc->{user});
+
+            ok !$user->email_verified, 'user is not email verified';
+
+            $rpc_ct->call_ok(@params)
+                ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+            is($emitted[0], 'account_verification', 'type=account_verification');
+            is $emitted[1]->{email}, $params[1]->{args}->{verify_email}, 'email is set';
+            is $emitted[1]->{verification_url},
+                'https://www.binary.com/en/redirect.html?action=verify_account&lang=EN&code=' . $emitted[1]->{code} . '&utm_medium=email',
+                'verification_url is set';
+            is $emitted[1]->{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
+            @emitted = ();
+        };
+
+        subtest 'Email verification already verified existing user' => sub {
+            my $verified_email = 'verified_' . $email;
+            $params[1]->{args}->{verify_email} = $verified_email;
+
+            my $args = {
+                details => {
+                    email           => $verified_email,
+                    client_password => 'secret_pwd',
+                    residence       => 'au',
+                    account_type    => 'binary',
+                    email_verified  => 1,
+                },
+            };
+            my $acc = BOM::Platform::Account::Virtual::create_account($args);
+            my ($vr_client, $user) = ($acc->{client}, $acc->{user});
+
+            ok $user->email_verified, 'user is already email verified';
+
+            $rpc_ct->call_ok(@params)
+                ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+            is scalar @emitted, 0, 'no email as user\'s email is already verified';
+            @emitted = ();
+        };
+    }
 };
 
 subtest 'Account opening request with email exists' => sub {

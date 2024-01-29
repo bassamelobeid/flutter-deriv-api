@@ -269,6 +269,34 @@ sub request_email {
     return;
 }
 
+=head2 account_verification
+
+If $self->type is `account_verification` then this function will execute.
+`account_verification` event will be emitted if user exists and is not email verified.
+
+=over 4
+
+=back
+
+=cut
+
+sub account_verification {
+    my ($self) = @_;
+    if ($self->{existing_user} && !$self->{existing_user}->email_verified) {
+        my $data = $self->{email_verification}->{account_verification}->();
+        BOM::Platform::Event::Emitter::emit(
+            'account_verification',
+            {
+                verification_url => $data->{template_args}->{verification_url} // '',
+                code             => $data->{template_args}->{code}             // '',
+                email            => $self->{email},
+                live_chat_url    => $data->{template_args}->{live_chat_url} // '',
+            });
+    }
+
+    return;
+}
+
 =head2 account_opening
 
 If $self->type is `account_opening` then this function will execute for this cases:
@@ -400,7 +428,7 @@ helper function for same actions in both `payment_withdraw` and `paymentagent_wi
 sub common_payment_withdraw {
     my ($self) = @_;
     # TODO: the following should be replaced by $rule_engine->validate_action($self->{type} )
-    # We should just wait until rhe rule engine integration of PA-withdrawal and cashier withdrawal actions.
+    # We should just wait until the rule engine integration of PA-withdrawal and cashier withdrawal actions.
     my $validation_error = BOM::RPC::v3::Utility::cashier_validation($self->{client}, $self->{type});
     return $validation_error if $validation_error;
     if (BOM::RPC::v3::Utility::is_impersonating_client($self->{token})) {

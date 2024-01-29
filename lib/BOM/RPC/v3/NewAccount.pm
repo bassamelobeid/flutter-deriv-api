@@ -11,6 +11,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use Log::Any qw($log);
 use URI;
 use Text::Trim;
+use Email::Valid;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
@@ -25,7 +26,6 @@ use BOM::Platform::Locale;
 use BOM::Platform::Redis;
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Accounts;
-use BOM::RPC::v3::EmailVerification qw(email_verification);
 use BOM::RPC::v3::Utility;
 use BOM::MyAffiliates;
 use BOM::User::Client::PaymentNotificationQueue;
@@ -547,6 +547,9 @@ sub create_virtual_account {
             ->{error}
             unless $is_email_verification_suspended;
         die $error if $error;
+
+        die +{code => 'InvalidEmail'}
+            if ($is_email_verification_suspended && !Email::Valid->address($args->{email}));
 
         $error = BOM::RPC::v3::Utility::check_password({
                 email        => $args->{email},

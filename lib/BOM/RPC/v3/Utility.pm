@@ -609,6 +609,7 @@ sub error_map {
         P2PRestrictedCountry       => localize("Deriv P2P is unavailable in your country. Please provide a different account opening reason."),
         InputValidationFailed      => localize("This field is required."),
         NotAgeVerified             => localize('Please verify your identity.'),
+        InvalidEmail               => localize('This email address is invalid.'),
 
         # validate_paymentagent_details
         RequiredFieldMissing       => localize('This field is required.'),
