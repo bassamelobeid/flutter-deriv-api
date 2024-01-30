@@ -11,6 +11,33 @@ use Test::More;
 
 my $basic_offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings({loaded_revision => 0, action => 'buy'});
 
+subtest 'offerings with CFD must be larger than BO/Multiplier' => sub {
+    my $offerings_tree          = BOM::Product::Offerings::DisplayHelper::Options->new(offerings => $basic_offerings)->decorate_tree();
+    my $offerings_tree_with_cfd = BOM::Product::Offerings::DisplayHelper::CFD->new(offerings => $basic_offerings)->decorate_tree();
+
+    my @underlyings          = ();
+    my @underlyings_with_cfd = ();
+
+    for my $mkt ($offerings_tree->@*) {
+        for my $submkt ($mkt->{submarkets}->@*) {
+            for my $underlying ($submkt->{underlyings}->@*) {
+                push @underlyings, $underlying->{obj}->{display_name};
+            }
+        }
+    }
+
+    for my $mkt ($offerings_tree_with_cfd->@*) {
+        for my $submkt ($mkt->{submarkets}->@*) {
+            for my $underlying ($submkt->{underlyings}->@*) {
+                push @underlyings_with_cfd, $underlying->{obj}->{display_name};
+            }
+        }
+    }
+
+    is scalar(@underlyings) < scalar(@underlyings_with_cfd), 1, 'offerings with CFD must be larger than BO/Multiplier';
+
+};
+
 subtest 'Suspended offerings should not be in the list' => sub {
 
     suspend_symbol();
@@ -26,8 +53,8 @@ subtest 'Suspended offerings should not be in the list' => sub {
         }
     }
 
-    my @suspended_symbols = grep { $_ eq 'frxUSDJPY' or $_ eq 'frxAUDUSD' } @underlyings_with_cfd;
-    is scalar(@suspended_symbols), 0, "Shouldn't have USD/JPY and AUD/USD";
+    my @suspended_symbols = grep { $_ eq 'USD/JPY DFX10 Index' or $_ eq 'AUD/USD DFX20 Index' } @underlyings_with_cfd;
+    is scalar(@suspended_symbols), 0, "Shouldn't have USD/JPY DFX10 Index and AUD/USD DFX20 Index";
 };
 
 sub suspend_symbol {
@@ -35,7 +62,7 @@ sub suspend_symbol {
     my ($chronicle_r, $chronicle_w) = Data::Chronicle::Mock::get_mocked_chronicle();
 
     $app_config->chronicle_writer($chronicle_w);
-    $app_config->set({'quants.underlyings.suspend_buy' => ['frxUSDJPY', 'frxAUDUSD']});
+    $app_config->set({'quants.underlyings.suspend_buy' => ['USDJPYDFX10', 'AUDUSDDFX20']});
 
 }
 
