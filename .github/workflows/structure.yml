@@ -9,7 +9,11 @@ on:
           required: false
           default: ${{ vars.DEBIAN_CI }}
           type: string
-
+        is_dependent:
+          description: 'Boolean to check if its part of dependent test'
+          required: false
+          default: false
+          type: boolean
 jobs:
     structure:
         runs-on: ubuntu-latest
@@ -43,7 +47,7 @@ jobs:
           - 
             name : Upload test results
             uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
-            if: success() || failure()
+            if: ${{ !inputs.is_dependent && ( success() || failure() ) }} 
             with:
               name: test-results
               path: /tmp/test-output/**/*.xml
