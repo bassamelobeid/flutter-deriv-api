@@ -1236,6 +1236,9 @@
       real\p01_ts01\financial\maltainvest_std-hr_eur: *mt5_account_details
       real\p01_ts01\financial\maltainvest_std-hr_gbp: *mt5_account_details
       real\p01_ts01\financial\maltainvest_std-hr_usd: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-ab_eur: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-ab_gbp: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-ab_usd: *mt5_account_details
       real\p01_ts01\financial\svg_std-hr_usd: *mt5_account_details
       real\p01_ts01\financial\svg_std-lim_usd: *mt5_account_details
       real\p01_ts01\financial\svg_std_usd: *mt5_account_details

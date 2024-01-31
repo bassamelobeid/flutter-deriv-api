@@ -543,7 +543,7 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 112,
+            count   => 115,
             comment => 'real groups'
         },
         {
@@ -661,7 +661,7 @@ subtest 'available_groups' => sub {
                 company     => 'maltainvest'
             },
             allow_multiple_subgroups => 1,
-            count                    => 15,
+            count                    => 18,
             comment                  => 'real maltainvest groups'
         },
         {
@@ -671,7 +671,7 @@ subtest 'available_groups' => sub {
                 market_type => 'financial'
             },
             allow_multiple_subgroups => 1,
-            count                    => 15,
+            count                    => 18,
             comment                  => 'real maltainvest financial groups'
         },
         {

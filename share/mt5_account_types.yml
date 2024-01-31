@@ -307,6 +307,9 @@ real\p01_ts01\financial\maltainvest_std-hr_eur: &real_maltainvest_financial_fina
   server: p01_ts01
 real\p01_ts01\financial\maltainvest_std-hr_gbp: *real_maltainvest_financial_financial
 real\p01_ts01\financial\maltainvest_std-hr_usd: *real_maltainvest_financial_financial
+real\p01_ts01\financial\maltainvest_std-ab_eur: *real_maltainvest_financial_financial
+real\p01_ts01\financial\maltainvest_std-ab_gbp: *real_maltainvest_financial_financial
+real\p01_ts01\financial\maltainvest_std-ab_usd: *real_maltainvest_financial_financial
 
 real\p01_ts02\financial\maltainvest_std-hr_gbp: &real_p01ts02_maltainvest_financial_financial
   account_type: real
