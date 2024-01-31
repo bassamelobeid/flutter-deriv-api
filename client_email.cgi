@@ -51,14 +51,8 @@ my $encoded_new_email;
 if ($input{new_email}) {
     $new_email         = trim(lc defang($input{new_email}));
     $encoded_new_email = encode_entities($new_email);
-}
 
-for my $email_address ($email, $new_email) {
-    next unless $email_address;
-    my $encoded_value = encode_entities($email_address);
-    if (not Email::Valid->address($email_address)) {
-        code_exit_BO("<p>ERROR: Invalid email format [$encoded_value]<p> $retry_form", $title);
-    }
+    code_exit_BO("<p>ERROR: Invalid email format [$encoded_new_email]<p> $retry_form", $title) unless Email::Valid->address($encoded_new_email);
 }
 
 unless ($email) {
