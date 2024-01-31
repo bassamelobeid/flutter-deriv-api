@@ -240,6 +240,13 @@ sub actions_config {
             }
         ],
         [
+            'confirm_email',
+            {
+                stash_params => [qw/ server_name account_tokens /],
+                category     => 'account',
+            }
+        ],
+        [
             'verify_email_cellxpert',
             {
                 stash_params => [qw/ server_name token account_tokens /],
