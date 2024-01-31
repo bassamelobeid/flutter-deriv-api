@@ -311,7 +311,7 @@ sub loginid_details {
     for my $row (@$loginids) {
         my $loginid = $row->{loginid};
         ($row->{broker_code}) = $loginid =~ /(^[a-zA-Z]+)/;
-        my $broker_info = broker_code_details($row->{broker_code});
+        my $broker_info = broker_code_details($row->{broker_code}) or next;
         $row->{platform} //= $broker_info->{platform};
         $row->{account_type} //=
             '';    # we could set this based on broker code, but this could break code that relied on empty platform to filter out mt5 accounts

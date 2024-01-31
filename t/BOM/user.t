@@ -1300,4 +1300,43 @@ subtest 'has_mt5_groups' => sub {
     ok $user->has_mt5_groups(%args), 'now it has a valid dummy loginid';
 };
 
+subtest 'user loginid_details skip invalid broker code' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'skip_invalid_broker_code@testing.com',
+    });
+
+    my $user = BOM::User->create(
+        email          => $client->email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+
+    $user->add_client($client);
+    $user->add_loginid('CH1000');
+
+    my $result = $user->loginid_details;
+
+    # Define the expected result based on your test setup
+    my $expected_result = {
+        'CR10162' => {
+            'account_type'   => '',
+            'attributes'     => {},
+            'broker_code'    => 'CR',
+            'creation_stamp' => ignore(),
+            'currency'       => undef,
+            'is_external'    => 0,
+            'is_virtual'     => 0,
+            'is_wallet'      => 0,
+            'loginid'        => 'CR10162',
+            'platform'       => 'dtrade',
+            'status'         => undef,
+            'wallet_loginid' => undef,
+        },
+    };
+
+    # Compare the actual result with the expected result using cmp_deeply
+    cmp_deeply($result, $expected_result, 'loginid_details is as expected');
+};
+
 done_testing();
