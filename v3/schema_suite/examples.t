@@ -52,6 +52,7 @@ subtest 'Examples not requiring auth work without error' => sub {
         reset_password
         unsubscribe_email
         verify_email_cellxpert
+        confirm_email
     );
 
     my @requires_other_services = ('crypto_config', 'ticks', 'crypto_estimations');

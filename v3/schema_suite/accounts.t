@@ -185,6 +185,10 @@ test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
     $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'mf@binary.com';
 
+# CONFIRM EMAIL
+test_sendrecv_params 'verify_email/test_send.json',  'verify_email/test_receive.json',  'test@binary.com',                    'account_verification';
+test_sendrecv_params 'confirm_email/test_send.json', 'confirm_email/test_receive.json', $suite->get_token('test@binary.com'), '1';
+
 # FINANCIAL ACCOUNT OPENING (MF)
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'Jack', 'dk', 81, '+61234567008',
     '1112223334';
