@@ -611,7 +611,7 @@ subtest 'mt5 white label download links assignment' => sub {
         token    => $token,
         args     => {},
     };
-    my $app_config  = BOM::Config::Runtime->instance->app_config->system->mt5;
+
     my $real_params = {
         language => 'EN',
         token    => $token,
@@ -633,20 +633,21 @@ subtest 'mt5 white label download links assignment' => sub {
     my ($real_account) = grep { $_->{'group'} && $_->{'group'} =~ /real/ } @$login_list;
 
     is(
-        $real_account->{white_label_download_links}->{windows},
+        $real_account->{white_label}->{download_links}->{windows},
         'https://download.mql5.com/cdn/web/22698/mt5/derivsvg5setup.exe',
         'Windows link is correctly assigned'
     );
     is(
-        $real_account->{white_label_download_links}->{ios},
+        $real_account->{white_label}->{download_links}->{ios},
         'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03',
         'iOS link is correctly assigned'
     );
     is(
-        $real_account->{white_label_download_links}->{android},
+        $real_account->{white_label}->{download_links}->{android},
         'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03',
         'Android link is correctly assigned'
     );
+    is($real_account->{white_label}->{notification}, 0, 'Notification is correctly assigned');
 
     $client_mock->unmock_all;
 };

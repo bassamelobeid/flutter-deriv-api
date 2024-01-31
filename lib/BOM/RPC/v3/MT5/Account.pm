@@ -148,7 +148,7 @@ async_rpc "mt5_login_list",
             my $residence               = $client->residence;
             my $is_mt5_restricted_group = request()->brand->countries_instance->is_mt5_restricted_group($residence);
             my $is_mt5_ib               = _is_mt5_ib(\@logins);
-            my $app_config              = BOM::Config::Runtime->instance->app_config->system->mt5;
+            my $app_config              = BOM::Config::Runtime->instance->app_config->system->mt5->white_label;
 
             @logins = map {
                 _filter_settings(
@@ -180,13 +180,16 @@ async_rpc "mt5_login_list",
                 my @valid_short_codes     = qw(bvi labuan maltainvest svg vanuatu);
                 if ($landing_company_short && grep { $_ eq $landing_company_short } @valid_short_codes) {
                     # Get the config for the landing company
-                    my $company_config = $app_config->{white_label_download_links}->{$landing_company_short};
+                    my $company_config = $app_config->{download_links}->{$landing_company_short};
 
                     # Assign the config values to the MT5 account
-                    $mt5_account->{white_label_download_links} = {
-                        'windows' => $company_config->windows,
-                        'ios'     => $company_config->ios,
-                        'android' => $company_config->android,
+                    $mt5_account->{white_label} = {
+                        'download_links' => {
+                            'windows' => $company_config->windows,
+                            'ios'     => $company_config->ios,
+                            'android' => $company_config->android,
+                        },
+                        'notification' => $app_config->notification,
                     };
                 }
             }
