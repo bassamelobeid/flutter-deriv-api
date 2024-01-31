@@ -349,7 +349,6 @@ sub is_verification_token_valid {
             message_to_client => localize('Your token has expired or is invalid.')});
 
     return $response unless ($verification_token and $verification_token->token);
-
     unless ($verification_token->{created_for} eq $created_for) {
         $verification_token->delete_token;
         return $response;
@@ -610,6 +609,7 @@ sub error_map {
         InputValidationFailed      => localize("This field is required."),
         NotAgeVerified             => localize('Please verify your identity.'),
         InvalidEmail               => localize('This email address is invalid.'),
+        InvalidUser                => localize('No user found.'),
 
         # validate_paymentagent_details
         RequiredFieldMissing       => localize('This field is required.'),

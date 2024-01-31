@@ -75,6 +75,85 @@ rpc "verify_email_cellxpert",
     return $verify_email_object->do_verification();
     };
 
+=head1 NAME
+
+confirm_email
+
+=head1 DESCRIPTION
+
+This RPC (Remote Procedure Call) subroutine is used to confirm a user's email address. It is unauthenticated, meaning it can be called without the user being logged in.
+
+=head1 PARAMETERS
+
+The subroutine takes a hash reference as input. The hash should contain the following keys:
+
+=over 4
+
+=item * verification_code
+
+The verification code sent to the user's email address.
+
+=item * email_consent
+
+A boolean indicating whether the user has given consent for their email to be used.
+
+=back
+
+=head1 RETURN VALUES
+
+The subroutine returns a hash reference. If the email confirmation is successful, the hash will contain a single key-value pair: `{status => 1}`.
+
+If there is an error, the subroutine will return a hash reference containing error details. The hash will contain the following keys:
+
+=over 4
+
+=item * code
+
+A string indicating the error code.
+
+=item * message_to_client
+
+A localized message to be displayed to the client.
+
+=item * details (optional)
+
+A hash reference containing additional error details.
+
+=back
+
+=cut
+
+rpc "confirm_email",
+    auth => [],    # unauthenticated
+    sub {
+    my $params = shift;
+    my $args   = delete $params->{args};
+
+    #Checking whether the provided verification code is valid or not
+    my $verification_code     = $args->{verification_code};
+    my $email                 = BOM::Platform::Token->new({token => $verification_code})->email;
+    my $verification_response = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $email, 'account_verification');
+
+    return $verification_response if $verification_response->{error};
+
+    my $user = BOM::User->new(email => $email);
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidUser') unless $user;
+
+    #Checking whether the user is already email verified or not
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'UserAlreadyVerified',
+            message_to_client => BOM::Platform::Context::localize("User is already email verified.")}) if $user->email_verified;
+
+    #Updating email fields for the user
+    my $updated_email_fields = {
+        email_consent  => $args->{email_consent},
+        email_verified => 1,
+    };
+    $user->update_email_fields($updated_email_fields->%*);
+
+    return {status => 1};
+    };
+
 sub _update_professional_existing_clients {
 
     my ($clients, $professional_status, $professional_requested) = @_;
