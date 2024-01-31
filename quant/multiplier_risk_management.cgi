@@ -13,7 +13,6 @@ use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Chronicle;
 use LandingCompany::Registry;
-use LandingCompany::Utility;
 use Finance::Underlying::Market::Registry;
 
 BOM::Backoffice::Sysinit::init();
