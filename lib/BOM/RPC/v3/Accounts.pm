@@ -1803,7 +1803,12 @@ rpc change_email => sub {
     }
 
     my $user = $client->user;
-    $args->{new_email} = lc $args->{new_email} if $args->{new_email};
+
+    if ($args->{new_email}) {
+        $args->{new_email} = lc $args->{new_email};
+        return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($args->{new_email});
+    }
+
     if ($args->{change_email} eq 'verify') {
         my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code},
             $client->email, 'request_email', 0, $client->binary_user_id)->{error};

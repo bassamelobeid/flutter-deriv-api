@@ -17,9 +17,10 @@ use Test::BOM::RPC::Accounts;
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 # init db
-my $email    = 'abc@nowhere.com';
-my $password = 'Aer13';
-my $hash_pwd = BOM::User::Password::hashpw($password);
+my $email          = 'abc@nowhere.com';
+my $invalid_emails = ['abc..xyz@nowhere.com', 'abc', '123@nowhere'];
+my $password       = 'Aer13';
+my $hash_pwd       = BOM::User::Password::hashpw($password);
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -215,6 +216,26 @@ subtest 'change email' => sub {
     isnt($user->{email}, $email, 'user\'s email is not old_email');
     is($user->{email}, lc $new_email, 'user\'s email updated to new_email');
     isnt($test_client->get_mt5_details->{email}, $email, 'mt5\'s user email updated');
+
+    $code = BOM::Platform::Token->new({
+            email       => lc $new_email,
+            expires_in  => 3600,
+            created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
+        })->token;
+
+    $params->{args}{verification_code} = $code;
+    for my $invalid_email ($invalid_emails->@*) {
+        $params->{args}{new_email} = $invalid_email;
+        $result                    = $c->tcall($method, $params);
+        $error                     = {
+            'error' => {
+                'code'              => 'InvalidEmail',
+                'message_to_client' => 'This email address is invalid.'
+            }};
+
+        is_deeply($result, $error, "change_email returns invalid email error for $invalid_email");
+    }
 };
 
 done_testing();
