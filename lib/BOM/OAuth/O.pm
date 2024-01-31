@@ -613,13 +613,12 @@ sub _datadog_config {
     my $is_production = BOM::Config::on_production;
 
     return {
-        APP_ID                     => $config->{oauth_rum_app_id},
-        CLIENT_TOKEN               => $config->{oauth_rum_client_token},
-        SESSION_SAMPLE_RATE        => 10,
-        SESSION_REPLAY_SAMPLE_RATE => 10,
-        SERVICE_NAME               => 'oauth.deriv.com',
-        VERSION                    => '1.0',
-        ENV                        => $is_production ? 'production' : 'qa',
+        APP_ID              => $config->{oauth_rum_app_id},
+        CLIENT_TOKEN        => $config->{oauth_rum_client_token},
+        SESSION_SAMPLE_RATE => 10,
+        SERVICE_NAME        => 'oauth.deriv.com',
+        VERSION             => '1.0',
+        ENV                 => $is_production ? 'production' : 'qa',
     };
 }
 

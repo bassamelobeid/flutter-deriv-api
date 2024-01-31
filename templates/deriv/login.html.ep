@@ -246,7 +246,6 @@
             env: '<%= $dd_rum_config->{ENV} %>',
             version: '<%= $dd_rum_config->{VERSION} %>',
             sessionSampleRate: <%= $dd_rum_config->{SESSION_SAMPLE_RATE} %>,
-            sessionReplaySampleRate: <%= $dd_rum_config->{SESSION_REPLAY_SAMPLE_RATE} %>,
             trackResources: true,
             trackLongTasks: true,
             trackUserInteractions: true,
@@ -254,7 +253,5 @@
             defaultPrivacyLevel: 'mask-user-input',
             enableExperimentalFeatures: ['clickmap'],
         })
-
-        window.DD_RUM.startSessionReplayRecording();
     }
 </script>
