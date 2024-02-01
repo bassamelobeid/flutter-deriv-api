@@ -14,6 +14,11 @@ on:
           required: false
           default: false
           type: boolean
+        repository:
+          description: 'Repository name for running tests'
+          required: false
+          default: regentmarkets/binary-websocket-api
+          type: string 
 jobs:
     structure:
         runs-on: ubuntu-latest
@@ -26,7 +31,7 @@ jobs:
         defaults:
           run:
             shell: bash -le {0}
-            working-directory: /home/git/${{ github.repository }}
+            working-directory: /home/git/${{ inputs.repository }}
         env:
           LOG_LEVEL: debug
           RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -37,7 +42,7 @@ jobs:
             uses: regentmarkets/github-actions/ci-setup@master
             with:
               read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-              repository: ${{ github.repository }}
+              repository: ${{ inputs.repository }}
           - 
             name: Code structure and syntax
             run: make structure formatter='--formatter TAP::Formatter::JUnit'
