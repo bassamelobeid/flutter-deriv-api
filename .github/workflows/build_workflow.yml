@@ -38,7 +38,7 @@ jobs:
       - 
         name: json_schemas tests
         run: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make json_schemas 
       - 
         name : Upload test results
@@ -74,11 +74,12 @@ jobs:
       - 
         name: Code Structure and syntax 
         run: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make syntax_diff
       - 
         name : Unit tests 
-        run: make unit
+        run: |
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
+          make unit
       - 
         name : Upload test results
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
@@ -115,7 +116,7 @@ jobs:
         run: |
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make test1 
       - 
         name : Upload test results
@@ -153,7 +154,7 @@ jobs:
         run: |
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make test2 
       - 
         name : Upload test results
