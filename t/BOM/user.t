@@ -1315,11 +1315,12 @@ subtest 'user loginid_details skip invalid broker code' => sub {
     $user->add_client($client);
     $user->add_loginid('CH1000');
 
-    my $result = $user->loginid_details;
+    my $result                  = $user->loginid_details;
+    my $expected_client_loginid = $client->loginid;
 
     # Define the expected result based on your test setup
     my $expected_result = {
-        'CR10162' => {
+        $expected_client_loginid => {
             'account_type'   => '',
             'attributes'     => {},
             'broker_code'    => 'CR',
@@ -1328,7 +1329,7 @@ subtest 'user loginid_details skip invalid broker code' => sub {
             'is_external'    => 0,
             'is_virtual'     => 0,
             'is_wallet'      => 0,
-            'loginid'        => 'CR10162',
+            'loginid'        => $expected_client_loginid,
             'platform'       => 'dtrade',
             'status'         => undef,
             'wallet_loginid' => undef,
