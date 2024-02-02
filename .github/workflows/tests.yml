@@ -1,5 +1,5 @@
-name: Repository tests
-run-name: Repository tests
+name: Tests
+run-name: Tests
 env:
     PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
