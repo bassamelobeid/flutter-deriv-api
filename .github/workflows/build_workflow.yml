@@ -10,14 +10,22 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 jobs:
+  check_dependent_tests:
+    runs-on: self-hosted
+    outputs:
+      needs_dependent_test: ${{ steps.check_dependent_test.outputs.result }}
+    steps:
+      -
+        name: Toggle Dependent Tests
+        id: check_dependent_test
+        uses: regentmarkets/github-actions/check-dependent-test@master
   core_unit_syntax_diff:
     uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
     secrets: inherit
     with:
       repository: ${{ github.repository }}
-  # Temporarily comment out dependent job
-  # dependent:
-  #   needs: core_unit_syntax_diff
-  #   if:  ${{ github.event_name != 'push' }}
-  #   uses: ./.github/workflows/dependent.yml
-  #   secrets: inherit
+  dependent:
+    needs: [ core_unit_syntax_diff , check_dependent_tests ]
+    if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }} 
+    uses: ./.github/workflows/dependent.yml
+    secrets: inherit
