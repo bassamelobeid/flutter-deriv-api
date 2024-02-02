@@ -82,65 +82,59 @@ sub vanilla_report {
     return shift->__send_file('vanilla_report');
 }
 
+=head2 turbos_report
+
+Returns myaffiliates turbos commission report.
+
+=cut
+
+sub turbos_report {
+    return shift->__send_file('turbos_report');
+}
+
 sub __send_file {
     my ($c, $type) = @_;
 
     my $date = $c->param('date');
-
     return $c->__bad_request("Invalid date format. Format should be YYYY-MM-DD.") unless $date =~ /^\d{4}-\d{2}-\d{2}$/;
-
     $date or return $c->__bad_request('the request was missing date');
 
-    my ($file_name, $file_path);
-    if ($type eq 'activity_report') {
-        my $reporter = BOM::MyAffiliates::ActivityReporter->new(
-            brand           => Brands->new(name => $c->stash('brand')),
-            processing_date => Date::Utility->new($date));
-        $file_name = $reporter->output_file_name();
-        $file_path = $reporter->output_file_path();
-    } elsif ($type eq 'registration') {
-        my $reporter = BOM::MyAffiliates::GenerateRegistrationDaily->new(
-            brand           => Brands->new(name => $c->stash('brand')),
-            processing_date => Date::Utility->new($date));
-        $file_name = $reporter->output_file_name();
-        $file_path = $reporter->output_file_path();
-    } elsif ($type eq 'turnover_report') {
-        my $reporter = BOM::MyAffiliates::TurnoverReporter->new(
-            brand           => Brands->new(name => $c->stash('brand')),
-            processing_date => Date::Utility->new($date));
-        $file_name = $reporter->output_file_name();
-        $file_path = $reporter->output_file_path();
-    } elsif ($type eq 'multiplier_report') {
-        my $reporter = BOM::MyAffiliates::MultiplierReporter->new(
-            brand           => Brands->new(name => $c->stash('brand')),
-            processing_date => Date::Utility->new($date));
-        $file_name = $reporter->output_file_name();
-        $file_path = $reporter->output_file_path();
-    } elsif ($type eq 'lookback_report') {
-        my $reporter = BOM::MyAffiliates::LookbackReporter->new(
-            brand           => Brands->new(name => $c->stash('brand')),
-            processing_date => Date::Utility->new($date));
-        $file_name = $reporter->output_file_name();
-        $file_path = $reporter->output_file_path();
-    } elsif ($type eq 'accumulator_report') {
-        my $reporter = BOM::MyAffiliates::ContractsWithSpreadReporter->new(
-            brand             => Brands->new(name => $c->stash('brand')),
-            processing_date   => Date::Utility->new($date),
-            contract_category => 'accumulator'
-        );
-        $file_name = $reporter->output_file_name();
-        $file_path = $reporter->output_file_path();
-    } elsif ($type eq 'vanilla_report') {
-        my $reporter = BOM::MyAffiliates::ContractsWithSpreadReporter->new(
-            brand             => Brands->new(name => $c->stash('brand')),
-            processing_date   => Date::Utility->new($date),
-            contract_category => 'vanilla'
-        );
-        $file_name = $reporter->output_file_name();
-        $file_path = $reporter->output_file_path();
+    my ($report_class, $contract_category);
+
+    my %report_mapping = (
+        'activity_report'    => {class => 'ActivityReporter'},
+        'registration'       => {class => 'GenerateRegistrationDaily'},
+        'turnover_report'    => {class => 'TurnoverReporter'},
+        'multiplier_report'  => {class => 'MultiplierReporter'},
+        'lookback_report'    => {class => 'LookbackReporter'},
+        'accumulator_report' => {
+            class    => 'ContractsWithSpreadReporter',
+            category => 'accumulator'
+        },
+        'vanilla_report' => {
+            class    => 'ContractsWithSpreadReporter',
+            category => 'vanilla'
+        },
+        'turbos_report' => {
+            class    => 'ContractsWithSpreadReporter',
+            category => 'turbos'
+        });
+
+    if (exists $report_mapping{$type}) {
+        $report_class      = $report_mapping{$type}{class};
+        $contract_category = $report_mapping{$type}{category} // undef;
+
     } else {
         return $c->__bad_request("Invalid request");
     }
+
+    my $reporter = "BOM::MyAffiliates::$report_class"->new(
+        brand           => Brands->new(name => $c->stash('brand')),
+        processing_date => Date::Utility->new($date),
+        (defined $contract_category ? (contract_category => $contract_category) : ()));
+
+    my $file_name = $reporter->output_file_name();
+    my $file_path = $reporter->output_file_path();
 
     unless (-f -r $file_path) {
         return $c->__bad_request("No data for date: $date");

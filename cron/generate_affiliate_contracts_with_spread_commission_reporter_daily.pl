@@ -55,7 +55,6 @@ try {
 
     my @csv = $reporter->activity();
     $log->infof('No CSV data for affiliate ' . $contract_category . ' report for %s', $processing_date->date_yyyymmdd) unless @csv;
-    die "No CSV data for " . $processing_date->date_yyyymmdd                                                           unless @csv;
 
     my $output_dir = $reporter->directory_path();
     $output_dir->mkpath unless ($output_dir->exists);
@@ -92,7 +91,7 @@ try {
                 "Failed to generate MyAffiliates $contract_category report",
                 "MyAffiliates $contract_category report failed to generate zip archive"
             );
-            $log->warn(
+            $log->warnf(
                 "Failed to generate MyAffiliates $contract_category report: MyAffiliates $contract_category report failed to generate zip archive");
             exit 1;
         }

@@ -38,6 +38,7 @@ sub startup {
     $r->get('/multiplier_report/*brand'  => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#multiplier_report');
     $r->get('/accumulator_report/*brand' => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#accumulator_report');
     $r->get('/vanilla_report/*brand'     => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#vanilla_report');
+    $r->get('/turbos_report/*brand'      => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#turbos_report');
     $r->get('/lookback_report/*brand'    => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#lookback_report');
 
     return;
