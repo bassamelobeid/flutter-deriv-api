@@ -164,6 +164,15 @@ jobs:
           name: test-results
           path: /tmp/test-output/**/*.xml
           retention-days: 1
+  check_dependent_tests:
+    runs-on: ubuntu-latest
+    outputs:
+      needs_dependent_test: ${{ steps.check_dependent_test.outputs.result }}
+    steps:
+      -
+        name: Toggle Dependent Tests
+        id: check_dependent_test
+        uses: regentmarkets/github-actions/check-dependent-test@master
   publish_test_results:
     needs: [ syntax_diff_unit, schema , core1 , core2 ]
     if: always()
@@ -178,8 +187,8 @@ jobs:
           file_path: ./**/*.xml
 
   # Temporarily comment out dependent job
-  # dependent:
-  #   needs: [schema,core1,core2]
-  #   if:  ${{ github.event_name != 'push' }}
-  #   uses: ./.github/workflows/dependent.yml
-  #   secrets: inherit
+  dependent:
+    needs: [schema,core1,core2 , check_dependent_tests ]
+    if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
+    uses: ./.github/workflows/dependent.yml
+    secrets: inherit
