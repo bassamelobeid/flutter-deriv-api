@@ -23,7 +23,6 @@ use constant ERROR_CODES => {
 };
 
 field $req_category;
-field $whoami;
 field $redis;
 field $req_counter;
 field $wait_period;
@@ -42,11 +41,9 @@ my $redis_api = BOM::Transport::RedisAPI->new(
 );
 my $request = $redis_api->build_rpc_request('authorize', {'authorize' => '<token>'}, undef, 60);
 my $response = $redis_api->call_rpc($request);
-The constuctor allow more options:
+The constructor allow more options:
 
 =over 4
-
-=item * C<redis> - RedisDB instance, if provided, the module will reuse the already created redisdb connection.
 
 =item * C<redis_config> - RedisDB connection info, if provided, the module will create a new RedisDB instance.
 
@@ -60,9 +57,7 @@ The constuctor allow more options:
 
 BUILD {
     my %args = @_;
-    if ($args{redis}) {
-        $redis = $args{redis};
-    } elsif ($args{redis_config}) {
+    if ($args{redis_config}) {
         try {
             $redis = RedisDB->new($args{redis_config}->%*);
         } catch ($e) {
@@ -75,19 +70,18 @@ BUILD {
     } else {
         die {
             code    => ERROR_CODES->{MISSING_ARGS},
-            message => "No redis connection info provided. please provide either 'redis' or 'redis_config'"
+            message => "No redis connection info provided. please provide a 'redis_config' parameter"
         };
     }
     $req_category = $args{req_category} // DEFAULT_CATEGORY_NAME;
     $wait_period  = $args{wait_period} || WAIT_PERIOD;
-    $whoami       = Data::UUID->new->create_str();
     $req_counter  = 0;
 }
 
 =head2 call_rpc
 
-Sends the request to the server and wait for the response. this method will subscribe to whoami channel and wait for the response.
-It'll also unsubscribe from the channel after the response is received. or in case of failure. to allow the connection to be reused.
+Sends the request to the server and wait for the response. this method will subscribe to who channel from request_data and wait for the response.
+It'll also unsubscribe (reset the connection) from the channel after the response is received. or in case of failure. to allow the connection to be reused.
 
 The request and the subscription commands will be sent in one transaction using MULTI/EXEC redis commands.
 The module will send additional subscribe command to let RedisDb enter the subscription mode.
@@ -103,39 +97,42 @@ The module will send additional subscribe command to let RedisDb enter the subsc
 method call_rpc ($request_data) {
     try {
         $self->send_request($request_data);
-        $self->subscribe;
+        $self->subscribe($request_data->{who});
         return $self->wait_for_reply($request_data);
     } catch ($e) {
         $self->throw_exception($e, $request_data);
     } finally {
-        # Postprocess, we don't need it's faluire to override the original exception.
-        # This call is manadatory to exist the subscription mode in case of reusable(cached) RedisDB instance.
-        try {
-            $self->unsubscribe;
-        } catch ($e) {
-            $log->debugf("Failed to unsubscribe: %s", $e);
-        };
+        # We are done with the connection all the way.
+        # RedisDB unsubscribe will reset the connection anyway. but it'll keep the replies causing inconsistency in the connection.
+        # Instead of unsubscribe we call reset connection right away.
+        $self->reset_connection;
     }
 }
 
 =head2 subscribe
 
-Subscribes to the whoami channel.
+Subscribes to the channel from request data.
+
+=over 4
+
+=item $channel - The request data.
+
+=back
 
 =cut
 
-method subscribe {
-    $redis->subscribe($whoami);
+method subscribe ($channel) {
+    $redis->subscribe($channel);
 }
 
-=head2 unsubscribe
+=head2 reset_connection
 
-Unsubscribes to the whoami channel.
+Resets the redisdb connection.
 
 =cut
 
-method unsubscribe {
-    $redis->unsubscribe($whoami);
+method reset_connection () {
+    $redis->reset_connection;
 }
 
 =head2 next_req_id
@@ -170,7 +167,7 @@ Creates the request data.
 method build_rpc_request ($method, $params, $stash_params = undef, $req_timeout = undef) {
     my $request_data = {
         rpc        => $method,
-        who        => $whoami,
+        who        => Data::UUID->new->create_str,
         deadline   => $req_timeout ? time + $req_timeout : $self->default_end_time,
         message_id => $self->next_req_id,
         $params       ? (args  => encode_json_utf8({args => $params})) : (),
@@ -238,10 +235,10 @@ Sends the request to the server and subscribe to response channel in a single tr
 =cut
 
 method send_request ($request_data) {
-    $redis->execute('MULTI');
+    $redis->send_command('MULTI', \&callback);
     $self->execute_request($request_data);
-    $redis->execute('subscribe', $whoami);
-    $redis->execute('EXEC');
+    $redis->send_command('subscribe', $request_data->{who}, \&callback);
+    $redis->send_command('EXEC', \&callback);
 }
 
 =head2 execute_request
@@ -257,7 +254,7 @@ Puts the request on the redis stream(category).
 =cut
 
 method execute_request ($request_data) {
-    $redis->execute('XADD' => ($req_category, qw(MAXLEN ~ 100000), '*', $request_data->%*));
+    $redis->send_command('XADD' => ($req_category, qw(MAXLEN ~ 100000), '*', $request_data->%*, \&callback));
 }
 
 =head2 process_message
@@ -329,6 +326,28 @@ method throw_exception ($e, $request_data) {
     die {
         code    => ERROR_CODES->{UNKNOWN},
         message => sprintf("Unknown error: %s while calling rpc: %s", $e, $request_data->{rpc})};
+}
+
+=head2 callback
+
+The default handler for redis commands. to be used as callback for send_command method
+Checks wether the reply is an error, and die if so.
+
+=over 4
+
+=item $redisdb - The redisdb instance.
+
+=item $reply - The reply from redisdb.
+
+=back
+
+=cut 
+
+sub callback {
+    my ($redisdb, $reply) = @_;
+    if (blessed $reply && $reply->isa('RedisDB::Error')) {
+        die $reply;
+    }
 }
 
 1;

@@ -95,11 +95,14 @@ subtest 'process message' => sub {
 };
 
 subtest 'send request' => sub {
-    # mock redis
-    my $mock_redis = Test::MockObject->new;
-    my @commands   = ();
-    $mock_redis->mock('execute' => sub { push @commands, $_[1]; });
-    my $redis_api = BOM::Transport::RedisAPI->new(redis => $mock_redis);
+    # mock redis db
+    my $mock_redis   = Test::MockObject->new;
+    my $mock_redisdb = Test::MockModule->new('RedisDB');
+    $mock_redisdb->mock('new' => sub { return $mock_redis; });
+
+    my @commands = ();
+    $mock_redis->mock('send_command' => sub { push @commands, $_[1]; });
+    my $redis_api = BOM::Transport::RedisAPI->new(@dummy_config);
 
     $redis_api->send_request($requests->{simple});
     is $commands[0], 'MULTI',     'should call MULTI in transaction mode';
@@ -111,12 +114,15 @@ subtest 'send request' => sub {
 subtest 'wait for reply' => sub {
 
     # mock redis
-    my $mock_redis  = Test::MockObject->new;
+    my $mock_redis   = Test::MockObject->new;
+    my $mock_redisdb = Test::MockModule->new('RedisDB');
+    $mock_redisdb->mock('new' => sub { return $mock_redis; });
+
     my $reply_ready = 0;
     $mock_redis->mock('reply_ready' => sub { return $reply_ready; });
 
     subtest 'requests passed the deadline will result in timeout' => sub {
-        my $redis_api = BOM::Transport::RedisAPI->new(redis => $mock_redis);
+        my $redis_api = BOM::Transport::RedisAPI->new(@dummy_config);
         cmp_deeply exception {
             $redis_api->wait_for_reply($requests->{timedout});
         }, $errors->{timeout}, 'should die if deadline is passed';
@@ -127,10 +133,7 @@ subtest 'wait for reply' => sub {
         my $mock_redis_api = Test::MockModule->new('BOM::Transport::RedisAPI');
         $mock_redis_api->mock('default_end_time' => sub { return time - 10; });
 
-        my $redis_api = BOM::Transport::RedisAPI->new(
-            redis       => $mock_redis,
-            wait_period => 1
-        );
+        my $redis_api = BOM::Transport::RedisAPI->new(@dummy_config, wait_period => 1);
         mock_time {
             cmp_deeply exception {
                 $redis_api->wait_for_reply($requests->{simple});
@@ -149,10 +152,7 @@ subtest 'wait for reply' => sub {
         my @sleep_params = ();
         $mock_hres->mock('usleep' => sub { @sleep_params = @_; return $mock_hres->original('usleep')->(@_); });
 
-        my $redis_api = BOM::Transport::RedisAPI->new(
-            redis       => $mock_redis,
-            wait_period => 1e6
-        );
+        my $redis_api = BOM::Transport::RedisAPI->new(@dummy_config, wait_period => 1e6);
         mock_time {
             dies_ok { $redis_api->wait_for_reply($requests->{simple}) } 'timeout ok';
             is $sleep_params[0], 1e6, 'should call usleep with wait_period';
@@ -168,10 +168,7 @@ subtest 'wait for reply' => sub {
         my $mock_redis_api = Test::MockModule->new('BOM::Transport::RedisAPI');
         $mock_redis_api->mock('default_end_time' => sub { return time + 0.1; });    #allow it it enter the loop.
         $mock_redis_api->mock('process_message'  => sub { return $_[2]; });
-        my $redis_api = BOM::Transport::RedisAPI->new(
-            redis       => $mock_redis,
-            wait_period => 1e6
-        );
+        my $redis_api = BOM::Transport::RedisAPI->new(@dummy_config,, wait_period => 1e6);
 
         $reply_ready = 1;
         $reply       = ['subscribe', 'abcd', 1];
@@ -193,50 +190,44 @@ subtest 'wait for reply' => sub {
 
 subtest 'call rpc' => sub {
     # mock redis
-    my $mock_redis = Test::MockObject->new;
+    my $mock_redis   = Test::MockObject->new;
+    my $mock_redisdb = Test::MockModule->new('RedisDB');
+    $mock_redisdb->mock('new' => sub { return $mock_redis; });
 
     # mock redis api
     my $mock_redis_api = Test::MockModule->new('BOM::Transport::RedisAPI');
-    my $redis_api      = BOM::Transport::RedisAPI->new(redis => $mock_redis);
+    my $redis_api      = BOM::Transport::RedisAPI->new(@dummy_config);
     $mock_redis_api->mock('wait_for_reply' => sub { $response_messages->{with_message_id}; });
     subtest 'all required redis commands are called and response is returned' => sub {
         my $methods_called;
         $mock_redis_api->mock(
             'send_request' => sub { $methods_called += 1; },
             'subscribe'    => sub { $methods_called += 10; },
-            'unsubscribe'  => sub { $methods_called += 100; },
         );
+        $mock_redis->mock('reset_connection' => sub { $methods_called += 100; });
         is $redis_api->call_rpc($requests->{simple}), $response_messages->{with_message_id}, 'should return response if response is received';
-        is $methods_called,                           111,                                   'should call send_request, subscribe and unsubscribe';
+        is $methods_called,                           111, 'should call send_request, subscribe and reset_connection';
     };
 
-    subtest 'unsubscribe will be called even if the request failed' => sub {
+    subtest 'reset_connection will be called even if the request failed' => sub {
         my $methods_called = 0;
         $mock_redis_api->mock(
             'send_request' => sub { die 'error'; },
             'subscribe'    => sub { $methods_called += 10; },
-            'unsubscribe'  => sub { $methods_called += 100; },
         );
+        $mock_redis->mock('reset_connection' => sub { $methods_called += 100; });
         dies_ok { $redis_api->call_rpc($requests->{simple}); } 'should die if call_rpc dies';
-        is $methods_called, 100, 'should still call unsubscribe if call_rpc dies';
-    };
-
-    subtest 'the failure of calling unsubscribe will not cause errors and gracefully handled' => sub {
-        my $methods_called = 0;
-        $mock_redis_api->mock(
-            'send_request' => sub { $methods_called += 1 },
-            'subscribe'    => sub { $methods_called += 10; },
-            'unsubscribe'  => sub { die 'error' },
-        );
-        lives_ok { is $redis_api->call_rpc($requests->{simple}), $response_messages->{with_message_id}, 'got response'; }
-        'return response even if unsubscribe failed';
+        is $methods_called, 100, 'should still call reset_connection if call_rpc dies';
     };
 };
 
 subtest 'throwing exceptions' => sub {
     # mock redis
-    my $mock_redis = Test::MockObject->new;
-    my $redis_api  = BOM::Transport::RedisAPI->new(redis => $mock_redis);
+    my $mock_redis   = Test::MockObject->new;
+    my $mock_redisdb = Test::MockModule->new('RedisDB');
+    $mock_redisdb->mock('new' => sub { return $mock_redis; });
+
+    my $redis_api = BOM::Transport::RedisAPI->new(@dummy_config);
 
     cmp_deeply exception {
         $redis_api->throw_exception('A string error', $requests->{simple});
@@ -259,6 +250,13 @@ subtest 'throwing exceptions' => sub {
     cmp_deeply exception {
         $redis_api->throw_exception($mock_redisdb_error, $requests->{simple});
     }, $errors->{redisdb}, 'should throw redisdb exception with error code and message';
+
+};
+
+subtest 'default callback dies in case of redisdb error thrown' => sub {
+    my $mock_redisdb_error = Test::MockObject->new;
+    $mock_redisdb_error->set_isa('RedisDB::Error');
+    dies_ok { BOM::Transport::RedisAPI::callback(undef, $mock_redisdb_error); }
 
 };
 
