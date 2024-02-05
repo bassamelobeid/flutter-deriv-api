@@ -1737,6 +1737,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        duplicate_poi_checks:
+          description: "Suspend duplicate POI document checks"
+          isa: Bool
+          default: 1
+          global: 1
     services:
       description: "Enable integrations with internal microservices"
       isa: section
