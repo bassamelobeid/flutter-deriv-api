@@ -73,7 +73,7 @@ subtest 'idv details' => sub {
             document => undef,
             check    => undef,
             result   => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'none',
                 reported_properties => {},
@@ -89,7 +89,7 @@ subtest 'idv details' => sub {
                 status                   => 'verified',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'verified',
                 reported_properties => {},
@@ -105,7 +105,7 @@ subtest 'idv details' => sub {
                 status                   => 'verified',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'verified',
                 expiry_date         => $non_expired_date->epoch,
@@ -122,7 +122,7 @@ subtest 'idv details' => sub {
                 status                   => 'verified',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'expired',
                 expiry_date         => $expired_date->epoch,
@@ -139,7 +139,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNDERAGE", "NAME_MISMATCH"]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => ["Underage", "NameMismatch"],
                 status              => 'rejected',
                 reported_properties => {},
@@ -155,7 +155,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNDERAGE", "TEST"]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => ["Underage"],
                 status              => 'rejected',
                 reported_properties => {},
@@ -171,7 +171,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNDERAGE", "TEST"]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'pending',
                 reported_properties => {},
@@ -187,7 +187,7 @@ subtest 'idv details' => sub {
                 status_messages => '["EMPTY_STATUS"]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => ["EmptyStatus"],
                 status              => 'rejected',
                 reported_properties => {},
@@ -203,7 +203,7 @@ subtest 'idv details' => sub {
                 status_messages => '["INFORMATION_LACK"]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => ["InformationLack"],
                 status              => 'rejected',
                 reported_properties => {},
@@ -219,7 +219,7 @@ subtest 'idv details' => sub {
                 status_messages => '["DOCUMENT_REJECTED"]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => ["DocumentRejected"],
                 status              => 'rejected',
                 reported_properties => {},
@@ -235,7 +235,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNAVAILABLE_ISSUER"]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => ["UnavailableIssuer"],
                 status              => 'rejected',
                 reported_properties => {},
@@ -251,7 +251,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNAVAILABLE_STATUS"]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => ["UnavailableStatus"],
                 status              => 'rejected',
                 reported_properties => {},
@@ -267,7 +267,7 @@ subtest 'idv details' => sub {
                 status_messages => '',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'rejected',
                 reported_properties => {},
@@ -283,7 +283,7 @@ subtest 'idv details' => sub {
                 status_messages => '[]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'rejected',
                 reported_properties => {},
@@ -299,7 +299,7 @@ subtest 'idv details' => sub {
                 status_messages => '[null]',
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'rejected',
                 reported_properties => {},
@@ -315,7 +315,7 @@ subtest 'idv details' => sub {
                 status_messages => undef,
             },
             result => {
-                submissions_left    => 3,
+                submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'rejected',
                 reported_properties => {},
@@ -1298,7 +1298,7 @@ subtest 'backtest from onfido rejected to manual expired' => sub {
         services => {
             idv => {
                 status              => 'none',
-                submissions_left    => 3,
+                submissions_left    => 2,
                 reported_properties => {},
                 last_rejected       => []
             },
@@ -1339,7 +1339,7 @@ subtest 'backtest from onfido rejected to manual expired' => sub {
         services => {
             idv => {
                 status              => 'none',
-                submissions_left    => 3,
+                submissions_left    => 2,
                 reported_properties => {},
                 last_rejected       => []
             },
@@ -1381,7 +1381,7 @@ subtest 'backtest from onfido rejected to manual expired' => sub {
         services => {
             idv => {
                 status              => 'none',
-                submissions_left    => 3,
+                submissions_left    => 2,
                 reported_properties => {},
                 last_rejected       => []
             },
@@ -1453,7 +1453,7 @@ subtest 'IDV Validated account' => sub {
                     'last_rejected'        => []
                 },
                 'idv' => {
-                    'submissions_left'    => 3,
+                    'submissions_left'    => 2,
                     'status'              => 'none',
                     'last_rejected'       => [],
                     'reported_properties' => {}
@@ -1507,7 +1507,7 @@ subtest 'IDV Validated account' => sub {
                     'last_rejected'        => []
                 },
                 'idv' => {
-                    'submissions_left'    => 3,
+                    'submissions_left'    => 2,
                     'status'              => 'none',
                     'last_rejected'       => [],
                     'reported_properties' => {}
@@ -1592,7 +1592,7 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
                     'last_rejected'        => []
                 },
                 'idv' => {
-                    'submissions_left'    => 3,
+                    'submissions_left'    => 2,
                     'status'              => 'verified',
                     'last_rejected'       => [],
                     'reported_properties' => {}
@@ -1648,7 +1648,7 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
                     'last_rejected'        => []
                 },
                 'idv' => {
-                    'submissions_left'    => 3,
+                    'submissions_left'    => 2,
                     'status'              => 'verified',
                     'last_rejected'       => [],
                     'reported_properties' => {}
@@ -1717,7 +1717,7 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
                     'last_rejected'        => []
                 },
                 'idv' => {
-                    'submissions_left'    => 3,
+                    'submissions_left'    => 2,
                     'status'              => 'verified',
                     'last_rejected'       => [],
                     'reported_properties' => {}
@@ -1788,7 +1788,7 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
                     'last_rejected'        => []
                 },
                 'idv' => {
-                    'submissions_left'    => 3,
+                    'submissions_left'    => 2,
                     'status'              => 'verified',
                     'last_rejected'       => [],
                     'reported_properties' => {}

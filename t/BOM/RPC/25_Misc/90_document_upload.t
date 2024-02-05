@@ -5,7 +5,8 @@ use Test::More;
 use Test::Mojo;
 use Test::Warn;
 use Test::Fatal;
-use Test::Deep                                 qw/cmp_deeply/;
+use Test::MockModule;
+use Test::Deep                                 qw/cmp_deeply re/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
@@ -32,6 +33,14 @@ my $real_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 
+my $emit_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my @emissions;
+$emit_mock->mock(
+    'emit',
+    sub {
+        push @emissions, {@_};
+        return undef;
+    });
 my $user = BOM::User->create(
     email    => $real_client->loginid . '@binary.com',
     password => 'Abcd1234'
@@ -174,15 +183,63 @@ subtest 'Basic upload test sequence' => sub {
     my $checksum = $default_args{expected_checksum};
 
     subtest 'Start upload with all defaults' => sub {
-        $file_id = start_successful_upload($real_client);
+        @emissions = ();
+        $file_id   = start_successful_upload($real_client);
+
+        cmp_deeply [@emissions], [], 'no emissions';
     };
 
     subtest 'Finish upload and verify CS notification email is receieved' => sub {
+        @emissions = ();
         finish_successful_upload($real_client, $file_id, $checksum, 1);
+
+        cmp_deeply [@emissions],
+            [{
+                poi_claim_ownership => {
+                    origin  => 'client',
+                    file_id => re('\d+'),
+                    loginid => $real_client->loginid,
+                }
+            },
+            {
+                document_upload => {
+                    issuing_country => undef,
+                    file_id         => re('\d+'),
+                    loginid         => $real_client->loginid,
+                }
+            },
+            {
+                sync_mt5_accounts_status => {
+                    binary_user_id => $real_client->binary_user_id,
+                    client_loginid => $real_client->loginid,
+                }}
+            ],
+            'expected emissions';
     };
 
     subtest 'Call finish again to ensure CS team is only sent 1 email' => sub {
+        @emissions = ();
         finish_successful_upload($real_client, $file_id, $checksum, 0);
+        cmp_deeply [@emissions],
+            [{
+                poi_claim_ownership => {
+                    origin  => 'client',
+                    file_id => re('\d+'),
+                    loginid => $real_client->loginid,
+                }
+            },
+            {
+                document_upload => {
+                    issuing_country => undef,
+                    file_id         => re('\d+'),
+                    loginid         => $real_client->loginid,
+                }
+            },
+            {
+                sync_mt5_accounts_status => {
+                    binary_user_id => $real_client->binary_user_id,
+                    client_loginid => $real_client->loginid,
+                }}];
     };
 };
 
@@ -191,6 +248,7 @@ subtest 'Basic upload test sequence' => sub {
 #########################################################
 
 subtest 'Attempt to upload POI document without an issuing country' => sub {
+    @emissions = ();
     call_and_check_error({
             args => {
                 %default_args,
@@ -246,6 +304,7 @@ subtest 'DD metrics for docs uploaded' => sub {
             return 1;
         });
 
+    @emissions = ();
     my $file_id = start_successful_upload(
         $real_client,
         {
@@ -254,6 +313,29 @@ subtest 'DD metrics for docs uploaded' => sub {
                 document_id       => '12341234',
             }});
     finish_successful_upload($real_client, $file_id, 'test1111', 1);
+
+    cmp_deeply [@emissions],
+        [{
+            poi_claim_ownership => {
+                origin  => 'client',
+                file_id => re('\d+'),
+                loginid => $real_client->loginid,
+            }
+        },
+        {
+            document_upload => {
+                issuing_country => undef,
+                file_id         => re('\d+'),
+                loginid         => $real_client->loginid,
+            }
+        },
+        {
+            sync_mt5_accounts_status => {
+                binary_user_id => $real_client->binary_user_id,
+                client_loginid => $real_client->loginid,
+            }}
+        ],
+        'expected emissions';
 
     ok $redis->ttl($key) > 0, 'there is a ttl';
 
@@ -616,6 +698,8 @@ subtest 'Lifetime valid' => sub {
 };
 
 subtest 'Proof of ownership upload' => sub {
+    @emissions = ();
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
@@ -698,6 +782,22 @@ subtest 'Proof of ownership upload' => sub {
                 file_id => $file_id,
                 status  => 'success',
             }})->has_no_error->result;
+
+    cmp_deeply [@emissions],
+        [{
+            document_upload => {
+                issuing_country => undef,
+                file_id         => re('\d+'),
+                loginid         => $client->loginid,
+            }
+        },
+        {
+            sync_mt5_accounts_status => {
+                binary_user_id => $client->binary_user_id,
+                client_loginid => $client->loginid,
+            }}
+        ],
+        'expected_emissions';
 
     my ($document) = $client->client_authentication_document;
     is $document->status,        'uploaded',           'Document uploaded';
@@ -1046,6 +1146,7 @@ sub call_and_check_error {
     my ($custom_params, $expected_err_message, $test_print_message) = @_;
 
     # Initialise default params
+    @emissions = ();
     my $params = {%default_params};
     $params->{args} = {%default_args};
 
@@ -1054,6 +1155,8 @@ sub call_and_check_error {
 
     # Call and check error
     $c->call_ok($method, $params)->has_error->error_message_is($expected_err_message, $test_print_message);
+
+    cmp_deeply [@emissions], [], 'No emissions';
 }
 
 sub customise_params {

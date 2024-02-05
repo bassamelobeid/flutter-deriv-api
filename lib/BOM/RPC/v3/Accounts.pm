@@ -1685,7 +1685,7 @@ sub _get_authentication_poi {
                 submissions_left     => BOM::User::Onfido::submissions_left($client),
                 is_country_supported => $onfido_available ? 1 : 0,
                 documents_supported  => BOM::Config::Onfido::supported_documents_for_country($country_code),
-                last_rejected        => $last_rejected,
+                last_rejected        => $last_rejected // [],
                 reported_properties  => BOM::User::Onfido::reported_properties($client),
                 status               => $client->get_onfido_status($documents),
                 $country_code_triplet ? (country_code => $country_code_triplet) : (),

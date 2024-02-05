@@ -99,7 +99,7 @@ subtest 'check legacy cfd_score' => sub {
                             last_rejected       => [],
                             reported_properties => {},
                             status              => "none",
-                            submissions_left    => 3,
+                            submissions_left    => 2,
                         },
                         manual => {status => "verified"},
                         onfido => {
@@ -179,7 +179,7 @@ subtest 'check legacy cfd_score' => sub {
                             last_rejected       => [],
                             reported_properties => {},
                             status              => "none",
-                            submissions_left    => 3,
+                            submissions_left    => 2,
                         },
                         manual => {status => "verified"},
                         onfido => {
@@ -278,7 +278,7 @@ subtest 'Fully Auth with IDV' => sub {
                         status              => 'verified',
                         last_rejected       => [],
                         reported_properties => {},
-                        submissions_left    => 3
+                        submissions_left    => 2
                     },
                     manual => {status => 'none'}}
             },
@@ -355,7 +355,7 @@ subtest 'Fully Auth with IDV' => sub {
                         status              => 'verified',
                         last_rejected       => [],
                         reported_properties => {},
-                        submissions_left    => 3
+                        submissions_left    => 2
                     },
                     manual => {status => 'none'}}
             },
@@ -454,7 +454,7 @@ subtest 'poi/idv status rejected for diel acc check latest_poi_by' => sub {
                 status              => 'rejected',
                 last_rejected       => [],
                 reported_properties => {},
-                submissions_left    => 3
+                submissions_left    => 2
             },
             manual => {status => 'none'}}
         },
@@ -479,7 +479,7 @@ subtest 'poi/idv status rejected for diel acc check latest_poi_by' => sub {
                 status              => 'rejected',
                 last_rejected       => [],
                 reported_properties => {},
-                submissions_left    => 3
+                submissions_left    => 2
             },
             manual => {status => 'none'}}
         },
@@ -1038,6 +1038,66 @@ subtest 'POA state machine' => sub {
     is $result->{authentication}->{document}->{status}, 'verified', 'Verified document';
 };
 
+subtest 'Onfido duplicated document rejected reason' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+dup_doc@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+    $client->set_default_account('EUR');
+    $client->save();
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{identity}->{services}->{onfido}->{last_rejected}, [], 'No rejected reasons';
+
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    $onfido_mock->mock(
+        'get_consider_reasons',
+        sub {
+            return ['duplicated_document'];
+        });
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{identity}->{services}->{onfido}->{last_rejected}, [], 'No rejected reasons (poi status must be rejected)';
+
+    my $cli_mock = Test::MockModule->new('BOM::User::Client');
+    my $poi_status;
+    $cli_mock->mock(
+        'get_poi_status',
+        sub {
+            return $poi_status;
+        });
+    $cli_mock->mock(
+        'latest_poi_by',
+        sub {
+            return ('onfido');
+        });
+
+    $poi_status = 'rejected';
+    $result     = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{identity}->{services}->{onfido}->{last_rejected}, ["DuplicatedDocument"], 'Dup document reason';
+
+    $poi_status = 'suspected';
+    $result     = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{identity}->{services}->{onfido}->{last_rejected}, ["DuplicatedDocument"], 'Dup document reason';
+
+    $poi_status = 'verified';
+    $result     = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{identity}->{services}->{onfido}->{last_rejected}, [], 'No rejected reasons';
+
+    $onfido_mock->unmock_all;
+    $cli_mock->unmock_all;
+};
+
 subtest "suspended onfido" => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -1079,7 +1139,7 @@ subtest "suspended onfido" => sub {
                         status              => 'none',
                         last_rejected       => [],
                         reported_properties => {},
-                        submissions_left    => 3
+                        submissions_left    => 2
                     },
                     manual => {status => 'none'}}
             },
@@ -1152,7 +1212,7 @@ subtest "suspended onfido" => sub {
                         status              => 'none',
                         last_rejected       => [],
                         reported_properties => {},
-                        submissions_left    => 3
+                        submissions_left    => 2
                     },
                     manual => {status => 'none'}}
             },

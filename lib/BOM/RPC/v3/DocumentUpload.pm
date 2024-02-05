@@ -160,6 +160,21 @@ sub successful_upload {
             if (any { $_ eq $document_type } @poa_doctypes) {
                 $client->set_authentication('ID_DOCUMENT', {status => 'under_review'});
             }
+
+            # A POI document needs to check for ownership
+            my @poi_doctypes = $client->documents->poi_types->@*;
+
+            if (any { $_ eq $document_type } @poi_doctypes) {
+                if (defined $doc->document_type and defined $doc->issuing_country and defined $doc->document_id) {
+                    BOM::Platform::Event::Emitter::emit(
+                        'poi_claim_ownership',
+                        {
+                            loginid => $client_id,
+                            file_id => $args->{file_id},
+                            origin  => 'client',
+                        });
+                }
+            }
         }
     } catch ($error) {
         log_exception();
