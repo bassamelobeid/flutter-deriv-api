@@ -127,12 +127,13 @@ my $action_mapping = {
         poi_updated                                 => \&BOM::Event::Actions::Client::poi_updated,
         ctrader_account_created                     => \&BOM::Event::Actions::CTrader::ctrader_account_created,
         underage_client_detected                    => \&BOM::Event::Actions::Client::underage_client_detected,
+        poi_claim_ownership                         => \&BOM::Event::Actions::Client::poi_claim_ownership,
         onfido_check_completed                      => \&BOM::Event::Actions::Client::onfido_check_completed,
         wallet_migration_started                    => \&BOM::Event::Actions::Wallets::wallet_migration_started,
         mt5_svg_migration_requested                 => \&BOM::Event::Actions::MT5::mt5_svg_migration_requested,
         nodejs_hello                                => \&BOM::Event::Actions::External::nodejs_hello,
         withdrawal_estimated_fee_updated            => \&BOM::Event::Actions::CryptoCashier::withdrawal_estimated_fee_updated,
-
+        recheck_onfido_face_similarity              => \&BOM::Event::Actions::Client::recheck_onfido_face_similarity,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,
@@ -218,6 +219,8 @@ my $action_mapping = {
         shared_payment_method_email_notification         => \&BOM::Event::Actions::Client::shared_payment_method_email_notification,
         derivez_inactive_account_closed                  => \&BOM::Event::Actions::DerivEZ::derivez_inactive_account_closed,
         derivez_inactive_notification                    => \&BOM::Event::Actions::DerivEZ::derivez_inactive_notification,
+        duplicated_document_account_closed               => \&BOM::Event::Services::Track::duplicated_document_account_closed,
+
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,

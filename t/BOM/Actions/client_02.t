@@ -11,12 +11,16 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 
 use BOM::Event::Actions::Client;
+use BOM::Event::Services;
 use BOM::User;
 use Date::Utility;
 use Future::AsyncAwait;
 
+use WebService::Async::Onfido;
+
 my $loop;
 my $handler;
+my $services;
 
 BEGIN {
     # Enable watchdog
@@ -27,6 +31,8 @@ BEGIN {
     require IO::Async::Loop;
     require BOM::Event::QueueHandler;
     $loop = IO::Async::Loop->new;
+
+    $loop->add($services = BOM::Event::Services->new);
 }
 
 subtest 'POA updated' => sub {
@@ -181,6 +187,236 @@ subtest 'POA updated' => sub {
         'sync_mt5_accounts_status emitted';
 
     $mocked_emitter->unmock_all;
+};
+
+subtest 'recheck onfido face_similarity' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'abcd1234@test.com',
+        first_name  => 'ABCD'
+    });
+
+    my $test_virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $test_client->email
+    });
+
+    my $test_user = BOM::User->create(
+        email          => $test_client->email,
+        password       => "hello",
+        email_verified => 1,
+    );
+    $test_user->add_client($test_client);
+    $test_user->add_client($test_virtual);
+    $test_client->place_of_birth('co');
+    $test_client->binary_user_id($test_user->id);
+    $test_client->save;
+    $test_virtual->binary_user_id($test_user->id);
+    $test_virtual->save;
+
+    $handler = BOM::Event::Process->new(category => 'generic')->actions->{recheck_onfido_face_similarity};
+    my $call_args = {};
+
+    like exception { $handler->($call_args)->get }, qr/No loginid supplied/, 'Expected exception for empty args';
+
+    $call_args->{loginid} = 'CR0';
+    like exception { $handler->($call_args)->get }, qr/Client not found:/, 'Expected exception when bogus loginid is given';
+
+    $call_args->{loginid} = $test_virtual->loginid;
+    like exception { $handler->($call_args)->get }, qr/Virtual account should not meddle with Onfido/, 'Expected exception for virtual client';
+
+    $call_args->{loginid} = $test_client->loginid;
+    like exception { $handler->($call_args)->get }, qr/No applicant found/, 'Expected exception for empty applicant';
+
+    my $onfido       = BOM::Event::Actions::Client::_onfido();
+    my $applicant_id = 'test1';
+    my $onfido_mock  = Test::MockModule->new('BOM::User::Onfido');
+    $onfido_mock->mock(
+        'get_user_onfido_applicant',
+        sub {
+            return {
+                id => $applicant_id,
+            };
+        });
+
+    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @doggy_bag;
+
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            push @doggy_bag, shift;
+        });
+
+    is $handler->($call_args)->get, 0, 'No previous selfie uploaded by this client';
+
+    cmp_deeply [@doggy_bag], ['events.recheck_onfido_face_similarity.fail_no_selfie'], 'Expected dog bag';
+
+    @doggy_bag = ();
+
+    my $selfie_to_test;
+    $onfido_mock->mock(
+        'get_onfido_live_photo',
+        sub {
+            $selfie_to_test = {
+                'test_selfie' => {
+                    id           => 'test_selfie',
+                    applicant_id => $applicant_id,
+                    file_id      => 'this is a selfie'
+                }};
+            return $selfie_to_test;
+        });
+
+    $onfido_mock->mock(
+        'get_all_onfido_reports',
+        sub {
+            return {
+                DOC => {
+                    result     => 'clear',
+                    api_name   => 'document',
+                    properties => ({
+                            first_name    => 'elon',
+                            last_name     => 'musk',
+                            date_of_birth => '1990-01-02',
+                        }
+                    ),
+                    breakdown => {},
+                },
+                selfie => {
+                    result     => 'clear',
+                    api_name   => 'facial_similarity',
+                    properties => ({
+                            first_name    => 'elon',
+                            last_name     => 'musk',
+                            date_of_birth => '1990-01-02',
+                        }
+                    ),
+                    breakdown => {},
+                }};
+        });
+
+    is $handler->($call_args)->get, 0, 'Selfie already verified';
+
+    cmp_deeply [@doggy_bag], ['events.recheck_onfido_face_similarity.fail_selfie_already_checked'], 'Expected dog bag';
+
+    $onfido_mock->unmock('get_all_onfido_reports');
+
+    my $document_type;
+    my $document_to_test;
+
+    $onfido_mock->mock(
+        'get_onfido_document',
+        sub {
+            if ($document_type eq 'passport') {
+                $document_to_test = {
+                    doc1 => {
+                        applicant_id    => $applicant_id,
+                        filename        => "document1.png",
+                        api_type        => 'passport',
+                        issuing_country => 'CO',
+                        side            => 'front',
+                        id              => 'passport1'
+                    },
+                };
+            } elsif ($document_type eq 'national_id') {
+                $document_to_test = {
+                    doc1 => {
+                        applicant_id    => $applicant_id,
+                        filename        => "document1.png",
+                        api_type        => 'national_identity_card',
+                        issuing_country => 'CO',
+                        side            => 'front',
+                        id              => 'national_id1'
+                    },
+                    doc2 => {
+                        applicant_id    => $applicant_id,
+                        filename        => "document2.png",
+                        api_type        => 'national_identity_card',
+                        issuing_country => 'CO',
+                        side            => 'back',
+                        id              => 'national_id2'
+                    }};
+            } elsif ($document_type eq 'driving_licence') {
+                $document_to_test = {
+                    doc1 => {
+                        applicant_id    => $applicant_id,
+                        filename        => "document1.png",
+                        api_type        => 'driving_licence',
+                        issuing_country => 'CO',
+                        side            => 'front',
+                        id              => 'driving_licence1'
+                    },
+                    doc2 => {
+                        applicant_id    => $applicant_id,
+                        filename        => "document2.png",
+                        api_type        => 'driving_licence',
+                        issuing_country => 'CO',
+                        side            => 'back',
+                        id              => 'driving_licence2'
+                    }};
+            }
+            return $document_to_test;
+        });
+
+    my $emit_mocker = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions;
+    $emit_mocker->mock(
+        'emit',
+        sub {
+            $emissions = +{@_};
+
+            return 1;
+        });
+
+    $document_type = 'passport';
+    $emissions     = {};
+    is $handler->($call_args)->get, 1, 'Selfie retriggered successfully';
+    ok $test_client->status->selfie_pending, 'Selfie status pending recheck';
+    cmp_deeply $emissions,
+        {
+        ready_for_authentication => {
+            loginid      => $test_client->loginid,
+            applicant_id => 'test1',
+            documents    => [keys $selfie_to_test->%*, map { $document_to_test->{$_}->{id} } keys %{$document_to_test}],
+        },
+        },
+        'Expected event emitted';
+    is scalar(keys $document_to_test->%*), 1, 'Document count correct for passport';
+
+    $document_type = 'national_id';
+    $emissions     = {};
+    is $handler->($call_args)->get, 1, 'Selfie retriggered successfully';
+    ok $test_client->status->selfie_pending, 'Selfie status pending recheck';
+    cmp_deeply $emissions,
+        {
+        ready_for_authentication => {
+            loginid      => $test_client->loginid,
+            applicant_id => 'test1',
+            documents    => [keys $selfie_to_test->%*, map { $document_to_test->{$_}->{id} } keys %{$document_to_test}],
+        },
+        },
+        'Expected event emitted';
+    is scalar(keys $document_to_test->%*), 2, 'Document count correct for national_id';
+
+    $document_type = 'driving_licence';
+    $emissions     = {};
+    is $handler->($call_args)->get, 1, 'Selfie retriggered successfully';
+    ok $test_client->status->selfie_pending, 'Selfie status pending recheck';
+    cmp_deeply $emissions,
+        {
+        ready_for_authentication => {
+            loginid      => $test_client->loginid,
+            applicant_id => 'test1',
+            documents    => [keys $selfie_to_test->%*, map { $document_to_test->{$_}->{id} } keys %{$document_to_test}],
+        },
+        },
+        'Expected event emitted';
+    is scalar(keys $document_to_test->%*), 2, 'Document count correct for driving_licence';
+
+    $onfido_mock->unmock_all;
+    $emit_mocker->unmock_all;
+    $dog_mock->unmock_all;
+
 };
 
 subtest 'POI updated' => sub {
@@ -400,6 +636,304 @@ subtest 'underage_client_detected' => sub {
     $mock_common->unmock_all;
 };
 
+subtest 'POI claim ownership' => sub {
+    my $common_mock = Test::MockModule->new('BOM::Event::Actions::Common');
+    my $dog_mock    = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @dog_hits;
+
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            push @dog_hits, @_;
+
+            return undef;
+        });
+
+    my @common_hits;
+
+    $common_mock->mock(
+        'handle_duplicated_documents',
+        sub {
+            push @common_hits, @_;
+
+            return undef;
+        });
+
+    my $args = {};
+    my $exception;
+
+    $exception = exception {
+        @dog_hits    = ();
+        @common_hits = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    ok $exception =~ /loginid is mandatory/, 'loginid arg is mandatory for this event';
+    cmp_deeply [@dog_hits],    [], 'Did not hit the dog';
+    cmp_deeply [@common_hits], [], 'Did not hit common';
+
+    $exception = exception {
+        $args->{loginid} = 'CR0';
+        @dog_hits        = ();
+        @common_hits     = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    ok $exception =~ /file_id is mandatory/, 'file_id arg is mandatory for this event';
+    cmp_deeply [@dog_hits],    [], 'Did not hit the dog';
+    cmp_deeply [@common_hits], [], 'Did not hit common';
+
+    $exception = exception {
+        $args->{file_id} = -1;
+        @dog_hits        = ();
+        @common_hits     = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    ok $exception =~ /origin is mandatory/, 'origin arg is mandatory for this event';
+    cmp_deeply [@dog_hits],    [], 'Did not hit the dog';
+    cmp_deeply [@common_hits], [], 'Did not hit common';
+
+    $exception = exception {
+        $args->{origin} = 'client';
+        @dog_hits       = ();
+        @common_hits    = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    ok $exception =~ /could not find client with loginid=CR0/, 'legit loginid should be passed to this event';
+    cmp_deeply [@dog_hits],    [], 'Did not hit the dog';
+    cmp_deeply [@common_hits], [], 'Did not hit common';
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $user = BOM::User->create(
+        email          => 'dup+user1@test.com',
+        password       => 'secreto',
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+    $client->save;
+
+    $exception = exception {
+        $args->{loginid} = $client->loginid;
+        @dog_hits        = ();
+        @common_hits     = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    ok $exception =~ /could not find document with id=-1/, 'legit file_id should be passed to this event';
+    cmp_deeply [@dog_hits],    [], 'Did not hit the dog';
+    cmp_deeply [@common_hits], [], 'Did not hit common';
+
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $user2 = BOM::User->create(
+        email          => 'dup+user2@test.com',
+        password       => 'secreto',
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
+    $user2->add_client($client2);
+    $client2->binary_user_id($user2->id);
+    $client2->save;
+
+    my $upload_info = start_document_upload({
+            document_type     => 'passport',
+            document_format   => 'PNG',
+            document_id       => undef,
+            expected_checksum => 'check1',
+        },
+        $client2
+    );
+
+    $exception = exception {
+        my ($doc) = $client2->find_client_authentication_document(query => [id => $upload_info->{file_id}]);
+
+        # since find_client_authentication_document is doing a fine job of adding to the query the client's loginid
+        # we should issue a classical: muk use acid! otherwise the exception would be untestable
+
+        my $client_mock = Test::MockModule->new(ref($client));
+        $client_mock->mock(
+            'find_client_authentication_document',
+            sub {
+                return ($doc);
+            });
+
+        $args->{file_id} = $upload_info->{file_id};
+        @dog_hits        = ();
+        @common_hits     = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+
+        $client_mock->unmock_all;
+    };
+
+    ok $exception =~ /document id=\d+ is not from loginid=\w+/, 'the file_id must belong to the passed client';
+    cmp_deeply [@dog_hits],    [], 'Did not hit the dog';
+    cmp_deeply [@common_hits], [], 'Did not hit common';
+
+    $upload_info = start_document_upload({
+            document_type     => 'passport',
+            document_format   => 'PNG',
+            document_id       => undef,
+            expected_checksum => 'check1',
+        },
+        $client
+    );
+
+    $exception = exception {
+        $args->{file_id} = $upload_info->{file_id};
+        @dog_hits        = ();
+        @common_hits     = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+    cmp_deeply [@dog_hits],    ['event.poi_claim_ownership.undefined_values'], 'Expected dog hits';
+    cmp_deeply [@common_hits], [],                                             'Did not hit common';
+
+    is $exception,                                                          undef, 'No exception thrown';
+    is $user->documents->poi_ownership('passport', '000-000-000-01', 'br'), undef, 'ownership not touched';
+
+    # reserve claim
+
+    my $reserve_entry = join('::', 'passport', '000-000-000-01', 'br');
+    my $redis_write   = $services->redis_events_write();
+    $redis_write->connect->get;
+    $redis_write->set(+BOM::Event::Actions::Client::USER_DOCUMENTS_RESERVE_KEY . $reserve_entry, $user2->id)->get;
+
+    $upload_info = start_document_upload({
+            document_type     => 'passport',
+            document_format   => 'PNG',
+            document_id       => '000-000-000-01',
+            expected_checksum => 'checkthisout',
+            issuing_country   => 'br',
+        },
+        $client
+    );
+
+    $exception = exception {
+        $args->{file_id} = $upload_info->{file_id};
+        @dog_hits        = ();
+        @common_hits     = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    cmp_deeply [@dog_hits], [], 'Did not hit the dog';
+    cmp_deeply [map { ref($_) eq ref($client) ? $_->loginid : $_ } @common_hits],
+        [
+        $client->loginid,
+        {
+            document_type   => 'passport',
+            document_number => '000-000-000-01',
+            issuing_country => 'br',
+            binary_user_id  => $client2->binary_user_id,
+        },
+        'client'
+        ],
+        'Handling the duplicated';
+
+    is $user->documents->poi_ownership('passport', '000-000-000-01', 'br'), undef, 'ownership not touched';
+    is $exception,                                                          undef, 'No exception thrown';
+
+    # db claimed
+    $user2->documents->poi_claim('passport', '000-000-000-01', 'br');
+    $redis_write->del(+BOM::Event::Actions::Client::USER_DOCUMENTS_RESERVE_KEY . $reserve_entry)->get;
+
+    $exception = exception {
+        @dog_hits    = ();
+        @common_hits = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    cmp_deeply [@dog_hits], [], 'Did not hit the dog';
+    cmp_deeply [map { ref($_) eq ref($client) ? $_->loginid : $_ } @common_hits],
+        [
+        $client->loginid,
+        {
+            document_type   => 'passport',
+            document_number => '000-000-000-01',
+            issuing_country => 'br',
+            binary_user_id  => $client2->binary_user_id,
+        },
+        'client'
+        ],
+        'Handling the duplicated';
+
+    is $user->documents->poi_ownership('passport', '000-000-000-01', 'br'), $user2->id, 'user2 keeps the ownership';
+    is $exception,                                                          undef,      'No exception thrown';
+
+    # reserve matched
+    $user2->documents->poi_free('passport', '000-000-000-01', 'br');
+    $redis_write->set(+BOM::Event::Actions::Client::USER_DOCUMENTS_RESERVE_KEY . $reserve_entry, $user->id)->get;
+
+    $exception = exception {
+        @dog_hits    = ();
+        @common_hits = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    cmp_deeply [@dog_hits], [], 'Did not hit the dog';
+    cmp_deeply [],          [], 'Did not hit common';
+
+    is $user->documents->poi_ownership('passport', '000-000-000-01', 'br'), undef, 'reserved owner wont claim here';
+    is $exception,                                                          undef, 'No exception thrown';
+
+    # db matched
+    $user->documents->poi_claim('passport', '000-000-000-01', 'br');
+    $redis_write->del(+BOM::Event::Actions::Client::USER_DOCUMENTS_RESERVE_KEY . $reserve_entry)->get;
+
+    $exception = exception {
+        @dog_hits    = ();
+        @common_hits = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    cmp_deeply [@dog_hits], [], 'Did not hit the dog';
+    cmp_deeply [],          [], 'Did not hit common';
+
+    is $user->documents->poi_ownership('passport', '000-000-000-01', 'br'), $user->id, 'user keeps the ownership';
+    is $exception,                                                          undef,     'No exception thrown';
+
+    # everything is free
+    $user->documents->poi_free('passport', '000-000-000-01', 'br');
+    $redis_write->del(+BOM::Event::Actions::Client::USER_DOCUMENTS_RESERVE_KEY . $reserve_entry)->get;
+    is $user->documents->poi_ownership('passport', '000-000-000-01', 'br'), undef, 'documents has no owner';
+
+    $exception = exception {
+        @dog_hits    = ();
+        @common_hits = ();
+
+        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+    };
+
+    cmp_deeply [@dog_hits], [], 'Did not hit the dog';
+    cmp_deeply [],          [], 'Did not hit common';
+
+    is $user->documents->poi_ownership('passport', '000-000-000-01', 'br'), $user->id, 'user gets the ownership';
+    is $exception,                                                          undef,     'No exception thrown';
+
+    $dog_mock->unmock_all;
+    $common_mock->unmock_all;
+};
+
 subtest 'timeout simulations' => sub {
     my $module = Test::MockModule->new('BOM::Event::Process');
     $module->mock(
@@ -461,6 +995,20 @@ subtest 'onfido api rate limit simulation' => sub {
     $dog_mock->unmock_all;
     $onfido_mock->unmock_all;
 };
+
+sub start_document_upload {
+    my ($document_args, $client) = @_;
+
+    return $client->db->dbic->run(
+        ping => sub {
+            $_->selectrow_hashref(
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin, ?)', undef,
+                $client->loginid, $document_args->{document_type},
+                $document_args->{document_format}, $document_args->{expiration_date} || undef,
+                $document_args->{document_id} || '', $document_args->{expected_checksum},
+                '', $document_args->{page_type} || '', undef, 0, 'legacy', $document_args->{issuing_country});
+        });
+}
 
 subtest 'onfido check completed' => sub {
     # onfido to the loop

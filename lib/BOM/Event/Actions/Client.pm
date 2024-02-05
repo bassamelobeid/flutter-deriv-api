@@ -99,6 +99,7 @@ use constant ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY    => 'ONFIDO::APPLICANT_CONTEX
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
 use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX    => 'ONFIDO::IS_A_RESUBMISSION::ID::';
+use constant USER_DOCUMENTS_RESERVE_KEY             => 'USER::DOCUMENTS::RESERVE::';
 use constant ONFIDO_PDF_CHECK_ENQUEUED              => 'ONFIDO::PDF::CHECK::ENQUEUED::';
 use constant ONFIDO_PDF_LOCK                        => 'ONFIDO::PDF::LOCK';
 use constant ONFIDO_PDF_LOCK_TTL                    => 300;
@@ -987,7 +988,17 @@ async sub client_verification {
                 BOM::User::Onfido::store_onfido_report($check, $each_report);
             }
 
-            await _store_applicant_documents($applicant_id, $client, \@all_report);
+            my $reported_documents = await _extract_onfido_reported_documents($applicant_id, $client, \@all_report);
+
+            my $duplicated_document = await _detect_duplicated_documents($client, $reported_documents);
+
+            my $documents_count = 0;
+
+            $documents_count += await _store_applicant_documents($client, $reported_documents, $duplicated_document);
+
+            $documents_count += await _store_applicant_selfie($applicant_id, $client, \@all_report);
+
+            DataDog::DogStatsd::Helper::stats_histogram('event.onfido.client_verification.reported_documents', $documents_count);
 
             my $pending_key = ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id;
 
@@ -1021,7 +1032,6 @@ async sub client_verification {
 
             await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
-            # TODO: remove this check when we have fully integrated Onfido
             try {
                 my @reports;
                 if ($client->is_face_similarity_required) {
@@ -1036,19 +1046,24 @@ async sub client_verification {
                 my $reports = +{map { ($_->{name} => $_) } @reports};
 
                 my $document_report = $reports->{document};
-                push @common_datadog_tags, sprintf("report:%s", $document_report->result);
+                push @common_datadog_tags, sprintf("report:%s", $document_report->result) if $document_report;
 
                 # Process the minimum_accepted_age result from Onfido
                 # we will consider the client as underage only if this result is defined and not equal to `clear`.
-                my $minimum_accepted_age = $document_report->{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result};
-                my $underage_detected    = defined $minimum_accepted_age && $minimum_accepted_age ne 'clear';
+                my $minimum_accepted_age =
+                    $document_report ? $document_report->{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result} : undef;
+
+                my $underage_detected = defined $minimum_accepted_age && $minimum_accepted_age ne 'clear';
 
                 if ($underage_detected) {
                     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.underage_detected', {tags => [@common_datadog_tags]});
 
                     BOM::Event::Actions::Common::handle_under_age_client($client, 'Onfido');
-                }
+                } elsif ($duplicated_document || $client->status->poi_duplicated_documents) {
+                    DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dup_documents', {tags => [@common_datadog_tags]});
 
+                    BOM::Event::Actions::Common::handle_duplicated_documents($client, $duplicated_document, 'Onfido');
+                }
                 # Extract all clear documents to check consistency between DOBs
                 elsif (my @valid_doc = grep { (defined $_->{properties}->{date_of_birth} and $_->result eq 'clear') } @reports) {
                     my %dob = map { ($_->{properties}{date_of_birth} // '') => 1 } @valid_doc;
@@ -1063,7 +1078,7 @@ async sub client_verification {
                         my $selfie_report = $reports->{facial_similarity_photo} // $reports->{facial_similarity};
                         my $selfie_result = $selfie_report ? $selfie_report->result : '';
 
-                        # we first check if facial similarity is clear for LCs with the required flag active, currently just for MF
+                        # we first check if facial similarity is clear for LCs with the required flag active
                         if ($selfie_result eq 'clear' || !$client->is_face_similarity_required) {
                             await check_onfido_rules({
                                 loginid       => $client->loginid,
@@ -1073,17 +1088,36 @@ async sub client_verification {
                                 report_result => $document_report->result,
                             });
 
+                            if ($client->status->selfie_pending) {
+                                push @common_datadog_tags, "result:selfie_verified";
+                                $client->propagate_clear_status('selfie_pending');
+                                DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.selfie_recheck_done',
+                                    {tags => [@common_datadog_tags]});
+                            }
+
                             $client->{status} = undef;
 
                             if ($age_verified =
                                 await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido'))
                             {
+                                $client->propagate_status('selfie_verified', 'system', 'Selfie verified by Onfido') if $selfie_report;
                                 push @common_datadog_tags, "result:age_verified";
                                 DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
                             }
                         } else {
-                            push @common_datadog_tags, "result:selfie_rejected";
-                            DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
+                            if ($selfie_result eq 'consider') {
+                                push @common_datadog_tags, "result:selfie_rejected";
+                                if ($client->status->selfie_pending) {
+                                    $client->propagate_clear_status('selfie_pending');
+                                    DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.selfie_recheck_done',
+                                        {tags => [@common_datadog_tags]});
+                                }
+                                $client->propagate_status('selfie_rejected', 'system', 'Selfie rejected by Onfido');
+                                DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
+                            } else {
+                                push @common_datadog_tags, "result:selfie_skipped";
+                                DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
+                            }
                         }
                     } else {
                         push @common_datadog_tags, "result:underage_detected";
@@ -1210,6 +1244,182 @@ async sub client_verification {
     return;
 }
 
+=head2 _extract_onfido_reported_documents
+
+Extracts the documents coming from the document report.
+
+It takes the following params:
+
+=over 4
+
+=item * C<$applicant_id> the Onfido Applicant's ID (string)
+
+=item * C<$client> a L<BOM::User::Client> instance
+
+=item * C<$check_reports> an arrayref of the current Onfido check reports (usually one for document and other for selfie checkup)
+
+=back
+
+Returns an arrayref of hashrefs including:
+
+=over 4
+
+=item * C<id> - the Onfido document id (uuid type thing)
+
+=item * C<document_type> - the document type
+
+=item * C<issuing_country> - the issuing country
+
+=item * C<document_number> - the document number
+
+=item * C<date_of_expiry> - date of expiration
+
+=item * C<document_side> - side of the document
+
+=item * C<file_type> - file type (png, jpg, pdf, etc...)
+
+=item * C<applicant_id> - id of the Onfido applicant (uuid type thing)
+
+=item * C<result> - the result of the report
+
+=item * C<created_at> - the creation stamp
+
+=item * C<href> - the href of the document
+
+=item * C<download_href> - the href of the document download
+
+=item * C<file_name> - the file name
+
+=item * C<file_size> - the file size
+
+=back
+
+=cut
+
+async sub _extract_onfido_reported_documents {
+    my ($applicant_id, $client, $check_reports) = @_;
+
+    my @documents;
+    my $onfido = _onfido();
+
+    for my $report ($check_reports->@*) {
+        next unless $report->name eq 'document';
+
+        my @report_documents = @{$report->documents // []};
+
+        for my $document (@report_documents) {
+            my $doc = await $onfido->get_document_details(
+                applicant_id => $applicant_id,
+                document_id  => $document->{id});
+
+            my ($expiration_date, $document_numbers, $report_issuing_country, $date_of_expiry) =
+                @{$report->{properties}}{qw(date_of_expiry document_numbers issuing_country date_of_expiry)};
+
+            my $doc_number = $document_numbers ? $document_numbers->[0]->{value} : undef;
+
+            my $cli_country = $client->place_of_birth // $client->residence;
+
+            my $issuing_country = $doc->issuing_country // $report_issuing_country;
+
+            my $issuing_country_code = $issuing_country ? lc(country_code2code($issuing_country, 'alpha-3', 'alpha-2')) : $cli_country;
+
+            my $document_type = $doc->type;
+
+            $document_type = 'live_photo' if $document_type eq 'photo';
+
+            my $doc_side = $doc->side // 'front';
+
+            push @documents,
+                +{
+                id              => $doc->id,
+                document_number => $doc_number,
+                issuing_country => $issuing_country_code,
+                document_type   => $document_type,
+                date_of_expiry  => $date_of_expiry,
+                document_side   => $doc_side // 'front',
+                file_type       => $doc->file_type,
+                applicant_id    => $applicant_id,
+                result          => $report->result,
+                created_at      => $doc->created_at,
+                href            => $doc->href,
+                download_href   => $doc->download_href,
+                file_name       => $doc->file_name,
+                file_size       => $doc->file_size,
+                };
+        }
+    }
+
+    return [@documents];
+}
+
+=head2 _detect_duplicated_documents
+
+Detects when the client attempts to POI using a duplicated document (this is a document already verified by another user).
+
+It takes the following params:
+
+=over 4
+
+=item * C<$client> a L<BOM::User::Client> instance
+
+=item * C<$documents> an arrayref of the current Onfido reported documents
+
+=back
+
+Returns C<undef> if no dups, the document details otherwise.
+
+=cut
+
+async sub _detect_duplicated_documents {
+    my ($client, $documents) = @_;
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    $app_config->check_for_update;
+
+    my $disabled_feature = $app_config->system->suspend->duplicate_poi_checks;
+
+    return undef if $disabled_feature;
+
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+
+    for my $document ($documents->@*) {
+        my ($document_type, $issuing_country, $document_number) = @{$document}{qw(document_type issuing_country document_number)};
+
+        # no point in checking dups if data is missing, most probably we must also drop the doc entirely (?)
+        next unless defined $issuing_country && defined $document_number && defined $document_type;
+
+        # undef owner means the document is free
+        my $owner = $client->user->documents->poi_ownership($document_type, $document_number, $issuing_country);
+
+        $document->{binary_user_id} = $owner;
+
+        # just a trick to avoid the undef warn
+        $owner //= $client->user->id;
+
+        return $document if $owner ne $client->user->id;
+
+        # put the document in a reserve
+        # this will solve potential race conditions
+        # the reservee must match the user
+        my $reserve_entry = join('::', $document_type, $document_number, $issuing_country);
+
+        await $redis_events_write->set(USER_DOCUMENTS_RESERVE_KEY . $reserve_entry, $client->user->id, 'EX', SECONDS_IN_DAY, 'NX');
+
+        my $reservee = await $redis_events_write->get(USER_DOCUMENTS_RESERVE_KEY . $reserve_entry);
+
+        $document->{binary_user_id} = $reservee;
+
+        # just a trick to avoid the undef warn
+        $reservee //= $client->user->id;
+
+        return $document if $reservee ne $client->user->id;
+    }
+
+    return undef;
+}
+
 =head2 _store_applicant_documents
 
 Gets the client's documents from Onfido and store in DB
@@ -1218,84 +1428,93 @@ It takes the following params:
 
 =over 4
 
-=item * C<applicant_id> the Onfido Applicant's ID (string)
 
-=item * C<client> a L<BOM::User::Client> instance
+=item * C<$client> a L<BOM::User::Client> instance
 
-=item * C<check_reports> an arrayref of the current Onfido check reports (usually one for document and other for selfie checkup)
+=item * C<$documents> an arrayref of the current Onfido reported documents
+
+=item * C<$duplicated> boolean, if true will skip the ownership claim over the document
 
 =back
 
-Returns undef.
+Returns the number of stored documents.
 
 =cut
 
 async sub _store_applicant_documents {
-    my ($applicant_id, $client, $check_reports) = @_;
-    my $onfido               = _onfido();
+    my ($client, $documents, $duplicated) = @_;
     my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
-    my @documents;
-    my $facial_similarity_report;
+    my $counter              = 0;
 
-    # Build hash index for onfido document id to report.
-    my %report_for_doc_id;
-    my $reported_documents = 0;
-
-    for my $report (@{$check_reports}) {
-        if ($report->name eq 'facial_similarity_photo') {
-            $facial_similarity_report = $report;
-
-            # we can assume there is a selfie, note that `documents` is not particularly useful on this kind of report
-            $reported_documents++;
-        } elsif ($report->name eq 'document') {
-            my @report_documents = @{$report->documents};
-            $reported_documents += scalar @report_documents;
-            push @documents, map { $_->{id} } @report_documents;
-            $report_for_doc_id{$_->{id}} = $report for @report_documents;
-        }
-    }
-
-    DataDog::DogStatsd::Helper::stats_histogram('event.onfido.client_verification.reported_documents', $reported_documents);
-
-    foreach my $document_id (@documents) {
-
-        # Fetch each document individually by applicant/id
-        my $doc = await $onfido->get_document_details(
-            applicant_id => $applicant_id,
-            document_id  => $document_id
-        );
-
-        my $type = $doc->type;
-        my $side = $doc->side;
-        $side = $side && $ONFIDO_DOCUMENT_SIDE_MAPPING{$side} // 'front';
-        $type = 'live_photo' if $side eq 'photo';
+    foreach my $document ($documents->@*) {
+        my ($id, $applicant_id, $expiration_date, $document_number, $issuing_country, $document_type, $document_side, $file_type, $result) =
+            @{$document}{qw(id applicant_id date_of_expiry document_number issuing_country document_type document_side file_type result)};
 
         # Skip if document exist in our DB
-        next if $existing_onfido_docs && $existing_onfido_docs->{$doc->id};
+        next if $existing_onfido_docs && $existing_onfido_docs->{$id};
 
-        $log->debugf('Insert document data for user %s and document id %s', $client->binary_user_id, $doc->id);
+        $log->debugf('Insert document data for user %s and document id %s', $client->binary_user_id, $id);
 
-        my $issuing_country = $doc->issuing_country // $client->place_of_birth // $client->residence;
-        BOM::User::Onfido::store_onfido_document($doc, $applicant_id, $issuing_country, $type, $side);
-
-        my ($expiration_date, $document_numbers) = @{$report_for_doc_id{$doc->id}{properties}}{qw(date_of_expiry document_numbers)};
-        my $doc_number = $document_numbers ? $document_numbers->[0]->{value} : undef;
+        BOM::User::Onfido::store_onfido_document_v2($document);
 
         await onfido_doc_ready_for_upload({
-                final_status   => _get_document_final_status($report_for_doc_id{$doc->id}{result}),
-                type           => 'document',
-                document_id    => $doc->id,
-                client_loginid => $client->loginid,
-                applicant_id   => $applicant_id,
-                file_type      => $doc->file_type,
-                document_info  => {
-                    issuing_country => $doc->issuing_country ? lc(country_code2code($doc->issuing_country, 'alpha-3', 'alpha-2')) : $issuing_country,
-                    type            => $type,
-                    side            => $side,
+                final_status => _get_document_final_status($result)
+                , # MAYBE: if we store the documents at the end of the process we might emit (NOT AWAIT) onfido_doc_ready_for_upload with the desired final status
+                type                 => 'document',
+                document_id          => $id,
+                client_loginid       => $client->loginid,
+                applicant_id         => $applicant_id,
+                file_type            => $file_type,
+                dont_claim_ownership => $duplicated,
+                document_info        => {
+                    issuing_country => $issuing_country,
+                    type            => $document_type,
+                    side            => $document_side,
                     expiration_date => $expiration_date,
-                    number          => $doc_number,
+                    number          => $document_number,
                 },
             });
+
+        $counter++;
+    }
+
+    return $counter;
+}
+
+=head2 _store_applicant_selfie
+
+Extracts the selfie coming from the check reports.
+
+It takes the following params:
+
+=over 4
+
+=item * C<$applicant_id> the Onfido Applicant's ID (string)
+
+=item * C<$client> a L<BOM::User::Client> instance
+
+=item * C<$check_reports> an arrayref of the current Onfido check reports (usually one for document and other for selfie checkup)
+
+=back
+
+Returns the number of stored photos.
+
+=cut
+
+async sub _store_applicant_selfie {
+    my ($applicant_id, $client, $check_reports) = @_;
+    my $onfido = _onfido();
+    my $selfie_report;
+
+    # IMPORTANT, even though there is no selfie check (svg)
+    # we are still interested in storing the selfie
+
+    for my $report (@{$check_reports}) {
+        next unless $report->name eq 'facial_similarity_photo';
+
+        $selfie_report = $report;
+
+        last;
     }
 
     # Unfortunately, the Onfido API doesn't narrow down the live photos list to the given report/check
@@ -1304,20 +1523,20 @@ async sub _store_applicant_documents {
 
     my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
 
-    return undef unless scalar @live_photos;
+    return 0 unless scalar @live_photos;
 
     my $photo                  = shift @live_photos;
     my $existing_onfido_photos = BOM::User::Onfido::get_onfido_live_photo($client->binary_user_id);
 
     # Skip if document exist in our DB
-    return undef if $existing_onfido_photos && $existing_onfido_photos->{$photo->id};
+    return 0 if $existing_onfido_photos && $existing_onfido_photos->{$photo->id};
 
     $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
 
     BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
 
     await onfido_doc_ready_for_upload({
-        $facial_similarity_report ? (final_status => _get_document_final_status($facial_similarity_report->result)) : (),
+        $selfie_report ? (final_status => _get_document_final_status($selfie_report->result)) : (),
         type           => 'photo',
         document_id    => $photo->id,
         client_loginid => $client->loginid,
@@ -1325,7 +1544,7 @@ async sub _store_applicant_documents {
         file_type      => $photo->file_type,
     });
 
-    return undef;
+    return 1;
 }
 
 =head2 poi_check_rules
@@ -1416,7 +1635,7 @@ async sub check_idv_rules {
     my $request_body  = eval { decode_json_text($idv_document_check->{request}   // '{}') } // {};
     my $messages      = eval { decode_json_text($idv_document->{status_messages} // '[]') } // [];
     my $provider      = $idv_document_check->{provider};
-    my $pictures      = $idv_document_check->{photo_id};
+    my $pictures      = $idv_document_check->{photo_id} // [];
 
     if ($report_decoded) {
         await BOM::Event::Actions::Client::IdentityVerification::idv_mismatch_lookback({
@@ -1639,8 +1858,8 @@ Gets the client's documents from Onfido and upload to S3
 
 async sub onfido_doc_ready_for_upload {
     my $data = shift;
-    my ($type, $doc_id, $client_loginid, $applicant_id, $file_type, $document_info, $final_status) =
-        @{$data}{qw/type document_id client_loginid applicant_id file_type document_info final_status/};
+    my ($type, $doc_id, $client_loginid, $applicant_id, $file_type, $document_info, $final_status, $dont_claim_ownership) =
+        @{$data}{qw/type document_id client_loginid applicant_id file_type document_info final_status dont_claim_ownership/};
 
     my $client          = BOM::User::Client->new({loginid => $client_loginid});
     my $s3_client       = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
@@ -1764,8 +1983,8 @@ async sub onfido_doc_ready_for_upload {
             die "Db returned unexpected file_id on finish. Expected $file_id but got $finish_upload_result. Please check the record"
                 unless $finish_upload_result == $file_id;
 
+            my $doc_number    = $document_info->{number};
             my $document_info = {
-
                 # to avoid a db hit, we can estimate the `upload_date` to the current timestamp.
                 # all the other fields can be derived from current symbols table.
                 upload_date     => Date::Utility->new->datetime_yyyymmdd_hhmmss,
@@ -1779,6 +1998,16 @@ async sub onfido_doc_ready_for_upload {
             };
 
             if ($document_info) {
+                # claim the ownership here
+                if (defined $doc_type && defined $doc_number && defined $issuing_country && !$dont_claim_ownership) {
+
+                    $client->user->documents->poi_claim($doc_type, $doc_number, $issuing_country);
+
+                    # safe to drop the reserve here
+                    my $reserve_entry = join('::', $doc_type, $doc_number, $issuing_country);
+                    await $redis_events_write->del(USER_DOCUMENTS_RESERVE_KEY . $reserve_entry);
+                }
+
                 BOM::Platform::Event::Emitter::emit(
                     'document_uploaded',
                     {
@@ -1839,6 +2068,83 @@ async sub sync_onfido_details {
     }
 
     return;
+}
+
+=head2 recheck_onfido_face_similarity
+
+This triggers face similarity check for clients that already verified their account via Onfido and afterwards became high risk aml.
+
+Returns 0 if:
+- client has no selfie uploaded, even if it was not checked for face similarity
+- client already verified their account with a selfie
+
+Returns 1 if the client's selfie was succesfully retriggered.
+
+=cut
+
+async sub recheck_onfido_face_similarity {
+    my $data    = shift;
+    my $loginid = $data->{loginid}                              or die 'No loginid supplied';
+    my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
+    die "Virtual account should not meddle with Onfido" if $client->is_virtual;
+
+    my $applicant    = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
+    my $applicant_id = $applicant->{id} or die 'No applicant found';
+
+    my $existing_onfido_selfie = BOM::User::Onfido::get_onfido_live_photo($client->binary_user_id, $applicant_id);
+
+    if (!keys $existing_onfido_selfie->%*) {
+        DataDog::DogStatsd::Helper::stats_inc('events.recheck_onfido_face_similarity.fail_no_selfie');
+        return 0;
+    }
+
+    my $check = BOM::User::Onfido::get_latest_check($client)->{user_check} // {};
+    my ($selfie_report) =
+        grep { $_->{api_name} eq 'facial_similarity_photo' || $_->{api_name} eq 'facial_similarity' }
+        values BOM::User::Onfido::get_all_onfido_reports($client->binary_user_id, $check->{id})->%*;
+
+    if ($selfie_report) {
+        DataDog::DogStatsd::Helper::stats_inc('events.recheck_onfido_face_similarity.fail_selfie_already_checked');
+        return 0;
+    }
+
+    # we need to recover the last document used by the client to verify their account to submit it again with the selfie
+    my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id, $applicant_id);
+
+    my @document_id_to_check;
+    my $doc_count = 0;
+    for my $id (keys $existing_onfido_docs->%*) {
+        my $document = $existing_onfido_docs->{$id};
+        # we check the document type of the array of onfido documents from the client's past submissions which is ordered by created_at in desc order
+        # passport only has one side, while national ID and driving license have 2 sides
+        if ($document->{api_type} eq 'passport') {
+            push @document_id_to_check, $document->{id};
+            $doc_count++;
+            last if $doc_count == 1;
+        } elsif ($document->{api_type} eq 'national_identity_card' || $document->{api_type} eq 'driving_licence') {
+            push @document_id_to_check, $document->{id};
+            $doc_count++;
+            last if $doc_count == 2;
+        }
+
+    }
+
+    my ($selfie_id) = keys $existing_onfido_selfie->%*;
+
+    # only the ids are passed for the onfido verification
+    my $recheck_docs = [$selfie_id, @document_id_to_check];
+
+    $client->propagate_status('selfie_pending', 'system', 'Pending selfie recheck');
+
+    BOM::Platform::Event::Emitter::emit(
+        'ready_for_authentication',
+        {
+            loginid      => $client->loginid,
+            applicant_id => $applicant_id,
+            documents    => $recheck_docs,
+        });
+
+    return 1;
 }
 
 =head2 verify_address
@@ -2731,6 +3037,13 @@ async sub _check_applicant {
         }
 
         my $error_type;
+        my $reports_to_check;
+        if ($client->is_face_similarity_required || $client->requires_selfie_recheck) {
+            $reports_to_check = [qw/document facial_similarity_photo/];
+        } else {
+            $reports_to_check = [qw/document/];
+        }
+
         my %request = (
             applicant_id => $applicant_id,
 
@@ -2744,7 +3057,7 @@ async sub _check_applicant {
             $staff_name ? () : (document_ids => $documents),
 
             # On v3 we need to specify the report names depending of the LC's requirements
-            report_names => $client->is_face_similarity_required ? [qw/document facial_similarity_photo/] : [qw/document/],
+            report_names => $reports_to_check,
         );
 
         my $future_applicant_check = $onfido->applicant_check(%request)->on_fail(
@@ -4623,6 +4936,77 @@ sub underage_client_detected {
     $from_client = BOM::User::Client->new({loginid => $args->{from_loginid}}) if $args->{from_loginid};
 
     BOM::Event::Actions::Common::handle_under_age_client($client, $provider, $from_client);
+
+    return undef;
+}
+
+=head2 poi_claim_ownership
+
+Tries to claim ownership of the document, if the document cannot be claimed it will apply duplicated documents
+side effects.
+
+=over 4
+
+=item * C<$loginid> - loginid of the client
+
+=item * C<$file_id> - id of the new document
+
+=item * C<origin> - the origin of the document, for now client should be the only origin but we might inclue more in future.
+
+=back
+
+Returns C<undef>
+
+=cut
+
+async sub poi_claim_ownership {
+    my $args = shift // {};
+
+    my $loginid = $args->{loginid} or die 'loginid is mandatory';
+
+    my $file_id = $args->{file_id} or die 'file_id is mandatory';
+
+    my $origin = $args->{origin} or die 'origin is mandatory';
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die sprintf('could not find client with loginid=%s', $loginid);
+
+    my ($document) = $client->find_client_authentication_document(query => [id => $file_id]);
+
+    die sprintf('could not find document with id=%d', $file_id) unless $document;
+
+    die sprintf('document id=%d is not from loginid=%s', $file_id, $loginid) if $document->client_loginid ne $loginid;
+
+    my $document_hashref = {
+        document_type   => $document->document_type,
+        document_number => $document->document_id,
+        issuing_country => $document->issuing_country,
+    };
+
+    # this should not happen, emissor must check for undef values!!
+    return DataDog::DogStatsd::Helper::stats_inc('event.poi_claim_ownership.undefined_values') unless all { defined $_ } values $document_hashref->%*;
+
+    # at this point is not really required to create a reserve, we still have to check the reserve queue nonetheless
+    my $redis_events_write = _redis_events_write();
+
+    await $redis_events_write->connect;
+
+    my $reserve_entry = join('::', @{$document_hashref}{qw/document_type document_number issuing_country/});
+
+    # check the redis reserve
+    my $owner = await $redis_events_write->get(USER_DOCUMENTS_RESERVE_KEY . $reserve_entry);
+
+    # if not reserved try to claim
+    $client->user->documents->poi_claim(@{$document_hashref}{qw/document_type document_number issuing_country/}) unless $owner;
+
+    # get the current owner
+    $owner = $client->user->documents->poi_ownership(@{$document_hashref}{qw/document_type document_number issuing_country/}) // '' unless $owner;
+
+    # add the owner of the document
+    $document_hashref->{binary_user_id} = $owner;
+
+    # owner should match current user
+    BOM::Event::Actions::Common::handle_duplicated_documents($client, $document_hashref, $origin) if $owner ne $client->binary_user_id;
 
     return undef;
 }

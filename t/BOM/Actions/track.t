@@ -5,6 +5,7 @@ use Test::More;
 use Test::Warnings qw(warning);
 use Test::Fatal;
 use Test::MockModule;
+use Test::Deep;
 use Time::Moment;
 use Date::Utility;
 use Brands;
@@ -745,6 +746,30 @@ subtest 'brand/offical app id validation' => sub {
 
         ok BOM::Event::Services::Track::_validate_event($_, $binary, -1000), "$_ is whitelisted" foreach @whitelisted_events;
     };
+};
+
+subtest 'transactional emails and the email argument' => sub {
+    my %track = %{BOM::Event::Services::Track::}{qw/duplicated_document_account_closed/};
+
+    # this test ensures that every transactional event has a defined email within its properties
+    # otherwise you will hit a nasty hidden `Missing required attribute: to`
+
+    for my $method (keys %track) {
+        next unless BOM::Event::Services::Track::_is_transactional($method);
+
+        my $valid_properties = BOM::Event::Services::Track::valid_properties(
+            $method,
+            {
+                email => 'test@test.com',
+                dirty => 'stuff'
+            });
+
+        cmp_deeply $valid_properties,
+            {
+            email => 'test@test.com',
+            },
+            "Transactional event $method has a valid email property, also dirty stuff is filtered out";
+    }
 };
 
 $mock_segment->unmock_all;

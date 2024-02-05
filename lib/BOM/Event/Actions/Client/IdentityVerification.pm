@@ -457,8 +457,6 @@ async sub idv_failed {
                 }
             )->%*,
         });
-
-    $log->infof('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, $messages);
 }
 
 =head2 idv_pending

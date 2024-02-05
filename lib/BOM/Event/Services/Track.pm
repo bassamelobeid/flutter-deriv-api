@@ -180,7 +180,7 @@ my %EVENT_PROPERTIES = (
     derivez_inactive_account_closed          => [qw(name title derivez_accounts live_chat_url)],
     document_expiring_today                  => [qw(authentication_url live_chat_url email)],
     document_expiring_soon                   => [qw(authentication_url live_chat_url expiration_date email)],
-
+    duplicated_document_account_closed       => [qw(tnc_approval email)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -240,6 +240,7 @@ my @COMMON_EVENT_METHODS = qw(
     document_expiring_today
     document_expiring_soon
     shared_payment_method_email_notification
+    duplicated_document_account_closed
 );
 
 # list of events that will be forwarded directly to cio as transactional emails
@@ -284,6 +285,7 @@ my @TRANSACTIONAL_EVENTS = qw(
     crypto_withdrawal_locked_email
     authenticated_with_scans
     underage_account_closed
+    duplicated_document_account_closed
     p2p_archived_ad
     mt5_inactive_account_closed
     crypto_withdrawal_sent_email
@@ -1174,8 +1176,7 @@ sub _send_track_request {
     die "Unknown event <$event> tracking request was triggered" unless $EVENT_PROPERTIES{$event};
 
     # filter invalid or unknown properties out
-    my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'loginid', 'lang', 'brand'];
-    my $valid_properties       = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } @$valid_event_properties};
+    my $valid_properties = BOM::Event::Services::Track::valid_properties($event, $properties);
 
     if (_is_transactional($event) && BOM::Config::Runtime->instance->app_config->customerio->transactional_emails) {
         return
@@ -1201,6 +1202,30 @@ sub _send_track_request {
         properties => $valid_properties,
         context    => $context,
     );
+}
+
+=head2 valid_properties
+
+Computes an arrayref of valid properties for the given event, filters out not defined values.
+
+=over 4
+
+=item * <$event> - the event name
+
+=item * <$properties> - a hashref of properties
+
+=back
+
+Returns a hashref of valid properties as { name_of_the_property => value_of_the_property }
+
+=cut
+
+sub valid_properties {
+    my ($event, $properties) = @_;
+    my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'loginid', 'lang', 'brand'];
+    my $valid_properties       = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } @$valid_event_properties};
+
+    return $valid_properties;
 }
 
 =head2 _send_transactional_request
@@ -1456,6 +1481,10 @@ sub _time_to_iso_8601 {
         )->epoch
     )->to_string;
 }
+
+=head2 duplicated_document_account_closed
+
+It is triggered for each B<duplicated_document_account_closed> event emitted, delivering it to Rudderstack.
 
 =head2 underage_account_closed
 

@@ -1708,9 +1708,7 @@ for my $client ($test_client, $test_client_mf) {
                 ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
 
                 cmp_deeply $dd_bag, {
-                    'event.onfido.client_verification.reported_documents' => $client->landing_company->short eq 'maltainvest'
-                    ? 3
-                    : 2,    # +1 because of the selfie
+                    'event.onfido.client_verification.reported_documents' => 3,    # svg will also store the selfie regardless
                     },
                     'Expected DD histogram sent';
 
@@ -2264,6 +2262,8 @@ for my $client ($test_client, $test_client_mf) {
                                 },
                                 'Expected dd metrics';
 
+                            ok $client->status->selfie_rejected, 'selfie rejected status set correctly';
+
                             my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
                             is scalar @$keys, 0, 'Lock released';
 
@@ -2451,6 +2451,574 @@ subtest "Uninitialized date of birth" => sub {
     $dog_mock->unmock_all;
 };
 
+subtest 'Dup documents coming from Onfido' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->duplicate_poi_checks(0);
+    $app_config->check_for_update;
+
+    my $user_mock = Test::MockModule->new('BOM::User');
+    $user_mock->mock(
+        'clients',
+        sub {
+            my ($user) = @_;
+
+            if ($user->id eq $test_client->user->id) {
+                return ($test_client);
+            }
+
+            return $user_mock->original('clients')->(@_);
+        });
+
+    $test_client->propagate_clear_status('poi_duplicated_documents');
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    my $redis_write = $services->redis_events_write();
+    $redis_write->connect->get;
+
+    my $redis_mock = Test::MockModule->new(ref($redis_write));
+    my @redis_log;
+
+    $redis_mock->mock(
+        'del',
+        sub {
+            my (undef, @params) = @_;
+
+            push @redis_log, {'del' => [@params]};
+
+            return $redis_mock->original('del')->(@_);
+        });
+
+    $redis_mock->mock(
+        'set',
+        sub {
+            my (undef, @params) = @_;
+
+            push @redis_log, {'set' => [@params]};
+
+            return $redis_mock->original('set')->(@_);
+        });
+
+    $redis_mock->mock(
+        'get',
+        sub {
+            my (undef, @params) = @_;
+
+            push @redis_log, {'get' => [@params]};
+
+            return $redis_mock->original('get')->(@_);
+        });
+
+    mailbox_clear();
+    #inject de doc first
+    my $another_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'the+counterpart@bin.com',
+    });
+
+    my $user = BOM::User->create(
+        email          => $another_client->email,
+        password       => 'secret',
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
+    $user->add_client($another_client);
+    $test_client->date_of_birth('2003-01-01');
+    $test_client->save;
+
+    my $dbh         = $another_client->db->dbic->dbh;
+    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin, ?)';
+    my $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($another_client->loginid, 'passport', 'PNG', 'yesterday', '999-999-999', 'test-dup-sus0001', 'none', 'front', 'bo', 'br');
+
+    $another_client->user->documents->poi_claim('passport', '999-999-999', 'br');
+
+    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @metrics;
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            push @metrics, @_ if scalar @_ == 2;
+            push @metrics, @_, undef if scalar @_ == 1;
+
+            return 1;
+        });
+
+    my $mocked_report =
+        Test::MockModule->new('WebService::Async::Onfido::Report');    #TODO Refactor mock_onfido.pl inorder to return report with initialized dob
+    $mocked_report->mock(
+        'new' => sub {
+            my $self = shift, my %data = @_;
+            $data{properties}->{issuing_country}  = 'BRA';
+            $data{properties}->{date_of_birth}    = '2003-01-01';
+            $data{properties}->{document_numbers} = [{value => '999-999-999'}];
+            $mocked_report->original('new')->($self, %data);
+        });
+
+    my $onfido_fake_docs = [
+        WebService::Async::Onfido::Document->new(
+            id        => 'zzz' . $another_client->loginid,
+            file_type => 'png',
+            type      => 'passport',
+        ),
+        WebService::Async::Onfido::Document->new(
+            id        => 'xxx' . $another_client->loginid,
+            file_type => 'png',
+            type      => 'passport',
+        ),
+    ];
+
+    $mocked_report->mock(
+        'documents',
+        sub {
+            return $onfido_fake_docs;
+        });
+
+    my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+
+    $onfido_mocker->mock(
+        'get_document_details',
+        sub {
+            my (undef, %args) = @_;
+            my $document_id = $args{document_id};
+            my $doc_hash    = +{map { ($_->id => $_) } $onfido_fake_docs->@*};
+
+            return Future->done($doc_hash->{$document_id});
+        });
+
+    my $db_check = BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            my $sth =
+                $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $test_client->user_id, $applicant_id);
+        });
+
+    reset_onfido_check({
+        id     => $db_check->{id},
+        status => 'in_progress',
+        result => undef,
+    });
+
+    lives_ok {
+        @redis_log = ();
+        @metrics   = ();
+        mailbox_clear();
+        BOM::Event::Actions::Client::client_verification({
+                check_url => $check_href,
+            })->get;
+
+        cmp_deeply + {@metrics},
+            +{
+            'onfido.api.hit'                                 => undef,
+            'event.onfido.client_verification.dispatch'      => undef,
+            'onfido.document.skip_repeated'                  => undef,
+            'event.onfido.client_verification.not_verified'  => {tags => ['check:clear', 'country:COL', 'report:clear']},
+            'event.onfido.client_verification.dup_documents' => {tags => ['check:clear', 'country:COL', 'report:clear']},
+            'event.onfido.client_verification.success'       => undef,
+            },
+            'Expected dd metrics';
+
+        # as the client was stopped by the database index, we don't expect to see reserve calls
+        my $reserve_calls = [
+            grep {
+                my ($call) = $_;
+                my (undef, $params) = $call->%*;
+
+                $params->[0] =~ qr/USER::DOCUMENTS::RESERVE::/
+            } @redis_log
+        ];
+
+        cmp_bag $reserve_calls, [], 'no reserve calls';
+    }
+    "no exception";
+
+    my $msg        = mailbox_search(subject => qr/Duplicated documents detection/);
+    my $brand      = request->brand;
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
+
+    is $msg->{from}, $from_email, 'expected from address';
+    cmp_deeply $msg->{to}, [$to_email], 'expected to address';
+
+    my $cli_loginid = $test_client->loginid;
+    is $msg->{subject}, "Duplicated documents detection from $cli_loginid", 'expected subject';
+    ok $test_client->status->poi_duplicated_documents, 'poi duplicated document status';
+    is $test_client->status->reason('poi_duplicated_documents'), sprintf('Attempted to verify a POI document %s', $another_client->loginid),
+        'another loginid mentioned';
+
+    ok $msg->{body} =~ /passport/,    'doc type mentioned';
+    ok $msg->{body} =~ /999-999-999/, 'doc number mentioned';
+    ok $msg->{body} =~ /br/,          'doc country mentioned';
+    ok $msg->{body} =~ /Onfido/,      'onfido mentioned';
+
+    my $another_loginid = $another_client->loginid;
+    ok $msg->{body} =~ qr/$another_loginid/, 'another loginid mentioned';
+
+    $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+    is $db_check->{status}, 'complete', 'check has been completed';
+
+    subtest 'dup detected at the reserve (race condition)' => sub {
+        $test_client->propagate_clear_status('poi_duplicated_documents');
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+        # free the document
+        $another_client->user->documents->poi_free('passport', '999-999-999', 'br');
+
+        # put the reserve
+        $redis_write->set('USER::DOCUMENTS::RESERVE::passport::999-999-999::br', $another_client->user->id)->get;
+
+        reset_onfido_check({
+            id     => $db_check->{id},
+            status => 'in_progress',
+            result => undef,
+        });
+
+        lives_ok {
+            @redis_log = ();
+            @metrics   = ();
+            mailbox_clear();
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+
+            cmp_deeply + {@metrics},
+                +{
+                'onfido.api.hit'                                 => undef,
+                'event.onfido.client_verification.dispatch'      => undef,
+                'event.onfido.client_verification.not_verified'  => {tags => ['check:clear', 'country:COL', 'report:clear']},
+                'event.onfido.client_verification.dup_documents' => {tags => ['check:clear', 'country:COL', 'report:clear']},
+                'event.onfido.client_verification.success'       => undef,
+                },
+                'Expected dd metrics';
+
+            # as the reserve was made we'd expect some calls
+            my $reserve_calls = [
+                grep {
+                    my ($call) = $_;
+                    my (undef, $params) = $call->%*;
+
+                    $params->[0] =~ qr/USER::DOCUMENTS::RESERVE::/
+                } @redis_log
+            ];
+
+            cmp_bag $reserve_calls,
+                [{
+                    set => ['USER::DOCUMENTS::RESERVE::passport::999-999-999::br', $test_client->user->id, 'EX', 86400, 'NX'],
+                },
+                {
+                    get => ['USER::DOCUMENTS::RESERVE::passport::999-999-999::br',],
+                }
+                ],
+                'reserve calls';
+        }
+        "no exception";
+
+        my $msg        = mailbox_search(subject => qr/Duplicated documents detection/);
+        my $brand      = request->brand;
+        my $from_email = $brand->emails('no-reply');
+        my $to_email   = $brand->emails('authentications');
+
+        is $msg->{from}, $from_email, 'expected from address';
+        cmp_deeply $msg->{to}, [$to_email], 'expected to address';
+
+        my $cli_loginid = $test_client->loginid;
+        is $msg->{subject}, "Duplicated documents detection from $cli_loginid", 'expected subject';
+
+        ok $msg->{body} =~ /passport/,    'doc type mentioned';
+        ok $msg->{body} =~ /999-999-999/, 'doc number mentioned';
+        ok $msg->{body} =~ /br/,          'doc country mentioned';
+        ok $msg->{body} =~ /Onfido/,      'onfido mentioned';
+
+        my $another_loginid = $another_client->loginid;
+        ok $msg->{body} =~ qr/$another_loginid/, 'another loginid mentioned';
+
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+        is $test_client->status->reason('poi_duplicated_documents'), sprintf('Attempted to verify a POI document %s', $another_client->loginid),
+            'another loginid mentioned';
+
+        $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+        is $db_check->{status}, 'complete', 'check has been completed';
+    };
+
+    subtest 'no dup scenario' => sub {
+        $test_client->propagate_clear_status('poi_duplicated_documents');
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+        $onfido_fake_docs = [
+            WebService::Async::Onfido::Document->new(
+                id        => 'ttt' . $another_client->loginid,
+                file_type => 'png',
+                type      => 'national_id',
+            ),
+            WebService::Async::Onfido::Document->new(
+                id        => 'bbb' . $another_client->loginid,
+                file_type => 'png',
+                type      => 'national_id',
+            ),
+        ];
+
+        # free the document
+        $another_client->user->documents->poi_free('national_id', '999-999-999', 'co');
+
+        # ensure there is no reserve
+        $redis_write->del('USER::DOCUMENTS::RESERVE::national_id::999-999-999::co')->get;
+
+        # this will also indirectly test the coalesce to the client residence
+        # when no issuing country is reported by Onfido
+        $mocked_report->mock(
+            'new' => sub {
+                my $self = shift, my %data = @_;
+                $data{properties}->{date_of_birth}    = '2003-01-01';
+                $data{properties}->{document_numbers} = [{value => '999-999-999'}];
+                $mocked_report->original('new')->($self, %data);
+            });
+
+        # make the coalesce kick in
+        $onfido_doc->mock(
+            'issuing_country',
+            sub {
+                return undef;
+            });
+
+        reset_onfido_check({
+            id     => $db_check->{id},
+            status => 'in_progress',
+            result => undef,
+        });
+
+        lives_ok {
+            @redis_log = ();
+            mailbox_clear();
+            @metrics = ();
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+
+            cmp_deeply + {@metrics},
+                +{
+                'onfido.api.hit'                                => undef,
+                'event.onfido.client_verification.dispatch'     => undef,
+                'onfido.document.skip_repeated'                 => undef,
+                'event.onfido.client_verification.not_verified' =>
+                    {'tags' => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch', 'result:dob_mismatch']},
+                'event.onfido.client_verification.result' =>
+                    {'tags' => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch', 'result:dob_mismatch']},
+                'event.onfido.client_verification.success' => undef,
+                },
+                'Expected dd metrics';
+
+            # as the reserve was made we'd expect some calls
+            my $reserve_calls = [
+                grep {
+                    my ($call) = $_;
+                    my (undef, $params) = $call->%*;
+
+                    $params->[0] =~ qr/USER::DOCUMENTS::RESERVE::/
+                } @redis_log
+            ];
+
+            cmp_bag $reserve_calls,
+                [{
+                    set => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co', $test_client->user->id, 'EX', 86400, 'NX'],
+                },
+                {
+                    get => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co',],
+                },
+                {
+                    set => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co', $test_client->user->id, 'EX', 86400, 'NX'],
+                },
+                {
+                    get => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co',],
+                },
+                {
+                    del => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co',],
+                }
+                ],
+                'reserve calls';
+
+            is $test_client->user->documents->poi_ownership('national_id', '999-999-999', 'co'), $test_client->user->id, 'Claimed ownership';
+        }
+        "no exception";
+
+        my $msg = mailbox_search(subject => qr/Duplicated documents detection/);
+
+        ok !$msg, 'No duplicated email was sent';
+        $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+        is $db_check->{status}, 'complete', 'check has been completed';
+
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+        ok !$test_client->status->poi_duplicated_documents, 'no poi duplicated document status';
+
+        # reset back
+        $onfido_doc->mock(
+            'issuing_country',
+            sub {
+                return 'BRA';
+            });
+    };
+
+    subtest 'no dup scenario (but status is there)' => sub {
+        $onfido_fake_docs = [
+            WebService::Async::Onfido::Document->new(
+                id        => 'ttt' . $another_client->loginid,
+                file_type => 'png',
+                type      => 'national_id',
+            ),
+            WebService::Async::Onfido::Document->new(
+                id        => 'bbb' . $another_client->loginid,
+                file_type => 'png',
+                type      => 'national_id',
+            ),
+        ];
+
+        # free the document
+        $another_client->user->documents->poi_free('national_id', '999-999-999', 'co');
+
+        # ensure there is no reserve
+        $redis_write->del('USER::DOCUMENTS::RESERVE::national_id::999-999-999::co')->get;
+
+        # this will also indirectly test the coalesce to the client residence
+        # when no issuing country is reported by Onfido
+        $mocked_report->mock(
+            'new' => sub {
+                my $self = shift, my %data = @_;
+                $data{properties}->{date_of_birth}    = '2003-01-01';
+                $data{properties}->{document_numbers} = [{value => '999-999-999'}];
+                $mocked_report->original('new')->($self, %data);
+            });
+
+        # make the coalesce kick in
+        $onfido_doc->mock(
+            'issuing_country',
+            sub {
+                return undef;
+            });
+
+        reset_onfido_check({
+            id     => $db_check->{id},
+            status => 'in_progress',
+            result => undef,
+        });
+
+        lives_ok {
+            @redis_log = ();
+            mailbox_clear();
+            @metrics = ();
+            $test_client->status->set('poi_duplicated_documents', 'system', 'test');
+            $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+
+            cmp_deeply + {@metrics},
+                +{
+                'onfido.api.hit'                                 => undef,
+                'event.onfido.client_verification.dispatch'      => undef,
+                'event.onfido.client_verification.not_verified'  => {tags => ['check:clear', 'country:COL', 'report:clear']},
+                'event.onfido.client_verification.dup_documents' => {tags => ['check:clear', 'country:COL', 'report:clear']},
+                'event.onfido.client_verification.success'       => undef,
+                },
+                'Expected dd metrics';
+
+            # as the reserve was made we'd expect some calls
+            my $reserve_calls = [
+                grep {
+                    my ($call) = $_;
+                    my (undef, $params) = $call->%*;
+
+                    $params->[0] =~ qr/USER::DOCUMENTS::RESERVE::/
+                } @redis_log
+            ];
+
+            cmp_bag $reserve_calls,
+                [{
+                    set => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co', $test_client->user->id, 'EX', 86400, 'NX'],
+                },
+                {
+                    get => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co',],
+                },
+                {
+                    set => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co', $test_client->user->id, 'EX', 86400, 'NX'],
+                },
+                {
+                    get => ['USER::DOCUMENTS::RESERVE::national_id::999-999-999::co',],
+                }
+                ],
+                'reserve calls';
+
+            is $test_client->user->documents->poi_ownership('national_id', '999-999-999', 'co'), $test_client->user->id, 'Claimed ownership';
+        }
+        "no exception";
+
+        my $msg = mailbox_search(subject => qr/Duplicated documents detection/);
+
+        ok !$msg, 'No duplicated email was sent';
+        $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
+        is $db_check->{status}, 'complete', 'check has been completed';
+
+        # reset back
+        $onfido_doc->mock(
+            'issuing_country',
+            sub {
+                return 'BRA';
+            });
+
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+        ok $test_client->status->poi_duplicated_documents, 'poi duplicated document status';
+        is $test_client->status->reason('poi_duplicated_documents'), 'test', 'reason is not updated';
+
+        $test_client->propagate_clear_status('poi_duplicated_documents');
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    };
+
+    $app_config->system->suspend->duplicate_poi_checks(1);
+
+    subtest 'Dup detection on suspended flag (no detection is performed)' => sub {
+        $another_client->user->documents->poi_claim('passport', '999-999-999', 'br');
+
+        reset_onfido_check({
+            id     => $db_check->{id},
+            status => 'in_progress',
+            result => undef,
+        });
+
+        lives_ok {
+            mailbox_clear();
+            @metrics = ();
+
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+
+            cmp_deeply + {@metrics}, +{
+                'event.onfido.client_verification.dispatch' => undef,
+                'onfido.api.hit'                            => undef,
+                'event.onfido.client_verification.result'   =>
+                    {'tags' => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch', 'result:dob_mismatch']},
+                'event.onfido.client_verification.not_verified' =>
+                    {'tags' => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch', 'result:dob_mismatch']},
+                'event.onfido.client_verification.success' => undef
+
+                },
+                'Expected dd metrics';
+
+            my $msg = mailbox_search(subject => qr/Duplicated documents detection/);
+            ok !$msg, 'no duplicated email sent';
+
+            $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+            ok !$test_client->status->poi_duplicated_documents, 'no poi duplicated document status';
+        }
+        'no exception seen';
+
+        $another_client->user->documents->poi_free('passport', '999-999-999', 'br');
+    };
+
+    $mocked_report->unmock_all;
+    $redis_mock->unmock_all;
+    $dog_mock->unmock_all;
+    $user_mock->unmock_all;
+    $app_config->check_for_update;
+};
+
 subtest "time from ready to verified" => sub {
     my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
     my @metrics;
@@ -2494,6 +3062,7 @@ subtest "time from ready to verified" => sub {
                 loginid      => $test_client->loginid,
                 applicant_id => $applicant_id,
             })->get;
+
         cmp_deeply [@metrics],
             [
             'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:COL']},
@@ -2535,7 +3104,7 @@ subtest "time from ready to verified" => sub {
 
     my $request;
     my $mocked_action = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return Future->done; });
+    $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return Future->done(0); });
 
     reset_onfido_check({
         id     => $db_check->{id},
@@ -2551,6 +3120,13 @@ subtest "time from ready to verified" => sub {
         cmp_deeply [@metrics],
             [
             'event.onfido.client_verification.dispatch'     => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
             'onfido.api.hit'                                => undef,
             'onfido.api.hit'                                => undef,
             'onfido.api.hit'                                => undef,
@@ -2636,7 +3212,7 @@ subtest "document upload request context" => sub {
 
     my $request;
     my $mocked_action = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return Future->done; });
+    $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return Future->done(0); });
 
     my $db_check = BOM::Database::UserDB::rose_db()->dbic->run(
         fixup => sub {
@@ -2659,6 +3235,13 @@ subtest "document upload request context" => sub {
         cmp_deeply [@metrics],
             [
             'event.onfido.client_verification.dispatch'     => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
+            'onfido.api.hit'                                => undef,
             'onfido.api.hit'                                => undef,
             'onfido.api.hit'                                => undef,
             'onfido.api.hit'                                => undef,
@@ -6874,7 +7457,7 @@ subtest 'store applicant if it does not exist in db' => sub {
         $events_mock->mock(
             '_store_applicant_documents',
             sub {
-                return Future->done;
+                return Future->done(0);
             });
         $onfido_async_mock->mock(
             'applicant_get',
@@ -6952,7 +7535,7 @@ subtest 'store check coming from webhook even if there is no check record in db'
         $events_mock->mock(
             '_store_applicant_documents',
             sub {
-                return Future->done;
+                return Future->done(0);
             });
 
         $mocked_check->mock(
@@ -6967,19 +7550,62 @@ subtest 'store check coming from webhook even if there is no check record in db'
                 return $onfido;
             });
 
-        my @reports = (
-            WebService::Async::Onfido::Report->new(
-                id         => 'aaa',
-                result     => 'consider',
-                breakdown  => {},
-                properties => {},
-                name       => 'document'
-            ),
-        );
+        my $ryu_data = {
+            photo_list    => [WebService::Async::Onfido::Document->new(id => 'selfie' . $test_client->loginid, file_type => 'png'),],
+            document_list => [
+                WebService::Async::Onfido::Document->new(
+                    id        => 'aaa' . $test_client->loginid,
+                    file_type => 'png',
+                    type      => 'passport',
+                ),
+                WebService::Async::Onfido::Document->new(
+                    id        => 'bbb' . $test_client->loginid,
+                    file_type => 'png',
+                    type      => 'passport',
+                ),
+            ],
+            reports => [
+                WebService::Async::Onfido::Report->new(
+                    id         => 'aaa',
+                    result     => 'consider',
+                    breakdown  => {},
+                    properties => {},
+                    name       => 'document'
+                ),
+            ]};
+        my $ryu_pointer;
+
+        $mocked_check->mock(
+            'reports',
+            sub {
+                $ryu_pointer = 'reports';
+                return Ryu::Source->new;
+            });
+
+        $onfido_mocker->mock(
+            'photo_list',
+            sub {
+                $ryu_pointer = 'photo_list';
+                return Ryu::Source->new;
+            });
+
+        $onfido_mocker->mock(
+            'document_list',
+            sub {
+                $ryu_pointer = 'document_list';
+                return Ryu::Source->new;
+            });
+
         $ryu_mock->mock(
             'as_list',
             sub {
-                return Future->done(@reports);
+                if ($ryu_pointer && exists $ryu_data->{$ryu_pointer}) {
+                    my @data = $ryu_data->{$ryu_pointer}->@*;
+                    $ryu_pointer = undef;
+                    return Future->done(@data);
+                }
+
+                return $ryu_mock->original('as_list')->(@_);
             });
 
         my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');

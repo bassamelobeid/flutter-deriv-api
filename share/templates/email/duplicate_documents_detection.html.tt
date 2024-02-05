@@ -1,0 +1,24 @@
+<p>A POI attempt was made using duplicated documents: [% loginid %]</p>
+
+<p>Document details:<p>
+<ul>
+    <li><b>Type:</b> [% document_type  %]</li>
+    <li><b>Number:</b> [% document_number  %]</li>
+    <li><b>Country:</b> [% issuing_country  %]</li>
+    <li><b>Origin:</b> [% provider  %]</li>
+</ul>
+
+[% IF cannot_disable %]
+<p>Please note the client cannot be automatically disabled.</p>
+[% ELSE %]
+<p>Please note the client and its siblings have been automatically disabled.</p>
+[% END %]
+
+[% IF loginids.size %]
+    <p>The document belongs to the following loginids:<p>
+    <ul>
+        [% FOR l IN loginids %]
+            <li><b>[% l %]</b></li>
+        [% END %]
+    </ul>
+[% END %]

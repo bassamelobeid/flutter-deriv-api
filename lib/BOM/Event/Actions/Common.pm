@@ -13,7 +13,7 @@ A set of common function between event handlers
 use strict;
 use warnings;
 
-use List::Util qw( any );
+use List::Util qw( any uniq );
 use Log::Any   qw( $log );
 use Template::AutoFilter;
 use Syntax::Keyword::Try;
@@ -32,6 +32,7 @@ use BOM::Event::Actions::CustomerIO;
 use Brands;
 use LandingCompany::Registry;
 use Carp;
+use BOM::Config::Runtime;
 
 # Templates prefix path
 use constant TEMPLATE_PREFIX_PATH => "/home/git/regentmarkets/bom-events/share/templates/email/";
@@ -330,6 +331,121 @@ sub trigger_cio_broadcast {
 
     $log->warn('No valid recipients provided to trigger_cio_broadcast');
     return 0;
+}
+
+=head2 handle_duplicated_documents
+
+Side effects to apply under a duplicated documents scenario.
+
+=over 4
+
+=item * C<$client> - an instance of L<BOM::User::Client>
+
+=item * C<$document> - a document in hashref form, must include: document_type, document_number, issuing_country and binary_user_id of the owner
+
+=item * C<$provider> - the provider name which verified user's age
+
+=back
+
+Returns C<undef>
+
+=cut
+
+sub handle_duplicated_documents {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    $app_config->check_for_update;
+
+    my $disabled_feature = $app_config->system->suspend->duplicate_poi_checks;
+
+    return undef if $disabled_feature;
+
+    my ($client, $document, $provider) = @_;
+
+    my $owner = BOM::User->new(id => $document->{binary_user_id});
+
+    return undef unless $owner;
+
+    my ($first_owner) = $owner->bom_real_loginids;
+
+    $client->propagate_status('poi_duplicated_documents', 'system', sprintf('Attempted to verify a POI document %s', $first_owner // ''));
+
+    # gather info to check if the client can be disabled
+    my $siblings = $client->real_account_siblings_information(include_disabled => 0);
+
+    my @have_balance = grep { $siblings->{$_}->{balance} > 0 } keys $siblings->%*;
+    my @mt5_loginids = $client->user->get_trading_platform_loginids(
+        platform        => 'mt5',
+        type_of_account => 'real'
+    );
+    my @dx_loginids = $client->user->get_trading_platform_loginids(
+        platform        => 'dxtrader',
+        type_of_account => 'real'
+    );
+    my $cannot_disable = @have_balance || @dx_loginids || @mt5_loginids;
+
+    my $loginid = $client->loginid;
+
+    unless ($cannot_disable) {
+        # push the virtual
+        $siblings->{$client->user->bom_virtual_loginid} = undef if $client->user->bom_virtual_loginid;
+
+        # if all of the accounts don't have balance, disable them
+        for my $each_siblings (keys %{$siblings}) {
+            my $current_client = BOM::User::Client->new({loginid => $each_siblings});
+            my $reason         = sprintf("client has duplicated documents %s", $first_owner // '');
+
+            $current_client->status->setnx('disabled', 'system', $reason);
+        }
+
+        # need to send email to client
+        my $brand  = request->brand;
+        my $params = {
+            language => uc($client->user->preferred_language // request->language // 'en'),
+        };
+
+        BOM::Platform::Event::Emitter::emit(
+            duplicated_document_account_closed => {
+                loginid    => $client->loginid,
+                properties => {
+                    tnc_approval => $brand->tnc_approval_url($params),
+                    email        => $client->email,
+                }});
+    }
+
+    # send a LC ticket
+    my $brand      = request->brand;
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
+    my $tt         = Template::AutoFilter->new({
+        ABSOLUTE => 1,
+        ENCODING => 'utf8'
+    });
+
+    my $subject = "Duplicated documents detection from $loginid";
+
+    try {
+        $tt->process(
+            BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH . 'duplicate_documents_detection.html.tt',
+            {
+                $document->%*,
+                loginid        => $loginid,
+                loginids       => [$owner->bom_real_loginids],
+                provider       => $provider,
+                cannot_disable => $cannot_disable,
+            },
+            \my $html
+        );
+        die "Template error: @{[$tt->error]}" if $tt->error;
+
+        die "failed to send duplicated documents email ($loginid)"
+            unless Email::Stuffer->from($from_email)->to($to_email)->subject($subject)->html_body($html)->send();
+    } catch ($e) {
+        $log->warn($e);
+        exception_logged();
+    }
+
+    return undef;
 }
 
 1;

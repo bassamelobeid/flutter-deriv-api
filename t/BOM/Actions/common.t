@@ -19,6 +19,9 @@ use BOM::Platform::Context    qw( request );
 
 use BOM::Event::Actions::Common;
 use BOM::User;
+use BOM::Config::Runtime;
+
+my $app_config = BOM::Config::Runtime->instance->app_config;
 
 my $client_mock = Test::MockModule->new('BOM::User::Client');
 my $mocked_poa_status;
@@ -628,6 +631,547 @@ subtest '_send_CS_email_POA_pending' => sub {
     $client_mf->status->clear_age_verification;
     mailbox_clear();
     $mock_client->unmock_all();
+};
+
+subtest 'handle duplicated documents' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $loginid = $client->loginid;
+    my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email          => 'dup+owner@test.com',
+        password       => 'secreto',
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
+    $user->add_client($virtual);
+    $user->add_client($client);
+    $user->add_client($sibling);
+    $client->binary_user_id($user->id);
+    $client->save;
+
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user2 = BOM::User->create(
+        email          => 'first+owner@test.com',
+        password       => 'secreto',
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
+    $user2->add_client($client2);
+    $client2->binary_user_id($user2->id);
+    $client2->save;
+
+    my $cli_mock      = Test::MockModule->new(ref($client));
+    my $siblings_info = {};
+
+    $cli_mock->mock(
+        'real_account_siblings_information',
+        sub {
+            return $siblings_info;
+        });
+
+    my $user_mock = Test::MockModule->new(ref($user));
+    my $mt5_loginids;
+    my $dxtrader_loginids;
+
+    $user_mock->mock(
+        'get_trading_platform_loginids',
+        sub {
+            my (undef, %args) = @_;
+
+            return $mt5_loginids->@* if $args{platform} eq 'mt5';
+
+            return $dxtrader_loginids->@* if $args{platform} eq 'dxtrader';
+
+            return ();
+        });
+
+    my $emit_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my @emissions;
+
+    $emit_mock->mock(
+        'emit',
+        sub {
+            push @emissions, +{@_};
+        });
+
+    my $brand = request->brand;
+    my $document;
+
+    subtest 'disabled feature' => sub {
+        $app_config->system->suspend->duplicate_poi_checks(1);
+        $app_config->check_for_update;
+
+        $siblings_info                                 = {};
+        $siblings_info->{$client->loginid}->{balance}  = 0;
+        $siblings_info->{$sibling->loginid}->{balance} = 0;
+
+        $mt5_loginids      = [];
+        $dxtrader_loginids = [];
+
+        $document = +{
+            document_type   => 'passport',
+            document_number => '000-000-000-11',
+            issuing_country => 'br',
+            binary_user_id  => $user2->id,
+        };
+
+        mailbox_clear();
+        @emissions = ();
+
+        $virtual->status->clear_disabled;
+        $client->status->clear_disabled;
+        $sibling->status->clear_disabled;
+
+        $client->status->_build_all;
+        $virtual->status->_build_all;
+        $sibling->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido');
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        my $msg = mailbox_search(subject => qr/Duplicated documents detection from $loginid/);
+
+        ok !$msg, 'No email sent';
+
+        ok !$client->status->disabled,                  'client has not been disabled';
+        ok !$virtual->status->disabled,                 'virtual has not been disabled';
+        ok !$sibling->status->disabled,                 'sibling has not been disabled';
+        ok !$sibling->status->poi_duplicated_documents, 'not flagged as POI duplicated document';
+        ok !$client->status->poi_duplicated_documents,  'not flagged as POI duplicated document';
+        ok !$virtual->status->poi_duplicated_documents, 'does not propagate to virtual';
+
+        cmp_deeply [@emissions], [], 'Expected emissions sent (empty)';
+    };
+
+    subtest 'document has no owner' => sub {
+        $app_config->system->suspend->duplicate_poi_checks(0);
+        $app_config->check_for_update;
+
+        $siblings_info                                 = {};
+        $siblings_info->{$client->loginid}->{balance}  = 0;
+        $siblings_info->{$sibling->loginid}->{balance} = 0;
+
+        $mt5_loginids      = [];
+        $dxtrader_loginids = [];
+
+        $document = +{
+            document_type   => 'passport',
+            document_number => '000-000-000-11',
+            issuing_country => 'br',
+        };
+
+        mailbox_clear();
+        @emissions = ();
+
+        $virtual->status->clear_disabled;
+        $client->status->clear_disabled;
+        $sibling->status->clear_disabled;
+
+        $client->status->_build_all;
+        $virtual->status->_build_all;
+        $sibling->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido');
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        my $msg = mailbox_search(subject => qr/Duplicated documents detection from $loginid/);
+
+        ok !$msg, 'No email sent';
+
+        ok !$client->status->disabled,                  'client has not been disabled';
+        ok !$virtual->status->disabled,                 'virtual has not been disabled';
+        ok !$sibling->status->disabled,                 'sibling has not been disabled';
+        ok !$sibling->status->poi_duplicated_documents, 'not flagged as POI duplicated document';
+        ok !$client->status->poi_duplicated_documents,  'not flagged as POI duplicated document';
+        ok !$virtual->status->poi_duplicated_documents, 'does not propagate to virtual';
+
+        cmp_deeply [@emissions], [], 'Expected emissions sent (empty)';
+    };
+
+    subtest 'client has no balance no mt5, no dx' => sub {
+        $siblings_info                                 = {};
+        $siblings_info->{$client->loginid}->{balance}  = 0;
+        $siblings_info->{$sibling->loginid}->{balance} = 0;
+
+        $mt5_loginids      = [];
+        $dxtrader_loginids = [];
+
+        $document = +{
+            document_type   => 'passport',
+            document_number => '000-000-000-11',
+            issuing_country => 'br',
+            binary_user_id  => $user2->id,
+        };
+
+        mailbox_clear();
+        @emissions = ();
+
+        $virtual->status->clear_disabled;
+        $client->status->clear_disabled;
+        $sibling->status->clear_disabled;
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido');
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        subtest 'email and content' => sub {
+            my $msg = mailbox_search(subject => qr/Duplicated documents detection from $loginid/);
+
+            ok $msg, 'Email about duplicated documents detection was sent to LC';
+
+            is $msg->{subject}, "Duplicated documents detection from $loginid", 'expected subject';
+
+            ok $msg->{body} =~ /passport/,       'doc type mentioned';
+            ok $msg->{body} =~ /000-000-000-11/, 'doc number mentioned';
+            ok $msg->{body} =~ /br/,             'doc country mentioned';
+            ok $msg->{body} =~ /Onfido/,         'onfido mentioned';
+
+            ok $msg->{body} =~ /Please note the client and its siblings have been automatically disabled/;
+
+            my $owner_loginid = $client2->loginid;
+            ok $msg->{body} =~ qr/$owner_loginid/, 'owner loginid mentioned';
+        };
+
+        ok $client->status->disabled,                   'client has been disabled';
+        ok $virtual->status->disabled,                  'virtual has been disabled';
+        ok $sibling->status->disabled,                  'sibling has been disabled';
+        ok $sibling->status->poi_duplicated_documents,  'flagged as POI duplicated document';
+        ok $client->status->poi_duplicated_documents,   'flagged as POI duplicated document';
+        ok !$virtual->status->poi_duplicated_documents, 'does not propagate to virtual';
+
+        cmp_deeply [@emissions],
+            [{
+                duplicated_document_account_closed => {
+                    loginid    => $client->loginid,
+                    properties => {
+                        tnc_approval => $brand->tnc_approval_url({language => uc($client->user->preferred_language // request->language // 'en')}),
+                        email        => $client->email,
+                    }}}
+            ],
+            'Expected emissions sent';
+    };
+
+    subtest 'cannot disable: client has funds' => sub {
+        $siblings_info                                 = {};
+        $siblings_info->{$client->loginid}->{balance}  = 1;
+        $siblings_info->{$sibling->loginid}->{balance} = 0;
+
+        $mt5_loginids      = [];
+        $dxtrader_loginids = [];
+
+        $document = +{
+            document_type   => 'passport',
+            document_number => '000-000-000-11',
+            issuing_country => 'br',
+            binary_user_id  => $user2->id,
+        };
+
+        mailbox_clear();
+        @emissions = ();
+
+        $virtual->status->clear_disabled;
+        $client->status->clear_disabled;
+        $sibling->status->clear_disabled;
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'client');
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        subtest 'email and content' => sub {
+            my $msg = mailbox_search(subject => qr/Duplicated documents detection from $loginid/);
+
+            ok $msg, 'Email about duplicated documents detection was sent to LC';
+
+            is $msg->{subject}, "Duplicated documents detection from $loginid", 'expected subject';
+
+            ok $msg->{body} =~ /passport/,       'doc type mentioned';
+            ok $msg->{body} =~ /000-000-000-11/, 'doc number mentioned';
+            ok $msg->{body} =~ /br/,             'doc country mentioned';
+            ok $msg->{body} =~ /client/,         'client mentioned';
+
+            ok $msg->{body} =~ /Please note the client cannot be automatically disabled/;
+
+            my $owner_loginid = $client2->loginid;
+            ok $msg->{body} =~ qr/$owner_loginid/, 'owner loginid mentioned';
+        };
+
+        ok !$client->status->disabled,                  'client has not been disabled';
+        ok !$virtual->status->disabled,                 'virtual has not been disabled';
+        ok !$sibling->status->disabled,                 'sibling has not been disabled';
+        ok $sibling->status->poi_duplicated_documents,  'flagged as POI duplicated document';
+        ok $client->status->poi_duplicated_documents,   'flagged as POI duplicated document';
+        ok !$virtual->status->poi_duplicated_documents, 'does not propagate to virtual';
+
+        cmp_deeply [@emissions], [], 'Expected emissions sent (empty)';
+    };
+
+    subtest 'cannot disable: sibling has funds' => sub {
+        $siblings_info                                 = {};
+        $siblings_info->{$client->loginid}->{balance}  = 0;
+        $siblings_info->{$sibling->loginid}->{balance} = 1;
+
+        $mt5_loginids      = [];
+        $dxtrader_loginids = [];
+
+        $document = +{
+            document_type   => 'passport',
+            document_number => '000-000-000-11',
+            issuing_country => 'br',
+            binary_user_id  => $user2->id,
+        };
+
+        mailbox_clear();
+        @emissions = ();
+
+        $virtual->status->clear_disabled;
+        $client->status->clear_disabled;
+        $sibling->status->clear_disabled;
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'idv');
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        subtest 'email and content' => sub {
+            my $msg = mailbox_search(subject => qr/Duplicated documents detection from $loginid/);
+
+            ok $msg, 'Email about duplicated documents detection was sent to LC';
+
+            is $msg->{subject}, "Duplicated documents detection from $loginid", 'expected subject';
+
+            ok $msg->{body} =~ /passport/,       'doc type mentioned';
+            ok $msg->{body} =~ /000-000-000-11/, 'doc number mentioned';
+            ok $msg->{body} =~ /br/,             'doc country mentioned';
+            ok $msg->{body} =~ /idv/,            'idv mentioned';
+
+            ok $msg->{body} =~ /Please note the client cannot be automatically disabled/;
+
+            my $owner_loginid = $client2->loginid;
+            ok $msg->{body} =~ qr/$owner_loginid/, 'owner loginid mentioned';
+        };
+
+        ok !$client->status->disabled,                  'client has not been disabled';
+        ok !$virtual->status->disabled,                 'virtual has not been disabled';
+        ok !$sibling->status->disabled,                 'sibling has not been disabled';
+        ok $sibling->status->poi_duplicated_documents,  'flagged as POI duplicated document';
+        ok $client->status->poi_duplicated_documents,   'flagged as POI duplicated document';
+        ok !$virtual->status->poi_duplicated_documents, 'does not propagate to virtual';
+
+        cmp_deeply [@emissions], [], 'Expected emissions sent (empty)';
+    };
+
+    subtest 'cannot disable: client has mt5 real' => sub {
+        $siblings_info                                 = {};
+        $siblings_info->{$client->loginid}->{balance}  = 0;
+        $siblings_info->{$sibling->loginid}->{balance} = 0;
+
+        $mt5_loginids      = [qw/MTR10000/];
+        $dxtrader_loginids = [];
+
+        $document = +{
+            document_type   => 'passport',
+            document_number => '000-000-000-11',
+            issuing_country => 'br',
+            binary_user_id  => $user2->id,
+        };
+
+        mailbox_clear();
+        @emissions = ();
+
+        $virtual->status->clear_disabled;
+        $client->status->clear_disabled;
+        $sibling->status->clear_disabled;
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido');
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        subtest 'email and content' => sub {
+            my $msg = mailbox_search(subject => qr/Duplicated documents detection from $loginid/);
+
+            ok $msg, 'Email about duplicated documents detection was sent to LC';
+
+            is $msg->{subject}, "Duplicated documents detection from $loginid", 'expected subject';
+
+            ok $msg->{body} =~ /passport/,       'doc type mentioned';
+            ok $msg->{body} =~ /000-000-000-11/, 'doc number mentioned';
+            ok $msg->{body} =~ /br/,             'doc country mentioned';
+            ok $msg->{body} =~ /Onfido/,         'onfido mentioned';
+
+            ok $msg->{body} =~ /Please note the client cannot be automatically disabled/;
+
+            my $owner_loginid = $client2->loginid;
+            ok $msg->{body} =~ qr/$owner_loginid/, 'owner loginid mentioned';
+        };
+
+        ok !$client->status->disabled,                  'client has not been disabled';
+        ok !$virtual->status->disabled,                 'virtual has not been disabled';
+        ok !$sibling->status->disabled,                 'sibling has not been disabled';
+        ok $sibling->status->poi_duplicated_documents,  'flagged as POI duplicated document';
+        ok $client->status->poi_duplicated_documents,   'flagged as POI duplicated document';
+        ok !$virtual->status->poi_duplicated_documents, 'does not propagate to virtual';
+
+        cmp_deeply [@emissions], [], 'Expected emissions sent (empty)';
+    };
+
+    subtest 'cannot disable: client has dxtrader real' => sub {
+        $siblings_info                                 = {};
+        $siblings_info->{$client->loginid}->{balance}  = 0;
+        $siblings_info->{$sibling->loginid}->{balance} = 0;
+
+        $mt5_loginids      = [];
+        $dxtrader_loginids = [qw/DXR1000/];
+
+        $document = +{
+            document_type   => 'passport',
+            document_number => '000-000-000-11',
+            issuing_country => 'br',
+            binary_user_id  => $user2->id,
+        };
+
+        mailbox_clear();
+        @emissions = ();
+
+        $virtual->status->clear_disabled;
+        $client->status->clear_disabled;
+        $sibling->status->clear_disabled;
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido');
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        subtest 'email and content' => sub {
+            my $msg = mailbox_search(subject => qr/Duplicated documents detection from $loginid/);
+
+            ok $msg, 'Email about duplicated documents detection was sent to LC';
+
+            is $msg->{subject}, "Duplicated documents detection from $loginid", 'expected subject';
+
+            ok $msg->{body} =~ /passport/,       'doc type mentioned';
+            ok $msg->{body} =~ /000-000-000-11/, 'doc number mentioned';
+            ok $msg->{body} =~ /br/,             'doc country mentioned';
+            ok $msg->{body} =~ /Onfido/,         'onfido mentioned';
+
+            ok $msg->{body} =~ /Please note the client cannot be automatically disabled/;
+
+            my $owner_loginid = $client2->loginid;
+            ok $msg->{body} =~ qr/$owner_loginid/, 'owner loginid mentioned';
+        };
+
+        ok !$client->status->disabled,                  'client has not been disabled';
+        ok !$virtual->status->disabled,                 'virtual has not been disabled';
+        ok !$sibling->status->disabled,                 'sibling has not been disabled';
+        ok $sibling->status->poi_duplicated_documents,  'flagged as POI duplicated document';
+        ok $client->status->poi_duplicated_documents,   'flagged as POI duplicated document';
+        ok !$virtual->status->poi_duplicated_documents, 'does not propagate to virtual';
+
+        cmp_deeply [@emissions], [], 'Expected emissions sent (empty)';
+    };
+
+    subtest 'disabled feature: backtest' => sub {
+        $app_config->system->suspend->duplicate_poi_checks(1);
+        $app_config->check_for_update;
+
+        $siblings_info                                 = {};
+        $siblings_info->{$client->loginid}->{balance}  = 0;
+        $siblings_info->{$sibling->loginid}->{balance} = 0;
+
+        $mt5_loginids      = [];
+        $dxtrader_loginids = [];
+
+        $document = +{
+            document_type   => 'passport',
+            document_number => '000-000-000-11',
+            issuing_country => 'br',
+            binary_user_id  => $user2->id,
+        };
+
+        mailbox_clear();
+        @emissions = ();
+
+        $virtual->status->clear_poi_duplicated_documents;
+        $virtual->status->clear_disabled;
+        $client->status->clear_poi_duplicated_documents;
+        $client->status->clear_disabled;
+        $sibling->status->clear_poi_duplicated_documents;
+        $sibling->status->clear_disabled;
+
+        $client->status->_build_all;
+        $virtual->status->_build_all;
+        $sibling->status->_build_all;
+
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido');
+
+        $virtual->status->_build_all;
+        $client->status->_build_all;
+        $sibling->status->_build_all;
+
+        my $msg = mailbox_search(subject => qr/Duplicated documents detection from $loginid/);
+
+        ok !$msg, 'No email sent';
+
+        $sibling = BOM::User::Client->new({loginid => $sibling->loginid});
+        $client  = BOM::User::Client->new({loginid => $client->loginid});
+        $virtual = BOM::User::Client->new({loginid => $virtual->loginid});
+
+        ok !$client->status->disabled,                  'client has not been disabled';
+        ok !$virtual->status->disabled,                 'virtual has not been disabled';
+        ok !$sibling->status->disabled,                 'sibling has not been disabled';
+        ok !$sibling->status->poi_duplicated_documents, 'not flagged as POI duplicated document';
+        ok !$client->status->poi_duplicated_documents,  'not flagged as POI duplicated document';
+        ok !$virtual->status->poi_duplicated_documents, 'does not propagate to virtual';
+
+        cmp_deeply [@emissions], [], 'Expected emissions sent (empty)';
+    };
+
+    $cli_mock->unmock_all;
+    $user_mock->unmock_all;
 };
 
 done_testing();
