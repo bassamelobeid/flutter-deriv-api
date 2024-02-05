@@ -369,6 +369,7 @@ if ($input{document_list}) {
             next;
         }
 
+        my $is_poi = any { $_ eq $doc->document_type } $client->documents->poi_types->@*;
         my $is_poa = any { $_ eq $doc->document_type } $client->documents->poa_types->@*;
         $poi_updated ||= any { $_ eq $doc->document_type } $client->documents->poi_types->@*;
         $poa_updated ||= $is_poa;
@@ -376,6 +377,13 @@ if ($input{document_list}) {
         if ($new_doc_status eq 'delete') {
             if ($doc->delete) {
                 $full_msg .= "<div class=\"notify\"><b>SUCCESS</b> - $file_name is <b>deleted</b>!</div>";
+
+                # relinquish the ownership of the POI doc
+                $client->user->documents->poi_free($doc->document_type, $doc->document_id, $doc->issuing_country)
+                    if $is_poi
+                    and $doc->document_type
+                    and $doc->document_id
+                    and $doc->issuing_country;
             } else {
                 $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b> did not remove <b>$file_name</b> record from db</div>";
             }
@@ -392,8 +400,23 @@ if ($input{document_list}) {
 
             if (defined $input{$input_key}) {
                 my $to_update_value = $input{$input_key};
+                my $current_number  = $doc->document_id // '';
 
-                if ($field eq 'issue_date') {
+                # if the document number changes, attempt to relinquish the POI
+                # and claim the new POI document number
+
+                if ($field eq 'document_id' && $current_number ne $to_update_value && !$field_error) {
+                    $client->user->documents->poi_free($doc->document_type, $doc->document_id, $doc->issuing_country)
+                        if $is_poi
+                        and $doc->document_type
+                        and $doc->document_id
+                        and $doc->issuing_country;
+                    $client->user->documents->poi_claim($doc->document_type, $to_update_value, $doc->issuing_country)
+                        if $is_poi
+                        and $doc->document_type
+                        and $to_update_value
+                        and $doc->issuing_country;
+                } elsif ($field eq 'issue_date') {
                     if ($issuance eq 'issuance_date') {
                         if ($to_update_value ne (eval { Date::Utility->new($to_update_value)->date_yyyymmdd; } // '')) {
                             $full_msg .=
@@ -799,6 +822,17 @@ if ($input{whattodo} eq 'uploadID') {
                     $log->warn($err . $e);
                 }
                 return Future->fail("Database Falure: " . $err) if $err;
+
+                # try to claim POI ownership
+                # if duplicated give no additional side effects
+                # the rationale here is, that a CS executive is uploading the document
+                # so if a disable is due he/she would be able to do that by hand.
+                $client->user->documents->poi_claim($doctype, $document_id, $docnationality)
+                    if $is_poi
+                    and $docnationality
+                    and $document_id
+                    and $doctype;
+
                 BOM::Platform::Event::Emitter::emit(
                     'document_upload',
                     {
@@ -1449,6 +1483,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
             } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth::has_authorisation(['Compliance'])) {
                 $cli->aml_risk_classification($input{$key});
                 _update_mt5_status($client);
+
+                if ($cli->requires_selfie_recheck) {
+                    $cli->propagate_status('selfie_pending', 'system', 'Pending selfie recheck');
+                    BOM::Platform::Event::Emitter::emit('recheck_onfido_face_similarity', {loginid => $cli->loginid});
+                }
+
                 BOM::Platform::Event::Emitter::emit('aml_high_risk_updated', {loginid => $client->loginid});
             } elsif ($key eq 'mifir_id'
                 and $cli->mifir_id eq ''

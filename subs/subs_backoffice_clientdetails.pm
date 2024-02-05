@@ -2516,8 +2516,8 @@ sub notify_resubmission_of_poi_poa_documents {
 
     if ($poi_selection) {
         $poi_layout = [
-            localize('bears your name that matches your Deriv/Binary profile'), localize('shows the date of issue and/or expiry (if applicable)'),
-            localize('shows your full date of birth'),                          localize('shows your photo')];
+            localize('bears your name that matches your Deriv profile'), localize('shows the date of issue and/or expiry (if applicable)'),
+            localize('shows your full date of birth'),                   localize('shows your photo')];
         if ($poi_selection eq "cropped") {
             $poi_title    = localize('Your proof of identity is cropped.');
             $poi_subtitle = [
@@ -2561,7 +2561,7 @@ sub notify_resubmission_of_poi_poa_documents {
                 'Please reply to this email and attach your birth certificate or submit a different proof of identity that shows your date of birth.'
             );
         } elsif ($poi_selection eq "different_person_name") {
-            $poi_title    = localize("The names on your proof of identity and Deriv/Binary profile don't match.");
+            $poi_title    = localize("The names on your proof of identity and Deriv profile don't match.");
             $poi_subtitle = [
                 localize(
                     'Please go to your profile and ensure your details are accurate. Then, verify/authenticate your account by submitting a proof of identity, such as a passport, driving licence, or national identity card, with the following requirements:'
@@ -2584,11 +2584,12 @@ sub notify_resubmission_of_poi_poa_documents {
         }
     }
 
+    my $months = $client->landing_company->poa_dated_within_months;
+
     if ($poa_selection) {
         $poa_layout = [
-            localize('bears your name that matches your Deriv/Binary profile'),
-            localize('shows a residential address that matches your Deriv/Binary profile'),
-            localize('is dated within the last 6 months')];
+            localize('Bears your name that matches your Deriv profile'), localize('Shows a residential address that matches your Deriv profile'),
+            localize('Is dated within the last [_1] months', $months)];
         if ($poa_selection eq "old") {
             $poa_title    = localize('Your proof of address is outdated.');
             $poa_subtitle = [
@@ -2620,7 +2621,7 @@ sub notify_resubmission_of_poi_poa_documents {
                     'Please visit your profile to verify/authenticate your account. Submit a valid document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
                 )];
         } elsif ($poa_selection eq "different_name") {
-            $poa_title    = localize("The name on the proof of address doesn't match your Deriv/Binary profile.");
+            $poa_title    = localize("The name on the proof of address doesn't match your Deriv profile.");
             $poa_subtitle = [
                 localize(
                     'Please visit your profile to verify/authenticate your account. Submit a clear and readable document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
@@ -2635,7 +2636,7 @@ sub notify_resubmission_of_poi_poa_documents {
             $poa_title    = localize('Your proof of address does not meet our verification standards.');
             $poa_subtitle = [
                 localize(
-                    'Please visit your profile to verify/authenticate your account. Submit a signed and stamped bank statement which clearly shows the account number you used to fund your Deriv/Binary account.'
+                    'Please visit your profile to verify/authenticate your account. Submit a signed and stamped bank statement which clearly shows the account number you used to fund your Deriv account.'
                 ),
                 localize('Or you may submit a different proof of address, such as a utility bill or affidavit, with the following requirements:')];
         } elsif ($poa_selection eq "password_protected") {
