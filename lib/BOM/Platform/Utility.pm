@@ -454,6 +454,7 @@ sub rejected_onfido_reasons {
         'selfie' => localize(
             "We're unable to verify the selfie you provided as it does not match the required criteria. Please provide a photo that closely resembles the document photo provided."
         ),
+        'duplicated_document' => localize("We're unable to verify the document you provided as it was already submitted."),
     };
 
 }
@@ -518,6 +519,7 @@ sub rejected_onfido_reasons_error_codes {
         'visual_authenticity.picture_face_integrity'                    => "VisualAuthenticityPictureFaceIntegrity",
         'visual_authenticity.security_features'                         => "VisualAuthenticitySecurityFeatures",
         'visual_authenticity.template'                                  => "VisualAuthenticityTemplate",
+        'duplicated_document'                                           => "DuplicatedDocument",
     };
 }
 
