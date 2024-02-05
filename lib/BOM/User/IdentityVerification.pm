@@ -441,7 +441,7 @@ Returns,
 =cut
 
 sub limit_per_user {
-    return $ENV{IDV_REQUEST_PER_USER_LIMIT} // 3;
+    return $ENV{IDV_REQUEST_PER_USER_LIMIT} // 2;
 }
 
 =head2 reported_properties

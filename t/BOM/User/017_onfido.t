@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 18;
+use Test::More tests => 20;
 use Test::MockTime qw( :all );
 use Test::Exception;
 use Test::NoWarnings;
@@ -17,6 +17,7 @@ use BOM::Test::Script::OnfidoMock;
 
 use BOM::User::Onfido;
 use WebService::Async::Onfido;
+use Date::Utility;
 use BOM::Database::UserDB;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -132,6 +133,80 @@ subtest 'store & get onfido document' => sub {
     my $result;
     lives_ok { $result = BOM::User::Onfido::get_onfido_document($test_client->binary_user_id, $app1->id); } 'Storing onfido live photo should pass';
     is_deeply([sort keys %$result], [sort $doc1->id, $doc2->id], 'the result of get photo ok');
+};
+
+subtest 'store onfido v2' => sub {
+    my $result;
+
+    my $document = {
+        id              => 'test',
+        document_type   => 'passport',
+        issuing_country => 'br',
+        document_number => '000-0-0',
+        date_of_expiry  => '2000-10-10',
+        document_side   => 'front',
+        file_type       => 'png',
+        applicant_id    => $app1->id,
+        result          => 'consider',
+        created_at      => '2023-07-07T14:12:23Z',
+        href            => '/v3.6/documents/test',
+        download_href   => '/v3.6/documents/test/download',
+        file_name       => 'test.png',
+        file_size       => 1024,
+    };
+
+    lives_ok { BOM::User::Onfido::store_onfido_document_v2($document); }
+    'Storing onfido document should pass';
+
+    lives_ok { $result = BOM::User::Onfido::get_onfido_document($test_client->binary_user_id, $app1->id); } 'Retrieving documents for applicant';
+
+    # some manipulation to make it match
+    $document->{created_at}      = Date::Utility->new($document->{created_at})->datetime_yyyymmdd_hhmmss;
+    $document->{api_type}        = $document->{document_type};
+    $document->{side}            = $document->{document_side};
+    $document->{stamp}           = re('.*');
+    $document->{issuing_country} = 'BRA';
+
+    cmp_deeply $result->{test},
+        +{%{$document}{qw/created_at id api_type issuing_country href applicant_id side stamp file_type download_href file_size file_type file_name/}
+        }, 'expected document';
+
+    subtest 'undef issuing country' => sub {
+        $document = {
+            id              => 'test2',
+            document_type   => 'passport',
+            issuing_country => undef,
+            document_number => '000-0-0',
+            date_of_expiry  => '2000-10-10',
+            document_side   => 'front',
+            file_type       => 'png',
+            applicant_id    => $app1->id,
+            result          => 'consider',
+            created_at      => '2023-07-07T14:12:23Z',
+            href            => '/v3.6/documents/test2',
+            download_href   => '/v3.6/documents/test2/download',
+            file_name       => 'test2.png',
+            file_size       => 1024,
+        };
+
+        lives_ok { BOM::User::Onfido::store_onfido_document_v2($document); }
+        'Storing onfido document should pass';
+
+        lives_ok { $result = BOM::User::Onfido::get_onfido_document($test_client->binary_user_id, $app1->id); } 'Retrieving documents for applicant';
+
+        # some manipulation to make it match
+        $document->{created_at}      = Date::Utility->new($document->{created_at})->datetime_yyyymmdd_hhmmss;
+        $document->{api_type}        = $document->{document_type};
+        $document->{side}            = $document->{document_side};
+        $document->{stamp}           = re('.*');
+        $document->{issuing_country} = '';
+
+        cmp_deeply $result->{test2},
+            +{%{$document}
+                {qw/created_at id api_type issuing_country href applicant_id side stamp file_type download_href file_size file_type file_name/}
+            }, 'expected document';
+
+    };
 };
 
 my $check;
@@ -262,13 +337,14 @@ subtest 'get consider reasons' => sub {
     # Do the needful mocks
 
     my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    my $check_result;
     $onfido_mock->mock(
         'get_latest_onfido_check',
         sub {
             return {
                 id     => 'TESTING',
                 status => 'complete',
-                result => 'consider',
+                result => $check_result // 'consider',
             };
         });
 
@@ -473,10 +549,32 @@ subtest 'get consider reasons' => sub {
         },
         };
 
+    # duplicated document
+    push @$cases,
+        {
+        test       => 'Testing duplicated document scenario',
+        reasons    => [qw/duplicated_document/],
+        result     => 'clear',
+        properties => {},
+        breakdown  => {},
+        status     => [qw/poi_duplicated_documents/]};
+    push @$cases,
+        {
+        test       => 'Testing duplicated document scenario (no status = no reason)',
+        reasons    => [qw//],
+        result     => 'clear',
+        properties => {},
+        breakdown  => {},
+        };
+
     # Perform the test
 
     subtest 'Breakdown coverage' => sub {
         foreach my $case ($cases->@*) {
+            $test_client->status->set($_, 'system', 'test') for ($case->{status}->@*);
+            $test_client  = BOM::User::Client->new({loginid => $test_client->loginid});
+            $check_result = $case->{result};
+
             $onfido_mock->mock(
                 'get_all_onfido_reports',
                 sub {
@@ -491,10 +589,13 @@ subtest 'get consider reasons' => sub {
                 });
             my $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
             cmp_deeply($reasons, set($case->{reasons}->@*), $case->{test});
+
+            $test_client->propagate_clear_status($_) for ($case->{status}->@*);
         }
     };
 
     # Selfie case
+    $check_result = undef;
 
     subtest 'Selfie coverage' => sub {
         my $tests = [{
@@ -1371,6 +1472,37 @@ subtest 'is face similarity check required' => sub {
     });
 
     ok $mf_client->is_face_similarity_required, 'Face check required for MF accounts';
+};
+
+subtest 'requires face similarity recheck - verified CR that became hr' => sub {
+    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $cr_client->status->set('selfie_verified', 'test', 'test');
+
+    ok !$cr_client->requires_selfie_recheck, 'Face recheck cannot be retriggered for accounts with already verified selfies';
+
+    $cr_client->status->clear_selfie_verified();
+
+    $cr_client->aml_risk_classification('low');
+
+    ok !$cr_client->requires_selfie_recheck, 'Face recheck cannot be retriggered for low risk CR accounts';
+
+    $cr_client->aml_risk_classification('high');
+
+    ok !$cr_client->requires_selfie_recheck, 'Face recheck cannot be retriggered for high risk CR accounts without previous submission';
+
+    my $mocked_cli = Test::MockModule->new(ref($cr_client));
+    $mocked_cli->mock(
+        'get_onfido_status',
+        sub {
+            return 'verified';
+        });
+
+    ok $cr_client->requires_selfie_recheck, 'Face recheck successfully retriggered for high risk CR accounts with previous submission';
+
+    $mocked_cli->unmock_all;
 };
 
 subtest 'is onfido disallowed' => sub {

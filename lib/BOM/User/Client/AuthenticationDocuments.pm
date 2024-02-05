@@ -1530,6 +1530,30 @@ sub is_upload_available {
     return $is_available;
 }
 
+=head2 owned
+
+Determines whether the client owns the specified document, it takes:
+
+=over 4
+
+=item * C<type> - type of the document
+
+=item * C<numbers> - numbers of the document
+
+=item * C<country> - country of the document
+
+=back
+
+Returns a boolean scalar.
+
+=cut
+
+sub owned {
+    my ($self, $type, $numbers, $country) = @_;
+
+    return $self->client->binary_user_id == ($self->client->user->documents->poi_ownership($type, $numbers, $country) // 0);
+}
+
 =head2 pending_poi_bundle
 
 Obtains a bundle of pending POI documents. A proper bundle will contain a selfie picture and also both sides (both and back),

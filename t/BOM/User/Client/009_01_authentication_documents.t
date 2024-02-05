@@ -10,6 +10,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
 use List::Util                                 qw/all uniq/;
 use Array::Utils                               qw(intersect array_minus unique);
+use BOM::User::Client::AuthenticationDocuments::Config;
 
 my $categories = [{
         category             => 'POI',
@@ -306,6 +307,8 @@ subtest 'POA document types' => sub {
     ];
 
     cmp_deeply $client->documents->poa_types, set($expected->@*), 'The expected POA types list is looking good';
+
+    cmp_deeply BOM::User::Client::AuthenticationDocuments::Config::poa_types(), set($expected->@*), 'The expected POA types list is looking good';
 };
 
 subtest 'POI document types' => sub {
@@ -331,6 +334,8 @@ subtest 'POI document types' => sub {
     ];
 
     cmp_deeply $client->documents->poi_types, set($expected->@*), 'The expected POI types list is looking good';
+
+    cmp_deeply BOM::User::Client::AuthenticationDocuments::Config::poi_types(), set($expected->@*), 'The expected POI types list is looking good';
 };
 
 subtest 'Preferred types' => sub {

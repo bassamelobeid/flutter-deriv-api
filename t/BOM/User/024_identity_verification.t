@@ -642,17 +642,14 @@ subtest 'get claimed documents' => sub {
 };
 
 subtest 'Submissions Left' => sub {
-    is $idv_model_ccr->submissions_left($client_mf), 3, 'Expected submissions left';
+    is $idv_model_ccr->submissions_left($client_mf), 2, 'Expected submissions left';
 };
 
 subtest 'Limit per user' => sub {
-    is $idv_model_ccr->limit_per_user($client_cr), 3, 'Expected limit per user';
+    is $idv_model_ccr->limit_per_user($client_cr), 2, 'Expected limit per user';
 };
 
 subtest 'Incr submissions' => sub {
-    $idv_model_ccr->incr_submissions;
-    is $idv_model_ccr->submissions_left, 2, 'Expected submissions left';
-
     $idv_model_ccr->incr_submissions;
     is $idv_model_ccr->submissions_left, 1, 'Expected submissions left';
 
@@ -664,17 +661,17 @@ subtest 'Incr submissions' => sub {
 
     subtest 'reset attempts' => sub {
         $idv_model_ccr->reset_attempts();
-        is $idv_model_ccr->submissions_left, 3, 'The attempts of the client have come back';
+        is $idv_model_ccr->submissions_left, 2, 'The attempts of the client have come back';
     };
 };
 
 subtest 'Decr submissions' => sub {
     $idv_model_ccr->decr_submissions;
-    is $idv_model_ccr->submissions_left, 4, 'Expected submissions left';
+    is $idv_model_ccr->submissions_left, 3, 'Expected submissions left';
 };
 
 subtest 'Reset submissions to zero' => sub {
-    is $idv_model_ccr->submissions_left, 4, 'Expected submissions left is correct';
+    is $idv_model_ccr->submissions_left, 3, 'Expected submissions left is correct';
     BOM::User::IdentityVerification::reset_to_zero_left_submissions($user_cr->id);
     is $idv_model_ccr->submissions_left, 0, 'Expected submissions left is reset';
 };
@@ -815,11 +812,11 @@ subtest 'identity verification requested' => sub {
 
     ok $idv_model_ccr->identity_verification_requested($client_cr), 'IDV succesfully requested';
     ok $redis->ttl(IDV_LOCK_PENDING . $idv_model_ccr->user_id) > 0, 'there is a TTL';
-    is $idv_model_ccr->submissions_left(), 2, 'submission left decreased';
+    is $idv_model_ccr->submissions_left(), 1, 'submission left decreased';
 
     cmp_deeply $emission, +{identity_verification_requested => {loginid => 'CR10000'}}, 'Expected emitted event';
 
-    is $idv_model_ccr->get_pending_lock, 3, 'There is a redis lock';
+    is $idv_model_ccr->get_pending_lock, 2, 'There is a redis lock';
 
     ok !$idv_model_ccr->identity_verification_requested($client_cr), 'IDV did not make it';
 

@@ -484,6 +484,80 @@ sub store_onfido_document {
     return;
 }
 
+=head2 store_onfido_document_v2
+
+The v2 of the subroutine takes a document as hashref:
+
+=over 4
+
+=item * C<id> - the Onfido document id (uuid type thing)
+
+=item * C<document_type> - the document type
+
+=item * C<issuing_country> - the issuing country
+
+=item * C<document_number> - the document number
+
+=item * C<date_of_expiry> - date of expiration
+
+=item * C<document_side> - side of the document
+
+=item * C<file_type> - file type (png, jpg, pdf, etc...)
+
+=item * C<applicant_id> - id of the Onfido applicant (uuid type thing)
+
+=item * C<result> - the result of the report
+
+=item * C<created_at> - the creation stamp
+
+=item * C<href> - the href of the document
+
+=item * C<download_href> - the href of the document download
+
+=item * C<file_name> - the file name
+
+=item * C<file_size> - the file size
+
+=back
+
+Returns C<undef>
+
+=cut
+
+sub store_onfido_document_v2 {
+    my ($doc) = @_;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        # to keep faithful to the Onfido original response we will store the 3 letter code country
+        my $country_code3 = uc(country_code2code($doc->{issuing_country}, 'alpha-2', 'alpha-3') // '');
+
+        $dbic->run(
+            fixup => sub {
+                $_->do(
+                    'select users.add_onfido_document(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
+                    undef,
+                    $doc->{id},
+                    $doc->{applicant_id},
+                    Date::Utility->new($doc->{created_at})->datetime_yyyymmdd_hhmmss,
+                    $doc->{href},
+                    $doc->{download_href},
+                    $doc->{document_type},
+                    $doc->{document_side},
+                    $country_code3,
+                    $doc->{file_name},
+                    $doc->{file_type},
+                    $doc->{file_size},
+                );
+            });
+    } catch ($e) {
+        warn "Fail to store Onfido document in DB: $e . Please check DOC_ID: " . $doc->{id};
+    }
+
+    return undef;
+}
+
 =head2 get_onfido_document
 
 Retrieves onfido document into the DB.
@@ -654,25 +728,29 @@ sub get_consider_reasons {
     my @reasons;
 
     if (my $onfido_check = get_latest_onfido_check($client->binary_user_id, undef, 1)) {
-        if ($onfido_check->{status} eq 'complete' and $onfido_check->{result} eq 'consider') {
-            my $onfido_reports = get_all_onfido_reports($client->binary_user_id, $onfido_check->{id});
+        if ($onfido_check->{status} eq 'complete') {
+            if ($onfido_check->{result} eq 'consider') {
+                my $onfido_reports = get_all_onfido_reports($client->binary_user_id, $onfido_check->{id});
 
-            for my $report (values $onfido_reports->%*) {
-                my $result = $report->{result} // '';
-                next unless $result eq 'consider';
+                for my $report (values $onfido_reports->%*) {
+                    my $result = $report->{result} // '';
+                    next unless $result eq 'consider';
 
-                # If the facial similarity is `consider` we directly inject the `selfie` reason.
-                my $api_name = $report->{api_name} // '';
-                push @reasons, 'selfie' if $api_name eq 'facial_similarity' || $api_name eq 'facial_similarity_photo';
+                    # If the facial similarity is `consider` we directly inject the `selfie` reason.
+                    my $api_name = $report->{api_name} // '';
+                    push @reasons, 'selfie' if $api_name eq 'facial_similarity' || $api_name eq 'facial_similarity_photo';
 
-                # For documents, scan the whole thing looking for `result` as `consider` or `unidentified`
-                # We may also look for a `properties` hash, in this case we scan each value for `consider` or `unidentified`.
-                next unless $api_name eq 'document';
-                my $breakdown_payload = eval { decode_json_utf8($report->{breakdown} // '{}') };
-                stats_inc('onfido.report.bogus_breakdown') unless defined $breakdown_payload;
+                    # For documents, scan the whole thing looking for `result` as `consider` or `unidentified`
+                    # We may also look for a `properties` hash, in this case we scan each value for `consider` or `unidentified`.
+                    next unless $api_name eq 'document';
+                    my $breakdown_payload = eval { decode_json_utf8($report->{breakdown} // '{}') };
+                    stats_inc('onfido.report.bogus_breakdown') unless defined $breakdown_payload;
 
-                $breakdown_payload //= {};
-                push @reasons, _extract_breakdown_reasons($breakdown_payload)->@*;
+                    $breakdown_payload //= {};
+                    push @reasons, _extract_breakdown_reasons($breakdown_payload)->@*;
+                }
+            } elsif ($onfido_check->{result} eq 'clear') {
+                push @reasons, 'duplicated_document' if $client->status->poi_duplicated_documents;
             }
         }
     }

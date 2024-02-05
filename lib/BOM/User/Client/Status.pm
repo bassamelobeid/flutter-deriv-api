@@ -34,6 +34,7 @@ use constant STATUS_CODES => qw(
     poi_name_mismatch crypto_auto_reject_disabled crypto_auto_approve_disabled potential_fraud
     deposit_attempt df_deposit_requires_poi smarty_streets_validated trading_hub poi_dob_mismatch
     allow_poinc_resubmission cooling_off_period poa_address_mismatch poi_poa_uploaded eligible_counterparty
+    poi_duplicated_documents selfie_pending selfie_verified selfie_rejected
 );
 
 # codes that are about to be dropped

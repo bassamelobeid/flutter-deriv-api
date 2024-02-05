@@ -16,6 +16,7 @@ use BOM::User::Script::AMLClientsUpdate;
 use BOM::User::Password;
 use BOM::User::FinancialAssessment   qw(update_financial_assessment copy_financial_assessment);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use Test::Deep;
 populate_exchange_rates();
 
 my $email    = 'abc' . rand . '@binary.com';
@@ -138,6 +139,38 @@ subtest 'low aml risk client MF company' => sub {
 subtest 'aml risk becomes high CR landing company' => sub {
     my $landing_company = 'CR';
 
+    my $user1 = BOM::User->create(
+        email    => 'test@deriv.com',
+        password => $hash_pwd,
+    );
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $user1->email,
+        residence      => 'id',
+        binary_user_id => $user1->id
+    });
+
+    $user1->add_client($test_client);
+
+    my $mocked_cli    = Test::MockModule->new(ref($client_cr));
+    my $mocked_status = 'verified';
+    $mocked_cli->mock(
+        'get_onfido_status',
+        sub {
+            return $mocked_status;
+        });
+
+    my $emit_mocker = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emission;
+    $emit_mocker->mock(
+        'emit',
+        sub {
+            $emission = +{@_};
+
+            return 1;
+        });
+
     #no matter what client aml risk was previously, its latest should be high to be able to picked up
     $client_cr->aml_risk_classification('high');
     $client_cr->save;
@@ -150,11 +183,20 @@ subtest 'aml risk becomes high CR landing company' => sub {
 
     ok $client_cr->status->withdrawal_locked,     "client is withdrawal_locked";
     ok $client_cr->status->allow_document_upload, "client is allow_document_upload";
-    is $client_cr->status->withdrawal_locked->{reason},     'Pending authentication or FA';
-    is $client_cr->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK';
+    is $client_cr->status->withdrawal_locked->{reason},     'Pending authentication or FA', "withdrawal_lock reason is set correctly";
+    is $client_cr->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK',             "document_upload reason is set correctly";
 
     ok !$client_cr2->status->withdrawal_locked,    "sibling account is not withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
+
+    ok $client_cr->requires_selfie_recheck, "client selfie check is retriggered";
+    cmp_deeply $emission,
+        {
+        recheck_onfido_face_similarity => {
+            loginid => $client_cr->loginid,
+        },
+        },
+        'Expected event emitted';
 
     $expected_db_rows = [];
     $result           = $c->update_aml_high_risk_clients_status($landing_company);
@@ -165,7 +207,39 @@ subtest 'aml risk becomes high CR landing company' => sub {
     $client_cr2->status->clear_withdrawal_locked();
     $client_cr2->status->clear_allow_document_upload();
 
+    #test case for selfie recheck not emitted if there is no previous onfido submission
+    $client_cr->aml_risk_classification('low');
+    $emission = {};
+
+    $test_client->aml_risk_classification('high');
+    $test_client->save;
+    $test_client->status->clear_withdrawal_locked;
+    $mocked_status    = 'none';
+    $expected_db_rows = [{login_ids => $test_client->loginid}];
+    $result           = $c->update_aml_high_risk_clients_status($landing_company);
+
+    is @$result, 1, 'Correct number of affected users';
+    is_deeply $result, [{login_ids => $test_client->loginid}], 'Returned client ids are correct';
+
+    ok $test_client->status->withdrawal_locked,     "client is withdrawal_locked";
+    ok $test_client->status->allow_document_upload, "client is allow_document_upload";
+    is $test_client->status->withdrawal_locked->{reason},     'Pending authentication or FA', "withdrawal_lock reason is set correctly";
+    is $test_client->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK',             "document_upload reason is set correctly";
+
+    ok !$test_client->requires_selfie_recheck, "client selfie recheck is not triggered";
+    cmp_deeply $emission, {}, 'No event emitted';
+
+    $expected_db_rows = [];
+    $result           = $c->update_aml_high_risk_clients_status($landing_company);
+    is @$result, 0, 'No result after withdrawal locked';
+
+    $test_client->status->clear_withdrawal_locked();
+    $test_client->status->clear_allow_document_upload();
+    $test_client->status->clear_withdrawal_locked();
+    $test_client->status->clear_allow_document_upload();
+
     #Two high risk siblings
+    $client_cr->aml_risk_classification('high');
     $client_cr2->aml_risk_classification('high');
     $client_cr2->save;
 
@@ -180,6 +254,8 @@ subtest 'aml risk becomes high CR landing company' => sub {
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
 
     clear_clients($client_cr, $client_cr2);
+    $mocked_cli->unmock_all;
+    $emit_mocker->unmock_all;
 };
 
 subtest 'high aml risk client MF company' => sub {

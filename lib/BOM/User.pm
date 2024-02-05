@@ -24,6 +24,7 @@ use BOM::User::Static;
 use BOM::User::Utility;
 use BOM::User::Client;
 use BOM::User::Wallet;
+use BOM::User::Documents;
 use BOM::User::Affiliate;
 use BOM::User::Onfido;
 use BOM::User::LexisNexis;
@@ -2488,6 +2489,24 @@ sub oneall_data {
         }
     }
     return \@user_data;
+}
+
+=head2 documents
+
+Accessor for the L<BOM::User::Documents> package.
+
+Not to be confused with L<BOM::User::Client::AuthenticationDocuments> which manages documents at the LC level.
+
+=cut
+
+sub documents {
+    my $self = shift;
+
+    return $self->{documents} //= do {
+        $self->{documents} = BOM::User::Documents->new({
+            user => $self,
+        });
+    };
 }
 
 1;

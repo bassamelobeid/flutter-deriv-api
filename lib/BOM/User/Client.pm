@@ -9385,7 +9385,7 @@ sub is_idv_validated {
 
 Check to see if the client requires Face similarity check for Onfido.
 
-This applies for MF accounts and CR that have high aml risk. 
+This applies for MF accounts and CR that are classified as high risk by sr or aml. 
 
 Returns 1 if required else 0.
 
@@ -9396,7 +9396,27 @@ sub is_face_similarity_required {
 
     return 1 if $self->landing_company->requires_face_similarity_check;
 
-    return 1 if $self->risk_level_aml eq 'high';
+    return 1 if $self->is_high_risk;
+
+    return 0;
+}
+
+=head2 requires_selfie_recheck 
+
+Check to see if the client requires face similarity recheck for Onfido.
+
+This applies for CR that are classified as high risk by sr or aml after being already verified. 
+
+Returns 1 if required else 0.
+
+=cut
+
+sub requires_selfie_recheck {
+    my ($self) = @_;
+
+    return 0 if $self->status->selfie_verified;
+
+    return 1 if $self->is_face_similarity_required && $self->get_onfido_status eq 'verified';
 
     return 0;
 }

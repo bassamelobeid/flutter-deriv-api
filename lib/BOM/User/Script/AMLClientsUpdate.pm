@@ -44,7 +44,7 @@ sub new {
 =head2 client_status_update
 
 Takes the list of recent high risk clients from database, makes them withdrawal locked and 
-prepares for POI notificaitons in the front-end.
+prepares for POI notifications in the front-end.
 
 =cut
 
@@ -126,7 +126,7 @@ sub aml_risk_update {
 
 =head2 _send_risk_report_email
 
-Sends an email to the compliance team, containing the list of the recently found high rish clients.
+Sends an email to the compliance team, containing the list of the recently found high risk clients.
 
 =cut
 
@@ -187,6 +187,11 @@ sub update_aml_high_risk_clients_status {
         foreach my $client_loginid (split ',', $client_info->{login_ids}) {
             my $client = BOM::User::Client->new({loginid => $client_loginid});
 
+            # check if client is onfido verified and retrigger face_similarity check
+            if ($client->requires_selfie_recheck) {
+                BOM::Platform::Event::Emitter::emit('recheck_onfido_face_similarity', {loginid => $client->loginid});
+            }
+
             push @loginid_list, $client_loginid if update_locks_high_risk_change($client);
         }
 
@@ -240,8 +245,8 @@ sub update_locks_high_risk_change {
 
 =head2 _get_recent_high_risk_clients
 
-Fetches the recent high risk clients from database, buy running a database funciton.
-This function is created to be enable mocking this specific db funciton call, 
+Fetches the recent high risk clients from database, by running a database function.
+This function is created to enable mocking this specific db function call, 
 because the function fails in circleci due to the included dblink.
 
 =cut
