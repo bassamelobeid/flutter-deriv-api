@@ -22,8 +22,8 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ inputs.repository }}
+      dependent_test: 'true'
   product_contract:
-    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -46,7 +46,6 @@ jobs:
       - name: Product contract test
         run: make unit_test_product_contract
   validation:
-    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -69,7 +68,6 @@ jobs:
       - name: Validation
         run: make unit_test_validation
   memory_test:
-    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -92,7 +90,6 @@ jobs:
       - name: MemoryTest
         run: make memory_test
   pricing:
-    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -115,7 +112,6 @@ jobs:
       - name: Pricing
         run: make unit_test_pricing
   product_others:
-    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -150,7 +146,6 @@ jobs:
         run: make unit_test_offerings
         if: always()
   benchmark_merlin_ovra:
-    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -180,7 +175,6 @@ jobs:
           make OVRA_benchmark
         if: always()
   benchmark_SD:
-    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -222,7 +216,6 @@ jobs:
         run: make SDEQ_benchmark_OTC_FTSE
         if: always()
   Pricing-Engine-Tests:
-    needs: syntax_diff_unit
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
