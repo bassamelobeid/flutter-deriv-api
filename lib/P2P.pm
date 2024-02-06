@@ -12,7 +12,6 @@ use Text::Trim                       qw(trim);
 use BOM::Platform::Context           qw(localize request);
 use Format::Util::Numbers            qw(financialrounding formatnumber);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
-use JSON::MaybeXS;
 use Encode;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use POSIX                      qw(ceil);
@@ -28,7 +27,7 @@ use BOM::Config::P2P;
 use BOM::Platform::Token;
 use JSON::MaybeUTF8 qw(:v1);
 
-use Carp qw(croak confess);
+use Carp qw(croak);
 
 use Log::Any qw($log);
 
@@ -38,15 +37,15 @@ P2P
 
 =cut
 
-my $json = JSON::MaybeXS->new;
-
 sub new {
-    my $class   = shift;
-    my $args    = shift || die 'P2P->new called without args';
-    my $loginid = $args->{loginid};
-    my $client  = $args->{client} // BOM::User::Client->new({loginid => $loginid});
+    my ($class, %args) = @_;
 
-    my $self = bless {client => $client}, $class;
+    my $client  = $args{client} // die "Client not found";
+    my $context = $args{context};
+    my $self    = bless {
+        client  => $client,
+        context => $context
+    }, $class;
 
     return $self;
 }
@@ -126,7 +125,8 @@ use constant {
         PP022 => 'OrderNotConfirmedPending',
         PP023 => 'OrderConfirmCompleted',
         PP024 => 'OrderReviewExists',
-        PP025 => 'AdvertiserExist'
+        PP025 => 'AdvertiserExist',
+        PP026 => 'AdvertCounterpartyIneligible',
 
     },
 };
@@ -166,19 +166,27 @@ Returns the advertiser info or dies with error code.
 
 sub p2p_advertiser_create {
     my ($self, %param) = @_;
-    my $name = trim($param{name});
+    my $name        = trim($param{name});
+    my $poa_setting = BOM::Config::Runtime->instance->app_config->payments->p2p->poa;
 
     die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
+    if ((
+               ($poa_setting->enabled  && none { $self->residence eq $_ } $poa_setting->countries_excludes->@*)
+            or (!$poa_setting->enabled && any { $self->residence eq $_ } $poa_setting->countries_includes->@*))
+        and (not($self->client->fully_authenticated and $self->status->age_verification)))
+    {
+        die +{error_code => 'AuthenticationRequired'};
+    }
 
     die +{error_code => 'AdvertiserNameRequired'} unless $name;
     die +{error_code => 'AdvertiserNameTaken'} if $self->_p2p_advertisers(unique_name => $name)->[0];
 
-    my $lc_withdrawal_limit   = BOM::Config::payment_limits()->{withdrawal_limits}{$self->{client}->landing_company->short}{lifetime_limit};
+    my $lc_withdrawal_limit   = BOM::Config::payment_limits()->{withdrawal_limits}{$self->client->landing_company->short}{lifetime_limit};
     my $p2p_create_order_chat = BOM::Config::Runtime->instance->app_config->payments->p2p->create_order_chat;
 
     my ($advertiser, $token, $expiry);
     unless ($p2p_create_order_chat) {
-        my ($id) = $self->{client}->db->dbic->run(
+        my ($id) = $self->db->dbic->run(
             fixup => sub {
                 $_->selectrow_array("SELECT nextval('p2p.advertiser_serial')");
             });
@@ -200,7 +208,7 @@ sub p2p_advertiser_create {
 
         die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
 
-        $advertiser = $self->{client}->db->dbic->run(
+        $advertiser = $self->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref(
                     'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -209,7 +217,7 @@ sub p2p_advertiser_create {
                 );
             });
     } else {
-        $advertiser = $self->{client}->db->dbic->run(
+        $advertiser = $self->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref(
                     'SELECT * FROM p2p.advertiser_create_v2(?, ?, ?, ?, ?, ?)',
@@ -219,8 +227,8 @@ sub p2p_advertiser_create {
             });
     }
 
-    unless ($self->{client}->status->age_verification or $self->{client}->status->allow_document_upload) {
-        $self->{client}->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+    unless ($self->status->age_verification or $self->status->allow_document_upload) {
+        $self->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
     }
 
     BOM::Config::Redis->redis_p2p_write->zadd(P2P_USERS_ONLINE_KEY, 'NX', time, join('::', $self->loginid, $self->residence));
@@ -293,7 +301,7 @@ All the trade partners from DB
 sub _p2p_advertiser_trade_partners {
     my ($self, %param) = @_;
 
-    $self->{client}->db->dbic->run(
+    $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
                 'SELECT * FROM p2p.advertiser_partner_list(?, ?, ?, ?, ?, ?, ?, ?)',
@@ -364,7 +372,7 @@ sub p2p_advertiser_update {
         }
     }
 
-    my $update = $self->{client}->db->dbic->run(
+    my $update = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
                 'SELECT * FROM p2p.advertiser_update_v2(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, NULL, NULL, ?, NULL)',
@@ -436,14 +444,14 @@ sub p2p_advertiser_relations {
 
         die +{error_code => 'AdvertiserRelationSelf'} if any { $_ == $advertiser_info->{id} } @relation_ids;
 
-        my %relations = $self->{client}->db->dbic->run(
+        my %relations = $self->db->dbic->run(
             fixup => sub {
                 $_->selectall_hashref('SELECT * FROM p2p.advertiser_id_check(?)', 'id', undef, \@relation_ids);
             })->%*;
 
         die +{error_code => 'InvalidAdvertiserID'} unless all { $relations{$_} } @relation_ids;
 
-        $self->{client}->db->dbic->run(
+        $self->db->dbic->run(
             fixup => sub {
                 $_->do(
                     'SELECT p2p.advertiser_relation_update(?, ?, ?, ?, ?)',
@@ -525,17 +533,19 @@ sub p2p_advert_create {
     $self->_validate_cross_border_availability if $param{local_currency} ne uc($self->local_currency);
     $self->_validate_block_trade_availability  if $param{block_trade};
     $self->_validate_advert(%param);
+    %param = $self->_process_advert_params(%param);
 
     my $market_rate = p2p_exchange_rate($param{local_currency})->{quote};
     die +{error_code => 'AdvertFloatRateNotAllowed'} if $param{rate_type} eq 'float' and not $market_rate;
 
-    my ($id) = $self->{client}->db->dbic->run(
+    my ($id) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 @param{
-                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids payment_method_names rate_type block_trade order_expiry_period/
+                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info
+                        payment_method_ids payment_method_names rate_type block_trade order_expiry_period min_completion_rate min_rating min_join_days eligible_countries/
                 });
         });
 
@@ -628,7 +638,7 @@ sub p2p_advert_info {
 
     if ($param{subscribe}) {
         if (@$list and $list->[0]{advertiser_loginid} ne $self->loginid) {
-            my $owner_client = BOM::User::Client->new({loginid => $list->[0]{advertiser_loginid}});
+            my $owner_client = $self->client->get_client_instance($list->[0]{advertiser_loginid}, 'replica', $self->{context});
             $account_id    = $owner_client->account->id;
             $advertiser_id = $list->[0]{advertiser_id};
         }
@@ -686,7 +696,7 @@ sub p2p_advert_list {
         client_loginid          => $self->loginid,
         account_currency        => $self->currency,
         hide_blocked            => 1,
-        country_payment_methods => $json->encode(\%country_payment_methods),
+        country_payment_methods => encode_json_utf8(\%country_payment_methods),
     );
 
     return $self->_advert_details($list, $param{amount});
@@ -720,13 +730,14 @@ sub p2p_advert_update {
 
     $advert->{remaining_amount} = delete $advert->{remaining};    # named differently in api vs db function
 
-    my %changed_fields = map { (exists $advert->{$_} and ($advert->{$_} // '') ne $param{$_}) ? ($_ => 1) : () } keys %param;
+    my %changed_fields = map { (exists $advert->{$_} and ($advert->{$_} // '') ne ($param{$_} // '')) ? ($_ => 1) : () } keys %param;
 
     # return current advert details if nothing changed
     return $self->p2p_advert_info(id => $id)
         if not $param{delete}
         and not $param{payment_method_ids}
         and not $param{payment_method_names}
+        and not $param{eligible_countries}
         and not %changed_fields;
 
     # upgrade of legacy ads
@@ -743,6 +754,14 @@ sub p2p_advert_update {
 
     $param{old} = $advert;
     $self->_validate_advert(%$advert, %param) unless $param{delete};
+    %param = $self->_process_advert_params(%param);
+
+    # set special values used by p2p.advert_update_v2 to set nulls in db when undef or empty array is sent in api request
+    for my $field (qw(min_completion_rate min_rating min_join_days)) {
+        $param{$field} = -1 if exists $param{$field} && !defined $param{$field};
+    }
+    $param{eligible_countries} = ['clear']
+        if exists $param{eligible_countries} && (!defined $param{eligible_countries} || $param{eligible_countries}->@* == 0);
 
     if ($param{is_active} and not $advert->{is_active}) {
         # reset archive date, cron will recreate it
@@ -750,14 +769,15 @@ sub p2p_advert_update {
         $redis->hdel(P2P_ARCHIVE_DATES_KEY, $id);
     }
 
-    my $updated_advert = $self->{client}->db->dbic->run(
+    my $updated_advert = $self->db->dbic->run(
         fixup => sub {
             my $dbh = shift;
             return $dbh->selectrow_hashref(
-                'SELECT * FROM p2p.advert_update_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_update_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $id,
                 @param{
-                    qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount rate min_order_amount max_order_amount rate_type order_expiry_period/
+                    qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount
+                        rate min_order_amount max_order_amount rate_type order_expiry_period min_completion_rate min_rating min_join_days eligible_countries/
                 });
         });
     $self->_p2p_db_error_handler($updated_advert);
@@ -812,7 +832,7 @@ sub p2p_order_create {
     my $p2p_config               = BOM::Config::Runtime->instance->app_config->payments->p2p;
     my $limit_per_day_per_client = $p2p_config->limits->count_per_day_per_client;
 
-    my ($day_order_count) = $self->{client}->db->dbic->run(
+    my ($day_order_count) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array('SELECT * FROM p2p.client_orders_created(?)', undef, $self->loginid);
         });
@@ -845,6 +865,9 @@ sub p2p_order_create {
     die +{error_code => 'InvalidAdvertOwn'}      if $advert->{advertiser_loginid} eq $self->loginid;
     die +{error_code => 'AdvertiserBlocked'}     if $advert->{advertiser_blocked};
     die +{error_code => 'InvalidAdvertForOrder'} if $advert->{client_blocked};
+    die +{error_code => 'AdvertCounterpartyIneligible'}
+        if any { $advert->{$_} }
+        qw (client_ineligible_completion_rate client_ineligible_rating client_ineligible_join_date client_ineligible_country);
 
     my $advert_type = $advert->{type};
 
@@ -863,7 +886,7 @@ sub p2p_order_create {
     die +{error_code => 'OrderCreateFailRateChanged'}
         if defined $param{rate} and p2p_rate_rounding($param{rate}) != p2p_rate_rounding($advert->{effective_rate});
 
-    my $advertiser = P2P->new({loginid => $advertiser_info->{client_loginid}});
+    my $advertiser = $self->client->get_client_instance($advertiser_info->{client_loginid}, 'replica', $self->{context});
     my ($order_type, $amount_advertiser, $amount_client);
 
     if ($advert_type eq 'buy') {
@@ -915,13 +938,14 @@ sub p2p_order_create {
     }
 
     try {
-        $self->{client}->validate_payment(
+        $self->client->validate_payment(
             amount       => $amount_client,
             currency     => $advert->{account_currency},
             payment_type => 'p2p',
             rule_engine  => $rule_engine,
         );
     } catch ($e) {
+
         my $message = ref $e ? $e->{message_to_client} : localize('Please try later.');
         # temporary logging to allow us to see the full string
         $log->warnf('validate_payment in p2p_order_create returned a scalar! %s', $e) unless ref $e;
@@ -932,7 +956,7 @@ sub p2p_order_create {
     }
 
     try {
-        $advertiser->{client}->validate_payment(
+        $advertiser->validate_payment(
             amount       => $amount_advertiser,
             currency     => $advert->{account_currency},
             payment_type => 'p2p',
@@ -957,7 +981,7 @@ sub p2p_order_create {
     my $open_orders = $self->_p2p_orders(
         advert_id => $advert_id,
         loginid   => $self->loginid,
-        status    => ['pending', 'buyer-confirmed'],
+        status    => P2P_ORDER_STATUS->{active},
     );
 
     die +{error_code => 'OrderAlreadyExists'} if @{$open_orders};
@@ -970,7 +994,7 @@ sub p2p_order_create {
     my $market_rate                       = p2p_exchange_rate($advert->{local_currency})->{quote};
     my $expiry                            = $advert->{order_expiry_period} //= $p2p_config->order_timeout;
 
-    my $order = $self->{client}->db->dbic->run(
+    my $order = $self->db->dbic->run(
         fixup => sub {
             my $dbh = shift;
 
@@ -1230,7 +1254,7 @@ sub p2p_order_cancel {
 
     my $txn_time = Date::Utility->new->datetime;
 
-    my $db_result = $self->{client}->db->dbic->run(
+    my $db_result = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_refund_v2(?, ?, ?, ?, ?, ?, ? ,?, ?)',
                 undef, $id, $escrow->loginid, $param{source}, $self->loginid, $is_refunded, $txn_time, $is_manual, $buyer_fault, $order->{advert_id});
@@ -1295,7 +1319,7 @@ sub p2p_order_review {
 
     my ($reviewee, $reviewer) = $reviewee_role eq 'client' ? $order->@{qw(client_id advertiser_id)} : $order->@{qw(advertiser_id client_id)};
 
-    my $review = $self->{client}->db->dbic->run(
+    my $review = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_review_v2(?, ?, ?, ?, ?)',
                 undef, $id, $reviewee, $reviewer, @param{qw(rating recommended)});
@@ -1399,7 +1423,7 @@ sub p2p_create_order_chat {
 
             my ($sb_user_token, $sb_user_expiry) =
                 ($sb_user->session_tokens->[0]{session_token}, int($sb_user->session_tokens->[0]{expires_at} / 1000));
-            $self->{client}->db->dbic->run(
+            $self->db->dbic->run(
                 fixup => sub {
                     $_->do('SELECT * FROM p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?, NULL, NULL, NULL, NULL, NULL)',
                         undef, $advertiser_id, $sb_user_id, $sb_user_token, $sb_user_expiry);
@@ -1425,7 +1449,7 @@ sub p2p_create_order_chat {
         die +{error_code => 'CreateChatError'};
     }
 
-    $self->{client}->db->dbic->run(
+    $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, ?)', undef, $order_id, undef, $sb_chat->channel_url);
         });
@@ -1489,7 +1513,7 @@ sub p2p_chat_token {
 
     $expiry = int($expiry / 1000);    # sb api returns milliseconds timestamps
 
-    $self->{client}->db->dbic->run(
+    $self->db->dbic->run(
         fixup => sub {
             $_->do(
                 'SELECT * FROM p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?, NULL, NULL, NULL, NULL, NULL)',
@@ -1526,7 +1550,7 @@ sub p2p_escrow {
 
     foreach my $loginid (@escrow_list) {
         try {
-            my $escrow = BOM::User::Client->new({loginid => $loginid});
+            my $escrow = $self->client->get_client_instance($loginid, 'replica', $self->{context});
 
             return $escrow if $escrow && $escrow->broker eq $self->broker_code && $escrow->currency eq $currency;
         } catch {
@@ -1587,7 +1611,7 @@ sub p2p_create_order_dispute {
     # Confirm the order is expired
     die +{error_code => 'InvalidStateForDispute'} unless $order->{is_expired};
 
-    my $updated_order = $self->{client}->db->dbic->run(
+    my $updated_order = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.create_order_dispute(?, ?, ?)', undef, $id, $dispute_reason, $self->loginid);
         });
@@ -1650,7 +1674,7 @@ sub p2p_resolve_order_dispute {
     if ($action eq 'refund') {
         # resolve in favor of seller
         my $buyer_fault = 1;    # this will negatively affect the buyer's completion rate
-        $self->{client}->db->dbic->run(
+        $self->db->dbic->run(
             fixup => sub {
                 $_->do('SELECT p2p.order_refund_v2(?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     undef, $id, $escrow->loginid, 4, $staff, 't', $txn_time, $is_manual, $buyer_fault, $order->{advert_id});
@@ -1668,7 +1692,7 @@ sub p2p_resolve_order_dispute {
 
     } elsif ($action eq 'complete') {
         # resolve in favor of buyer
-        my $completed_order = $self->{client}->db->dbic->run(
+        my $completed_order = $self->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref('SELECT p2p.order_complete_v2(?, ?, ?, ?, ?, ?, ?)',
                     undef, $id, $escrow->loginid, 4, $staff, $txn_time, $is_manual, $fraud);
@@ -1786,7 +1810,7 @@ sub p2p_expire_order {
     my $elapsed          = time - Date::Utility->new($order->{created_time})->epoch;
     my $buyer_fault      = $elapsed < $grace_period ? 0 : 1;    # negatively affect the buyer's completion rate when after grace period
 
-    my ($old_status, $new_status, $expiry) = $self->{client}->db->dbic->txn(
+    my ($old_status, $new_status, $expiry) = $self->db->dbic->txn(
         fixup => sub {
             $_->selectrow_array('SELECT * FROM p2p.order_expire(?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $order_id, $escrow->loginid, $param{source}, $param{staff}, $txn_time, $days_for_release, $order->{advert_id}, $buyer_fault);
@@ -1933,6 +1957,21 @@ sub _validate_block_trade_availability {
     die +{error_code => 'BlockTradeDisabled'} unless BOM::Config::Runtime->instance->app_config->payments->p2p->block_trade->enabled;
 }
 
+=head2 _process_advert_params
+
+Common processing of ad params for p2p_advert_create and p2p_advert_update.
+
+=cut
+
+sub _process_advert_params {
+    my ($self, %param) = @_;
+
+    $param{min_completion_rate} = $param{min_completion_rate} / 100     if $param{min_completion_rate};
+    $param{eligible_countries}  = [sort $param{eligible_countries}->@*] if $param{eligible_countries};
+
+    return %param;
+}
+
 =head2 _p2p_advertisers
 
 Returns a list of advertisers filtered by id and/or loginid.
@@ -1945,7 +1984,7 @@ sub _p2p_advertisers {
     # don't call $self->_p2p_advertiser_cached or we will have deep recursion
     my $self_id = $self->{_p2p_advertiser_cached} ? $self->{_p2p_advertiser_cached}{id} : undef;
 
-    my $advertisers = $self->{client}->db->dbic->run(
+    my $advertisers = $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
                 'SELECT * FROM p2p.advertiser_list_v2(?, ?, ?, ?, ?)',
@@ -1968,6 +2007,7 @@ In tests you will need to delete this every time you update an advertiser and ca
 
 sub _p2p_advertiser_cached {
     my $self = shift;
+
     return $self->{_p2p_advertiser_cached} //= $self->_p2p_advertisers(loginid => $self->loginid)->[0];
 }
 
@@ -2032,23 +2072,23 @@ sub _p2p_adverts {
             }
         }
         my %market_rate_map = map { $_ => p2p_exchange_rate($_)->{quote} } @currencies;
-        $param{market_rate_map} = $json->encode(\%market_rate_map);
+        $param{market_rate_map} = encode_json_utf8(\%market_rate_map);
     }
 
     for my $field (qw/id advert_id limit offset/) {
         $param{$field} += 0 if defined $param{$field};
     }
 
-    $self->{client}->db->dbic->run(
+    $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
                         client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
                         use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map country_payment_methods
-                        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback block_trade/
+                        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback block_trade hide_ineligible/
                 });
         }) // [];
 }
@@ -2093,7 +2133,7 @@ sub _p2p_orders {
         $param{end_time} = $date_to->db_timestamp;
     }
 
-    return $self->{client}->db->dbic->run(
+    return $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
                 'SELECT * FROM p2p.order_list(?, ?, ?, ?, ?, ?, ?, ?)',
@@ -2120,6 +2160,7 @@ sub _validate_advert {
     $self->_validate_advert_payment_method_ids(%param);
     $self->_validate_advert_payment_method_names(%param);
     $self->_validate_advert_payment_contact_info(%param);
+    $self->_validate_advert_counterparty_terms(%param);
 }
 
 =head2 _validate_advert_amount
@@ -2437,6 +2478,25 @@ sub _validate_advert_payment_method_names {
     }
 }
 
+=head2 _validate_advert_counterparty_terms
+
+Validate fields for advert terms.
+
+=cut
+
+sub _validate_advert_counterparty_terms {
+    my ($self, %param) = @_;
+
+    if ($param{eligible_countries} && $param{eligible_countries}->@*) {
+        my %p2p_countries = BOM::Config::P2P::available_countries()->%*;
+        if (my $invalid_country = first { !$p2p_countries{$_} } $param{eligible_countries}->@*) {
+            die +{
+                error_code     => 'InvalidCountry',
+                message_params => [$invalid_country]};
+        }
+    }
+}
+
 =head2 _p2p_advertiser_payment_methods
 
 Gets advertiser payment methods from DB.
@@ -2446,7 +2506,7 @@ Returns hashref keyed by id.
 
 sub _p2p_advertiser_payment_methods {
     my ($self, %param) = @_;
-    my $result = $self->{client}->db->dbic->run(
+    my $result = $self->db->dbic->run(
         fixup => sub {
             $_->selectall_hashref(
                 'SELECT id, is_enabled, method, params, used_by_adverts, used_by_orders FROM p2p.advertiser_payment_method_list(?, ?, ?, ?)',
@@ -2457,7 +2517,7 @@ sub _p2p_advertiser_payment_methods {
 
     for my $item (values %$result) {
         delete $item->{id};
-        $item->{fields} = $json->decode(delete $item->{params});
+        $item->{fields} = decode_json_utf8(delete $item->{params});
     }
     return $result;
 }
@@ -2599,7 +2659,7 @@ sub _p2p_order_confirm_verification {
     if (my $code = $param{verification_code}) {
         my $token = BOM::Platform::Token->new({token => $code});
 
-        unless ($token->token and $token->{created_for} eq 'p2p_order_confirm' and $token->email eq $self->{client}->email) {
+        unless ($token->token and $token->{created_for} eq 'p2p_order_confirm' and $token->email eq $self->email) {
             $redis->zrem($attempts_key, $code);           # don't count expired code twice
             $redis->zadd($attempts_key, time, rand());    # record a failed attempt at current time
             $redis->rpush($history_key, time . '|Invalid/expired token provided');
@@ -2626,7 +2686,7 @@ sub _p2p_order_confirm_verification {
         $redis->zadd(P2P_VERIFICATION_EVENT_KEY, time + P2P_VERIFICATION_REQUEST_INTERVAL, "REQUEST_BLOCK$event_postfix");
 
         my $code = BOM::Platform::Token->new({
-                email       => $self->{client}->email,
+                email       => $self->email,
                 created_for => 'p2p_order_confirm',
                 expires_in  => P2P_VERIFICATION_TOKEN_EXPIRY,
             })->token;
@@ -2745,8 +2805,8 @@ sub _advertiser_details {
             defined $advertiser->{withdrawal_limit}
             ? financialrounding('amount', $advertiser->{account_currency}, $advertiser->{withdrawal_limit})
             : undef;
-        $details->{basic_verification} = $self->{client}->status->age_verification ? 1 : 0;
-        $details->{full_verification}  = $self->{client}->fully_authenticated      ? 1 : 0;
+        $details->{basic_verification} = $self->status->age_verification    ? 1 : 0;
+        $details->{full_verification}  = $self->client->fully_authenticated ? 1 : 0;
         $details->{cancels_remaining}  = $self->_p2p_advertiser_cancellations->{remaining};
         $details->{blocked_by_count}   = $advertiser->{blocked_by_count}
             // 0;    # only p2p.advertiser_create does not return it, but there it must be zero
@@ -2860,6 +2920,11 @@ sub _advert_details {
             max_order_amount_limit         => $advert->{max_order_amount_actual},
             max_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
             block_trade                    => $advert->{block_trade},
+            defined $advert->{min_completion_rate} ? (min_completion_rate => sprintf('%.1f', $advert->{min_completion_rate} * 100)) : (),
+            defined $advert->{min_rating}          ? (min_rating          => sprintf('%.2f', $advert->{min_rating}))                : (),
+            defined $advert->{min_join_days}       ? (min_join_days       => $advert->{min_join_days})                              : (),
+            defined $advert->{eligible_countries}  ? (eligible_countries  => $advert->{eligible_countries})                         : (),
+
             # to match p2p_advert_list params, plus checking if advertiser blocked
             is_visible => (
                         $advert->{is_active}
@@ -2957,6 +3022,12 @@ sub _advert_details {
                 push @reasons, 'advertiser_block_trade_ineligible' if $advert->{block_trade} and not $advert->{advertiser_can_block_trade};
                 $result->{visibility_status} = \@reasons;
             }
+        } else {
+            push $result->{eligibility_status}->@*, 'completion_rate' if $advert->{client_ineligible_completion_rate};
+            push $result->{eligibility_status}->@*, 'country'         if $advert->{client_ineligible_country};
+            push $result->{eligibility_status}->@*, 'join_date'       if $advert->{client_ineligible_join_date};
+            push $result->{eligibility_status}->@*, 'rating_average'  if $advert->{client_ineligible_rating};
+            $result->{is_eligible} = $result->{eligibility_status} ? 0 : 1;
         }
 
         push @results, $result;
@@ -3218,7 +3289,6 @@ Returns hashref.
 
 sub _p2p_advertiser_stats {
     my ($self, $loginid, $hours) = @_;
-
     my $start_ts   = $hours ? Date::Utility->new->minus_time_interval($hours . 'h')->epoch : '-inf';
     my $key_prefix = P2P_STATS_REDIS_PREFIX . '::' . $loginid . '::';
     my $redis      = BOM::Config::Redis->redis_p2p();
@@ -3300,7 +3370,7 @@ sub _p2p_advertiser_relation_lists {
 
     my $advertiser = $self->_p2p_advertiser_cached or return;
 
-    my $relations = $self->{client}->db->dbic->run(
+    my $relations = $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM p2p.advertiser_relation_list(?)', {Slice => {}}, $advertiser->{id});
         });
@@ -3460,7 +3530,8 @@ sub _p2p_order_cancelled {
 
     my ($buyer_loginid) = $self->_p2p_order_parties($order);
     # make sure we are operating on the buyer - bom-events will use client_loginid of the order, which is not always buyer
-    my $buyer_client = $buyer_loginid eq $self->loginid ? $self : BOM::User::Client->new({loginid => $buyer_loginid});
+
+    my $buyer_client = $buyer_loginid eq $self->loginid ? $self : $self->client->get_client_instance($buyer_loginid, 'write', $self->{context});
 
     $buyer_client->_p2p_record_stat(
         loginid => $buyer_loginid,
@@ -3629,7 +3700,7 @@ sub _p2p_order_fraud {
 
     if ($stats->{$type . '_fraud_count'} >= $config->$count_cfg) {
         # disable the advertiser
-        $self->{client}->db->dbic->run(
+        $self->db->dbic->run(
             fixup => sub {
                 $_->do('SELECT p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, FALSE, NULL, NULL, NULL)',
                     undef, $advertiser->{id});
@@ -3697,7 +3768,7 @@ Returns,
 sub p2p_order_status_history {
     my ($self, $order_id) = @_;
 
-    return $self->{client}->db->dbic->run(
+    return $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM p2p.order_status_history(?)', {Slice => {}}, $order_id);
         }) // [];
@@ -3727,7 +3798,7 @@ sub p2p_payment_methods {
     my ($self, $country) = @_;
 
     my $methods        = BOM::Config::p2p_payment_methods();
-    my $country_config = $json->decode(BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries);
+    my $country_config = decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries);
     my $result         = {};
 
     for my $method (keys %$methods) {
@@ -3866,7 +3937,7 @@ sub _p2p_advertiser_payment_method_delete {
 
     $self->_p2p_check_payment_methods_in_use($deletes);
 
-    $self->{client}->db->dbic->run(
+    $self->db->dbic->run(
         fixup => sub {
             $_->do('SELECT p2p.advertiser_payment_method_delete(?)', undef, $deletes);
         });
@@ -3944,9 +4015,9 @@ sub _p2p_advertiser_payment_method_update {
 
     $self->_p2p_check_payment_methods_in_use(\@disabled_ids, \@updated_ids);
 
-    $self->{client}->db->dbic->run(
+    $self->db->dbic->run(
         fixup => sub {
-            $_->do('SELECT p2p.advertiser_payment_method_update(?)', undef, Encode::encode_utf8($json->encode($updates)));
+            $_->do('SELECT p2p.advertiser_payment_method_update(?)', undef, Encode::encode_utf8(encode_json_utf8($updates)));
         });
 
     return $existing;
@@ -4013,14 +4084,14 @@ sub _p2p_advertiser_payment_method_create {
             method => $method,
             fields => {pairgrep { $a !~ /^(method|is_enabled)$/ } %$item}};
 
-        my $created_pm = $self->{client}->db->dbic->run(
+        my $created_pm = $self->db->dbic->run(
             fixup => sub {
                 my $dbh = shift;
                 return $dbh->selectrow_hashref(
                     'SELECT *  FROM p2p.advertiser_payment_method_create_v2(?, ?)',
                     undef,
                     $self->_p2p_advertiser_cached->{id},
-                    Encode::encode_utf8($json->encode($item)));
+                    Encode::encode_utf8(encode_json_utf8($item)));
             });
 
         if ($created_pm->{error_params}->[0]) {
@@ -4053,7 +4124,7 @@ Dies or returns undef.
 sub _p2p_check_payment_methods_in_use {
     my ($self, $deleted_ids, $updated_ids) = @_;
 
-    my $in_use = $self->{client}->db->dbic->run(
+    my $in_use = $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM p2p.advertiser_payment_method_in_use(?, ?)', {Slice => {}}, $deleted_ids, $updated_ids);
         });
@@ -4114,11 +4185,12 @@ Returns the balance available for p2p
 sub p2p_balance {
     my ($self) = @_;
 
-    my $account_balance = $self->{client}->account->balance;
+    my $account_balance = $self->account->balance;
     my $excluded_amount = $self->p2p_exclusion_amount;
     my $advertiser      = $self->_p2p_advertiser_cached    // {};
     my $extra_sell      = $advertiser->{extra_sell_amount} // 0;
     my $p2p_balance     = min($account_balance, max(0, $account_balance - $excluded_amount) + $extra_sell);
+
     return financialrounding('amount', $self->currency, $p2p_balance);
 }
 
@@ -4144,13 +4216,9 @@ sub p2p_exclusion_amount {
         $reversible = 1;
     }
 
-    my ($amount) = $self->{client}->db->dbic->run(
+    my ($amount) = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_array(
-                'SELECT * FROM p2p.balance_exclusion_amount(?, ?, ?, ?)',
-                undef,  $self->{client}->account->id,
-                $limit, $lookback, $reversible
-            );
+            $_->selectrow_array('SELECT * FROM p2p.balance_exclusion_amount(?, ?, ?, ?)', undef, $self->account->id, $limit, $lookback, $reversible);
         });
 
     return $amount;
@@ -4165,18 +4233,20 @@ Returns the amount that can be withdrawn via cashier or transferred to sibling a
 sub p2p_withdrawable_balance {
     my ($self) = @_;
 
-    my $balance = $self->{client}->account->balance;
+    my $balance = $self->account->balance;
     my $config  = BOM::Config::Runtime->instance->app_config->payments;
-    my $limit   = $config->p2p_withdrawal_limit;
+    my $limit   = $config->p2p_withdrawal_limit;                          # this setting is a percentage
 
-    return $balance if $limit >= 100;                                                      # setting is a percentage
-    return $balance unless BOM::Config::P2P::available_countries()->{$self->residence};    # banned countries can withdraw p2p deposits
+    if ($limit >= 100 || $self->p2p_is_advertiser_blocked || !BOM::Config::P2P::available_countries()->{$self->residence}) {
+        return $balance;
+        # permanently banned P2P advertiser or advertisers from P2P banned countries can withdraw p2p deposits
+    }
 
     my $lookback = $config->p2p_deposits_lookback;
 
-    my ($p2p_net) = $self->{client}->db->dbic->run(
+    my ($p2p_net) = $self->db->dbic->run(
         fixup => sub {
-            return $_->selectrow_array('SELECT payment.aggregate_payments_by_type(?, ?, ?)', undef, $self->{client}->account->id, 'p2p', $lookback);
+            return $_->selectrow_array('SELECT payment.aggregate_payments_by_type(?, ?, ?)', undef, $self->account->id, 'p2p', $lookback);
         }) // 0;
 
     return $balance if $p2p_net <= 0;
@@ -4186,6 +4256,8 @@ sub p2p_withdrawable_balance {
     # this calcalution was tested on over 10k clients so even though it may look strange, we know it works
     return min($balance, $p2p_excluded + max(0, $balance - $p2p_excluded - $p2p_net));
 }
+
+#### TODO: As Bill Marrioitt suggesting bellow functions should remove and use $p2p->client->sub_call explicity everywhere!
 
 sub broker_code {
     my $self = shift;
@@ -4217,6 +4289,21 @@ sub client {
     return $self->{client};
 }
 
+sub status {
+    my $self = shift;
+    return $self->{client}->status;
+}
+
+sub account {
+    my $self = shift;
+    return $self->{client}->account;
+}
+
+sub email {
+    my $self = shift;
+    return $self->{client}->email;
+}
+
 sub db {
     my $self = shift;
     return $self->{client}->db;
@@ -4228,4 +4315,23 @@ sub set_db {
     return $self->{client}->set_db($param);
 }
 
+sub first_name {
+    my $self = shift;
+    return $self->{client}->first_name;
+}
+
+sub binary_user_id {
+    my $self = shift;
+    return $self->{client}->binary_user_id;
+}
+
+sub broker {
+    my $self = shift;
+    return $self->{client}->broker;
+}
+
+sub user {
+    my $self = shift;
+    return $self->{client}->user;
+}
 1;

@@ -10,14 +10,12 @@ use Log::Any::Test;
 use Test::Exception;
 use Test::MockTime        qw(set_fixed_time restore_time);
 use Format::Util::Numbers qw(formatnumber);
-
 use BOM::User::Client;
 use BOM::Config::Redis;
+use P2P;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use JSON::MaybeUTF8                            qw(:v1);
-# use lib '/home/git/regentmarkets/p2p/lib/';
-use P2P;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -47,11 +45,11 @@ subtest 'advertiser Registration' => sub {
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
     @emitted_events = ();
-
-    cmp_deeply(exception { $client->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
+    my $p2p_client = P2P->new(client => $client);
+    cmp_deeply(exception { $p2p_client->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
 
     my $advertiser;
-    lives_ok { $advertiser = $client->p2p_advertiser_create(name => $advertiser_name) } 'create advertiser ok';
+    lives_ok { $advertiser = $p2p_client->p2p_advertiser_create(name => $advertiser_name) } 'create advertiser ok';
 
     cmp_deeply(
         \@emitted_events,
@@ -65,7 +63,7 @@ subtest 'advertiser Registration' => sub {
         'p2p_advertiser_created event emitted'
     );
 
-    my $advertiser_info = $client->p2p_advertiser_info;
+    my $advertiser_info = $p2p_client->p2p_advertiser_info;
     ok !$advertiser_info->{is_approved}, "advertiser not approved";
     ok $advertiser_info->{is_listed},    "advertiser adverts are listed";
     cmp_ok $advertiser_info->{name}, 'eq', $advertiser_name, "advertiser name";
@@ -73,13 +71,75 @@ subtest 'advertiser Registration' => sub {
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
 };
 
+subtest 'advertiser in POA mandetory countries' => sub {
+
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
+    my $p2p_client = P2P->new(client => $client);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(1);
+
+    cmp_deeply(
+        exception { $p2p_client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required if POA enabled globally'
+    );
+
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(0);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_includes([$client->residence]);
+    cmp_deeply(
+        exception { $p2p_client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required if POA disabled globally but country is mandetory'
+    );
+
+    ok !$client->status->age_verification, "client has not basic verification";
+    ok !$client->fully_authenticated,      "client has not full authenticated";
+
+    $client->status->set('age_verification', 'system', 'testing');
+    ok $client->status->age_verification, "client has basic verification";
+    cmp_deeply(
+        exception { $p2p_client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required both not only POI if user is in POA mandetory country'
+    );
+
+    $client->status->clear_age_verification;
+    $client->set_authentication('ID_ONLINE', {status => 'pass'});
+
+    ok !$client->status->age_verification, "client has not basic verification";
+    ok $client->fully_authenticated,       "client has full authenticated";
+
+    cmp_deeply(
+        exception { $p2p_client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required both not only POA if user is in POA mandetory country'
+    );
+
+    $client->status->set('age_verification', 'system', 'testing');
+    ok $p2p_client->p2p_advertiser_create(name => 'advertiser POA'), 'create advertiser who has POA and POI verified is ok';
+
+    my $client_new     = BOM::Test::Helper::Client::create_client();
+    my $p2p_client_new = P2P->new(client => $client_new);
+    $client_new->account('USD');
+
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(1);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_excludes([$client_new->residence]);
+    ok $p2p_client_new->p2p_advertiser_create(name => 'advertiser POA 2'), 'create advertiser in country which is excluded is ok';
+
+    ## Set Config as default for rest of the test
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(0);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_includes([]);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_excludes([]);
+};
+
 subtest 'advertiser basic and full verification' => sub {
 
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
-    my $advertiser = $client->p2p_advertiser_create(name => 'advertiser 1');
+    my $p2p_client = P2P->new(client => $client);
+    my $advertiser = $p2p_client->p2p_advertiser_create(name => 'advertiser 1');
 
-    my $advertiser_info = $client->p2p_advertiser_info;
+    my $advertiser_info = $p2p_client->p2p_advertiser_info;
     ok 1, "empty test";
 
     ok !$advertiser_info->{basic_verification}, "advertiser has not basic verification";
@@ -88,7 +148,7 @@ subtest 'advertiser basic and full verification' => sub {
     $client->status->set('age_verification', 'system', 'testing');
     $client->set_authentication('ID_ONLINE', {status => 'pass'});
 
-    $advertiser_info = $client->p2p_advertiser_info;
+    $advertiser_info = $p2p_client->p2p_advertiser_info;
 
     ok $advertiser_info->{basic_verification}, "advertiser has basic verification";
     ok $advertiser_info->{full_verification},  "advertiser has full verification";
@@ -96,12 +156,13 @@ subtest 'advertiser basic and full verification' => sub {
 
 subtest 'advertiser already age verified' => sub {
 
-    my $client = BOM::Test::Helper::Client::create_client();
+    my $client     = BOM::Test::Helper::Client::create_client();
+    my $p2p_client = P2P->new(client => $client);
     $client->account('USD');
     $client->status->set('age_verification', 'system', 'testing');
-    ok $client->p2p_advertiser_create(name => 'age_verified already')->{is_approved};
-    ok $client->p2p_advertiser_info->{is_approved}, 'advertiser is approved';
-    ok !$client->status->allow_document_upload,     'allow_document_upload status not present';
+    ok $p2p_client->p2p_advertiser_create(name => 'age_verified already')->{is_approved};
+    ok $p2p_client->p2p_advertiser_info->{is_approved}, 'advertiser is approved';
+    ok !$p2p_client->status->allow_document_upload,     'allow_document_upload status not present';
 };
 
 subtest 'Duplicate advertiser Registration' => sub {
@@ -119,10 +180,11 @@ subtest 'Duplicate advertiser Registration' => sub {
 subtest 'Advertiser name already taken' => sub {
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
     my $client     = BOM::Test::Helper::Client::create_client();
+
     $client->account('USD');
 
     cmp_deeply(
-        exception { $client->p2p_advertiser_create(name => 'ad_MAN') },
+        exception { P2P->new(client => $client)->p2p_advertiser_create(name => 'ad_MAN') },
         {error_code => 'AdvertiserNameTaken'},
         "Can't create an advertiser with a name that's already taken"
     );
