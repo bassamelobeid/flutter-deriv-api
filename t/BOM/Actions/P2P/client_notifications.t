@@ -4,25 +4,27 @@ use Test::More;
 use RedisDB;
 use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use P2P;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
-my $escrow = BOM::Test::Helper::P2P::create_escrow();
+my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
     amount      => 100,
     type        => 'sell',
     description => 'instruction 1'
 );
-my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
     advert_id => $advert->{id},
     amount    => 100
 );
 
-my $client_id = $client->{_p2p_advertiser_cached}{id};
+my $client_id = P2P->new(client => $client)->_p2p_advertiser_cached->{id};
 delete $client->{_p2p_advertiser_cached};    # delete cache
 
 my $proc = BOM::Event::Process->new(category => 'generic');
