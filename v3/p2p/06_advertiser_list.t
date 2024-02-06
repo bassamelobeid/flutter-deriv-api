@@ -86,7 +86,7 @@ subtest 'trade partners' => sub {
     is $resp->{p2p_advertiser_list}->{list}->[0]->{last_name},  'pItT', 'indicates trade partner\'s last_name correctly';
 
     $partner1->status->set('age_verification', 'system', 'testing');
-    $partner1->set_authentication('ID_ONLINE', {status => 'pass'});
+    $partner1->client->set_authentication('ID_ONLINE', {status => 'pass'});
 
     $resp = $t->await::p2p_advertiser_list({
         p2p_advertiser_list => 1,
@@ -145,7 +145,7 @@ subtest 'trade partners' => sub {
     my $online_time = time();
 
     is scalar $resp->{p2p_advertiser_list}->{list}->@*, 2, '2 listing';
-    cmp_bag(
+    cmp_deeply(
         $resp->{p2p_advertiser_list}->{list},
         [{
                 advert_rates               => undef,
@@ -167,7 +167,7 @@ subtest 'trade partners' => sub {
                 is_recommended             => 0,
                 last_name                  => 'pItT',
                 last_online_time           => num($online_time, 3),
-                name                       => 'test advertiser 2',
+                name                       => 'test advertiser 102',
                 partner_count              => 0,
                 rating_average             => undef,
                 rating_count               => 0,
@@ -199,7 +199,7 @@ subtest 'trade partners' => sub {
                 is_online                  => 1,
                 is_recommended             => 0,
                 last_online_time           => num($online_time, 3),
-                name                       => 'test advertiser 3',
+                name                       => 'test advertiser 103',
                 partner_count              => 0,
                 rating_average             => undef,
                 rating_count               => 0,

@@ -10,6 +10,7 @@ use await;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
@@ -26,8 +27,7 @@ $app_config->set({'payments.p2p.available'     => 1});
 $app_config->set({'payments.p2p.order_timeout' => 3600});
 
 my $t = build_wsapi_test();
-
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my ($me, $my_ad) = BOM::Test::Helper::P2P::create_advert();
 my $my_token = BOM::Platform::Token::API->new->create_token($me->loginid, 'test', ['payments']);
