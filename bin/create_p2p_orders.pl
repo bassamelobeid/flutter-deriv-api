@@ -5,6 +5,7 @@ use Getopt::Long;
 use BOM::Rules::Engine;
 use Data::Dumper;
 use Syntax::Keyword::Try;
+use P2P;
 
 my %opts;
 GetOptions(\%opts, 'client|c=s', 'advertiser|a=s', 'orders|o=i');
@@ -15,6 +16,7 @@ my $rule_engine = BOM::Rules::Engine->new();
 
 $opts{orders} //= 100;
 my $ad;
+my $p2p = P2P->new(client => $advertiser);
 
 try {
     $advertiser->payment_free_gift(
@@ -22,8 +24,7 @@ try {
         remark   => 'x',
         currency => $advertiser->currency
     );
-
-    $ad = $advertiser->p2p_advert_create(
+    $ad = $p2p->p2p_advert_create(
         amount           => 3000,
         type             => 'sell',
         rate             => 1,
@@ -38,19 +39,19 @@ try {
     for my $i (1 .. $opts{orders} // 100) {
         print "Creating order $i\n";
 
-        my $order = $client->p2p_order_create(
+        my $order = $p2p->p2p_order_create(
             advert_id   => $ad->{id},
             amount      => $i / 100,
             rule_engine => $rule_engine,
         );
 
-        $client->p2p_order_confirm(id => $order->{id});
-        $advertiser->p2p_order_confirm(id => $order->{id});
+        $p2p->p2p_order_confirm(id => $order->{id});
+        $p2p->p2p_order_confirm(id => $order->{id});
     }
 } catch {
     print Dumper $@ if $@;
 } finally {
-    $advertiser->p2p_advert_update(
+    $p2p->p2p_advert_update(
         id     => $ad->{id},
         delete => 1,
     ) if $ad;

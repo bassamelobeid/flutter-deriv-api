@@ -57,6 +57,7 @@ use BOM::Config::Chronicle;
 use BOM::Database::AuthDB;
 use BOM::Rules::Engine;
 use BOM::Config::CurrencyConfig;
+use P2P;
 use JSON::MaybeUTF8 qw(:v1);
 
 my $rule_engine = BOM::Rules::Engine->new();
@@ -170,6 +171,10 @@ sub create_client {
         amount       => $balance,
         remark       => "prefilled balance",
     ) if $balance;
+
+    $cr->set_authentication('ID_DOCUMENT' => {status => 'pass'});
+    $cr->status->setnx('age_verification', 'SYSTEM', 'by script');
+
     return $cr;
 }
 
@@ -227,6 +232,8 @@ my $advertiser = create_client(
     email   => 'advertiser+' . $idx . '@binary.com',
     balance => 5000,
 );
+my $p2p_advertiser = P2P->new(client => $advertiser);
+
 $log->infof('Advertiser is %s - Token: %s', $advertiser->loginid, token_for_client($advertiser));
 
 # ===== Client =====
@@ -234,6 +241,7 @@ section_title('Client Account');
 my $client = create_client(
     email => 'client+' . $idx . '@binary.com',
 );
+my $p2p_client = P2P->new(client => $client);
 
 unless ($client->p2p_advertiser_info) {
     $client->p2p_advertiser_create(name => 'client ' . $client->loginid);
@@ -285,7 +293,7 @@ $advertiser->p2p_advertiser_update(
 delete $advertiser->{_p2p_advertiser_cached};
 $log->infof('Advertiser info: %s', $advertiser->p2p_advertiser_info);
 
-$advertiser->p2p_advert_create(
+$p2p_advertiser->p2p_advert_create(
     account_currency => 'USD',
     local_currency   => $local_currency,
     amount           => 3000,
@@ -307,7 +315,7 @@ $advertiser->p2p_advert_create(
     ),
 );
 
-my $advert_sell = $advertiser->p2p_advert_create(
+my $advert_sell = $p2p_advertiser->p2p_advert_create(
     account_currency => 'USD',
     local_currency   => $local_currency,
     amount           => 3000,
@@ -356,7 +364,7 @@ if ($create_order) {
     delete $client->{_p2p_advertiser_cached};
 
     # Create ad
-    my $advert_buy = $client->p2p_advert_create(
+    my $advert_buy = $p2p_client->p2p_advert_create(
         account_currency => 'USD',
         local_currency   => 'ZAR',
         amount           => 3000,

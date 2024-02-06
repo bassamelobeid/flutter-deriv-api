@@ -1,10 +1,11 @@
-package BOM::Test::Helper::P2P;
+package BOM::Test::Helper::P2PWithClient;
 
 use strict;
 use warnings;
 
 use BOM::Test::Helper::Client;
 use BOM::User;
+use P2P;
 use BOM::Config;
 use BOM::Rules::Engine;
 use Carp;
@@ -12,12 +13,11 @@ use Test::More;
 use Test::MockModule;
 use Date::Utility;
 use JSON::MaybeXS;
-use P2P;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
-my $advertiser_num = 100;
-my $client_num     = 100;
+my $advertiser_num = 1;
+my $client_num     = 1;
 my $mock_sb;
 my $mock_sb_user;
 my $mock_config;
@@ -66,15 +66,11 @@ sub create_advertiser {
         BOM::Test::Helper::Client::top_up($client, $client->currency, $param{balance});
     }
 
-    my $p2p = P2P->new(
-        client  => $client,
-        context => $client->{context});
+    $client->p2p_advertiser_create(name => $param{name});
+    $client->p2p_advertiser_update(is_approved => $param{is_approved});
+    delete $client->{_p2p_advertiser_cached};
 
-    $p2p->p2p_advertiser_create(name => $param{name});
-    $p2p->p2p_advertiser_update(is_approved => $param{is_approved});
-    delete $p2p->{_p2p_advertiser_cached};
-
-    return $p2p;
+    return $client;
 }
 
 sub create_advert {
@@ -98,7 +94,7 @@ sub create_advert {
     );
     delete $advertiser->{_p2p_advertiser_cached};
 
-    my $advert = $advertiser->p2p_advert_create(%param);
+    my $advert = P2P->new(client => $advertiser)->p2p_advert_create(%param);
 
     return $advertiser, $advert;
 }
@@ -109,17 +105,17 @@ sub create_order {
     my $advert_id = $param{advert_id} || croak 'advert_id is required';
     my $amount    = $param{amount}  // 100;
     my $balance   = $param{balance} // $param{amount};
-    my $p2p       = $param{client}  // create_advertiser(
+    my $client    = $param{client}  // create_advertiser(
         balance        => $balance,
         client_details => $param{advertiser});
-    delete $p2p->{_p2p_advertiser_cached};
+    delete $client->{_p2p_advertiser_cached};
 
-    my $advert = $p2p->p2p_advert_info(id => $param{advert_id});
+    my $advert = $client->p2p_advert_info(id => $param{advert_id});
 
     $param{payment_info} //= $advert->{type} eq 'buy' ? 'Bank: 123456' : undef;
     $param{contact_info} //= $advert->{type} eq 'buy' ? 'Tel: 123456'  : undef;
 
-    my $order = $p2p->p2p_order_create(
+    my $order = $client->p2p_order_create(
         advert_id    => $advert_id,
         amount       => $amount,
         payment_info => $param{payment_info},
@@ -129,27 +125,27 @@ sub create_order {
 
     # NOW() in db will not be affected when we mock time in tests, so we need to adjust order creation time
     if (time != CORE::time) {
-        $p2p->db->dbic->dbh->do('UPDATE p2p.p2p_order SET created_time = ? WHERE id =?', undef, Date::Utility->new->datetime, $order->{id});
+        $client->db->dbic->dbh->do('UPDATE p2p.p2p_order SET created_time = ? WHERE id =?', undef, Date::Utility->new->datetime, $order->{id});
     }
 
-    return $p2p, $order;
+    return $client, $order;
 }
 
 sub expire_order {
-    my ($p2p, $order_id, $interval) = @_;
+    my ($client, $order_id, $interval) = @_;
     $interval //= '-1 day';
-    $interval = $p2p->db->dbic->dbh->quote($interval);
-    return $p2p->db->dbic->dbh->do(
+    $interval = $client->db->dbic->dbh->quote($interval);
+    return $client->db->dbic->dbh->do(
         "UPDATE p2p.p2p_order SET expire_time = NOW() + INTERVAL $interval WHERE id = ?",    ## SQL safe($interval)
         undef, $order_id
     );
 }
 
 sub ready_to_refund {
-    my ($p2p, $order_id, $days_needed) = @_;
+    my ($client, $order_id, $days_needed) = @_;
     $days_needed //= BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
 
-    return $p2p->db->dbic->dbh->do(
+    return $client->db->dbic->dbh->do(
         "UPDATE p2p.p2p_order SET status='timed-out', expire_time = ?::TIMESTAMP - INTERVAL ? WHERE id = ?",
         undef,
         Date::Utility->new->datetime,
@@ -210,9 +206,7 @@ sub set_advertiser_created_time_by_day {
 }
 
 =head2 set_advertiser_completion_rate
-
 Sets advertiser completion rate to a value of 0-1 or undef
-
 =cut
 
 sub set_advertiser_completion_rate {
@@ -232,9 +226,7 @@ sub set_advertiser_completion_rate {
 }
 
 =head2 set_advertiser_rating_average
-
 Sets advertiser rating average to a value of 1-5 or undef
-
 =cut
 
 sub set_advertiser_rating_average {
@@ -252,9 +244,9 @@ sub set_advertiser_rating_average {
 }
 
 sub set_order_status {
-    my ($p2p, $order_id, $new_status) = @_;
+    my ($client, $order_id, $new_status) = @_;
 
-    $p2p->db->dbic->dbh->do(
+    $client->db->dbic->dbh->do(
         "UPDATE p2p.p2p_advert a SET active_orders=active_orders+
         CASE 
             WHEN p2p.is_status_final(?) AND NOT p2p.is_status_final(o.status) THEN -1
@@ -265,7 +257,7 @@ sub set_order_status {
         undef, $new_status, $new_status, $order_id
     );
 
-    $p2p->db->dbic->dbh->do('SELECT * FROM p2p.order_update(?, ?, NULL)', undef, $order_id, $new_status);
+    $client->db->dbic->dbh->do('SELECT * FROM p2p.order_update(?, ?, NULL)', undef, $order_id, $new_status);
 }
 
 sub bypass_sendbird {
@@ -313,12 +305,12 @@ Given a p2p order, it updates any requirement needed to be ready for dispute.
 =cut
 
 sub set_order_disputable {
-    my ($p2p, $order_id) = @_;
+    my ($client, $order_id) = @_;
 
-    expire_order($p2p, $order_id);
+    expire_order($client, $order_id);
 
     # Status needs to be `timed-out`
-    $p2p->db->dbic->run(
+    $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, NULL)', undef, $order_id, 'timed-out');
         });
