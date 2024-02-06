@@ -29,7 +29,7 @@ subtest 'float rate offset limit for different range of inputs' => sub {
     my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 
     my $call_args = {
-        client => $client,
+        client => $client->{client},
         args   => {
             p2p_settings => 1,
         },

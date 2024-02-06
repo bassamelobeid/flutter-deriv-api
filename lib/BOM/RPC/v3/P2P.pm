@@ -28,6 +28,7 @@ use BOM::Config::Redis;
 use BOM::User;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Rules::Engine;
+use P2P;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use Format::Util::Numbers            qw/financialrounding formatnumber/;
 
@@ -267,7 +268,9 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
         try {
             my $app_config = BOM::Config::Runtime->instance->app_config;
             my $client     = $params->{client};
-
+            my $p2p        = P2P->new(
+                client  => $client,
+                context => $client->{context});
             my $rule_engine = BOM::Rules::Engine->new(client => $client);
             # We're directly checking a single rule here; but with P2P rule engine integration, it can be changed into:
             # $rule_engine->verify_action($method, $params->{args}->%*)
@@ -280,13 +283,13 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
             # skip _check_client_access for p2p_settings because it is not a client based settings
             # only check needed for p2p_settings is RestrictedCountry which is done in Client.pm
             if ($method ne 'p2p_settings') {
-                _check_client_access($client, $app_config);
+                _check_client_access($p2p, $app_config);
                 BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, ($client->loginid . "::" . $client->residence))
                     if $client->_p2p_advertiser_cached;
             }
 
             return $code->(
-                client      => $client,
+                p2p         => $p2p,
                 account     => $client->default_account,
                 app_config  => $app_config,
                 params      => $params,
@@ -368,9 +371,8 @@ Returns a hashref containing the created advertiser details.
 p2p_rpc p2p_advertiser_create => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-
-    return $client->p2p_advertiser_create($args{params}{args}->%*);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_advertiser_create($args{params}{args}->%*);
 };
 
 =head2 p2p_advertiser_update
@@ -394,8 +396,8 @@ Returns a hashref containing the current advertiser details.
 p2p_rpc p2p_advertiser_update => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return $client->p2p_advertiser_update($args{params}{args}->%*);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_advertiser_update($args{params}{args}->%*);
 };
 
 =head2 p2p_advertiser_info
@@ -433,15 +435,15 @@ Returns a hashref containing the following information:
 p2p_rpc p2p_advertiser_info => readonly => 1 => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return $client->p2p_advertiser_info($args{params}{args}->%*) // die +{error_code => 'AdvertiserNotFound'};
+    my $p2p = $args{p2p};
+    return $p2p->p2p_advertiser_info($args{params}{args}->%*) // die +{error_code => 'AdvertiserNotFound'};
 };
 
 p2p_rpc p2p_advertiser_adverts => readonly => 1 => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return {list => $client->p2p_advertiser_adverts($args{params}{args}->%*)};
+    my $p2p = $args{p2p};
+    return {list => $p2p->p2p_advertiser_adverts($args{params}{args}->%*)};
 };
 
 =head2 p2p_advertiser_list
@@ -453,8 +455,8 @@ Retuns list of advertisers has/had order or relationship with requester advertis
 p2p_rpc p2p_advertiser_list => readonly => 1 => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return {list => $client->p2p_advertiser_list($args{params}{args}->%*)};
+    my $p2p = $args{p2p};
+    return {list => $p2p->p2p_advertiser_list($args{params}{args}->%*)};
 };
 
 =head2 p2p_payment_methods
@@ -468,8 +470,8 @@ Returns available payment methods for current client's country.
 p2p_rpc p2p_payment_methods => readonly => 1 => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return $client->p2p_payment_methods($client->residence);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_payment_methods($args{p2p}->residence);
 };
 
 =head2 p2p_advertiser_payment_methods
@@ -483,8 +485,8 @@ Manages advertiser payment methods:
 p2p_rpc p2p_advertiser_payment_methods => readonly => 1 => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return $client->p2p_advertiser_payment_methods($args{params}{args}->%*);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_advertiser_payment_methods($args{params}{args}->%*);
 };
 
 =head2 p2p_advertiser_relations
@@ -496,8 +498,8 @@ Updates and returns favourite and blocked advertisers.
 p2p_rpc p2p_advertiser_relations => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return $client->p2p_advertiser_relations($args{params}{args}->%*);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_advertiser_relations($args{params}{args}->%*);
 };
 
 =head2 p2p_advert_create
@@ -532,8 +534,8 @@ above information).
 p2p_rpc p2p_advert_create => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return $client->p2p_advert_create($args{params}{args}->%*);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_advert_create($args{params}{args}->%*);
 };
 
 =head2 p2p_advert_info
@@ -572,8 +574,8 @@ p2p_rpc p2p_advert_info => readonly => 1 => sub {
     my (%args) = @_;
 
     my %params = $args{params}{args}->%* or die +{error_code => 'AdvertInfoMissingParam'};
-    my $client = $args{client};
-    return $client->p2p_advert_info(%params) // die +{error_code => 'AdvertNotFound'};
+    my $p2p    = $args{p2p};
+    return $p2p->p2p_advert_info(%params) // die +{error_code => 'AdvertNotFound'};
 };
 
 =head2 p2p_advert_list
@@ -619,9 +621,9 @@ Returns available adverts as an arrayref containing hashrefs with the following 
 p2p_rpc p2p_advert_list => readonly => 1 => sub {
     my %args = @_;
 
-    my $client = $args{client};
+    my $p2p = $args{p2p};
 
-    return {list => $client->p2p_advert_list($args{params}{args}->%*)};
+    return {list => $p2p->p2p_advert_list($args{params}{args}->%*)};
 };
 
 =head2 p2p_advert_update
@@ -633,8 +635,8 @@ Modifies details on an advert.
 p2p_rpc p2p_advert_update => sub {
     my %args = @_;
 
-    my $client = $args{client};
-    return $client->p2p_advert_update($args{params}{args}->%*) // die +{error_code => 'AdvertNotFound'};
+    my $p2p = $args{p2p};
+    return $p2p->p2p_advert_update($args{params}{args}->%*) // die +{error_code => 'AdvertNotFound'};
 };
 
 =head2 p2p_order_create
@@ -646,9 +648,9 @@ Creates a new order for an advert.
 p2p_rpc p2p_order_create => sub {
     my %args = @_;
 
-    my $client = $args{client};
+    my $p2p = $args{p2p};
 
-    return $client->p2p_order_create(
+    return $p2p->p2p_order_create(
         $args{params}{args}->%*,
         source      => $args{params}{source},
         rule_engine => $args{rule_engine},
@@ -682,8 +684,8 @@ if the current client owns that advert)
 p2p_rpc p2p_order_list => readonly => 1 => sub {
     my %args = @_;
 
-    my $client = $args{client};
-    return $client->p2p_order_list($args{params}{args}->%*);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_order_list($args{params}{args}->%*);
 };
 
 =head2 p2p_order_info
@@ -703,8 +705,8 @@ Takes the following named parameters:
 p2p_rpc p2p_order_info => readonly => 1 => sub {
     my %args = @_;
 
-    my ($client, $params) = @args{qw/client params/};
-    return $client->p2p_order_info($args{params}{args}->%*) // die +{error_code => 'OrderNotFound'};
+    my ($p2p, $params) = @args{qw/p2p params/};
+    return $p2p->p2p_order_info($args{params}{args}->%*) // die +{error_code => 'OrderNotFound'};
 };
 
 =head2 p2p_order_confirm
@@ -724,8 +726,8 @@ Takes the following named parameters:
 p2p_rpc p2p_order_confirm => sub {
     my %args = @_;
 
-    my ($client, $params) = @args{qw/client params/};
-    return $client->p2p_order_confirm($params->{args}->%*, source => $params->{source});
+    my ($p2p, $params) = @args{qw/p2p params/};
+    return $p2p->p2p_order_confirm($params->{args}->%*, source => $params->{source});
 };
 
 =head2 p2p_order_cancel
@@ -745,11 +747,11 @@ Takes the following named parameters:
 p2p_rpc p2p_order_cancel => sub {
     my %args = @_;
 
-    my ($client, $params) = @args{qw/client params/};
+    my ($p2p, $params) = @args{qw/p2p params/};
 
     my $order_id = $params->{args}{id};
 
-    my $order = $client->p2p_order_cancel(
+    my $order = $p2p->p2p_order_cancel(
         id     => $order_id,
         source => $params->{source});
 
@@ -768,8 +770,8 @@ Creates an order review.
 p2p_rpc p2p_order_review => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return $client->p2p_order_review($args{params}{args}->%*);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_order_review($args{params}{args}->%*);
 };
 
 =head2 p2p_chat_create
@@ -799,8 +801,8 @@ Returns the information of the created chat containing:
 p2p_rpc p2p_chat_create => sub {
     my %args = @_;
 
-    my $client = $args{client};
-    return $client->p2p_chat_create($args{params}{args}->%*);
+    my $p2p = $args{p2p};
+    return $p2p->p2p_chat_create($args{params}{args}->%*);
 };
 
 =head2 p2p_order_dispute
@@ -824,12 +826,12 @@ Returns, a C<hashref> containing the updated order data.
 p2p_rpc p2p_order_dispute => sub {
     my %args = @_;
 
-    my ($client, $params) = @args{qw/client params/};
+    my ($p2p, $params) = @args{qw/p2p params/};
 
     my $order_id       = $params->{args}{id};
     my $dispute_reason = $params->{args}{dispute_reason};
 
-    my $order = $client->p2p_create_order_dispute(
+    my $order = $p2p->p2p_create_order_dispute(
         id             => $order_id,
         dispute_reason => $dispute_reason,
     );
@@ -840,8 +842,8 @@ p2p_rpc p2p_order_dispute => sub {
 # Check to see if the client can has access to p2p API calls or not?
 # Does nothing if client has access or die
 sub _check_client_access {
-    my ($client, $app_config) = @_;
-
+    my ($p2p, $app_config) = @_;
+    my $client = $p2p->client;
     # Yes, we have two ways to disable - devops can shut it down if there
     # are problems, and payments/ops/QA can choose whether or not the
     # functionality should be exposed in the first place. The ->p2p->enabled
@@ -874,7 +876,7 @@ sub _check_client_access {
 
     die +{error_code => 'PermissionDenied'} if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
 
-    die +{error_code => 'PermissionDenied'} if $client->p2p_is_advertiser_blocked;
+    die +{error_code => 'PermissionDenied'} if $p2p->p2p_is_advertiser_blocked;
 }
 
 =head2 p2p_ping
@@ -894,9 +896,9 @@ Returns general settings for P2P.
 =cut
 
 p2p_rpc p2p_settings => readonly => 1 => sub {
-    my %args   = @_;
-    my $client = $args{client};
-    return $client->p2p_settings($args{params}{args}->%*);
+    my %args = @_;
+    my $p2p  = $args{p2p};
+    return $p2p->p2p_settings($args{params}{args}->%*);
 };
 
 1;

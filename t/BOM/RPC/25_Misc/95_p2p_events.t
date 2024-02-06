@@ -36,7 +36,7 @@ subtest 'p2p order create and confirm' => sub {
 
     @emitted   = ();
     $call_args = {
-        client => $client,
+        client => $client->{client},
         args   => {
             advert_id => $advert->{id},
             amount    => 10,
@@ -104,7 +104,7 @@ subtest 'p2p order create and confirm' => sub {
     );
 
     @emitted             = ();
-    $call_args->{client} = $advertiser;
+    $call_args->{client} = $advertiser->{client};
     $call_args->{args}   = {
         id => $order->{id},
     };
@@ -159,7 +159,7 @@ subtest 'p2p order create and cancel' => sub {
 
     @emitted   = ();
     $call_args = {
-        client => $client,
+        client => $client->{client},
         args   => {
             advert_id => $advert->{id},
             amount    => 10,
@@ -250,7 +250,7 @@ subtest 'p2p order create and cancel' => sub {
 
     @emitted = ();
     $order   = BOM::RPC::v3::P2P::p2p_order_create({
-            client => $client,
+            client => $client->{client},
             args   => {
                 advert_id => $advert->{id},
                 amount    => 10,
@@ -305,7 +305,7 @@ subtest 'Order dispute (type buy)' => sub {
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
 
     my $params;
-    $params->{client} = $client;
+    $params->{client} = $client->{client};
     $params->{args}   = {
         id             => $order->{id},
         dispute_reason => 'seller_not_released',

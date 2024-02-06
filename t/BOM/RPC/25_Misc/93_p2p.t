@@ -171,8 +171,8 @@ subtest 'P2P is available for only one client' => sub {
 $app_config->payments->p2p->available(1);
 
 subtest 'Client blocked' => sub {
-    my $mock_client = Test::MockModule->new('BOM::User::Client');
-    $mock_client->mock('p2p_is_advertiser_blocked' => sub { 1 });
+    my $mock_p2p = Test::MockModule->new('P2P');
+    $mock_p2p->mock('p2p_is_advertiser_blocked' => sub { 1 });
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'error code is PermissionDenied');
 };
 
@@ -365,11 +365,7 @@ subtest 'Create new order' => sub {
     my $params;
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
-    $advertiser->payment_free_gift(
-        currency => 'USD',
-        amount   => 100,
-        remark   => 'free gift'
-    );
+    BOM::Test::Helper::Client::top_up($advertiser->{client}, 'USD', 100);
 
     $params->{args} = {
         advert_id => $advert->{id},
@@ -837,8 +833,8 @@ subtest 'P2P Order Info' => sub {
             loginid          => $client->loginid,
             id               => re('\d+'),
             name             => $client->p2p_advertiser_info->{name},
-            first_name       => $client->first_name,
-            last_name        => $client->last_name,
+            first_name       => $client->{client}->first_name,
+            last_name        => $client->{client}->last_name,
             is_online        => ignore(),
             last_online_time => ignore(),
         },
@@ -859,8 +855,8 @@ subtest 'P2P Order Info' => sub {
             loginid          => $advertiser->loginid,
             id               => re('\d+'),
             name             => $advertiser->p2p_advertiser_info->{name},
-            first_name       => $advertiser->first_name,
-            last_name        => $advertiser->last_name,
+            first_name       => $advertiser->{client}->first_name,
+            last_name        => $advertiser->{client}->last_name,
             is_recommended   => undef,
             is_online        => ignore(),
             last_online_time => ignore(),
@@ -911,11 +907,11 @@ subtest 'RestrictedCountry error before PermissionDenied' => sub {
     };
 
     # Set unwelcome to client
-    $client->status->set('unwelcome');
+    $client->{client}->status->set('unwelcome');
     # Set restricted country and client residence to py
     $app_config->payments->p2p->restricted_countries(['py']);
-    $client->residence('py');
-    $client->save;
+    $client->{client}->residence('py');
+    $client->{client}->save;
     my $res = $c->call_ok(p2p_advertiser_info => $params)->has_no_system_error->result;
     is $res->{error}->{code}, 'RestrictedCountry', 'The expected error code is RestrictedCountry';
 };
