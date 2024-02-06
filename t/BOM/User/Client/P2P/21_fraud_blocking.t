@@ -9,13 +9,14 @@ use Test::MockTime qw(set_fixed_time);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use Test::Fatal;
 use Test::Exception;
 use Test::MockModule;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $dt = Date::Utility->new('2000-01-01T00:00:00Z');
 
@@ -112,12 +113,12 @@ sub testit {
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type   => $test{ad_type},
             client => $test{advertiser});
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 10,
             client    => $test{client});
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
 
         $advertiser->p2p_create_order_dispute(
             id             => $order->{id},

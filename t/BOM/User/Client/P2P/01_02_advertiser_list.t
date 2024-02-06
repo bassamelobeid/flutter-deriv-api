@@ -6,6 +6,7 @@ use Test::Deep;
 
 use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
 
@@ -13,8 +14,8 @@ my $rule_engine = BOM::Rules::Engine->new();
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
-BOM::Test::Helper::P2P::create_escrow();
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my $partners;
 
@@ -38,12 +39,12 @@ subtest 'advertiser trade partners' => sub {
         max_order_amount => 100,
         type             => 'sell'
     );
-    my $advertiser1 = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser1 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {
             first_name => 'mary',
             last_name  => 'jane'
         });
-    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser2 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {
             first_name => 'john',
             last_name  => 'smith'
@@ -107,19 +108,19 @@ subtest 'advertiser trade partners' => sub {
 
             },
             1 => {
-                name               => 'test advertiser 1',
+                name               => 'test advertiser 101',
                 basic_verification => 0,
                 full_verification  => 0,
                 is_blocked         => 0,
-                first_name         => undef,                 #when show_name is false then first_name is undef
-                last_name          => undef                  #when show_name is false then last_name is undef
+                first_name         => undef,                   #when show_name is false then first_name is undef
+                last_name          => undef                    #when show_name is false then last_name is undef
             }
         },
         'correct values for first trade partner'
     );
 
-    $advertiser0->status->set('age_verification', 'system', 'testing');
-    $advertiser0->set_authentication('ID_ONLINE', {status => 'pass'});
+    $advertiser0->client->status->set('age_verification', 'system', 'testing');
+    $advertiser0->client->set_authentication('ID_ONLINE', {status => 'pass'});
 
     $partner_list = $advertiser1->p2p_advertiser_list(trade_partners => 1);
     _model_result($partner_list);
@@ -137,12 +138,12 @@ subtest 'advertiser trade partners' => sub {
 
             },
             1 => {
-                name               => 'test advertiser 1',
+                name               => 'test advertiser 101',
                 basic_verification => 1,
                 full_verification  => 1,
                 is_blocked         => 0,
-                first_name         => undef,                 #when show_name is false then first_name is undef
-                last_name          => undef                  #when show_name is false then last_name is undef
+                first_name         => undef,                   #when show_name is false then first_name is undef
+                last_name          => undef                    #when show_name is false then last_name is undef
             }
         },
         'correct values for updated verifications'
@@ -165,12 +166,12 @@ subtest 'advertiser trade partners' => sub {
 
             },
             1 => {
-                name               => 'test advertiser 1',
+                name               => 'test advertiser 101',
                 basic_verification => 1,
                 full_verification  => 1,
                 is_blocked         => 0,
-                first_name         => 'bRaD',                #when show_name is true then first_name is visible
-                last_name          => 'pItT'                 #when show_name is true then last_name is visible
+                first_name         => 'bRaD',                  #when show_name is true then first_name is visible
+                last_name          => 'pItT'                   #when show_name is true then last_name is visible
             }
         },
         'correct values for updated verifications'

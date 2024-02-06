@@ -8,7 +8,9 @@ use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Email;
+use P2P;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::User::Script::P2PDailyMaintenance;
@@ -18,8 +20,8 @@ use Test::Fatal;
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 my $redis  = BOM::Config::Redis->redis_p2p_write();
@@ -29,7 +31,7 @@ my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my $emitted_events;
 $mock_events->redefine('emit' => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
-my $mock_client = Test::MockModule->new('BOM::User::Client');
+my $mock_client = Test::MockModule->new('P2P');
 $mock_client->redefine(p2p_exchange_rate => {quote => 1});
 
 set_fixed_time(Date::Utility->new('2000-01-01')->epoch);
@@ -44,7 +46,7 @@ $config->email_campaign_ids(encode_json_utf8(\%campaigns));
 subtest 'deactivate fixed ads notice' => sub {
     my $country    = 'zw';
     my $currency   = BOM::Config::CurrencyConfig::local_currency_for_country(country => $country);
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => $country});
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => $country});
 
     my $date = '2000-01-02';
     $config->country_advert_config(
@@ -61,7 +63,7 @@ subtest 'deactivate fixed ads notice' => sub {
     ok !$redis->hexists($key, "$country:deactivate_fixed"), 'redis key removed';
 
     my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(
-        client    => $advertiser,
+        client    => P2P->new(client => $advertiser),
         rate_type => 'fixed'
     );
     $redis->hset($key, "$country:deactivate_fixed", $date);
@@ -135,7 +137,7 @@ subtest 'deactivate fixed ads notice' => sub {
 subtest 'ad deactivation' => sub {
     my $country    = 'zw';
     my $currency   = BOM::Config::CurrencyConfig::local_currency_for_country(country => $country);
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => $country});
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => $country});
 
     $config->country_advert_config(
         encode_json_utf8({
@@ -156,7 +158,7 @@ subtest 'ad deactivation' => sub {
                     float_ads => 'disabled'
                 }}));
     my (undef, $fixed_ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         rate_type        => 'fixed',
         min_order_amount => 1,
         max_order_amount => 2
@@ -203,7 +205,7 @@ subtest 'ad deactivation' => sub {
         is_active => 1
     );
     my (undef, $float_ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         rate_type        => 'float',
         min_order_amount => 2.1,
         max_order_amount => 3
@@ -248,8 +250,11 @@ subtest 'ad deactivation' => sub {
     );
 
     ok !($redis->hexists($key, "$country:fixed_ads") or $redis->hexists($key, "$country:float_ads")), 'redis keys removed';
-    ok !$advertiser->p2p_advert_info(id => $fixed_ad->{id})->{is_active}, 'fixed ad was disabled';
-    ok !$advertiser->p2p_advert_info(id => $float_ad->{id})->{is_active}, 'float ad was disabled';
+    ok !$advertiser->p2p_advert_info(id => $fixed_ad->{id})->{is_active},                             'fixed ad was disabled';
+    ok !$advertiser->p2p_advert_info(
+        id          => $float_ad->{id},
+        market_rate => 1
+    )->{is_active}, 'float ad was disabled';
 
     $config->country_advert_config(
         encode_json_utf8({

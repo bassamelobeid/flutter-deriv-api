@@ -7,12 +7,14 @@ use Test::Deep;
 use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
+use P2P;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
-BOM::Test::Helper::P2P::create_payment_methods();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
+BOM::Test::Helper::P2PWithClient::create_payment_methods();
 
 my $p2p_config  = BOM::Config::Runtime->instance->app_config->payments->p2p;
 my $rule_engine = BOM::Rules::Engine->new();
@@ -36,17 +38,17 @@ $p2p_config->payment_method_countries(
                 mode      => 'include',
                 countries => ['nz']}}));
 
-my $advertiser_id = BOM::Test::Helper::P2P::create_advertiser(
+my $advertiser_id = BOM::Test::Helper::P2PWithClient::create_advertiser(
     balance        => 1000,
     client_details => {residence => 'id'});
-my $advertiser_ng = BOM::Test::Helper::P2P::create_advertiser(
+my $advertiser_ng = BOM::Test::Helper::P2PWithClient::create_advertiser(
     balance        => 1000,
     client_details => {residence => 'ng'});
-my $advertiser_nz = BOM::Test::Helper::P2P::create_advertiser(
+my $advertiser_nz = BOM::Test::Helper::P2PWithClient::create_advertiser(
     balance        => 1000,
     client_details => {residence => 'nz'});
 
-my $advertiser_nz_2 = BOM::Test::Helper::P2P::create_advertiser(
+my $advertiser_nz_2 = BOM::Test::Helper::P2PWithClient::create_advertiser(
     balance        => 1000,
     client_details => {residence => 'nz'});
 
@@ -56,14 +58,14 @@ my $methods_nz = $advertiser_nz->p2p_advertiser_payment_methods(create => [{meth
 
 # sell ad with common pm
 my (undef, $ad_sell_id_1) = BOM::Test::Helper::P2P::create_advert(
-    client             => $advertiser_id,
+    client             => P2P->new(client => $advertiser_id),
     type               => 'sell',
     rate               => 1,
     min_order_amount   => 1,
     max_order_amount   => 2,
     payment_method_ids => [keys %$methods_id]);
 my (undef, $ad_sell_ng_1) = BOM::Test::Helper::P2P::create_advert(
-    client             => $advertiser_ng,
+    client             => P2P->new(client => $advertiser_ng),
     type               => 'sell',
     rate               => 1,
     min_order_amount   => 1,
@@ -71,14 +73,14 @@ my (undef, $ad_sell_ng_1) = BOM::Test::Helper::P2P::create_advert(
     payment_method_ids => [keys %$methods_ng]);
 # sell ad with country specific pm
 my (undef, $ad_sell_id_2) = BOM::Test::Helper::P2P::create_advert(
-    client             => $advertiser_id,
+    client             => P2P->new(client => $advertiser_id),
     type               => 'sell',
     rate               => 2,
     min_order_amount   => 3,
     max_order_amount   => 4,
     payment_method_ids => [grep { $methods_id->{$_}{method} eq 'method1' } keys %$methods_id]);
 my (undef, $ad_sell_ng_2) = BOM::Test::Helper::P2P::create_advert(
-    client             => $advertiser_ng,
+    client             => P2P->new(client => $advertiser_ng),
     type               => 'sell',
     rate               => 2,
     min_order_amount   => 3,
@@ -86,7 +88,7 @@ my (undef, $ad_sell_ng_2) = BOM::Test::Helper::P2P::create_advert(
     payment_method_ids => [grep { $methods_ng->{$_}{method} eq 'method3' } keys %$methods_ng]);
 # buy ad with common pm
 my (undef, $ad_buy_id_1) = BOM::Test::Helper::P2P::create_advert(
-    client               => $advertiser_id,
+    client               => P2P->new(client => $advertiser_id),
     type                 => 'buy',
     rate                 => 1,
     min_order_amount     => 1,
@@ -94,7 +96,7 @@ my (undef, $ad_buy_id_1) = BOM::Test::Helper::P2P::create_advert(
     payment_method_names => ['method1', 'method2'],
 );
 my (undef, $ad_buy_ng_1) = BOM::Test::Helper::P2P::create_advert(
-    client               => $advertiser_ng,
+    client               => P2P->new(client => $advertiser_ng),
     type                 => 'buy',
     rate                 => 1,
     min_order_amount     => 1,
@@ -103,7 +105,7 @@ my (undef, $ad_buy_ng_1) = BOM::Test::Helper::P2P::create_advert(
 );
 # buy ad with country specific pm
 my (undef, $ad_buy_id_2) = BOM::Test::Helper::P2P::create_advert(
-    client               => $advertiser_id,
+    client               => P2P->new(client => $advertiser_id),
     type                 => 'buy',
     rate                 => 2,
     min_order_amount     => 3,
@@ -111,7 +113,7 @@ my (undef, $ad_buy_id_2) = BOM::Test::Helper::P2P::create_advert(
     payment_method_names => ['method1'],
 );
 my (undef, $ad_buy_ng_2) = BOM::Test::Helper::P2P::create_advert(
-    client               => $advertiser_ng,
+    client               => P2P->new(client => $advertiser_ng),
     type                 => 'buy',
     rate                 => 2,
     min_order_amount     => 3,
@@ -119,7 +121,7 @@ my (undef, $ad_buy_ng_2) = BOM::Test::Helper::P2P::create_advert(
     payment_method_names => ['method3'],
 );
 my (undef, $ad_buy_nz_1) = BOM::Test::Helper::P2P::create_advert(
-    client               => $advertiser_nz,
+    client               => P2P->new(client => $advertiser_nz),
     type                 => 'buy',
     rate                 => 2,
     min_order_amount     => 3,
@@ -128,7 +130,7 @@ my (undef, $ad_buy_nz_1) = BOM::Test::Helper::P2P::create_advert(
 );
 
 my (undef, $ad_buy_nz_2) = BOM::Test::Helper::P2P::create_advert(
-    client               => $advertiser_nz_2,
+    client               => P2P->new(client => $advertiser_nz_2),
     type                 => 'buy',
     rate                 => 2,
     min_order_amount     => 3,
@@ -267,7 +269,7 @@ subtest 'floating rate ads' => sub {
         advertiser => {residence => 'lk'});
     cmp_ok $ad->{effective_rate}, '==', 100.1, 'rate returned from ad create';
 
-    my $za_advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'za'});
+    my $za_advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => 'za'});
 
     cmp_ok $za_advertiser->p2p_advert_info(id => $ad->{id})->{effective_rate}, '==', 100.1,
         'advertiser in other country gets correct ad rate from p2p_advert_info';
@@ -314,7 +316,7 @@ subtest 'cross border ads disabled for a particular country' => sub {
     cmp_deeply(
         exception {
             BOM::Test::Helper::P2P::create_advert(
-                client               => $advertiser_nz,
+                client               => P2P->new(client => $advertiser_nz),
                 type                 => 'buy',
                 rate                 => 2,
                 min_order_amount     => 3,

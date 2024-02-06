@@ -7,6 +7,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 
@@ -15,7 +16,7 @@ use Test::MockModule;
 use Test::Exception;
 use Test::Deep;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 my $rule_engine = BOM::Rules::Engine->new();
 
 my @emitted_events;
@@ -383,24 +384,24 @@ for my $test_case (@test_cases) {
         my $amount = $test_case->{amount};
         my $source = 1;
 
-        my $escrow = BOM::Test::Helper::P2P::create_escrow();
+        my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
         my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
             amount  => $amount,
             type    => $test_case->{type},
             balance => $test_case->{advertiser_balance},
         );
 
-        my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert_info->{id},
             amount    => $amount,
             balance   => $test_case->{client_balance},
         );
 
-        cmp_ok($escrow->account->balance,     '==', $test_case->{escrow}{before},     'Escrow balance is correct');
-        cmp_ok($advertiser->account->balance, '==', $test_case->{advertiser}{before}, 'advertiser balance is correct');
-        cmp_ok($client->account->balance,     '==', $test_case->{client}{before},     'Client balance is correct');
+        cmp_ok($escrow->account->balance,             '==', $test_case->{escrow}{before},     'Escrow balance is correct');
+        cmp_ok($advertiser->client->account->balance, '==', $test_case->{advertiser}{before}, 'advertiser balance is correct');
+        cmp_ok($client->account->balance,             '==', $test_case->{client}{before},     'Client balance is correct');
 
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_case->{init_status});
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, $test_case->{init_status});
 
         @emitted_events = ();
         my $loginid;
@@ -418,9 +419,9 @@ for my $test_case (@test_cases) {
 
         is($err->{error_code}, $test_case->{error}, 'Got expected error behavior (' . ($test_case->{error} // 'none') . ')');
 
-        cmp_ok($escrow->account->balance,     '==', $test_case->{escrow}{after},     'Escrow balance is correct');
-        cmp_ok($advertiser->account->balance, '==', $test_case->{advertiser}{after}, 'advertiser balance is correct');
-        cmp_ok($client->account->balance,     '==', $test_case->{client}{after},     'Client balance is correct');
+        cmp_ok($escrow->account->balance,             '==', $test_case->{escrow}{after},     'Escrow balance is correct');
+        cmp_ok($advertiser->client->account->balance, '==', $test_case->{advertiser}{after}, 'advertiser balance is correct');
+        cmp_ok($client->account->balance,             '==', $test_case->{client}{after},     'Client balance is correct');
 
         my $order_data = $client->p2p_order_info(id => $order->{id});
 
@@ -464,12 +465,12 @@ for my $test_case (@test_cases) {
             cmp_deeply(\@emitted_events, bag(@expected_events), 'expected events emitted');
         }
 
-        BOM::Test::Helper::P2P::reset_escrow();
+        BOM::Test::Helper::P2PWithClient::reset_escrow();
     };
 }
 
 subtest 'Advertiser confirms pending buy order' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my $ad_amount = 100;
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
@@ -478,7 +479,7 @@ subtest 'Advertiser confirms pending buy order' => sub {
         type             => 'sell'
     );
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     my $order = $client->p2p_order_create(
         advert_id   => $advert_info->{id},
@@ -492,11 +493,11 @@ subtest 'Advertiser confirms pending buy order' => sub {
 
     is $err->{error_code}, 'OrderNotConfirmedPending', 'OrderNotConfirmedPending';
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'Client confirms not pending (cancelled) buy order' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my $ad_amount = 100;
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
@@ -505,7 +506,7 @@ subtest 'Client confirms not pending (cancelled) buy order' => sub {
         type             => 'sell'
     );
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     my $order = $client->p2p_order_create(
         advert_id   => $advert_info->{id},
@@ -521,11 +522,11 @@ subtest 'Client confirms not pending (cancelled) buy order' => sub {
 
     is $err->{error_code}, 'OrderConfirmCompleted', 'OrderConfirmCompleted';
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'Client confirms pending sell order' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my $ad_amount = 100;
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
@@ -534,7 +535,7 @@ subtest 'Client confirms pending sell order' => sub {
         type             => 'buy'
     );
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => $ad_amount);
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => $ad_amount);
 
     ok my $order = $client->p2p_order_create(
         advert_id    => $advert_info->{id},
@@ -550,11 +551,11 @@ subtest 'Client confirms pending sell order' => sub {
 
     is $err->{error_code}, 'OrderNotConfirmedPending', 'OrderNotConfirmedPending';
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'Advertiser confirms not pending (cancelled) sell order' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my $ad_amount = 100;
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
@@ -563,7 +564,7 @@ subtest 'Advertiser confirms not pending (cancelled) sell order' => sub {
         type             => 'buy'
     );
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => $ad_amount);
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => $ad_amount);
 
     my $order = $client->p2p_order_create(
         advert_id    => $advert_info->{id},
@@ -581,14 +582,14 @@ subtest 'Advertiser confirms not pending (cancelled) sell order' => sub {
 
     is $err->{error_code}, 'OrderConfirmCompleted', 'OrderConfirmCompleted';
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'race condition' => sub {
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert();
-    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(advert_id => $ad->{id});
+    my ($client,     $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $ad->{id});
     $client->p2p_order_cancel(id => $order->{id});
     my $details = $client->_p2p_orders(id => $order->{id})->[0];
 
@@ -603,7 +604,7 @@ subtest 'race condition' => sub {
         'order is not confirmable and caught by db and correct eror returned'
     );
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 done_testing();

@@ -20,6 +20,8 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
 use BOM::Test::Helper::ExchangeRates qw (populate_exchange_rates populate_exchange_rates_db);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
+use P2P;
 
 my $db = BOM::Database::ClientDB->new({broker_code => 'CR', operation => 'write'})->db->dbic;
 
@@ -34,8 +36,8 @@ populate_exchange_rates_db($db, $rates);
 
 BOM::Config::Runtime->instance->app_config->payments->pa_sum_deposits_limit(200);
 
-BOM::Test::Helper::P2P::create_escrow;
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow;
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments;
 
@@ -394,16 +396,16 @@ subtest 'Crypto' => sub {
 
 subtest 'P2P restricted country withdrawal' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
-    my $client     = BOM::Test::Helper::P2P::create_advertiser(balance => 500);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
+    my $client     = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 500);
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         max_order_amount => 100,
         amount           => 100,
     );
 
-    my (undef, $order) = BOM::Test::Helper::P2P::create_order(
+    my (undef, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $ad->{id},
         amount    => 100
@@ -425,16 +427,16 @@ subtest 'P2P restricted country withdrawal' => sub {
 };
 
 subtest 'P2P withdrawal for permanently banned advertiser' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
-    my $client     = BOM::Test::Helper::P2P::create_advertiser(balance => 500);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
+    my $client     = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 500);
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         max_order_amount => 100,
         amount           => 100,
     );
 
-    my (undef, $order) = BOM::Test::Helper::P2P::create_order(
+    my (undef, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $ad->{id},
         amount    => 100
@@ -448,7 +450,7 @@ subtest 'P2P withdrawal for permanently banned advertiser' => sub {
     is $advertiser->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod',
         'If Deposit is from P2P and advertiser is not permananently banned, he can only withdraw via P2P';
 
-    BOM::Test::Helper::P2P::set_advertiser_is_enabled($advertiser, 0);
+    BOM::Test::Helper::P2PWithClient::set_advertiser_is_enabled($advertiser, 0);
     delete $advertiser->{_p2p_advertiser_cached};
 
     is $advertiser->allow_paymentagent_withdrawal, undef, "can withdraw P2P deposit as PA if advertiser is permanently banned from P2P";

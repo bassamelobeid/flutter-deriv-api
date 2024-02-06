@@ -8,6 +8,8 @@ use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
+use P2P;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::User::Script::P2PDailyMaintenance;
@@ -21,11 +23,11 @@ use constant {
     P2P_ADVERTISER_BAND_UPGRADE_COMPLETED => "P2P::ADVERTISER_BAND_UPGRADE_COMPLETED",
 };
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 # populate trade band information for medium and high band
-BOM::Test::Helper::P2P::populate_trade_band_db();
+BOM::Test::Helper::P2PWithClient::populate_trade_band_db();
 
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -46,7 +48,7 @@ subtest 'automatic upgrade for medium band' => sub {
 
     # create 3 orders which are completed normally
     for (1 .. 3) {
-        my ($client, $order_create_response) = BOM::Test::Helper::P2P::create_order(
+        my ($client, $order_create_response) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => $advert->{min_order_amount},
         );
@@ -57,10 +59,10 @@ subtest 'automatic upgrade for medium band' => sub {
         $advertiser->p2p_order_confirm(id => $order_id);
     }
     # set advertiser created time > 3 months ago
-    BOM::Test::Helper::P2P::set_advertiser_created_time_by_day($advertiser, -92);
+    BOM::Test::Helper::P2PWithClient::set_advertiser_created_time_by_day($advertiser, -92);
     # fully authenthenticate advertiser;
     $advertiser->status->set('age_verification', 'system', 'testing');
-    $advertiser->set_authentication('ID_ONLINE', {status => 'pass'});
+    $advertiser->client->set_authentication('ID_ONLINE', {status => 'pass'});
 
     @emitted_events = ();
     mailbox_clear();
@@ -116,7 +118,7 @@ subtest 'manual upgrade for high band' => sub {
     my $advertiser_id = $advertiser->p2p_advertiser_info->{id};
     # create 3 orders which are completed normally
     for (1 .. 3) {
-        my ($client, $order_create_response) = BOM::Test::Helper::P2P::create_order(
+        my ($client, $order_create_response) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
@@ -127,10 +129,10 @@ subtest 'manual upgrade for high band' => sub {
         $advertiser->p2p_order_confirm(id => $order_id);
     }
     # set advertiser created time > 6 months ago
-    BOM::Test::Helper::P2P::set_advertiser_created_time_by_day($advertiser, -182);
+    BOM::Test::Helper::P2PWithClient::set_advertiser_created_time_by_day($advertiser, -182);
     # fully authenticate advertiser;
     $advertiser->status->set('age_verification', 'system', 'testing');
-    $advertiser->set_authentication('ID_ONLINE', {status => 'pass'});
+    $advertiser->client->set_authentication('ID_ONLINE', {status => 'pass'});
 
     @emitted_events = ();
     mailbox_clear();
@@ -254,11 +256,11 @@ subtest 'manual upgrade for high band' => sub {
 
 subtest 'block trade' => sub {
 
-    my $advertiser    = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser    = BOM::Test::Helper::P2PWithClient::create_advertiser;
     my $advertiser_id = $advertiser->p2p_advertiser_info->{id};
 
     # block_trade_medium band has min_joined_days = 365
-    BOM::Test::Helper::P2P::set_advertiser_created_time_by_day($advertiser, -365);
+    BOM::Test::Helper::P2PWithClient::set_advertiser_created_time_by_day($advertiser, -365);
 
     BOM::User::Script::P2PDailyMaintenance->new->run;
 
@@ -273,7 +275,7 @@ subtest 'block trade' => sub {
     is(
         exception {
             BOM::Test::Helper::P2P::create_advert(
-                client           => $advertiser,
+                client           => P2P->new(client => $advertiser),
                 block_trade      => 1,
                 min_order_amount => 1000,
                 max_order_amount => 5000,
@@ -287,8 +289,8 @@ subtest 'block trade' => sub {
 
 subtest 'turnover requirement' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
-    BOM::Test::Helper::P2P::set_advertiser_created_time_by_day($advertiser, -30);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
+    BOM::Test::Helper::P2PWithClient::set_advertiser_created_time_by_day($advertiser, -30);
     my $advertiser_id = $advertiser->p2p_advertiser_info->{id};
 
     $advertiser->db->dbic->dbh->do(
@@ -306,7 +308,7 @@ subtest 'turnover requirement' => sub {
         type             => 'sell',
         max_order_amount => 100
     );
-    my (undef, $order) = BOM::Test::Helper::P2P::create_order(
+    my (undef, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $advertiser,
         advert_id => $ad->{id},
         amount    => 100
@@ -333,9 +335,9 @@ subtest 'turnover requirement' => sub {
 
 subtest 'payment agent requirement' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
     $advertiser->status->set('age_verification', 'system', 'testing');    # needed to keep is_approved when pa tier changes
-    BOM::Test::Helper::P2P::set_advertiser_created_time_by_day($advertiser, -30);
+    BOM::Test::Helper::P2PWithClient::set_advertiser_created_time_by_day($advertiser, -30);
     my $advertiser_id = $advertiser->p2p_advertiser_info->{id};
 
     $advertiser->db->dbic->dbh->do(

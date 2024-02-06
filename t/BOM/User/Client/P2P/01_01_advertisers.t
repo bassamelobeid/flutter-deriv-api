@@ -12,11 +12,11 @@ use Test::MockTime        qw(set_fixed_time restore_time);
 use Format::Util::Numbers qw(formatnumber);
 use BOM::User::Client;
 use BOM::Config::Redis;
-use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use JSON::MaybeUTF8                            qw(:v1);
 
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -75,6 +75,7 @@ subtest 'advertiser in POA mandetory countries' => sub {
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
     BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(1);
+
     cmp_deeply(
         exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
         {error_code => 'AuthenticationRequired'},
@@ -160,7 +161,7 @@ subtest 'advertiser already age verified' => sub {
 };
 
 subtest 'Duplicate advertiser Registration' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     cmp_deeply(
         exception {
@@ -172,7 +173,7 @@ subtest 'Duplicate advertiser Registration' => sub {
 };
 
 subtest 'Advertiser name already taken' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
     my $client     = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
 
@@ -185,7 +186,7 @@ subtest 'Advertiser name already taken' => sub {
 
 subtest 'Updating advertiser fields' => sub {
     my $advertiser_name = 'test advertiser ' . int(rand(9999));
-    my $advertiser      = BOM::Test::Helper::P2P::create_advertiser(name => $advertiser_name);
+    my $advertiser      = BOM::Test::Helper::P2PWithClient::create_advertiser(name => $advertiser_name);
 
     my $advertiser_info = $advertiser->p2p_advertiser_info;
 
@@ -249,7 +250,7 @@ subtest 'show real name' => sub {
         last_name  => 'smith'
     };
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {%$names});
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {%$names});
 
     my $details = $advertiser->p2p_advertiser_info;
     is $details->{show_name},  0,     'show_name defaults to 0';
@@ -261,7 +262,7 @@ subtest 'show real name' => sub {
 
     cmp_deeply($advertiser->p2p_advertiser_info, superhashof({%$names, show_name => 1}), 'names returned from advertiser info');
 
-    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser2 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {
             first_name => 'mary',
             last_name  => 'jane'
@@ -286,7 +287,7 @@ subtest 'online status' => sub {
     my $redis = BOM::Config::Redis->redis_p2p_write;
     set_fixed_time(1000);
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser();
     $redis->zadd('P2P::USERS_ONLINE', 910, ($client->loginid . "::" . $client->residence));
 
     cmp_deeply(
@@ -315,8 +316,8 @@ subtest 'online status' => sub {
 };
 
 subtest 'p2p_advertiser_info subscription' => sub {
-    my $advertiser1 = BOM::Test::Helper::P2P::create_advertiser;
-    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser1 = BOM::Test::Helper::P2PWithClient::create_advertiser;
+    my $advertiser2 = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     my $id2   = $advertiser1->_p2p_advertisers(loginid => $advertiser2->loginid)->[0]{id};
     my $info1 = $advertiser1->p2p_advertiser_info;
@@ -342,7 +343,7 @@ subtest 'p2p_advertiser_info subscription' => sub {
 };
 
 subtest 'advertiser band upgrade information' => sub {
-    my $advertiser1 = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser1 = BOM::Test::Helper::P2PWithClient::create_advertiser();
     my $info1       = $advertiser1->p2p_advertiser_info;
     ok !exists $info1->{upgradable_daily_limits}, 'advertiser not eligible for band upgrade';
 
@@ -374,7 +375,7 @@ subtest 'advertiser band upgrade information' => sub {
         'advertiser next available band information returned'
     );
 
-    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser2 = BOM::Test::Helper::P2PWithClient::create_advertiser();
     my $info2       = $advertiser2->p2p_advertiser_info(id => $info1->{id});
     ok !exists $info2->{upgradable_daily_limits}, 'advertiser 1 band information not returned to advertiser 2';
 
@@ -382,7 +383,7 @@ subtest 'advertiser band upgrade information' => sub {
 
 subtest 'advertiser band update' => sub {
     no warnings;
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
     my $info       = $advertiser->p2p_advertiser_info;
 
     cmp_deeply(
@@ -407,7 +408,7 @@ subtest 'advertiser band update' => sub {
     );
 
     # prepare trade band data for medium and high
-    BOM::Test::Helper::P2P::populate_trade_band_db();
+    BOM::Test::Helper::P2PWithClient::populate_trade_band_db();
 
     @emitted_events = ();
     my $data = +{

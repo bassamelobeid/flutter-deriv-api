@@ -9,7 +9,9 @@ use Test::Warn;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
+use P2P;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use Test::Fatal;
@@ -25,8 +27,8 @@ $config->cancellation_barring->count(10);
 $config->transaction_verification_countries([]);
 $config->transaction_verification_countries_all(0);
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 populate_exchange_rates({IDR => 1});
 
 my ($advertiser, $client, $advert, $order, $stats_cli, $stats_adv);
@@ -82,7 +84,7 @@ reset_stats();
 
 subtest 'verification' => sub {
 
-    $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
     check_stats($advertiser, $stats_adv, 'stats for new advertiser');
 
     $advertiser->status->set('age_verification', 'system', 'testing');
@@ -98,7 +100,7 @@ subtest 'sell ads' => sub {
     tt_secs(0);
 
     ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
-        client         => $advertiser,
+        client         => P2P->new(client => $advertiser),
         type           => 'sell',
         local_currency => 'IDR',
     );
@@ -106,7 +108,7 @@ subtest 'sell ads' => sub {
     $stats_adv->{advert_rates} = '0.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order created');
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 1,
@@ -138,7 +140,7 @@ subtest 'sell ads' => sub {
     is $client->p2p_advert_info(id => $advert->{id})->{advertiser_details}{completed_orders_count}, 1,
         'advertiser completed_orders_count increases after buy order completed';
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 1
@@ -153,7 +155,7 @@ subtest 'sell ads' => sub {
     check_stats($advertiser, $stats_adv, 'advertiser stats after order cancelled');
     check_stats($client,     $stats_cli, 'client stats after order cancelled');
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 1
@@ -165,14 +167,14 @@ subtest 'sell ads' => sub {
     check_stats($advertiser, $stats_adv, 'advertiser stats after 2nd order cancelled');
     check_stats($client,     $stats_cli, 'client stats after 2nd order cancelled');
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 1
     );
 
     tt_secs(2 * 60 * 60);    #+2h
-    BOM::Test::Helper::P2P::expire_order($client, $order->{id});
+    BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id});
     $client->p2p_expire_order(id => $order->{id});
     $stats_cli->{buy_completion_rate} = $stats_cli->{total_completion_rate} = '25.0';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order expired');
@@ -184,7 +186,7 @@ subtest 'sell ads' => sub {
     is $client->p2p_advert_info(id => $advert->{id})->{advertiser_details}{completed_orders_count}, 0,
         'advert advertiser completed_orders_count resets in future';
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 2
@@ -207,7 +209,7 @@ subtest 'sell ads' => sub {
     is $client->p2p_advert_info(id => $advert->{id})->{advertiser_details}{completed_orders_count}, 1,
         'advert advertiser completed_orders_count increases after buy order completed';
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 1
@@ -229,7 +231,7 @@ subtest 'buy ads' => sub {
     $stats_adv->{advert_rates} = '0.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order created');
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 3
@@ -259,7 +261,7 @@ subtest 'buy ads' => sub {
     is $client->p2p_advert_info(id => $advert->{id})->{advertiser_details}{completed_orders_count}, 2,
         'advert advertiser completed_orders_count after sell order completed';
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 1
@@ -273,14 +275,14 @@ subtest 'buy ads' => sub {
     check_stats($advertiser, $stats_adv, 'advertiser stats after order cancelled');
     check_stats($client,     $stats_cli, 'client stats after order cancelled');
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 1
     );
 
     tt_secs(2 * 60 * 60);    #+2h
-    BOM::Test::Helper::P2P::expire_order($advertiser, $order->{id});
+    BOM::Test::Helper::P2PWithClient::expire_order($advertiser, $order->{id});
     $advertiser->p2p_expire_order(id => $order->{id});
     $stats_adv->{total_completion_rate} = '50.0';
     $stats_adv->{buy_completion_rate}   = '33.3';
@@ -292,14 +294,14 @@ subtest 'expire within/beyond grace period' => sub {
 
     my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => 1,
         expiry    => 5,               # grace period is 10min
     );
 
     tt_secs(6);
-    BOM::Test::Helper::P2P::expire_order($advertiser, $order->{id});
+    BOM::Test::Helper::P2PWithClient::expire_order($advertiser, $order->{id});
     $client->p2p_expire_order(id => $order->{id});
 
     delete $client->{_p2p_advertiser_cached};
@@ -308,14 +310,14 @@ subtest 'expire within/beyond grace period' => sub {
 
     (undef, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => 1,
         expiry    => 10 * 60,
     );
 
     tt_secs((10 * 60) + 1);
-    BOM::Test::Helper::P2P::expire_order($advertiser, $order->{id});
+    BOM::Test::Helper::P2PWithClient::expire_order($advertiser, $order->{id});
     $client->p2p_expire_order(id => $order->{id});
 
     delete $client->{_p2p_advertiser_cached};
@@ -330,12 +332,12 @@ subtest 'dispute resolution - fraud' => sub {
 
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
         $client->p2p_create_order_dispute(
             id             => $order->{id},
             dispute_reason => 'buyer_underpaid',
@@ -362,12 +364,12 @@ subtest 'dispute resolution - fraud' => sub {
 
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
         $client->p2p_create_order_dispute(
             id             => $order->{id},
             dispute_reason => 'buyer_underpaid',
@@ -391,12 +393,12 @@ subtest 'dispute resolution - fraud' => sub {
 
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
         $client->p2p_create_order_dispute(
             id             => $order->{id},
             dispute_reason => 'buyer_underpaid',
@@ -423,12 +425,12 @@ subtest 'dispute resolution - fraud' => sub {
 
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
         $client->p2p_create_order_dispute(
             id             => $order->{id},
             dispute_reason => 'buyer_underpaid',
@@ -455,12 +457,12 @@ subtest 'dispute resolution - no fraud' => sub {
 
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
         $client->p2p_create_order_dispute(
             id             => $order->{id},
             dispute_reason => 'buyer_underpaid',
@@ -490,12 +492,12 @@ subtest 'dispute resolution - no fraud' => sub {
 
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
         $client->p2p_create_order_dispute(
             id             => $order->{id},
             dispute_reason => 'buyer_underpaid',
@@ -519,12 +521,12 @@ subtest 'dispute resolution - no fraud' => sub {
 
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
         $client->p2p_create_order_dispute(
             id             => $order->{id},
             dispute_reason => 'buyer_underpaid',
@@ -554,12 +556,12 @@ subtest 'dispute resolution - no fraud' => sub {
 
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert->{id},
             amount    => 1,
         );
 
-        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
         $client->p2p_create_order_dispute(
             id             => $order->{id},
             dispute_reason => 'buyer_underpaid',
@@ -580,18 +582,18 @@ subtest 'dispute resolution - no fraud' => sub {
 };
 
 subtest 'different advertiser' => sub {
-    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser2 = BOM::Test::Helper::P2PWithClient::create_advertiser;
     my $res         = $advertiser->p2p_advertiser_info(id => $advertiser2->p2p_advertiser_info->{id});
     cmp_deeply($res, superhashof(\%default_stats), 'stats are for new advertiser');
 };
 
 subtest 'trade partners' => sub {
     my ($advertiser, $ad)     = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my ($client1,    $order1) = BOM::Test::Helper::P2P::create_order(
+    my ($client1,    $order1) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 10
     );
-    my ($client2, $order2) = BOM::Test::Helper::P2P::create_order(
+    my ($client2, $order2) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 10
     );
@@ -606,7 +608,7 @@ subtest 'trade partners' => sub {
 };
 
 subtest 'advert rates' => sub {
-    my $client = BOM::Test::Helper::P2P::create_advertiser;
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     $config->country_advert_config(
         encode_json_utf8({
@@ -616,7 +618,7 @@ subtest 'advert rates' => sub {
                 }}));
 
     BOM::Test::Helper::P2P::create_advert(
-        client    => $client,
+        client    => P2P->new(client => $client),
         type      => 'buy',
         rate      => 0.95,
         rate_type => 'fixed',
@@ -700,7 +702,7 @@ subtest 'advert rates' => sub {
     is $client->p2p_advertiser_info->{advert_rates}, '15.00', 'averaging of multiple ads';
 };
 
-BOM::Test::Helper::P2P::reset_escrow();
+BOM::Test::Helper::P2PWithClient::reset_escrow();
 
 $emit_mock->unmock_all;
 $client_mock->unmock_all;

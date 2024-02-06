@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 use Test::Fatal;
@@ -27,7 +28,7 @@ $config->transaction_verification_countries([]);
 $config->transaction_verification_countries_all(0);
 $config->order_timeout(3600);
 
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -46,7 +47,7 @@ subtest 'Order dispute (type buy)' => sub {
         local_currency => 'sgd',
     );
 
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         %ad_params,
@@ -56,12 +57,12 @@ subtest 'Order dispute (type buy)' => sub {
         });
 
     my $order_amount = 100;
-    my ($client, $new_order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $new_order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert_info->{id},
         balance   => $order_amount,
     );
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $new_order->{id});
     @emitted_events = ();
 
     my $response = $client->p2p_create_order_dispute(
@@ -93,11 +94,11 @@ subtest 'Order dispute (type buy)' => sub {
 
     subtest 'dispute time not set in redis' => sub {
         my $p2p_redis   = BOM::Config::Redis->redis_p2p_write();
-        my $disputed_at = $p2p_redis->zrangebyscore(BOM::User::Client::P2P_ORDER_DISPUTED_AT, $time, time);
+        my $disputed_at = $p2p_redis->zrangebyscore(P2P::P2P_ORDER_DISPUTED_AT, $time, time);
         is scalar $disputed_at->@*, 0, 'Dispute time not set in redis (therefore livechat is skipped)';
     };
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $new_order->{id});
     my $response_advertiser = $advertiser->p2p_create_order_dispute(
         id             => $new_order->{id},
         dispute_reason => 'buyer_third_party_payment_method',
@@ -111,7 +112,7 @@ subtest 'Order dispute (type buy)' => sub {
     is $response_advertiser->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response_advertiser->{dispute_details}, $expected_response_advertiser, 'order_dispute expected response after advertiser complaint');
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $new_order->{id});
     $response_advertiser = $advertiser->p2p_create_order_dispute(
         id             => $new_order->{id},
         dispute_reason => 'buyer_underpaid',
@@ -168,18 +169,18 @@ subtest 'Order dispute (type buy)' => sub {
 subtest 'Order dispute (type sell)' => sub {
     my $time = time;
 
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
     my $amount = 100;
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
         amount => $amount,
         type   => 'buy'
     );
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         balance   => $amount
     );
 
-    BOM::Test::Helper::P2P::set_order_disputable($advertiser, $order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($advertiser, $order->{id});
     my $response = $advertiser->p2p_create_order_dispute(
         id             => $order->{id},
         dispute_reason => 'buyer_underpaid',
@@ -195,11 +196,11 @@ subtest 'Order dispute (type sell)' => sub {
 
     subtest 'dispute time set in redis' => sub {
         my $p2p_redis   = BOM::Config::Redis->redis_p2p_write();
-        my $disputed_at = $p2p_redis->zrangebyscore(BOM::User::Client::P2P_ORDER_DISPUTED_AT, $time, time);
+        my $disputed_at = $p2p_redis->zrangebyscore(P2P::P2P_ORDER_DISPUTED_AT, $time, time);
         cmp_deeply($disputed_at, superbagof(join('|', $order->{id}, $client->broker_code)), 'Disputed order found in the ZSET');
     };
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
     my $response_client = $client->p2p_create_order_dispute(
         id             => $order->{id},
         dispute_reason => 'buyer_not_paid',
@@ -213,7 +214,7 @@ subtest 'Order dispute (type sell)' => sub {
     is $response_client->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response_client->{dispute_details}, $expected_response_client, 'order_dispute expected response after client complaint');
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
     $response_client = $client->p2p_create_order_dispute(
         id             => $order->{id},
         dispute_reason => 'buyer_third_party_payment_method',
@@ -279,7 +280,7 @@ subtest 'Seller can confirm under dispute' => sub {
         local_currency => 'sgd',
     );
 
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         %ad_params,
@@ -289,12 +290,12 @@ subtest 'Seller can confirm under dispute' => sub {
         });
 
     my $order_amount = 100;
-    my ($client, $new_order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $new_order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert_info->{id},
         balance   => $order_amount,
     );
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $new_order->{id});
     my $response = $client->p2p_create_order_dispute(
         id             => $new_order->{id},
         dispute_reason => 'seller_not_released',
@@ -327,7 +328,7 @@ subtest 'Buyer cannot confirm under dispute' => sub {
         local_currency => 'sgd',
     );
 
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         %ad_params,
@@ -337,12 +338,12 @@ subtest 'Buyer cannot confirm under dispute' => sub {
         });
 
     my $order_amount = 100;
-    my ($client, $new_order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $new_order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert_info->{id},
         balance   => $order_amount,
     );
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $new_order->{id});
     my $response = $client->p2p_create_order_dispute(
         id             => $new_order->{id},
         dispute_reason => 'seller_not_released',
@@ -369,19 +370,19 @@ subtest 'Edge cases' => sub {
     # Frontend relies on expiration time rather than states for placing the complain button
     # due to this we may allow buyer-confirmed if the order is indeed expired.
 
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
     my $amount = 100;
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
         amount => $amount,
         type   => 'buy'
     );
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         balance   => $amount
     );
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
-    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'buyer-confirmed');
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, 'buyer-confirmed');
 
     my $response = $advertiser->p2p_create_order_dispute(
         id             => $order->{id},
@@ -398,13 +399,13 @@ subtest 'Edge cases' => sub {
 };
 
 subtest 'Order cannot be disputed' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
     my $amount = 100;
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
         amount => $amount,
         type   => 'sell'
     );
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         balance   => $amount
     );
@@ -413,7 +414,7 @@ subtest 'Order cannot be disputed' => sub {
         type   => 'buy'
     );
 
-    my ($client2, $order2) = BOM::Test::Helper::P2P::create_order(
+    my ($client2, $order2) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert2->{id},
         balance   => $amount
     );
@@ -435,7 +436,7 @@ subtest 'Order cannot be disputed' => sub {
     };
     is $err->{error_code}, 'InvalidStateForDispute', 'Invalid status for dispute';
 
-    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'refunded');
+    BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, 'refunded');
     $err = exception {
         $client->p2p_create_order_dispute(
             id             => $order->{id},
@@ -513,7 +514,7 @@ subtest 'Returning dispute fields' => sub {
         local_currency => 'sgd',
     );
 
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         %ad_params,
@@ -522,7 +523,7 @@ subtest 'Returning dispute fields' => sub {
             last_name  => 'asdf'
         });
 
-    my $client       = BOM::Test::Helper::P2P::create_advertiser();
+    my $client       = BOM::Test::Helper::P2PWithClient::create_advertiser();
     my $order_amount = 100;
     my $new_order    = $client->p2p_order_create(
         advert_id   => $advert_info->{id},
@@ -537,7 +538,7 @@ subtest 'Returning dispute fields' => sub {
 
     cmp_deeply($new_order->{dispute_details}, $expected_response, 'order_create expected response');
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $new_order->{id});
     # modify expected response accordingly
     $expected_response->{dispute_details} = {
         disputer_loginid => $client->loginid,
@@ -568,7 +569,7 @@ subtest 'Returning dispute fields' => sub {
 
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_info expected response after dispute');
 
-    BOM::Test::Helper::P2P::set_order_status($client, $new_order->{id}, 'pending');
+    BOM::Test::Helper::P2PWithClient::set_order_status($client, $new_order->{id}, 'pending');
     @emitted_events = ();
 
     $response = $client->p2p_expire_order(

@@ -6,19 +6,20 @@ use Test::Fatal;
 use Test::Deep;
 
 use BOM::User::Client;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 populate_exchange_rates();
 
 subtest 'Seller lists ads and those with a min order amount greater than its balance are excluded' => sub {
     my $seller_balance = 10;
-    my $escrow         = BOM::Test::Helper::P2P::create_escrow();
-    my $seller         = BOM::Test::Helper::P2P::create_advertiser(balance => $seller_balance);
+    my $escrow         = BOM::Test::Helper::P2PWithClient::create_escrow();
+    my $seller         = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => $seller_balance);
 
     cmp_ok $seller->account->balance, '==', $seller_balance, "Seller balance is $seller_balance";
 
@@ -109,7 +110,7 @@ subtest 'show real name' => sub {
 
     ($advertiser, $ad) = BOM::Test::Helper::P2P::create_advert(
         local_currency => 'xxx',
-        client         => $advertiser,
+        client         => P2P->new(client => $advertiser->client),
     );
 
     cmp_deeply($ad->{advertiser_details}, superhashof($names), 'create ad: real names returned');
@@ -129,15 +130,15 @@ subtest 'show real name' => sub {
 };
 
 subtest 'search by advertiser name' => sub {
-    my $advertiser1 = BOM::Test::Helper::P2P::create_advertiser(name => 'c%ol_guy$!_');
+    my $advertiser1 = BOM::Test::Helper::P2PWithClient::create_advertiser(name => 'c%ol_guy$!_');
     my $ad          = BOM::Test::Helper::P2P::create_advert(
-        client => $advertiser1,
+        client => P2P->new(client => $advertiser1),
         type   => 'buy'
     );
 
-    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser(name => 'bob');
+    my $advertiser2 = BOM::Test::Helper::P2PWithClient::create_advertiser(name => 'bob');
     BOM::Test::Helper::P2P::create_advert(
-        client => $advertiser2,
+        client => P2P->new(client => $advertiser2),
         type   => 'buy'
     );
 
@@ -174,6 +175,6 @@ subtest 'search by advertiser name' => sub {
         [], 'no match';
 };
 
-BOM::Test::Helper::P2P::reset_escrow();
+BOM::Test::Helper::P2PWithClient::reset_escrow();
 
 done_testing();

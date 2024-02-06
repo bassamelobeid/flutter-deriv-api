@@ -8,11 +8,11 @@ use Test::MockModule;
 use JSON::MaybeXS;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 
 my $json = JSON::MaybeXS->new;
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my $runtime_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $runtime_config->payment_method_countries($json->encode({}));

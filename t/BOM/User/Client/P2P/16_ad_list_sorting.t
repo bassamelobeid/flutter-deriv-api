@@ -3,41 +3,43 @@ use warnings;
 
 use Test::More;
 use Test::Deep;
+use P2P;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->cancellation_grace_period(0);
 $config->transaction_verification_countries([]);
 $config->transaction_verification_countries_all(0);
 
-my $adv1 = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
-my $adv2 = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+my $adv1 = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
+my $adv2 = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
 
 my (undef, $buy_ad1) = BOM::Test::Helper::P2P::create_advert(
-    client => $adv1,
+    client => P2P->new(client => $adv1),
     type   => 'buy',
     rate   => 100
 );
 my (undef, $buy_ad2) = BOM::Test::Helper::P2P::create_advert(
-    client => $adv2,
+    client => P2P->new(client => $adv2),
     type   => 'buy',
     rate   => 99
 );
 my (undef, $sell_ad1) = BOM::Test::Helper::P2P::create_advert(
-    client => $adv1,
+    client => P2P->new(client => $adv1),
     type   => 'sell',
     rate   => 100
 );
 my (undef, $sell_ad2) = BOM::Test::Helper::P2P::create_advert(
-    client => $adv2,
+    client => P2P->new(client => $adv2),
     type   => 'sell',
     rate   => 101
 );
@@ -106,6 +108,6 @@ cmp_deeply(\@ids, [$sell_ad2->{id}, $sell_ad1->{id}], 'sort sell ads by completi
 is $adv1->p2p_advert_list(id => $buy_ad1->{id})->[0]{advertiser_details}{total_completion_rate}, '50.0',  'completion rate for advertiser 1';
 is $adv1->p2p_advert_list(id => $buy_ad2->{id})->[0]{advertiser_details}{total_completion_rate}, '100.0', 'completion rate for advertiser 2';
 
-BOM::Test::Helper::P2P::reset_escrow();
+BOM::Test::Helper::P2PWithClient::reset_escrow();
 
 done_testing;

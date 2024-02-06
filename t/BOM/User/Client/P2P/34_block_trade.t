@@ -7,23 +7,24 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
-use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
+use P2P;
 use Test::Fatal;
 use Test::Exception;
 use Guard;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
-BOM::Test::Helper::P2P::populate_trade_band_db();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
+BOM::Test::Helper::P2PWithClient::populate_trade_band_db();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->block_trade->enabled(1);
 $config->block_trade->maximum_advert(20000);
 
-my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 10000);
-my $client     = BOM::Test::Helper::P2P::create_advertiser;
+my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 10000);
+my $client     = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
 my %params = (
     amount           => 20000,
@@ -40,7 +41,7 @@ my %params = (
 
 cmp_deeply(
     exception {
-        $advertiser->p2p_advert_create(%params);
+        P2P->new(client => $advertiser)->p2p_advert_create(%params);
     },
     {
         error_code => 'BlockTradeNotAllowed',
@@ -68,7 +69,7 @@ $config->block_trade->enabled(0);
 
 cmp_deeply(
     exception {
-        $advertiser->p2p_advert_create(%params);
+        P2P->new(client => $advertiser)->p2p_advert_create(%params);
     },
     {
         error_code => 'BlockTradeDisabled',
@@ -81,7 +82,7 @@ $config->block_trade->enabled(1);
 my $ad;
 is(
     exception {
-        $ad = $advertiser->p2p_advert_create(%params);
+        $ad = P2P->new(client => $advertiser)->p2p_advert_create(%params);
     },
     undef,
     'Create block trade ad ok'

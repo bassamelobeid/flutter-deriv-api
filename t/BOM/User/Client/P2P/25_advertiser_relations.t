@@ -8,14 +8,15 @@ use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Helper::Client;
 use BOM::Rules::Engine;
 use BOM::Config::Runtime;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -344,7 +345,7 @@ subtest 'blocking' => sub {
         'Blocked advertiser cannot create order on blockers ad'
     );
 
-    my $order = $me->p2p_order_create(
+    my $order = $me->client->p2p_order_create(
         advert_id   => $other2_ad->{id},
         amount      => 10,
         rule_engine => $rule_engine,

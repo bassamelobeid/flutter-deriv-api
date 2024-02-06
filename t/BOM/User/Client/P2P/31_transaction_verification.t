@@ -11,14 +11,15 @@ use Test::MockTime qw(set_fixed_time);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Token;
 use BOM::Platform::Context::Request;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -78,7 +79,7 @@ subtest 'successful verification' => sub {
         type => 'sell',
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -201,7 +202,7 @@ subtest 'bad verification codes' => sub {
         type => 'sell',
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -294,7 +295,7 @@ subtest 'token timeout blocking' => sub {
         type => 'sell',
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -350,7 +351,7 @@ subtest 'extend order expiry' => sub {
         type => 'sell',
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -388,7 +389,7 @@ subtest 'extend order timeout refund' => sub {
         type => 'sell',
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -420,7 +421,7 @@ subtest 'verification_pending flag' => sub {
     set_fixed_time(0);
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
 
     ok !exists $order->{verification_pending}, 'flag does not exist on new order';
 
@@ -442,7 +443,7 @@ sub check_verification {
         advertiser => {residence => $country},
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id  => $advert->{id},
         amount     => $advert->{min_order_amount},
         advertiser => {residence => $country},
@@ -462,7 +463,7 @@ sub check_verification {
         advertiser => {residence => $country},
     );
 
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id  => $advert->{id},
         amount     => $advert->{min_order_amount},
         advertiser => {residence => $country},

@@ -7,6 +7,7 @@ use Test::MockModule;
 use Test::MockTime qw(set_fixed_time);
 
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
@@ -112,8 +113,8 @@ subtest 'chat_token' => sub {
 subtest 'create chat' => sub {
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
-    BOM::Test::Helper::P2P::create_escrow;
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    BOM::Test::Helper::P2PWithClient::create_escrow;
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
 
     is exception { $client->p2p_chat_create(()) }->{error_code} => 'OrderNotFound',
         'empty params';

@@ -7,11 +7,12 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use Test::Fatal;
 use Test::MockModule;
 use Test::Deep;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -315,13 +316,13 @@ for my $test_case (@test_cases) {
         my $amount = $test_case->{amount};
         my $source = 1;
 
-        my $escrow = BOM::Test::Helper::P2P::create_escrow();
+        my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
         my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
             amount  => $amount,
             type    => $test_case->{type},
             balance => $test_case->{advertiser_balance},
         );
-        my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert_info->{id},
             amount    => $amount,
             balance   => $test_case->{client_balance},
@@ -331,8 +332,8 @@ for my $test_case (@test_cases) {
         cmp_ok($advertiser->account->balance, '==', $test_case->{advertiser}{before}, 'advertiser balance is correct');
         cmp_ok($client->account->balance,     '==', $test_case->{client}{before},     'Client balance is correct');
 
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_case->{init_status});
-        BOM::Test::Helper::P2P::expire_order($client, $order->{id}) if $test_case->{expire};
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, $test_case->{init_status});
+        BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id}) if $test_case->{expire};
 
         @emitted_events = ();
         my $loginid;
@@ -397,21 +398,21 @@ for my $test_case (@test_cases) {
             );
         }
 
-        BOM::Test::Helper::P2P::reset_escrow();
+        BOM::Test::Helper::P2PWithClient::reset_escrow();
     };
 }
 
 subtest 'race condition' => sub {
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert();
-    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(advert_id => $ad->{id});
+    my ($client,     $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $ad->{id});
     $client->p2p_order_cancel(id => $order->{id});
     my $details = $client->_p2p_orders(id => $order->{id})->[0];
 
     # Make perl code think that order is still pending
     $details->{status} = 'pending';
-    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $mock_client = Test::MockModule->new('P2P');
     $mock_client->mock('_p2p_orders' => sub { [$details] });
 
     cmp_deeply(
@@ -420,7 +421,7 @@ subtest 'race condition' => sub {
         'Unrefundable order caught by db and correct eror returned'
     );
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 done_testing();

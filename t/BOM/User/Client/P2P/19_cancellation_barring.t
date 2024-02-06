@@ -10,14 +10,15 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::Rules::Engine;
 use Test::Fatal;
 use Test::Exception;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->cancellation_grace_period(10);
@@ -60,7 +61,7 @@ subtest general => sub {
     my ($advertiser, $ad1) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
     my ($client, $ord1, $ord2, $ord3);
 
-    ($client, $ord1) = BOM::Test::Helper::P2P::create_order(
+    ($client, $ord1) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad1->{id},
         amount    => 1
     );
@@ -81,7 +82,7 @@ subtest general => sub {
         'p2p_advertiser_cancel_at_fault event emitted'
     );
 
-    ($client, $ord2) = BOM::Test::Helper::P2P::create_order(
+    ($client, $ord2) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $ord1->{id},
         amount    => 1,
@@ -89,7 +90,7 @@ subtest general => sub {
 
     tt_hours(1);
     my $ad2 = (BOM::Test::Helper::P2P::create_advert(type => 'sell'))[1];
-    ($client, $ord3) = BOM::Test::Helper::P2P::create_order(
+    ($client, $ord3) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $ad2->{id},
         amount    => 1
@@ -122,7 +123,7 @@ subtest general => sub {
         exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1, rule_engine => $rule_engine) },
         $expected_error, 'barred for create order',
     );
-    cmp_deeply(exception { $client->p2p_advert_create(%ad_params) }, $expected_error, 'barred for create ad',);
+    cmp_deeply(exception { P2P->new(client => $client)->p2p_advert_create(%ad_params) }, $expected_error, 'barred for create ad',);
 
     is $client->p2p_advertiser_info->{blocked_until}, $block_until->epoch, 'p2p_advertiser_info returns blocked_until';
     is $advertiser->p2p_advertiser_info(id => $client->p2p_advertiser_info->{id})->{blocked_until}, undef, 'other advertiser cannot see it';
@@ -147,7 +148,7 @@ subtest general => sub {
 
     tt_hours(1);
     lives_ok { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1, rule_engine => $rule_engine) } 'can create order at hour 25';
-    lives_ok { $client->p2p_advert_create(%ad_params) } 'can create ad at hour 25';
+    lives_ok { P2P->new(client => $client)->p2p_advert_create(%ad_params) } 'can create ad at hour 25';
 
     is $client->p2p_advertiser_info->{blocked_until}, undef, 'p2p_advertiser_info blocked_until is undef now';
 };
@@ -157,7 +158,7 @@ subtest 'timeouts and disputes' => sub {
     $config->cancellation_barring->period(100);    # crazy but possible
 
     my $ad1 = (BOM::Test::Helper::P2P::create_advert(type => 'sell'))[1];
-    my ($client, $ord1) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $ord1) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad1->{id},
         amount    => 10
     );
@@ -165,24 +166,24 @@ subtest 'timeouts and disputes' => sub {
     $client->p2p_order_confirm(id => $ord1->{id});
 
     tt_hours(2);
-    BOM::Test::Helper::P2P::expire_order($client, $ord1->{id});
+    BOM::Test::Helper::P2PWithClient::expire_order($client, $ord1->{id});
     $client->p2p_expire_order(id => $ord1->{id});
 
     my $ord2;
     my $ad2 = (BOM::Test::Helper::P2P::create_advert(type => 'sell', rate => 2))[1];
-    lives_ok { ($client, $ord2) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad2->{id}, amount => 10) }
+    lives_ok { ($client, $ord2) = BOM::Test::Helper::P2PWithClient::create_order(client => $client, advert_id => $ad2->{id}, amount => 10) }
     'timed-out order does not count as cancel';
     $client->p2p_order_cancel(id => $ord2->{id});    # grace period
 
-    BOM::Test::Helper::P2P::ready_to_refund($client, $ord1->{id});
+    BOM::Test::Helper::P2PWithClient::ready_to_refund($client, $ord1->{id});
     $client->p2p_expire_order(id => $ord1->{id});
 
     my $ord3;
     my $ad3 = (BOM::Test::Helper::P2P::create_advert(type => 'sell', rate => 3))[1];
-    lives_ok { ($client, $ord3) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad3->{id}, amount => 10) }
+    lives_ok { ($client, $ord3) = BOM::Test::Helper::P2PWithClient::create_order(client => $client, advert_id => $ad3->{id}, amount => 10) }
     'timeded out refunded order does not count as cancel';
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $ord3->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $ord3->{id});
     $client->p2p_create_order_dispute(
         id             => $ord3->{id},
         dispute_reason => 'seller_not_released',
@@ -197,10 +198,10 @@ subtest 'timeouts and disputes' => sub {
 
     my $ord4;
     my $ad4 = (BOM::Test::Helper::P2P::create_advert(type => 'sell', rate => 4))[1];
-    lives_ok { ($client, $ord4) = BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $ad4->{id}, amount => 10) }
+    lives_ok { ($client, $ord4) = BOM::Test::Helper::P2PWithClient::create_order(client => $client, advert_id => $ad4->{id}, amount => 10) }
     'dispute refunded order does not count as cancel';
     tt_hours(2);
-    BOM::Test::Helper::P2P::expire_order($client, $ord4->{id});
+    BOM::Test::Helper::P2PWithClient::expire_order($client, $ord4->{id});
     $client->p2p_expire_order(id => $ord4->{id});
     delete $client->{_p2p_advertiser_cached};
     cmp_deeply(
@@ -216,12 +217,12 @@ subtest 'timeouts and disputes' => sub {
 subtest 'buy ads' => sub {
 
     my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert(type => 'buy');
-    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client,     $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 10
     );
     tt_hours(2);
-    BOM::Test::Helper::P2P::expire_order($client, $order->{id});
+    BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id});
     $client->p2p_expire_order(id => $order->{id});
     is $advertiser->_p2p_advertiser_stats($advertiser->loginid, 100)->{cancel_count}, 1, 'advertiser cancel count was increased';
     is $client->_p2p_advertiser_stats($client->loginid, 100)->{cancel_count},         0, 'client cancel count was not increased';

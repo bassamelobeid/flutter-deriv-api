@@ -6,13 +6,14 @@ use Test::Deep;
 use Test::MockModule;
 
 use BOM::Config;
-use BOM::Test::Helper::P2P;
+use P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User::Script::P2PDailyMaintenance;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $client = BOM::Test::Helper::Client::create_client();
 BOM::User->create(
@@ -42,7 +43,7 @@ is $client->p2p_advertiser_update()->{withdrawal_limit}, '400.00', 'withdrawal_l
 is $client->p2p_advertiser_update(contact_info => 'y')->{withdrawal_limit}, '400.00',
     'withdrawal_limit returned from advertiser_update (actual update)';
 
-my $ad = $client->p2p_advert_create(
+my $ad = P2P->new(client => $client)->p2p_advert_create(
     type             => 'sell',
     amount           => 100,
     local_currency   => 'myr',
@@ -55,7 +56,7 @@ my $ad = $client->p2p_advert_create(
     contact_info     => 'x',
 );
 
-my $other = BOM::Test::Helper::P2P::create_advertiser;
+my $other = BOM::Test::Helper::P2PWithClient::create_advertiser;
 my $list  = $other->p2p_advert_list(counterparty_type => 'buy');
 
 cmp_deeply([map { $_->{id} } @$list], [$ad->{id}], 'ad is visible');

@@ -8,6 +8,7 @@ use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::Database::ClientDB;
@@ -16,8 +17,8 @@ use Test::Warn;
 use Date::Utility;
 use Test::Fatal;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->transaction_verification_countries([]);
@@ -95,7 +96,7 @@ subtest 'archive old ads' => sub {
     set_fixed_time(Date::Utility->new->plus_time_interval('10d')->iso8601);
     is $advertiser->p2p_advert_info(id => $advert->{id})->{days_until_archive}, 0, '0 after date passed';
 
-    BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
     is $advertiser->p2p_advert_info(id => $advert->{id})->{days_until_archive}, undef, 'undef after order created';
 
     restore_time();
@@ -150,7 +151,7 @@ subtest 'archive old ads' => sub {
 
 subtest 'refresh advertiser completion rates' => sub {
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
     $client->p2p_order_confirm(id => $order->{id});
     $advertiser->p2p_order_confirm(id => $order->{id});
 
@@ -208,7 +209,7 @@ subtest 'delete old ads' => sub {
 
     ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
     $id = $advert->{id};
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $id);
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $id);
 
     $db->do("UPDATE p2p.p2p_advert SET created_time = NOW() - '1 year'::INTERVAL, is_active = FALSE WHERE id = $id");
     $db->do("UPDATE audit.p2p_advert SET stamp = NOW() - '1 year'::INTERVAL WHERE id = $id");

@@ -8,7 +8,9 @@ use Test::Warn;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
+use P2P;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 use Test::Fatal;
@@ -18,6 +20,7 @@ use Guard;
 my $rule_engine = BOM::Rules::Engine->new();
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->limits->maximum_advert(1000);
@@ -30,10 +33,10 @@ $config->escrow([$escrow_client->loginid]);
 my ($client, $advertiser, $ad);
 
 subtest 'Default band' => sub {
-    $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+    $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance => 1000,
     );
-    $ad = $advertiser->p2p_advert_create(
+    $ad = P2P->new(client => $advertiser)->p2p_advert_create(
         amount           => 500,
         type             => 'sell',
         rate             => 1,
@@ -105,10 +108,10 @@ subtest 'Check client band limits' => sub {
     # Although advertiser 2 band limits are ok and there is no order for his add,
     # test client will not be able to create order for ad2 because he will be exceeding himself daily buy limit
 
-    my $test_client = BOM::Test::Helper::P2P::create_advertiser(
+    my $test_client = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance => 1000,
     );
-    my $ad_cl = $test_client->p2p_advert_create(
+    my $ad_cl = P2P->new(client => $test_client)->p2p_advert_create(
         amount           => 500,
         type             => 'sell',
         rate             => 1,
@@ -121,10 +124,10 @@ subtest 'Check client band limits' => sub {
         contact_info     => 'test'
     );
 
-    my $advertiser_1 = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser_1 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance => 1000,
     );
-    my $ad_1 = $advertiser_1->p2p_advert_create(
+    my $ad_1 = P2P->new(client => $advertiser_1)->p2p_advert_create(
         amount           => 500,
         type             => 'sell',
         rate             => 1,
@@ -144,11 +147,11 @@ subtest 'Check client band limits' => sub {
         rule_engine => $rule_engine,
     );
 
-    my $advertiser_2 = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser_2 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance  => 1000,
         currency => 'USD'
     );
-    my $ad_2 = $advertiser_2->p2p_advert_create(
+    my $ad_2 = P2P->new(client => $advertiser_2)->p2p_advert_create(
         amount           => 500,
         type             => 'sell',
         rate             => 1,
@@ -184,7 +187,7 @@ subtest 'Check client band limits' => sub {
 };
 
 subtest 'ad list' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $ad) = BOM::Test::Helper::P2P::create_advert(
         amount           => 100,
@@ -192,7 +195,7 @@ subtest 'ad list' => sub {
         max_order_amount => 100,
         type             => 'sell'
     );
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         amount    => 100,
         advert_id => $ad->{id});
     my ($advertiser2, $ad2) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
@@ -212,7 +215,7 @@ subtest 'ad list' => sub {
         max_order_amount => 100,
         type             => 'buy'
     );
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         balance   => 100,
         amount    => 100,
         advert_id => $ad->{id});
@@ -227,12 +230,12 @@ subtest 'ad list' => sub {
         0, 'buy ad is hidden with use_client_limits=1';
     is scalar($client->p2p_advert_list(id => $ad2->{id})->@*), 1, 'buy ad is shown without use_client_limits=1';
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'min balance' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance        => 9,
         client_details => {residence => 'za'},
     );
@@ -241,7 +244,7 @@ subtest 'min balance' => sub {
     cmp_ok $advertiser->p2p_advertiser_info->{min_balance}, '==', 10, 'min balance from low band';
 
     my $advert = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'sell',
         min_order_amount => 1,
         max_order_amount => 20
@@ -258,7 +261,7 @@ subtest 'min balance' => sub {
 };
 
 subtest 'ad limits' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {residence => 'ng'},
     );
     $advertiser->db->dbic->dbh->do(
@@ -269,7 +272,7 @@ subtest 'ad limits' => sub {
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(
+            P2P->new(client => $advertiser)->p2p_advert_create(
                 type             => 'sell',
                 amount           => 100,
                 rate             => 1,
@@ -290,7 +293,7 @@ subtest 'ad limits' => sub {
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(
+            P2P->new(client => $advertiser)->p2p_advert_create(
                 type             => 'sell',
                 amount           => 100,
                 rate             => 1,
@@ -317,7 +320,7 @@ subtest 'ad limits' => sub {
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(
+            P2P->new(client => $advertiser)->p2p_advert_create(
                 type             => 'sell',
                 amount           => 100,
                 rate             => 1,
@@ -336,7 +339,7 @@ subtest 'ad limits' => sub {
 
 sub order {
     my ($advert_id, $amount) = @_;
-    $client = BOM::Test::Helper::P2P::create_advertiser(currency => 'USD');
+    $client = BOM::Test::Helper::P2PWithClient::create_advertiser(currency => 'USD');
     $client->p2p_order_create(
         advert_id   => $advert_id,
         amount      => $amount,

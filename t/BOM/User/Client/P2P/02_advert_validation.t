@@ -6,15 +6,15 @@ use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
 
-use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Runtime;
 use JSON::MaybeUTF8 qw(:v1);
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
-BOM::Test::Helper::P2P::create_payment_methods();
-BOM::Test::Helper::P2P::populate_trade_band_db();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
+BOM::Test::Helper::P2PWithClient::create_payment_methods();
+BOM::Test::Helper::P2PWithClient::populate_trade_band_db();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->payment_methods_enabled(1);
@@ -42,7 +42,7 @@ my %params = (
 my $method = '_validate_advert';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     is(
         exception {
@@ -56,7 +56,7 @@ subtest $method => sub {
 $method = '_validate_advert_amount';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
     my $max_ad     = $config->limits->maximum_advert;
 
     is(
@@ -78,7 +78,7 @@ subtest $method => sub {
         'Error when amount exceeds BO advert limit'
     );
 
-    my $ad = $advertiser->p2p_advert_create(%params);
+    my $ad = P2P->new(client => $advertiser)->p2p_advert_create(%params);
 
     is(
         exception {
@@ -92,12 +92,12 @@ subtest $method => sub {
         'no error for edit ad'
     );
 
-    my $order1 = BOM::Test::Helper::P2P::create_order(
+    my $order1 = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 10
     );
 
-    my $order2 = BOM::Test::Helper::P2P::create_order(
+    my $order2 = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 10
     );
@@ -117,7 +117,7 @@ subtest $method => sub {
         'Error with open orders'
     );
 
-    BOM::Test::Helper::P2P::set_order_status($advertiser, $order1->{id}, 'completed');
+    BOM::Test::Helper::P2PWithClient::set_order_status($advertiser, $order1->{id}, 'completed');
 
     is exception {
         $advertiser->$method(
@@ -128,7 +128,7 @@ subtest $method => sub {
     }
     ->{error_code}, 'MaximumExceededNewAmount', 'still get error after order completed';
 
-    BOM::Test::Helper::P2P::set_order_status($advertiser, $order2->{id}, 'refunded');
+    BOM::Test::Helper::P2PWithClient::set_order_status($advertiser, $order2->{id}, 'refunded');
 
     is(
         exception {
@@ -175,7 +175,7 @@ subtest $method => sub {
 $method = '_validate_advert_min_max';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
     $advertiser->db->dbic->dbh->do(
         "UPDATE p2p.p2p_advertiser SET trade_band = 'block_trade_medium' WHERE id = " . $advertiser->p2p_advertiser_info->{id});
     delete $advertiser->{_p2p_advertiser_cached};
@@ -261,7 +261,7 @@ subtest $method => sub {
         'Error when min_order_amount is more than max_order_amount'
     );
 
-    $advertiser = BOM::Test::Helper::P2P::create_advertiser();    # to get default band
+    $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();    # to get default band
 
     cmp_deeply(
         exception {
@@ -282,7 +282,7 @@ subtest $method => sub {
 $method = '_validate_advert_rates';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'id'});
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => 'id'});
     my %params     = %params;
 
     $config->country_advert_config(
@@ -454,7 +454,7 @@ subtest $method => sub {
 $method = '_validate_advert_payment_contact_info';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     is(
         exception {
@@ -536,10 +536,10 @@ subtest $method => sub {
 
     subtest 'duplicate rate' => sub {
 
-        my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+        my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
         $params{advertiser_id} = $advertiser->_p2p_advertiser_cached->{id};
 
-        my $ad = $advertiser->p2p_advert_create(%params);
+        my $ad = P2P->new(client => $advertiser)->p2p_advert_create(%params);
 
         cmp_deeply(
             exception {
@@ -562,7 +562,7 @@ subtest $method => sub {
             'no error after disabling first ad'
         );
 
-        $advertiser->p2p_advert_create(%params);
+        P2P->new(client => $advertiser)->p2p_advert_create(%params);
 
         cmp_deeply(
             exception {
@@ -583,10 +583,10 @@ subtest $method => sub {
 
     subtest 'overlapping range' => sub {
 
-        my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+        my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
         $params{advertiser_id} = $advertiser->_p2p_advertiser_cached->{id};
 
-        my $ad = $advertiser->p2p_advert_create(
+        my $ad = P2P->new(client => $advertiser)->p2p_advert_create(
             %params,
             rate             => 1,
             min_order_amount => 1,
@@ -664,7 +664,7 @@ subtest $method => sub {
             'no error after ad disabled'
         );
 
-        $advertiser->p2p_advert_create(
+        P2P->new(client => $advertiser)->p2p_advert_create(
             %params,
             rate             => 1.1,
             min_order_amount => 1.1,
@@ -687,7 +687,7 @@ subtest $method => sub {
 
     subtest 'max ads of same type' => sub {
 
-        my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+        my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
         $params{advertiser_id} = $advertiser->_p2p_advertiser_cached->{id};
 
         $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET trade_band = 'block_trade_medium' WHERE id = " . $params{advertiser_id});
@@ -696,26 +696,26 @@ subtest $method => sub {
 
         $config->limits->maximum_ads_per_type(3);
 
-        $advertiser->p2p_advert_create(
+        P2P->new(client => $advertiser)->p2p_advert_create(
             %params,
             rate             => 1,
             min_order_amount => 5,
             max_order_amount => 6
         );
-        $advertiser->p2p_advert_create(
+        P2P->new(client => $advertiser)->p2p_advert_create(
             %params,
             rate             => 2,
             min_order_amount => 7,
             max_order_amount => 8
         );
-        my $normal_ad = $advertiser->p2p_advert_create(
+        my $normal_ad = P2P->new(client => $advertiser)->p2p_advert_create(
             %params,
             rate             => 3,
             min_order_amount => 9,
             max_order_amount => 10
         );
 
-        $advertiser->p2p_advert_create(
+        P2P->new(client => $advertiser)->p2p_advert_create(
             %params,
             block_trade      => 1,
             rate             => 1,
@@ -724,7 +724,7 @@ subtest $method => sub {
             max_order_amount => 1001,
 
         );
-        $advertiser->p2p_advert_create(
+        P2P->new(client => $advertiser)->p2p_advert_create(
             %params,
             block_trade      => 1,
             rate             => 2,
@@ -732,7 +732,7 @@ subtest $method => sub {
             min_order_amount => 1002,
             max_order_amount => 1003
         );
-        my $block_trade_ad = $advertiser->p2p_advert_create(
+        my $block_trade_ad = P2P->new(client => $advertiser)->p2p_advert_create(
             %params,
             block_trade      => 1,
             rate             => 3,
@@ -826,12 +826,12 @@ subtest $method => sub {
 
     subtest 'max active ads' => sub {
 
-        my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 10);
+        my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 10);
         $params{advertiser_id} = $advertiser->_p2p_advertiser_cached->{id};
 
         my $ad;
         for my $num (1 .. 10) {
-            is exception { $ad = $advertiser->p2p_advert_create(%params, local_currency => chr($num + 60) x 3) }, undef,
+            is exception { $ad = P2P->new(client => $advertiser)->p2p_advert_create(%params, local_currency => chr($num + 60) x 3) }, undef,
                 "can create ${num}th ad with different currency";
         }
 
@@ -856,7 +856,7 @@ subtest $method => sub {
             'no error after one is deactivated'
         );
 
-        my $ad2 = $advertiser->p2p_advert_create(%params, amount => 10);
+        my $ad2 = P2P->new(client => $advertiser)->p2p_advert_create(%params, amount => 10);
 
         cmp_deeply(
             exception {
@@ -866,7 +866,7 @@ subtest $method => sub {
             'error after an ad is created'
         );
 
-        BOM::Test::Helper::P2P::create_order(
+        BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $ad2->{id},
             amount    => 10
         );
@@ -878,7 +878,7 @@ subtest $method => sub {
 $method = '_validate_advert_payment_method_type';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     cmp_deeply(
         exception {
@@ -968,7 +968,7 @@ subtest $method => sub {
 $method = '_validate_advert_payment_method_ids';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
     my %params     = (
         %params,
         type          => 'sell',
@@ -1058,13 +1058,13 @@ subtest $method => sub {
 
     $advertiser->p2p_advertiser_payment_methods(update => {$pms{method1} => {is_enabled => 1}});
 
-    my $ad = $advertiser->p2p_advert_create(
+    my $ad = P2P->new(client => $advertiser)->p2p_advert_create(
         %params,
         payment_method     => '',
         payment_method_ids => [values %pms],
     );
 
-    my $order1 = BOM::Test::Helper::P2P::create_order(
+    my $order1 = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 10
     );
@@ -1102,7 +1102,7 @@ subtest $method => sub {
         'PMs can be added when ad has active orders'
     );
 
-    my $order2 = BOM::Test::Helper::P2P::create_order(
+    my $order2 = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 10
     );
@@ -1124,8 +1124,8 @@ subtest $method => sub {
         'Cannot remove pm name from ad with multiple active orders'
     );
 
-    BOM::Test::Helper::P2P::set_order_status($advertiser, $order1->{id}, 'cancelled');
-    BOM::Test::Helper::P2P::set_order_status($advertiser, $order2->{id}, 'cancelled');
+    BOM::Test::Helper::P2PWithClient::set_order_status($advertiser, $order1->{id}, 'cancelled');
+    BOM::Test::Helper::P2PWithClient::set_order_status($advertiser, $order2->{id}, 'cancelled');
 
     is(
         exception {
@@ -1145,7 +1145,7 @@ subtest $method => sub {
 $method = '_validate_advert_payment_method_names';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
     my %params     = (
         %params,
         type          => 'buy',
@@ -1215,7 +1215,8 @@ subtest $method => sub {
 
 $method = '_validate_advert_counterparty_terms';
 subtest $method => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     $config->restricted_countries(['id', 'ke']);
 

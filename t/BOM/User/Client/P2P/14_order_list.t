@@ -6,7 +6,9 @@ use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
+use P2P;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use Test::MockModule;
 use BOM::Rules::Engine;
@@ -17,7 +19,7 @@ my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->escrow([]);
 $config->order_timeout(3600);
 
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my %ad_params = (
     amount         => 100,
@@ -30,7 +32,7 @@ my %ad_params = (
     local_currency => 'sgd',
 );
 
-my $escrow         = BOM::Test::Helper::P2P::create_escrow();
+my $escrow         = BOM::Test::Helper::P2PWithClient::create_escrow();
 my @created_orders = ();
 
 my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
@@ -40,7 +42,7 @@ my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         last_name  => 'smith'
     });
 
-my $client = BOM::Test::Helper::P2P::create_advertiser(
+my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(
     client_details => {
         first_name => 'mary',
         last_name  => 'jane'
@@ -52,7 +54,7 @@ my $new_order = $client->p2p_order_create(
 );
 push @created_orders, $new_order;
 
-my $second_client = BOM::Test::Helper::P2P::create_advertiser(
+my $second_client = BOM::Test::Helper::P2PWithClient::create_advertiser(
     client_details => {
         first_name => 'mary2',
         last_name  => 'jane2'
@@ -64,7 +66,7 @@ my $new_order2 = $second_client->p2p_order_create(
 );
 push @created_orders, $new_order2;
 
-my $third_client = BOM::Test::Helper::P2P::create_advertiser(
+my $third_client = BOM::Test::Helper::P2PWithClient::create_advertiser(
     client_details => {
         first_name => 'mary3',
         last_name  => 'jane3'
@@ -76,7 +78,7 @@ my $new_order3 = $third_client->p2p_order_create(
 );
 push @created_orders, $new_order3;
 
-my $fourth_client = BOM::Test::Helper::P2P::create_advertiser(
+my $fourth_client = BOM::Test::Helper::P2PWithClient::create_advertiser(
     client_details => {
         first_name => 'mary4',
         last_name  => 'jane4'
@@ -138,7 +140,7 @@ subtest "check all orders" => sub {
 subtest 'dispute statuses' => sub {
     my @dispute_statuses = qw/disputed dispute-refunded dispute-completed/;
     foreach my $dispute_status (@dispute_statuses) {
-        my $nth_client = BOM::Test::Helper::P2P::create_advertiser(
+        my $nth_client = BOM::Test::Helper::P2PWithClient::create_advertiser(
             client_details => {
                 first_name => 'maryN',
                 last_name  => 'janeN'
@@ -149,7 +151,7 @@ subtest 'dispute statuses' => sub {
             amount      => 10,
             rule_engine => $rule_engine,
         );
-        BOM::Test::Helper::P2P::set_order_status($nth_client, $new_orderN->{id}, $dispute_status);
+        BOM::Test::Helper::P2PWithClient::set_order_status($nth_client, $new_orderN->{id}, $dispute_status);
         push @created_orders, $new_orderN;
     }
 
@@ -188,7 +190,7 @@ subtest 'Filter date' => sub {
             last_name  => 'smith'
         });
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser(
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {
             first_name => 'mary',
             last_name  => 'jane'
@@ -201,7 +203,7 @@ subtest 'Filter date' => sub {
     );
     push @created_orders_for_date, $order1;
 
-    my $client2 = BOM::Test::Helper::P2P::create_advertiser(
+    my $client2 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {
             first_name => 'mary2',
             last_name  => 'jane2'
@@ -214,7 +216,7 @@ subtest 'Filter date' => sub {
     );
     push @created_orders_for_date, $order2;
 
-    my $client3 = BOM::Test::Helper::P2P::create_advertiser(
+    my $client3 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {
             first_name => 'mary3',
             last_name  => 'jane3'
@@ -227,7 +229,7 @@ subtest 'Filter date' => sub {
     );
     push @created_orders_for_date, $order3;
 
-    my $client4 = BOM::Test::Helper::P2P::create_advertiser(
+    my $client4 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {
             first_name => 'mary4',
             last_name  => 'jane4'
@@ -275,5 +277,5 @@ subtest 'Filter date' => sub {
 
 };
 
-BOM::Test::Helper::P2P::reset_escrow();
+BOM::Test::Helper::P2PWithClient::reset_escrow();
 done_testing();

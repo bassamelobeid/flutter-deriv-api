@@ -11,6 +11,7 @@ use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
@@ -18,9 +19,9 @@ use Date::Utility;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_payment_methods();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_payment_methods();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->review_period(2);
@@ -33,11 +34,11 @@ $mock_events->mock(emit => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
 my $redis      = BOM::Config::Redis->redis_p2p;
 my $review_key = 'P2P::ORDER::REVIEWABLE_START_AT';
-my $other_guy  = BOM::Test::Helper::P2P::create_advertiser();
+my $other_guy  = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
 subtest 'validaton' => sub {
     my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert();
-    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(advert_id => $ad->{id});
+    my ($client,     $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $ad->{id});
 
     cmp_deeply(
         exception {
@@ -67,7 +68,7 @@ subtest 'validaton' => sub {
 
     my $info;
     for my $status ('pending', 'buyer-confirmed', 'timed-out') {
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, $status);
         is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     0, "client cannot review $status order";
         is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 0, "advertiser review $status order";
 
@@ -86,7 +87,7 @@ subtest 'validaton' => sub {
     }
 
     for my $status ('refunded', 'completed', 'disputed', 'dispute-completed', 'dispute-refunded') {
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, $status);
         is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     0, "client cannot review $status order";
         is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 0, "advertiser review $status order";
 
@@ -104,7 +105,7 @@ subtest 'validaton' => sub {
         );
     }
 
-    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'pending');
+    BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, 'pending');
     $client->p2p_order_confirm(id => $order->{id});
     $advertiser->p2p_order_confirm(id => $order->{id});
 
@@ -243,7 +244,6 @@ subtest 'create reviews' => sub {
         recommended_count => 1,
         is_recommended    => 1,
     };
-
     $info = $client->p2p_advertiser_info(id => $advertiser->_p2p_advertiser_cached->{id});
     cmp_deeply($info, superhashof($rating), 'rating info in advertiser info for client');
 
@@ -373,7 +373,7 @@ subtest 'create reviews' => sub {
 
 subtest 'buy advert' => sub {
     my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert(type => 'buy');
-    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client,     $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 10
     );
@@ -405,7 +405,7 @@ subtest 'buy advert' => sub {
 
 subtest 'duplicate review from DB' => sub {
     my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert();
-    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(advert_id => $ad->{id});
+    my ($client,     $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $ad->{id});
 
     $client->p2p_order_confirm(id => $order->{id});
     $advertiser->p2p_order_confirm(id => $order->{id});

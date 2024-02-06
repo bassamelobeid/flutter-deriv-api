@@ -8,13 +8,14 @@ use Test::MockModule;
 use JSON::MaybeXS;
 
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
-BOM::Test::Helper::P2P::create_payment_methods();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
+BOM::Test::Helper::P2PWithClient::create_payment_methods();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->payment_methods_enabled(1);
@@ -41,14 +42,14 @@ subtest 'updating all advert fields' => sub {
         type             => 'sell',
     );
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
-    my $advert     = $advertiser->p2p_advert_create(%params);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
+    my $advert     = P2P->new(client => $advertiser)->p2p_advert_create(%params);
 
     cmp_deeply(exception { $advertiser->p2p_advert_update(id => -1, is_listed => 0) }, {error_code => 'AdvertNotFound'}, 'invalid id');
 
     cmp_deeply(exception { $advertiser->p2p_advert_update() }, {error_code => 'AdvertNotFound'}, 'no id');
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser();
     cmp_deeply(
         exception { $client->p2p_advert_update(id => $advert->{id}, is_listed => 0) },
         {error_code => 'PermissionDenied'},
@@ -97,7 +98,7 @@ subtest 'updating all advert fields' => sub {
         'rate validation'
     );
 
-    my $order = BOM::Test::Helper::P2P::create_order(
+    my $order = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => 10
     );
@@ -111,7 +112,7 @@ subtest 'updating all advert fields' => sub {
     cmp_ok $advert->{remaining_amount}, '==', 100, 'update remaining_amount';
     cmp_ok $advert->{amount},           '==', 110, 'adjusted amount includes non-refunded orders';
 
-    BOM::Test::Helper::P2P::set_order_status($advertiser, $order->{id}, 'refunded');
+    BOM::Test::Helper::P2PWithClient::set_order_status($advertiser, $order->{id}, 'refunded');
 
     $advert = $advertiser->p2p_advert_update(
         id               => $advert->{id},
@@ -172,7 +173,7 @@ subtest 'updating all advert fields' => sub {
         is_active => 0
     );
 
-    my $advert_dupe = $advertiser->p2p_advert_create(%params);
+    my $advert_dupe = P2P->new(client => $advertiser)->p2p_advert_create(%params);
 
     cmp_deeply(
         exception { $advertiser->p2p_advert_update(id => $advert->{id}, is_active => 1) },
@@ -277,11 +278,11 @@ subtest 'updating all advert fields' => sub {
 };
 
 subtest 'Updating order_expiry_period of advert' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(order_expiry_period => 1800);
     is $advert->{order_expiry_period}, 1800, 'expected order_expiry_period for ad';
 
-    my (undef, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my (undef, $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
     is $order->{expiry_time}, ($order->{created_time} + $advert->{order_expiry_period}), "order expiry epoch reflected correctly";
     my $initial_expiry_time = $order->{expiry_time};
 
@@ -309,12 +310,12 @@ subtest 'Updating order_expiry_period of advert' => sub {
         {error_code => 'InvalidOrderExpiryPeriod'},
         'invalid order expiry time error captured correctly'
     );
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 };
 
 subtest 'updating advert fields that will be reflected in orders' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(
         client_details => {residence => 'id'},
         balance        => 100
     );
@@ -383,7 +384,7 @@ subtest 'updating advert fields that will be reflected in orders' => sub {
     my $advert;
     foreach my $ad_type (keys %test_data) {
         @emitted_events = ();
-        $advert         = $advertiser->p2p_advert_create($test_data{$ad_type}->{initial_params}->%*);
+        $advert         = P2P->new(client => $advertiser)->p2p_advert_create($test_data{$ad_type}->{initial_params}->%*);
         foreach my $field (keys $test_data{$ad_type}->{update_params}->%*) {
             @emitted_events = ();
             $advertiser->p2p_advert_update(
@@ -435,8 +436,8 @@ subtest 'Buy ads' => sub {
         type             => 'buy',
     );
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
-    my $advert     = $advertiser->p2p_advert_create(%params);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
+    my $advert     = P2P->new(client => $advertiser)->p2p_advert_create(%params);
 
     cmp_deeply(
         exception { $advertiser->p2p_advert_update(id => $advert->{id}, payment_method_ids => [1, 2, 3]) },
@@ -472,11 +473,11 @@ subtest 'Buy ads' => sub {
 
 subtest 'Deleting ads' => sub {
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
-    BOM::Test::Helper::P2P::create_escrow();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    BOM::Test::Helper::P2PWithClient::create_escrow();
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
 
     for my $status (qw( pending buyer-confirmed timed-out )) {
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, $status);
         cmp_deeply(
             exception {
                 $advertiser->p2p_advert_update(
@@ -489,7 +490,7 @@ subtest 'Deleting ads' => sub {
         );
     }
 
-    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
+    BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, 'cancelled');
 
     my $resp;
     is exception { $resp = $advertiser->p2p_advert_update(id => $advert->{id}, delete => 1) }, undef, 'can delete ad with cancelled order';
@@ -525,7 +526,7 @@ subtest 'Deleting ads' => sub {
         'cannot undelete ad'
     );
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 done_testing();

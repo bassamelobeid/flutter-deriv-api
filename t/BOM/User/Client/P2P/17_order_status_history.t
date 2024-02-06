@@ -4,11 +4,12 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Rules::Engine;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 =head2 
 
@@ -32,7 +33,7 @@ my $client_names = {
 };
 
 my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(advertiser => $advertiser_names);
-my $client = BOM::Test::Helper::P2P::create_advertiser(client_details => $client_names);
+my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => $client_names);
 
 my $test_cases = [{
         order_audit => [qw(pending pending pending buyer-confirmed buyer-confirmed timed-out timed-out completed)],
@@ -59,7 +60,7 @@ foreach my $test_case (@$test_cases) {
         rule_engine => BOM::Rules::Engine->new(),
     );
     foreach my $status (@{$test_case->{order_audit}}) {
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, $status);
     }
 
     my $list = $client->p2p_order_status_history($order->{id});
@@ -67,6 +68,6 @@ foreach my $test_case (@$test_cases) {
 
 }
 
-BOM::Test::Helper::P2P::reset_escrow();
+BOM::Test::Helper::P2PWithClient::reset_escrow();
 
 done_testing;

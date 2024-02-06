@@ -6,8 +6,10 @@ use Test::Fatal;
 use Test::Exception;
 use Test::MockModule;
 use Guard;
+use P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Helper::Client;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
@@ -15,17 +17,17 @@ use BOM::Rules::Engine;
 my $rule_engine = BOM::Rules::Engine->new();
 my $app_config  = BOM::Config::Runtime->instance->app_config;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 BOM::Test::Helper::Client::create_doughflow_methods('CR');
 
 subtest 'sell ads reversible balance' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
-    my $client     = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
+    my $client     = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'sell',
         min_order_amount => 20
     );
@@ -77,11 +79,11 @@ subtest 'sell ads reversible balance' => sub {
 
 subtest 'buy ads reversible methods' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
-    my $client     = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
+    my $client     = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         min_order_amount => 20
     );
@@ -136,8 +138,8 @@ subtest 'sell ads fiat deposits restricted' => sub {
     $app_config->payments->p2p->fiat_deposit_restricted_countries(['za']);
     $app_config->payments->p2p->fiat_deposit_restricted_lookback(180);
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'ng'});
-    my $client     = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'za'});
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => 'ng'});
+    my $client     = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => 'za'});
 
     my $client_usdc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -149,7 +151,7 @@ subtest 'sell ads fiat deposits restricted' => sub {
     $advertiser->user->add_client($client_usdc);
 
     my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'sell',
         min_order_amount => 20
     );
@@ -189,7 +191,7 @@ subtest 'sell ads fiat deposits restricted' => sub {
         'ad hidden after country restricted'
     );
 
-    my $err = exception { BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id}, amount => 20) };
+    my $err = exception { BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id}, amount => 20) };
     is $err->{error_code}, 'AdvertNotFound', 'Cannot place order';
 
     $client_usdc->payment_account_transfer(
@@ -210,10 +212,10 @@ subtest 'sell ads fiat deposits restricted' => sub {
         'ad visible after crypto transfer'
     );
 
-    $err = exception { BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id}, amount => 20.01) };
+    $err = exception { BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id}, amount => 20.01) };
     is $err->{error_code}, 'OrderCreateFailAmountAdvertiser', 'Cannot place order that exceeds non-cashier balance';
 
-    lives_ok { BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id}, amount => 20.00) } 'can create order with correct amount';
+    lives_ok { BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id}, amount => 20.00) } 'can create order with correct amount';
     is(
         $client->p2p_advert_list(
             local_currency => $advertiser->local_currency,
@@ -238,8 +240,8 @@ subtest 'buy ads fiat deposits restricted' => sub {
 
     $app_config->payments->p2p->fiat_deposit_restricted_countries(['ke']);
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'ke'});
-    my $client     = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'lk'});
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => 'ke'});
+    my $client     = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => 'lk'});
 
     my $client_usdc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -251,7 +253,7 @@ subtest 'buy ads fiat deposits restricted' => sub {
     $advertiser->user->add_client($client_usdc);
 
     my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         min_order_amount => 20
     );

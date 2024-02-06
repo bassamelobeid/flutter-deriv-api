@@ -9,11 +9,11 @@ use Test::Fatal;
 use JSON::MaybeXS;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 
 my $json = JSON::MaybeXS->new;
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -378,7 +378,7 @@ subtest 'combo operations' => sub {
 };
 
 subtest 'update duplicate' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     my $methods = $advertiser->p2p_advertiser_payment_methods(
         create => [{
@@ -409,7 +409,7 @@ subtest 'update duplicate' => sub {
 };
 
 subtest 'Instructions field' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     my $methods = $advertiser->p2p_advertiser_payment_methods(
         create => [{

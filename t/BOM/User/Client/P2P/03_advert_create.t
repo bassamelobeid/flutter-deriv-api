@@ -12,15 +12,17 @@ use Date::Utility;
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Redis;
 use BOM::Rules::Engine;
+use P2P;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_payment_methods();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_payment_methods();
 
 my $email = 'p2p_adverts_test@binary.com';
 
@@ -81,7 +83,11 @@ subtest 'Creating advert from non-advertiser' => sub {
 
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
-    cmp_deeply(exception { $client->p2p_advert_create(%params) }, {error_code => 'AdvertiserNotRegistered'}, "non advertiser can't create advert");
+    cmp_deeply(
+        exception { P2P->new(client => $client)->p2p_advert_create(%params) },
+        {error_code => 'AdvertiserNotRegistered'},
+        "non advertiser can't create advert"
+    );
 };
 
 subtest 'advertiser Registration' => sub {
@@ -140,7 +146,7 @@ subtest 'advertiser Registration' => sub {
     my $advertiser_info = $adv_client->p2p_advertiser_info;
     cmp_deeply($advertiser_info, $expected, 'correct advertiser_info for advertiser');
 
-    my $other_client = BOM::Test::Helper::P2P::create_advertiser();
+    my $other_client = BOM::Test::Helper::P2PWithClient::create_advertiser();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
     delete $expected->@{
         qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available cancels_remaining blocked_by_count withdrawal_limit/
@@ -152,7 +158,7 @@ subtest 'advertiser Registration' => sub {
 
 subtest 'Duplicate advertiser Registration' => sub {
     my $name       = 'ad man 2';
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(name => $name);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(name => $name);
 
     cmp_deeply(
         exception {
@@ -175,13 +181,13 @@ subtest 'Duplicate advertiser Registration' => sub {
 };
 
 subtest 'Creating advert from not approved advertiser' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
     $advertiser->p2p_advertiser_update(is_approved => 0);
     delete $advertiser->{_p2p_advertiser_cached};
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%advert_params)
+            P2P->new(client => $advertiser)->p2p_advert_create(%advert_params)
         },
         {error_code => 'AdvertiserNotApproved'},
         "non approved can't create advert"
@@ -194,7 +200,7 @@ subtest 'Updating advertiser fields' => sub {
         name => 'ad man 3',
         %advertiser_params
     );
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(%params);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(%params);
 
     my $advertiser_info = $advertiser->p2p_advertiser_info;
 
@@ -258,7 +264,7 @@ subtest 'Updating advertiser fields' => sub {
 subtest 'Creating advert' => sub {
 
     my $name       = 'ad man 4';
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(
         %advertiser_params,
         name    => $name,
         balance => 2.4
@@ -270,7 +276,7 @@ subtest 'Creating advert' => sub {
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {
             error_code     => 'MaximumExceeded',
@@ -283,7 +289,7 @@ subtest 'Creating advert' => sub {
     $params{min_order_amount} = $params{max_order_amount} + 1;
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'InvalidMinMaxAmount'},
         'min max validation'
@@ -293,7 +299,7 @@ subtest 'Creating advert' => sub {
     $params{rate} = 0.0000001;
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {
             error_code     => 'RateTooSmall',
@@ -306,7 +312,7 @@ subtest 'Creating advert' => sub {
     $params{contact_info} = ' ';
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'AdvertContactInfoRequired'},
         'contact info validation'
@@ -316,7 +322,7 @@ subtest 'Creating advert' => sub {
     $params{payment_method} = ' ';
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'AdvertPaymentMethodRequired'},
         'Error when payment method not provided for sell advert'
@@ -326,7 +332,7 @@ subtest 'Creating advert' => sub {
     $params{payment_info} = ' ';
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'AdvertPaymentInfoRequired'},
         'Error when payment info not provided for sell advert'
@@ -337,7 +343,7 @@ subtest 'Creating advert' => sub {
     $params{type}           = 'buy';
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'AdvertPaymentMethodRequired'},
         'Error when payment method not provided for buy advert'
@@ -348,7 +354,7 @@ subtest 'Creating advert' => sub {
     $params{payment_method_ids} = [1, 2, 3];
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'AdvertPaymentMethodParam'},
         'Error when both payment_method and payment_method_ids are provided for sell advert'
@@ -360,7 +366,7 @@ subtest 'Creating advert' => sub {
     $params{payment_method_names} = ['x', 'y', 'z'];
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'AdvertPaymentMethodParam'},
         'Error when both payment_method and payment_method_names are provided for buy advert'
@@ -371,7 +377,7 @@ subtest 'Creating advert' => sub {
     $params{payment_method_ids} = [1, 2, 3];
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'InvalidPaymentMethods'},
         'payment_method_ids validation'
@@ -383,7 +389,7 @@ subtest 'Creating advert' => sub {
     $params{payment_method_names} = ['x', 'y', 'z'];
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {
             error_code     => 'InvalidPaymentMethod',
@@ -397,7 +403,7 @@ subtest 'Creating advert' => sub {
     %params = %advert_params;
     is(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advert = P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         undef,
         "create advert successfully"
@@ -456,7 +462,7 @@ subtest 'Creating advert' => sub {
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params);
+            P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {error_code => 'DuplicateAdvert'},
         'Duplicate validation'
@@ -520,14 +526,14 @@ subtest 'Creating advert' => sub {
 
 subtest 'Rate Validation' => sub {
     my %params     = %advert_params;
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     my $advert;
 
     $params{rate} = 0.0000001;
     cmp_deeply(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advert = P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {
             error_code     => 'RateTooSmall',
@@ -538,7 +544,7 @@ subtest 'Rate Validation' => sub {
     $params{rate} = 10**9 + 1;
     cmp_deeply(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advert = P2P->new(client => $advertiser)->p2p_advert_create(%params);
         },
         {
             error_code     => 'RateTooBig',
@@ -555,18 +561,18 @@ subtest 'Duplicate ads' => sub {
     $params{min_order_amount} = 5;
     $params{max_order_amount} = 9.99;
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 1000);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 1000);
 
-    BOM::Test::Helper::P2P::create_escrow;
+    BOM::Test::Helper::P2PWithClient::create_escrow;
 
     my $ad;
-    lives_ok { $ad = $advertiser->p2p_advert_create(%params) } 'create first ad';
+    lives_ok { $ad = P2P->new(client => $advertiser)->p2p_advert_create(%params) } 'create first ad';
 
     subtest 'duplicate rate' => sub {
 
         cmp_deeply(
             exception {
-                $advertiser->p2p_advert_create(%params)
+                P2P->new(client => $advertiser)->p2p_advert_create(%params)
             },
             {error_code => 'DuplicateAdvert'},
             'cannot create ad with duplicate rate'
@@ -576,7 +582,7 @@ subtest 'Duplicate ads' => sub {
             id        => $ad->{id},
             is_active => 0
         );
-        lives_ok { $advertiser->p2p_advert_create(%params) } 'create duplicate ad when first disabled';
+        lives_ok { P2P->new(client => $advertiser)->p2p_advert_create(%params) } 'create duplicate ad when first disabled';
 
         cmp_deeply(
             exception {
@@ -598,7 +604,7 @@ subtest 'Duplicate ads' => sub {
 
         cmp_deeply(
             exception {
-                $advertiser->p2p_advert_create(%params)
+                P2P->new(client => $advertiser)->p2p_advert_create(%params)
             },
             {error_code => 'AdvertSameLimits'},
             'cannot create ad with overlapping min_order_amount'
@@ -608,7 +614,7 @@ subtest 'Duplicate ads' => sub {
         $params{max_order_amount} = 5;
         cmp_deeply(
             exception {
-                $advertiser->p2p_advert_create(%params)
+                P2P->new(client => $advertiser)->p2p_advert_create(%params)
             },
             {error_code => 'AdvertSameLimits'},
             'cannot create ad with overlapping max_order_amount'
@@ -618,7 +624,7 @@ subtest 'Duplicate ads' => sub {
         $params{max_order_amount} = 7;
         cmp_deeply(
             exception {
-                $advertiser->p2p_advert_create(%params)
+                P2P->new(client => $advertiser)->p2p_advert_create(%params)
             },
             {error_code => 'AdvertSameLimits'},
             'cannot create ad with inner range'
@@ -628,7 +634,7 @@ subtest 'Duplicate ads' => sub {
         $params{max_order_amount} = 11;
         cmp_deeply(
             exception {
-                $advertiser->p2p_advert_create(%params)
+                P2P->new(client => $advertiser)->p2p_advert_create(%params)
             },
             {error_code => 'AdvertSameLimits'},
             'cannot create ad with outer range'
@@ -636,13 +642,13 @@ subtest 'Duplicate ads' => sub {
 
         $params{min_order_amount} = 10;
         $params{max_order_amount} = 19.99;
-        lives_ok { $ad = $advertiser->p2p_advert_create(%params) } 'can create 2nd ad with new range';
+        lives_ok { $ad = P2P->new(client => $advertiser)->p2p_advert_create(%params) } 'can create 2nd ad with new range';
         $advertiser->p2p_advert_update(
             id        => $ad->{id},
             is_active => 0
         );
         $params{rate} = 49.98;
-        lives_ok { $advertiser->p2p_advert_create(%params) } 'can create again after disabling it';
+        lives_ok { P2P->new(client => $advertiser)->p2p_advert_create(%params) } 'can create again after disabling it';
 
         cmp_deeply(
             exception {
@@ -658,7 +664,7 @@ subtest 'Duplicate ads' => sub {
         $params{rate}             = 49.95;
         $params{min_order_amount} = 20;
         $params{max_order_amount} = 29.99;
-        lives_ok { $ad = $advertiser->p2p_advert_create(%params) } 'can create 3rd ad with new range';
+        lives_ok { $ad = P2P->new(client => $advertiser)->p2p_advert_create(%params) } 'can create 3rd ad with new range';
     };
 
     subtest 'max ads of same type' => sub {
@@ -670,7 +676,7 @@ subtest 'Duplicate ads' => sub {
 
         cmp_deeply(
             exception {
-                $advertiser->p2p_advert_create(%params)
+                P2P->new(client => $advertiser)->p2p_advert_create(%params)
             },
             {
                 error_code     => 'AdvertMaxExceededSameType',
@@ -683,7 +689,7 @@ subtest 'Duplicate ads' => sub {
             id        => $ad->{id},
             is_active => 0
         );
-        lives_ok { $advertiser->p2p_advert_create(%params) } 'can create after disabling another ad';
+        lives_ok { P2P->new(client => $advertiser)->p2p_advert_create(%params) } 'can create after disabling another ad';
 
         cmp_deeply(
             exception {
@@ -704,20 +710,20 @@ subtest 'Duplicate ads' => sub {
         $params{max_order_amount} = 60;
 
         BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_ads_per_type(4);
-        lives_ok { $advertiser->p2p_advert_create(%params) } 'can create 4th ad when limit increased';
+        lives_ok { P2P->new(client => $advertiser)->p2p_advert_create(%params) } 'can create 4th ad when limit increased';
         BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_ads_per_type(3);
     };
 
     subtest 'max active ads' => sub {
         for my $num (5 .. 10) {
             $params{local_currency} = chr($num + 60) x 3;
-            lives_ok { $ad = $advertiser->p2p_advert_create(%params) } "can create ${num}th ad with different currency";
+            lives_ok { $ad = P2P->new(client => $advertiser)->p2p_advert_create(%params) } "can create ${num}th ad with different currency";
         }
 
         $params{local_currency} = 'xxx';
         cmp_deeply(
             exception {
-                $advertiser->p2p_advert_create(%params)
+                P2P->new(client => $advertiser)->p2p_advert_create(%params)
             },
             {error_code => 'AdvertMaxExceeded'},
             'cannot have more than 10 active ads'
@@ -727,7 +733,7 @@ subtest 'Duplicate ads' => sub {
             is_active => 0
         );
         my $ad_10;
-        lives_ok { $ad_10 = $advertiser->p2p_advert_create(%params) } 'can create after an ad is disabled';
+        lives_ok { $ad_10 = P2P->new(client => $advertiser)->p2p_advert_create(%params) } 'can create after an ad is disabled';
 
         cmp_deeply(
             exception {
@@ -740,24 +746,24 @@ subtest 'Duplicate ads' => sub {
             'cannot re-enable another ad'
         );
 
-        BOM::Test::Helper::P2P::create_order(
+        BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $ad_10->{id},
             amount    => 55
         );
         lives_ok { $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 1) } 'can re-enable if another ad is used up';
     };
 
-    BOM::Test::Helper::P2P::reset_escrow;
+    BOM::Test::Helper::P2PWithClient::reset_escrow;
 };
 
 subtest 'Updating advert' => sub {
-    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+    my ($advertiser, $advert) = BOM::Test::Helper::P2PWithClient::create_advert(
         max_order_amount => 80,
         amount           => 100
     );
     ok $advert->{is_active}, 'advert is active';
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser();
     cmp_deeply(
         exception { $client->p2p_advert_update(id => $advert->{id}, is_listed => 0) },
         {error_code => 'PermissionDenied'},
@@ -789,13 +795,13 @@ subtest 'Updating advert' => sub {
 
 subtest 'Creating advert from non active advertiser' => sub {
     my %params     = %advert_params;
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
     ok !$advertiser->p2p_advertiser_update(is_listed => 0)->{is_listed}, "set advertiser's adverts inactive";
     delete $advertiser->{_p2p_advertiser_cached};
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params)
+            P2P->new(client => $advertiser)->p2p_advert_create(%params)
         },
         undef,
         "unlisted advertiser can still create advert"
@@ -803,12 +809,12 @@ subtest 'Creating advert from non active advertiser' => sub {
 };
 
 subtest 'Deleting ads' => sub {
-    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
-    BOM::Test::Helper::P2P::create_escrow();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($advertiser, $advert) = BOM::Test::Helper::P2PWithClient::create_advert();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
 
     for my $status (qw( pending buyer-confirmed timed-out )) {
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, $status);
         cmp_deeply(
             exception {
                 $advertiser->p2p_advert_update(
@@ -821,7 +827,7 @@ subtest 'Deleting ads' => sub {
         );
     }
 
-    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
+    BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, 'cancelled');
 
     my $resp;
     is exception { $resp = $advertiser->p2p_advert_update(id => $advert->{id}, delete => 1) }, undef, 'can delete ad with cancelled order';
@@ -857,7 +863,7 @@ subtest 'Deleting ads' => sub {
         'cannot undelete ad'
     );
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'p2p_advert_info' => sub {
@@ -867,7 +873,7 @@ subtest 'p2p_advert_info' => sub {
         min_order_amount => 10,
         max_order_amount => 100
     );
-    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 50);
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 50);
 
     is $client->p2p_advert_info(id => -1), undef, 'non existant ad id returns undef';
     is $client->p2p_advert_info(),         undef, 'missing id param returns undef';
@@ -880,7 +886,7 @@ subtest 'p2p_advert_info' => sub {
             use_client_limits => 1
         )->{max_order_amount_limit}, '==', 50, 'limit considers client balance';
 
-        my $client2 = BOM::Test::Helper::P2P::create_advertiser();
+        my $client2 = BOM::Test::Helper::P2PWithClient::create_advertiser();
         cmp_ok $client2->p2p_advert_info(
             id                => $advert->{id},
             use_client_limits => 1
@@ -904,11 +910,11 @@ subtest 'is_visible flag and subscription event' => sub {
         contact_info     => 'x',
     );
 
-    my $client        = BOM::Test::Helper::P2P::create_advertiser(balance => 1);
+    my $client        = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 1);
     my $advertiser_id = $client->_p2p_advertiser_cached->{id};
 
     undef $emitted_events;
-    my $advert = $client->p2p_advert_create(%ad_params);
+    my $advert = P2P->new(client => $client)->p2p_advert_create(%ad_params);
 
     cmp_deeply($emitted_events->{p2p_adverts_updated}, [{advertiser_id => $advertiser_id}], 'p2p_adverts_updated event emitted for advert create');
 
@@ -948,7 +954,7 @@ subtest 'is_visible flag and subscription event' => sub {
     $config->limits->maximum_order(1000);
     cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after limit increased';
 
-    my $client2 = BOM::Test::Helper::P2P::create_advertiser;
+    my $client2 = BOM::Test::Helper::P2PWithClient::create_advertiser;
     $client2->p2p_advertiser_relations(add_blocked => [$advertiser_id]);
     cmp_ok $client2->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible when blocked';
     $client2->p2p_advertiser_relations(remove_blocked => [$advertiser_id]);
@@ -982,7 +988,7 @@ subtest 'is_visible flag and subscription event' => sub {
         remaining_amount => 100
     )->{is_visible}, '==', 1, 'visible after increasing remaining';
 
-    my $client3 = BOM::Test::Helper::P2P::create_advertiser(
+    my $client3 = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance        => 100,
         currency       => 'USD',
         client_details => {residence => 'zw'},
@@ -994,7 +1000,7 @@ subtest 'is_visible flag and subscription event' => sub {
         VALUES ('zw','low','USD',100,100,11), ('zw','medium','USD',100,100,NULL)"
     );
 
-    $advert = $client3->p2p_advert_create(%ad_params);
+    $advert = P2P->new(client => $client3)->p2p_advert_create(%ad_params);
 
     cmp_ok $advert->{is_visible}, '==', 0, 'not visible when balance below band min';
     cmp_deeply $advert->{visibility_status}, ['advert_min_limit'], 'visibility_status contains advert_min_limit';
@@ -1013,7 +1019,7 @@ subtest 'is_visible flag and subscription event' => sub {
     $client3->db->dbic->dbh->do('INSERT INTO p2p.p2p_advertiser_totals_daily (advertiser_id, day, buy_amount) VALUES (?, NOW(), 100)',
         undef, $advertiser_id);
 
-    $advert = $client3->p2p_advert_create(
+    $advert = P2P->new(client => $client3)->p2p_advert_create(
         type             => 'buy',
         amount           => 100,
         min_order_amount => 1,
@@ -1056,10 +1062,12 @@ subtest 'subscriptions' => sub {
     cmp_deeply decode_json_utf8($redis->get($key)), {}, 'no ads, no state saved in redis';
 
     my $pms = $client1->p2p_advertiser_payment_methods(create => [{method => 'method1'}, {method => 'method2'}]);
+    $client1->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_approved=TRUE WHERE id = $advertiser_id");
 
+    delete $client1->{_p2p_advertiser_cached};
     my $advert = (
         BOM::Test::Helper::P2P::create_advert(
-            client             => $client1,
+            client             => P2P->new(client => $client1),
             type               => 'sell',
             payment_method     => '',
             payment_method_ids => [keys %$pms]))[1];
@@ -1091,13 +1099,13 @@ subtest 'subscriptions' => sub {
 };
 
 subtest 'rate check' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(
         rate => 1.001,
     );
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser;
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     cmp_deeply(
         exception {
@@ -1125,11 +1133,11 @@ subtest 'rate check' => sub {
         'can create order with correct rate'
     );
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'Creating advert with custom order_expiry_period values' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
     for my $order_expiry_period (900, 1800, 2700, 3600, 5400, 7200) {
         my ($advert, $order);
         cmp_deeply(
@@ -1141,7 +1149,7 @@ subtest 'Creating advert with custom order_expiry_period values' => sub {
         );
         undef $emitted_events;
         is $advert->{order_expiry_period}, $order_expiry_period, 'expected order_expiry_period for ad';
-        (undef, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+        (undef, $order) = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
         is $order->{expiry_time}, ($order->{created_time} + $advert->{order_expiry_period}), "order expiry epoch reflected correctly";
     }
 
@@ -1153,7 +1161,7 @@ subtest 'Creating advert with custom order_expiry_period values' => sub {
         'invalid order expiry time error captured correctly'
     ) foreach (100, 200.15, "900.00", "abc");
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 
 };
 

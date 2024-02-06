@@ -6,13 +6,15 @@ use Test::Fatal qw(exception lives_ok);
 use Test::Deep;
 use JSON::MaybeUTF8 qw(:v1);
 
+use P2P;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 BOM::Test::Helper::Client::create_doughflow_methods('CR');
 
 my $config      = BOM::Config::Runtime->instance->app_config->payments;
@@ -26,19 +28,19 @@ subtest 'positive p2p and reversible, balance more than p2p+reversible' => sub {
     # net reversible = +100
     # Balance = 250
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'id'});
-    my $client     = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => 'id'});
+    my $client     = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance        => 50,
         client_details => {residence => 'th'});
 
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         max_order_amount => 50,
         amount           => 50,
     );
 
-    my (undef, $order) = BOM::Test::Helper::P2P::create_order(
+    my (undef, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $ad->{id},
         amount    => 50
@@ -64,12 +66,12 @@ subtest 'positive p2p and reversible, balance more than p2p+reversible' => sub {
     cmp_ok $advertiser->p2p_withdrawable_balance, '==', 0, 'zero available when other country banned';
     $config->p2p->restricted_countries([]);
 
-    BOM::Test::Helper::P2P::set_advertiser_is_enabled($advertiser, 0);
+    BOM::Test::Helper::P2PWithClient::set_advertiser_is_enabled($advertiser, 0);
     delete $advertiser->{_p2p_advertiser_cached};
 
     cmp_ok $advertiser->p2p_withdrawable_balance, '==', $advertiser->account->balance, 'full balance availble when advertiser is banned from P2P';
 
-    BOM::Test::Helper::P2P::set_advertiser_is_enabled($advertiser, 1);
+    BOM::Test::Helper::P2PWithClient::set_advertiser_is_enabled($advertiser, 1);
     delete $advertiser->{_p2p_advertiser_cached};
 
     $advertiser->payment_doughflow(
@@ -93,13 +95,13 @@ subtest 'positive p2p and reversible, balance more than p2p+reversible' => sub {
     check_total($advertiser);
 
     (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'sell',
         max_order_amount => 100,
         amount           => 100,
     );
 
-    (undef, $order) = BOM::Test::Helper::P2P::create_order(
+    (undef, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         client    => $client,
         advert_id => $ad->{id},
         amount    => 100
@@ -120,7 +122,7 @@ subtest 'transfers' => sub {
 
     $config->p2p_withdrawal_limit(0);
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     my $client_usdc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -131,13 +133,13 @@ subtest 'transfers' => sub {
     $advertiser->user->add_client($client_usdc);
 
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         max_order_amount => 50,
         amount           => 50,
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 50
     );
@@ -190,16 +192,16 @@ subtest 'mix of deposits' => sub {
     # reversible: 100
     # non reversible: 500
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         max_order_amount => 50,
         amount           => 50,
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 50
     );
@@ -233,16 +235,16 @@ subtest 'negative reversible' => sub {
     # reversible: -50
     # non-reversible: 100
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser();
 
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         max_order_amount => 100,
         amount           => 100,
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 100
     );
@@ -273,16 +275,16 @@ subtest 'negative reversible' => sub {
 
 subtest 'fiat deposit exclusion' => sub {
     $config->p2p->fiat_deposit_restricted_countries(['ng']);
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'ng'});
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => 'ng'});
 
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser,
+        client           => P2P->new(client => $advertiser),
         type             => 'buy',
         max_order_amount => 50,
         amount           => 50,
     );
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $ad->{id},
         amount    => 50
     );

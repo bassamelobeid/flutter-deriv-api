@@ -5,9 +5,10 @@ use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 my $redis  = BOM::Config::Redis->redis_p2p_write;
@@ -18,7 +19,7 @@ subtest 'order created and completed normally' => sub {
         type => 'sell',
     );
 
-    my ($client, $order_create_response) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order_create_response) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -35,6 +36,7 @@ subtest 'order created and completed normally' => sub {
     # buyer clicked I've paid
     $client->p2p_order_confirm(id => $order_id);
     $order = $client->_p2p_orders(id => $order_id)->[0];
+
     is $client->_order_details([$order])->[0]->{is_seen}, 1, 'buyer is_seen flag is 1';
 
     # before seller call p2p_order_info when status is buyer-confimed
@@ -57,7 +59,7 @@ subtest 'order created, becomes timed-out and completed normally' => sub {
         type => 'sell',
     );
 
-    my ($client, $order_create_response) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order_create_response) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -67,7 +69,7 @@ subtest 'order created, becomes timed-out and completed normally' => sub {
     $client->p2p_order_confirm(id => $order_id);
 
     #set order status to timed-out
-    BOM::Test::Helper::P2P::set_order_disputable($client, $order_id);
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order_id);
 
     my $order = $client->_p2p_orders(id => $order_id)->[0];
 
@@ -92,7 +94,7 @@ subtest 'order cancelled' => sub {
         type => 'sell',
     );
 
-    my ($client, $order_create_response) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order_create_response) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -114,14 +116,14 @@ subtest 'order expires without any action from buyer' => sub {
         type => 'sell',
     );
 
-    my ($client, $order_create_response) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order_create_response) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
     my $order_id = $order_create_response->{id};
 
-    BOM::Test::Helper::P2P::expire_order($client, $order_id);
-    BOM::Test::Helper::P2P::set_order_status($client, $order_id, "refunded");
+    BOM::Test::Helper::P2PWithClient::expire_order($client, $order_id);
+    BOM::Test::Helper::P2PWithClient::set_order_status($client, $order_id, "refunded");
     my $order = $client->_p2p_orders(id => $order_id)->[0];
 
     # before seller and buyer call p2p_order_info when status is refunded
@@ -138,7 +140,7 @@ subtest 'order becomes timed-out, buyer create dispute, dispute resolved by sell
         type => 'sell',
     );
 
-    my ($client, $order_create_response) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order_create_response) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -148,7 +150,7 @@ subtest 'order becomes timed-out, buyer create dispute, dispute resolved by sell
     $client->p2p_order_confirm(id => $order_id);
 
     #expire the order and set order status to timed-out
-    BOM::Test::Helper::P2P::set_order_disputable($client, $order_id);
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order_id);
 
     my $response = $client->p2p_create_order_dispute(
         id             => $order_id,
@@ -180,7 +182,7 @@ subtest 'order becomes timed-out, seller create dispute, dispute resolved in fav
         type => 'sell',
     );
 
-    my ($client, $order_create_response) = BOM::Test::Helper::P2P::create_order(
+    my ($client, $order_create_response) = BOM::Test::Helper::P2PWithClient::create_order(
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
@@ -191,7 +193,7 @@ subtest 'order becomes timed-out, seller create dispute, dispute resolved in fav
 
     #expire the order and set order status to timed-out
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $order_id);
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order_id);
 
     my $response = $client->p2p_create_order_dispute(
         id             => $order_id,

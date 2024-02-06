@@ -7,18 +7,20 @@ use Test::Warn;
 use Test::MockModule;
 use Test::Fatal;
 use JSON::MaybeXS;
+use P2P;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
 my $json = JSON::MaybeXS->new;
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_escrow();
-BOM::Test::Helper::P2P::create_payment_methods();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_escrow();
+BOM::Test::Helper::P2PWithClient::create_payment_methods();
 
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -31,7 +33,7 @@ $runtime_config->transaction_verification_countries_all(0);
 
 subtest 'adverts' => sub {
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
 
     my %methods = $client->p2p_advertiser_payment_methods(
         create => [{
@@ -49,7 +51,7 @@ subtest 'adverts' => sub {
 
     my %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
-    my $advert = $client->p2p_advert_create(
+    my $advert = P2P->new(client => $client)->p2p_advert_create(
         type               => 'sell',
         amount             => 10,
         min_order_amount   => 1,
@@ -70,7 +72,7 @@ subtest 'adverts' => sub {
     cmp_deeply $client->p2p_advert_list()->[0]{payment_method_names}, ['Method 2'], 'disabled pms not shown in advert list to advert owner';
     cmp_deeply $ad_info->{payment_method_details},                    \%methods,    'payment method details when a method is disbled in country';
 
-    BOM::Test::Helper::P2P::create_payment_methods();    # reset
+    BOM::Test::Helper::P2PWithClient::create_payment_methods();    # reset
 
     is exception {
         %methods = $client->p2p_advertiser_payment_methods(
@@ -84,7 +86,7 @@ subtest 'adverts' => sub {
     cmp_deeply $ad_info->{payment_method_names},   ['Method 2'], 'payment method names';
     cmp_deeply $ad_info->{payment_method_details}, \%methods,    'payment method details';
 
-    my $otherclient = BOM::Test::Helper::P2P::create_advertiser;
+    my $otherclient = BOM::Test::Helper::P2PWithClient::create_advertiser;
     $ad_info = $otherclient->p2p_advert_info(id => $advert->{id});
     ok !exists $ad_info->{payment_method_details}, 'payment_method_details not returned for other client from p2p_advert_info';
 
@@ -147,7 +149,7 @@ subtest 'adverts' => sub {
 
     is(
         exception {
-            $advert = $client->p2p_advert_create(
+            $advert = P2P->new(client => $client)->p2p_advert_create(
                 type                 => 'buy',
                 amount               => 10,
                 min_order_amount     => 1,
@@ -166,7 +168,7 @@ subtest 'adverts' => sub {
     $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
     cmp_deeply $client->p2p_advert_info(id => $advert->{id})->{payment_method_names}, ['Method 1', 'Method 2'],
         'payment method names when a method is disbled in country';
-    BOM::Test::Helper::P2P::create_payment_methods();    # reset
+    BOM::Test::Helper::P2PWithClient::create_payment_methods();    # reset
 
     cmp_deeply(
         exception {
@@ -195,7 +197,7 @@ subtest 'adverts' => sub {
 
 subtest 'buy ads / sell orders' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     my %ad_params = (
         amount           => 100,
@@ -209,7 +211,7 @@ subtest 'buy ads / sell orders' => sub {
     );
 
     cmp_deeply(
-        exception { $advertiser->p2p_advert_create(%ad_params, payment_method_names => ['nonsense', 'method1']) },
+        exception { P2P->new(client => $advertiser)->p2p_advert_create(%ad_params, payment_method_names => ['nonsense', 'method1']) },
         {
             error_code     => 'InvalidPaymentMethod',
             message_params => ['nonsense'],
@@ -218,7 +220,7 @@ subtest 'buy ads / sell orders' => sub {
     );
 
     cmp_deeply(
-        exception { $advertiser->p2p_advert_create(%ad_params, payment_method_names => []) },
+        exception { P2P->new(client => $advertiser)->p2p_advert_create(%ad_params, payment_method_names => []) },
         {
             error_code => 'AdvertPaymentMethodRequired',
         },
@@ -226,7 +228,8 @@ subtest 'buy ads / sell orders' => sub {
     );
 
     cmp_deeply(
-        exception { $advertiser->p2p_advert_create(%ad_params, payment_method_names => ['method1'], payment_method => 'method1') },
+        exception { P2P->new(client => $advertiser)->p2p_advert_create(%ad_params, payment_method_names => ['method1'], payment_method => 'method1') }
+        ,
         {
             error_code => 'AdvertPaymentMethodParam',
         },
@@ -234,7 +237,7 @@ subtest 'buy ads / sell orders' => sub {
     );
 
     my $advert;
-    is(exception { $advert = $advertiser->p2p_advert_create(%ad_params, payment_method_names => ['method2', 'method1']) },
+    is(exception { $advert = P2P->new(client => $advertiser)->p2p_advert_create(%ad_params, payment_method_names => ['method2', 'method1']) },
         undef, 'can create ad with valid names');
 
     cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment_method_names returned from advert create';
@@ -250,7 +253,7 @@ subtest 'buy ads / sell orders' => sub {
     is(exception { $advertiser->p2p_advert_update(id => $advert->{id}, payment_method_names => ['method1', 'method3']) },
         undef, 'update ad method names');
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
 
     my %methods = $client->p2p_advertiser_payment_methods(
         create => [{
@@ -374,7 +377,7 @@ subtest 'sell ads / buy orders' => sub {
         local_currency   => 'myr',
     );
 
-    my $advertiser         = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    my $advertiser         = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
     my %advertiser_methods = $advertiser->p2p_advertiser_payment_methods(
         create => [{
                 method => 'method1',
@@ -395,7 +398,8 @@ subtest 'sell ads / buy orders' => sub {
     is(
         exception {
             $advert =
-                $advertiser->p2p_advert_create(%ad_params, payment_method_ids => [$methods_by_tag{m1}, $methods_by_tag{m2}, $methods_by_tag{m3}])
+                P2P->new(client => $advertiser)
+                ->p2p_advert_create(%ad_params, payment_method_ids => [$methods_by_tag{m1}, $methods_by_tag{m2}, $methods_by_tag{m3}])
         },
         undef,
         'can create ad with valid methods',
@@ -403,7 +407,7 @@ subtest 'sell ads / buy orders' => sub {
 
     cmp_deeply $advert->{payment_method_names}, ['Method 1'], 'payment_method_names correct on created ad';
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser;
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     my %client_methods = $client->p2p_advertiser_payment_methods(
         create => [{
@@ -457,7 +461,7 @@ subtest 'sell ads / buy orders' => sub {
     cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details,
         'payment_method_details returned after buyer-confirmed';
 
-    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    BOM::Test::Helper::P2PWithClient::set_order_disputable($client, $order->{id});
     cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details, 'payment_method_details returned when timed-out';
 
     $client->p2p_create_order_dispute(
@@ -574,9 +578,9 @@ subtest 'sell ads / buy orders' => sub {
 
 subtest 'legacy buy ads' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
-    my $ad = $advertiser->p2p_advert_create(
+    my $ad = P2P->new(client => $advertiser)->p2p_advert_create(
         amount           => 100,
         description      => 'x',
         type             => 'buy',
@@ -596,9 +600,9 @@ subtest 'legacy buy ads' => sub {
 
 subtest 'legacy sell ads' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
 
-    my $ad = $advertiser->p2p_advert_create(
+    my $ad = P2P->new(client => $advertiser)->p2p_advert_create(
         amount           => 100,
         description      => 'x',
         type             => 'sell',
@@ -638,10 +642,10 @@ subtest 'cross border ads' => sub {
                     mode      => 'include',
                     countries => ['ng', 'za']}}));
 
-    my $client_ng = BOM::Test::Helper::P2P::create_advertiser(
+    my $client_ng = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance        => 1000,
         client_details => {residence => 'ng'});
-    my $client_za = BOM::Test::Helper::P2P::create_advertiser(
+    my $client_za = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance        => 1000,
         client_details => {residence => 'za'});
 
@@ -662,12 +666,12 @@ subtest 'cross border ads' => sub {
     my %method_ids = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
     my (undef, $ad_ng) = BOM::Test::Helper::P2P::create_advert(
-        client             => $client_ng,
+        client             => P2P->new(client => $client_ng),
         type               => 'sell',
         payment_method_ids => [keys %methods]);
 
     my (undef, $ad_za) = BOM::Test::Helper::P2P::create_advert(
-        client               => $client_za,
+        client               => P2P->new(client => $client_za),
         type                 => 'buy',
         payment_method_names => ['method1', 'method2', 'method3']);
 
@@ -827,16 +831,16 @@ subtest 'ads visiblity to non-P2P clients' => sub {
                     mode      => 'include',
                     countries => ['br']}}));
 
-    my $advertiser_id = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser_id = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance        => 1000,
         client_details => {residence => 'id'});
 
-    my $advertiser_br = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser_br = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance        => 1000,
         client_details => {residence => 'br'});
 
     my (undef, $legacy_ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $advertiser_id,
+        client           => P2P->new(client => $advertiser_id),
         amount           => 5,
         min_order_amount => 2,
         max_order_amount => 5,
@@ -847,7 +851,7 @@ subtest 'ads visiblity to non-P2P clients' => sub {
     cmp_deeply([map { $_->{id} } @$ads], [$legacy_ad->{id}], 'legacy ad visible to non-p2p user due to matching local currency');
 
     my (undef, $ad_id) = BOM::Test::Helper::P2P::create_advert(
-        client               => $advertiser_id,
+        client               => P2P->new(client => $advertiser_id),
         amount               => 10,
         min_order_amount     => 8,
         max_order_amount     => 10,
@@ -856,7 +860,7 @@ subtest 'ads visiblity to non-P2P clients' => sub {
         payment_method_names => ['method4']);
 
     my (undef, $ad_br) = BOM::Test::Helper::P2P::create_advert(
-        client               => $advertiser_br,
+        client               => P2P->new(client => $advertiser_br),
         type                 => 'buy',
         payment_method_names => ['method5']);
 

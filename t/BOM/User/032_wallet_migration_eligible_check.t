@@ -12,13 +12,12 @@ use BOM::Rules::Engine;
 use BOM::TradingPlatform;
 use BOM::Test::Script::DevExperts;
 use BOM::Config::Runtime;
-use BOM::Test::Helper::P2P;
-
+use BOM::Test::Helper::P2PWithClient;
 use BOM::User::WalletMigration;
 
 plan tests => 10;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->system->suspend->wallets(0);

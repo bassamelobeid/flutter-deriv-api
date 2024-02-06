@@ -11,10 +11,11 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 
-BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 my $redis  = BOM::Config::Redis->redis_p2p();
 
@@ -235,24 +236,24 @@ for my $test_case (@test_cases) {
     subtest $test_case->{test_name} => sub {
         my $amount = $test_case->{amount};
 
-        my $escrow = BOM::Test::Helper::P2P::create_escrow();
+        my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
         my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
             amount  => $amount,
             type    => $test_case->{type},
             balance => $test_case->{advertiser_balance},
         );
-        my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        my ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             advert_id => $advert_info->{id},
             amount    => $amount,
             balance   => $test_case->{client_balance},
         );
 
-        cmp_ok($escrow->account->balance,     '==', $test_case->{escrow}{before},     'Escrow balance is correct');
-        cmp_ok($advertiser->account->balance, '==', $test_case->{advertiser}{before}, 'advertiser balance is correct');
-        cmp_ok($client->account->balance,     '==', $test_case->{client}{before},     'Client balance is correct');
+        cmp_ok($escrow->account->balance,             '==', $test_case->{escrow}{before},     'Escrow balance is correct');
+        cmp_ok($advertiser->client->account->balance, '==', $test_case->{advertiser}{before}, 'advertiser balance is correct');
+        cmp_ok($client->account->balance,             '==', $test_case->{client}{before},     'Client balance is correct');
 
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_case->{init_status});
-        BOM::Test::Helper::P2P::expire_order($client, $order->{id}, $test_case->{expiry});
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, $test_case->{init_status});
+        BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id}, $test_case->{expiry});
         @emitted_events = ();
 
         my $err = exception {
@@ -264,9 +265,9 @@ for my $test_case (@test_cases) {
         };
         is($err->{error_code}, $test_case->{error}, 'Got expected error behavior');
 
-        cmp_ok($escrow->account->balance,     '==', $test_case->{escrow}{after},     'Escrow balance is correct');
-        cmp_ok($advertiser->account->balance, '==', $test_case->{advertiser}{after}, 'advertiser balance is correct');
-        cmp_ok($client->account->balance,     '==', $test_case->{client}{after},     'Client balance is correct');
+        cmp_ok($escrow->account->balance,             '==', $test_case->{escrow}{after},     'Escrow balance is correct');
+        cmp_ok($advertiser->client->account->balance, '==', $test_case->{advertiser}{after}, 'advertiser balance is correct');
+        cmp_ok($client->account->balance,             '==', $test_case->{client}{after},     'Client balance is correct');
 
         my $order_data = $client->p2p_order_info(id => $order->{id}) // die;
 
@@ -316,20 +317,20 @@ for my $test_case (@test_cases) {
             ok !@emitted_events, 'no events emitted';
         }
 
-        BOM::Test::Helper::P2P::reset_escrow();
+        BOM::Test::Helper::P2PWithClient::reset_escrow();
     };
 }
 
 subtest 'timed out orders' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
-    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
     my $redis_item = join '|', $order->{id}, $client->loginid;
 
     ok $redis->zscore($expire_key, $redis_item), 'redis expire item present';
-    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'buyer-confirmed');
-    BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '0 hour');
+    BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, 'buyer-confirmed');
+    BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id}, '0 hour');
 
     @emitted_events = ();
 
@@ -357,7 +358,7 @@ subtest 'timed out orders' => sub {
         'expected events emitted'
     );
 
-    BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '-28 day');
+    BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id}, '-28 day');
 
     @emitted_events = ();
     ok !$client->p2p_expire_order(
@@ -369,7 +370,7 @@ subtest 'timed out orders' => sub {
     ok !$redis->zscore($expire_key, $redis_item), 'redis expire item still removed';
     ok $redis->zscore($timeout_key, $redis_item), 'redis timeout item still present';
 
-    BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '-30 day');
+    BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id}, '-30 day');
     is $client->p2p_expire_order(
         id     => $order->{id},
         source => 5,
@@ -422,18 +423,18 @@ subtest 'timed out orders' => sub {
         'no status change for repeat timeout';
     ok !$redis->zscore($timeout_key, $redis_item), 'redis timeout item removed for repeat timeout';
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'repeat expiry' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
+    BOM::Test::Helper::P2PWithClient::create_escrow();
 
     subtest 'refunded order' => sub {
         my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
-        my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+        my ($client,     $order)  = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
         my $redis_item = join '|', $order->{id}, $client->loginid;
 
-        BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '0 hour');
+        BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id}, '0 hour');
         is $client->p2p_expire_order(
             id     => $order->{id},
             source => 5,
@@ -453,11 +454,11 @@ subtest 'repeat expiry' => sub {
 
     subtest 'timed-out order' => sub {
         my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
-        my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+        my ($client,     $order)  = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
         my $redis_item = join '|', $order->{id}, $client->loginid;
 
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'buyer-confirmed');
-        BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '0 hour');
+        BOM::Test::Helper::P2PWithClient::set_order_status($client, $order->{id}, 'buyer-confirmed');
+        BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id}, '0 hour');
         is $client->p2p_expire_order(
             id     => $order->{id},
             source => 5,
@@ -475,14 +476,14 @@ subtest 'repeat expiry' => sub {
         ok !$redis->zscore($expire_key, $redis_item), 'redis expiry item removed for repeat expiry';
     };
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 };
 
 subtest 'errors' => sub {
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
-    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2PWithClient::create_order(advert_id => $advert->{id});
 
     my $exception = exception {
         $client->p2p_expire_order();
@@ -499,10 +500,10 @@ subtest 'errors' => sub {
     like $exception, qr/Invalid order provided to p2p_expire_order/, 'Invalid order id';
 
     # Escrow not found
-    my $mock = Test::MockModule->new('BOM::User::Client');
+    my $mock = Test::MockModule->new('P2P');
     $mock->mock(p2p_escrow => sub { });
 
-    BOM::Test::Helper::P2P::ready_to_refund($client, $order->{id});
+    BOM::Test::Helper::P2PWithClient::ready_to_refund($client, $order->{id});
     $exception = exception {
         $client->p2p_expire_order(
             id     => $order->{id},
@@ -515,7 +516,7 @@ subtest 'errors' => sub {
 
     $mock->unmock_all;
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Test::Helper::P2PWithClient::reset_escrow();
 
 };
 done_testing();

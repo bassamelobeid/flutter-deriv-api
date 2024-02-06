@@ -10,21 +10,24 @@ use List::Util      qw(pairs);
 use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;
+use P2P;
 use BOM::User::Utility;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
-BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::create_payment_methods();
-BOM::Test::Helper::P2P::create_escrow();
+BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+BOM::Test::Helper::P2PWithClient::create_payment_methods();
+BOM::Test::Helper::P2PWithClient::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 
 my $mock_client = Test::MockModule->new('BOM::User::Client');
+my $mock_p2p    = Test::MockModule->new('P2P');
 
 my %params = (
     amount           => 100,
@@ -71,9 +74,10 @@ subtest 'exchange rate' => sub {
 };
 
 subtest 'float and fixed rates enabled/disabled scenarios' => sub {
-    my $client = BOM::Test::Helper::P2P::create_advertiser;
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     $mock_client->redefine(p2p_exchange_rate => {quote => 1});
+    $mock_p2p->redefine(p2p_exchange_rate => {quote => 1});
 
     $config->country_advert_config(
         encode_json_utf8({
@@ -84,7 +88,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
 
     is(
         exception {
-            $client->p2p_advert_create(
+            P2P->new(client => $client)->p2p_advert_create(
                 %params,
                 rate             => 1,
                 rate_type        => 'fixed',
@@ -98,7 +102,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
     my $ad;
     is(
         exception {
-            $ad = $client->p2p_advert_create(
+            $ad = P2P->new(client => $client)->p2p_advert_create(
                 %params,
                 rate             => 1.23,
                 rate_type        => 'float',
@@ -119,7 +123,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
 
     cmp_deeply(
         exception {
-            $client->p2p_advert_create(
+            P2P->new(client => $client)->p2p_advert_create(
                 %params,
                 rate             => 1,
                 rate_type        => 'fixed',
@@ -135,7 +139,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
 
     cmp_deeply(
         exception {
-            $client->p2p_advert_create(
+            P2P->new(client => $client)->p2p_advert_create(
                 %params,
                 rate             => 1,
                 rate_type        => 'float',
@@ -153,7 +157,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
 
     cmp_deeply(
         exception {
-            $client->p2p_advert_create(
+            P2P->new(client => $client)->p2p_advert_create(
                 %params,
                 rate             => 1,
                 rate_type        => 'float',
@@ -170,6 +174,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
     $config->restricted_countries([]);
 
     $mock_client->redefine(p2p_exchange_rate => {});
+    $mock_p2p->redefine(p2p_exchange_rate => {});
 
     $config->country_advert_config(
         encode_json_utf8({
@@ -180,7 +185,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
 
     cmp_deeply(
         exception {
-            $client->p2p_advert_create(
+            P2P->new(client => $client)->p2p_advert_create(
                 %params,
                 rate             => 1,
                 rate_type        => 'float',
@@ -198,7 +203,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
 
 subtest 'converting ad rate types' => sub {
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser;
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser;
     $config->country_advert_config(
         encode_json_utf8({
                 $client->residence => {
@@ -207,11 +212,11 @@ subtest 'converting ad rate types' => sub {
                 }}));
 
     $mock_client->redefine(p2p_exchange_rate => {quote => 1});
-
+    $mock_p2p->redefine(p2p_exchange_rate => {quote => 1});
     my $ad;
     is(
         exception {
-            $ad = $client->p2p_advert_create(
+            $ad = P2P->new(client => $client)->p2p_advert_create(
                 %params,
                 rate      => 1,
                 rate_type => 'fixed',
@@ -355,7 +360,7 @@ subtest 'converting ad rate types' => sub {
 
 subtest 'rate fields' => sub {
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
     $config->country_advert_config(
         encode_json_utf8({
                 $client->residence => {
@@ -364,11 +369,12 @@ subtest 'rate fields' => sub {
                 }}));
 
     $mock_client->redefine(p2p_exchange_rate => {quote => 100});
+    $mock_p2p->redefine(p2p_exchange_rate => {quote => 100});
 
     my $ad;
     is(
         exception {
-            $ad = $client->p2p_advert_create(
+            $ad = P2P->new(client => $client)->p2p_advert_create(
                 %params,
                 rate      => 0.1,
                 rate_type => 'float',
@@ -400,7 +406,7 @@ subtest 'rate fields' => sub {
         is $item->{price_display}, '100.10', "$k price_display";
     }
 
-    my $buy_ad = $client->p2p_advert_create(
+    my $buy_ad = P2P->new(client => $client)->p2p_advert_create(
         %params,
         type      => 'buy',
         rate      => -1,
@@ -412,7 +418,7 @@ subtest 'rate fields' => sub {
 
 subtest 'orders' => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
     $config->country_advert_config(
         encode_json_utf8({
                 $advertiser->residence => {
@@ -422,13 +428,13 @@ subtest 'orders' => sub {
 
     $mock_client->redefine(p2p_exchange_rate => {quote => 100});
 
-    my $ad = $advertiser->p2p_advert_create(
+    my $ad = P2P->new(client => $advertiser)->p2p_advert_create(
         %params,
         rate      => 0.1,
         rate_type => 'float',
     );
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => $advertiser->residence});
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(client_details => {residence => $advertiser->residence});
 
     cmp_deeply(
         exception {
@@ -477,7 +483,7 @@ subtest 'orders' => sub {
 };
 
 subtest 'ad list filtering' => sub {
-    my $client = BOM::Test::Helper::P2P::create_advertiser(
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(
         balance        => 100,
         client_details => {residence => 'ng'});
     $config->country_advert_config(
@@ -489,7 +495,7 @@ subtest 'ad list filtering' => sub {
 
     $mock_client->redefine(p2p_exchange_rate => {quote => 100});
 
-    my $fixed_ad = $client->p2p_advert_create(
+    my $fixed_ad = P2P->new(client => $client)->p2p_advert_create(
         %params,
         rate             => 1,
         rate_type        => 'fixed',
@@ -497,7 +503,7 @@ subtest 'ad list filtering' => sub {
         max_order_amount => 2,
     );
 
-    my $float_ad = $client->p2p_advert_create(
+    my $float_ad = P2P->new(client => $client)->p2p_advert_create(
         %params,
         rate             => 1,
         rate_type        => 'float',
@@ -506,14 +512,17 @@ subtest 'ad list filtering' => sub {
     );
 
     $mock_client->redefine(p2p_exchange_rate => {});
+    $mock_p2p->redefine(p2p_exchange_rate => {});
     cmp_bag([map { $_->{id} } $client->p2p_advert_list->@*], [$fixed_ad->{id}], 'fixed only when there is no rate');
 
     $mock_client->redefine(p2p_exchange_rate => {quote => 100});
+    $mock_p2p->redefine(p2p_exchange_rate => {quote => 100});
+
     cmp_bag([map { $_->{id} } $client->p2p_advert_list->@*], [$fixed_ad->{id}, $float_ad->{id}], 'both shown when there is rate');
 };
 
 subtest 'advertiser active ads flags' => sub {
-    my $client = BOM::Test::Helper::P2P::create_advertiser;
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     $config->country_advert_config(
         encode_json_utf8({
@@ -523,20 +532,20 @@ subtest 'advertiser active ads flags' => sub {
                 }}));
 
     my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
-        client           => $client,
+        client           => P2P->new(client => $client),
         rate_type        => 'fixed',
         min_order_amount => 1,
         max_order_amount => 2
     );
     BOM::Test::Helper::P2P::create_advert(
-        client           => $client,
+        client           => P2P->new(client => $client),
         rate_type        => 'float',
         min_order_amount => 3,
         max_order_amount => 4,
         rate             => 1
     );
     BOM::Test::Helper::P2P::create_advert(
-        client           => $client,
+        client           => P2P->new(client => $client),
         rate_type        => 'float',
         min_order_amount => 5,
         max_order_amount => 6,
