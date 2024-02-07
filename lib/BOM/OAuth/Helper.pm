@@ -156,6 +156,12 @@ sub exception_string {
         return $message;
     }
 
+    if (ref $exception eq 'HASH' && $exception->{code}) {
+        my $message = $exception->{code};
+        $message .= ": $exception->{message}" if $exception->{message};
+        return $message;
+    }
+
     return "Unknown Error";
 }
 

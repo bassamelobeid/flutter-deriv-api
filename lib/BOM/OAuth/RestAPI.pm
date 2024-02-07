@@ -41,6 +41,7 @@ use BOM::OAuth::Static qw( get_api_errors_mapping get_valid_login_types );
 use BOM::OAuth::SocialLogin::RestHandler;
 use BOM::OAuth::SocialLoginClient;
 use BOM::Platform::Token::API;
+use BOM::OAuth::Passkeys::PasskeysService;
 
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 
@@ -309,6 +310,7 @@ sub login {
 
         $login = $c->$method($app, $brand_name);
     } catch ($e) {
+
         $log->warnf(build_login_error_message($e, $login_type, request_details_string($c->req, $c->stash('request'))));
         return $c->_make_error($e->{code}, $e->{status});
     }
@@ -875,6 +877,21 @@ sub _perform_social_login_login {
     $rest_handler->clear_cache($payload->{state});
     $result->{social_type} = $login_attempt->{social_type};
 
+    return $result;
+}
+
+=head2 _perform_passkeys_login
+
+Tries to validate user's login request via passkeys by communicating with the passkey service.
+
+Returns an array of associated clients
+
+=cut
+
+sub _perform_passkeys_login {
+    my ($c, $app) = @_;
+    my $passkeys_service = BOM::OAuth::Passkeys::PasskeysService->new;
+    my $result           = $passkeys_service->login($c, $c->req->json, $app);
     return $result;
 }
 

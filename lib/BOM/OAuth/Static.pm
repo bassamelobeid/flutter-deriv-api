@@ -76,17 +76,19 @@ my $config = {
         INVALID_RESIDENCE    => "Sorry, our service is currently unavailable in your region.",
         DUPLICATE_EMAIL      =>
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
-        NO_APP_TOKEN_FOUND        => "There is no token defined for this application.",
-        MISSING_ONE_TIME_PASSWORD => "Please provide an authentication code.",
-        TFA_FAILURE               => "Invalid authentication code.",
-        INVALID_REDIRECTION       => "Destination app id can't be source app id.",
-        INVALID_SCOPES            => "Redirection failed to the requested app.",
-        INVALID_URL_PARAMS        => "The provided parameters are invalid.",
-        TOO_MANY_PARAMETERS       => "Too Many Parameters are provided.",
-        TOO_MANY_ATTEMPTS         => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
-        ACCOUNT_UNAVAILABLE       => 'Your account is deactivated. Please contact us via live chat.',
-        NO_SELF_CLOSED_ACCOUNT    => 'activate account flag was provided, no self closed accounts were found.',
-        INVALID_FIELD_VALUE       => 'Value passed is invalid.'
+        NO_APP_TOKEN_FOUND         => "There is no token defined for this application.",
+        MISSING_ONE_TIME_PASSWORD  => "Please provide an authentication code.",
+        TFA_FAILURE                => "Invalid authentication code.",
+        INVALID_REDIRECTION        => "Destination app id can't be source app id.",
+        INVALID_SCOPES             => "Redirection failed to the requested app.",
+        INVALID_URL_PARAMS         => "The provided parameters are invalid.",
+        TOO_MANY_PARAMETERS        => "Too Many Parameters are provided.",
+        TOO_MANY_ATTEMPTS          => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
+        ACCOUNT_UNAVAILABLE        => 'Your account is deactivated. Please contact us via live chat.',
+        NO_SELF_CLOSED_ACCOUNT     => 'activate account flag was provided, no self closed accounts were found.',
+        INVALID_FIELD_VALUE        => 'Value passed is invalid.',
+        PASSKEYS_NOT_FOUND         => 'Your passkey is no longer available, please remove it from you password manager.',
+        PASSKEYS_NO_AUTHENTICATION => 'Failed to authenticate with passkeys. Please try again',
     },
     api_error_mappings => {
         LoginTooManyAttempts => 'TOO_MANY_ATTEMPTS',
@@ -138,7 +140,7 @@ Return an array of valid login types
 =cut
 
 sub get_valid_login_types {
-    return qw( system social social_login);
+    return qw( system social social_login passkeys);
 }
 
 1;

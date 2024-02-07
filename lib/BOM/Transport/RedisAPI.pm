@@ -164,14 +164,17 @@ Creates the request data.
 
 =cut
 
-method build_rpc_request ($method, $params, $stash_params = undef, $req_timeout = undef) {
+method build_rpc_request ($method, $params = undef, $stash_params = undef, $req_timeout = undef) {
+    my $payload = {};
+    $payload->{args} = $params ? $params : {$method => 1};
+
     my $request_data = {
         rpc        => $method,
         who        => Data::UUID->new->create_str,
         deadline   => $req_timeout ? time + $req_timeout : $self->default_end_time,
         message_id => $self->next_req_id,
-        $params       ? (args  => encode_json_utf8({args => $params})) : (),
-        $stash_params ? (stash => encode_json_utf8($stash_params))     : (),
+        args       => encode_json_utf8($payload),
+        $stash_params ? (stash => encode_json_utf8($stash_params)) : (),
     };
     return $request_data;
 }

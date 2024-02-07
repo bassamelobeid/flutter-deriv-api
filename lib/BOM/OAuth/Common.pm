@@ -54,6 +54,7 @@ sub validate_login {
     my $c                     = delete $login_details->{c};
     my $oneall_user_id        = delete $login_details->{oneall_user_id};
     my $social_user_id        = delete $login_details->{social_user_id};
+    my $passkeys_user_id      = delete $login_details->{passkeys_user_id};
     my $refresh_token_user_id = delete $login_details->{user_id};
     my $refresh_token         = delete $login_details->{refresh_token};
     my $app                   = delete $login_details->{app};
@@ -80,6 +81,9 @@ sub validate_login {
         return $err_var->("INVALID_USER") unless $user;
 
         $password = '**SOCIAL-LOGIN**';
+    } elsif ($passkeys_user_id) {
+        $user = BOM::User->new(id => $passkeys_user_id);
+        return $err_var->("INVALID_USER") unless $user;
     } else {
         return $err_var->("INVALID_EMAIL")    unless ($email and Email::Valid->address($email));
         return $err_var->("INVALID_PASSWORD") unless $password;
@@ -111,6 +115,7 @@ sub validate_login {
         environment            => $env,
         is_refresh_token_login => $refresh_token                       ? 1 : 0,
         is_social_login        => ($oneall_user_id || $social_user_id) ? 1 : 0,
+        is_passkeys_login      => $passkeys_user_id                    ? 1 : 0,
         app_id                 => $app_id,
         device_id              => $device_id,
     );

@@ -786,6 +786,119 @@ subtest 'login' => sub {
         ok !$redis->get('SOCIAL::LOGIN::TEMP::state'), 'Social Login response cache is deleted after successful login';
     };
 
+    subtest 'Login via passkeys' => sub {
+
+        my $mock_passkeys_client = Test::MockModule->new('BOM::OAuth::Passkeys::PasskeysClient');
+        my $login_type           = 'passkeys';
+        my $passkeys_login_url   = '/api/v1/passkeys/login/verify';
+        subtest 'missing publicKeyCredential required param' => sub {
+            $post->(
+                $passkeys_login_url,
+                {
+                    app_id => $app_id,
+                    type   => $login_type
+                },
+                {
+                    Authorization => "Bearer $jwt_token",
+                })->status_is(400)->json_is('/error_code', 'INVALID_FIELD_VALUE');
+        };
+
+        subtest 'binary_user_id should be present in the rpc response' => sub {
+            my $rpc_result = {
+                verified => 1,
+            };
+            $mock_passkeys_client->mock(
+                'passkeys_login' => sub {
+                    return $rpc_result;
+                });
+            $post->(
+                $passkeys_login_url,
+                {
+                    publicKeyCredential => 'publicKeyCredential',
+                    app_id              => $app_id,
+                    type                => $login_type
+                },
+                {
+                    Authorization => "Bearer $jwt_token",
+                })->status_is(500)->json_is('/error_code', 'NO_USER_IDENTITY');
+        };
+        subtest 'system user is able to login with passkeys' => sub {
+            my $rpc_result = {
+                verified       => 1,
+                binary_user_id => $system_user->id,
+            };
+            $mock_passkeys_client->mock(
+                'passkeys_login' => sub {
+                    return $rpc_result;
+                });
+            my $res = $post->(
+                $passkeys_login_url,
+                {
+                    publicKeyCredential => 'publicKeyCredential',
+                    app_id              => $app_id,
+                    type                => $login_type
+                },
+                {
+                    Authorization => "Bearer $jwt_token",
+                })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', undef);
+        };
+        subtest 'socail user is able to login with passkeys' => sub {
+            my $rpc_result = {
+                verified       => 1,
+                binary_user_id => $social_user->id,
+            };
+            $mock_passkeys_client->mock(
+                'passkeys_login' => sub {
+                    return $rpc_result;
+                });
+            my $res = $post->(
+                $passkeys_login_url,
+                {
+                    publicKeyCredential => 'publicKeyCredential',
+                    app_id              => $app_id,
+                    type                => $login_type
+                },
+                {
+                    Authorization => "Bearer $jwt_token",
+                })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', undef);
+        };
+        my $rpc_map = [{
+                rpc_error => 'UserNotFound',
+                error     => 'PASSKEYS_NOT_FOUND',
+                title     => 'Passkey not found error correctly mapped'
+            },
+            {
+                rpc_error => 'AuthenticationNotVerified',
+                error     => 'PASSKEYS_NO_AUTHENTICATION',
+                title     => 'Verification failure error correctly mapped'
+            },
+            {
+                rpc_error => 'ChallengeExpired',
+                error     => 'PASSKEYS_NO_AUTHENTICATION',
+                title     => 'Expired challenge error correctly mapped'
+            },
+        ];
+        for my $case ($rpc_map->@*) {
+            subtest $case->{title} => sub {
+                my $rpc_result = {code => $case->{rpc_error}};
+                $mock_passkeys_client->mock(
+                    'passkeys_login' => sub {
+                        die $rpc_result;
+                    });
+                my $res = $post->(
+                    $passkeys_login_url,
+                    {
+                        publicKeyCredential => 'publicKeyCredential',
+                        app_id              => $app_id,
+                        type                => $login_type
+                    },
+                    {
+                        Authorization => "Bearer $jwt_token",
+                    })->status_is(400)->json_is('/error_code', $case->{error});
+            };
+        }
+    };
+
     subtest 'New social signup' => sub {
         $social_user_email = 'newguy@test.com';
         $events            = {};
