@@ -7,6 +7,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User;
 use BOM::Test::Helper::Token;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::P2PWithClient;
+use P2P;
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
@@ -324,34 +326,34 @@ subtest 'p2p' => sub {
 
     my ($order, $advert, $result);
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(
         name    => 'andy',
         balance => 100
     );
-    my $client = BOM::Test::Helper::P2P::create_advertiser(
+    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(
         name    => 'cody',
         balance => 100
     );
 
     subtest 'sell ads' => sub {
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
-            client => $advertiser,
+            client => P2P->new(client => $advertiser),
             type   => 'sell'
         );
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             client    => $client,
             advert_id => $advert->{id},
             amount    => 10
         );
 
-        my @res = get_remarks($advertiser);
+        my @res = get_remarks($advertiser->client);
         is $res[0], 'P2P order ' . $order->{id} . ' created by cody (' . $client->loginid . ') - seller funds held',
             'order create remark for advertiser';
 
         $client->p2p_order_confirm(id => $order->{id});
         $advertiser->p2p_order_confirm(id => $order->{id});
 
-        @res = get_remarks($advertiser);
+        @res = get_remarks($advertiser->client);
         is $res[1], 'P2P order ' . $order->{id} . ' completed - seller funds released', 'release remark for advertiser';
         is $res[0], 'P2P order ' . $order->{id} . ' completed - funds transferred to cody (' . $client->loginid . ')',
             'payment remark for advertiser';
@@ -359,25 +361,25 @@ subtest 'p2p' => sub {
         @res = get_remarks($client);
         is $res[0], 'P2P order ' . $order->{id} . ' completed - funds received from andy (' . $advertiser->loginid . ')', 'payment remark for client';
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             client    => $client,
             advert_id => $advert->{id},
             amount    => 10
         );
         $client->p2p_order_cancel(id => $order->{id});
 
-        @res = get_remarks($advertiser);
+        @res = get_remarks($advertiser->client);
         is $res[0], 'P2P order ' . $order->{id} . ' cancelled - seller funds released', 'cancel remark for advertiser';
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             client    => $client,
             advert_id => $advert->{id},
             amount    => 10
         );
-        BOM::Test::Helper::P2P::expire_order($client, $order->{id});
+        BOM::Test::Helper::P2PWithClient::expire_order($client, $order->{id});
         $client->p2p_expire_order(id => $order->{id});
 
-        @res = get_remarks($advertiser);
+        @res = get_remarks($advertiser->client);
         is $res[0], 'P2P order ' . $order->{id} . ' refunded - seller funds released', 'refund remark for advertiser';
     };
 
@@ -386,7 +388,7 @@ subtest 'p2p' => sub {
             client => $advertiser,
             type   => 'buy'
         );
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             client    => $client,
             advert_id => $advert->{id},
             amount    => 10
@@ -406,10 +408,10 @@ subtest 'p2p' => sub {
         is $res[0], 'P2P order ' . $order->{id} . ' completed - funds transferred to andy (' . $advertiser->loginid . ')',
             'payment remark for client';
 
-        @res = get_remarks($advertiser);
+        @res = get_remarks($advertiser->client);
         is $res[0], 'P2P order ' . $order->{id} . ' completed - funds received from cody (' . $client->loginid . ')', 'payment remark for advertiser';
 
-        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        ($client, $order) = BOM::Test::Helper::P2PWithClient::create_order(
             client    => $client,
             advert_id => $advert->{id},
             amount    => 10
