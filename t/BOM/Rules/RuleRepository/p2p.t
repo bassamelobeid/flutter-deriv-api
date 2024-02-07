@@ -37,8 +37,9 @@ subtest $rule_name => sub {
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
 
-    $rule_engine = BOM::Rules::Engine->new(client => $advertiser);
-    %args        = (loginid => $advertiser->loginid);
+    $rule_engine = BOM::Rules::Engine->new(client => $advertiser->client);
+
+    %args = (loginid => $advertiser->loginid);
 
     ok $rule_engine->apply_rules($rule_name, %args), 'Rule passes for advertiser with no orders';
 
@@ -53,7 +54,7 @@ subtest $rule_name => sub {
         'Advertiser fails for open order'
     );
 
-    $rule_engine = BOM::Rules::Engine->new(client => $client_p2p);
+    $rule_engine = BOM::Rules::Engine->new(client => $client_p2p->client);
     %args        = (loginid => $client_p2p->loginid);
 
     cmp_deeply(
@@ -69,7 +70,7 @@ subtest $rule_name => sub {
 
     ok $rule_engine->apply_rules($rule_name, %args), 'Rule passes for counterparty with cancelled order';
 
-    $rule_engine = BOM::Rules::Engine->new(client => $advertiser);
+    $rule_engine = BOM::Rules::Engine->new(client => $advertiser->client);
     %args        = (loginid => $advertiser->loginid);
 
     ok $rule_engine->apply_rules($rule_name, %args), 'Rule passes for advertiser with cancelled order';
