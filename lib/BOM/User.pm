@@ -461,17 +461,21 @@ Returns hashref, {success => 1} if successfully authenticated user or {error => 
 sub login {
     my ($self, %args) = @_;
 
-    my $password               = $args{password}               || die "requires password argument";
-    my $environment            = $args{environment}            || '';
-    my $is_social_login        = $args{is_social_login}        || 0;
-    my $is_refresh_token_login = $args{is_refresh_token_login} || 0;
-    my $app_id                 = $args{app_id}                 || undef;
+    my $environment = $args{environment} || '';
+    my $app_id      = $args{app_id}      || undef;
+
+    my $skip_password =
+           $args{is_passkeys_login}
+        || $args{is_social_login}
+        || $args{is_refresh_token_login}
+        || 0;
+
+    my $password = $skip_password ? undef : ($args{password} || die "requires password argument");
 
     use constant {
         MAX_FAIL_TIMES   => 5,
         ATTEMPT_INTERVAL => '5 minutes'
     };
-    my @clients;
     my $error;
     my $too_many_attempts = $self->dbic->run(
         fixup => sub {
@@ -481,9 +485,9 @@ sub login {
 
     if ($too_many_attempts) {
         $error = 'LoginTooManyAttempts';
-    } elsif (!$is_social_login && !$is_refresh_token_login && !BOM::User::Password::checkpw($password, $self->{password})) {
+    } elsif (!$skip_password && !BOM::User::Password::checkpw($password, $self->{password})) {
         $error = 'INVALID_CREDENTIALS';
-    } elsif (!(@clients = $self->clients)) {
+    } elsif (!($self->clients)) {
         $error = $self->clients(include_self_closed => 1) ? 'AccountSelfClosed' : 'AccountUnavailable';
     }
 
