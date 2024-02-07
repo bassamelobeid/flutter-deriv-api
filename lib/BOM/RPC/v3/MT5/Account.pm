@@ -1572,15 +1572,29 @@ sub set_mt5_account_settings {
     $settings->{sub_account_type}      = $config->{sub_account_type};
     $settings->{sub_account_category}  = $config->{sub_account_category};
 
+    my %server_name_mapping = (
+        'Deriv (SVG) LLC'                    => 'SVG',
+        'Deriv Investments (Europe) Limited' => 'MT',
+        'Deriv (V) Ltd'                      => 'VU',
+        'Deriv (BVI) Ltd.'                   => 'BVI',
+        'Deriv (FX) Ltd'                     => 'FX',
+    );
+
     if ($config->{server}) {
-        my $mt5webapi_config = BOM::Config::MT5->new(group => $group_name);
-        my $server_config    = $mt5webapi_config->server_by_id();
-        my $webtrader_url    = $mt5webapi_config->get_webtrader_url();
+        my $mt5webapi_config   = BOM::Config::MT5->new(group => $group_name);
+        my $server_config      = $mt5webapi_config->server_by_id();
+        my $webtrader_url      = $mt5webapi_config->get_webtrader_url();
+        my $server_environment = $server_config->{$config->{server}}{environment};
+
+        if ($config->{account_type} eq 'real') {
+            my $suffix = $server_name_mapping{$settings->{landing_company} // ''} // '';
+            $server_environment =~ s/Deriv/Deriv$suffix/;
+        }
 
         $settings->{server_info} = {
             id          => $config->{server},
             geolocation => $server_config->{$config->{server}}{geolocation},
-            environment => $server_config->{$config->{server}}{environment},
+            environment => $server_environment,
         };
 
         $settings->{webtrader_url} = $webtrader_url;
