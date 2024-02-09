@@ -23,5 +23,6 @@ jobs:
     with:
       debianci_image: ${{ inputs.debianci_image }}
       repository: ${{ inputs.repository }}
+      dependent_test: 'true'
       env_vars: |
         OAUTH_CONFIG=/home/git/regentmarkets/bom-oauth/oauth.conf.example
