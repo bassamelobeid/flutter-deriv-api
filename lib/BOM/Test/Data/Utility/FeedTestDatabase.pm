@@ -181,17 +181,21 @@ sub create_tick {
     # date for database
     my $ts = Date::Utility->new($defaults{epoch})->datetime_yyyymmdd_hhmmss;
 
-    my $tick_sql = <<EOD;
-INSERT INTO feed.tick(underlying, ts, bid, ask, spot)
-    VALUES(?, ?, ?, ?, ?)
+    my $tick_sql = <<'EOD';
+SELECT insert_ticks($1, jsonb_build_array(jsonb_build_object(
+                            'underlying', $2::TEXT,
+                            'bid', $3::TEXT,
+                            'ask', $4::TEXT,
+                            'price', $5::TEXT
+                        )))
 EOD
 
     my $dbic = Postgres::FeedDB::write_dbic;
     $dbic->run(
         sub {
             my $sth = $_->prepare($tick_sql);
-            $sth->bind_param(1, $defaults{underlying});
-            $sth->bind_param(2, $ts);
+            $sth->bind_param(1, $ts);
+            $sth->bind_param(2, $defaults{underlying});
             $sth->bind_param(3, $defaults{bid});
             $sth->bind_param(4, $defaults{ask});
             $sth->bind_param(5, $defaults{quote});
