@@ -1,3 +1,4 @@
+#!perl
 use strict;
 use warnings;
 
@@ -43,45 +44,27 @@ $ENV{BOM_POPULATOR_ROOT} = "$feed_dir";
 
 subtest 'Initialization' => sub {
     lives_ok {
-        my ($fill_start, $populator, @ticks, $fh);
-        my $work_dir = File::Temp->newdir();
-        my $buffer   = BOM::Populator::TickFile->new(base_dir => "$work_dir");
-
-        # Insert OTC_HSI data ticks
-        $fill_start = $now->minus_time_interval('7h');
-        $populator  = BOM::Populator::InsertTicks->new({
-            symbols            => [qw/ OTC_HSI /],
-            last_migrated_time => $fill_start,
-            buffer             => $buffer,
-        });
-
-        open($fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/HSI/17-Dec-12.fullfeed") or die $!;
-        @ticks = <$fh>;
-        close $fh;
-
-        $populator->insert_to_db({
-            ticks  => \@ticks,
-            date   => $fill_start,
-            symbol => 'OTC_HSI',
-        });
-
-        # Insert R_100 data ticks
-        $fill_start = $now->minus_time_interval('1d7h');
-        $populator  = BOM::Populator::InsertTicks->new({
-            symbols            => [qw/ R_100 /],
-            last_migrated_time => $fill_start,
-            buffer             => $buffer,
-        });
-        open($fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/frxUSDJPY/13-Apr-12.fullfeed") or die $!;
-        @ticks = <$fh>;
-        close $fh;
-        foreach my $i (0 .. 1) {
-            $populator->insert_to_db({
-                ticks  => \@ticks,
-                date   => $fill_start->plus_time_interval("${i}d"),
-                symbol => 'R_100',
-            });
+        my $fill_start = $now->minus_time_interval('7h')->epoch;
+        my $fh;
+        my $fn = "/home/git/regentmarkets/bom-test/feed/combined/HSI/17-Dec-12.fullfeed";
+        open($fh, "<", $fn) or die $!;
+        while (defined(my $l = readline $fh)) {
+            chomp $l;
+            $l =~ /^(\d{2}:\d{2}:\d{2}) \d{2}:\d{2} ([0-9.]+) ([0-9.]+) ([0-9.]+) /
+                or die "Could not parse '$l' in file $fn\n";
+            my ($tm, $bid, $ask, $spot) = ($1, $2, $3, $4);
+            my $offset = 0;
+            $offset = $offset * 60 + $_ for (split ':', $tm);
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick(
+                +{
+                    underlying => 'OTC_HSI',
+                    epoch      => $fill_start + $offset,
+                    bid        => $bid,
+                    ask        => $ask,
+                    quote      => $spot,
+                });
         }
+        close $fh;
 
         # Insert frxUSDJPY data ticks
         BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('feed.tick_2012_3', 'frxUSDJPY', '14-Mar-12');
