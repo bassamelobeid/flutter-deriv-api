@@ -145,7 +145,7 @@ sub on_sec {
     $self->process_verification_events;
 
     $self->{in_progress}->done;
-    stats_timing('p2p.daemon.processing_time_min', 1000 * tv_interval($start_tv));
+    stats_timing('p2p.daemon.processing_time_sec', 1000 * tv_interval($start_tv));
 }
 
 =head2 on_min
