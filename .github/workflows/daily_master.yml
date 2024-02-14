@@ -38,11 +38,14 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc 
           make unit
       - 
+        name: Update UID for nobody user
+        uses: regentmarkets/github-actions/update-uid@master
+      - 
         name: Upload Test Results
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
-        if: always()
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+        if: success() || failure()
         with:
-          name: test-results
+          name: test-results-syntax_unit
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   core:
@@ -50,16 +53,15 @@ jobs:
     secrets: inherit
   publish_test_results:
     needs: [ core , syntax_unit ]
-    if: always()
+    if: success() || failure()
     runs-on: ubuntu-latest
-    steps:
+    steps:     
       - 
-        name: Upload results to TestSpace
-        uses: regentmarkets/github-actions/testspace-publish@master
-        with: 
-          token: ${{ secrets.TESTSPACE_TOKEN }}
-          artifact: test-results
-          file_path: ./**/*.xml
+       name: Upload results to DataDog
+       uses: regentmarkets/github-actions/datadog-publish@master
+       with: 
+          datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+          service-name: bom-backoffice
   translations:
     runs-on: ubuntu-latest
     container:
