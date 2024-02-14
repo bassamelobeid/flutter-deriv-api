@@ -35,22 +35,24 @@ jobs:
           sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db
           make test
       - 
+        name: Update UID for nobody user
+        uses: regentmarkets/github-actions/update-uid@master
+      - 
         name : Upload test results
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
-        if: always()
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+        if: success() || failure()
         with:
-          name: test-results
+          name: test-results-core
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   publish_test_results:
     needs: [ syntax_unit , core  ]
-    if: always()
+    if: success() || failure()
     runs-on: ubuntu-latest
     steps:
       - 
-        name: Upload results to TestSpace
-        uses: regentmarkets/github-actions/testspace-publish@master
+        name: Upload results to DataDog
+        uses: regentmarkets/github-actions/datadog-publish@master
         with: 
-          token: ${{ secrets.TESTSPACE_TOKEN }}
-          artifact: test-results
-          file_path:  ./**/*.xml
+          datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+          service-name: bom-transaction
