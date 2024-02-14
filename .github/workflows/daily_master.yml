@@ -33,11 +33,13 @@ jobs:
         run:  |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_product_contract
+      - name: Update UID for nobody user
+        uses: regentmarkets/github-actions/update-uid@master
       - name: Upload Test Results
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
-        if: always()
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+        if: success() || failure()
         with:
-          name: test-results
+          name: test-results-product_contract
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   validation:
@@ -64,11 +66,13 @@ jobs:
         run:  |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_validation
+      - name: Update UID for nobody user
+        uses: regentmarkets/github-actions/update-uid@master
       - name: Upload Test Results
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
-        if: always()
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+        if: success() || failure()
         with:
-          name: test-results
+          name: test-results-validation
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   memory_test:
@@ -95,11 +99,13 @@ jobs:
         run: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make memory_test
+      - name: Update UID for nobody user
+        uses: regentmarkets/github-actions/update-uid@master
       - name: Upload Test Results
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
-        if: always()
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+        if: success() || failure()
         with:
-          name: test-results
+          name: test-results-memory_test
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   pricing:
@@ -126,11 +132,13 @@ jobs:
         run: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_pricing
+      - name: Update UID for nobody user
+        uses: regentmarkets/github-actions/update-uid@master
       - name: Upload Test Results
-        uses: actions/upload-artifact@v3
-        if: always()
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
+        if: success() || failure()
         with:
-          name: test-results
+          name: test-results-pricing
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   product_others:
@@ -169,11 +177,13 @@ jobs:
       - name: Offerings
         run: make unit_test_offerings
         if: always()
+      - name: Update UID for nobody user
+        uses: regentmarkets/github-actions/update-uid@master
       - name: Upload Test Results
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
         if: always()
         with:
-          name: test-results
+          name: test-results-product_others
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   benchmark_merlin_ovra:
@@ -312,13 +322,12 @@ jobs:
         if: always()
   publish_test_results:
     needs: [ product_others , pricing , memory_test , validation , product_contract ]
-    if: always()
+    if: success() || failure()
     runs-on: ubuntu-latest
     steps:
       - 
-        name: Upload results to TestSpace
-        uses: regentmarkets/github-actions/testspace-publish@master
+        name: Upload results to DataDog
+        uses: regentmarkets/github-actions/datadog-publish@master
         with: 
-          token: ${{ secrets.TESTSPACE_TOKEN }}
-          artifact: test-results
-          file_path: ./**/*.xml
+          datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+          service-name: bom
