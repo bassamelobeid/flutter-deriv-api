@@ -48,12 +48,15 @@ jobs:
             run: make structure formatter='--formatter TAP::Formatter::JUnit'
           - 
             name: unit tests
-            run: make unit formatter='--formatter TAP::Formatter::JUnit'
+            run: make unit formatter='--formatter TAP::Formatter::JUnit'       
           - 
-            name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+          - 
+            name : Upload test results                   
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0   
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }} 
             with:
-              name: test-results
+              name: test-results-structure
               path: /tmp/test-output/**/*.xml
-              retention-days: 1   
+              retention-days: 1  

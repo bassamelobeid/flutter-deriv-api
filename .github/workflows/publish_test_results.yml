@@ -16,9 +16,8 @@ jobs:
               export FILE_PATH="$FILE_PATH ./home/git/regentmarkets/bom-websocket-tests/v3/misc/**/*.xml"
               echo "test-path=$FILE_PATH" >> "$GITHUB_OUTPUT"
           - 
-            name: Upload results to TestSpace
-            uses: regentmarkets/github-actions/testspace-publish@master
+            name: Upload results to DataDog
+            uses: regentmarkets/github-actions/datadog-publish@master
             with: 
-              token: ${{ secrets.TESTSPACE_TOKEN }}
-              artifact: test-results
-              file_path: ${{ steps.path.outputs.test-path }}
+              datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+              service-name: binary-websocket-api

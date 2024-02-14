@@ -48,11 +48,14 @@ jobs:
             name: Accounts-related functionality
             run: make accounts formatter='--formatter TAP::Formatter::JUnit'
           - 
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+          - 
             name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }}
             with:
-              name: test-results
+              name: test-results-accounts
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     security:
@@ -81,12 +84,17 @@ jobs:
           - 
             name: Security handling
             run: make security formatter='--formatter TAP::Formatter::JUnit'
+
+          - 
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+
           - 
             name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }}
             with:
-              name: test-results
+              name: test-results-security
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     pricing:
@@ -116,11 +124,14 @@ jobs:
             name: Pricing
             run: make pricing formatter='--formatter TAP::Formatter::JUnit'
           - 
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+          - 
             name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }}
             with:
-              name: test-results
+              name: test-results-pricing
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     misc:
@@ -150,11 +161,14 @@ jobs:
             name: Uncategorised tests
             run: make misc formatter='--formatter TAP::Formatter::JUnit'
           - 
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+          - 
             name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }}
             with:
-              name: test-results
+              name: test-results-misc
               path: /tmp/test-output/**/*.xml
               retention-days: 1 
     p2p:
@@ -184,11 +198,14 @@ jobs:
             name: Run P2P tests
             run: make p2p formatter='--formatter TAP::Formatter::JUnit'
           - 
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+          - 
             name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }}
             with:
-              name: test-results
+              name: test-results-p2p
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     schema:
@@ -218,11 +235,14 @@ jobs:
             name: Schema tests
             run: make schema formatter='--formatter TAP::Formatter::JUnit'
           - 
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+          - 
             name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }}
             with:
-              name: test-results
+              name: test-results-schema
               path: /tmp/test-output/**/*.xml
               retention-days: 1
     subscriptions:
@@ -252,11 +272,14 @@ jobs:
             name: Run subscription tests
             run: make subscriptions formatter='--formatter TAP::Formatter::JUnit'
           - 
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+          - 
             name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }}
             with:
-              name: test-results
+              name: test-results-subscriptions
               path: /tmp/test-output/**/*.xml
               retention-days: 1 
     backends:
@@ -286,10 +309,13 @@ jobs:
             name: Run backends tests
             run: make backends formatter='--formatter TAP::Formatter::JUnit'
           - 
+            name: Update UID for nobody user
+            uses: regentmarkets/github-actions/update-uid@master
+          - 
             name : Upload test results
-            uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 #v3
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
             if: ${{ !inputs.is_dependent && ( success() || failure() ) }}
             with:
-              name: test-results
+              name: test-results-backends
               path: /tmp/test-output/**/*.xml
               retention-days: 1
