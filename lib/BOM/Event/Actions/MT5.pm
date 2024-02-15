@@ -247,11 +247,11 @@ sub new_mt5_signup {
     }
 
     try {
-        my $mt5_server_geolocation = BOM::Config::MT5->new(group => $data->{mt5_group})->server_geolocation();
-
+        my $mt5_config             = BOM::Config::MT5->new(group => $data->{mt5_group});
+        my $mt5_server_geolocation = $mt5_config->server_geolocation();
         $data->{mt5_server_region}      = $mt5_server_geolocation->{region};
         $data->{mt5_server_location}    = $mt5_server_geolocation->{location};
-        $data->{mt5_server_environment} = BOM::Config::MT5->new(group => $data->{mt5_group})->server_environment();
+        $data->{mt5_server_environment} = $mt5_config->server_name_by_landing_company($group_details);
     } catch ($e) {
         $log->errorf('Unable to send email to client for new mt5 account open due to error: %s', $e);
     }

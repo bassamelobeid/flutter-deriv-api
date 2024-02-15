@@ -210,7 +210,7 @@ subtest 'mt5 track event' => sub {
                 mt5_server_location    => 'South Africa',
                 mt5_server_region      => 'Africa',
                 mt5_server             => 'p02_ts02',
-                mt5_server_environment => 'Deriv-Server-02',
+                mt5_server_environment => 'DerivSVG-Server-02',
                 lang                   => 'ID',
                 mt5_dashboard_url      => 'https://app.deriv.com/mt5?lang=id',
                 live_chat_url          => 'https://deriv.com/id/?is_livechat_open=true'
