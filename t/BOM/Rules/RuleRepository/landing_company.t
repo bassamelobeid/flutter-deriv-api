@@ -50,8 +50,9 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     $args{loginid} = $client_mlt->loginid;
     is_deeply exception { $engine->apply_rules($rule_name, %args) },
         {
-        error_code => 'NewAccountLimitReached',
-        rule       => $rule_name
+        error_code  => 'NewAccountLimitReached',
+        rule        => $rule_name,
+        description => 'New account limit reached'
         },
         'Number of MLT accounts is limited';
 
@@ -69,8 +70,9 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     $engine = BOM::Rules::Engine->new(client => [$client_mlt, $client_mf, $client_vr]);
     is_deeply exception { $engine->apply_rules($rule_name, %args) },
         {
-        error_code => 'FinancialAccountExists',
-        rule       => $rule_name
+        error_code  => 'FinancialAccountExists',
+        rule        => $rule_name,
+        description => 'Financial account limit reached'
         },
         'Number of MF accounts is limited';
 
@@ -106,17 +108,19 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code => 'InsufficientAccountDetails',
-        details    => {missing => [qw(first_name last_name)]},
-        rule       => $rule_name
+        error_code  => 'InsufficientAccountDetails',
+        details     => {missing => [qw(first_name last_name)]},
+        rule        => $rule_name,
+        description => 'first_name, last_name required field(s) missing'
         },
         'Error with missing client data';
 
     is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %args, loginid => $client_vr->loginid) },
         {
-        error_code => 'InsufficientAccountDetails',
-        details    => {missing => [qw(first_name last_name)]},
-        rule       => $rule_name
+        error_code  => 'InsufficientAccountDetails',
+        details     => {missing => [qw(first_name last_name)]},
+        rule        => $rule_name,
+        description => 'first_name, last_name required field(s) missing'
         },
         'Error with missing client data (vr)';
 
@@ -164,9 +168,10 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
 
     is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %args) },
         {
-        error_code => 'InsufficientAccountDetails',
-        details    => {missing => [qw(first_name last_name)]},
-        rule       => $rule_name
+        error_code  => 'InsufficientAccountDetails',
+        details     => {missing => [qw(first_name last_name)]},
+        rule        => $rule_name,
+        description => 'first_name, last_name required field(s) missing'
         },
         'Error with missing client data (vr)';
 
@@ -196,9 +201,10 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code => 'InsufficientAccountDetails',
-        details    => {missing => [qw(affiliate_plan)]},
-        rule       => $rule_name
+        error_code  => 'InsufficientAccountDetails',
+        details     => {missing => [qw(affiliate_plan)]},
+        rule        => $rule_name,
+        description => 'affiliate_plan required field(s) missing'
         },
         'Error with missing client data';
 
@@ -225,9 +231,10 @@ subtest 'rule landing_company.currency_is_allowed' => sub {
     $args{currency} = 'USD';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code => 'CurrencyNotApplicable',
-        params     => 'USD',
-        rule       => $rule_name
+        error_code  => 'CurrencyNotApplicable',
+        params      => 'USD',
+        rule        => $rule_name,
+        description => "Currency $args{currency} not allowed"
         },
         'Error for illegal currency';
 
@@ -256,16 +263,18 @@ subtest 'rule landing_company.p2p_availability' => sub {
     $args{account_opening_reason} = 'p2p exchange';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code => 'P2PRestrictedCountry',
-        rule       => 'landing_company.p2p_availability'
+        error_code  => 'P2PRestrictedCountry',
+        rule        => 'landing_company.p2p_availability',
+        description => 'P2P is currently unavailable for the selected landing company'
         },
         'It fails for a p2p related reason in args';
 
     $args{account_opening_reason} = 'Peer-to-peer exchange';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code => 'P2PRestrictedCountry',
-        rule       => 'landing_company.p2p_availability'
+        error_code  => 'P2PRestrictedCountry',
+        rule        => 'landing_company.p2p_availability',
+        description => 'P2P is currently unavailable for the selected landing company'
         },
         "It fails when reason is 'Peer-to-peer exchange'";
 

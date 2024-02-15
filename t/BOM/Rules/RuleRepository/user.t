@@ -32,9 +32,10 @@ subtest 'rule user.has_no_enabled_clients_without_currency' => sub {
     $args->{loginid} = $client_cr->loginid;
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'SetExistingAccountCurrency',
-        params     => $client_cr->loginid,
-        rule       => $rule_name
+        error_code  => 'SetExistingAccountCurrency',
+        params      => $client_cr->loginid,
+        rule        => $rule_name,
+        description => 'Currency for ' . $client_cr->loginid . ' needs to be set'
         },
         'Correct error when currency is not set';
 
@@ -47,9 +48,10 @@ subtest 'rule user.has_no_enabled_clients_without_currency' => sub {
     $user->add_client($client_cr2);
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'SetExistingAccountCurrency',
-        params     => $client_cr2->loginid,
-        rule       => $rule_name
+        error_code  => 'SetExistingAccountCurrency',
+        params      => $client_cr2->loginid,
+        rule        => $rule_name,
+        description => 'Currency for ' . $client_cr2->loginid . ' needs to be set'
         },
         'Sibling account has not currency';
     $client_cr2->status->set('disabled', 'test', 'test');
@@ -71,8 +73,9 @@ subtest 'user.email_is_verified' => sub {
     $email_verified = 0;
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'email unverified',
-        rule       => $rule_name
+        error_code  => 'email unverified',
+        rule        => $rule_name,
+        description => 'Email address is not verified for user'
         },
         'Rule fails when email is verified';
 

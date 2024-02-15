@@ -27,22 +27,25 @@ subtest 'rule residence.account_type_is_available' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'InvalidAccount',
-        rule       => $rule_name
+        error_code  => 'InvalidAccount',
+        rule        => $rule_name,
+        description => 'Market type or landing company is invalid'
         },
         'correct error when market_type in not specified in args';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'InvalidAccount',
-        rule       => $rule_name
+        error_code  => 'InvalidAccount',
+        rule        => $rule_name,
+        description => 'Market type or landing company is invalid'
         },
         'correct error when there is no matching landing_company';
     $companies->{synthetic} = 'abcd';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'InvalidAccount',
-        rule       => $rule_name
+        error_code  => 'InvalidAccount',
+        rule        => $rule_name,
+        description => 'Market type or landing company is invalid'
         },
         'Fails if the landing company matching market type is different form context landing company';
 
@@ -61,8 +64,9 @@ subtest 'rule residence.account_type_is_available' => sub {
         $args->{category}     = 'wallet';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
             {
-            error_code => 'InvalidAccount',
-            rule       => $rule_name
+            error_code  => 'InvalidAccount',
+            rule        => $rule_name,
+            description => 'Market type or landing company is invalid'
             },
             'correct error when there is no landing_company';
 
@@ -91,8 +95,9 @@ subtest 'rule residence.not_restricted' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'InvalidResidence',
-        rule       => $rule_name
+        error_code  => 'InvalidResidence',
+        rule        => $rule_name,
+        description => 'Residence country is restricted'
         },
         'correct error when the country is restricted';
     $is_restricted = 0;
@@ -133,8 +138,9 @@ subtest 'residence.account_type_is_available_for_real_account_opening' => sub {
     $args->{category}     = 'wallet';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'InvalidResidence',
-        rule       => $rule_name
+        error_code  => 'InvalidResidence',
+        rule        => $rule_name,
+        description => 'Account type is not available for country of residence'
         },
         'correct error when the account type is disabled';
 
@@ -156,8 +162,9 @@ subtest 'rule residence.is_signup_allowed' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'InvalidAccount',
-        rule       => $rule_name
+        error_code  => 'InvalidAccount',
+        rule        => $rule_name,
+        description => 'Signup is not allowed for country of residence'
         },
         'correct error when signup is not allowed';
     $is_allowed = 1;

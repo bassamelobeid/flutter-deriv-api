@@ -37,16 +37,20 @@ rule 'currency.is_currency_suspended' => {
         return 1 if $type eq 'fiat';
 
         my $error;
+        my $description;
         try {
             $error = 'CurrencySuspended'
                 if BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency);
+            $description = "Currency $currency is suspended";
         } catch {
-            $error = 'InvalidCryptoCurrency';
+            $error       = 'InvalidCryptoCurrency';
+            $description = "Currency $currency is invalid";
         };
 
         $self->fail(
             $error,
-            params => $currency,
+            params      => $currency,
+            description => $description
         ) if $error;
 
         return 1;
@@ -64,7 +68,8 @@ rule 'currency.experimental_currency' => {
             my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
             my $client_email   = $context->client($args)->email;
 
-            $self->fail('ExperimentalCurrency') if not any { $_ eq $client_email } @$allowed_emails;
+            $self->fail('ExperimentalCurrency', description => 'Experimental currency is not allowed for client')
+                if not any { $_ eq $client_email } @$allowed_emails;
         }
 
         return 1;
@@ -197,22 +202,28 @@ sub _currency_is_available {
         # Only one fiat account is allowed per landing company
         if ($account_category eq 'trading' && $currency_type eq 'fiat' && !$sibling_duplicate) {
             my $sibling_currency_type = LandingCompany::Registry::get_currency_type($sibling->{currency});
-            $self->fail('CurrencyTypeNotAllowed') if ($sibling_currency_type eq 'fiat' && $currency ne $sibling->{currency});
+            $self->fail('CurrencyTypeNotAllowed', description => 'Currency type is not allowed')
+                if ($sibling_currency_type eq 'fiat' && $currency ne $sibling->{currency});
         }
 
         if ($account_category eq 'wallet' && $currency_type eq 'fiat' && $account_type eq 'doughflow') {
             my $sibling_currency_type = LandingCompany::Registry::get_currency_type($sibling->{currency});
-            $self->fail('CurrencyTypeNotAllowed')
+            $self->fail('CurrencyTypeNotAllowed', description => 'Currency type is not allowed')
                 if ($sibling_currency_type eq 'fiat' && $sibling->{account_type} eq 'doughflow' && $currency ne $sibling->{currency});
         }
 
         my $sibling_account_category = $sibling->{category} // '';
-        my $error_code               = $sibling_account_category eq 'trading' ? 'DuplicateCurrency' : 'DuplicateWallet';
+        my $error_code               = $sibling_account_category eq 'trading' ? 'DuplicateCurrency'           : 'DuplicateWallet';
+        my $error_desc               = $sibling_account_category eq 'trading' ? 'Duplicate currency detected' : 'Duplicate wallet detected';
         my $sibling_account_type     = $sibling->{account_type} // '';
 
         # Accounts of the same currency are not acceptable (duplicate accounts included)
         # Account type, currency and account category should match
-        $self->fail($error_code, params => $currency)
+        $self->fail(
+            $error_code,
+            params      => $currency,
+            description => $error_desc
+            )
             if $account_category eq $sibling_account_category
             and $currency eq ($sibling->{currency} // '')
             and $account_type eq $sibling_account_type;

@@ -25,14 +25,15 @@ rule 'residence.account_type_is_available' => {
 
         my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // BOM::Config::AccountType::LEGACY_TYPE);
 
-        $self->fail('InvalidAccount')
+        $self->fail('InvalidAccount', description => 'Market type or landing company is invalid')
             unless $account_type->is_supported($context->brand($args), $context->residence($args), $context->landing_company($args));
 
         if ($account_type->name eq 'standard') {
             my $wallet      = $context->client($args);
             my $wallet_type = $wallet->get_account_type->name;
 
-            return $self->fail('InvalidAccount') unless any { $_ eq $wallet_type } $account_type->linkable_wallet_types->@*;
+            return $self->fail('InvalidAccount', description => 'Account is invalid')
+                unless any { $_ eq $wallet_type } $account_type->linkable_wallet_types->@*;
 
             my @account_links = ($wallet->user->get_accounts_links->{$wallet->loginid} // [])->@*;
 
@@ -48,7 +49,7 @@ rule 'residence.account_type_is_available' => {
                 # skip closed accounts
                 next if $sibling->status->duplicate_account;
 
-                return $self->fail('InvalidAccount');
+                return $self->fail('InvalidAccount', description => 'Account is invalid');
             }
         }
 
@@ -64,7 +65,8 @@ rule 'residence.is_signup_allowed' => {
 
         my $countries_instance = $context->brand($args)->countries_instance;
 
-        $self->fail('InvalidAccount') unless $countries_instance->is_signup_allowed($residence);
+        $self->fail('InvalidAccount', description => 'Signup is not allowed for country of residence')
+            unless $countries_instance->is_signup_allowed($residence);
 
         return 1;
     },
@@ -84,7 +86,7 @@ rule 'residence.account_type_is_available_for_real_account_opening' => {
 
         my $countries_instance           = $context->brand($args)->countries_instance;
         my $wallet_companies_for_country = $countries_instance->wallet_companies_for_country($residence, 'real') // [];
-        $self->fail('InvalidResidence')
+        $self->fail('InvalidResidence', description => 'Account type is not available for country of residence')
             unless grep { $_ eq $landing_company } $wallet_companies_for_country->@*;
         return 1;
     },
@@ -98,7 +100,8 @@ rule 'residence.not_restricted' => {
 
         my $countries_instance = $context->brand($args)->countries_instance;
 
-        $self->fail('InvalidResidence') if $countries_instance->restricted_country($residence);
+        $self->fail('InvalidResidence', description => 'Residence country is restricted')
+            if $countries_instance->restricted_country($residence);
 
         return 1;
     },

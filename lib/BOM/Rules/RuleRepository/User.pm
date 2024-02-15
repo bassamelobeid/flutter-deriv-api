@@ -19,7 +19,7 @@ use BOM::Platform::Context qw(localize);
 use BOM::Rules::Registry   qw(rule);
 
 rule 'user.has_no_real_clients_without_currency' => {
-    description => "Succeeds if currency of all ennabled real accounts of the context landing company are set",
+    description => "Succeeds if currency of all enabled real accounts of the context landing company are set",
     code        => sub {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
@@ -31,7 +31,11 @@ rule 'user.has_no_real_clients_without_currency' => {
         );
 
         if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
-            $self->fail('SetExistingAccountCurrency', params => $loginid_no_curr);
+            $self->fail(
+                'SetExistingAccountCurrency',
+                params      => $loginid_no_curr,
+                description => "Currency for $loginid_no_curr needs to be set"
+            );
         }
 
         return 1;
@@ -44,7 +48,8 @@ rule 'user.email_is_verified' => {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
 
-        $self->fail('email unverified') unless $client->user->email_verified;
+        $self->fail('email unverified', description => 'Email address is not verified for user')
+            unless $client->user->email_verified;
 
         return 1;
     },
