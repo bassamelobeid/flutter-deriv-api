@@ -88,6 +88,55 @@ subtest 'server by id' => sub {
     is $server->{$server_type}{geolocation}{location}, 'Ireland', 'undef if server id is not that we know of';
 };
 
+subtest 'server name by landing company' => sub {
+
+    my $server_type = 'p01_ts01';
+
+    my $mt5_obj = BOM::Config::MT5->new(
+        group_type  => 'real',
+        server_type => $server_type
+    );
+
+    my $group_details = {
+        account_type          => 'real',
+        landing_company_short => 'svg',
+    };
+
+    my $result = $mt5_obj->server_name_by_landing_company($group_details);
+    is $result, 'DerivSVG-Server', 'correct server name for svg real';
+
+    $group_details = {
+        account_type          => 'real',
+        landing_company_short => 'maltainvest',
+    };
+
+    $result = $mt5_obj->server_name_by_landing_company($group_details);
+    is $result, 'DerivMT-Server', 'correct server name for maltainvest real';
+
+    $group_details = {
+        account_type          => 'demo',
+        landing_company_short => 'svg',
+    };
+
+    $result = $mt5_obj->server_name_by_landing_company($group_details);
+    is $result, 'Deriv-Server', 'correct server name for svg demo';
+
+    $server_type = 'p02_ts01';
+    $mt5_obj     = BOM::Config::MT5->new(
+        group_type  => 'real',
+        server_type => $server_type
+    );
+
+    $group_details = {
+        account_type          => 'real',
+        landing_company_short => 'bvi',
+    };
+
+    $result = $mt5_obj->server_name_by_landing_company($group_details);
+    is $result, 'DerivBVI-Server-02', 'correct server name for bvi real';
+
+};
+
 subtest 'servers' => sub {
     my $mt5_obj     = BOM::Config::MT5->new();
     my $all_servers = $mt5_obj->servers();

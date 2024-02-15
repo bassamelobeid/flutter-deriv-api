@@ -171,6 +171,32 @@ sub server_by_country {
     return $servers;
 }
 
+=head2 server_name_by_landing_company
+
+Get the server name of the mt5 accounts based on the landing_company.
+
+=cut
+
+sub server_name_by_landing_company {
+    my ($self, $group_details) = @_;
+
+    my $server_name = $self->server_environment();
+
+    if ($group_details->{account_type} eq 'real') {
+        my %server_name_mapping = (
+            'svg'         => 'SVG',
+            'maltainvest' => 'MT',
+            'vanuatu'     => 'VU',
+            'bvi'         => 'BVI',
+            'labuan'      => 'FX',
+        );
+        my $suffix = $server_name_mapping{$group_details->{landing_company_short} // ''} // '';
+        $server_name =~ s/Deriv/Deriv$suffix/;
+    }
+
+    return $server_name;
+}
+
 =head2 _generate_server_info
 
 Sorted (by recommended first) server information
