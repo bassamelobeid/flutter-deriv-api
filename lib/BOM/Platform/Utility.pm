@@ -704,6 +704,7 @@ sub status_op_processor {
         sharedpaymentmethod       => 'shared_payment_method',
         cryptoautorejectdisabled  => 'crypto_auto_reject_disabled',
         cryptoautoapprovedisabled => 'crypto_auto_approve_disabled',
+        allowduplicatesignup      => 'allow_duplicate_signup',
     };
 
     if ($client_status_type && $status_map->{$client_status_type}) {
@@ -892,9 +893,10 @@ sub verify_reactivation {
         my $error        = ref($e) ? $e->{error_code} // '' : $e;
         my $failing_rule = $e->{rule};
         $error =~ s/([A-Z])/ $1/g;
-        die {
+        die +{
             error_msg    => $error,
-            failing_rule => $failing_rule
+            failing_rule => $failing_rule,
+            $e->{description} ? (description => $e->{description}) : (),
         };
     };
 
