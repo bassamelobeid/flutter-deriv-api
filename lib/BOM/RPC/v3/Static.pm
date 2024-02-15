@@ -89,8 +89,15 @@ rpc residence_list => sub {
         my $has_visual_sample  = $idv_config->{has_visual_sample}                   // 0;
         my $app_config         = BOM::Config::Runtime->instance->app_config;
         $app_config->check_for_update;
-        my $onfido_suspended = $app_config->system->suspend->onfido;
-        my $option           = {
+        my $onfido_suspended    = $app_config->system->suspend->onfido;
+        my $documents_supported = BOM::User::Onfido::supported_documents($country_code);
+
+        # Special case for Nigeria's NIN
+        if ($documents_supported->{identification_number_document}) {
+            delete $documents_supported->{identification_number_document};
+            $documents_supported->{national_identity_card} = {display_name => 'National Identity Card'};
+        }
+        my $option = {
             value => $country_code,
             text  => $country_name,
             $phone_idd  ? (phone_idd  => $phone_idd)  : (),
@@ -106,7 +113,7 @@ rpc residence_list => sub {
                         has_visual_sample => $has_visual_sample
                     },
                     onfido => {
-                        documents_supported  => BOM::User::Onfido::supported_documents($country_code),
+                        documents_supported  => $documents_supported,
                         is_country_supported => (!$onfido_suspended && BOM::Config::Onfido::is_country_supported($country_code)) ? 1 : 0,
                     }
                 },
