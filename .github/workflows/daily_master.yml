@@ -12,13 +12,12 @@ jobs:
     secrets: inherit
   publish_test_results:
     needs: [ syntax_unit , core ]
-    if: always()
+    if: success() || failure()
     runs-on: ubuntu-latest
     steps:
-      - 
-        name: Upload results to TestSpace
-        uses: regentmarkets/github-actions/testspace-publish@master
+      -
+        name: Upload results to DataDog
+        uses: regentmarkets/github-actions/datadog-publish@master
         with: 
-          token: ${{ secrets.TESTSPACE_TOKEN }}
-          artifact: test-results
-          file_path: ./**/*.xml
+          datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+          service-name: bom-config
