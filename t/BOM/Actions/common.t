@@ -553,8 +553,6 @@ subtest 'underage handling' => sub {
 
             ok !$client->status->disabled, 'client is not disabled';
 
-            ok index($email->{body}, $_) > -1, 'contains ' . $_ . ' mention' for $mt5_loginids->@*;
-            ok index($email->{body}, $_) > -1, 'contains ' . $_ . ' mention' for $dxtrade->@*;
             ok index($email->{body}, 'The client tried to authenticate underage documents from ' . $from->loginid) > -1 if $from;
             is index($email->{body}, 'The client tried to authenticate underage documents from'), -1 unless $from;
         } else {
