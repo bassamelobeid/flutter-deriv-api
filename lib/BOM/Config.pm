@@ -945,4 +945,22 @@ sub dynamic_leverage_config {
     return $config;
 }
 
+=head2 status_hierarchy
+
+Gets the hierarchy of statuses to define sub statuses
+
+Example:
+
+    my $status_tree       = BOM::Config::status_hierarchy->{hierarchy};
+    my $disabled_children = $config->{disabled};
+
+Returns a hashref representing the hierarchy of statuses where each key is a status code and the value corresponding to it is an array of strings, as children of the status code in key.
+
+=cut
+
+sub status_hierarchy {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/status_hierarchy.yml');
+    return $config;
+}
+
 1;
