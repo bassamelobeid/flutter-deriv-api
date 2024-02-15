@@ -1564,12 +1564,12 @@ for my $client ($test_client, $test_client_mf) {
                 WebService::Async::Onfido::Document->new(
                     id        => 'aaa' . $client->loginid,
                     file_type => 'png',
-                    type      => 'passport',
+                    type      => 'identification_number_document',
                 ),
                 WebService::Async::Onfido::Document->new(
                     id        => 'bbb' . $client->loginid,
                     file_type => 'png',
-                    type      => 'passport',
+                    type      => 'identification_number_document',
                 ),
             ],
         };
@@ -1951,7 +1951,7 @@ for my $client ($test_client, $test_client_mf) {
                             loginid    => $client->loginid,
                             properties => {
                                 lifetime_valid  => 1,
-                                document_type   => 'passport',
+                                document_type   => 'identification_number_document',
                                 upload_date     => re('\w+'),
                                 file_name       => re('\w+'),
                                 expiration_date => undef,
@@ -1971,6 +1971,22 @@ for my $client ($test_client, $test_client_mf) {
                 $mocked_report->unmock_all;
             }
             "client verification no exception, rejected result";
+
+            my $ryu_data = {
+                photo_list    => [WebService::Async::Onfido::Document->new(id => 'test' . $client->loginid, file_type => 'png'),],
+                document_list => [
+                    WebService::Async::Onfido::Document->new(
+                        id        => 'aaa' . $client->loginid,
+                        file_type => 'png',
+                        type      => 'passport',
+                    ),
+                    WebService::Async::Onfido::Document->new(
+                        id        => 'bbb' . $client->loginid,
+                        file_type => 'png',
+                        type      => 'passport',
+                    ),
+                ],
+            };
 
             subtest 'clear report from Onfido' => sub {
                 reset_onfido_check({

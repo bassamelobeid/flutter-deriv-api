@@ -154,6 +154,7 @@ my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     bankstatement                                => 'bank_statement',
     national_identity_card                       => 'national_identity_card',
     proofid                                      => 'national_identity_card',
+    identification_number_document               => 'identification_number_document',
     vf_face_id                                   => 'live_photo',
     vf_poa                                       => 'unknown',
     vf_id                                        => 'unknown',
