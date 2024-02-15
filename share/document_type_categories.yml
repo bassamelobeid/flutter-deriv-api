@@ -38,6 +38,14 @@ POI:
       date: expiration
       priority: 4
       sides: *two_sided
+    identification_number_document:
+      preferred: 1
+      description: Identification Number Document
+      providers:
+        onfido: identification_number_document
+      date: expiration
+      priority: 4
+      sides: *two_sided
     student_card:
       preferred: 1
       description: Student Card

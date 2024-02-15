@@ -1587,14 +1587,18 @@ sub pending_poi_bundle {
     my $onfido_country = $args->{onfido_country};
 
     # this sorting will ensure (not 100% though but pretty close) that the documents being processed are related to each other in sequence
-    my $stash = [sort { $b->id <=> $a->id }
-            $client->documents->stash('uploaded', 'client', ['national_identity_card', 'driving_licence', 'passport', 'selfie_with_id'])->@*];
+    my $stash = [
+        sort { $b->id <=> $a->id }
+            $client->documents->stash('uploaded', 'client',
+            ['national_identity_card', 'identification_number_document', 'driving_licence', 'passport', 'selfie_with_id'])->@*
+    ];
 
     # having the stash of POI potential documents
     # we need to find a valid cluster of documents:
     #  - passport + selfie_with_id
     #  - driving_licence (front and back) + selfie_with_id
     #  - national_identity_card (front and back) + selfie_with_id
+    #  - identification_number_document (front and back) + selfie_with_id
 
     my $stack = {};
     my $selfie;

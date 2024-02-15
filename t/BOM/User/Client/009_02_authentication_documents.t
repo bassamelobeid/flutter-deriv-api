@@ -1887,7 +1887,11 @@ subtest 'POI bundle' => sub {
         sub {
             my @args = @_;
 
-            cmp_deeply [@args], [ignore(), 'uploaded', 'client', ['national_identity_card', 'driving_licence', 'passport', 'selfie_with_id']],
+            cmp_deeply [@args],
+                [
+                ignore(), 'uploaded', 'client',
+                ['national_identity_card', 'identification_number_document', 'driving_licence', 'passport', 'selfie_with_id']
+                ],
                 'expected stash requested';
 
             return $stash;

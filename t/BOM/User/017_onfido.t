@@ -1653,7 +1653,11 @@ subtest 'candidate documents' => sub {
         sub {
             my @args = @_;
 
-            cmp_deeply [@args], [ignore(), 'uploaded', 'client', ['national_identity_card', 'driving_licence', 'passport', 'selfie_with_id']],
+            cmp_deeply [@args],
+                [
+                ignore(), 'uploaded', 'client',
+                ['national_identity_card', 'identification_number_document', 'driving_licence', 'passport', 'selfie_with_id']
+                ],
                 'expected stash requested';
 
             return $stash;
@@ -1675,7 +1679,7 @@ subtest 'candidate documents' => sub {
         is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
     };
 
-    my $two_sided = [qw/national_identity_card driving_licence/];
+    my $two_sided = [qw/national_identity_card driving_licence identification_number_document/];
     my $sides     = [qw/front back/];
 
     subtest 'two sided documents' => sub {
@@ -1771,6 +1775,7 @@ subtest 'candidate documents' => sub {
                 }
 
                 my @sides = $sides->@*;
+                push @sides, 'back';
 
                 $stash = [
                     build_document({
@@ -1794,6 +1799,7 @@ subtest 'candidate documents' => sub {
                 ];
 
                 @sides = reverse $sides->@*;
+                push @sides, 'back';
 
                 $stash = [
                     build_document({
