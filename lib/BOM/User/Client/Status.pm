@@ -10,6 +10,8 @@ use Class::Method::Modifiers qw( install_modifier );
 use Carp                     qw( croak );
 use Array::Utils             qw(array_minus);
 
+use BOM::Config;
+
 has client_loginid => (
     is       => 'ro',
     required => 1,
@@ -35,12 +37,66 @@ use constant STATUS_CODES => qw(
     deposit_attempt df_deposit_requires_poi smarty_streets_validated trading_hub poi_dob_mismatch
     allow_poinc_resubmission cooling_off_period poa_address_mismatch poi_poa_uploaded eligible_counterparty
     poi_duplicated_documents selfie_pending selfie_verified selfie_rejected
+    allow_duplicate_signup
 );
 
 # codes that are about to be dropped
 my @deprecated_codes = qw(
     proveid_requested proveid_pending
 );
+
+use constant STATUS_CODE_HIERARCHY => BOM::Config::status_hierarchy()->{hierarchy};
+
+=head2 _build_parent_map
+
+Function to build a parent map from the given hierarchy.
+Input tree: {
+    'parent1' => [
+        'child1',
+        'child2',
+        ...
+    ],
+    'parent2' => [
+        'child3',
+        'child4',
+        ...
+    ],
+    ...
+}
+
+Output map: {
+    'child1' => 'parent1',
+    'child2' => 'parent1',
+    'child3' => 'parent2',
+    'child4' => 'parent2',
+    ...
+}
+
+Returns a hashref containing the parent map
+
+=over 4
+
+=item * tree: hashref, tree to build parent map from
+
+=back
+
+=cut
+
+sub _build_parent_map {
+    my ($hierarchy) = @_;
+
+    my %parent_map;
+
+    foreach my $parent_status (keys %$hierarchy) {
+        foreach my $child_status (@{$hierarchy->{$parent_status}}) {
+            $parent_map{$child_status} = $parent_status;
+        }
+    }
+
+    return \%parent_map;
+}
+
+use constant REVERSE_STATUS_CODE_HIERARCHY => _build_parent_map(STATUS_CODE_HIERARCHY);
 
 for my $code (STATUS_CODES) {
     has $code => (
@@ -64,6 +120,41 @@ for my $code (STATUS_CODES) {
 
         return $result;
     };
+}
+
+=head2 _children
+
+Returns an array containing the client statuses that are children of the given status code
+
+=over 4
+
+=item * status_code
+
+=back
+
+=cut
+
+sub _children {
+    my ($status_code) = @_;
+    my $children = STATUS_CODE_HIERARCHY->{$status_code} // [];
+    return $children->@*;
+}
+
+=head2 _parent
+
+Returns the status code that is the parent of the given status code
+
+=over 4
+
+=item * status_code
+
+=back
+
+=cut
+
+sub _parent {
+    my ($status_code) = @_;
+    return REVERSE_STATUS_CODE_HIERARCHY->{$status_code};
 }
 
 =head2 all
@@ -139,7 +230,8 @@ sub _build_is_login_disallowed {
 =head2 set
 
 set is used to assign a status_code to the associated client.
-Returns true if successful, or dies.
+Returns true if succesful and status code did not exist before
+Returns false if succesful and status code existed before, or dies.
 
 Takes four arguments:
 
@@ -162,15 +254,31 @@ sub set {
     my $loginid = $self->client_loginid;
     die 'status_code is required' unless $status_code;
 
-    my $result = $self->dbic->run(
-        ping => sub {
-            $_->selectrow_array('SELECT * FROM betonmarkets.set_client_status(?,?,?,?,?)',
-                undef, $loginid, $status_code, $staff_name, $reason, $allow_existing);
-        });
+    my $status_code_exists = defined($self->{$status_code});
+
+    my @statuses_to_apply = ($status_code);
+    my $parent            = _parent($status_code);
+    if ($parent) {
+        push @statuses_to_apply, $parent;
+    }
+
+    my $dbh = $self->dbic->dbh;
+
+    # Since parent can be applied already, we would have allow_existing as 1 for parent application
+    my @allow_existing = map { $_ eq $status_code ? $allow_existing : 1 } @statuses_to_apply;
+
+    my $stmt = $dbh->prepare(
+        'SELECT betonmarkets.set_client_status($1, x.code, $3 , $4, x.allow_existing) FROM unnest($2::TEXT[], $5::BOOLEAN[]) AS x(code, allow_existing)'
+    );
+    my $result = $stmt->execute($loginid, \@statuses_to_apply, $staff_name, $reason, \@allow_existing);
 
     if ($result) {
-        delete $self->{$status_code};
+        foreach (@statuses_to_apply) {
+            delete $self->{$_};
+        }
+
         $self->_clear_composite_cache_elements();
+        return !$status_code_exists;
     }
 
     return $result;
@@ -355,10 +463,23 @@ sub _clear {
     my $loginid = $self->client_loginid;
     die 'status_code is required' unless $status_code;
 
-    $self->dbic->run(
-        ping => sub {
-            $_->do('SELECT betonmarkets.clear_client_status(?,?)', undef, $loginid, $status_code);
-        });
+    my @statuses_to_clear = ($status_code);
+    my @children          = _children($status_code);
+
+    if (scalar @children) {
+        push @statuses_to_clear, @children;
+    }
+
+    my $dbh = $self->dbic->dbh;
+
+    my $stmt   = $dbh->prepare('SELECT betonmarkets.clear_client_status($1, x.code) FROM unnest($2::TEXT[]) AS x(code)');
+    my $result = $stmt->execute($loginid, \@statuses_to_clear);
+
+    if ($result) {
+        foreach (@statuses_to_clear) {
+            delete $self->{$_};
+        }
+    }
 
     $self->_clear_composite_cache_elements();
 
