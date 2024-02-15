@@ -128,7 +128,7 @@ my $redis             = BOM::Config::Redis::redis_replicated_write();
 my $poi_status_reason = $input{poi_reason} // $client->status->reason('allow_poi_resubmission') // 'unselected';
 # Add a comment about kyc email checkbox
 $poi_status_reason = join(' ', $poi_status_reason, $input{kyc_email_checkbox} ? 'kyc_email' : ()) unless $poi_status_reason =~ /\skyc_email$/;
-
+$input{reason} //= '';
 # POA address mismatch
 
 if ($broker ne 'MF' and defined $input{address_mismatch}) {
@@ -1696,7 +1696,7 @@ BOM::Backoffice::Request::template()->process(
         broker                   => $broker,
         clientid                 => $loginid,
         actions                  => [sort { $a->{comments} cmp $b->{comments} } @{get_untrusted_types()}],
-        actions_hash             => get_untrusted_types_hashref(),
+        actions_hash_json        => encode_json(get_untrusted_types_hashref()),
         p2p_approved             => $p2p_approved,
         client_statuses_readonly => \%client_statuses,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";

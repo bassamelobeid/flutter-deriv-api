@@ -121,9 +121,11 @@ if (defined $action && $action eq "gross_transactions") {
         print "<div class='error center'>Error: Client $loginID does not have currency set. </div>";
     }
 }
-
+my %input = %{request()->params};
+$input{clerk}  //= BOM::Backoffice::Auth::get_staffname();
+$input{reason} //= '';
 # Deleting checked statuses
-my $status_op_summary = BOM::Platform::Utility::status_op_processor($client, request()->params);
+my $status_op_summary = BOM::Platform::Utility::status_op_processor($client, \%input);
 # Print other untrusted section warning in backoffice
 print build_client_warning_message(encode_entities($client->loginid), $is_readonly);
 # The choice of positioning is to allow display under the buttons associated with this event

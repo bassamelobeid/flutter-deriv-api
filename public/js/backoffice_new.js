@@ -692,6 +692,55 @@ function setCurrentSection(all_sections, top_margin, last_section, current_secti
     return current_section;
 }
 
+function updateChildDropdown(selectedValue, perlData) {
+    var statusCode = selectedValue.options[selectedValue.selectedIndex].getAttribute('data-statuscode');
+    // Get the container for the child dropdown
+    var childDropdownContainer = document.getElementById('childDropdownContainer');
+
+    // Remove existing child dropdown, if any
+    while (childDropdownContainer.firstChild) {
+        childDropdownContainer.removeChild(childDropdownContainer.firstChild);
+    }
+
+    // Find the selected status in the Perl data
+    var selectedStatus = perlData[statusCode];
+    
+    // Check if the selected status has children
+    if (selectedStatus.children && selectedStatus.children.length > 0) {
+
+        // Create a new child dropdown
+        var labelTd = document.createElement('td');
+        var label = document.createElement('label');
+        label.textContent = 'SUB ACTION';
+        
+        labelTd.appendChild(label);
+
+        childDropdownContainer.appendChild(labelTd);
+
+        var childDropdownTd = document.createElement('td');
+        var childDropDownSelect = document.createElement('select');
+        childDropDownSelect.name = "untrusted_sub_action_type";
+        // Add an initial option
+        var initialOption = document.createElement('option');
+        initialOption.value = '';
+        initialOption.text = '------------------ SELECT AN ACTION ------------------';
+        childDropDownSelect.appendChild(initialOption);
+
+        // Add options for each child status
+        for (var i = 0; i < selectedStatus.children.length; i++) {
+            var childStatus = selectedStatus.children[i];
+            var option = document.createElement('option');
+            option.value = perlData[childStatus].linktype;
+            option.text = perlData[childStatus].comments;
+            childDropDownSelect.appendChild(option);
+        }
+
+        childDropdownTd.appendChild(childDropDownSelect);
+        // Append the child dropdown to the container
+        childDropdownContainer.appendChild(childDropdownTd);
+    }
+}
+
 function initCopyText() {
     document.querySelectorAll('.copy-on-click').forEach(el => {
         el.classList.add('tooltip-nowrap');
@@ -726,6 +775,8 @@ function initThemeSwitcher() {
         localStorage.setItem('theme', theme);
     }, false);
 }
+
+
 
 let clock_interval;
 

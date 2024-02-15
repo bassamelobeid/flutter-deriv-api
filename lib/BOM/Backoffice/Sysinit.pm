@@ -113,16 +113,14 @@ my $permissions = {
     'f_client_anonymization_dcc.cgi'          => ['Compliance'],
     'f_client_anonymization_confirmation.cgi' => ['Compliance'],
     'bulk_aml_risk.cgi'                       => ['Compliance'],
-    'f_client_bulk_authentication.cgi'        => ['Compliance', 'CS', 'Payments'],
-
-    'download_document.cgi'       => ['CS',              'Compliance', 'Quants', 'IT'],
-    'f_client_combined_audit.cgi' => ['CS',              'Compliance'],
-    'f_dailyturnoverreport.cgi'   => ['AccountsLimited', 'AccountsAdmin', 'Quants', 'IT', 'Marketing'],
-    'f_quant_query.cgi'           => ['Quants',          'CS'],
-    'f_dynamic_settings.cgi'      => ['Quants',          'IT'],    # it has extra internal logic inside
-    'f_resync_service.cgi'        => ['Quants',          'IT'],
-    'crypto_dynamic_settings.cgi' => ['IT'],
-    'f_idv_dashboard.cgi'         => ['CS', 'Compliance', 'CostControl', 'IDV'],
+    'f_client_bulk_authentication.cgi'        => ['Compliance',      'CS', 'Payments'],
+    'f_client_combined_audit.cgi'             => ['CS',              'Compliance'],
+    'f_dailyturnoverreport.cgi'               => ['AccountsLimited', 'AccountsAdmin', 'Quants', 'IT', 'Marketing'],
+    'f_quant_query.cgi'                       => ['Quants',          'CS'],
+    'f_dynamic_settings.cgi'                  => ['Quants',          'IT'],    # it has extra internal logic inside
+    'f_resync_service.cgi'                    => ['Quants',          'IT'],
+    'crypto_dynamic_settings.cgi'             => ['IT'],
+    'f_idv_dashboard.cgi'                     => ['CS', 'Compliance', 'CostControl', 'IDV'],
 
     'f_internal_transfer.cgi' => ['PaymentInternalTransfer'],
 
@@ -151,8 +149,6 @@ my $permissions = {
     'quant/pricing/bpot_graph_json.cgi'                                       => ['Quants', 'CS'],
     'quant/risk_dashboard.cgi'                                                => ['Quants'],
     'quant/trading_strategy.cgi'                                              => ['Quants'],
-    'quant/update_vol.cgi'                                                    => ['Quants'],
-    'quant/validate_surface.cgi'                                              => ['Quants'],
     'quant/edit_interest_rate.cgi'                                            => ['QuantsWrite'],
     'quant/market_data_mgmt/quant_market_tools_backoffice.cgi'                => ['QuantsWrite'],
     'quant/pricing/bpot.cgi'                                                  => ['Quants', 'CS'],
