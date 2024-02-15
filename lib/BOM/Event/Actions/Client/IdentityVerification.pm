@@ -275,9 +275,11 @@ async sub verify_process {
 
     die 'No standby document found, IDV request skipped.' unless $document;
 
-    my $provider = _get_provider($document->{issuing_country}, $document->{document_type});
+    my $check = $idv_model->get_document_check_detail($document->{id});
 
-    return undef unless $provider;
+    die 'No document check found, IDV request skipped.' unless $check;
+
+    my $provider = $check->{provider};
 
     my @common_datadog_tags = (sprintf('provider:%s', $provider), sprintf('country:%s', $document->{issuing_country}));
 

@@ -17,6 +17,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Config::Redis;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 
 use BOM::User::IdentityVerification;
 use BOM::Event::Actions::Client::IdentityVerification;
@@ -287,6 +288,8 @@ subtest 'address verified' => sub {
     my $redis = BOM::Config::Redis::redis_events();
     $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
+    my $idv_document = $idv_model->get_standby_document;
+
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
     $client->address_postcode('12345900');
@@ -426,6 +429,29 @@ subtest 'verify_process - apply side effects' => sub {
         FullName => 'John Doe',
         DOB      => '1988-02-12',
     };
+
+    my $exception = exception {
+        ok $idv_event_handler->({
+                id            => $client->loginid,
+                status        => 'verified',
+                messages      => ['ADDRESS_VERIFIED'],
+                response_body => {},
+                request_body  => {},
+                report        => {},
+            })->get, 'the IDV response processed without error';
+    };
+
+    ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
+
+    my $idv_document = $idv_model->get_standby_document;
+
+    $idv_model->update_document_check({
+        document_id  => $idv_document->{id},
+        status       => +BOM::Event::Actions::Client::IdentityVerification::IDV_DOCUMENT_STATUS->{pending},
+        messages     => [+BOM::Event::Actions::Client::IdentityVerification::IDV_MESSAGES->{VERIFICATION_STARTED},],
+        provider     => 'zaig',
+        request_body => '{}',
+    });
 
     @emissions = ();
     ok $idv_event_handler->({
@@ -2116,6 +2142,29 @@ subtest 'testing callback status' => sub {
     $client->date_of_birth('1988-02-12');
     $client->save();
 
+    my $exception = exception {
+        ok $idv_event_handler->({
+                id            => $client->loginid,
+                status        => 'verified',
+                messages      => ['ADDRESS_VERIFIED'],
+                response_body => {},
+                request_body  => {},
+                report        => {},
+            })->get, 'the IDV response processed without error';
+    };
+
+    ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
+
+    my $idv_document_model = $idv_model->get_standby_document;
+
+    $idv_model->update_document_check({
+        document_id  => $idv_document_model->{id},
+        status       => +BOM::Event::Actions::Client::IdentityVerification::IDV_DOCUMENT_STATUS->{pending},
+        messages     => [+BOM::Event::Actions::Client::IdentityVerification::IDV_MESSAGES->{VERIFICATION_STARTED},],
+        provider     => 'zaig',
+        request_body => '{}',
+    });
+
     @emissions = ();
     ok $idv_event_handler->($args)->get, 'the event processed without error';
 
@@ -2389,6 +2438,29 @@ subtest 'integration test - webhook' => sub {
             status   => 'refuted',
             id       => $client->loginid,
         };
+
+        my $exception = exception {
+            ok $idv_proc_handler->({
+                    id            => $client->loginid,
+                    status        => 'verified',
+                    messages      => ['ADDRESS_VERIFIED'],
+                    response_body => {},
+                    request_body  => {},
+                    report        => {},
+                })->get, 'the IDV response processed without error';
+        };
+
+        ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
+
+        my $idv_document = $idv_model->get_standby_document;
+
+        $idv_model->update_document_check({
+            document_id  => $idv_document->{id},
+            status       => +BOM::Event::Actions::Client::IdentityVerification::IDV_DOCUMENT_STATUS->{pending},
+            messages     => [+BOM::Event::Actions::Client::IdentityVerification::IDV_MESSAGES->{VERIFICATION_STARTED},],
+            provider     => 'zaig',
+            request_body => '{}',
+        });
 
         @emissions = ();
         my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
@@ -2872,6 +2944,29 @@ subtest 'IDV lookback' => sub {
     $idv_model->add_document($document);
     @emissions = ();
 
+    my $exception = exception {
+        ok $idv_proc_handler->({
+                id            => $client->loginid,
+                status        => 'verified',
+                messages      => ['ADDRESS_VERIFIED'],
+                response_body => {},
+                request_body  => {},
+                report        => {},
+            })->get, 'the IDV response processed without error';
+    };
+
+    ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
+
+    my $idv_document_model = $idv_model->get_standby_document;
+
+    $idv_model->update_document_check({
+        document_id  => $idv_document_model->{id},
+        status       => +BOM::Event::Actions::Client::IdentityVerification::IDV_DOCUMENT_STATUS->{pending},
+        messages     => [+BOM::Event::Actions::Client::IdentityVerification::IDV_MESSAGES->{VERIFICATION_STARTED},],
+        provider     => 'zaig',
+        request_body => '{}',
+    });
+
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['NAME_MISMATCH', 'DOB_MISMATCH'],
@@ -2912,6 +3007,29 @@ subtest 'IDV lookback' => sub {
     };
     $idv_model->add_document($document);
 
+    $exception = exception {
+        ok $idv_proc_handler->({
+                id            => $client->loginid,
+                status        => 'verified',
+                messages      => ['ADDRESS_VERIFIED'],
+                response_body => {},
+                request_body  => {},
+                report        => {},
+            })->get, 'the IDV response processed without error';
+    };
+
+    ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
+
+    $idv_document_model = $idv_model->get_standby_document;
+
+    $idv_model->update_document_check({
+        document_id  => $idv_document_model->{id},
+        status       => +BOM::Event::Actions::Client::IdentityVerification::IDV_DOCUMENT_STATUS->{pending},
+        messages     => [+BOM::Event::Actions::Client::IdentityVerification::IDV_MESSAGES->{VERIFICATION_STARTED},],
+        provider     => 'zaig',
+        request_body => '{}',
+    });
+
     @emissions = ();
     ok $idv_proc_handler->({
             status   => 'refuted',
@@ -2950,6 +3068,29 @@ subtest 'IDV lookback' => sub {
         issuing_country => 'ar',
         number          => '123456788-3',
         type            => 'dni',
+    });
+
+    $exception = exception {
+        ok $idv_proc_handler->({
+                id            => $client->loginid,
+                status        => 'verified',
+                messages      => ['ADDRESS_VERIFIED'],
+                response_body => {},
+                request_body  => {},
+                report        => {},
+            })->get, 'the IDV response processed without error';
+    };
+
+    ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
+
+    $idv_document_model = $idv_model->get_standby_document;
+
+    $idv_model->update_document_check({
+        document_id  => $idv_document_model->{id},
+        status       => +BOM::Event::Actions::Client::IdentityVerification::IDV_DOCUMENT_STATUS->{pending},
+        messages     => [+BOM::Event::Actions::Client::IdentityVerification::IDV_MESSAGES->{VERIFICATION_STARTED},],
+        provider     => 'zaig',
+        request_body => '{}',
     });
 
     @emissions = ();
@@ -2992,7 +3133,7 @@ subtest 'IDV lookback' => sub {
             'full_name' => 'The Chosen One',
             'birthdate' => '1989-10-10'
         },
-        'provider' => 'metamap',
+        'provider' => 'zaig',
         'pictures' => undef
         },
         'expected arguments for lookback call';
@@ -3055,7 +3196,7 @@ subtest 'IDV lookback' => sub {
         {
         'response'     => '{"resposne": "get"}',
         'id'           => re('\d+'),
-        'provider'     => 'metamap',
+        'provider'     => 'zaig',
         'photo_id'     => [],
         'request'      => '{"request": "set"}',
         'requested_at' => ignore(),
@@ -3119,7 +3260,7 @@ subtest 'IDV lookback' => sub {
     cmp_deeply $idv_document_check, {
         'response'     => '{"resposne": "get"}',
         'id'           => re('\d+'),
-        'provider'     => 'metamap',
+        'provider'     => 'zaig',
         'photo_id'     => [],
         'request'      => '{"request": "set"}',
         'requested_at' => ignore(),
@@ -3184,7 +3325,7 @@ subtest 'IDV lookback' => sub {
     cmp_deeply $idv_document_check, {
         'response'     => '{"resposne": "get"}',
         'id'           => re('\d+'),
-        'provider'     => 'metamap',
+        'provider'     => 'zaig',
         'photo_id'     => [],
         'request'      => '{"request": "set"}',
         'requested_at' => ignore(),
