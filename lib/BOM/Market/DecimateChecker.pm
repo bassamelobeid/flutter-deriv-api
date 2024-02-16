@@ -68,12 +68,12 @@ sub log_limit { 5 }
 
 =head2 retention_interval
 
-The amount of time to look back for checking tick, 30 minutes and 50 seconds
-This is 10 seconds less than L<BOM::Market::DataDecimate::_raw_retention_interval>
+The amount of time to look back for checking tick, 30 minutes and 30 seconds
+This is 30 seconds less than L<BOM::Market::DataDecimate::_raw_retention_interval>
 
 =cut
 
-sub retention_interval { 1850 }
+sub retention_interval { 1830 }
 
 =head2 tick_miss_history
 
@@ -86,7 +86,8 @@ sub tick_miss_history { shift->{tick_miss_history} }
 
 sub new {
     my ($class, %args) = @_;
-    $args{markets} //= ['forex', 'synthetic_index'];
+    $args{markets}  //= ['forex', 'synthetic_index'];
+    $args{interval} //= "31m";
     $args{tick_miss_history} = {};
     my $self = bless \%args, $class;
     return $self;
@@ -174,16 +175,17 @@ async sub check_decimate_sync {
 
     $self->{executing} = 1;
     await $self->redis->connected;
-    my $interval    = $self->retention_interval;
     my $end         = [gettimeofday]->[0];
-    my $last_period = $end - $interval;
+    my $last_period = $end - $self->retention_interval;
+    my $interval    = $self->{interval};
 
     for my $symbol (keys $self->symbols->%*) {
         my $last_miss_epoch = $self->tick_miss_history->{$symbol}{epoch} // 0;
         my $start           = max($last_period, $last_miss_epoch);
 
         my $redis_ticks =
-            [map { $self->decoder->decode($_) } @{await $self->redis->zrevrangebyscore("DECIMATE_" . $symbol . "_31m_FULL", $end, $start)}];
+            [map { $self->decoder->decode($_) }
+                @{await $self->redis->zrevrangebyscore("DECIMATE_" . $symbol . "_" . $interval . "_FULL", $end, $start)}];
         my $feed_api = Postgres::FeedDB::Spot::DatabaseAPI->new({
             underlying => $symbol,
             dbic       => Postgres::FeedDB::read_dbic,
@@ -213,7 +215,7 @@ async sub check_decimate_sync {
         # Threshold set to be more than 1 tick delayed from current time selection.
         next unless $count_diff > 1;
 
-        $log->warnf('Missing ticks detected in Redis for %s: From: %s | To: %s | Ticks: %s', $symbol, $start, $end, $diff);
+        $log->warnf('Missing ticks detected in Redis for %s (%s): From: %s | To: %s | Ticks: %s', $symbol, $interval, $start, $end, $diff);
 
         if (++$self->tick_miss_history->{$symbol}{times} >= $self->log_limit) {
             my $new_start = max @$db_epoch;

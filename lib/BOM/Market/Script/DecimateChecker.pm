@@ -15,17 +15,20 @@ $0 = 'tick_decimator_checker';    ## no critic
 async sub run {
     STDOUT->autoflush(1);
 
-    my $loop = IO::Async::Loop->new;
-    my $app  = BOM::Market::DecimateChecker->new();
+    my $loop  = IO::Async::Loop->new;
+    my $app31 = BOM::Market::DecimateChecker->new();
+    my $app32 = BOM::Market::DecimateChecker->new(interval => "32m");
     $log->info("$0 is running");
     try {
-        $loop->add($app);
-        await $app->run;
+        $loop->add($app31);
+        $loop->add($app32);
+        await Future->wait_any($app31->run, $app32->run);
     } catch ($e) {
         $log->warnf('Failed | %s', $e);
     }
 
-    $loop->remove($app);
+    $loop->remove($app31);
+    $loop->remove($app32);
     return Future->done;
 }
 
