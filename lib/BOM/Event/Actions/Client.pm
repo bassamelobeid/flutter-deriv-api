@@ -3545,9 +3545,6 @@ sub get_duplicate_dob_phone_number {
 
     my @brokers = LandingCompany::Registry->all_broker_codes();
 
-    my $exclude_payment_agents = 1;
-    my $excluded_status_codes  = ['allow_duplicate_signup'];
-
     for my $broker (@brokers) {
         my $dbic = BOM::Database::ClientDB->new({
                 broker_code  => $broker,
@@ -3557,9 +3554,9 @@ sub get_duplicate_dob_phone_number {
         my $client = $dbic->run(
             fixup => sub {
                 $_->selectrow_hashref(
-                    q{SELECT * FROM betonmarkets.check_duplicate_dob_phone(?, ?, ?, ?, ?)},
+                    q{SELECT * FROM betonmarkets.check_duplicate_dob_phone(?, ?, ?)},
                     {Slice => {}},
-                    $client->binary_user_id, $client->phone, $client->date_of_birth, $exclude_payment_agents, $excluded_status_codes
+                    $client->binary_user_id, $client->phone, $client->date_of_birth
                 );
             });
 

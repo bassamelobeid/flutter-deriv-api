@@ -3785,9 +3785,9 @@ subtest 'signup event' => sub {
 
 subtest 'duplicate dob and phone' => sub {
     # Data sent for virtual signup should be loginid, country and landing company. Other values are not defined for virtual
-
-    my %common_attributes = (
+    my $test_client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code      => 'CR',
+        email            => 'test24@bin.com',
         first_name       => '',
         last_name        => '',
         date_of_birth    => '1994-05-01',
@@ -3797,44 +3797,21 @@ subtest 'duplicate dob and phone' => sub {
         address_city     => '',
         address_state    => '',
         address_postcode => '',
-
-    );
-
-    my $test_client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({%common_attributes, email => 'test24@bin.com'});
+    });
 
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            %common_attributes,
-            email => 'test25@bin.com',
-
+        broker_code      => 'MF',
+        email            => 'test25@bin.com',
+        first_name       => '',
+        last_name        => '',
+        date_of_birth    => '1994-05-01',
+        phone            => '+1234567890',
+        address_line_1   => '',
+        address_line_2   => '',
+        address_city     => '',
+        address_state    => '',
+        address_postcode => '',
     });
-
-    $common_attributes{broker_code}   = 'MF';
-    $common_attributes{date_of_birth} = '1994-05-02';
-
-    my $test_client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        %common_attributes,
-        email => 'test26@bin.com',
-    });
-
-    my $test_client4 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        %common_attributes,
-        email => 'test27@bin.com',
-    });
-
-    $test_client4->account('USD');
-
-    $test_client4->payment_agent({
-        payment_agent_name    => 'Joe',
-        email                 => 'joe@example.com',
-        information           => 'Test Info',
-        summary               => 'Test Summary',
-        commission_deposit    => 0,
-        commission_withdrawal => 0,
-        status                => 'authorized',
-        currency_code         => 'USD',
-        is_listed             => 't',
-    });
-    $test_client4->save;
 
     $test_client2->status->clear_unwelcome();
 
@@ -3883,71 +3860,6 @@ subtest 'duplicate dob and phone' => sub {
         );
 
         ok !$msg, 'Email not sent to anti-fraud';
-    };
-
-    subtest 'With payment agent' => sub {
-        mailbox_clear();
-
-        BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone(1);
-
-        # test_client4 has same DOB and phone number but is a payment agent, thus test_client3 should be able to signup
-
-        $real_args->{loginid} = $test_client3->loginid;
-        is exception { $handler->($real_args) }, undef, 'Event processed successfully';
-
-        # clearing cache for the status
-        $test_client3 = BOM::User::Client->new({loginid => $test_client3->loginid});
-
-        ok !$test_client3->status->unwelcome, 'Unwelcome status not applied';
-
-        $msg = mailbox_search(
-            subject => qr/Account created with same DOB and Phone/,
-        );
-
-        ok !$msg, 'Email not sent to anti-fraud';
-    };
-
-    subtest 'With excluded status codes' => sub {
-
-        subtest 'Client with status codes' => sub {
-            mailbox_clear();
-            BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone(1);
-            $test_client1->status->set('allow_duplicate_signup', 'test', 'test');
-            $real_args->{loginid} = $test_client2->loginid;
-            $test_client2->status->clear_unwelcome();
-            is exception { $handler->($real_args) }, undef, 'Event processed successfully';
-
-            # clearing cache for the status
-            $test_client2 = BOM::User::Client->new({loginid => $test_client2->loginid});
-
-            ok !$test_client2->status->unwelcome, 'Unwelcome status not applied';
-
-            $msg = mailbox_search(
-                subject => qr/Account created with same DOB and Phone/,
-            );
-
-            ok !$msg, 'Email not sent to anti-fraud';
-        };
-
-        subtest 'Client without status codes' => sub {
-            mailbox_clear();
-            BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone(1);
-            $test_client1->status->clear_allow_duplicate_signup;
-            $test_client2->status->clear_unwelcome;
-            $real_args->{loginid} = $test_client2->loginid;
-            is exception { $handler->($real_args) }, undef, 'Event processed successfully';
-            # clearing cache for the status
-            $test_client2 = BOM::User::Client->new({loginid => $test_client2->loginid});
-
-            ok $test_client2->status->unwelcome, 'Unwelcome status applied';
-
-            $msg = mailbox_search(
-                subject => qr/Account created with same DOB and Phone/,
-            );
-
-            ok $msg, 'Email sent to anti-fraud';
-        };
-
     };
 
 };
@@ -6842,6 +6754,10 @@ subtest 'Onfido DOB checks' => sub {
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
             ok $msg, 'underage email sent to CS';
+            ok $msg->{body} =~ /The client posseses the following MT5 loginids/, 'MT5 loginds detected';
+            ok $msg->{body} =~ /\bMTR9009\b/,                                    'Real MT5 loginid reported';
+            ok $msg->{body} =~ /\bMTR90000\b/,                                   'Real MT5 loginid reported';
+            ok $msg->{body} !~ /\bMTD90000\b/,                                   'Demo MT5 loginid not reported';
             cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
 
@@ -7017,6 +6933,9 @@ subtest 'Onfido DOB checks' => sub {
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
             ok $msg, 'underage email sent to CS';
+            ok $msg->{body} =~ /The client posseses the following Deriv X loginids/, 'DX loginds detected';
+            ok $msg->{body} =~ /\bDXR9009\b/,                                        'Real DX loginid reported';
+            ok $msg->{body} !~ /\bDXD90000\b/,                                       'Demo DX loginid not reported';
             cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
 
