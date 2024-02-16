@@ -12,6 +12,7 @@ use BOM::Config::Redis;
 use BOM::Product::Exception;
 use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Turbos;
+use BOM::Product::Utils qw(rounddown);
 use BOM::Config::Quants qw(minimum_stake_limit);
 with 'BOM::Product::Role::AmericanExpiry' => {-excludes => ['_build_hit_tick', '_build_close_tick']};
 with 'BOM::Product::Role::SingleBarrier'  => {-excludes => '_validate_barrier'};
@@ -22,7 +23,7 @@ Added currency precision used in rounding number_of_contracts
 
 =cut
 
-use constant ADDED_CURRENCY_PRECISION => 3;
+use constant ADDED_CURRENCY_PRECISION => 4;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -370,14 +371,25 @@ We need to use entry tick to calculate this figure.
 sub _build_number_of_contracts {
     my $self = shift;
 
-    my $contract_price = $self->_contract_price;
-
+    my $rounding_precision  = $self->get_rounding_precision();
+    my $contract_price      = $self->_contract_price;
     my $number_of_contracts = $contract_price ? ($self->_user_input_stake / $contract_price) : $self->_contracts_limit->{min};
+
+    return roundcommon($rounding_precision, rounddown($number_of_contracts, $rounding_precision));
+}
+
+=head2 get_rounding_precision
+
+Calculates rounding precision for a currency with ADDED_CURRENCY_PRECISION
+
+=cut
+
+sub get_rounding_precision {
+    my $self = shift;
 
     my $currency_decimal_places = Format::Util::Numbers::get_precision_config()->{price}->{$self->currency} + ADDED_CURRENCY_PRECISION;
     my $rounding_precision      = 10**($currency_decimal_places * -1);
-    # Based on the documentation for roundcommon, this sub uses the same rounding technique as financialrounding, the only difference is that it acccepts precision
-    return roundcommon($rounding_precision, $number_of_contracts);
+    return $rounding_precision;
 }
 
 =head2 available_orders

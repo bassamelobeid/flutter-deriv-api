@@ -78,13 +78,13 @@ subtest 'number of contracts' => sub {
     # must be the same
     my $c = produce_contract($args);
     ok $c->pricing_new, 'this is a new contract';
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
+    cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
     ok !$c->is_expired, 'not expired (obviously but just be safe)';
     is $c->buy_commission, 0.529763095440703, 'correct buy commission';
 
     $args->{date_pricing} = $now->plus_time_interval('1s');
     $c = produce_contract($args);
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
+    cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
     is $c->bid_price,       '1.39',            'has bid price';
@@ -92,7 +92,7 @@ subtest 'number of contracts' => sub {
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
+    cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
     is $c->bid_price, '210.68', 'has bid price, and higher because spot is higher now';
@@ -105,14 +105,14 @@ subtest 'number of contracts' => sub {
     $args->{date_pricing} = $now->plus_time_interval('31d');
     $c = produce_contract($args);
     ok $c->is_expired, 'contract is expired, this is a 30d contract';
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
+    cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '0.03766', 'correct number of contracts';
 };
 
 subtest 'shortcode' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     $args->{duration}     = '5m';
     my $c         = produce_contract($args);
-    my $shortcode = 'TURBOSSHORT_1HZ25V_20.00_' . $now->epoch . '_' . $now->plus_time_interval('5m')->epoch . '_351610000000_0.03766_1425945600';
+    my $shortcode = 'TURBOSSHORT_1HZ25V_20.00_' . $now->epoch . '_' . $now->plus_time_interval('5m')->epoch . '_351610000000_0.037660_1425945600';
 
     my $c_shortcode;
     lives_ok {
@@ -140,7 +140,7 @@ subtest 'longcode' => sub {
             ['contract start time'],
             '10-Mar-15 00:05:00GMT',
             '351610.00',
-            '0.03766'
+            '0.037660'
         ],
         'longcode matches'
     );
@@ -157,7 +157,7 @@ subtest 'longcode' => sub {
             ['first tick'],
             [5],
             '351610.00',
-            '0.03766'
+            '0.037660'
         ],
         'longcode matches'
     );

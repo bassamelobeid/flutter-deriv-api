@@ -111,7 +111,7 @@ subtest 'tick duration contract close tick' => sub {
     is $c->close_tick,                           undef, 'close tick is undefined';
     is defined $c->audit_details->{'all_ticks'}, 1,     'audit_details is defined';
     ok !$c->is_expired, 'not expired';
-    is $c->bid_price, '1555.57', 'has higher bid price';
+    is $c->bid_price, '1555.58', 'has higher bid price';
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => $symbol,
@@ -172,6 +172,70 @@ subtest 'audit_details exit spot in correct tick' => sub {
     # verify audit exit spot in correct tick
     my $exit_spot = $c->audit_details->{'all_ticks'}[5]{'name'}[2];
     is $exit_spot, "Exit Spot", "Contract exit in correct tick";
+};
+
+$now    = Date::Utility->new('18-Jan-2024');
+$symbol = '1HZ25V';
+$epoch  = $now->epoch;
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => 'USD',
+        recorded_date => $now
+    });
+
+$args = {
+    bet_type     => 'TURBOSLONG',
+    underlying   => $symbol,
+    date_start   => $now,
+    date_pricing => $now,
+    duration     => '5t',
+    currency     => 'USD',
+    amount_type  => 'stake',
+    amount       => 28,
+    barrier      => '-243082.23',
+};
+
+subtest 'number of contracts after roundcommon change to rounddown' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([485812.86, $now->epoch, $symbol],);
+
+    $args->{underlying}   = $symbol;
+    $args->{duration}     = '5t';
+    $args->{date_pricing} = $now;
+
+    my $c = produce_contract($args);
+    ok $c->pricing_new, 'this is a new contract';
+    is $c->number_of_contracts, '0.000115', 'correct number_of_contracts';
+
+};
+
+subtest 'number of contracts after roundcommon change to rounddown crypto' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([485812.86, $now->epoch, $symbol],);
+
+    my $base                     = 'USD';
+    my $target_currency          = 'BTC';
+    my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+    $mocked_CurrencyConverter->mock(
+        'in_usd',
+        sub {
+            my $price         = shift;
+            my $from_currency = shift;
+
+            $from_currency eq 'BTC' and return 5500 * $price;
+            $from_currency eq 'USD' and return 1 * $price;
+            return 0;
+        });
+
+    $args->{currency}     = 'BTC';
+    $args->{underlying}   = $symbol;
+    $args->{duration}     = '5t';
+    $args->{date_pricing} = $now;
+    my $c = produce_contract($args);
+
+    ok $c->pricing_new, 'this is a new contract';
+    is $c->number_of_contracts, '0.000115178135', 'correct number_of_contracts';
+
 };
 
 done_testing();

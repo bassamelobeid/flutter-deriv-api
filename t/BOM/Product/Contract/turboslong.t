@@ -79,29 +79,29 @@ subtest 'number of contracts' => sub {
     # must be the same
     my $c = produce_contract($args);
     ok $c->pricing_new, 'this is a new contract';
-    is $c->number_of_contracts, '1.36241', 'correct number_of_contracts';
+    is $c->number_of_contracts, '1.362405', 'correct number_of_contracts';
     ok !$c->is_expired, 'not expired (obviously but just be safe)';
-    is $c->buy_commission, 0.544395264483802, 'buy commission';
+    is $c->buy_commission, 0.544393266571043, 'buy commission';
 
     $args->{currency}     = 'USD';
     $args->{date_pricing} = $now->plus_time_interval('1s');
     $c                    = produce_contract($args);
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '1.36241', 'correct number of contracts';
+    cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '1.362405', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
     is $c->bid_price,       '122.07',          'has bid price';
-    is $c->sell_commission, 0.549644679966629, 'sell commission when contract is not expired';
+    is $c->sell_commission, 0.549642662788687, 'sell commission when contract is not expired';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '1.36241', 'correct number of contracts';
+    cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '1.362405', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
     is $c->bid_price, '364.52', 'has bid price, and higher because spot is higher now';
 
     $args->{date_pricing} = $now->plus_time_interval('3s');
     $c = produce_contract($args);
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '1.36241', 'correct number of contracts';
+    cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '1.362405', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok $c->is_expired,   'expired';
     is $c->bid_price,       '0.00', 'does not have bid price';
@@ -258,19 +258,19 @@ subtest 'expired and not breached barrier' => sub {
     $args->{date_pricing} = $now->plus_time_interval('2m');
     $c = produce_contract($args);
     ok $c->is_expired, 'expired';
-    is $c->bid_price, '365.13', 'payoff higher than bid price because in expiry time no commission';
+    is $c->bid_price, '365.12', 'payoff higher than bid price because in expiry time no commission';
 
     $args->{date_pricing} = $now->plus_time_interval('125s');
     $c = produce_contract($args);
     ok !$c->pricing_new, 'contract is new';
     ok $c->is_expired,   'expired';
-    is $c->bid_price, '365.13', 'win payoff';
+    is $c->bid_price, '365.12', 'win payoff';
 };
 
 subtest 'shortcode' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     my $c         = produce_contract($args);
-    my $shortcode = 'TURBOSLONG_R_100_100.00_' . $now->epoch . '_' . $now->plus_time_interval('2m')->epoch . '_S-7300P_1.36241_1425945600';
+    my $shortcode = 'TURBOSLONG_R_100_100.00_' . $now->epoch . '_' . $now->plus_time_interval('2m')->epoch . '_S-7300P_1.362405_1425945600';
 
     my $c_shortcode;
     lives_ok {
@@ -292,7 +292,7 @@ subtest 'shortcode' => sub {
 subtest 'shortcode (legacy)' => sub {
     $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
     my $c         = produce_contract($args);
-    my $shortcode = 'TURBOSLONG_R_100_100.00_' . $now->epoch . '_' . $now->plus_time_interval('2m')->epoch . '_S-7300P_1.36241';
+    my $shortcode = 'TURBOSLONG_R_100_100.00_' . $now->epoch . '_' . $now->plus_time_interval('2m')->epoch . '_S-7300P_1.362405';
 
     my $c_shortcode;
     lives_ok {
@@ -318,7 +318,7 @@ subtest 'longcode' => sub {
             ['contract start time'],
             '10-Mar-15 00:02:00GMT',
             ['entry spot minus [_1]', '73.00'],
-            '1.36241'
+            '1.362405'
         ]);
 
     delete $args->{duration};
@@ -333,7 +333,7 @@ subtest 'longcode' => sub {
             ['first tick'],
             [5],
             ['entry spot minus [_1]', '73.00'],
-            '1.36241'
+            '1.362405'
         ],
         'longcode matches'
     );
@@ -348,24 +348,24 @@ subtest 'entry and exit tick' => sub {
         is $c->code, 'TURBOSLONG';
         ok $c->is_intraday,             'is intraday';
         ok !defined $c->pricing_engine, 'price engine is udefined';
-        cmp_ok $c->barrier->as_absolute, 'eq', '1690.00', 'correct absolute barrier (it will be pipsized) ';
-        cmp_ok $c->entry_tick->quote,    'eq', '1763',    'correct entry tick';
-        cmp_ok $c->current_spot,         'eq', '1763.00', 'correct current spot (it will be pipsized)';
-        cmp_ok $c->number_of_contracts,  'eq', '1.36241', 'number of contracts are correct';
+        cmp_ok $c->barrier->as_absolute, 'eq', '1690.00',  'correct absolute barrier (it will be pipsized) ';
+        cmp_ok $c->entry_tick->quote,    'eq', '1763',     'correct entry tick';
+        cmp_ok $c->current_spot,         'eq', '1763.00',  'correct current spot (it will be pipsized)';
+        cmp_ok $c->number_of_contracts,  'eq', '1.362405', 'number of contracts are correct';
 
         $args->{date_pricing} = $now->plus_time_interval('2m');
         $c = produce_contract($args);
         ok $c->bid_price, 'ok bid price';
-        cmp_ok $c->number_of_contracts, 'eq', '1.36241', 'number of contracts are correct';
+        cmp_ok $c->number_of_contracts, 'eq', '1.362405', 'number of contracts are correct';
         cmp_ok sprintf("%.2f", $c->current_spot),         'eq', '1958.00', 'correct spot price';
         cmp_ok sprintf("%.2f", $c->barrier->as_absolute), 'eq', '1690.00', 'correct strike';
 
         ok $c->is_expired, 'expired';
-        cmp_ok sprintf("%.2f", $c->value), 'eq', '365.13', '(strike - spot) * number of contracts';
+        cmp_ok sprintf("%.2f", $c->value), 'eq', '365.12', '(strike - spot) * number of contracts';
         ok $c->exit_tick,                                   'has exit tick';
         ok $c->exit_tick->quote > $c->barrier->as_absolute, 'exit tick is bigger than strike price';
         ok $c->value > 0,                                   'contract value is bigger than 0, exit tick is bigger than strike price';
-        cmp_ok sprintf("%.2f", $c->value), 'eq', '365.13', 'correct payout';
+        cmp_ok sprintf("%.2f", $c->value), 'eq', '365.12', 'correct payout';
         cmp_ok $c->exit_tick->quote,       'eq', '1958',   'correct exit tick';
     }
     'winning the contract';
