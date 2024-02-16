@@ -120,7 +120,7 @@ sub create_redis_ticks {
 
     my $ticks             = $args->{ticks}      // die 'ticks are required.';
     my $underlying_symbol = $args->{underlying} // die 'underlying is required.';
-    my $type              = $args->{type} eq 'decimate' ? '_15s_DEC' : '_31m_FULL';
+    my $type              = $args->{type} eq 'decimate' ? '_15s_DEC' : '_32m_FULL';
     my $redis             = BOM::Config::Redis::redis_feed_master_write();
     my $key               = 'DECIMATE_' . $underlying_symbol . $type;
 
