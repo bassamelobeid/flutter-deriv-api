@@ -14,6 +14,7 @@ use BOM::Config;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Context::Request;
 use BOM::Platform::Locale;
+use BOM::Platform::Event::Emitter;
 use BOM::Database::Model::OAuth;
 
 use parent 'Exporter';
