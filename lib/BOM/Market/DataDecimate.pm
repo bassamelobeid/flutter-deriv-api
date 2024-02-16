@@ -228,7 +228,7 @@ has decimate_retention_interval => (
 has raw_retention_interval => (
     is      => 'ro',
     isa     => 'Time::Duration::Concise',
-    default => sub { return Time::Duration::Concise->new(interval => '31m'); });
+    default => sub { return Time::Duration::Concise->new(interval => '32m'); });
 
 has decoder => (
     is      => 'ro',
@@ -504,7 +504,7 @@ sub _upsert {
 =head2 _clean_up
 
 Clean up old feed-raw or tick_decimator data up to end_epoch - retention interval.
-raw-feed retention interval is 31m for forex and 5h for synthetic_index.
+raw-feed retention interval is 32m.
 tick_decimator retention interval is 12h.
 
 =cut
