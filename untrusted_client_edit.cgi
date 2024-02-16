@@ -15,7 +15,6 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Utility;
-use BOM::User::Client::Status;
 use CGI;
 use Log::Any      qw($log);
 use Future::Utils qw( fmap_void );
@@ -32,19 +31,14 @@ BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth::get_staffname();
 
-my $clientID = uc(request()->param('login_id') // '');
-my $action   = request()->param('untrusted_action');
-my $client_status_type =
-    (request()->param('untrusted_sub_action_type') && request()->param('untrusted_sub_action_type') !~ /SELECT AN ACTION/)
-    ? request()->param('untrusted_sub_action_type')
-    : request()->param('untrusted_action_type');
-my $status_code =
-    ($client_status_type && $client_status_type !~ /SELECT AN ACTION/) ? get_untrusted_type_by_linktype($client_status_type)->{code} : undef;
-my $bulk_loginids = request()->param('bulk_loginids') // '';
-my $cgi           = request()->cgi;
-my $DCcode        = request()->param('DCcode') // '';
+my $clientID           = uc(request()->param('login_id') // '');
+my $action             = request()->param('untrusted_action');
+my $client_status_type = request()->param('untrusted_action_type');
+my $bulk_loginids      = request()->param('bulk_loginids') // '';
+my $cgi                = request()->cgi;
+my $DCcode             = request()->param('DCcode') // '';
 
-my $reason         = request()->param('untrusted_reason') // '';
+my $reason         = request()->param('untrusted_reason');
 my $operation      = request()->param('status_op');
 my $status_checked = request()->param('status_checked') // [];
 $status_checked = [$status_checked] unless ref($status_checked);
@@ -105,7 +99,7 @@ if ($bulk_loginids) {
                 clerk                 => $clerk,
                 file_name             => $file_name,
                 action                => $action,
-                status_code           => $status_code,
+                status_code           => get_untrusted_type_by_linktype($client_status_type)->{code},
                 req_params            => request()->params,
             }});
     code_exit_BO(_get_display_message("SUCCESS the client loginds update is triggered"), redirect());
@@ -156,9 +150,9 @@ foreach my $login_id (@login_ids) {
     );
 
     # DISABLED/CLOSED CLIENT LOGIN
-    if ($client_status_type =~ /SELECT AN ACTION/ || !$status_code) {
+    if ($client_status_type =~ /SELECT AN ACTION/) {
         #Skip (it's just a check)
-    } elsif ($status_code eq 'disabled' || BOM::User::Client::Status::_parent($status_code) eq 'disabled') {
+    } elsif ($client_status_type eq 'disabledlogins') {
         if ($action eq 'insert_data' && $operation =~ $add_regex) {
             #should check portfolio
             if (@{get_open_contracts($client)}) {
@@ -166,24 +160,22 @@ foreach my $login_id (@login_ids) {
                 $printline =
                     "<span class='error'>ERROR:</span>&nbsp;&nbsp;Account <b>$encoded_login_id</b> cannot be marked as disabled as account has open positions. Please check account portfolio.";
             } else {
-                $printline = execute_set_status({%common_args_for_execute_method, status_code => $status_code});
+                $printline = execute_set_status({%common_args_for_execute_method, status_code => 'disabled'});
             }
         }
         # remove client from $broker.disabledlogins
         elsif ($action eq 'remove_status') {
             $printline = execute_remove_status({
                 %common_args_for_execute_method,
-                status_code  => $status_code,
+                status_code  => 'disabled',
                 reactivating => 1
             });
         }
-    } elsif (($status_code eq 'duplicate_account' || BOM::User::Client::Status::_parent($status_code) eq 'duplicate_account')
-        && ($operation =~ $add_regex))
-    {
+    } elsif ($client_status_type eq 'duplicateaccount' && ($operation =~ $add_regex)) {
         if ($action eq 'insert_data') {
             $printline = execute_set_status({
                     %common_args_for_execute_method,
-                    status_code => $status_code,
+                    status_code => 'duplicate_account',
                     override    => sub {
                         my $m = BOM::Platform::Token::API->new;
                         $m->remove_by_loginid($client->loginid);
@@ -192,18 +184,18 @@ foreach my $login_id (@login_ids) {
         } elsif ($action eq 'remove_status') {
             $printline = execute_remove_status->({
                 %common_args_for_execute_method,
-                status_code  => $status_code,
+                status_code  => 'duplicate_account',
                 reactivating => 1
             });
         }
-    } elsif (($status_code eq 'professional_requested' || BOM::User::Client::Status::_parent($status_code) eq 'professional_requested')) {
+    } elsif ($client_status_type eq 'professionalrequested') {
         if ($action eq 'remove_status') {
             $printline = execute_remove_status({
                     %common_args_for_execute_method,
                     override => sub {
                         $client->status->multi_set_clear({
                             set        => ['professional_rejected'],
-                            clear      => ['professional_requested', $status_code],
+                            clear      => ['professional_requested'],
                             staff_name => $clerk,
                             reason     => 'Professional request rejected'
                         });
@@ -211,6 +203,7 @@ foreach my $login_id (@login_ids) {
                 });
         }
     } else {
+        my $status_code = get_untrusted_type_by_linktype($client_status_type)->{code};
         if ($action eq 'insert_data' && ($operation =~ $add_regex)) {
             $printline = execute_set_status({%common_args_for_execute_method, status_code => $status_code});
             if ($status_code eq 'allow_document_upload' && $reason eq 'Pending payout request') {
@@ -226,6 +219,7 @@ foreach my $login_id (@login_ids) {
 
     if ($printline =~ /SUCCESS/) {
         print '<br/><br/>';
+        my $status_code = get_untrusted_type_by_linktype($client_status_type)->{code};
 
         if (!($operation eq 'sync_accounts' || $operation eq 'sync')) {
             if ($action eq 'insert_data') {
