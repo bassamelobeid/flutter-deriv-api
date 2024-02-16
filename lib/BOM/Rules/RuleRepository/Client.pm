@@ -26,8 +26,7 @@ rule 'client.check_duplicate_account' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        $self->fail('DuplicateAccount', description => 'Duplicate account found')
-            if $context->client($args)->check_duplicate_account($args);
+        $self->fail('DuplicateAccount') if $context->client($args)->check_duplicate_account($args);
 
         return 1;
     },
@@ -54,8 +53,7 @@ rule 'client.residence_is_not_empty' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        $self->fail('NoResidence', description => 'Residence information for the client is missing')
-            unless $context->client($args)->residence;
+        $self->fail('NoResidence') unless $context->client($args)->residence;
 
         return 1;
     },
@@ -107,11 +105,7 @@ rule 'client.signup_immutable_fields_not_changed' => {
             push(@changed, $field) if $cli_value ne ($arg_value // '');
         }
 
-        $self->fail(
-            'CannotChangeAccountDetails',
-            details     => {changed => [@changed]},
-            description => (join ', ', @changed) . ' field(s) are modified'
-        ) if @changed;
+        $self->fail('CannotChangeAccountDetails', details => {changed => [@changed]}) if @changed;
 
         return 1;
     },

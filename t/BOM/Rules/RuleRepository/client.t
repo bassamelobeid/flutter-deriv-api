@@ -87,9 +87,8 @@ subtest 'rule client.check_duplicate_account' => sub {
     my %args = (loginid => $client->loginid);
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code  => 'DuplicateAccount',
-        rule        => $rule_name,
-        description => 'Duplicate account found'
+        error_code => 'DuplicateAccount',
+        rule       => $rule_name
         },
         "Duplicate accounnt is rejected";
     $mock_client->redefine(check_duplicate_account => sub { return 0 });
@@ -133,9 +132,8 @@ subtest 'rule client.residence_is_not_empty' => sub {
     $residence = undef;
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code  => 'NoResidence',
-        rule        => $rule_name,
-        description => 'Residence information for the client is missing'
+        error_code => 'NoResidence',
+        rule       => $rule_name
         },
         'Rule fails when residence is empty';
 
@@ -161,10 +159,9 @@ subtest 'rule client.signup_immutable_fields_not_changed' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') },
             {
-            error_code  => 'CannotChangeAccountDetails',
-            details     => {changed => [$field]},
-            rule        => $rule_name,
-            description => "$field field(s) are modified"
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]},
+            rule       => $rule_name
             },
             "Rule fails when empty immutable field $field is different";
 
@@ -172,10 +169,9 @@ subtest 'rule client.signup_immutable_fields_not_changed' => sub {
         $client->save;
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args, $field => 'xyz') },
             {
-            error_code  => 'CannotChangeAccountDetails',
-            details     => {changed => [$field]},
-            rule        => $rule_name,
-            description => "$field field(s) are modified"
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]},
+            rule       => $rule_name
             },
             "Rule fails when non-empty immutable field $field is different";
 
@@ -187,10 +183,9 @@ subtest 'rule client.signup_immutable_fields_not_changed' => sub {
 
         is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %args, $field => 'xyz') },
             {
-            error_code  => 'CannotChangeAccountDetails',
-            details     => {changed => [$field]},
-            rule        => $rule_name,
-            description => "$field field(s) are modified"
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]},
+            rule       => $rule_name
             },
             "Rule fails when non-empty immutable field $field is different for a vr with duplicated sibling";
 

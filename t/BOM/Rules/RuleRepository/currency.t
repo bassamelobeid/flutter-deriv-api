@@ -47,10 +47,9 @@ subtest 'rule currency.is_currency_suspended' => sub {
     $args{currency} = 'BTC';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code  => 'CurrencySuspended',
-        params      => 'BTC',
-        rule        => $rule_name,
-        description => "Currency $args{currency} is suspended"
+        error_code => 'CurrencySuspended',
+        params     => 'BTC',
+        rule       => $rule_name
         },
         'Rule fails to apply on a suspended crypto currency.';
 
@@ -60,10 +59,9 @@ subtest 'rule currency.is_currency_suspended' => sub {
     $args{currency} = 'BTC';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code  => 'InvalidCryptoCurrency',
-        params      => 'BTC',
-        rule        => $rule_name,
-        description => "Currency $args{currency} is invalid"
+        error_code => 'InvalidCryptoCurrency',
+        params     => 'BTC',
+        rule       => $rule_name
         },
         'Rule fails to apply on a failing crypto currency.';
 
@@ -84,7 +82,6 @@ subtest 'rule currency.experimental_currency' => sub {
             allowed_emails => [],
             error          => 'ExperimentalCurrency',
             description    => 'If currency is experimental and client email is not included, rule fails.',
-            error_detail   => 'Experimental currency is not allowed for client'
         },
         {
             experimental   => 1,
@@ -110,9 +107,8 @@ subtest 'rule currency.experimental_currency' => sub {
         if ($case->{error}) {
             is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
                 {
-                error_code  => $case->{error},
-                rule        => $rule_name,
-                description => $case->{error_detail}
+                error_code => $case->{error},
+                rule       => $rule_name
                 },
                 $case->{description};
         } else {
@@ -141,9 +137,8 @@ subtest $rule_name => sub {
         );
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
             {
-            error_code  => 'CurrencyTypeNotAllowed',
-            rule        => $rule_name,
-            description => 'Currency type is not allowed'
+            error_code => 'CurrencyTypeNotAllowed',
+            rule       => $rule_name
             },
             'Only one fiat account is allowed';
 
@@ -151,10 +146,9 @@ subtest $rule_name => sub {
         lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Duplicate account with different currency is ignored';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args, currency => 'USD') },
             {
-            error_code  => 'DuplicateCurrency',
-            params      => 'USD',
-            rule        => $rule_name,
-            description => 'Duplicate currency detected'
+            error_code => 'DuplicateCurrency',
+            params     => 'USD',
+            rule       => $rule_name
             },
             "Currency shouldnt be the same as a duplicate account's";
         $client_cr_usd->status->clear_duplicate_account;
@@ -166,10 +160,9 @@ subtest $rule_name => sub {
         $args{currency} = 'BTC';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
             {
-            error_code  => 'DuplicateCurrency',
-            params      => 'BTC',
-            rule        => $rule_name,
-            description => 'Duplicate currency detected'
+            error_code => 'DuplicateCurrency',
+            params     => 'BTC',
+            rule       => $rule_name
             },
             'The same currency cannot be used again';
 
@@ -204,19 +197,17 @@ subtest $rule_name => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
             {
-            error_code  => 'DuplicateWallet',
-            params      => 'USD',
-            rule        => $rule_name,
-            description => 'Duplicate wallet detected'
+            error_code => 'DuplicateWallet',
+            params     => 'USD',
+            rule       => $rule_name
             },
             'Duplicate wallet is detected';
 
         $args{currency} = 'EUR';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
             {
-            error_code  => 'CurrencyTypeNotAllowed',
-            rule        => $rule_name,
-            description => 'Currency type is not allowed'
+            error_code => 'CurrencyTypeNotAllowed',
+            rule       => $rule_name
             },
             'Same Fiat wallet is detected';
 
@@ -237,10 +228,9 @@ subtest $rule_name => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
             {
-            error_code  => 'DuplicateWallet',
-            params      => 'USD',
-            rule        => $rule_name,
-            description => 'Duplicate wallet detected'
+            error_code => 'DuplicateWallet',
+            params     => 'USD',
+            rule       => $rule_name
             },
             'Duplicate wallet is detected';
     };
@@ -263,19 +253,17 @@ subtest $rule_name => sub {
     );
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code  => 'CurrencyTypeNotAllowed',
-        rule        => $rule_name,
-        description => 'Currency type is not allowed'
+        error_code => 'CurrencyTypeNotAllowed',
+        rule       => $rule_name
         },
         'Only one fiat trading account is allowed';
     $client_cr_usd->status->set('duplicate_account', 'test', 'test');
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Duplicate account with different currency is ignored';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args, currency => 'USD') },
         {
-        error_code  => 'DuplicateCurrency',
-        params      => 'USD',
-        rule        => $rule_name,
-        description => 'Duplicate currency detected'
+        error_code => 'DuplicateCurrency',
+        params     => 'USD',
+        rule       => $rule_name
         },
         "Currency shouldnt be the same as a duplicate account's";
     $client_cr_usd->status->clear_duplicate_account;
@@ -310,10 +298,9 @@ subtest $rule_name => sub {
 
     my %args             = (loginid => $client_cr_usd1->loginid);
     my $expected_failure = {
-        error_code  => 'DuplicateCurrency',
-        params      => 'USD',
-        rule        => $rule_name,
-        description => 'Duplicate currency detected'
+        error_code => 'DuplicateCurrency',
+        params     => 'USD',
+        rule       => $rule_name
     };
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) }, $expected_failure,
@@ -322,9 +309,8 @@ subtest $rule_name => sub {
     $user->add_client($client_cr_eur);
     $client_cr_usd2->status->set('duplicate_account', 'test', 'test');
     $expected_failure = {
-        error_code  => 'CurrencyTypeNotAllowed',
-        rule        => $rule_name,
-        description => 'Currency type is not allowed'
+        error_code => 'CurrencyTypeNotAllowed',
+        rule       => $rule_name
     };
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) }, $expected_failure, 'Rule fails because there is an enabled fiat sibling';
 

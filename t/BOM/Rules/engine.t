@@ -233,9 +233,8 @@ subtest 'Sample rule-gruop and action' => sub {
     is $result->has_failure, 1, 'One rule has failed';
     is_deeply $result->failed_rules,
         [{
-            rule        => 'profile.valid_profile_countries',
-            error_code  => 'InvalidPlaceOfBirth',
-            description => 'place_of_birth xyz is invalid'
+            rule       => 'profile.valid_profile_countries',
+            error_code => 'InvalidPlaceOfBirth',
         }];
     is_deeply $result->passed_rules,
         ['client.is_not_virtual', 'residence.not_restricted', 'landing_company.currency_is_allowed', 'currency.is_available_for_change'],

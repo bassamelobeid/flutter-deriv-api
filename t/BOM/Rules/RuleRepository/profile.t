@@ -55,18 +55,16 @@ subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code  => 'InvalidDateOfBirth',
-        rule        => $rule_name,
-        description => 'Date of birth is missing'
+        error_code => 'InvalidDateOfBirth',
+        rule       => $rule_name
         },
         'correct error when there is no date of birth in args';
 
     $args->{date_of_birth} = $client_cr->date_of_birth;
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code  => 'InvalidResidence',
-        rule        => $rule_name,
-        description => 'Minimum age is not configured for residence'
+        error_code => 'InvalidResidence',
+        rule       => $rule_name
         },
         'correct error when there is no minimum age configured';
     $minimum_age = 18;
@@ -77,9 +75,8 @@ subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
     $args->{date_of_birth} = 'abcd';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code  => 'InvalidDateOfBirth',
-        rule        => $rule_name,
-        description => 'Date of birth is invalid'
+        error_code => 'InvalidDateOfBirth',
+        rule       => $rule_name
         },
         'correct error for invalid date of birth';
 
@@ -90,9 +87,8 @@ subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
     $args->{date_of_birth} = $args->{date_of_birth}->plus_time_interval('1d');
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code  => 'BelowMinimumAge',
-        rule        => $rule_name,
-        description => 'Date of birth is below minimum age'
+        error_code => 'BelowMinimumAge',
+        rule       => $rule_name
         },
         'correct error when client is younger than minimum age';
 
@@ -109,9 +105,8 @@ subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
 
     is_deeply exception { $rule_engine_vr->apply_rules($rule_name, %$args) },
         {
-        error_code  => 'BelowMinimumAge',
-        rule        => $rule_name,
-        description => 'Date of birth is below minimum age'
+        error_code => 'BelowMinimumAge',
+        rule       => $rule_name
         },
         'correct error when client is younger than minimum age (vr dup)';
 
@@ -133,33 +128,29 @@ subtest 'rule profile.both_secret_question_and_answer_required' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, secret_answer => 'dummy') },
         {
-        error_code  => 'NeedBothSecret',
-        rule        => $rule_name,
-        description => 'Missing secret question or secret answer'
+        error_code => 'NeedBothSecret',
+        rule       => $rule_name
         },
         'Secret answer without question will fail.';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, secret_question => 'dummy') },
         {
-        error_code  => 'NeedBothSecret',
-        rule        => $rule_name,
-        description => 'Missing secret question or secret answer'
+        error_code => 'NeedBothSecret',
+        rule       => $rule_name
         },
         'Secret question without answer will fail.';
 
     is_deeply exception { $rule_engine_vr->apply_rules($rule_name, loginid => $client_vr->loginid, secret_answer => 'dummy') },
         {
-        error_code  => 'NeedBothSecret',
-        rule        => $rule_name,
-        description => 'Missing secret question or secret answer'
+        error_code => 'NeedBothSecret',
+        rule       => $rule_name
         },
         'Secret answer without question will fail.';
 
     is_deeply exception { $rule_engine_vr->apply_rules($rule_name, loginid => $client_vr->loginid, secret_question => 'dummy') },
         {
-        error_code  => 'NeedBothSecret',
-        rule        => $rule_name,
-        description => 'Missing secret question or secret answer'
+        error_code => 'NeedBothSecret',
+        rule       => $rule_name
         },
         'Secret answer without answer will fail.';
 
@@ -190,9 +181,8 @@ subtest 'rule profile.valid_profile_countries' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, $field => 'xyz') },
             {
-            error_code  => $errors{$field},
-            rule        => $rule_name,
-            description => "$field xyz is invalid"
+            error_code => $errors{$field},
+            rule       => $rule_name
             },
             "Rule fails with an invalid $field";
     }
@@ -215,9 +205,8 @@ subtest 'rule profile.valid_promo_code' => sub {
     delete $args->{promo_code};
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code  => 'No promotion code was provided',
-        rule        => $rule_name,
-        description => 'Promo code is missing'
+        error_code => 'No promotion code was provided',
+        rule       => $rule_name
         },
         'rule fails if promo status is true, but promo code is missing.';
 
@@ -228,26 +217,23 @@ subtest 'rule profile.valid_non_pep_declaration_time' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name) },
         {
-        error_code  => 'InvalidNonPepTime',
-        rule        => $rule_name,
-        description => 'Non-pep declaration is missing'
+        error_code => 'InvalidNonPepTime',
+        rule       => $rule_name
         },
         'rule fails if non-pep declaraion is missing.';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, non_pep_declaration_time => '') },
         {
-        error_code  => 'InvalidNonPepTime',
-        rule        => $rule_name,
-        description => 'Non-pep declaration is missing'
+        error_code => 'InvalidNonPepTime',
+        rule       => $rule_name
         },
         'rule fails if non-pep declaraion is false.';
 
     lives_ok { $rule_engine->apply_rules($rule_name, non_pep_declaration_time => time) } 'rule apples if declaration time equals to now.';
     is_deeply exception { $rule_engine->apply_rules($rule_name, non_pep_declaration_time => time + 2) },
         {
-        error_code  => 'TooLateNonPepTime',
-        rule        => $rule_name,
-        description => 'Non-pep declaration is after current time'
+        error_code => 'TooLateNonPepTime',
+        rule       => $rule_name
         },
         'rule fails if non-pep declaraion is a future time.';
 };
@@ -262,20 +248,18 @@ subtest $rule_name => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rule applies with the same residence';
 
     $args->{residence} = 'us';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
-        {
-        error_code  => 'PerimissionDenied',
-        rule        => $rule_name,
-        description => 'Residence cannot be updated'
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) }, {
+        error_code => 'PerimissionDenied',
+
+        rule => $rule_name
         },
         'rule fails with a different residence';
 
     $args->{residence} = undef;
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code  => 'PerimissionDenied',
-        rule        => $rule_name,
-        description => 'Residence cannot be updated'
+        error_code => 'PerimissionDenied',
+        rule       => $rule_name
         },
         'rule fails with empty residence';
 

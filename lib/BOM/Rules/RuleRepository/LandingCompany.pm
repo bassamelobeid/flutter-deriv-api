@@ -52,10 +52,9 @@ rule 'landing_company.accounts_limit_not_reached' => {
 
         return 1 unless scalar @clients;
 
-        $self->fail('FinancialAccountExists', description => 'Financial account limit reached')
-            if @enabled_clients && $args->{landing_company} eq 'maltainvest';
-        $self->fail('VirtualAccountExists',   description => 'Virtual account limit reached') if $is_virtual;
-        $self->fail('NewAccountLimitReached', description => 'New account limit reached');
+        $self->fail('FinancialAccountExists') if @enabled_clients && $args->{landing_company} eq 'maltainvest';
+        $self->fail('VirtualAccountExists')   if $is_virtual;
+        $self->fail('NewAccountLimitReached');
     },
 };
 
@@ -83,11 +82,7 @@ rule 'landing_company.required_fields_are_non_empty' => {
         # Affiliate Landing Company requires extra info
         push @missing, 'affiliate_plan' if $landing_company->is_for_affiliates and not $args->{affiliate_plan};
 
-        $self->fail(
-            'InsufficientAccountDetails',
-            details     => {missing => [@missing]},
-            description => (join ', ', @missing) . ' required field(s) missing'
-        ) if @missing;
+        $self->fail('InsufficientAccountDetails', details => {missing => [@missing]}) if @missing;
 
         return 1;
     },
@@ -103,11 +98,8 @@ rule 'landing_company.currency_is_allowed' => {
 
         return 1 unless $args->{currency};
 
-        $self->fail(
-            'CurrencyNotApplicable',
-            params      => $args->{currency},
-            description => "Currency $args->{currency} not allowed"
-        ) unless $landing_company_object->is_currency_legal($args->{currency});
+        $self->fail('CurrencyNotApplicable', params => $args->{currency})
+            unless $landing_company_object->is_currency_legal($args->{currency});
 
         return 1;
     },
@@ -121,7 +113,7 @@ rule 'landing_company.p2p_availability' => {
 
         return 1 unless $args->{account_opening_reason};
 
-        $self->fail('P2PRestrictedCountry', description => 'P2P is currently unavailable for the selected landing company')
+        $self->fail('P2PRestrictedCountry')
             if !$landing_company->p2p_available
             && ($args->{account_opening_reason} =~ qr/p2p/i or $args->{account_opening_reason} eq 'Peer-to-peer exchange');
 
