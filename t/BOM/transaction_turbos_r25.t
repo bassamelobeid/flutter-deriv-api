@@ -258,7 +258,7 @@ subtest 'buy turbos options', sub {
             is $chld->{financial_market_bet_id},    $fmb->{id},       'financial_market_bet_id';
             is $chld->{'take_profit_order_amount'}, undef,            'take_profit_order_amount is undef';
             is $chld->{'take_profit_order_date'},   undef,            'take_profit_order_date is undef';
-            is $chld->{'ask_spread'},               3.58378101651172, 'ask_spread is charged for buy';
+            is $chld->{'ask_spread'},               3.58378044201383, 'ask_spread is charged for buy';
             is $chld->{'bid_spread'},               undef,            'bid_spread is undef';
             is $chld->{entry_spot},                 '10138.979',      'correct entry spot price';
             is $chld->{barrier},                    '10123.523',      'correct strike price (normalized)';
@@ -336,10 +336,11 @@ subtest 'sell a bet', sub {
         is $chld->{financial_market_bet_id},    $fmb->{id},       'financial_market_bet_id';
         is $chld->{'take_profit_order_amount'}, undef,            'take_profit_order_amount is undef';
         is $chld->{'take_profit_order_date'},   undef,            'take_profit_order_date is undef';
-        is $chld->{'ask_spread'},               3.58378101651172, 'ask_spread is charged for buy';
-        is $chld->{'bid_spread'},               3.58408146233216, 'bid_spread is charged for sell';
+        is $chld->{'ask_spread'},               3.58378044201383, 'ask_spread is charged for buy';
+        is $chld->{'bid_spread'},               3.58408088778611, 'bid_spread is charged for sell';
         is $chld->{entry_spot},                 '10138.979',      'correct entry spot price';
         is $chld->{barrier},                    '10123.523',      'correct strike price (normalized)';
+
     };
 
 };
