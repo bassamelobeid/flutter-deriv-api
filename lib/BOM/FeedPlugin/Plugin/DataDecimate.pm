@@ -67,9 +67,10 @@ sub _build__tick_source {
     my $self = shift;
 
     return BOM::Market::DataDecimate->new({
-        market      => $self->market,
-        redis_write => BOM::Config::Redis::redis_feed_master_write(),
-        redis_read  => BOM::Config::Redis::redis_feed_replica(),
+        market                 => $self->market,
+        redis_write            => BOM::Config::Redis::redis_feed_master_write(),
+        redis_read             => BOM::Config::Redis::redis_feed_replica(),
+        raw_retention_interval => Time::Duration::Concise->new(interval => '31m'),
     });
 }
 

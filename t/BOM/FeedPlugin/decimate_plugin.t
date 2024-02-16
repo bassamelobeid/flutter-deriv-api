@@ -69,8 +69,10 @@ sub test_plugin_flow {
         interval => 1,
         on_tick  => sub {
             $attempts += 1;
-            my $decimate_cache = BOM::Market::DataDecimate->new;
-            my $data_out       = $decimate_cache->_get_raw_from_cache({
+            my $decimate_cache = BOM::Market::DataDecimate->new({
+                raw_retention_interval => Time::Duration::Concise->new(interval => '31m'),
+            });
+            my $data_out = $decimate_cache->_get_raw_from_cache({
                 symbol      => $sym->{name},
                 start_epoch => $time,
                 end_epoch   => $time + 1,
