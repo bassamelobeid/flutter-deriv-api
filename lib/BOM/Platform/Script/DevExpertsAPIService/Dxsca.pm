@@ -56,19 +56,42 @@ sub _add_to_loop {
         $self->{clients}{demo} = WebService::Async::DevExperts::Dxsca::Client->new(
             host => $self->{demo_host},
             port => $self->{demo_port},
-            user => $self->{demo_user},
-            pass => $self->{demo_pass},
         ));
 
     $self->add_child(
         $self->{clients}{real} = WebService::Async::DevExperts::Dxsca::Client->new(
             host => $self->{real_host},
             port => $self->{real_port},
-            user => $self->{real_user},
-            pass => $self->{real_pass},
         ));
 
     return $self->next::method;
+}
+
+=head2 call_api
+
+Overrides base class to handle login. 
+
+=cut
+
+async sub call_api {
+    my ($self, $server, $method, $params) = @_;
+
+    if ($method ne 'login') {
+        my $client = $self->{clients}{$server};
+        # Automatically login if no session, or session is about to expire. The token is stored in $client.
+        if (not $client->session_expiry or ($client->session_expiry - TOKEN_RENEW_SECS) < time) {
+            $log->tracef('No token or token expired, logging in.');
+            await $self->next::method(
+                $server, 'login',
+                {
+                    username => $self->{$server . '_username'},
+                    domain   => $self->{$server . '_domain'},
+                    password => $self->{$server . '_pass'},
+                });
+        }
+    }
+
+    return await $self->next::method($server, $method, $params);
 }
 
 1;

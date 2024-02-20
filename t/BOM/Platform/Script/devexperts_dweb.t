@@ -7,7 +7,7 @@ use Test::Deep;
 use IO::Async::Loop;
 use BOM::Platform::Script::DevExpertsAPIService::DxWeb;
 use WebService::Async::DevExperts::DxWeb::Model::Error;
-use Net::Async::HTTP;
+use IO::Async::Loop;
 use JSON::MaybeUTF8   qw(:v1);
 use Log::Any::Adapter qw(TAP);
 
