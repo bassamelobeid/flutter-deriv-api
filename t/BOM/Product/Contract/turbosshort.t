@@ -344,6 +344,7 @@ subtest 'take_profit' => sub {
         is $c->take_profit->{amount},     10,      'take profit amount is 10';
         is $c->take_profit_barrier_value, 1726.32, 'take profit barrier value is 1726.32';
         ok $c->is_expired, 'expired when take profit is set at ' . $epoch;
+        is $c->sell_commission, 0.0193118764874699, 'bid_spread charged on take_profit_hit';
 
         $args->{limit_order} = {
             take_profit => {

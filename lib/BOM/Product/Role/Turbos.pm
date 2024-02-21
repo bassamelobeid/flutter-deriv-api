@@ -342,7 +342,7 @@ commission charged when client sells a contract. this value is charged only when
 sub sell_commission {
     my $self = shift;
 
-    return 0 if $self->is_expired;
+    return 0 if $self->is_expired && !$self->_hit_take_profit;
     return $self->number_of_contracts * $self->current_spot * $self->bid_spread;
 }
 

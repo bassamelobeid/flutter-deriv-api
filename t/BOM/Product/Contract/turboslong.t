@@ -481,9 +481,10 @@ subtest 'special test for take profit discrepancies' => sub {
 
     my $c = produce_contract($special_args);
     ok $c->take_profit, 'take profit is defined';
-    is $c->take_profit->{amount},     100,     'take profit amount is 100';
-    is $c->hit_tick->{quote},         2165.43, 'hit tick at 2165.43';
-    is $c->take_profit_barrier_value, 2165.43, 'take profit barrier value is 2165.43';
+    is $c->take_profit->{amount},     100,              'take profit amount is 100';
+    is $c->hit_tick->{quote},         2165.43,          'hit tick at 2165.43';
+    is $c->take_profit_barrier_value, 2165.43,          'take profit barrier value is 2165.43';
+    is $c->sell_commission,           25.6638243959644, 'bid_spread charged on take_profit_hit';
 };
 
 done_testing();
