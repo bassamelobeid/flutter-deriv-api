@@ -1,7 +1,9 @@
 use strict;
 use warnings;
+
 use Test::More;
 use Test::MockModule;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User::Client;
@@ -11,6 +13,11 @@ use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Static;
 use Email::Stuffer::TestLinks;
+
+# setting redis cache as 0
+# else we would have to add sleep in test for TTL
+my $mock_static = Test::MockModule->new('BOM::RPC::v3::Static');
+$mock_static->mock("STATIC_CACHE_TTL" => 0);
 
 ## TRICKY but works
 my $version    = 1;

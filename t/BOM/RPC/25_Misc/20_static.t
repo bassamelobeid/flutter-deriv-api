@@ -16,10 +16,16 @@ use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use BOM::User;
 use BOM::User::Client;
 use BOM::User::Password;
+use BOM::RPC::v3::Static;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use JSON::MaybeXS                              qw(decode_json encode_json);
 
 populate_exchange_rates();
+
+# setting redis cache as 0
+# else we would have to add sleep in test for TTL
+my $mock_static = Test::MockModule->new('BOM::RPC::v3::Static');
+$mock_static->mock("STATIC_CACHE_TTL" => 0);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 subtest 'residence_list' => sub {
@@ -670,7 +676,9 @@ subtest 'p2p_config' => sub {
         website_status => {
             language     => 'EN',
             country_code => 'xxx',
-            args         => {website_status => 1}});
+            args         => {website_status => 1},
+        },
+    );
 
     my $resp = $c->call_ok(%params)->result;
     is $resp->{clients_country}, 'xxx', 'got country in response';
@@ -727,7 +735,9 @@ subtest 'broker_codes' => sub {
     my %params = (
         website_status => {
             language => 'EN',
-            args     => {website_status => 1}});
+            args     => {website_status => 1},
+        },
+    );
 
     cmp_deeply($c->call_ok(%params)->result->{broker_codes}, $config, 'expected results from runtime config');
 };
@@ -743,7 +753,9 @@ subtest 'optional_verification_feature_flag' => sub {
     my %params = (
         website_config => {
             language => 'EN',
-            args     => {website_config => 1}});
+            args     => {website_config => 1},
+        },
+    );
 
     my $res = $c->call_ok(%params)->result;
     cmp_deeply($res->{feature_flags}->@*, @$expected_feature_flags, 'Feature flag is enabled and shown in RPC response');
@@ -751,6 +763,36 @@ subtest 'optional_verification_feature_flag' => sub {
     $app_config->set({'email_verification.suspend.virtual_accounts' => 0});
     $res = $c->call_ok(%params)->result;
     ok(!scalar($res->{feature_flags}->@*), 'Feature flag is disabled and not shown in RPC response');
+};
+
+subtest 'test static subs' => sub {
+    my $ttl = 2;
+    $mock_static->mock("STATIC_CACHE_TTL" => $ttl);
+
+    my $expected_feature_flags = ['signup_with_optional_email_verification'];
+    my $app_config             = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    $app_config->set({'email_verification.suspend.virtual_accounts' => 1});
+    my %params = (
+        website_config => {
+            language => 'EN',
+            args     => {website_config => 1},
+        },
+    );
+
+    my $res = $c->call_ok(%params)->result;
+    cmp_deeply($res->{feature_flags}->@*, @$expected_feature_flags, 'Feature flag is enabled and shown in RPC response');
+
+    $app_config->set({'email_verification.suspend.virtual_accounts' => 0});
+    $res = $c->call_ok(%params)->result;
+    cmp_deeply($res->{feature_flags}->@*, @$expected_feature_flags, 'Feature flag is still enabled and shown in RPC response');
+
+    # sleep for more than ttl so that redis key expires
+    sleep $ttl + 1;
+    $res = $c->call_ok(%params)->result;
+    ok(!scalar($res->{feature_flags}->@*), 'Feature flag is disabled and not shown in RPC response');
+    $mock_static->unmock("STATIC_CACHE_TTL");
 };
 
 done_testing();

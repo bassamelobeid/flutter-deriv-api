@@ -27,6 +27,7 @@ use Format::Util::Numbers;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 use Unicode::UTF8              qw(decode_utf8);
 use JSON::MaybeXS              qw(decode_json);
+use JSON::MaybeUTF8            qw(:v1);
 use POSIX                      qw( floor );
 use Math::BigFloat;
 
@@ -44,7 +45,12 @@ use BOM::Platform::Context qw(localize);
 use BOM::TradingPlatform::DXTrader;
 use BOM::Config::P2P;
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 use LandingCompany::Registry;
+
+use constant WEBSITE_STATUS_KEY_NAMESPACE => 'WEBSITE_STATUS';
+use constant WEBSITE_CONFIG_KEY_NAMESPACE => 'WEBSITE_CONFIG';
+use constant STATIC_CACHE_TTL             => 10;
 
 =head2 residence_list
 
@@ -295,14 +301,22 @@ sub _dxtrade_status {
 }
 
 rpc website_status => sub {
-    my $params     = shift;
+    my $params = shift;
+
+    my $result  = {};
+    my $country = $params->{residence} // $params->{country_code};
+    my $key     = $country ? WEBSITE_STATUS_KEY_NAMESPACE . "::" . lc($country) : WEBSITE_STATUS_KEY_NAMESPACE;
+
+    $result = get_static_data($key);
+    return $result if keys %$result;
+
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update;
+
     my $tnc_config   = $app_config->cgi->terms_conditions_versions;
     my $tnc_version  = decode_json($tnc_config)->{request()->brand->name};
-    my $country      = $params->{residence} // $params->{country_code};
     my $broker_codes = [keys BOM::Config::broker_databases()->%*];
-    my $result       = {
+    $result = {
         terms_conditions_version => $tnc_version // '',
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
@@ -369,6 +383,8 @@ rpc website_status => sub {
         };
     }
 
+    set_static_data($key, $result);
+
     return $result;
 };
 
@@ -411,15 +427,21 @@ Returns a HASH containing the following keys:
 rpc website_config => sub {
     my $params = shift;
 
+    my $result  = {};
+    my $country = $params->{residence} // $params->{country_code};
+    my $key     = $country ? WEBSITE_CONFIG_KEY_NAMESPACE . "::" . lc($country) : WEBSITE_CONFIG_KEY_NAMESPACE;
+
+    $result = get_static_data($key);
+    return $result if keys %$result;
+
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update;
 
-    my $country = $params->{country_code};
     my @feature_flags;
     push @feature_flags, 'signup_with_optional_email_verification' if $app_config->email_verification->suspend->virtual_accounts;
     my $terms_conditions_versions = decode_json($app_config->cgi->terms_conditions_versions)->{request()->brand->name};
 
-    my $result = {
+    $result = {
         feature_flags     => \@feature_flags,
         currencies_config => _currencies_config($country),
         payment_agents    => {
@@ -429,7 +451,58 @@ rpc website_config => sub {
         terms_conditions_version => $terms_conditions_versions // '',
     };
 
+    set_static_data($key, $result);
     return $result;
 };
+
+=head2 get_static_data
+
+Returns the static cache stored in Redis for the provided key
+
+Takes a single C<$key>.
+
+=over 4
+
+=item * C<$key> - a key string for the redis
+
+=back
+
+=cut
+
+sub get_static_data {
+    my $key = shift;
+
+    my $data = BOM::Config::Redis::redis_rpc_write()->get($key);
+    return {} unless $data;
+
+    return decode_json_utf8($data);
+}
+
+=head2 set_static_data
+
+Set the static data in Redis for the key and value pair
+
+Takes a C<$key>.
+
+Takes a C<$value>.
+
+=over 4
+
+=item * C<$key> - a key string for the redis
+
+=item * C<$value> - a value (a hash) to store against the key provided
+
+=back
+
+=cut
+
+sub set_static_data {
+    my ($key, $value) = @_;
+    # if condition is added to prevent warnings
+    # and for test to update it to 0 to stop caching functionality
+    BOM::Config::Redis::redis_rpc_write()->set($key, encode_json_utf8($value), 'NX', 'EX', __PACKAGE__->STATIC_CACHE_TTL)
+        if __PACKAGE__->STATIC_CACHE_TTL > 0;
+    return undef;
+}
 
 1;
