@@ -27,7 +27,9 @@ jobs:
       - name: Code structure and syntax
         run: make syntax
       - name: unit tests
-        run: make unit
+        run: |
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
+          make unit
   core:
     uses: regentmarkets/github-actions/.github/workflows/core.yml@master
     secrets: inherit

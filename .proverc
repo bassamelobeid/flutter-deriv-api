@@ -1,2 +1,3 @@
 --exec '/etc/rmg/bin/perl -MTest::Warnings'
 -MBOM::Test
+--merge
