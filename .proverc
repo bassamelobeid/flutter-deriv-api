@@ -1,2 +1,3 @@
 -It/lib
 --exec '/etc/rmg/bin/perl -It/lib -MTest::Warnings -MBOM::Test'
+--merge

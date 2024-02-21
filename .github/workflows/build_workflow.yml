@@ -40,7 +40,7 @@ jobs:
           repository: ${{ github.repository }}
       - name: Product contract test
         run: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make unit_test_product_contract
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
@@ -74,7 +74,7 @@ jobs:
           repository: ${{ github.repository }}
       - name: Validation
         run: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make unit_test_validation
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
@@ -108,7 +108,7 @@ jobs:
           repository: ${{ github.repository }}
       - name: MemoryTest
         run: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make memory_test
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
@@ -142,7 +142,7 @@ jobs:
           repository: ${{ github.repository }}
       - name: Pricing
         run: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make unit_test_pricing
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
@@ -175,7 +175,7 @@ jobs:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
       - name: Enable Test Report Generation
-        run: echo '--formatter TAP::Formatter::JUnit' >> .proverc
+        run: echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
       - name: Product extended
         run: make unit_test_product_contract_extended
       - name: Product base
