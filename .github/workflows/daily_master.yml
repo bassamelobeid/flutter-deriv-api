@@ -31,7 +31,7 @@ jobs:
           repository: ${{ github.repository }}
       - name: Core tests
         run: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db
           make test
       - 
