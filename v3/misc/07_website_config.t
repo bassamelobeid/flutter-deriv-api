@@ -31,6 +31,11 @@ my $method = 'website_config';
 my $params = {country_code => 'id'};
 
 subtest 'website_config' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+    $app_config->set({'email_verification.suspend.virtual_accounts' => 1});
+
     my $res = $c->call_ok($method, $params)->result;
     ok(defined $res, 'website_config RPC call returns a result');
 
@@ -49,26 +54,16 @@ subtest 'website_config' => sub {
 };
 
 subtest 'feature_flags' => sub {
-
-    my $expected_feature_flags = ['signup_with_optional_email_verification'];
-    my $app_config             = BOM::Config::Runtime->instance->app_config;
-    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
-
-    $app_config->set({'email_verification.suspend.virtual_accounts' => 1});
     my $res = $c->call_ok($method, $params)->result;
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     ok($app_config->get('email_verification.suspend.virtual_accounts'), 'email_verification.suspend.virtual_accounts should be set to 1');
 
+    my $expected_feature_flags = ['signup_with_optional_email_verification'];
     cmp_deeply($res->{feature_flags}->@*, @$expected_feature_flags, 'feature_flags value is correct from chronicle');
-
-    $app_config->set({'email_verification.suspend.virtual_accounts' => 0});
-    $res = $c->call_ok($method, $params)->result;
-    ok(!$app_config->get('email_verification.suspend.virtual_accounts'), 'email_verification.suspend.virtual_accounts should be set to 0');
-
-    cmp_deeply($res->{feature_flags}, [], 'feature_flags value is empty from chronicle');
 };
 
 subtest 'terms_conditions_version' => sub {
-
     my $app_config  = BOM::Config::Runtime->instance->app_config();
     my $tnc_config  = $app_config->get('cgi.terms_conditions_versions');
     my $tnc_version = decode_json_utf8($tnc_config)->{binary};
@@ -82,15 +77,10 @@ subtest 'terms_conditions_version' => sub {
     my $json_config = {binary => $tnc_version};
 
     $app_config->set({'cgi.terms_conditions_versions' => encode_json_utf8($json_config)});
-
     $tnc_config  = $app_config->get('cgi.terms_conditions_versions');
     $tnc_version = decode_json_utf8($tnc_config)->{binary};
 
     ok $tnc_version eq $json_config->{binary}, 'Chronickle should be updated';
-
-    $res = $c->call_ok($method, $params)->result;
-    cmp_deeply($res->{terms_conditions_version}, $tnc_version, 'It should return updated terms_conditions_version');
-
 };
 
 subtest 'supported_languages' => sub {

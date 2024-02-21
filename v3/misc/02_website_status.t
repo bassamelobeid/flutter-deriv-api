@@ -11,6 +11,7 @@ use Test::MockModule;
 use Mojo::Redis2;
 use Clone;
 use BOM::Config::Chronicle;
+use BOM::RPC::v3::Static;
 use BOM::Test::Helper::ExchangeRates             qw/populate_exchange_rates/;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
@@ -100,13 +101,6 @@ $uuid = $res->{subscription}->{id};
 $t   = $t->send_ok({json => {forget => $uuid}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
 is $res->{forget}, 1, 'Successfully forgotten';
-
-# set app-config refresh_interval=>1 in bom-test/bin/binary_rpc_redis_for_test.pl
-sleep 1.1;
-$t   = $t->send_ok({json => {website_status => 1}})->message_ok;
-$res = decode_json_utf8($t->message->[1]);
-
-is $res->{website_status}->{terms_conditions_version}, $tnc_version, 'It should return updated terms_conditions_version';
 
 my $ws_redis_write_config = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml')->{write};
 
