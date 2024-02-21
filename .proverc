@@ -1,5 +1,6 @@
 -Ilib
 --exec '/etc/rmg/bin/perl -MBOM::Test -It/lib -MTest::Warnings'
+--merge
 -MBOM::Test::Initializations
 -MBOM::Test::Suite
 -MBOM::Test::RPC::BinaryRpcRedis
