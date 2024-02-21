@@ -18,10 +18,6 @@
                     "description": "The user id.",
                     "type": "integer"
                 },
-                "email": {
-                    "description": "The email address of the user.",
-                    "type": "string"
-                },
                 "verified": {
                     "description": "The Passkeys login status",
                     "type": "boolean"

@@ -682,21 +682,23 @@ sub actions_config {
             'passkeys_list',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken /],
+                stash_params       => [qw/ jtoken client_ip user_agent /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
         [
             'passkeys_login',
             {
-                category => 'passkeys',
+                category     => 'passkeys',
+                stash_params => [qw/ client_ip user_agent /],
+
             }
         ],
         [
             'passkeys_options',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken /],
+                stash_params       => [qw/ jtoken client_ip user_agent /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -704,7 +706,7 @@ sub actions_config {
             'passkeys_register_options',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken /],
+                stash_params       => [qw/ jtoken client_ip user_agent /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -712,7 +714,7 @@ sub actions_config {
             'passkeys_register',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken /],
+                stash_params       => [qw/ jtoken client_ip user_agent /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -720,7 +722,7 @@ sub actions_config {
             'passkeys_rename',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken /],
+                stash_params       => [qw/ jtoken client_ip user_agent /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -728,11 +730,14 @@ sub actions_config {
             'passkeys_revoke',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken /],
+                stash_params       => [qw/ jtoken client_ip user_agent /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
-        ['trading_platform_asset_listing', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::trading_platform_asset_listing}],
+        [
+            'trading_platform_asset_listing',
+            {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::trading_platform_asset_listing}
+        ],
         [
             'p2p_advertiser_list',
             {
@@ -743,8 +748,14 @@ sub actions_config {
         ['trading_platform_available_accounts'],
         ['trading_platform_accounts'],
         ['trading_platform_new_account'],
-        ['trading_platform_deposit',    {stash_params => [qw/ token_type /]}],
-        ['trading_platform_withdrawal', {stash_params => [qw/ token_type /]}],
+        [
+            'trading_platform_deposit',
+            {stash_params => [qw/ token_type /]}
+        ],
+        [
+            'trading_platform_withdrawal',
+            {stash_params => [qw/ token_type /]}
+        ],
         [
             'trading_platform_password_change',
             {

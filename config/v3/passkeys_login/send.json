@@ -25,7 +25,6 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
-                "authenticatorAttachment",
                 "clientExtensionResults",
                 "id",
                 "rawId",

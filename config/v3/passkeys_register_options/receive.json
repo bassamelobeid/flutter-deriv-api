@@ -50,6 +50,11 @@
                                     "description": "Ask the auth to save the passkey on the device. this will allow seamless login without the need to enter the user name. will be true always",
                                     "type": "boolean"
                                 },
+                                "residentKey": {
+                                    "title": "residentKey",
+                                    "description": "Ask the auth to save the passkey on the device. this will allow seamless login without the need to enter the user name. will be true always",
+                                    "type": "string"
+                                },
                                 "userVerification": {
                                     "title": "userVerification",
                                     "description": "Ask the user to enter thier authentication method (PIN, fingerprint, etc). Default is required.",
@@ -115,7 +120,14 @@
                             "title": "extensions",
                             "description": "Empty for now",
                             "type": "object",
-                            "additionalProperties": false
+                            "additionalProperties": false,
+                            "properties": {
+                                "credProps": {
+                                    "title": "credProps",
+                                    "description": "Credential Properties",
+                                    "type": "boolean"
+                                }
+                            }
                         },
                         "pubKeyCredParams": {
                             "title": "pubKeyCredParams",
@@ -130,7 +142,7 @@
                                     "alg": {
                                         "title": "alg",
                                         "description": "Algorithm",
-                                        "type": "string"
+                                        "type": "integer"
                                     },
                                     "type": {
                                         "title": "type",
