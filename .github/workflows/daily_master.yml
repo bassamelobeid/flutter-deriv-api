@@ -33,7 +33,7 @@ jobs:
       - name: Core tests
         run: |
           sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make test
       - 
         name: Update UID for nobody user
