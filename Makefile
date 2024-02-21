@@ -1,7 +1,7 @@
 TESTS=test syntax
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
-P=/etc/rmg/bin/prove -v --timer -rl -It/lib
+P=/etc/rmg/bin/prove --merge -v --timer -rl -It/lib
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test_all: $(TESTS)
