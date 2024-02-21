@@ -35,7 +35,7 @@ jobs:
       - 
         name: unit tests
         run: | 
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc 
+          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc 
           make unit
       - 
         name: Update UID for nobody user

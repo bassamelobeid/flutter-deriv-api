@@ -40,7 +40,7 @@ jobs:
           make syntax_diff
       - 
         name: Configure Test Reporting
-        run: echo '--formatter TAP::Formatter::JUnit' >> .proverc
+        run: echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
       - 
         name: unit tests
         run: make unit
