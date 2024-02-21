@@ -20,6 +20,10 @@ jobs:
   core_unit_syntax_diff:
     uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
     secrets: inherit
+    # Passing need_syntax_diff: 'true' to execute 'syntax_diff' during dependent test,
+    # as it is skipped by default.
     with:
       debianci_image: ${{ inputs.debianci_image }}
       repository: ${{ inputs.repository }}
+      dependent_test: 'true'
+      need_syntax_diff: 'true'
