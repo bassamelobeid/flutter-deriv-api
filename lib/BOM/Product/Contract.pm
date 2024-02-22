@@ -1238,6 +1238,7 @@ sub _get_tick_details {
 
     my @ticks_all;
     my @ticks_after;
+
     if ($self->tick_expiry) {
         #Accumulator contracts tend to get closed much sooner than their tick duration, to avoid sending pointless
         # data, tick_count_after_entry is used instead of ticks_to_expiry in calculating $limit for them.
@@ -1252,7 +1253,9 @@ sub _get_tick_details {
                     limit      => $limit,
                 }
             ) // []};
+
         push @ticks_all, @tmp_ticks;
+
     } else {
         my @tmp_ticks = @{
             $self->_tick_accessor->ticks_in_between_start_limit({
@@ -1283,6 +1286,11 @@ sub _get_tick_details {
     }
 
     my @details;
+    my $pre_exit_tick;
+    # Accumulator contracts -> always have exit spot + 1 extra tick in audit details
+    # So, pre exit tick is the 3rd tick from the last extra tick in all ticks i.e. @ticks
+    $pre_exit_tick = scalar @ticks - 3 if ($self->category_code eq 'accumulator');
+
     for (my $i = 0; $i <= $#ticks; $i++) {
         my $t         = $ticks[$i];
         my $t2        = $ticks[$i + 1];
@@ -1336,6 +1344,13 @@ sub _get_tick_details {
                     $t_details->{flag} = "highlight_tick";
                 }
             }
+        }
+
+        if ($pre_exit_tick && $i == $pre_exit_tick) {
+            $t_details->{name} = [$GENERIC_MAPPING->{pre_exit_tick}];
+            $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $GENERIC_MAPPING->{entry_spot_cap}, $GENERIC_MAPPING->{pre_exit_tick}]
+                if ($self->entry_tick->epoch == $t->epoch);
+            $t_details->{flag} = "highlight_tick";
         }
 
         push @details, $t_details;

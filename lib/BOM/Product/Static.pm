@@ -168,6 +168,7 @@ my $config = {
         highest_spot   => 'Highest Spot',
         lowest_spot    => 'Lowest Spot',
         time_and_spot  => '[_1] and [_2]',
+        pre_exit_tick  => 'Pre Exit Spot',
         # sub-categories in trading page
         risefall       => 'Rise/Fall',
         higherlower    => 'Higher/Lower',
