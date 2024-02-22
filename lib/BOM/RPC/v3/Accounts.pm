@@ -71,6 +71,7 @@ use BOM::Rules::Engine;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::TradingPlatform::CTrader;
 use BOM::User::Client::AuthenticationDocuments;
+use BOM::User::ExecutionContext;
 
 use Locale::Country;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
@@ -894,10 +895,15 @@ rpc balance => sub {
     return $response;
 };
 
-rpc get_account_status => sub {
+rpc
+    get_account_status => (readonly => 1),
+    sub {
     my $params = shift;
 
-    my $client                     = $params->{client};
+    my $ctx    = BOM::User::ExecutionContext->new;
+    my $client = $params->{client};
+    $client->set_context($ctx);
+
     my $risk_aml                   = $client->risk_level_aml;
     my $risk_sr                    = $client->risk_level_sr;
     my $status                     = $client->status->visible;
@@ -999,6 +1005,7 @@ rpc get_account_status => sub {
         stop_on_failure => 0
     );
     my %args = (
+        client      => $client,
         loginid     => $client->loginid,
         action      => '',
         is_internal => 0,
@@ -1111,7 +1118,7 @@ rpc get_account_status => sub {
         p2p_status       => $p2p_status,
         p2p_poa_required => $p2p_poa_required
     };
-};
+    };
 
 =head2 kyc_auth_status
 

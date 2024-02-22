@@ -7,6 +7,7 @@ use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helper::Client                  qw(invalidate_object_cache);
 use BOM::Test::RPC::QueueClient;
 use BOM::Test::Email;
 use BOM::Platform::Context qw (request);
@@ -297,7 +298,7 @@ subtest 'Application for PA' => sub {
         'paymentagent_details for applied pa'
     );
 
-    delete $client_cr->{payment_agent};
+    invalidate_object_cache($client_cr);
     ok my $pa = $client_cr->get_payment_agent, 'Client has a payment agent now';
     is_deeply {
         map { $_ => $pa->$_ } keys %expected_values
@@ -378,7 +379,7 @@ subtest 'Application for PA' => sub {
 
     $c->call_ok('paymentagent_create', $params)->has_no_system_error->has_no_error('PA with status rejected can reapply');
 
-    delete $client_cr->{payment_agent};
+    invalidate_object_cache($client_cr);
     $pa = $client_cr->get_payment_agent;
 
     is $pa->application_attempts, 2,         'application attempts is now 2';

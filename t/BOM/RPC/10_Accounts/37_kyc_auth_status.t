@@ -1724,9 +1724,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
 
             my $result = $c->tcall($method, $params);
 
-            my $n_landing_companies = scalar LandingCompany::Registry->get_all;
-            my $LCS_ARGUMENT_LIMIT  = 20;
-            is $counter, $LCS_ARGUMENT_LIMIT * $n_landing_companies, 'expected number of comparison in loop for arguments limited to 20 lcs';
+            my $n_landing_companies   = scalar LandingCompany::Registry->get_all;
+            my $LCS_ARGUMENT_LIMIT    = 20;
+            my $LCS_CALLS_AT_LAST_POI = 3;
+            is $counter, $LCS_ARGUMENT_LIMIT * $n_landing_companies + $LCS_CALLS_AT_LAST_POI,
+                'expected number of comparison in loop for arguments limited to 20 lcs';
 
             $landing_company_mock->unmock_all();
             $doc_mock->unmock_all;
