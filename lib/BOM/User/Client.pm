@@ -109,7 +109,8 @@ use constant {
 
 use constant CACHED_FIELDS => qw(
     account _self_exclusion status documents proof_of_ownership _p2p_advertiser_cached
-    _account_type_obj client_authentication_document financial_assessment);
+    _account_type_obj client_authentication_document financial_assessment payment_agent
+    _payment_agent _financial_assessment _risk_level_sr _latest_poi_by);
 
 # Redis key prefix for counting DoughFlow payouts
 use constant {
@@ -156,6 +157,20 @@ sub new {
     }
 
     return $self;
+}
+
+=head2 set_context
+
+Sets the context object for the client. This is used to store the client in the client registry. 
+
+=cut
+
+sub set_context {
+    my ($self, $context) = @_;
+    $context->client_registry->add_client($self);
+    $self->{context} = $context;
+    weaken($self->{context});
+    return;
 }
 
 sub get_instance {
@@ -681,6 +696,8 @@ and have no financial assessment
 sub risk_level_sr {
     my $self = shift;
 
+    return $self->{_risk_level_sr} if $self->{_risk_level_sr};
+
     my $risk = 'low';
 
     if ($self->landing_company->social_responsibility_check) {
@@ -691,12 +708,15 @@ sub risk_level_sr {
         }
 
         if ($self->landing_company->social_responsibility_check eq 'manual') {
+
             $risk = BOM::User::SocialResponsibility->get_sr_risk_status($self->binary_user_id) // 'low';
             # 'low', 'high', 'manual override high', 'problem gambler'
             $risk =~ s/manual override high|problem trader/high/;
         }
 
     }
+
+    $self->{_risk_level_sr} = $risk;
 
     return $risk;
 }
@@ -770,6 +790,58 @@ sub is_financial_assessment_complete {
     return 0 if ($is_withdrawals && !$is_FI);
 
     return 1;
+}
+
+=head2 financial_assessment
+
+Wrapper for the financial_assessment RoseDB method
+Purpose of this method to improve caching of the financial_assessment field
+RoseDB keep results of the method in the object, but only if data is exists in the database.
+If data is not exists in the database, it will return undef, but the result will not be cached.
+This method will cache the result of the method, even if it's undef.
+
+=cut
+
+sub financial_assessment {
+    my ($self, @args) = @_;
+
+    # if we are setting the value, we need to clear the cache
+    if (@args) {
+        delete $self->{_financial_assessment};
+        return $self->SUPER::financial_assessment(@args);
+    }
+
+    return $self->{_financial_assessment} if exists $self->{_financial_assessment};
+
+    $self->{_financial_assessment} = $self->SUPER::financial_assessment;
+
+    return $self->{_financial_assessment};
+}
+
+=head2 payment_agent
+
+Wrapper for the payment_agent RoseDB method
+Purpose of this method to improve caching of the payment_agent field
+RoseDB keep results of the method in the object, but only if data is exists in the database.
+If data is not exists in the database, it will return undef, but the result will not be cached.
+This method will cache the result of the method, even if it's undef.
+
+=cut
+
+sub payment_agent {
+    my ($self, @args) = @_;
+
+    # if we are setting the value, we need to clear the cache
+    if (@args) {
+        delete $self->{_payment_agent};
+        return $self->SUPER::payment_agent(@args);
+    }
+
+    return $self->{_payment_agent} if exists $self->{_payment_agent};
+
+    $self->{_payment_agent} = $self->SUPER::payment_agent;
+
+    return $self->{_payment_agent};
 }
 
 =head2 is_financial_information_complete
@@ -5994,9 +6066,13 @@ Returns an array of triplets containing:
 
 sub latest_poi_by {
     my ($self, $args) = @_;
-    my @triplets;
 
     my $lc = $args->{landing_company} ? LandingCompany::Registry->by_name($args->{landing_company}) : $self->landing_company;
+
+    my $cache_key = join q{_} => ($lc->short, ($args->{only_verified} // 0));
+    return $self->{_latest_poi_by}{$cache_key}->@* if $self->{_latest_poi_by}{$cache_key};
+
+    my @triplets;
 
     my $idv_allowed    = any { $_ eq 'idv' } $lc->allowed_poi_providers->@*;
     my $onfido_allowed = any { $_ eq 'onfido' } $lc->allowed_poi_providers->@*;
@@ -6050,9 +6126,9 @@ sub latest_poi_by {
 
     my @sorted = sort { @{$b}[2] <=> @{$a}[2] } @triplets;
 
-    my $latest = shift @sorted // [];
+    $self->{_latest_poi_by}{$cache_key} = shift @sorted // [];
 
-    return $latest->@*;
+    return $self->{_latest_poi_by}{$cache_key}->@*;
 }
 
 =head2 poi_attempts

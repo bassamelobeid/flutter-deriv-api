@@ -6,7 +6,7 @@ use Test::Deep;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
-use BOM::Test::Helper::Client                  qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client invalidate_object_cache );
 use Test::MockModule;
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -1068,6 +1068,7 @@ subtest 'Manual docs uploaded at BO' => sub {
 
     $client->documents->_clear_uploaded;
     $client->documents->_clear_latest;
+    invalidate_object_cache($client);
 
     is $client->get_manual_poi_status, 'pending', 'Pending Manual POI status';
     is $client->get_poi_status,        'pending', 'Pending POI status';

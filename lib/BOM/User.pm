@@ -62,9 +62,17 @@ use constant {
 };
 
 sub dbic {
-    my (undef, %params) = @_;
-    #not caching this as the handle is cached at a lower level and
-    #if it does cache a bad handle here it will not recover.
+    my ($self, %params) = @_;
+
+    # Cache connection to the database for object methods calls
+    # This helps to avoid setting audit context every time we get connection from global cache
+    if (ref $self) {
+        my $key = 'dbic_' . ($params{db_operation} // 'write');
+        $self->{$key} //= BOM::Database::UserDB::rose_db(%params)->dbic;
+        return $self->{$key};
+    }
+
+    # For class methods, we use global connection cache
     return BOM::Database::UserDB::rose_db(%params)->dbic;
 }
 
@@ -140,8 +148,10 @@ sub new {
     # Also to create index by loginid we need to hit one more table, which is not worth it
     # if this conditions will be different in future feel free to change it
 
-    my $v    = $args{$k};
-    my $self = $class->dbic->run(
+    my $v = $args{$k};
+
+    my $dbic = $class->dbic;
+    my $self = $dbic->run(
         fixup => sub {
             $_->selectrow_hashref("select * from users.get_user_by_$k(?)", undef, $v);    ## SQL safe($k)
         });
@@ -149,6 +159,7 @@ sub new {
     return undef unless $self;
 
     my $user = bless $self, $class;
+    $user->{dbic_write} = $dbic;
 
     if ($context && $k eq 'loginid') {
         # We don't have index by loginid in registry, so we need to check if user is already there

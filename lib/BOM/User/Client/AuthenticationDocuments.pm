@@ -168,7 +168,8 @@ sub _build_uploaded {
 
     my @siblings = $self->client->user->clients(
         include_disabled   => 1,
-        include_duplicated => 1
+        include_duplicated => 1,
+        db_operation       => $self->client->get_db,
     );
 
     for my $each_sibling (@siblings) {

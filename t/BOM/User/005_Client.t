@@ -10,6 +10,7 @@ use BOM::User::Client;
 use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client                  qw(invalidate_object_cache);
 use Test::MockModule;
 use Date::Utility;
 
@@ -713,6 +714,7 @@ subtest 'latest poi by' => sub {
             @{$test}{qw/onfido idv title expected manual idv_pending_check age_verification landing_company lc_status only_verified/};
 
         subtest $title => sub {
+            invalidate_object_cache($client_cr);
             $age_verification_status = $age_verification;
 
             $onfido_latest = {user_check => $onfido};

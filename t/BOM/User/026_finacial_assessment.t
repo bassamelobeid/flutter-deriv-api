@@ -11,6 +11,7 @@ use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
+use BOM::Test::Helper::Client qw(invalidate_object_cache);
 use BOM::User::SocialResponsibility;
 use BOM::User::FinancialAssessment qw(is_section_complete build_financial_assessment update_financial_assessment should_warn appropriateness_tests);
 
@@ -67,11 +68,13 @@ subtest 'CR is_financial_assessment_complete' => sub {
 
     lives_ok { BOM::User::SocialResponsibility->update_sr_risk_status($id, 'high'); } 'high sr_risk_status saved';
 
+    invalidate_object_cache($client_cr_1);
     lives_ok { $is_financial_assessment_complete = $client_cr_1->is_financial_assessment_complete(); }
     'is_financial_assessment_complete is needed';
     is $is_financial_assessment_complete, 0, 'FI is required for high sr risk';
 
     lives_ok { BOM::User::SocialResponsibility->update_sr_risk_status($id, 'low'); } ' low sr_risk_status saved';
+    invalidate_object_cache($client_cr_1);
 
     $client_cr_1->status->set('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
     $client_cr_1->status->set('withdrawal_locked',     'system', 'BECOME_HIGH_RISK');

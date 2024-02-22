@@ -332,6 +332,11 @@ subtest 'payment agent' => sub {
     });
     $client->save();
 
+    $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
     ok !$migration->is_eligible(no_cache => 1), 'Not eligible after becoming pa';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['registered_pa'], 'Failed checks is registered_pa';
 };
