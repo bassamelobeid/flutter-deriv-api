@@ -814,7 +814,7 @@ subtest 'login' => sub {
             $post->(
                 $passkeys_login_url,
                 {
-                    publicKeyCredential => 'publicKeyCredential',
+                    publicKeyCredential => {},
                     app_id              => $app_id,
                     type                => $login_type
                 },
@@ -834,7 +834,7 @@ subtest 'login' => sub {
             my $res = $post->(
                 $passkeys_login_url,
                 {
-                    publicKeyCredential => 'publicKeyCredential',
+                    publicKeyCredential => {},
                     app_id              => $app_id,
                     type                => $login_type
                 },
@@ -854,7 +854,7 @@ subtest 'login' => sub {
             my $res = $post->(
                 $passkeys_login_url,
                 {
-                    publicKeyCredential => 'publicKeyCredential',
+                    publicKeyCredential => {},
                     app_id              => $app_id,
                     type                => $login_type
                 },
@@ -888,7 +888,7 @@ subtest 'login' => sub {
                 my $res = $post->(
                     $passkeys_login_url,
                     {
-                        publicKeyCredential => 'publicKeyCredential',
+                        publicKeyCredential => {},
                         app_id              => $app_id,
                         type                => $login_type
                     },

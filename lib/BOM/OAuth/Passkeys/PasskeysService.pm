@@ -8,6 +8,7 @@ use Syntax::Keyword::Try;
 use Log::Any           qw( $log );
 use List::Util         qw(any);
 use BOM::OAuth::Helper qw(exception_string);
+use JSON::MaybeUTF8    qw(decode_json_utf8);
 use BOM::OAuth::Passkeys::PasskeysClient;
 
 use constant RPC_ERROR_MAP => {
@@ -38,26 +39,34 @@ method get_options {
     return $passkeys_client->passkeys_options();
 }
 
-=head2 login
+=head2 get_user_details
 
 Communicates with passkeys service to verify the user authentication response.
-Returns the login result.
+Returns a hashref of bianry_user_id and verified (will be ignored)
 
 =over 4
 
-=item * $c - The mojo controller.
-
 =item * $payload - The payload of the request. should contain authenticator response.
-
-=item * $app - The app object.
 
 =back
 
 =cut
 
-method login ($c, $payload, $app) {
+method get_user_details ($payload) {
 
-    my $pub_key = $payload->{publicKeyCredential};
+    my $pub_key;
+    if ($payload && !ref $payload) {
+        try {
+            $pub_key = decode_json_utf8($payload);
+        } catch ($e) {
+            die +{
+                code   => 'INVALID_FIELD_VALUE',
+                status => 400
+            };
+        }
+    } else {
+        $pub_key = $payload;
+    }
 
     if (!$pub_key) {
         die +{
@@ -79,15 +88,7 @@ method login ($c, $payload, $app) {
             status => 500
         };
     }
-
-    my $result = BOM::OAuth::Common::validate_login({
-        c                => $c,
-        app              => $app,
-        passkeys_user_id => $user_details->{binary_user_id},
-        device_id        => $c->req->param('device_id'),
-    });
-
-    return $result;
+    return $user_details;
 }
 
 =head2 to_login_error

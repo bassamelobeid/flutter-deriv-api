@@ -6,9 +6,6 @@ use Test::Exception;
 use Test::Mojo;
 use Test::MockModule;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-
 use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::OAuth::PasskeysController;

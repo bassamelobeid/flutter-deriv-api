@@ -37,7 +37,7 @@ use BOM::Platform::Email   qw(send_email);
 use BOM::User::AuditLog;
 use URI::Escape;
 use BOM::OAuth::SocialLoginClient;
-
+use BOM::OAuth::Passkeys::PasskeysService;
 use constant CTRADER_APPID => 36218;
 
 sub authorize {
@@ -118,40 +118,37 @@ sub authorize {
         }
 
         my ($client, $clients);
+        my $login_type = $c->_get_login_type;
         # try to retrieve client from session
-        if (    $c->req->method eq 'POST'
-            and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
-            and defang($c->param('login')))
-        {
+        if ($login_type eq 'basic') {
             my $login = $c->_login({app => $app, social_login_bypass => $social_login_bypass}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
-            $c->session('_is_logged_in', 1);
-            $c->session('_loginid',      $client->loginid);
-            $c->session('_self_closed',  $login->{login_result}->{self_closed});
-        } elsif ($c->req->method eq 'POST' and $c->session('_is_logged_in')) {
+            $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
+        } elsif ($login_type eq 'session') {
             # Get loginid from Mojo Session
             $clients = $c->_get_client($app_id);
             $client  = $clients->[0];
-        } elsif ($c->session('_oneall_user_id')) {
+        } elsif ($login_type eq 'oneall') {
 
             # Get client from Oneall Social Login.
             my $oneall_user_id = $c->session('_oneall_user_id');
             my $login          = $c->_login({app => $app, oneall_user_id => $oneall_user_id}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
-            $c->session('_is_logged_in', 1);
-            $c->session('_loginid',      $client->loginid);
-            $c->session('_self_closed',  $login->{login_result}->{self_closed});
-        } elsif ($c->session('_sls_user_id')) {    #exact same logic as oneall
-                                                   # Get client from sls Social Login.
+            $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
+        } elsif ($login_type eq 'social') {    #exact same logic as oneall
+                                               # Get client from sls Social Login.
             my $sls_user_id = $c->session('_sls_user_id');
             my $login       = $c->_login({app => $app, oneall_user_id => $sls_user_id}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
-            $c->session('_is_logged_in', 1);
-            $c->session('_loginid',      $client->loginid);
-            $c->session('_self_closed',  $login->{login_result}->{self_closed});
+            $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
+        } elsif ($login_type eq 'passkeys') {
+            my $login = $c->_passkeys_login($app, %template_params) or return;
+            $clients = $login->{clients};
+            $client  = $clients->[0];
+            $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
         }
 
         my $date_first_contact = $c->param('date_first_contact') // '';
@@ -243,7 +240,8 @@ sub authorize {
         }
 
         # Check if user has enabled 2FA authentication and this is not a scope request
-        if ($user->{is_totp_enabled} && !$is_verified) {
+        # The 2FA check will be skipped for Passkey logins
+        if ($user->{is_totp_enabled} && !$is_verified && $login_type ne 'passkeys') {
             return $c->render(
                 template       => $c->_get_template_name('totp'),
                 layout         => $brand_name,
@@ -359,10 +357,64 @@ sub authorize {
         $c->session(expires => 1);
         return BOM::OAuth::Common::redirect_to($c, $redirect_uri, \@params);
     } catch {
-
         $template_params{error} = localize(get_message_mapping()->{invalid});
         return $c->render(%template_params);
     }
+}
+
+=head2 set_logged_in_session
+
+Set the session for the logged in user.
+
+=over 4 
+
+=item C<$c> -The controller object.
+
+=item C<$loginid> -The loginid of the user.
+
+=item C<$is_self_closed> -The self_closed status of the user.
+
+=back
+
+=cut
+
+sub set_logged_in_session {
+    my ($c, $loginid, $is_self_closed) = @_;
+    $c->session('_is_logged_in', 1);
+    $c->session('_loginid',      $loginid);
+    $c->session('_self_closed',  $is_self_closed);
+}
+
+=head2 _passkeys_login
+
+Handles the passkeys login.
+
+=over 4
+
+=item C<$c> -The controller object.
+
+=item C<$app> -The requested application.
+
+=item C<%template_params> -The template parameters.
+
+=back
+
+=cut
+
+sub _passkeys_login {
+    my ($c, $app, %template_params) = @_;
+    my $passkeys_user_id;
+    try {
+        my $passkeys_service      = BOM::OAuth::Passkeys::PasskeysService->new;
+        my $passkeys_user_details = $passkeys_service->get_user_details($c->param('publicKeyCredential'));
+        $passkeys_user_id = $passkeys_user_details->{binary_user_id};
+    } catch ($e) {
+        $log->errorf("Passkeys login exception - failed to get user info - %s %s", $e->{code}, ($e->{additional_info} // ""));
+        $template_params{passkeys_error} = localize(get_message_mapping()->{$e->{code}} // $e->{code});
+        $c->render(%template_params);
+        return;    # to keep it consistent we need to return undef;
+    }
+    return $c->_login({app => $app, passkeys_user_id => $passkeys_user_id});
 }
 
 =head2 _scopes_changed
@@ -466,8 +518,8 @@ sub _handle_self_closed {
 
 sub _login {
     my ($c, $params) = @_;
-    my ($app, $oneall_user_id, $social_login_bypass) =
-        @{$params}{qw/app oneall_user_id social_login_bypass/};
+    my ($app, $oneall_user_id, $social_login_bypass, $passkeys_user_id) =
+        @{$params}{qw/app oneall_user_id social_login_bypass passkeys_user_id/};
 
     my $email    = trim lc(defang $c->param('email'));
     my $password = $c->param('password');
@@ -475,12 +527,13 @@ sub _login {
     my $brand_name = $c->stash('brand')->name;
 
     my $result = BOM::OAuth::Common::validate_login({
-        c              => $c,
-        app            => $app,
-        oneall_user_id => $oneall_user_id,
-        email          => $email,
-        password       => $password,
-        device_id      => $c->req->param('device_id'),
+        c                => $c,
+        app              => $app,
+        oneall_user_id   => $oneall_user_id,
+        passkeys_user_id => $passkeys_user_id,
+        email            => $email,
+        password         => $password,
+        device_id        => $c->req->param('device_id'),
     });
 
     if ($result->{error_code}) {
@@ -642,6 +695,72 @@ sub format_route_param {
     my $route_param = shift;
     $route_param = defined $route_param ? uri_escape($route_param) : "";
     return $route_param;
+}
+
+=head2 _is_valid_post_request
+
+Check if the request is a valid POST request. by evaluating the request method and csrf token.
+
+=over 4
+
+=item C<$c> -The controller object.
+
+=back
+
+=cut
+
+sub _is_valid_post_request {
+    my $c = shift;
+    return (($c->req->method eq 'POST') && ($c->csrf_token eq (defang($c->param('csrf_token')) // '')));
+}
+
+# a map of login types and their validation functions.
+my $login_types = {
+    basic => sub {
+        my $c = shift;
+        return ($c->_is_valid_post_request && defang($c->param('login')));
+    },
+    session => sub {
+        my $c = shift;
+        return ($c->req->method eq 'POST') && $c->session('_is_logged_in');
+    },
+    oneall => sub {
+        my $c = shift;
+        return $c->session('_oneall_user_id');
+    },
+    social => sub {
+        my $c = shift;
+        return $c->session('_sls_user_id');
+    },
+    passkeys => sub {
+        my $c = shift;
+        return ($c->_is_valid_post_request && defang($c->param('passkeys_login')));
+    },
+};
+
+=head2 _get_login_type
+
+Get the login type from the request. The login type is determined by applying the validation functions in the login_types map.
+Returns a string representing the login type. or an empty string if no valid login type is found.
+
+=over 4
+
+=item C<$c> -The controller object.
+
+=back
+
+=cut
+
+sub _get_login_type {
+    my $c = shift;
+    # the order of login types to be checked.
+    my @login_types_order = ('basic', 'session', 'oneall', 'social', 'passkeys');
+    for my $type (@login_types_order) {
+        if ($login_types->{$type}->($c)) {
+            return $type;
+        }
+    }
+    return '';
 }
 
 1;

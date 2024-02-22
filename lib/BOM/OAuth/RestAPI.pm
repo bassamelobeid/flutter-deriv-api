@@ -889,9 +889,25 @@ Returns an array of associated clients
 =cut
 
 sub _perform_passkeys_login {
-    my ($c, $app) = @_;
+    my ($c, $app, $brand_name) = @_;
     my $passkeys_service = BOM::OAuth::Passkeys::PasskeysService->new;
-    my $result           = $passkeys_service->login($c, $c->req->json, $app);
+    my $user_details     = $passkeys_service->get_user_details($c->req->json->{publicKeyCredential});
+    my $result           = BOM::OAuth::Common::validate_login({
+        c                => $c,
+        app              => $app,
+        passkeys_user_id => $user_details->{binary_user_id},
+        device_id        => $c->req->param('device_id'),
+    });
+
+    if (my $err = $result->{error_code}) {
+        stats_inc('login.authorizer.validation_failure', {tags => ["brand:$brand_name", "error:$err"]});
+        BOM::OAuth::Common::failed_login_attempt($c);
+
+        die +{
+            code => $err,
+        };
+    }
+
     return $result;
 }
 
