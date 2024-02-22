@@ -336,21 +336,27 @@ jobs:
           cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
           make test
         if: always()
+  check_dependent_tests:
+    if:  ${{ github.event_name != 'push' }}
+    runs-on: ubuntu-latest
+    outputs:
+      needs_dependent_test: ${{ steps.check_dependent_test.outputs.result }}
+    steps:
+      - name: Toggle Dependent Tests
+        id: check_dependent_test
+        uses: regentmarkets/github-actions/check-dependent-test@master
   publish_test_results:
     needs: [ product_others , pricing , memory_test , validation , product_contract ]
     if: success() || failure()
     runs-on: ubuntu-latest
     steps:
-      - 
-        name: Upload results to DataDog
+      - name: Upload results to DataDog
         uses: regentmarkets/github-actions/datadog-publish@master
         with: 
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
           service-name: bom
-
-  # Temporarily comment out dependent job
-  # dependent:
-  #   needs: [Pricing-Engine-Tests,benchmark_merlin_ovra,product_contract,validation,memory_test,pricing,product_others,benchmark_SD]
-  #   if:  ${{ github.event_name != 'push' }}
-  #   uses: ./.github/workflows/dependent.yml
-  #   secrets: inherit
+  dependent:
+    needs: [Pricing-Engine-Tests,benchmark_merlin_ovra,product_contract,validation,memory_test,pricing,product_others,benchmark_SD,check_dependent_tests]
+    if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
+    uses: ./.github/workflows/dependent.yml
+    secrets: inherit
