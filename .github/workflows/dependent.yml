@@ -4,7 +4,7 @@ on:
   workflow_call:
 jobs:
   bom-backoffice:
-    uses: regentmarkets/bom-backoffice/.github/workflows/base.yml@develop_ghactions
+    uses: regentmarkets/bom-backoffice/.github/workflows/base.yml@master
     secrets: inherit
     with:
       repository: regentmarkets/bom-backoffice
