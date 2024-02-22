@@ -96,6 +96,8 @@ regulation and compliance requirements.
 
 =over 4
 
+=item * C<client> - An object of the type L<BOM::User::Client>.
+
 =item * C<$loginid> - For creating an instance of L<BOM::User::Client>.
 
 =item * C<action> - takes either deposit or withdraw to include their specific rules.
@@ -117,7 +119,7 @@ sub validate {
     my ($loginid, $action, $is_internal, $is_cashier, $underlying_action) = @args{qw(loginid action is_internal is_cashier underlying_action)};
 
     my $errors = {};
-    my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
+    my $client = delete $args{client} // BOM::User::Client->get_client_instance($loginid, 'replica');
 
     unless ($client) {
         _add_error_by_code($errors, 'InvalidAccount');
