@@ -2,7 +2,9 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Mojo;
-use Test::Fatal qw(lives_ok);
+use Test::Deep;
+use Test::Fatal    qw(lives_ok);
+use Test::Warnings qw(warning);
 use MojoX::JSON::RPC::Client;
 use BOM::User::Password;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -14,6 +16,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::User;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Test::Helper::Client;
+use BOM::RPC::v3::VerifyEmail::Functions;
 
 use BOM::Test::RPC::QueueClient;
 
@@ -431,7 +434,6 @@ subtest 'Payment withdraw' => sub {
 };
 
 subtest 'Closed account' => sub {
-
     $client->status->set('disabled', 1, 'test disabled');
 
     my @emitted;
@@ -488,10 +490,181 @@ subtest 'Closed account' => sub {
     ok($emitted[1]->{properties}, 'Properties are set');
     is($emitted[1]->{properties}{email}, lc $params[1]->{args}->{verify_email}, 'email is set');
     is $emitted[1]->{properties}{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
+
+    subtest 'empty loginids, existing user' => sub {
+        my @loginids  = ();
+        my @doggy_bag = ();
+
+        my $func_mock = Test::MockModule->new('BOM::RPC::v3::VerifyEmail::Functions');
+        $func_mock->mock(
+            'stats_inc',
+            sub {
+                push @doggy_bag, @_;
+            });
+
+        my $user_mock = Test::MockModule->new('BOM::User');
+        $user_mock->mock(
+            'bom_loginids',
+            sub {
+                return @loginids;
+            });
+
+        my $endpoints = [qw/verify_email_cellxpert verify_email/];
+        my $types     = [qw/account_opening reset_password foobar/];
+
+        # for account closed sort of emails
+        my $event_mappings = {
+            account_opening => 'verify_email_closed_account_account_opening',
+            reset_password  => 'verify_email_closed_account_reset_password',
+            foobar          => 'verify_email_closed_account_other',
+        };
+
+        # special outcome when the user exists but there is no loginid attached
+        my $event_outcome_when_not_closed = {
+            account_opening => {
+                emissions => [
+                    'account_opening_new',
+                    {
+                        code             => re('.*'),
+                        email            => re('.*'),
+                        verification_url => re('.*'),
+                        live_chat_url    => re('.*'),
+                    }
+                ],
+                doggy => [
+                    'bom_rpc.verify_email.user_with_no_loginid',
+                    {'tags' => [re('user:\d+'), 'type:account_opening',]}
+
+                ],
+            },
+            reset_password => {
+                emissions => [],
+                doggy     => [
+                    'bom_rpc.verify_email.user_with_no_loginid',
+                    {'tags' => [re('user:\d+'), 'type:reset_password',]}
+
+                ],
+            },
+            foobar => {
+                emissions => [],
+                doggy     => [
+                    'bom_rpc.verify_email.user_with_no_loginid',
+                    {'tags' => [re('user:\d+'), 'type:foobar',]}
+
+                ],
+                exception => 'unknown type foobar',
+            },
+        };
+
+        for my $endpoint ($endpoints->@*) {
+            subtest $endpoint => sub {
+                for my $type ($types->@*) {
+                    subtest $type => sub {
+                        @emitted = ();
+
+                        my $password = 'jskjd8292922';
+                        my $hash_pwd = BOM::User::Password::hashpw($password);
+
+                        my $email = $endpoint . '+' . $type . rand(999) . '@binary.com';
+
+                        my $user = BOM::User->create(
+                            email    => $email,
+                            password => $hash_pwd
+                        );
+
+                        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                            broker_code => 'CR',
+                        });
+
+                        $client->status->set('disabled', 'test', 'test');
+
+                        $client->account('USD');
+                        $user->add_client($client);
+
+                        my $params = {
+                            language => 'EN',
+                            country  => 'ru',
+                            source   => 1,
+                            args     => {
+                                $endpoint   => $email,
+                                type        => $type,
+                                server_name => 'binary.com',
+                                link        => 'binary.com/some_url',
+                            },
+                        };
+
+                        @doggy_bag = ();
+                        @loginids  = ($client->loginid);
+
+                        $rpc_ct->call_ok($endpoint, $params)->has_no_system_error->has_no_error('no error on closed account')
+                            ->result_is_deeply($expected_result, 'It always should return 1, so not to leak client\'s email');
+
+                        cmp_deeply [@emitted],
+                            [
+                            $event_mappings->{$type},
+                            {
+                                loginid    => shift @loginids,
+                                properties => {
+                                    language      => 'EN',
+                                    live_chat_url => 'https://www.binary.com/en/contact.html?is_livechat_open=true',
+                                    email         => $email,
+                                    type          => $type,
+                                },
+                            }
+                            ],
+                            'Expected emissions, closed account';
+                        cmp_deeply [@doggy_bag], [], 'No stats_inc as the user has loginids';
+
+                        @doggy_bag = ();
+                        @loginids  = ();
+                        @emitted   = ();
+
+                        if (my $exception = $event_outcome_when_not_closed->{$type}->{exception}) {
+                            my $warning = warning {
+                                $rpc_ct->call_ok($endpoint, $params)
+                                    ->has_no_system_error->has_error->error_code_is('InternalServerError', 'unknown type')
+                                    ->error_message_is('Sorry, an error occurred while processing your request.');
+                            };
+
+                            ok $warning =~ qr/$exception/, $exception;
+                        } else {
+                            $rpc_ct->call_ok($endpoint, $params)->has_no_system_error->has_no_error('no error for empty loginids, existing user')
+                                ->result_is_deeply($expected_result, 'It always should return 1, so not to leak client\'s email');
+                        }
+
+                        cmp_deeply [@emitted],   $event_outcome_when_not_closed->{$type}->{emissions}, 'Expected emissions, sign up email';
+                        cmp_deeply [@doggy_bag], $event_outcome_when_not_closed->{$type}->{doggy},     'Expected datadog';
+
+                        @doggy_bag = ();
+                        @loginids  = ();
+                        @emitted   = ();
+                        $client->status->clear_disabled;
+
+                        if (my $exception = $event_outcome_when_not_closed->{$type}->{exception}) {
+                            my $warning = warning {
+                                $rpc_ct->call_ok($endpoint, $params)
+                                    ->has_no_system_error->has_error->error_code_is('InternalServerError', 'unknown type')
+                                    ->error_message_is('Sorry, an error occurred while processing your request.');
+                            };
+
+                            ok $warning =~ qr/$exception/, $exception;
+                        } else {
+                            $rpc_ct->call_ok($endpoint, $params)
+                                ->has_no_system_error->has_no_error('no error for empty loginids and disabled orphan, existing user')
+                                ->result_is_deeply($expected_result, 'It always should return 1, so not to leak client\'s email');
+                        }
+                        cmp_deeply [@emitted], $event_outcome_when_not_closed->{$type}->{emissions}, 'Expected emissions, sign up email';
+                    };
+                }
+            };
+        }
+
+        $user_mock->unmock_all;
+        $func_mock->unmock_all;
+    };
 };
 
 subtest 'withdrawal validation' => sub {
-
     $params[1]->{args}->{verify_email} = $client->email;
     $params[1]->{server_name}          = 'binary.com';
     $params[1]->{link}                 = 'binary.com/some_url';
@@ -639,6 +812,89 @@ subtest 'Request Email request with an unofficial app_id' => sub {
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'If the app is unofficial app')
         ->error_message_is('Permission denied.');
+
+};
+
+subtest 'Functions.pm' => sub {
+    subtest 'user closed' => sub {
+        my $verify_email_object = BOM::RPC::v3::VerifyEmail::Functions->new(
+            args => {
+                verify_email   => $user->email,
+                type           => 'account_opening',
+                url_parameters => {},
+            });
+
+        my $user_mock = Test::MockModule->new('BOM::User');
+        my @loginids  = ($client->loginid);
+
+        $client->status->setnx('disabled', 'test', 'test');
+
+        $user_mock->mock(
+            'bom_loginids',
+            sub {
+                return @loginids;
+            });
+
+        ok !$verify_email_object->is_existing_user_closed, 'There is no user yet';
+
+        $verify_email_object->create_existing_user();
+
+        ok $verify_email_object->is_existing_user_closed, 'User is closed';
+
+        # reload the statuses
+        $client->status->clear_disabled;
+        $verify_email_object->create_existing_user();
+
+        ok !$verify_email_object->is_existing_user_closed, 'User is not closed';
+
+        # make it closed again
+        $client->status->setnx('disabled', 'test', 'test');
+        $verify_email_object->create_existing_user();
+
+        ok $verify_email_object->is_existing_user_closed, 'User is closed again';
+
+        # empty loginids
+        @loginids = ();
+        ok !$verify_email_object->is_existing_user_closed, 'User is not closed';
+
+        $user_mock->unmock_all;
+    };
+
+    subtest 'available loginid' => sub {
+        my $verify_email_object = BOM::RPC::v3::VerifyEmail::Functions->new(
+            args => {
+                verify_email   => $user->email,
+                type           => 'account_opening',
+                url_parameters => {},
+            });
+        my $user_mock = Test::MockModule->new('BOM::User');
+        my @loginids  = ($client->loginid);
+
+        $user_mock->mock(
+            'bom_loginids',
+            sub {
+                return @loginids;
+            });
+
+        $client->status->clear_disabled;
+        ok !$verify_email_object->available_loginid, 'There is no user yet';
+
+        $verify_email_object->create_existing_user();
+
+        is $verify_email_object->available_loginid, $client->loginid, 'there is a loginid';
+
+        # reload the statuses
+        $client->status->setnx('disabled', 'test', 'test');
+        $verify_email_object->create_existing_user();
+
+        ok !$verify_email_object->available_loginid, 'not available loginid as they are disabled';
+
+        # empty loginids
+        @loginids = ();
+        ok !$verify_email_object->available_loginid, 'no loginid available';
+
+        $user_mock->unmock_all;
+    };
 
 };
 

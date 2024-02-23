@@ -23,6 +23,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::User::Client;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use List::Util                      qw/any/;
+use DataDog::DogStatsd::Helper      qw(stats_inc);
 use constant {REQUEST_EMAIL_TOKEN_TTL => 3600};
 
 =head2 new
@@ -85,7 +86,18 @@ Return existing_user if it is not closed yet
 
 sub is_existing_user_closed {
     my ($self) = @_;
-    return ($self->{existing_user} and $self->{existing_user}->is_closed);
+
+    return 0 unless $self->{existing_user};
+
+    # special scenario where a user exists in the DB and there are no loginids attached.
+    my $has_loginids = scalar $self->{existing_user}->bom_loginids;
+
+    unless ($has_loginids) {
+        stats_inc('bom_rpc.verify_email.user_with_no_loginid', {tags => ['user:' . $self->{existing_user}->id, 'type:' . $self->{type}]});
+        return 0;
+    }
+
+    return $self->{existing_user}->is_closed;
 }
 
 =head2 send_close_account_email
@@ -102,19 +114,26 @@ sub send_close_account_email {
     my ($self)         = @_;
     my $data           = $self->{email_verification}->{closed_account}->();
     my %possible_types = (
-        account_opening => "verify_email_closed_account_account_opening",
-        reset_password  => "verify_email_closed_account_reset_password"
+        account_opening => 'verify_email_closed_account_account_opening',
+        reset_password  => 'verify_email_closed_account_reset_password',
     );
-    BOM::Platform::Event::Emitter::emit(
-        $possible_types{$self->{type}} // "verify_email_closed_account_other",
-        {
-            loginid    => ($self->{existing_user}->bom_loginids)[0],
-            properties => {
-                language      => $self->{language},
-                type          => $data->{template_args}->{type}          // '',
-                live_chat_url => $data->{template_args}->{live_chat_url} // '',
-                email         => $data->{template_args}->{email}         // '',
-            }});
+
+    my ($loginid) = $self->{existing_user}->bom_loginids;
+
+    # if there is no loginid, this event would throw nonetheless
+    if ($loginid) {
+        BOM::Platform::Event::Emitter::emit(
+            $possible_types{$self->{type}} // 'verify_email_closed_account_other',
+            {
+                loginid    => $loginid,
+                properties => {
+                    language      => $self->{language},
+                    type          => $data->{template_args}->{type}          // '',
+                    live_chat_url => $data->{template_args}->{live_chat_url} // '',
+                    email         => $data->{template_args}->{email}         // '',
+                }});
+    }
+
     return {status => 1};
 }
 
@@ -214,21 +233,25 @@ If $self->type is `reset_password` then this function will execute
 sub reset_password {
     my ($self) = @_;
     if ($self->{existing_user}) {
-        my $data = $self->{email_verification}->{reset_password}->();
-        BOM::Platform::Event::Emitter::emit(
-            'reset_password_request',
-            {
-                loginid    => $self->{existing_user}->get_default_client->loginid,
-                properties => {
-                    verification_url      => $data->{template_args}->{verification_url}  // '',
-                    social_login          => $data->{template_args}->{has_social_signup} // '',
-                    first_name            => $self->{existing_user}->get_default_client->first_name,
-                    code                  => $data->{template_args}->{code} // '',
-                    email                 => $self->{email},
-                    time_to_expire_in_min => REQUEST_EMAIL_TOKEN_TTL / 60,
-                    live_chat_url         => request()->brand->live_chat_url
-                },
-            });
+        my $loginid = $self->available_loginid;
+
+        if ($loginid) {
+            my $data = $self->{email_verification}->{reset_password}->();
+            BOM::Platform::Event::Emitter::emit(
+                'reset_password_request',
+                {
+                    loginid    => $loginid,
+                    properties => {
+                        verification_url      => $data->{template_args}->{verification_url}  // '',
+                        social_login          => $data->{template_args}->{has_social_signup} // '',
+                        first_name            => $self->{existing_user}->get_default_client->first_name,
+                        code                  => $data->{template_args}->{code} // '',
+                        email                 => $self->{email},
+                        time_to_expire_in_min => REQUEST_EMAIL_TOKEN_TTL / 60,
+                        live_chat_url         => request()->brand->live_chat_url
+                    },
+                });
+        }
     }
     return;
 
@@ -332,7 +355,9 @@ sub account_opening {
                     },
                 });
         } else {
-            unless ($self->{existing_user}) {
+            my $loginid = $self->available_loginid;
+
+            unless ($loginid) {
                 my $data = $self->{email_verification}->{account_opening_new}->();
                 BOM::Platform::Event::Emitter::emit(
                     'account_opening_new',
@@ -347,7 +372,7 @@ sub account_opening {
                 BOM::Platform::Event::Emitter::emit(
                     'account_opening_existing',
                     {
-                        loginid    => $self->{existing_user}->get_default_client->loginid,
+                        loginid    => $loginid,
                         properties => {
                             code               => $data->{template_args}->{code} // '',
                             language           => $self->{params}->{language},
@@ -361,7 +386,9 @@ sub account_opening {
             }
         }
     } else {
-        unless ($self->{existing_user}) {
+        my $loginid = $self->available_loginid;
+
+        unless ($loginid) {
             my $data = $self->{email_verification}->{account_opening_new}->();
             BOM::Platform::Event::Emitter::emit(
                 'account_opening_new',
@@ -377,7 +404,7 @@ sub account_opening {
             BOM::Platform::Event::Emitter::emit(
                 'account_opening_existing',
                 {
-                    loginid    => $self->{existing_user}->get_default_client->loginid,
+                    loginid    => $loginid,
                     properties => {
                         code               => $data->{template_args}->{code} // '',
                         language           => $self->{params}->{language},
@@ -391,6 +418,24 @@ sub account_opening {
         }
     }
     return;
+}
+
+=head2 available_loginid
+
+Returns a loginid if available, otherwise C<undef>.
+
+=cut
+
+sub available_loginid {
+    my ($self) = @_;
+
+    return undef unless $self->{existing_user};
+
+    my $client = $self->{existing_user}->get_default_client;
+
+    return undef unless $client;
+
+    return $client->loginid;
 }
 
 =head2 partner_account_opening
