@@ -206,6 +206,8 @@ $META->column('date_joined')->add_trigger(inflate => $date_inflator_ymdhms);
 $META->column('date_joined')->add_trigger(deflate => $date_inflator_ymdhms);
 $META->column('non_pep_declaration_time')->add_trigger(inflate => $date_inflator_ymdhms);
 $META->column('non_pep_declaration_time')->add_trigger(deflate => $date_inflator_ymdhms);
+$META->column('fatca_declaration_time')->add_trigger(inflate => $date_inflator_ymdhms);
+$META->column('fatca_declaration_time')->add_trigger(deflate => $date_inflator_ymdhms);
 
 my %DEFAULT_VALUES = (
     cashier_setting_password => '',
@@ -254,11 +256,19 @@ sub register_and_return_new_client {
         $args->{non_pep_declaration_time} = Date::Utility->new($args->{non_pep_declaration_time})->datetime_yyyymmdd_hhmmss;
     }
 
+    if ($args->{fatca_declaration_time}) {
+        $args->{fatca_declaration_time} = Date::Utility->new($args->{fatca_declaration_time})->datetime_yyyymmdd_hhmmss;
+    }
+
     my $dbic   = $class->rnew(broker => $broker)->db->dbic;
     my $result = $dbic->run(
         fixup => sub {
             return $_->selectrow_hashref("select * from betonmarkets.create_client(?::JSON)", undef, encode_json_text($args));
         });
+
+    # Sanitize $result, avoids exception when anything additional is part of $result
+    my @columns = $class->meta->column_names;
+    $result = +{%{$result}{@columns}};
 
     my $self = $class->SUPER::new(%$result);
     $self->set_db('write');
@@ -2352,6 +2362,7 @@ sub validate_common_account_details {
         die "No promotion code was provided\n" if (trim($args->{promo_code_status}) and not(trim($args->{promo_code}) // $self->promo_code));
 
         $self->_validate_non_pep_time($args->{non_pep_declaration_time}) if $args->{non_pep_declaration_time};
+        $self->_validate_fatca_time($args->{fatca_declaration_time})     if $args->{fatca_declaration_time};
 
         return undef;
     } catch ($err) {
@@ -2408,6 +2419,23 @@ sub _validate_non_pep_time {
     die "InvalidNonPepTime\n" unless $non_pep_date;
 
     die "TooLateNonPepTime\n" if $non_pep_date->epoch > time;
+
+    return undef;
+}
+
+=pod
+
+=head2 _validate_fatca_time
+Validates FATCA declaration time for a client.
+=cut
+
+sub _validate_fatca_time {
+    my ($self, $fatca_time) = @_;
+
+    my $fatca_date = eval { Date::Utility->new($fatca_time) };
+    die "InvalidFatcaTime\n" unless $fatca_date;
+
+    die "TooLateFatcaTime\n" if $fatca_date->epoch > time;
 
     return undef;
 }

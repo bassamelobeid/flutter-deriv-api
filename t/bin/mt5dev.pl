@@ -68,6 +68,8 @@ sub create_client {
         secret_question          => '',
         secret_answer            => '',
         non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
+        fatca_declaration_time   => Date::Utility->new('20010108')->date_yyyymmdd,
+        fatca_declaration        => 1,
     );
     my $vr = $user->create_client(
         %details,

@@ -363,6 +363,36 @@ subtest "format and validate" => sub {
     };
     is $client->validate_common_account_details($args), undef, 'Validation is passed with non-pep declaration time set to an earlier time';
 
+    $args = {
+        fatca_declaration_time => 'abc',
+    };
+    is $client->validate_common_account_details($args)->{error}, 'InvalidFatcaTime', 'Invalid FATCA declaration time format error';
+
+    $args = {
+        fatca_declaration_time => '2002-01-66',
+    };
+    is $client->validate_common_account_details($args)->{error}, 'InvalidFatcaTime', 'Invalid FATCA declaration time format error';
+
+    $args = {
+        fatca_declaration_time => time + 1,
+    };
+    is $client->validate_common_account_details($args)->{error}, 'TooLateFatcaTime', 'Too late FATCA declaration time error';
+
+    $args = {
+        fatca_declaration_time => undef,
+    };
+    is $client->validate_common_account_details($args), undef, 'Validation is passed with empty FATCA declaration time';
+
+    $args = {
+        fatca_declaration_time => time,
+    };
+    is $client->validate_common_account_details($args), undef, 'Validation is passed with FATCA declaration time set to now';
+
+    $args = {
+        fatca_declaration_time => Date::Utility->today->_plus_years(-1)->date_yyyymmdd,
+    };
+    is $client->validate_common_account_details($args), undef, 'Validation is passed with FATCA declaration time set to an earlier time';
+
     subtest 'P.O. Box' => sub {
         subtest 'Regulated accounts' => sub {
             my $client_details = {

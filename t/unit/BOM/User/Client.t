@@ -163,6 +163,28 @@ subtest validate_common_account_details => sub {
         is $client->validate_common_account_details($args)->{error}, 'TooLateNonPepTime', 'too late non pep time';
     };
 
+    subtest 'fatca time' => sub {
+        Test::MockTime::set_absolute_time('2021-03-05T00:00:00Z');
+        my $time = time;
+
+        my $args = {'fatca_declaration_time' => 'text'};
+        is $client->validate_common_account_details($args)->{error}, 'InvalidFatcaTime', 'invalid string of FATCA time';
+        throws_ok { $client->_validate_fatca_time($args->{fatca_declaration_time}) } qr/InvalidFatcaTime/,
+            'invalid string of FATCA time - throws correctly';
+
+        $args = {'fatca_declaration_time' => '2019-03-20'};
+        is $client->validate_common_account_details($args),                undef, 'valid date format of FATCA time';
+        is $client->_validate_fatca_time($args->{fatca_declaration_time}), undef, 'valid date format of FATCA time - Direct sub call';
+
+        $args = {'fatca_declaration_time' => $time};
+        is $client->validate_common_account_details($args),                undef, 'valid time format of FATCA time';
+        is $client->_validate_fatca_time($args->{fatca_declaration_time}), undef, 'valid time format of FATCA time - Direct sub call';
+
+        $args = {'fatca_declaration_time' => '2200-03-20'};
+        is $client->validate_common_account_details($args)->{error}, 'TooLateFatcaTime', 'too late FATCA time';
+        throws_ok { $client->_validate_fatca_time($args->{fatca_declaration_time}) } qr/TooLateFatcaTime/, 'too late FATCA time - throws correctly';
+    };
+
     subtest 'po box validation' => sub {
         my $args = {
             'address_line_1' => 'ring road',

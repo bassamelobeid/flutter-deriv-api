@@ -49,6 +49,8 @@ sub create_client {
         cashier_setting_password => '',
         date_of_birth            => '1980-01-01',
         non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
+        fatca_declaration_time   => Date::Utility->new('20010108')->date_yyyymmdd,
+        fatca_declaration        => 1,
     };
     $client_data->{email}       = 'unit_test' . rand . '@binary.com';
     $client_data->{broker_code} = $broker_code;

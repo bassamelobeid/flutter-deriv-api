@@ -419,7 +419,7 @@ method create_wallet (%args) {
         address_line_1 address_line_2 address_city address_state address_postcode
         phone secret_question secret_answer tax_residence tax_identification_number
         account_opening_reason place_of_birth tax_residence tax_identification_number
-        non_pep_declaration_time myaffiliates_token client_password
+        non_pep_declaration_time fatca_declaration_time fatca_declaration myaffiliates_token client_password
     );
 
     my $type        = BOM::Config::AccountType::Registry->account_type_by_name($account_type);

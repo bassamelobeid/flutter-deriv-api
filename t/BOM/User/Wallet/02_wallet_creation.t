@@ -41,6 +41,8 @@ my $details = {
     secret_answer            => '',
     binary_user_id           => BOM::Test::Data::Utility::UnitTestDatabase::get_next_binary_user_id(),
     non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
+    fatca_declaration_time   => Date::Utility->new('20010108')->date_yyyymmdd,
+    fatca_declaration        => 1,
     account_type             => 'doughflow',
     landing_company          => "svg"
 

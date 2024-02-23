@@ -96,6 +96,8 @@ unless ($dry_run) {
         account_opening_reason   => 'Speculative',
         date_of_birth            => '1990-01-01',
         non_pep_declaration_time => time,
+        fatca_declaration_time   => time,
+        fatca_declaration        => 1,
         address_postcode         => '121001',
     };
 
