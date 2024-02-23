@@ -231,4 +231,18 @@ test_sendrecv 'logout/test_send.json', 'logout/test_receive.json';
 test_sendrecv 'verify_email_cellxpert/test_send_to_fail.json', 'verify_email_cellxpert/test_receive_fail.json';
 fail_test_sendrecv 'verify_email_cellxpert/test_send.json', 'verify_email_cellxpert/test_receive_fail.json';
 
+# VIRTUAL ACCOUNT OPENING FOR (CR with FATCA declaration)
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test3@binary.com', 'account_opening';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+    $suite->get_token('test3@binary.com'), 'test3@binary.com', 'id';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test3@binary.com';
+
+# REAL ACCOUNT OPENING (CR with FATCA declaration)
+fail_test_sendrecv_params 'new_account_real/test_send_fatca.json', 'new_account_real/test_receive_cr.json', 'Peter', 'id', '+61234567002', 'abcd';
+test_sendrecv_params 'new_account_real/test_send_fatca.json', 'new_account_real/test_receive_cr.json', 'Peter', 'id', '+61234567002', 1;
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json',
+    $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test3@binary.com', 'Peter';
+test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_cr_before.json';
+
 finish;

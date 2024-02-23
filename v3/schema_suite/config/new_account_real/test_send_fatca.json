@@ -1,0 +1,21 @@
+{
+  "new_account_real": "1",
+  "salutation": "Mr",
+  "first_name": "[_1]",
+  "last_name": "Pan",
+  "date_of_birth": "1981-01-31",
+  "citizen": "at",
+  "place_of_birth": "id",
+  "residence": "[_2]",
+  "address_line_1": "20 Broadway Av",
+  "address_line_2": "East Melbourne VIC",
+  "address_city": "Melbourne",
+  "address_state": "BT",
+  "address_postcode": "3002",
+  "phone": "[_3]",
+  "secret_question": "Mother's maiden name",
+  "secret_answer": "Jones",
+  "account_opening_reason": "Speculative",
+  "non_pep_declaration": 1,
+  "fatca_declaration": "[_4]"
+}

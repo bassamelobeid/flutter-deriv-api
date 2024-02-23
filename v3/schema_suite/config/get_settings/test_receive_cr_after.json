@@ -120,6 +120,12 @@
                     1
                 ]
             },
+            "fatca_declaration": {
+               "type": [
+                  "integer",
+                  "null"
+               ]
+            },
             "immutable_fields" : {
                "type" : "array",
                "items" : {
