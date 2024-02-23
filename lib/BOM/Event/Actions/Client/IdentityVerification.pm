@@ -158,38 +158,17 @@ async sub verify_identity {
 
         my $request_start = [Time::HiRes::gettimeofday];
 
-        my $body = +{
-            document => {
-                issuing_country => $document->{issuing_country},
-                type            => $document->{document_type},
-                number          => $document->{document_number},
-                $document->{document_additional} ? (additional => $document->{document_additional}) : (),
-            },
-            profile => {
-                id         => $client->loginid,
-                first_name => $client->first_name,
-                last_name  => $client->last_name,
-                birthdate  => $client->date_of_birth,
-            },
-            address => {
-                line_1    => $client->address_line_1,
-                line_2    => $client->address_line_2,
-                postcode  => $client->address_postcode,
-                residence => $client->residence,
-                city      => $client->address_city,
-            }};
-
-        my $req_body = encode_json_utf8 $body;
+        my $message_payload = idv_message_payload($client, $document);
 
         $idv_model->update_document_check({
             document_id  => $document->{id},
             status       => IDV_DOCUMENT_STATUS->{pending},
             messages     => [IDV_MESSAGES->{VERIFICATION_STARTED}],
             provider     => $provider,
-            request_body => $req_body
+            request_body => encode_json_utf8 $message_payload,
         });
 
-        BOM::Platform::Event::Emitter::emit('idv_verification', $body);
+        BOM::Platform::Event::Emitter::emit('idv_verification', $message_payload);
 
         DataDog::DogStatsd::Helper::stats_timing(
             'event.identity_verification.callout.timing',
@@ -229,6 +208,57 @@ async sub verify_identity {
     }
 
     return 1;
+}
+
+=head2 idv_message_payload
+
+Computes the IDV message payload. It takes:
+
+=over 4
+
+=item * C<$client> - a L<BOM::User::Client> instance
+
+=item * C<$document> - a standby IDV document as hashref
+
+=back
+
+Returns the IDV message payload as a hashref, containing:
+
+=over 4
+
+=item * C<document> - info about the document
+
+=item * C<profile> - info about the user
+
+=item * C<address> - info about the address, for POA check if available
+
+=back
+
+=cut
+
+sub idv_message_payload {
+    my ($client, $document) = @_;
+
+    return +{
+        document => {
+            issuing_country => $document->{issuing_country},
+            type            => $document->{document_type},
+            number          => $document->{document_number},
+            $document->{document_additional} ? (additional => $document->{document_additional}) : (),
+        },
+        profile => {
+            id         => $client->loginid,
+            first_name => $client->first_name,
+            last_name  => $client->last_name,
+            birthdate  => $client->date_of_birth,
+        },
+        address => {
+            line_1    => $client->address_line_1,
+            line_2    => $client->address_line_2,
+            postcode  => $client->address_postcode,
+            residence => $client->residence,
+            city      => $client->address_city,
+        }};
 }
 
 =head2 verify_process
