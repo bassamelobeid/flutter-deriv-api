@@ -96,6 +96,14 @@
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$"
         },
+        "fatca_declaration": {
+            "description": "[Optional] Indicates client's self-declaration of FATCA.",
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ]
+        },
         "financial_assessment": {
             "description": "Required for maltainvest",
             "type": "object",
