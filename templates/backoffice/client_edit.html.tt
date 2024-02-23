@@ -116,6 +116,15 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             </td>
         </tr>
     [% END %]
+    [% IF show_fatca_declaration_time %]
+        <tr>
+            <td class="label">FATCA self-declaration</td>
+            <td style="text-align:left;">
+                : <input type="checkbox" id='fatca_declaration' [% IF fatca_declaration %]checked[% END %] disabled="disabled"/>
+                <label for="fatca_declaration">[% IF fatca_declaration_time %] [% fatca_declaration_time %] [% END %] </label>
+            </td>
+        </tr>
+    [% END %]
     <tr>
         <td class="label">Client's Professional status</td>
         <td>: <b>[% professional_status %]</b> </td>
