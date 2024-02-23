@@ -48,6 +48,7 @@ use BOM::Config::Onfido;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Config::Services;
+use Business::Config;
 use BOM::Database::ClientDB;
 use BOM::Database::CommissionDB;
 use BOM::Database::UserDB;
@@ -4896,6 +4897,119 @@ async sub payops_event_email {
             email_template => $template,
         },
         loginid => $loginid
+    );
+}
+
+=head2 notify_resubmission_of_poi_poa_documents
+
+Sends email to notify clients that they need to resubmit their documents based on the reason it was rejected.
+Takes a hashref with the following named parameters
+
+=over 4
+
+=item * C<loginid>    - loginid
+
+=item * C<poi_reason>    - reason for rejected poi
+
+=item * C<poa_reason>   - reason for rejected poa
+
+=back
+
+=cut
+
+sub notify_resubmission_of_poi_poa_documents {
+    my ($args)     = @_;
+    my $loginid    = $args->{loginid};
+    my $poi_reason = $args->{poi_reason};
+    my $poa_reason = $args->{poa_reason};
+
+    die 'No client loginid found' unless $loginid;
+
+    return unless ($poi_reason or $poa_reason);
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    my $email_title = localize("We couldn't verify your account");
+
+    my $poi_title;
+    my $poi_subtitle;
+    my $poi_layout;
+    my $footnote;
+    my $poa_title;
+    my $poa_subtitle;
+    my $poa_layout;
+    my $tags;
+
+    my $country           = $client->residence;
+    my $country_tag       = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
+    my $config_email_info = Business::Config->new()->kyc_email_information();
+
+    if ($poi_reason) {
+        my $config_poi_info = $config_email_info->{'POI Information'};
+        $poi_layout = [];
+        foreach my $layout (@{$config_poi_info->{poi_layout}}) {
+            push @$poi_layout, localize($layout);
+        }
+
+        $tags = ["reason:$poi_reason", "country:$country_tag"];
+        DataDog::DogStatsd::Helper::stats_inc('event.poi.allow_resubmission.reason', {tags => $tags});
+
+        my $poi_info = $config_poi_info->{$poi_reason} || $config_poi_info->{"default"};
+        $poi_reason   = undef if $poi_reason eq 'unselected' || $poi_reason eq 'other';
+        $poi_title    = localize($poi_info->{title});
+        $poi_subtitle = [];
+        foreach my $subtitle (@{$poi_info->{subtitle}}) {
+            push @$poi_subtitle, localize($subtitle);
+        }
+        $footnote = localize($poi_info->{footnote}) if exists $poi_info->{footnote};
+    }
+
+    if ($poa_reason) {
+        my $config_poa_info = $config_email_info->{'POA Information'};
+        my $months          = $client->landing_company->poa_dated_within_months;
+        $poa_layout = [];
+        foreach my $layout (@{$config_poa_info->{poa_layout}}) {
+
+            my $modified_layout = $layout;
+
+            $modified_layout =~ s/number_of_months/$months/;
+
+            push @$poa_layout, localize($modified_layout);
+        }
+
+        $tags = ["reason:$poa_reason", "country:$country_tag"];
+        DataDog::DogStatsd::Helper::stats_inc('event.poa.allow_resubmission.reason', {tags => $tags});
+
+        my $poa_info = $config_poa_info->{$poa_reason} || $config_poa_info->{"default"};
+        $poa_reason   = undef if $poa_reason eq 'unselected' || $poa_reason eq 'other' || $poa_reason eq 'forged';
+        $poa_title    = localize($poa_info->{title});
+        $poa_subtitle = [];
+        foreach my $subtitle (@{$poa_info->{subtitle}}) {
+            push @$poa_subtitle, localize($subtitle);
+        }
+        $footnote = localize($poa_info->{footnote}) if exists $poa_info->{footnote};
+    }
+
+    return unless ($poi_reason or $poa_reason);
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'poi_poa_resubmission',
+        properties => {
+            first_name   => $client->first_name,
+            poi_reason   => $poi_reason,
+            poi_title    => $poi_title,
+            poi_subtitle => $poi_subtitle,
+            footnote     => $footnote,
+            poi_layout   => $poi_layout,
+            poa_reason   => $poa_reason,
+            poa_title    => $poa_title,
+            poa_subtitle => $poa_subtitle,
+            poa_layout   => $poa_layout,
+            loginid      => $client->loginid,
+            title        => $email_title,
+            is_eu        => $client->landing_company->is_eu,
+        },
+        loginid => $client->loginid
     );
 }
 
