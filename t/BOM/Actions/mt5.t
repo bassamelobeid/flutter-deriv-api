@@ -3731,6 +3731,64 @@ subtest 'mt5_archive_accounts' => sub {
             'Correct email emission';
     };
 
+    subtest 'Successful archival with linked wallet' => sub {
+        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => 'svg_wallet_archival@gmail.com',
+        });
+        $test_client->set_default_account('USD');
+
+        my $test_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code  => 'CRW',
+            account_type => 'doughflow',
+            email        => 'svg_wallet_archival@gmail.com',
+        });
+        $test_wallet->set_default_account('USD');
+
+        my $user = BOM::User->create(
+            email          => $test_client->email,
+            password       => "testpassword",
+            email_verified => 1,
+        );
+        $user->add_client($test_client);
+        $user->add_client($test_wallet);
+
+        my $mt5_loginid = 'MTR10003';
+        $user->add_loginid($mt5_loginid, 'mt5', 'real', 'USD', {}, $test_wallet->loginid);
+
+        $mocked_actions->redefine(
+            '_get_mt5_account',
+            sub {
+                return [$user->id, undef, '{"group":"real\\\\p01_ts02\\\\some_bvi_group"}'];
+            });
+
+        $mocked_mt5->redefine(
+            'get_user',
+            sub {
+                my $loginid = shift;
+                return Future->done({
+                    balance => 100,
+                    login   => $mt5_loginid
+                });
+            });
+
+        $mocked_time->redefine('now', sub { return Time::Moment->from_string('2023-07-25T09:38:48.819049Z'); });
+        $mocked_mt5->redefine('get_open_orders_count',    sub { return Future->done({total    => 0}); });
+        $mocked_mt5->redefine('get_open_positions_count', sub { return Future->done({total    => 0}); });
+        $mocked_mt5->redefine('get_group',                sub { return Future->done({currency => 'USD'}); });
+        $mocked_mt5->redefine('withdrawal',               sub { return Future->done({status   => 1}); });
+        $mocked_actions->redefine('_archive_mt5_account', async sub { return 1; });
+
+        $emissions = [];
+        $result    = $action_handler->({
+                loginids => [$mt5_loginid],
+            })->get;
+        ok $result, 'Success mt5 archive request';
+
+        is $test_wallet->account->balance, '100.00', 'Wallet balance is 100';
+        is $test_client->account->balance, 0,        'Trading account balance is 0';
+    };
+
     $mocked_actions->unmock_all;
     $emitter_mock->unmock_all;
     $mocked_time->unmock_all;
@@ -4035,7 +4093,8 @@ subtest 'mt5_svg_migration_requested' => sub {
         my $result = $action_get->($args);
 
         is_deeply \@emitter_args, [], 'Correct absence of color change emission';
-        is_deeply \@datadog_args, ['MT5AccountMigrationSkipped', 'Aborted migration for CR10005 on financial/bvi', {alert_type => 'warning'}],
+        is_deeply \@datadog_args,
+            ['MT5AccountMigrationSkipped', 'Aborted migration for ' . $test_client->loginid . ' on financial/bvi', {alert_type => 'warning'}],
             'Correct warning';
     };
 
@@ -4068,7 +4127,8 @@ subtest 'mt5_svg_migration_requested' => sub {
         my $result = $action_get->($args);
 
         is_deeply \@emitter_args, [], 'Correct absence of color change emission';
-        is_deeply \@datadog_args, ['MT5AccountMigrationSkipped', 'Aborted migration for CR10005 on financial/bvi', {alert_type => 'warning'}],
+        is_deeply \@datadog_args,
+            ['MT5AccountMigrationSkipped', 'Aborted migration for ' . $test_client->loginid . ' on financial/bvi', {alert_type => 'warning'}],
             'Correct warning';
     };
 
@@ -4451,6 +4511,57 @@ subtest 'mt5_deposit_retry function' => sub {
 
     $mocked_actions->unmock_all;
     $mock_mt5->unmock_all;
+};
+
+subtest '_get_loginids_for_mt5_transfer function' => sub {
+    my $email       = 'loginids_for_mt5_transfer@example.com';
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email,
+    });
+    $test_client->set_default_account('USD');
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => "testpassword",
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
+    my $mt5_loginid1 = 'MTR10004';
+    $user->add_loginid($mt5_loginid1, 'mt5', 'real', 'USD', {});
+
+    my @login_ids = BOM::Event::Actions::MT5::_get_loginids_for_mt5_transfer($user, $mt5_loginid1);
+
+    is_deeply \@login_ids, [$test_client->loginid], 'Real money account loginid is returned';
+
+    my $test_client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email,
+    });
+    $test_client1->set_default_account('BTC');
+    $user->add_client($test_client1);
+
+    @login_ids = BOM::Event::Actions::MT5::_get_loginids_for_mt5_transfer($user, $mt5_loginid1);
+
+    is_deeply \@login_ids, [$test_client->loginid, $test_client1->loginid], 'If we have multiple real money accounts, all loginids are returned';
+
+    my $test_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code  => 'CRW',
+        account_type => 'doughflow',
+        email        => 'svg_wallet_archival@gmail.com',
+    });
+    $test_wallet->set_default_account('USD');
+    $user->add_client($test_wallet);
+
+    my $mt5_loginid2 = 'MTR10005';
+    $user->add_loginid($mt5_loginid2, 'mt5', 'real', 'USD', {}, $test_wallet->loginid);
+
+    @login_ids = BOM::Event::Actions::MT5::_get_loginids_for_mt5_transfer($user, $mt5_loginid2);
+    is_deeply \@login_ids, [$test_wallet->loginid], 'If mt5 account is linked to wallet, only wallet loginid is returned';
+
+    @login_ids = BOM::Event::Actions::MT5::_get_loginids_for_mt5_transfer($user, $mt5_loginid1);
+    is_deeply \@login_ids, [$test_client->loginid, $test_client1->loginid, $test_wallet->loginid],
+        'If mt5 account is not linked to wallet, all loginids are returned';
 };
 
 done_testing();

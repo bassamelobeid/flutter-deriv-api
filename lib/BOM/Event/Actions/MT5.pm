@@ -801,7 +801,7 @@ async sub mt5_deriv_auto_rescind {
                     next;
                 }
 
-                my @bom_login_ids = $bom_user->bom_real_loginids();
+                my @bom_login_ids = _get_loginids_for_mt5_transfer($bom_user, $mt5_account);
                 unless (@bom_login_ids) {
                     _create_error(\%process_mt5_fail, $mt5_account, 'MT5 Error', 'BOM User Real Loginids not found');
                     next;
@@ -1907,8 +1907,9 @@ async sub mt5_archive_accounts {
 
             # Check balance and withdraw
             if ($mt5_user->{balance} and $mt5_user->{balance} > 0) {
+                my @transfer_loginids = _get_loginids_for_mt5_transfer($user, $loginid);
+                $client = $user->accounts_by_category(\@transfer_loginids)->{enabled}->[0];
 
-                $client = $user->accounts_by_category([$user->bom_real_loginids])->{enabled}->[0];
                 unless ($client) {
                     push @email_content, sprintf($archive_failed_row, $group, 'No active CR account found to withdraw');
                     next;
@@ -2326,6 +2327,30 @@ async sub mt5_svg_migration_requested {
 
     return Future->done(1);
 
+}
+
+=head2 _get_loginids_for_mt5_transfer
+
+Get loginids for mt5 transfer
+
+=over 4
+
+=item * C<$user> - User object
+
+=item * C<$mt5_loginid> - MT5 loginid
+
+=back
+
+=cut
+
+sub _get_loginids_for_mt5_transfer {
+    my ($user, $mt5_loginid) = @_;
+
+    if (my $wallet_loginid = $user->loginid_details->{$mt5_loginid}{wallet_loginid}) {
+        return ($wallet_loginid);
+    }
+
+    return $user->bom_real_loginids;
 }
 
 1;
