@@ -147,6 +147,8 @@ sub create_client {
         secret_question          => '',
         secret_answer            => '',
         non_pep_declaration_time => time,
+        fatca_declaration_time   => time,
+        fatca_declaration        => 1,
     );
 
     my $vr = $user->create_client(

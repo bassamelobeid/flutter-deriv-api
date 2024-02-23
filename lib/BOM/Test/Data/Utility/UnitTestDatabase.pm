@@ -155,6 +155,8 @@ sub create_client {
     $client_data->{loginid}           = $new_loginid;
     $client_data->{binary_user_id}    = $args->{binary_user_id} // get_next_binary_user_id();
     $args->{non_pep_declaration_time} = DateTime->now unless exists($args->{non_pep_declaration_time});
+    $args->{fatca_declaration_time}   = DateTime->now unless exists($args->{fatca_declaration_time});
+    $args->{fatca_declaration}        = 1             unless exists($args->{fatca_declaration});
 
     # any modify args were specified?
     for (keys %$args) {

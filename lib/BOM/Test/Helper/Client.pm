@@ -143,6 +143,8 @@ sub create_wallet_factory {
             client_password           => BOM::User::Password::hashpw('Abcd3s3!@'),
             phone                     => '',
             non_pep_declaration_time  => DateTime->now,
+            fatca_declaration_time    => DateTime->now,
+            fatca_declaration         => 1,
             salutation                => 'Mr.',
 
         );
