@@ -24,6 +24,7 @@
       "is_authenticated_payment_agent",
       "client_tnc_status",
       "non_pep_declaration",
+      "fatca_declaration",
       "preferred_language",
       "trading_hub"
    ],
@@ -112,6 +113,14 @@
         "enum": [
             1
         ]
+      },
+      "fatca_declaration": {
+         "description": "Indicates client's self-declaration of FATCA.",
+         "type": "integer",
+         "enum": [
+            0,
+            1
+         ]
       },
       "immutable_fields" : {
          "type" : "array",

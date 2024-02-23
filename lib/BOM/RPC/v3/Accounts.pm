@@ -2173,6 +2173,8 @@ rpc get_settings => sub {
                 ($client->payment_agent and $client->payment_agent->status and $client->payment_agent->status eq 'authorized') ? 1 : 0,
             %$settings,
         };
+
+        $settings->{fatca_declaration} = $real_client->fatca_declaration if defined $real_client->fatca_declaration;
     }
     return $settings;
 };

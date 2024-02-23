@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Syntax::Keyword::Try;
 use List::MoreUtils       qw(any);
-use List::Util            qw(minstr);
+use List::Util            qw(first minstr);
 use Format::Util::Numbers qw/formatnumber/;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
@@ -584,6 +584,9 @@ sub create_virtual_account {
     # Non-PEP declaration is not made for virtual accounts
     delete $args->{non_pep_declaration};
 
+    # fatca declaration is not made for virtual accounts
+    delete $args->{fatca_declaration};
+
     my $is_affiliate = ($args->{account_opening_reason} // '' eq 'affiliate') ? 1 : 0;
     my ($error);
 
@@ -1060,6 +1063,11 @@ sub _new_account_pre_process {
     my $non_pep_declaration = delete $args->{non_pep_declaration};
     $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, $args->{landing_company}, $non_pep_declaration, $args->{source});
 
+    my $fatca_response = _get_fatca_declaration($client, $args->{fatca_declaration});
+
+    $args->{fatca_declaration}      = $fatca_response->{fatca_declaration};
+    $args->{fatca_declaration_time} = $fatca_response->{fatca_declaration_time};
+
     my $details = {
         broker_code                   => $broker,
         email                         => $client->email,
@@ -1120,6 +1128,8 @@ sub _new_account_pre_process {
         tax_residence             => undef,
         tax_identification_number => undef,
         non_pep_declaration_time  => undef,
+        fatca_declaration_time    => undef,
+        fatca_declaration         => undef,
         currency                  => undef,
         account_type              => undef,
     );
@@ -1272,6 +1282,47 @@ sub _get_non_pep_declaration_time {
     #TODO(Mat): we will return undef here, provided that nothing is logged by the above line
     #           (non_pep_declaration is sent from all appls for the first real account per landing complany).
     return minstr(map { $_->date_joined } @same_lc_siblings) || time;
+}
+
+=head2 _get_fatca_declaration
+
+Called on new real account rpc calls, 
+
+If fatca_declaration is supplied as either 0 or 1, it returns the timestamp as fatca_declaration_time and the fatca_declaration value in a hashref
+Else if there is an older account with fatca_declaration, it's declaration time and boolean value will be returned in a hashref
+Otherwise, an empty hashref is returned
+
+=over 4
+
+=item * C<client> - current client who has initated a new real account request
+
+=item * C<fatca_declaration> - boolean value that determines if FATCA declaration is made through the current signup process
+
+=back
+
+returns a hashref containing fatca_declaration_time and fatca_declaration boolean for when the client/sibling has declared FATCA,
+if not, then an empty hashref is returned.
+
+=cut
+
+sub _get_fatca_declaration {
+    my ($client, $fatca_declaration) = @_;
+
+    # If fatca_declaration is provided as either 0 or 1 in the input, we use current time
+    return {
+        fatca_declaration_time => time,
+        fatca_declaration      => $fatca_declaration
+    } if defined $fatca_declaration;
+
+    # As a fallback, declaration time can be extracted from siblings across landing companies
+    my $sibling = first { $_->fatca_declaration_time } $client->user->clients;
+
+    return $sibling
+        ? {
+        fatca_declaration_time => $sibling->fatca_declaration_time,
+        fatca_declaration      => $sibling->fatca_declaration
+        }
+        : {};
 }
 
 =head2 affiliate_add_person

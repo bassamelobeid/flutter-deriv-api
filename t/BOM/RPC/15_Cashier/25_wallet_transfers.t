@@ -66,6 +66,8 @@ my %args = (
     secret_question          => '',
     account_opening_reason   => 'Speculative',
     non_pep_declaration_time => '2023-01-01',
+    fatca_declaration_time   => '2023-01-01',
+    fatca_declaration        => 1,
 );
 
 my (%accs, @tests);

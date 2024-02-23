@@ -53,7 +53,9 @@ $test_client_X_mf->save;
 
 my $test_client_X_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code              => 'VRTC',
-    non_pep_declaration_time => undef
+    non_pep_declaration_time => undef,
+    fatca_declaration_time   => undef,
+    fatca_declaration        => undef
 });
 $test_client_X_vr->email($email_X);
 $test_client_X_vr->save;
@@ -283,6 +285,7 @@ subtest 'get settings' => sub {
             'user_hash'                      => hmac_sha256_hex($user_Y->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
             'non_pep_declaration'            => 1,
+            'fatca_declaration'              => 1,
             'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
             'preferred_language'             => 'FA',
             'feature_flag'                   => {wallet => 0},
@@ -354,6 +357,7 @@ subtest 'get settings' => sub {
             'user_hash'                      => hmac_sha256_hex($user_X->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
             'non_pep_declaration'            => 0,
+            'fatca_declaration'              => 1,
             'immutable_fields'               => ['residence'],
             'preferred_language'             => 'AZ',
             'feature_flag'                   => {wallet => 0},
@@ -396,6 +400,7 @@ subtest 'get settings' => sub {
         'user_hash'                      => hmac_sha256_hex($user_Y->email, BOM::Config::third_party()->{elevio}->{account_secret}),
         'has_secret_answer'              => 1,
         'non_pep_declaration'            => 1,
+        'fatca_declaration'              => 1,
         'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
         'preferred_language'             => 'FA',
         'feature_flag'                   => {wallet => 0},
@@ -433,6 +438,7 @@ subtest 'get settings' => sub {
         'user_hash'                      => hmac_sha256_hex($user_Y->email, BOM::Config::third_party()->{elevio}->{account_secret}),
         'has_secret_answer'              => 1,
         'non_pep_declaration'            => 1,
+        'fatca_declaration'              => 1,
         'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
         'preferred_language'             => 'FA',
         'feature_flag'                   => {wallet => 0},

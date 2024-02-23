@@ -278,6 +278,33 @@ subtest $method => sub {
             'non_pep_self_declaration_time is empty for virtual accounts even when rpc is called with param set to 1';
     };
 
+    subtest 'fatca self declaration' => sub {
+        %datadog_args = ();
+        # without non-pep declaration
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => 'new_email' . rand(999) . 'vr_fatca@binary.com',
+            created_for => 'account_opening'
+        )->token;
+        $params->{args}->{residence} = 'de';
+
+        delete $params->{args}->{fatca_declaration};
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('virtual account created without checking fatca declaration');
+        my $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        is $client->fatca_declaration_time, undef, 'fatca_declaration_time is empty for virtual account';
+        is $client->fatca_declaration,      undef, 'fatca_declaration is empty for virtual account';
+
+        # with fatca declaration
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => 'new_email' . rand(999) . 'vr_fatca@binary.com',
+            created_for => 'account_opening'
+        )->token;
+        $params->{args}->{fatca_declaration} = 1;
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('virtual account created with fatca declaration');
+        $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        is $client->fatca_declaration_time, undef, 'fatca_declaration_time is empty for virtual accounts even when rpc is called with param set to 1';
+        is $client->fatca_declaration,      undef, 'fatca_declaration is empty for virtual accounts even when rpc is called with param set to 1';
+    };
+
     subtest 'email consent given' => sub {
         my $vr_email = 'consent_given' . rand(999) . '@binary.com';
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
@@ -677,12 +704,13 @@ subtest $method => sub {
         $params->{args}->{email}           = $email;
         $params->{args}->{client_password} = 'verylongDDD1!';
 
-        $params->{args}->{residence}       = 'id';
-        $params->{args}->{utm_source}      = 'google.com';
-        $params->{args}->{utm_medium}      = 'email';
-        $params->{args}->{utm_campaign}    = 'spring sale';
-        $params->{args}->{gclid_url}       = 'FQdb3wodOkkGBgCMrlnPq42q8C';
-        $params->{args}->{affiliate_token} = 'first';
+        $params->{args}->{residence}         = 'id';
+        $params->{args}->{utm_source}        = 'google.com';
+        $params->{args}->{utm_medium}        = 'email';
+        $params->{args}->{utm_campaign}      = 'spring sale';
+        $params->{args}->{gclid_url}         = 'FQdb3wodOkkGBgCMrlnPq42q8C';
+        $params->{args}->{affiliate_token}   = 'first';
+        $params->{args}->{fatca_declaration} = 1;
         delete $params->{args}->{non_pep_declaration};
         %datadog_args = ();
 
@@ -719,6 +747,12 @@ subtest $method => sub {
         ok $cl_usd->non_pep_declaration_time, 'Non-pep self declaration time is set';
         $cl_usd->non_pep_declaration_time('2018-01-01');
 
+        ok $cl_usd->fatca_declaration_time, 'Fatca self declaration time is set';
+        $cl_usd->fatca_declaration_time('2018-01-01');
+
+        ok $cl_usd->fatca_declaration, 'Fatca self declaration boolean is set';
+        ok $cl_usd->fatca_declaration(1);
+
         is $cl_usd->authentication_status, 'no', 'Client is not authenticated yet';
 
         $cl_usd->set_authentication('ID_DOCUMENT', {status => 'pass'});
@@ -732,6 +766,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create second fiat currency account')
             ->error_code_is('CurrencyTypeNotAllowed', 'error code is CurrencyTypeNotAllowed');
 
+        delete $params->{args}->{fatca_declaration};
         # Delete all params except currency. Info from prior account should be used
         $params->{args} = {'currency' => 'BTC'};
         $params->{args}->{affiliate_token} = 'second';
@@ -758,8 +793,10 @@ subtest $method => sub {
 
         ok(defined($cl_btc->binary_user_id), 'BTC client has a binary user id');
         ok(defined($cl_usd->binary_user_id), 'USD client has a binary_user_id');
-        is $cl_btc->binary_user_id,           $cl_usd->binary_user_id, 'Both BTC and USD clients have the same binary user id';
-        is $cl_btc->non_pep_declaration_time, '2018-01-01 00:00:00',   'Pep self-declaration time is the same for CR siblings';
+        is $cl_btc->binary_user_id,           $cl_usd->binary_user_id,    'Both BTC and USD clients have the same binary user id';
+        is $cl_btc->non_pep_declaration_time, '2018-01-01 00:00:00',      'Pep self-declaration time is the same for CR siblings';
+        is $cl_btc->fatca_declaration_time,   '2018-01-01 00:00:00',      'Fatca self-declaration time is the same for CR siblings';
+        is $cl_btc->fatca_declaration,        $cl_usd->fatca_declaration, 'Fatca self-declaration boolean is the same for CR siblings';
 
         $params->{args}->{currency} = 'BTC';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create another crypto currency account with same currency')
@@ -774,6 +811,7 @@ subtest $method => sub {
 
         $params->{args}->{currency}            = 'LTC';
         $params->{args}->{non_pep_declaration} = 1;
+        $params->{args}->{fatca_declaration}   = 1;
 
         delete $params->{args}->{place_of_birth};
         delete $params->{args}->{citizen};
@@ -850,6 +888,7 @@ subtest $method => sub {
     subtest 'Create new account maltainvest' => sub {
         $params->{args}->{accept_risk} = 1;
         delete $params->{args}->{non_pep_declaration};
+        delete $params->{args}->{fatca_declaration};
         %datadog_args = ();
         $params->{token} = $auth_token;
 
@@ -984,6 +1023,11 @@ subtest $method => sub {
         is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
             'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
 
+        is $cl->fatca_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+            'fatca_declaration_time is auto-initialized with no fatca_declaration in args';
+
+        is $cl->fatca_declaration, 1, 'fatca_declaration is auto-initialized with no fatca_declaration in args';
+
         is $cl->status->crs_tin_information->{reason}, 'Client confirmed tax information', "CRS status is set";
 
         my ($resp_loginid, $t, $uaf) =
@@ -1023,9 +1067,14 @@ subtest $method => sub {
                 email                    => $email,
                 residence                => 'cz',
                 non_pep_declaration_time => '2010-10-10',
+                fatca_declaration_time   => '2010-10-10',
+                fatca_declaration        => 1,
             });
             is $client->non_pep_declaration_time, '2010-10-10 00:00:00',
                 'non_pep_declaration_time equals the value of the arg passed to test create_account';
+            is $client->fatca_declaration_time, '2010-10-10 00:00:00',
+                'fatca_declaration_time equals the value of the arg passed to test create_account';
+            is $client->fatca_declaration, 1, 'fatca_declaration equals the value of the arg passed to test create_account';
             $client->save;
 
             warning_like {
@@ -1051,6 +1100,8 @@ subtest $method => sub {
                 address_state            => '',
                 secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
                 non_pep_declaration_time => '2020-01-02',
+                fatca_declaration_time   => '2020-01-02',
+                fatca_declaration        => 1,
             });
             $client_mlt->set_authentication('ID_DOCUMENT', {status => 'pass'});
             $client_mlt->save;
@@ -1063,10 +1114,11 @@ subtest $method => sub {
     };
 
     subtest 'Create new account maltainvest from MLT' => sub {
-        $params->{args}->{accept_risk} = 1;
-        $params->{token}               = $auth_token;
-        $params->{args}->{residence}   = 'de';
-        $params->{args}->{citizen}     = 'at';
+        $params->{args}->{accept_risk}       = 1;
+        $params->{token}                     = $auth_token;
+        $params->{args}->{residence}         = 'de';
+        $params->{args}->{citizen}           = 'at';
+        $params->{args}->{fatca_declaration} = 1;
         delete $params->{args}->{non_pep_declaration};
         %datadog_args = ();
 
@@ -1108,6 +1160,13 @@ subtest $method => sub {
             'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
 
         cmp_ok $cl->non_pep_declaration_time, 'ne', $client_mlt->non_pep_declaration_time, 'non_pep declaration time is different from MLT account';
+
+        is $cl->fatca_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+            'fatca_declaration_time is auto-initialized with no fatca_declaration in args';
+
+        is $cl->fatca_declaration, 1, 'fatca_declaration is auto-initialized with no fatca_declaration in args';
+
+        cmp_ok $cl->fatca_declaration_time, 'ne', $client_mlt->fatca_declaration_time, 'fatca declaration time is different from MLT account';
     };
 
     my $client_cr1;
@@ -1139,6 +1198,11 @@ subtest $method => sub {
             is $client_cr1->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
                 'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args (test create_account call)';
             $client_cr1->non_pep_declaration_time('2020-01-02');
+            is $client_cr1->fatca_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+                'fatca_declaration_time is auto-initialized with no fatca_declaration in args (test create_account call)';
+            is $client_cr1->fatca_declaration, 1,
+                'fatca_declaration is auto-initialized with no fatca_declaration in args (test create_account call)';
+            $client_cr1->fatca_declaration_time('2020-01-02');
             $client_cr1->status->set('age_verification', 'system', 'Age verified client');
             $client_cr1->save;
         }
@@ -1151,6 +1215,7 @@ subtest $method => sub {
         $params->{args}->{residence}   = 'za';
         $params->{args}->{citizen}     = 'za';
         delete $params->{args}->{non_pep_declaration};
+        delete $params->{args}->{fatca_declaration};
         %datadog_args = ();
 
         # call with totally random values - our client still should have correct one
@@ -1181,6 +1246,9 @@ subtest $method => sub {
         ok $cl->status->age_verification,   'age verification synced between CR and MF.';
         ok $cl->non_pep_declaration_time,   'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
+        ok $cl->fatca_declaration_time, 'fatca_declaration_time is auto-initialized with no fatca_declaration in args';
+        ok $cl->fatca_declaration,      'fatca_declaration is auto-initialized with no fatca_declaration in args';
+        cmp_ok $cl->fatca_declaration_time, 'ne', '2020-01-02T00:00:00', 'fatca declaration time is different from MLT account';
     };
 
     subtest 'Check tax information and account opening reason is synchronize to CR from MF new account' => sub {
@@ -1224,6 +1292,7 @@ subtest $method => sub {
         $params->{args}->{tax_identification_number} = $hash_array[1]->{value};
         $params->{args}->{account_opening_reason}    = $hash_array[2]->{value};
         delete $params->{args}->{non_pep_declaration};
+        delete $params->{args}->{fatca_declaration};
 
         my $result = $rpc_ct->call_ok($method, $params)->result;
         is $result->{error}->{code}, undef, 'Allow to open new account';
@@ -1311,6 +1380,8 @@ subtest $method => sub {
         my $cl = BOM::User::Client->new({loginid => $result->{client_id}});
         ok $cl->non_pep_declaration_time,
             'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args (test create_account call)';
+        ok $cl->fatca_declaration_time, 'fatca_declaration_time is auto-initialized with no fatca_declaration in args (test create_account call)';
+        ok $cl->fatca_declaration,      'fatca_declaration is auto-initialized with no fatca_declaration in args (test create_account call)';
     };
 
     subtest 'Create new account maltainvest without MLT' => sub {
