@@ -533,7 +533,7 @@ SQL
         my $tin_format             = $country->get_tin_format($selected_tax_residence);
         if ($tin_format) {
             $tin_format_description  = $country->get_tin_format_description($selected_tax_residence) // 'Please check TIN documents';
-            $is_valid_tin            = any { $tax_identification_number =~ m/$_/ } @$tin_format;
+            $is_valid_tin            = $tax_identification_number eq 'Approved000' || any { $tax_identification_number =~ m/$_/ } @$tin_format;
             $tin_validation_required = 1;
         }
     }
