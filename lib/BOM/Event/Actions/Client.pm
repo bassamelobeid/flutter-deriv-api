@@ -4864,19 +4864,20 @@ Takes a hashref with the following named parameters
 async sub payops_event_email {
     my $args = shift;
 
-    my $subject = $args->{subject};
-    my $loginid = $args->{loginid}
+    my $subject = delete $args->{subject};
+    my $loginid = delete $args->{loginid}
         or die 'No client loginid found';
-    my $event_name = $args->{event_name};
+    my $event_name = delete $args->{event_name};
     die 'No event specified' unless $event_name;
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     die 'No client here' unless $client;
-    my $template     = $args->{template};
-    my $properties   = $args->{properties};
-    my $contents     = $args->{contents};
-    my $phone_number = $client->phone;
-    my $language     = uc(request->language // 'en');
+    my $template        = delete $args->{template};
+    my $contents        = delete $args->{contents};
+    my $properties      = $args->{properties} // $args;
+    my $phone_number    = $client->phone;
+    my $language        = uc($client->user->preferred_language // 'en');
+    my $email_consent   = $client->user->email_consent;
 
     my $recipient = $client->email;
     die 'No client email found' unless $recipient;
@@ -4886,12 +4887,13 @@ async sub payops_event_email {
     return BOM::Event::Services::Track::track_event(
         event      => $event_name,
         properties => {
-            properties     => $properties,
+            $properties->%*,
             subject        => $subject,
             email          => $recipient,
             phone          => $phone_number,
             country        => $country,
             language       => $language,
+            email_consent  => $email_consent,
             contents       => $contents,
             email_template => $template,
         },

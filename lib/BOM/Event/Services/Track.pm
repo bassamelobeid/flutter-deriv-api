@@ -170,7 +170,7 @@ my %EVENT_PROPERTIES = (
     poi_poa_resubmission        =>
         [qw(first_name poi_reason poi_title poi_subtitle footnote poi_layout poa_reason poa_title poa_subtitle poa_layout title is_eu)],
     professional_status_requested            => [qw(first_name email request_professional_status)],
-    payops_event_email                       => [qw(contents subject loginid email_template properties)],
+    payops_event_email                       => [qw(contents subject loginid email_template properties email phone country language email_consent)],
     p2p_limit_changed                        => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
     p2p_limit_upgrade_available              => [qw(loginid advertiser_id)],
     dp_successful_login                      => [qw(timestamp)],

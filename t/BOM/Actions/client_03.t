@@ -206,9 +206,17 @@ subtest 'payops event email' => sub {
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
-        email       => 'ingrid@test.com',
     });
 
+    my $user = BOM::User->create(
+        email          => 'unit_test@binary.com',
+        password       => 'secret',
+        email_consent  => 1,
+    );
+
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+    $client->user($user);
     $client->save;
 
     $track_properties = undef;
@@ -220,8 +228,8 @@ subtest 'payops event email' => sub {
             template   => 'test',
             contents   => 'Testing CR',
             properties => {
-                test => 1,
-                abc  => 'abc',
+                    test => 1,
+                    abc  => 'abc',
             },
         })->get;
 
@@ -229,17 +237,15 @@ subtest 'payops event email' => sub {
         +{
         event      => 'payops_event_email',
         properties => {
-            email          => 'ingrid@test.com',
+            email          => 'unit_test@binary.com',
             phone          => '+15417543010',
             email_template => 'test',
             subject        => 'testing with client login id',
             contents       => 'Testing CR',
             country        => 'id',
             language       => 'EN',
-            properties     => {
-                test => 1,
-                abc  => 'abc'
-            }
+            test           => '1',
+            abc            => 'abc'
         },
         loginid => $client->loginid,
         },
