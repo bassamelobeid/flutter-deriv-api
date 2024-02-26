@@ -122,7 +122,7 @@ subtest 'process - generic jobs' => sub {
                 p2p_advert_updated
                 p2p_order_created p2p_order_updated p2p_order_expired p2p_order_chat_create
                 p2p_timeout_refund p2p_dispute_expired p2p_chat_received
-                affiliate_sync_initiated withdrawal_limit_reached payops_event_update_account_status payops_event_request_poo notify_resubmission_of_poi_poa_documents
+                affiliate_sync_initiated withdrawal_limit_reached payops_event_update_account_status payops_event_request_poo
                 crypto_withdrawal idv_webhook_received
                 client_promo_codes_upload onfido_doc_ready_for_upload shared_payment_method_found
                 dispute_notification account_reactivated verify_false_profile_info poi_check_rules mt5_archived_account_reset_trading_password

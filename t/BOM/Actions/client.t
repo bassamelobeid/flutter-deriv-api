@@ -5228,53 +5228,6 @@ subtest 'POA email notification' => sub {
     mailbox_clear();
 };
 
-subtest 'allow poi_poa resubmission' => sub {
-    my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'deriv',
-        language   => 'EN',
-        app_id     => $app_id,
-    );
-
-    request($req);
-    undef @track_args;
-
-    my $param = {
-        'first_name'   => 'bRaD pItT',
-        'poi_reason'   => 'blurred',
-        'poi_title'    => 'Your proof of address is blurred.',
-        'poi_subtitle' => 'Please visit your profile to verify/authenticate your account.',
-        'poi_layout'   => 'bears your name that matches your Deriv profile',
-        'loginid'      => $test_client->loginid,
-        'title'        => "We could not verify your account",
-        'is_eu'        => $test_client->landing_company->is_eu,
-    };
-
-    my $handler = BOM::Event::Process->new(category => 'track')->actions->{poi_poa_resubmission};
-    my $result  = $handler->($param)->get;
-    ok $result, 'Success result';
-
-    my ($customer, %r_args) = @track_args;
-
-    is $r_args{event}, 'poi_poa_resubmission', "Event=poi_poa_resubmission";
-
-    cmp_deeply $r_args{properties},
-        {
-        poi_title    => 'Your proof of address is blurred.',
-        poi_subtitle => 'Please visit your profile to verify/authenticate your account.',
-        brand        => 'deriv',
-        loginid      => 'CR10000',
-        title        => 'We could not verify your account',
-        poi_reason   => 'blurred',
-        lang         => 'EN',
-        poi_layout   => 'bears your name that matches your Deriv profile',
-        first_name   => 'bRaD pItT',
-        is_eu        => 0
-        },
-        'event properties are ok';
-
-    is $r_args{properties}->{loginid}, $test_client->loginid, "got correct customer loginid";
-};
-
 subtest 'EDD email notification' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -5897,7 +5850,7 @@ subtest 'request_change_email' => sub {
             language   => 'EN',
         }};
 
-    my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_change_email};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{request_change_email};
     my $result  = $handler->($args)->get;
     ok $result, 'OK result';
     is scalar @track_args, 7, 'OK event';
@@ -5926,7 +5879,7 @@ subtest 'verify_change_email' => sub {
             language   => 'EN',
         }};
 
-    my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_change_email};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{verify_change_email};
     my $result  = $handler->($args)->get;
     ok $result, 'OK result';
     my ($customer, %args) = @track_args;
@@ -5955,7 +5908,7 @@ subtest 'confirm_change_email' => sub {
             language   => 'EN',
         }};
 
-    my $handler = BOM::Event::Process->new(category => 'track')->actions->{confirm_change_email};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{confirm_change_email};
     my $result  = $handler->($args)->get;
     ok $result, 'OK result';
     my ($customer, %args) = @track_args;
@@ -6389,7 +6342,7 @@ subtest 'new account opening' => sub {
         email            => $test_client->email,
     };
 
-    my $handler = BOM::Event::Process->new(category => 'track')->actions->{account_opening_new};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{account_opening_new};
     my $result  = $handler->($param)->get;
     ok $result, 'Success result';
     my ($customer, %args) = @track_args;
@@ -6454,7 +6407,7 @@ subtest 'pa transfer confirm' => sub {
         'currency'          => 'USD'
     };
 
-    my $handler = BOM::Event::Process->new(category => 'track')->actions->{pa_transfer_confirm};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{pa_transfer_confirm};
     my $result  = $handler->($param)->get;
     ok $result, 'Success result';
 
@@ -6513,7 +6466,7 @@ subtest 'pa withdraw confirm' => sub {
         'currency'          => 'USD'
     };
 
-    my $handler = BOM::Event::Process->new(category => 'track')->actions->{pa_withdraw_confirm};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{pa_withdraw_confirm};
     my $result  = $handler->($param)->get;
     ok $result, 'Success result';
 

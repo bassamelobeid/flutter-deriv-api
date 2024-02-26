@@ -125,7 +125,6 @@ my $action_mapping = {
         mt5_archive_accounts                        => \&BOM::Event::Actions::MT5::mt5_archive_accounts,
         poa_updated                                 => \&BOM::Event::Actions::Client::poa_updated,
         poi_updated                                 => \&BOM::Event::Actions::Client::poi_updated,
-        notify_resubmission_of_poi_poa_documents    => \&BOM::Event::Actions::Client::notify_resubmission_of_poi_poa_documents,
         ctrader_account_created                     => \&BOM::Event::Actions::CTrader::ctrader_account_created,
         underage_client_detected                    => \&BOM::Event::Actions::Client::underage_client_detected,
         poi_claim_ownership                         => \&BOM::Event::Actions::Client::poi_claim_ownership,
