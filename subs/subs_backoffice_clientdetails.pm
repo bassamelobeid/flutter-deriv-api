@@ -124,8 +124,8 @@ my $POA_REASONS = {
     capitec_stat_no_match => {
         reason => 'capitec stat no match',
     },
-    forged => {
-        reason => 'forged',
+    suspicious => {
+        reason => 'suspicious',
     },
     password_protected => {
         reason => 'password protected',
@@ -2487,6 +2487,202 @@ sub get_limit_expiration_date {
         });
     return undef if !defined $latest_modified_date;
     return Date::Utility->new($latest_modified_date)->plus_time_interval(($added_day // 0) . 'd')->date;
+}
+
+sub notify_resubmission_of_poi_poa_documents {
+    my ($loginid, $poi_selection, $poa_selection) = @_;
+
+    return unless ($poi_selection or $poa_selection);
+
+    my $brand = Brands->new(name => 'deriv');
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    my $req = BOM::Backoffice::Request::Base->new(
+        brand_name => $brand->name,
+        app_id     => $client->source,
+        $client->user->preferred_language ? (language => $client->user->preferred_language) : (),
+    );
+
+    BOM::Backoffice::Request::request($req);
+
+    my $email_title = localize("We couldn't verify your account");
+
+    my $poi_title;
+    my $poi_subtitle;
+    my $poi_layout;
+    my $footnote;
+    my $poa_title;
+    my $poa_subtitle;
+    my $poa_layout;
+    my $remarks;
+
+    if ($poi_selection) {
+        $poi_layout = [
+            localize('bears your name that matches your Deriv profile'), localize('shows the date of issue and/or expiry (if applicable)'),
+            localize('shows your full date of birth'),                   localize('shows your photo')];
+        if ($poi_selection eq "cropped") {
+            $poi_title    = localize('Your proof of identity is cropped.');
+            $poi_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a full document, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+        } elsif ($poi_selection eq "expired") {
+            $poi_title    = localize('Your proof of identity is expired.');
+            $poi_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a valid document, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+        } elsif ($poi_selection eq "blurred") {
+            $poi_title    = localize('Your proof of identity is blurred.');
+            $poi_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a high-resolution, clear, and readable document, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+        } elsif ($poi_selection eq "type_is_not_valid") {
+            $poi_title    = localize("The type of document you submitted as proof of identity can't be accepted.");
+            $poi_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a different proof of identity, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+        } elsif ($poi_selection eq "selfie_is_not_valid") {
+            $poi_title    = localize("The selfie submitted does not show a clear image of your face.");
+            $poi_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a selfie with a clear image of your face which we can verify against the picture in your proof of identity.'
+                ),
+                localize(
+                    'You can also submit it together with your proof of identity, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+        } elsif ($poi_selection eq "nimc_no_dob") {
+            $poi_title    = localize("Your proof of identity doesn't show your date of birth.");
+            $poi_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a document, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+            $footnote = localize(
+                'Please reply to this email and attach your birth certificate or submit a different proof of identity that shows your date of birth.'
+            );
+        } elsif ($poi_selection eq "different_person_name") {
+            $poi_title    = localize("The names on your proof of identity and Deriv profile don't match.");
+            $poi_subtitle = [
+                localize(
+                    'Please go to your profile and ensure your details are accurate. Then, verify/authenticate your account by submitting a proof of identity, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+        } elsif ($poi_selection eq "missing_one_side") {
+            $poi_title    = localize("Your proof of identity is missing a front/back section.");
+            $poi_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit your complete proof of identity, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+            $footnote = localize(
+                'If you have trouble sending both sides of the document via the link provided, you may reply to this email with an attachment of both the front and back sides of your document.'
+            );
+        } else {
+            $poi_title    = localize('Your proof of identity does not meet our verification standards.');
+            $poi_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a valid proof of identity, such as a passport, driving licence, or national identity card, with the following requirements:'
+                )];
+        }
+    }
+
+    my $months = $client->landing_company->poa_dated_within_months;
+
+    if ($poa_selection) {
+        $poa_layout = [
+            localize('Bears your name that matches your Deriv profile'), localize('Shows a residential address that matches your Deriv profile'),
+            localize('Is dated within the last [_1] months', $months)];
+        if ($poa_selection eq "old") {
+            $poa_title    = localize('Your proof of address is outdated.');
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a clear and readable document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
+                )];
+        } elsif ($poa_selection eq "cropped") {
+            $poa_title    = localize("Your proof of address is cropped or doesn't show complete details.");
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a full document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
+                )];
+        } elsif ($poa_selection eq "blurred") {
+            $poa_title    = localize('Your proof of address is blurred.');
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a clear and readable document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
+                )];
+        } elsif ($poa_selection eq "screenshot") {
+            $poa_title    = localize("We don't accept screenshots as proof of address. We also don't accept addresses on envelopes.");
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a valid document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
+                )];
+        } elsif ($poa_selection eq "envelope") {
+            $poa_title    = localize("We don't accept addresses on envelopes as proof of address. We also don't accept screenshots.");
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a valid document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
+                )];
+        } elsif ($poa_selection eq "different_name") {
+            $poa_title    = localize("The name on the proof of address doesn't match your Deriv profile.");
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a clear and readable document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
+                )];
+        } elsif ($poa_selection eq "different_address") {
+            $poa_title    = localize("The details in the proof of address don't match your profile.");
+            $poa_subtitle = [
+                localize(
+                    'Please go to your profile to update your residential address. Then, verify/authenticate your account by submitting a clear and readable document, such as a bank statement, utility bill, or affidavit, with the following requirements:'
+                )];
+        } elsif ($poa_selection eq "capitec_stat_no_match") {
+            $poa_title    = localize('Your proof of address does not meet our verification standards.');
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a signed and stamped bank statement which clearly shows the account number you used to fund your Deriv account.'
+                ),
+                localize('Or you may submit a different proof of address, such as a utility bill or affidavit, with the following requirements:')];
+        } elsif ($poa_selection eq "password_protected") {
+            $poa_title    = localize('The documents you submitted as proof of address are password-protected.');
+            $poa_subtitle = [
+                localize('Please remove password-protection from the documents and resubmit them.'),
+                localize(
+                    'Alternatively, you can submit a different proof of address such as a bank statement, utility bill, or affidavit, with the following requirements:'
+                )];
+        } elsif ($poa_selection eq "unsupported_format") {
+            $poa_title =
+                localize(
+                'The documents you submitted as proof of address could not be opened as they are either in an unsupported format or are corrupted.');
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a valid document such as a bank statement, utility bill, or affidavit, in JPG, JPEG, PNG, or PDF formats, with the following requirements:'
+                )];
+        } else {
+            $poa_title    = localize('Your proof of address does not meet our verification standards.');
+            $poa_subtitle = [
+                localize(
+                    'Please visit your profile to verify/authenticate your account. Submit a valid document, such as a bank statement, utility bill, or affidavit, with the following requirements'
+                )];
+        }
+    }
+
+    BOM::Platform::Event::Emitter::emit(
+        poi_poa_resubmission => {
+            first_name   => $client->first_name,
+            poi_reason   => $poi_selection,
+            poi_title    => $poi_title,
+            poi_subtitle => $poi_subtitle,
+            footnote     => $footnote,
+            poi_layout   => $poi_layout,
+            poa_reason   => $poa_selection,
+            poa_title    => $poa_title,
+            poa_subtitle => $poa_subtitle,
+            poa_layout   => $poa_layout,
+            loginid      => $client->loginid,
+            title        => $email_title,
+            is_eu        => $client->landing_company->is_eu,
+        });
+
 }
 
 =head2 notify_resubmission_of_risk_disclaimer
