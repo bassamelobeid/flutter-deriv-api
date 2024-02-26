@@ -67,7 +67,8 @@ if ($input{action}) {
             id     => $input{order_id},
             action => $input{action},
             fraud  => $input{fraud},
-            staff  => BOM::Backoffice::Auth::get_staffname(),
+            staff  => substr(BOM::Backoffice::Auth::get_staff_nickname(BOM::Backoffice::Auth::get_staff()), 0, 24)
+            ,  #We are trimming because staff_loginid column in transaction table cannot hold more than 24 chars, in same time these users are unique.
         );
         die "DB error $res->{error} occurred. Please try again and contact backend if it keeps happening." if $res->{error};
     } catch ($e) {
