@@ -1636,6 +1636,7 @@
 - country_code: USA
   country_grouping: Americas
   country_name: United States of America
+  disabled: 1
   doc_types_list:
   - Driving Licence
   - Immigration Status Document
