@@ -209,9 +209,9 @@ subtest 'payops event email' => sub {
     });
 
     my $user = BOM::User->create(
-        email          => 'unit_test@binary.com',
-        password       => 'secret',
-        email_consent  => 1,
+        email         => 'unit_test@binary.com',
+        password      => 'secret',
+        email_consent => 1,
     );
 
     $user->add_client($client);
@@ -228,8 +228,8 @@ subtest 'payops event email' => sub {
             template   => 'test',
             contents   => 'Testing CR',
             properties => {
-                    test => 1,
-                    abc  => 'abc',
+                test => 1,
+                abc  => 'abc',
             },
         })->get;
 
@@ -245,7 +245,8 @@ subtest 'payops event email' => sub {
             country        => 'id',
             language       => 'EN',
             test           => '1',
-            abc            => 'abc'
+            abc            => 'abc',
+            email_consent  => 1
         },
         loginid => $client->loginid,
         },

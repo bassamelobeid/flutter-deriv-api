@@ -4872,12 +4872,12 @@ async sub payops_event_email {
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     die 'No client here' unless $client;
-    my $template        = delete $args->{template};
-    my $contents        = delete $args->{contents};
-    my $properties      = $args->{properties} // $args;
-    my $phone_number    = $client->phone;
-    my $language        = uc($client->user->preferred_language // 'en');
-    my $email_consent   = $client->user->email_consent;
+    my $template      = delete $args->{template};
+    my $contents      = delete $args->{contents};
+    my $properties    = $args->{properties} // $args;
+    my $phone_number  = $client->phone;
+    my $language      = uc($client->user->preferred_language // 'en');
+    my $email_consent = $client->user->email_consent;
 
     my $recipient = $client->email;
     die 'No client email found' unless $recipient;
