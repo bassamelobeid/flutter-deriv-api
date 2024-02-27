@@ -27,6 +27,7 @@ get config of accumulator
 
 sub _load_config {
     $config //= {
+        loss_probability  => LoadFile('/home/git/regentmarkets/bom-config/share/accumulator_loss_probabilities.yml'),
         tick_size_barrier => LoadFile('/home/git/regentmarkets/bom-config/share/default_tick_size_barrier_accumulator.yml'),
     };
 }
@@ -100,6 +101,30 @@ has growth_frequency => (
     is      => 'ro',
     default => 1,
 );
+
+=head2 loss_probability
+
+Probability of client losing the stake.
+Used in calculating sell_commission.
+
+=cut
+
+has loss_probability => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 _build_loss_probability
+
+Build loss_probability attribute for calculation of sell commission
+
+=cut
+
+sub _build_loss_probability {
+    my $self = shift;
+
+    return $self->_load_config->{loss_probability}{"growth_rate_" . $self->growth_rate};
+}
 
 =head2 quants_config
 
@@ -1144,7 +1169,7 @@ sub sell_commission {
 
     my $number_of_ticks_stayed_in = $self->tick_count_after_entry;
 
-    return $self->_user_input_stake * (1 - ((1 + $self->growth_rate) * (1 - $self->growth_rate))**$number_of_ticks_stayed_in);
+    return $self->_user_input_stake * (1 - ((1 + $self->growth_rate) * (1 - $self->loss_probability))**$number_of_ticks_stayed_in);
 }
 
 1;

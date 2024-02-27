@@ -95,6 +95,36 @@ subtest 'have duration in user input' => sub {
     delete $args->{date_expiry};
 };
 
+subtest 'loss probability' => sub {
+    my @test_cases = ({
+            growth_rate               => 0.02,
+            expected_loss_probability => 0.021
+        },
+        {
+            growth_rate               => 0.03,
+            expected_loss_probability => 0.03
+        },
+        {
+            growth_rate               => 0.04,
+            expected_loss_probability => 0.04
+        },
+        {
+            growth_rate               => 0.05,
+            expected_loss_probability => 0.05
+        },
+        {
+            growth_rate               => 0.01,
+            expected_loss_probability => 0.0105
+        },
+    );
+
+    foreach my $test_case (@test_cases) {
+        $args->{growth_rate} = $test_case->{growth_rate};
+        my $c = produce_contract($args);
+        is $c->loss_probability, $test_case->{expected_loss_probability}, "loss_probability with growth_rate $test_case->{growth_rate}";
+    }
+};
+
 subtest 'shortcode and longcode' => sub {
     my $c = produce_contract($args);
 
@@ -468,8 +498,8 @@ subtest 'sell_commission' => sub {
     $args->{date_pricing} = $now->epoch + 3;
     my $c = produce_contract($args);
 
-    is $c->tick_count_after_entry, 2,                  'tick_count_after_entry is correct';
-    is $c->sell_commission,        0.0199989999999928, 'sell_commission is correct';
+    is $c->tick_count_after_entry, 2,                 'tick_count_after_entry is correct';
+    is $c->sell_commission,        0.120963397499996, 'sell_commission is correct';
 
     $args->{date_pricing} = $now;
 };
