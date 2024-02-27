@@ -298,7 +298,7 @@ subtest 'sell multiday on weekend' => sub {
             underlying => 'frxUSDJPY',
             epoch      => $_,
             quote      => 100
-        }) for ($pricing_date->epoch, $pricing_date->epoch + 1);
+        }) for ($weekday->epoch, $pricing_date->epoch, $pricing_date->epoch + 1);
     my $bet_params = {
         underlying   => 'frxUSDJPY',
         bet_type     => 'CALL',
