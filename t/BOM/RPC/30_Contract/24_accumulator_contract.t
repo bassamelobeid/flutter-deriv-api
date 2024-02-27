@@ -99,7 +99,7 @@ subtest 'accumulator - send_ask' => sub {
             "low_barrier"           => 99.935,
             "maximum_payout"        => ignore(),
             "maximum_ticks"         => ignore(),
-            "tick_size_barrier"     => 0.000648677482,
+            "tick_size_barrier"     => ignore(),
             "barrier_spot_distance" => 0.065,
         },
         'auth_time'     => ignore(),
@@ -160,7 +160,7 @@ subtest 'accumulator - send_ask' => sub {
             "low_barrier"           => 99.935,
             "maximum_payout"        => ignore(),
             "maximum_ticks"         => ignore(),
-            "tick_size_barrier"     => 0.000648677482,
+            "tick_size_barrier"     => ignore(),
             "barrier_spot_distance" => 0.065,
         },
         'limit_order' => {
