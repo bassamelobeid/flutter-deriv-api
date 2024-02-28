@@ -479,21 +479,20 @@ subtest 'sell a bet', sub {
     lives_ok {
 
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100,    $contract_start_time,     $underlying->symbol],
-            [100.01, $contract_start_time + 1, $underlying->symbol],
-            [100.02, $contract_start_time + 2, $underlying->symbol]);
+            [100, $contract_start_time,     $underlying->symbol],
+            [100, $contract_start_time + 1, $underlying->symbol],
+            [101, $contract_start_time + 2, $underlying->symbol]);
         my $contract = produce_contract({
-                underlying          => $underlying,
-                date_start          => $contract_start_time,
-                date_pricing        => $contract_start_time + 1,
-                bet_type            => 'MULTUP',
-                currency            => 'USD',
-                multiplier          => 10,
-                next_tick_execution => 1,
-                amount              => 100,
-                amount_type         => 'stake',
-                current_tick        => $current_tick,
-                limit_order         => {
+                underlying   => $underlying,
+                date_start   => $contract_start_time,
+                date_pricing => $contract_start_time + 1,
+                bet_type     => 'MULTUP',
+                currency     => 'USD',
+                multiplier   => 10,
+                amount       => 100,
+                amount_type  => 'stake',
+                current_tick => $current_tick,
+                limit_order  => {
                     stop_out => {
                         order_type   => 'stop_out',
                         order_amount => -100,
@@ -534,7 +533,7 @@ subtest 'sell a bet', sub {
             is $trx->{account_id},              $acc_usd->id,             'account_id';
             is $trx->{action_type},             'sell',                   'action_type';
             is $trx->{amount} + 0,              $contract->bid_price + 0, 'amount';
-            is $trx->{balance_after} + 0,       4799.4,                   'balance_after';
+            is $trx->{balance_after} + 0,       4799.5,                   'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id},               'financial_market_bet_id';
             is $trx->{payment_id},              undef,                    'payment_id';
             is $trx->{quantity},                1,                        'quantity';
@@ -563,10 +562,6 @@ subtest 'sell a bet', sub {
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
-        };
-
-        subtest 'chld row', sub {
-            is $chld->{basis_spot} + 0, 100.01, 'basis_spot is correctly set to next tick';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
