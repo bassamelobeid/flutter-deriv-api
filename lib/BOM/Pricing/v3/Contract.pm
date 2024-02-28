@@ -67,11 +67,6 @@ sub prepare_ask {
         $p2{barrier} //= 'S0P';
     }
 
-    foreach my $type (@contract_types) {
-        if ($type) {
-            $p2{next_tick_execution} = 1 if $type =~ /MULTUP|MULTDOWN/;
-        }
-    }
     $p2{underlying} = delete $p2{symbol};
     if (@contract_types > 1) {
         $p2{bet_types} = \@contract_types;
