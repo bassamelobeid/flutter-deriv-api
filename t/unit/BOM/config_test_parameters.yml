@@ -1473,3 +1473,9 @@
         p01_ts04: *webapi_server_details
         p02_ts02: *webapi_server_details
   name: mt5webapi.yml
+- args:
+    config: BOM::Config::status_hierarchy
+    expected_config:
+      hierarchy: {}
+    file_is_array: 0
+  name: status_hierarchy.yml
