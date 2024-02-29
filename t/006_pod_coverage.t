@@ -15,7 +15,7 @@ my $allowed_naked_packages = {
     'BOM::User::Utility'                               => 4,
     'BOM::User::Password'                              => 3,
     'BOM::User::FinancialAssessment'                   => 3,
-    'BOM::User::Client::Status'                        => 62,
+    'BOM::User::Client::Status'                        => 63,
     'BOM::User::Client::Account'                       => 4,
     'BOM::User::Client::PaymentTransaction'            => 19,
     'BOM::User::Client::PaymentNotificationQueue'      => 2,
@@ -28,11 +28,11 @@ my $allowed_naked_packages = {
 
 =head2 reasons
 
-=over 4
+        = over 4
 
-=item BOM::User::Client::Payments
+        = item BOM::User::Client::Payments
 
-We ignore L<BOM::User::Client::Payments> because it fails on load. You can check the package's content.
+        We ignore L <BOM::User::Client::Payments> because it fails on load . You can check the package's content .
 
 =back
 

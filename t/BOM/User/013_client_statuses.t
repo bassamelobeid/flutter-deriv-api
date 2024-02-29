@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
 
 use BOM::User::Client;
+use BOM::User::Client::Status;
 
 my $client = create_client();
 my $res;
@@ -564,6 +565,173 @@ subtest 'Deposit Attempt' => sub {
     $client->status->_build_all;          # reload
 
     ok !$client->status->deposit_attempt, 'deposit_attempt is removed';
+};
+
+subtest 'Status Hierarchy' => sub {
+    my $mock   = Test::MockModule->new('BOM::User::Client::Status');
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    sub mock_hierarchy {
+        my ($mock, $hierarchy) = @_;
+
+        $mock->mock(
+            'children',
+            sub {
+                my ($status_code) = @_;
+                my $children = $hierarchy->{$status_code} // [];
+                return $children->@*;
+            });
+        $mock->mock(
+            'parent',
+            sub {
+                my ($status_code) = @_;
+                return BOM::User::Client::Status::_build_parent_map($hierarchy)->{$status_code};
+            });
+
+    }
+
+    subtest 'Multiple Roots' => sub {
+
+        mock_hierarchy(
+            $mock,
+            {
+                'age_verification'       => ['cashier_locked'],
+                'professional_requested' => ['professional'],
+            });
+
+        subtest 'Set' => sub {
+            $client->status->set('cashier_locked', 'test', 'test_reason');
+            ok $client->status->age_verification,        'age_verification is set';
+            ok $client->status->cashier_locked,          'cashier_locked is set';
+            ok !$client->status->professional_requested, 'professional_requested is not set';
+            ok !$client->status->professional,           'professional is not set';
+
+            $client->status->clear_age_verification;
+
+            $client->status->set('professional', 'test', 'test_reason');
+            ok $client->status->professional_requested, 'professional_requested is set';
+            ok $client->status->professional,           'professional is set';
+            ok !$client->status->age_verification,      'age_verification is not set';
+            ok !$client->status->cashier_locked,        'cashier_locked is not set';
+
+        };
+
+        subtest 'Clear' => sub {
+            reset_client_statuses($client);
+            $client->status->set('cashier_locked', 'test', 'test_reason');
+            $client->status->set('professional',   'test', 'test_reason');
+
+            $client->status->clear_age_verification;
+            ok !$client->status->age_verification,      'age_verification is not set';
+            ok !$client->status->cashier_locked,        'cashier_locked is not set';
+            ok $client->status->professional_requested, 'professional_requested is set';
+            ok $client->status->professional,           'professional is set';
+
+            $client->status->clear_professional_requested;
+            ok !$client->status->professional_requested, 'professional_requested is not set';
+            ok !$client->status->professional,           'professional is not set';
+
+        };
+
+    };
+
+    subtest 'Multiple Children' => sub {
+
+        mock_hierarchy(
+            $mock,
+            {
+                'age_verification' => ['cashier_locked', 'professional_requested'],
+            });
+
+        subtest 'Set' => sub {
+            $client->status->set('cashier_locked', 'test', 'test_reason');
+            ok $client->status->age_verification,        'age_verification is set';
+            ok $client->status->cashier_locked,          'cashier_locked is set';
+            ok !$client->status->professional_requested, 'professional_requested is not set';
+
+            ok $client->status->set('professional_requested', 'test', 'test_reason');
+            ok $client->status->age_verification,       'age_verification is set';
+            ok $client->status->cashier_locked,         'cashier_locked is set';
+            ok $client->status->professional_requested, 'professional_requested is set';
+
+        };
+
+        subtest 'Clear' => sub {
+            reset_client_statuses($client);
+            $client->status->set('cashier_locked',         'test', 'test_reason');
+            $client->status->set('professional_requested', 'test', 'test_reason');
+
+            $client->status->clear_age_verification;
+            ok !$client->status->age_verification,       'age_verification is not set';
+            ok !$client->status->cashier_locked,         'cashier_locked is not set';
+            ok !$client->status->professional_requested, 'professional_requested is not set';
+
+        };
+
+    };
+
+    subtest 'Existing parent statuses' => sub {
+        $client->status->set('age_verification',       'test', 'test_reason');
+        $client->status->set('professional_requested', 'test', 'test_reason');
+
+        $client->status->set('cashier_locked', 'test', 'test_reason 2');
+        ok $client->status->age_verification,                            'age_verification is set';
+        ok $client->status->reason('age_verification') eq 'test_reason', 'reason is correct. Did not affect parent status';
+        ok $client->status->cashier_locked,                              'cashier_locked is set';
+        ok $client->status->reason('cashier_locked') eq 'test_reason 2', 'reason is correct. Did not affect self status';
+
+    };
+
+    mock_hierarchy(
+        $mock,
+        {
+            'age_verification'       => ['cashier_locked'],
+            'professional_requested' => ['professional'],
+        });
+
+    subtest 'Setnx' => sub {
+        reset_client_statuses($client);
+        $client->status->set('cashier_locked', 'test', 'test_reason');
+        $client->status->set('professional',   'test', 'test_reason');
+        $client->status->_build_all;
+        ok !$client->status->setnx('age_verification', 'test', 'test_reason'), 'age verification was already set';
+        ok $client->status->age_verification,                                  'age_verification is set';
+        ok $client->status->cashier_locked,                                    'cashier_locked is set';
+        ok $client->status->professional_requested,                            'professional_requested is set';
+        ok $client->status->professional,                                      'professional is set';
+
+        $client->status->clear_age_verification;
+        $client->status->clear_cashier_locked;
+        $client->status->clear_professional_requested;
+
+        ok $client->status->setnx('professional', 'test', 'test_reason'), 'professional was not already set';
+        ok $client->status->professional_requested,                       'professional_requested is set';
+        ok $client->status->professional,                                 'professional is set';
+
+    };
+
+    subtest 'Upsert' => sub {
+        reset_client_statuses($client);
+        $client->status->set('cashier_locked', 'test', 'test_reason');
+        $client->status->set('professional',   'test', 'test_reason');
+        ok $client->status->cashier_locked, 'cashier_locked is set';
+        ok $client->status->professional,   'professional is set';
+
+        ok $client->status->upsert('cashier_locked', 'test', 'test_reason_1');
+
+        ok $client->status->cashier_locked,                              'cashier_locked is set';
+        ok $client->status->age_verification,                            'age_verification is set';
+        ok $client->status->reason('cashier_locked') eq 'test_reason_1', 'reason is correct';
+
+        ok $client->status->reason('age_verification') eq 'test_reason', 'reason is correct';
+        ok $client->status->reason('professional') eq 'test_reason',     'reason is correct';
+
+    };
+
+    $mock->unmock_all;
+
 };
 
 done_testing();
