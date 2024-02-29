@@ -704,6 +704,7 @@ sub status_op_processor {
         sharedpaymentmethod       => 'shared_payment_method',
         cryptoautorejectdisabled  => 'crypto_auto_reject_disabled',
         cryptoautoapprovedisabled => 'crypto_auto_approve_disabled',
+        allowduplicatesignup      => 'allow_duplicate_signup',
     };
 
     if ($client_status_type && $status_map->{$client_status_type}) {
