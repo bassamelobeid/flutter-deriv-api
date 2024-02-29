@@ -32,18 +32,18 @@ rule 'profile.date_of_birth_complies_minimum_age' => {
         my $duplicated = $client->duplicate_sibling_from_vr;
 
         $dup_dob = $duplicated->date_of_birth if $duplicated;
-        $self->fail('InvalidDateOfBirth') unless $args->{date_of_birth} // $dup_dob;
+        $self->fail('InvalidDateOfBirth', description => 'Date of birth is missing') unless $args->{date_of_birth} // $dup_dob;
 
         my $dob_date = eval { Date::Utility->new($args->{date_of_birth} // $dup_dob) };
-        $self->fail('InvalidDateOfBirth') unless $dob_date;
+        $self->fail('InvalidDateOfBirth', description => 'Date of birth is invalid') unless $dob_date;
 
         my $countries_instance = $context->brand($args)->countries_instance;
         # Get the minimum age from the client's residence
         my $min_age = $countries_instance && $countries_instance->minimum_age_for_country($residence);
-        $self->fail("InvalidResidence") unless $min_age;
+        $self->fail('InvalidResidence', description => 'Minimum age is not configured for residence') unless $min_age;
 
         my $minimum_date = Date::Utility->new->minus_time_interval($min_age . 'y');
-        $self->fail('BelowMinimumAge') if $dob_date->is_after($minimum_date);
+        $self->fail('BelowMinimumAge', description => 'Date of birth is below minimum age') if $dob_date->is_after($minimum_date);
 
         return 1;
     },
@@ -65,7 +65,7 @@ rule 'profile.both_secret_question_and_answer_required' => {
             $dup_secret_question = $duplicated->secret_question;
         }
 
-        $self->fail("NeedBothSecret")
+        $self->fail("NeedBothSecret", description => 'Missing secret question or secret answer')
             if !($args->{secret_question} // $dup_secret_question) ^ !($args->{secret_answer} // $dup_secret_answer);
 
         return 1;
@@ -77,13 +77,14 @@ rule 'profile.valid_profile_countries' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        $self->fail("InvalidPlaceOfBirth")
+        $self->fail("InvalidPlaceOfBirth", description => "place_of_birth $args->{place_of_birth} is invalid")
             if $args->{place_of_birth} && !$context->get_country($args->{place_of_birth});
 
-        $self->fail("InvalidCitizenship")
+        $self->fail("InvalidCitizenship", description => "citizen $args->{citizen} is invalid")
             if $args->{citizen} && !$context->get_country($args->{citizen});
 
-        $self->fail("InvalidResidence") if $args->{residence} && !$context->get_country($args->{residence});
+        $self->fail("InvalidResidence", description => "residence $args->{residence} is invalid")
+            if $args->{residence} && !$context->get_country($args->{residence});
 
         return 1;
     },
@@ -119,7 +120,7 @@ rule 'profile.valid_promo_code' => {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
 
-        $self->fail("No promotion code was provided")
+        $self->fail("No promotion code was provided", description => 'Promo code is missing')
             if (trim($args->{promo_code_status}) and not(trim($args->{promo_code}) // $client->promo_code));
 
         return 1;
@@ -131,19 +132,22 @@ rule 'profile.valid_non_pep_declaration_time' => {
     code        => sub {
         my ($self, undef, $args) = @_;
 
-        $self->fail("InvalidNonPepTime") unless $args->{non_pep_declaration_time};
+        $self->fail("InvalidNonPepTime", description => 'Non-pep declaration is missing')
+            unless $args->{non_pep_declaration_time};
 
         my $non_pep_date = eval { Date::Utility->new($args->{non_pep_declaration_time}) };
-        $self->fail("InvalidNonPepTime") unless $non_pep_date;
+        $self->fail("InvalidNonPepTime", description => 'Non-pep declaration is invalid')
+            unless $non_pep_date;
 
-        $self->fail("TooLateNonPepTime") if $non_pep_date->epoch > time;
+        $self->fail("TooLateNonPepTime", description => 'Non-pep declaration is after current time')
+            if $non_pep_date->epoch > time;
 
         return 1;
     },
 };
 
 rule 'profile.residence_cannot_be_changed' => {
-    description => "Resdence cannot be set to a new values, unless the context client is a virtual account with no residence",
+    description => "Residence cannot be set to a new value, unless the context client is a virtual account with no residence",
     code        => sub {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
@@ -152,7 +156,8 @@ rule 'profile.residence_cannot_be_changed' => {
 
         return 1 if $client->is_virtual and not $client->residence;
 
-        $self->fail('PerimissionDenied') if $client->residence ne ($args->{residence} // '');
+        $self->fail('PerimissionDenied', description => 'Residence cannot be updated')
+            if $client->residence ne ($args->{residence} // '');
 
         return 1;
     },
