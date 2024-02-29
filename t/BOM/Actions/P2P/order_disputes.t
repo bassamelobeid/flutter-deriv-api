@@ -12,10 +12,14 @@ use Time::Moment;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Config::Runtime;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->dispute_response_time(6);
 
 my @emissions;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -116,6 +120,8 @@ subtest 'Order disputes' => sub {
                 id             => $order->{id},
                 dispute_reason => $scenario->{reason},
             );
+            my $seller_nickname = $ad_type eq 'buy' ? $order->{client_details}->{name}     : $order->{advertiser_details}->{name};
+            my $buyer_nickname  = $ad_type eq 'buy' ? $order->{advertiser_details}->{name} : $order->{client_details}->{name};
 
             @segment_args = ();
             @emissions    = ();
@@ -128,11 +134,14 @@ subtest 'Order disputes' => sub {
             is scalar @emissions, 1, 'event emitted';
             BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
             my %common_args = (
-                disputer       => $scenario->{disputer},
-                dispute_reason => $scenario->{reason},
-                order_id       => $order->{id},
-                lang           => ignore(),
-                brand          => ignore(),
+                disputer              => $scenario->{disputer},
+                dispute_reason        => $scenario->{reason},
+                order_id              => $order->{id},
+                dispute_response_time => 6,
+                buyer_nickname        => $buyer_nickname  // '',
+                seller_nickname       => $seller_nickname // '',
+                lang                  => ignore(),
+                brand                 => ignore(),
             );
 
             cmp_deeply(
@@ -223,7 +232,6 @@ subtest 'Dispute resolution' => sub {
                     properties => {
                         user_role        => $user_role,
                         order_type       => $order_type,
-                        seller_nickname  => '',
                         order_id         => $order->{id},
                         buyer_user_id    => $buyer_user_id,
                         seller_user_id   => $seller_user_id,

@@ -94,7 +94,7 @@ my %EVENT_PROPERTIES = (
     p2p_order_expired => [
         qw(buyer_has_confirmed user_role order_type  order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
     ],
-    p2p_order_dispute        => [qw(user_role title order_id disputer dispute_reason)],
+    p2p_order_dispute        => [qw(user_role title order_id disputer dispute_reason dispute_response_time buyer_nickname seller_nickname)],
     p2p_order_timeout_refund => [
         qw(user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
     ],
@@ -806,9 +806,12 @@ sub p2p_order_dispute {
     my ($order, $parties) = @args{qw(order parties)};
 
     my %properties = (
-        disputer       => 'buyer',
-        order_id       => $order->{id},
-        dispute_reason => $order->{dispute_details}{dispute_reason},
+        disputer              => 'buyer',
+        order_id              => $order->{id},
+        dispute_reason        => $order->{dispute_details}{dispute_reason},
+        dispute_response_time => (BOM::Config::Runtime->instance->app_config->payments->p2p->dispute_response_time // 6),
+        buyer_nickname        => $parties->{buyer_nickname}  // '',
+        seller_nickname       => $parties->{seller_nickname} // '',
     );
 
     # most emails use the same titles
