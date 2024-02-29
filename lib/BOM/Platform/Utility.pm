@@ -892,9 +892,10 @@ sub verify_reactivation {
         my $error        = ref($e) ? $e->{error_code} // '' : $e;
         my $failing_rule = $e->{rule};
         $error =~ s/([A-Z])/ $1/g;
-        die {
+        die +{
             error_msg    => $error,
-            failing_rule => $failing_rule
+            failing_rule => $failing_rule,
+            $e->{description} ? (description => $e->{description}) : (),
         };
     };
 
