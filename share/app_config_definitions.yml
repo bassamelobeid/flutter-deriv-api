@@ -367,6 +367,11 @@ payments:
           isa: Num
           global: 1
           default: 24
+        dispute_response_time:
+          description: 'Maximum number of hours given to P2P clients to respond to their dispute email'
+          isa: Int
+          global: 1
+          default: 6
         clients:
           description: 'List of clients allowed to access P2P'
           isa: ArrayRef
