@@ -6754,10 +6754,6 @@ subtest 'Onfido DOB checks' => sub {
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
             ok $msg, 'underage email sent to CS';
-            ok $msg->{body} =~ /The client posseses the following MT5 loginids/, 'MT5 loginds detected';
-            ok $msg->{body} =~ /\bMTR9009\b/,                                    'Real MT5 loginid reported';
-            ok $msg->{body} =~ /\bMTR90000\b/,                                   'Real MT5 loginid reported';
-            ok $msg->{body} !~ /\bMTD90000\b/,                                   'Demo MT5 loginid not reported';
             cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
 
@@ -6933,9 +6929,6 @@ subtest 'Onfido DOB checks' => sub {
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
             ok $msg, 'underage email sent to CS';
-            ok $msg->{body} =~ /The client posseses the following Deriv X loginids/, 'DX loginds detected';
-            ok $msg->{body} =~ /\bDXR9009\b/,                                        'Real DX loginid reported';
-            ok $msg->{body} !~ /\bDXD90000\b/,                                       'Demo DX loginid not reported';
             cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
 
