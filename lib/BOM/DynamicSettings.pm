@@ -588,6 +588,7 @@ sub get_settings_by_group {
                 payments.p2p.advert_counterparty_terms.completion_rate_steps
                 payments.p2p.advert_counterparty_terms.join_days_steps
                 payments.p2p.advert_counterparty_terms.rating_steps
+                payments.p2p.dispute_response_time
             )]};
 
     my $settings;
@@ -707,6 +708,7 @@ sub get_extra_validations {
         'payments.p2p.advert_counterparty_terms.completion_rate_steps' => \&_validate_positive_number,
         'payments.p2p.advert_counterparty_terms.join_days_steps'       => [\&_validate_positive_number, \&_validate_whole_number],
         'payments.p2p.advert_counterparty_terms.rating_steps'          => \&_validate_positive_number,
+        'payments.p2p.dispute_response_time'                           => \&_validate_positive_number,
     };
 
     my $validations = $setting_validators->{$setting} or return ();
