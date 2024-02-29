@@ -41,6 +41,7 @@ use BOM::Backoffice::Config;
 use BOM::Database::Model::HandoffToken;
 use BOM::Config::Redis;
 use BOM::User::Client;
+use BOM::User::Client::Status;
 use BOM::Backoffice::Request qw(request localize);
 use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
@@ -268,7 +269,22 @@ my $UNTRUSTED_STATUS = [{
         'show_reason' => 'yes',
         'explanation' => 'Prevents Auto Approving client crypto payouts.',
     },
+    {
+        'linktype'    => 'allowduplicatesignup',
+        'comments'    => 'Allow to create a new duplicate account for approved SOPs',
+        'code'        => 'allow_duplicate_signup',
+        'show_reason' => 'yes',
+    },
+
 ];
+
+foreach my $untrusted_status ($UNTRUSTED_STATUS->@*) {
+    my $status_code = $untrusted_status->{code};
+    my $children    = BOM::User::Client::Status::STATUS_CODE_HIERARCHY->{$status_code};
+    my $is_root     = !defined(BOM::User::Client::Status::REVERSE_STATUS_CODE_HIERARCHY->{$status_code});
+    $untrusted_status->{children} = $children;
+    $untrusted_status->{is_root}  = $is_root;
+}
 
 sub get_document_type_category_mapping {
     my $client = shift;

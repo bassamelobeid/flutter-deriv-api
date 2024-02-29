@@ -113,18 +113,20 @@ my $show_disabled     = !$has_accounts_access;
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
-        selected_untrusted_action => request()->param('untrusted_action_type'),
-        edit_url                  => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons                   => get_untrusted_client_reason(),
-        broker                    => $broker,
-        encoded_broker            => $encoded_broker,
-        clientid                  => $client_login,
-        bulk_loginids             => $bulk_loginids,
-        actions                   => get_untrusted_types(),
-        show_untrusted            => 1,
-        show_login                => 1,
-        show_notification         => $show_notification,
-        show_disabled             => $show_disabled,
+        selected_untrusted_action     => request()->param('untrusted_action_type'),
+        selected_untrusted_sub_action => request()->param('untrusted_sub_action_type'),
+        edit_url                      => request()->url_for('backoffice/untrusted_client_edit.cgi'),
+        reasons                       => get_untrusted_client_reason(),
+        broker                        => $broker,
+        encoded_broker                => $encoded_broker,
+        clientid                      => $client_login,
+        bulk_loginids                 => $bulk_loginids,
+        actions                       => get_untrusted_types(),
+        actions_hash_json             => encode_json(get_untrusted_types_hashref()),
+        show_untrusted                => 1,
+        show_login                    => 1,
+        show_notification             => $show_notification,
+        show_disabled                 => $show_disabled,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 unless ($has_accounts_access) {
