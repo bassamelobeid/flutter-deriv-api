@@ -185,7 +185,9 @@ sub transform_summary_status_to_html {
             $result .=
                 "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b> for $ids. Please try again.</div>";
             $result .= $summary->{error}
-                ? "<div class='notify notify--danger'><b>Failed Because</b> : $summary->{error}->{error_msg}.</div>
+                ? "<div class='notify notify--danger'><b>Failed Because</b> : "
+                . ($summary->{error}->{description} // $summary->{error}->{error_msg} // "Some error occured in $fail_op")
+                . ".</div>
             <div class='notify notify--danger'><b>Failed Rule</b> : $summary->{error}->{failing_rule}.</div>"
                 : '';
         }

@@ -38,7 +38,7 @@ my $bulk_loginids      = request()->param('bulk_loginids') // '';
 my $cgi                = request()->cgi;
 my $DCcode             = request()->param('DCcode') // '';
 
-my $reason         = request()->param('untrusted_reason');
+my $reason         = request()->param('untrusted_reason') // '';
 my $operation      = request()->param('status_op');
 my $status_checked = request()->param('status_checked') // [];
 $status_checked = [$status_checked] unless ref($status_checked);
@@ -216,31 +216,6 @@ foreach my $login_id (@login_ids) {
 
     $printline //= '';
     print $printline;
-
-    if ($printline =~ /SUCCESS/) {
-        print '<br/><br/>';
-        my $status_code = get_untrusted_type_by_linktype($client_status_type)->{code};
-
-        if (!($operation eq 'sync_accounts' || $operation eq 'sync')) {
-            if ($action eq 'insert_data') {
-                print link_for_copy_status_status_to_siblings(
-                    $login_id,
-                    $status_code,
-                    {
-                        enabled  => 'Do you need to set the status to the remaining landing company siblings? Click here.',
-                        disabled => ''
-                    });
-            } elsif ($action eq 'remove_status') {
-                print link_for_remove_status_from_all_siblings(
-                    $login_id,
-                    $status_code,
-                    {
-                        enabled  => 'Do you need to remove the status from the remaining landing company siblings? Click here.',
-                        disabled => ''
-                    });
-            }
-        }
-    }
 
     p2p_advertiser_approval_check($client, request()->params);
 
