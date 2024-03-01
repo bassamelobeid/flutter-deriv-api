@@ -1204,6 +1204,7 @@ sub _new_account_post_process {
     }
     try {
         $new_client->sync_authentication_from_siblings;
+        stats_inc('bom_rpc.v_3.new_account_real_success.count', {tags => ["rpc:new_account_real"]});
     } catch ($error) {
         $log->errorf('Failed to sync authentication for client %s: %s', $new_client->loginid, $error);
         return BOM::RPC::v3::Utility::client_error()

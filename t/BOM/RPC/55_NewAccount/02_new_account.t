@@ -60,13 +60,16 @@ $mock_events->mock(
         $emitted{$type . '_' . $loginid}++;
     });
 
-my %datadog_args;
-my $mock_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my $dd_inc_metrics = {};
+my $dd_tags        = {};
+my $mock_datadog   = Test::MockModule->new('BOM::RPC::v3::NewAccount');
+
 $mock_datadog->mock(
     'stats_inc' => sub {
-        my $key  = shift;
-        my $args = shift;
-        $datadog_args{$key} = $args;
+        my $metric_name = shift;
+        my $tags        = shift;
+        $dd_inc_metrics->{$metric_name}++;
+        $dd_tags->{$metric_name} = $tags;
     },
 );
 
@@ -231,7 +234,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
-
+        is $dd_inc_metrics->{'bom_rpc.v_3.new_account_real_success.count'}, undef, "new account real count is not increased for virtual account";
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
         $user = BOM::User->new(
@@ -253,7 +256,7 @@ subtest $method => sub {
     };
 
     subtest 'non-pep self declaration' => sub {
-        %datadog_args = ();
+
         # without non-pep declaration
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => 'new_email' . rand(999) . 'vr_non_pep@binary.com',
@@ -279,7 +282,6 @@ subtest $method => sub {
     };
 
     subtest 'fatca self declaration' => sub {
-        %datadog_args = ();
         # without non-pep declaration
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => 'new_email' . rand(999) . 'vr_fatca@binary.com',
@@ -575,6 +577,8 @@ subtest $method => sub {
             'Deriv (SVG) LLC',
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return new account data');
+        is $dd_inc_metrics->{'bom_rpc.v_3.new_account_real_success.count'}, 1, "new account real count is increased for new real account";
+        cmp_deeply $dd_tags->{'bom_rpc.v_3.new_account_real_success.count'}, {tags => ["rpc:new_account_real"]}, 'data dog tags';
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
@@ -599,6 +603,8 @@ subtest $method => sub {
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} },
             'svg', 'It should return new account data if one of the account is marked as duplicate');
+        is $dd_inc_metrics->{'bom_rpc.v_3.new_account_real_success.count'}, 2, "new account real count is increased for new real account";
+        cmp_deeply $dd_tags->{'bom_rpc.v_3.new_account_real_success.count'}, {tags => ["rpc:new_account_real"]}, 'data dog tags';
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/,       'new CR loginid';
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
@@ -611,6 +617,8 @@ subtest $method => sub {
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} },
             'svg', 'It should return new account data if one of the account is marked as disabled & account currency is not selected.');
+        is $dd_inc_metrics->{'bom_rpc.v_3.new_account_real_success.count'}, 3, "new account real count is increased for new real account";
+        cmp_deeply $dd_tags->{'bom_rpc.v_3.new_account_real_success.count'}, {tags => ["rpc:new_account_real"]}, 'data dog tags';
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
         # check disabled but account currency selected case
@@ -640,7 +648,8 @@ subtest $method => sub {
         delete $params->{args}->{secret_answer};
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error;
-        is $rpc_ct->result->{refresh_token}, undef, 'No refresh token generated for the second account';
+        is $dd_inc_metrics->{'bom_rpc.v_3.new_account_real_success.count'}, 4,     "new account real count is increased for new real account";
+        is $rpc_ct->result->{refresh_token},                                undef, 'No refresh token generated for the second account';
         ok $rpc_ct->result->{oauth_token} =~ /^a1-.*/, 'OAuth token generated for the second account';
 
         $new_loginid = $rpc_ct->result->{client_id};
@@ -712,7 +721,6 @@ subtest $method => sub {
         $params->{args}->{affiliate_token}   = 'first';
         $params->{args}->{fatca_declaration} = 1;
         delete $params->{args}->{non_pep_declaration};
-        %datadog_args = ();
 
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $email,
@@ -889,7 +897,6 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         delete $params->{args}->{non_pep_declaration};
         delete $params->{args}->{fatca_declaration};
-        %datadog_args = ();
         $params->{token} = $auth_token;
 
         $client->residence('ng');
@@ -1120,7 +1127,6 @@ subtest $method => sub {
         $params->{args}->{citizen}           = 'at';
         $params->{args}->{fatca_declaration} = 1;
         delete $params->{args}->{non_pep_declaration};
-        %datadog_args = ();
 
         mailbox_clear();
 
@@ -1216,7 +1222,6 @@ subtest $method => sub {
         $params->{args}->{citizen}     = 'za';
         delete $params->{args}->{non_pep_declaration};
         delete $params->{args}->{fatca_declaration};
-        %datadog_args = ();
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
