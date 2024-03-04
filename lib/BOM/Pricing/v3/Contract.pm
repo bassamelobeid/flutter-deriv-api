@@ -265,14 +265,15 @@ sub _get_ask {
                 my $low_barrier  = $contract->current_spot_low_barrier;
 
                 $response->{contract_details} = {
-                    'maximum_payout'        => $contract->max_payout,
-                    'minimum_stake'         => $contract->min_stake,
-                    'maximum_stake'         => $contract->max_stake,
-                    'maximum_ticks'         => $contract->max_duration,
-                    'tick_size_barrier'     => $contract->tick_size_barrier,
-                    'high_barrier'          => $high_barrier,
-                    'low_barrier'           => $low_barrier,
-                    'barrier_spot_distance' => $contract->barrier_spot_distance
+                    'maximum_payout'               => $contract->max_payout,
+                    'minimum_stake'                => $contract->min_stake,
+                    'maximum_stake'                => $contract->max_stake,
+                    'maximum_ticks'                => $contract->max_duration,
+                    'tick_size_barrier'            => $contract->tick_size_barrier,
+                    'tick_size_barrier_percentage' => $contract->tick_size_barrier_percentage,
+                    'high_barrier'                 => $high_barrier,
+                    'low_barrier'                  => $low_barrier,
+                    'barrier_spot_distance'        => $contract->barrier_spot_distance
                 };
                 $response->{contract_details}->{ticks_stayed_in} = $ticks_stayed_in                   if @$ticks_stayed_in;
                 $response->{contract_details}->{last_tick_epoch} = $last_tick_processed->{tick_epoch} if $last_tick_processed;

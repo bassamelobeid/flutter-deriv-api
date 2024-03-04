@@ -1,12 +1,13 @@
-use Test::Most;
-use Test::MockModule;
 use BOM::Pricing::v3::Contract;
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis    qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Test::MockModule;
+use Test::Most;
 initialize_realtime_ticks_db();
 
-# sub to check if longcode is defined and arrayref
+my $now         = Date::Utility->new(time);
 my $is_arrayref = sub {
     return 0, "not arrayref" unless ref shift eq 'ARRAY';
 };
@@ -534,6 +535,72 @@ subtest 'send_ask MULTUP' => sub {
         'limit_order'         => ignore(),
     };
     cmp_deeply($result, $expected, 'get_ask MULTUP right');
+};
+
+subtest 'send_ask ACCU' => sub {
+    my $params = {
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "payout",
+        "contract_type" => "ACCU",
+        "currency"      => "USD",
+        "symbol"        => "1HZ100V",
+    };
+
+    my $expected = {
+        'code'              => 'ContractCreationFailure',
+        'details'           => {'field' => 'basis'},
+        'message_to_client' => 'Basis must be stake for this contract.'
+    };
+
+    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    cmp_deeply($result->{error}, $expected, 'ContractCreationFailure basis');
+
+    $params->{basis} = 'stake';
+    $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
+
+    $expected = {
+        'code'              => 'ContractCreationFailure',
+        'details'           => {'field' => 'growth_rate'},
+        'message_to_client' => 'Missing required contract parameters (growth_rate).'
+    };
+    cmp_deeply($result->{error}, $expected, 'ContractCreationFailure growth_rate');
+
+    $params->{growth_rate} = 0.03;
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, '1HZ100V']);
+
+    my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
+    $mocked->mock('tick_at' => sub { return Postgres::FeedDB::Spot::Tick->new(quote => 100, epoch => Date::Utility->new->epoch) });
+
+    $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
+    note explain $result if $result->{error};
+
+    $expected = {
+        'ask_price'        => '100.00',
+        'contract_details' => {
+            'barrier_spot_distance'        => '0.039',
+            'high_barrier'                 => '100.039',
+            'low_barrier'                  => '99.961',
+            'maximum_payout'               => '10000',
+            'maximum_stake'                => '2000.00',
+            'maximum_ticks'                => '90',
+            'minimum_stake'                => '1.00',
+            'tick_size_barrier'            => '0.000386433279',
+            'tick_size_barrier_percentage' => '0.03864%',
+        },
+        'contract_parameters' => ignore(),
+        'date_expiry'         => ignore(),
+        'date_start'          => ignore(),
+        'display_value'       => '100.00',
+        'longcode'            => code($is_arrayref),
+        'payout'              => 0,
+        'rpc_time'            => ignore(),
+        'skip_basis_override' => 1,
+        'skip_streaming'      => 0,
+        'spot'                => '100.00',
+        'spot_time'           => ignore(),
+    };
+    cmp_deeply($result, $expected, 'get_ask ACCU right');
 };
 
 done_testing;
