@@ -112,9 +112,6 @@ sub get_unavailable_contracts {
 
     my $contract_types = Finance::Contract::Category::get_all_contract_types();
 
-    # temporarily disabling 1(s) indices for accumulator on Real accounts for ROW
-    push @na_contract_types, "ACCU" if $symbol =~ /1HZ.*V$/ && $args->{landing_company_name} =~ /svg/;
-
     my @result;
 
     # creating data for all_contract_types
