@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Date::Utility;
 use Test::Deep;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -12,6 +13,13 @@ use Test::MockModule;
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+my $current_year    = Date::Utility->new->year;
+my $leap_year_check = sub {
+    return 0 if $current_year % 4;
+    return 1 if $current_year % 100;
+    return 0 if $current_year % 400;
+    return 1;
+};
 
 my $user = BOM::User->create(
     email    => $client->loginid . '@binary.com',
@@ -241,8 +249,10 @@ subtest 'Outdated documents' => sub {
 
         $sth_doc_update->execute($best_date, $id1);
 
+        my $outdated_days = $leap_year_check->() ? 101 : 100;
+
         $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'),                                           100,        'PoA is outdated by 100 days';
+        is $client->documents->outdated('proof_of_address'), $outdated_days, "PoA is outdated by $outdated_days days";
         is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $best_date, 'expected best verified date';
 
         $sth_doc_update->execute(undef, $id1);
@@ -264,8 +274,10 @@ subtest 'Outdated documents' => sub {
 
         $sth_doc_update->execute($best_date, $id1);
 
+        my $outdated_days = $leap_year_check->() ? 3 : 2;
+
         $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'),                                           2,          'PoA is outdated by 2 days';
+        is $client->documents->outdated('proof_of_address'), $outdated_days, "PoA is outdated by $outdated_days days";
         is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $best_date, 'expected best verified date';
 
         $sth_doc_update->execute(undef, $id1);
@@ -288,10 +300,11 @@ subtest 'Outdated documents' => sub {
             'expected best issue date';
 
         $sth_doc_update->execute($best_date, $id1);
+        my $outdated_days = $leap_year_check->() ? 2 : 1;
 
         $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'),                                           1,          'PoA is outdated by 1 day';
-        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $best_date, 'expected best verified date';
+        is $client->documents->outdated('proof_of_address'),                                           $outdated_days, "PoA is outdated by 1 day";
+        is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd, $best_date,     'expected best verified date';
 
         # note: don't reset the the verified_date for the next test to pass
     };
@@ -313,9 +326,10 @@ subtest 'Outdated documents' => sub {
             'expected best issue date';
 
         $sth_doc_update->execute($best_date, $id1);
+        my $outdated_days = $leap_year_check->() ? 2 : 1;
 
         $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'), 1, 'PoA is outdated by 1 day still';
+        is $client->documents->outdated('proof_of_address'), $outdated_days, "PoA is outdated by $outdated_days day still";
         is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd,
             $one_year_ago->minus_time_interval('1d')->date_yyyymmdd, 'expected best verified date';
 
@@ -333,9 +347,11 @@ subtest 'Outdated documents' => sub {
         $sth_doc_finish->execute($id1);
         $sth_doc_update->execute(undef, $id1);
 
+        my $outdated_days = $leap_year_check->() ? 2 : 1;
+
         $client->documents->_clear_uploaded;
-        is $client->documents->to_be_outdated('proof_of_address'), undef, 'Not getting outdated (already outdated)';
-        is $client->documents->outdated('proof_of_address'),       1,     'PoA is outdated by 1 day still';
+        is $client->documents->to_be_outdated('proof_of_address'), undef,          'Not getting outdated (already outdated)';
+        is $client->documents->outdated('proof_of_address'),       $outdated_days, "PoA is outdated by $outdated_days day still";
         is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd,
             $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
             'expected best issue date';
@@ -343,7 +359,7 @@ subtest 'Outdated documents' => sub {
         $sth_doc_update->execute($best_date, $id1);
 
         $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'), 1, 'PoA is outdated by 1 day still';
+        is $client->documents->outdated('proof_of_address'), $outdated_days, "PoA is outdated by $outdated_days day still";
         is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd,
             $one_year_ago->minus_time_interval('1d')->date_yyyymmdd, 'expected best verified date';
 
@@ -543,9 +559,11 @@ subtest 'Outdated documents' => sub {
         my $sth_doc_new = $dbh->prepare($SQL);
         $sth_doc_new->execute('uploaded', $now->minus_time_interval('1d')->date_yyyymmdd);
 
+        my $outdated_days = $leap_year_check->() ? 2 : 1;
+
         $client->documents->_clear_uploaded;
-        is $client->documents->to_be_outdated('proof_of_address'), undef, 'already outdated';
-        is $client->documents->outdated('proof_of_address'),       1,     'PoA is outdated';
+        is $client->documents->to_be_outdated('proof_of_address'), undef,          'already outdated';
+        is $client->documents->outdated('proof_of_address'),       $outdated_days, 'PoA is outdated';
         is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
             'expected best issue date';
     };

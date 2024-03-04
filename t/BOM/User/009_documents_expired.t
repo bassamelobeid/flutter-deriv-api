@@ -14,6 +14,15 @@ use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
 
+my $current_year = Date::Utility->new->year;
+
+my $leap_year_check = sub {
+    return 0 if $current_year % 4;
+    return 1 if $current_year % 100;
+    return 0 if $current_year % 400;
+    return 1;
+};
+
 my $user_client1 = BOM::User->create(
     email          => 'abc@binary.com',
     password       => BOM::User::Password::hashpw('jskjd8292922'),
@@ -24,21 +33,21 @@ my $user_client2 = BOM::User->create(
     password       => BOM::User::Password::hashpw('jskjd8292922'),
     email_verified => 1,
 );
-my $client_cr  = create_client('CR');
-my $client_mlt = create_client('MLT');
+my $client_cr = create_client('CR');
+my $client_mf = create_client('MF');
 
 $user_client1->add_client($client_cr);
-$user_client2->add_client($client_mlt);
+$user_client2->add_client($client_mf);
 
 $client_cr->set_default_account('USD');
 $client_cr->save();
 
-$client_mlt->set_default_account('EUR');
-$client_mlt->save();
+$client_mf->set_default_account('EUR');
+$client_mf->save();
 
 my %clients_document_expiry = (
-    $client_cr->loginid  => 0,
-    $client_mlt->loginid => 1,
+    $client_cr->loginid => 0,
+    $client_mf->loginid => 1,
 );
 
 my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
@@ -215,15 +224,15 @@ subtest 'client documents expiry' => sub {
 };
 
 subtest 'documents uploaded' => sub {
-    my $documents_mlt = $client_mlt->documents->uploaded();
+    my $documents_mf = $client_mf->documents->uploaded();
 
-    my $document_hash_mlt = {
+    my $document_hash_mf = {
         proof_of_address => {
             documents => {
-                $client_mlt->loginid
-                    . ".bankstatement.270744521_front.PNG" => {
+                $client_mf->loginid
+                    . ".bankstatement.270744561_front.PNG" => {
                     expiry_date =>
-                        $documents_mlt->{proof_of_address}{documents}{$client_mlt->loginid . ".bankstatement.270744521_front.PNG"}{expiry_date},
+                        $documents_mf->{proof_of_address}{documents}{$client_mf->loginid . ".bankstatement.270744561_front.PNG"}{expiry_date},
                     format => "PNG",
                     id     => 65555,
                     status => "verified",
@@ -233,73 +242,22 @@ subtest 'documents uploaded' => sub {
             is_pending         => 0,
             is_verified        => 1,
             is_outdated        => 0,
-            to_be_outdated     => -366,       # okay to be a negative number
+            to_be_outdated     => $leap_year_check ? -365 : -366,    # okay to be a negative number
             best_verified_date => ignore(),
         },
         proof_of_identity => {
             documents => {
-                $client_mlt->loginid
-                    . ".passport.270744481_front.PNG" => {
-                    expiry_date =>
-                        $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744481_front.PNG"}{expiry_date},
-                    format => "PNG",
-                    id     => 55555,
-                    status => "verified",
-                    type   => "passport",
-                    },
-                $client_mlt->loginid
-                    . ".passport.270744501_front.PNG" => {
-                    expiry_date =>
-                        $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
-                    format => "PNG",
-                    id     => 66666,
-                    status => "verified",
-                    type   => "passport",
-                    },
-            },
-            is_expired    => 0,
-            is_pending    => 0,
-            is_verified   => 2,
-            to_be_expired => -1,    # it's okay for this to be a negative number
-            expiry_date   => $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
-        },
-    };
-
-    cmp_deeply($documents_mlt, $document_hash_mlt, 'correct structure for client documents');
-    my $documents_cr = $client_cr->documents->uploaded();
-
-    my $document_hash_cr = {
-        proof_of_address => {
-            documents => {
-                $client_cr->loginid
-                    . ".bankstatement.270744461_front.PNG" => {
-                    expiry_date =>
-                        $documents_cr->{proof_of_address}{documents}{$client_cr->loginid . ".bankstatement.270744461_front.PNG"}{expiry_date},
-                    format => "PNG",
-                    id     => 65555,
-                    status => "verified",
-                    type   => "bankstatement",
-                    },
-            },
-            is_pending         => 0,
-            is_verified        => 1,
-            is_outdated        => 0,
-            best_verified_date => ignore(),
-            to_be_outdated     => -366,       # okay to be a negative number
-        },
-        proof_of_identity => {
-            documents => {
-                $client_cr->loginid
-                    . ".passport.270744421_front.PNG" => {
-                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744421_front.PNG"}{expiry_date},
+                $client_mf->loginid
+                    . ".passport.270744521_front.PNG" => {
+                    expiry_date => $documents_mf->{proof_of_identity}{documents}{$client_mf->loginid . ".passport.270744521_front.PNG"}{expiry_date},
                     format      => "PNG",
                     id          => 55555,
                     status      => "verified",
                     type        => "passport",
                     },
-                $client_cr->loginid
-                    . ".passport.270744441_front.PNG" => {
-                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744441_front.PNG"}{expiry_date},
+                $client_mf->loginid
+                    . ".passport.270744541_front.PNG" => {
+                    expiry_date => $documents_mf->{proof_of_identity}{documents}{$client_mf->loginid . ".passport.270744541_front.PNG"}{expiry_date},
                     format      => "PNG",
                     id          => 66666,
                     status      => "verified",
@@ -310,7 +268,56 @@ subtest 'documents uploaded' => sub {
             is_pending    => 0,
             is_verified   => 2,
             to_be_expired => -1,    # it's okay for this to be a negative number
-            expiry_date   => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744441_front.PNG'}{expiry_date},
+            expiry_date   => $documents_mf->{proof_of_identity}{documents}{$client_mf->loginid . ".passport.270744541_front.PNG"}{expiry_date},
+        },
+    };
+
+    cmp_deeply($documents_mf, $document_hash_mf, 'correct structure for client documents');
+    my $documents_cr = $client_cr->documents->uploaded();
+
+    my $document_hash_cr = {
+        proof_of_address => {
+            documents => {
+                $client_cr->loginid
+                    . ".bankstatement.270744501_front.PNG" => {
+                    expiry_date =>
+                        $documents_cr->{proof_of_address}{documents}{$client_cr->loginid . ".bankstatement.270744501_front.PNG"}{expiry_date},
+                    format => "PNG",
+                    id     => 65555,
+                    status => "verified",
+                    type   => "bankstatement",
+                    },
+            },
+            is_pending         => 0,
+            is_verified        => 1,
+            is_outdated        => 0,
+            best_verified_date => ignore(),
+            to_be_outdated     => $leap_year_check ? -365 : -366,    # okay to be a negative number
+        },
+        proof_of_identity => {
+            documents => {
+                $client_cr->loginid
+                    . ".passport.270744461_front.PNG" => {
+                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744461_front.PNG"}{expiry_date},
+                    format      => "PNG",
+                    id          => 55555,
+                    status      => "verified",
+                    type        => "passport",
+                    },
+                $client_cr->loginid
+                    . ".passport.270744481_front.PNG" => {
+                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744481_front.PNG"}{expiry_date},
+                    format      => "PNG",
+                    id          => 66666,
+                    status      => "verified",
+                    type        => "passport",
+                    },
+            },
+            is_expired    => 0,
+            is_pending    => 0,
+            is_verified   => 2,
+            to_be_expired => -1,    # it's okay for this to be a negative number
+            expiry_date   => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744481_front.PNG'}{expiry_date},
         },
     };
 
