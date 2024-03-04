@@ -34,8 +34,9 @@ if ($input{create}) {
         validate($db, %input);
         my $result = $db->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_create(?, ?, ?, ?, ?, ?)',
-                    undef, @input{qw/payment_processor payment_method reversible deposit_poi_required poo_required withdrawal_supported/});
+                $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_create(?, ?, ?, ?, ?, ?, ?)',
+                    undef,
+                    @input{qw/payment_processor payment_method reversible deposit_poi_required poo_required withdrawal_supported payment_category/});
             });
         $success = format_details($result) . ' method has been created';
     } catch ($e) {
@@ -46,7 +47,7 @@ if ($input{create}) {
 if (my $id = $input{edit}) {
     $item = $db->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_list(?, NULL, NULL, NULL, NULL, NULL)', undef, $id);
+            $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_list(?, NULL, NULL, NULL, NULL, NULL, NULL, NULL)', undef, $id);
         });
     $error = 'Method does not exist' unless $item;
 }
@@ -56,9 +57,12 @@ if ($input{update_confirm}) {
         validate($db, %input);
         my $result = $db->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_update(?, ?, ?, ?, ?, ?, ?)',
+                $_->selectrow_hashref(
+                    'SELECT * FROM payment.doughflow_method_update(?, ?, ?, ?, ?, ?, ?, ?)',
                     undef,
-                    @input{qw/update_confirm payment_processor payment_method reversible deposit_poi_required poo_required withdrawal_supported/});
+                    @input{
+                        qw/update_confirm payment_processor payment_method reversible deposit_poi_required poo_required withdrawal_supported payment_category/
+                    });
             });
         die "method may have been removed\n" unless $result;
         $success = format_details($result) . ' method has been updated';
@@ -82,13 +86,18 @@ if (my $id = $input{delete_confirm}) {
 
 my $limit  = 50;
 my $offset = $input{offset} || 0;
+my $filter = {$input{methods_sort_option} // 0 => $input{filter_by} //= 0};
 
 my $methods = $db->run(
     fixup => sub {
         $_->selectall_arrayref(
-            'SELECT * FROM payment.doughflow_method_list(NULL, ?, NULL, NULL, ?, ?)',
+            'SELECT * FROM payment.doughflow_method_list(NULL, ?, ?, ?, ?, ?, ?, ?)',
             {Slice => {}},
-            $input{show_all} ? undef : $reversible_days,
+            $input{show_all}             ? undef                        : $reversible_days,
+            $filter->{payment_processor} ? $filter->{payment_processor} : undef,
+            $filter->{payment_method}    ? $filter->{payment_method}    : undef,
+            $filter->{payment_category}  ? $filter->{payment_category}  : undef,
+            $input{methods_sort_option}  ? $input{methods_sort_option}  : undef,
             $limit + 1,    # one more to detect if next page is available
             $offset,
         );
@@ -110,6 +119,8 @@ BOM::Backoffice::Request::template()->process(
         check           => $check,
         reversible_days => $reversible_days,
         show_all        => $input{show_all},
+        filter_by       => $input{filter_by},
+        sort_by         => $input{methods_sort_option},
         offset          => $offset,
         prev            => $prev,
         next            => $next,
@@ -125,7 +136,7 @@ sub validate {
 
     my ($exist_id) = $db->run(
         fixup => sub {
-            $_->selectrow_array('SELECT id FROM payment.doughflow_method_list(NULL, NULL, ?, ?, NULL, NULL)',
+            $_->selectrow_array('SELECT id FROM payment.doughflow_method_list(NULL, NULL, ?, ?, NULL, NULL, NULL, NULL)',
                 undef, @input{qw(payment_processor payment_method)});
         });
 

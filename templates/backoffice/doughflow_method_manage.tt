@@ -25,7 +25,13 @@
                         <td>
                             <input type="text" name="payment_method" value="[% item.payment_method %]">
                         </td>
-                    </tr>            
+                    </tr>
+                    <tr>
+                        <td class="label">Payment Category</td>
+                        <td>
+                            <input type="text" name="payment_category" value="[% item.payment_category %]">
+                        </td>
+                    </tr>           
                     <tr>
                         <td class="label">Is Reversible</td>
                         <td>
@@ -77,12 +83,36 @@
 <div class="card">
     <div class="card__label toggle">Methods for [% broker %]</div>
     <div class="card__content">
+        <div class='row'>
         <form action="[% request.url_for('backoffice/doughflow_method_manage.cgi') %]" method="get">
         <input type="checkbox" name="show_all" value="1" [% IF show_all %]checked="checked"[% END %]>Show all. Otherwise only with transactions within reversible period ([% reversible_days %] days) are shown.
-        <input type="hidden" name="broker" value="[% broker %]">
-        <input type="hidden" name="offset" value="[% offset %]">
-        <button type="submit" class="btn btn--primary">Refresh</button>
+
+            <label for='methods_sort_option'>Sort By: </label>
+            <select  name='methods_sort_option' onchange="showFilterField(value)">
+                <option value='' selected>Please choose</option>
+                <option value='payment_processor'>Processor</option>
+                <option value='payment_method'>Method</option>
+                <option value='payment_category'>Category</option>
+                <option value='reversible'>Reversible</option>
+                <option value='deposit_poi_required'>Deposit POI</option>
+                <option value='poo_required'>POO Required</option>
+                <option value='withdrawal_supported'>Withdrawal Supported</option>
+                <option value='deposit_count'>Deposits</option>
+                <option value='deposit_latest'>Last Deposit</option>
+                <option value='withdrawal_count'>Withdrawls</option>  
+                <option value='withdrawal_latest'>Last Withdrawal</option>
+                <option value='last_modified_by'>Modified By</option>
+                <option value='last_modified_at'>Last Modified</option>          
+            </select>
+
+            <label class="filter_payment_methods_field" style="display: none" for='methods_sort_option'>Filter By: </label>
+            <input class="filter_payment_methods_field" style="display: none" type="text" name="filter_by" placeholder= "">
+            
+            <input type="hidden" name="broker" value="[% broker %]">
+            <input type="hidden" name="offset" value="[% offset %]">
+            <button type="submit" class="btn btn--primary">Search</button>
         </form>
+            </div>
 
         <p>Processor and method values must exactly match the values sent by Doughflow for the type of event:</p>
             <ol>
@@ -90,15 +120,17 @@
                 <li><b>Withdrawal</b> will always have empty processor and always have a method. E.g. all Visa withdrawals are method = VISA and processor = [empty].</li>
                 <li><b>Deposit validation</b> will always have empty method. Deposit POI Required check is run on this event, so method should be empty when this attribute is set.</li>
             </ol>
+       
 
-        [% IF prev.defined %]<a href="[% request.url_for('backoffice/doughflow_method_manage.cgi', {broker => broker, offset => prev, show_all => show_all}) %]"><- Previous</a>[% END %]
-        [% IF next.defined %]<a href="[% request.url_for('backoffice/doughflow_method_manage.cgi', {broker => broker, offset => next, show_all => show_all}) %]">Next -></a>[% END %]
+        [% IF prev.defined %]<a href="[% request.url_for('backoffice/doughflow_method_manage.cgi', {broker => broker, offset => prev, show_all => show_all, methods_sort_option => sort_by }) %]"><- Previous</a>[% END %]
+        [% IF next.defined %]<a href="[% request.url_for('backoffice/doughflow_method_manage.cgi', {broker => broker, offset => next, show_all => show_all, methods_sort_option => sort_by }) %]">Next -></a>[% END %]
 
         <table class="sortable border">
             <thead>
                 <tr>
                     <th scope="col">Processor</th>
                     <th scope="col">Method</th>
+                    <th scope="col">Category</th>
                     <th scope="col">Reversible</th>
                     <th scope="col">Deposit POI</th>                    
                     <th scope="col">Poo required</th>
@@ -118,6 +150,7 @@
                 <tr>
                     <td>[% m.payment_processor || '<span style="color: LightGrey">[empty]</span>' | none %]</td>
                     <td>[% m.payment_method || '<span style="color: LightGrey">[empty]</span>' | none %]</td>
+                    <td>[% m.payment_category || '<span style="color: LightGrey">[empty]</span>' | none %]</td>
                     [% IF m.reversible %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
                     [% IF m.deposit_poi_required %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
                     [% IF m.poo_required %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
@@ -137,3 +170,17 @@
         </table>
     </div>
 </div>
+
+<script type="text/javascript" language="javascript">
+    function showFilterField(value){
+        if(["payment_processor", "payment_method", "payment_category"].includes(value)){
+            document.querySelectorAll('.filter_payment_methods_field').forEach(el => {
+                el.style.display = "inline";
+            });
+        }else{
+            document.querySelectorAll('.filter_payment_methods_field').forEach(el => {
+                el.style.display = "none";
+            });
+        }
+    }
+</script>
