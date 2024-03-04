@@ -61,11 +61,6 @@ rpc contracts_for => sub {
         %$args,
     });
 
-    # temporarily disabling 1(s) indices for accumulator on Real accounts for ROW
-    if ($args->{symbol} =~ /1HZ.*V$/ && $args->{landing_company_name} =~ /svg/) {
-        @$offerings = grep { $_->{contract_type} ne 'ACCU' } @$offerings;
-    }
-
     my $i = 0;
     foreach my $contract (@{$contracts_for->{available}}) {
         # localise contract *_display

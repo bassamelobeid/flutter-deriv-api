@@ -19,14 +19,6 @@ rpc send_ask => sub {
 
     $params->{landing_company} = $params->{landing_company} ? $params->{landing_company} : "virtual";
 
-    # temporarily disabling 1(s) indices for accumulator on Real accounts for ROW
-    my $symbol        = $params->{args}->{symbol};
-    my $contract_type = $params->{args}->{contract_type};
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'ContractCreationFailure',
-            message_to_client => BOM::Platform::Context::localize("Cannot create contract")}
-    ) if (defined $contract_type && $contract_type eq "ACCU" && $symbol =~ /1HZ.*V$/ && $params->{landing_company} =~ /svg/);
-
     # TODO: clean up send_ask so it does not change it's arguments.
     my $args = dclone $params;
 
