@@ -516,7 +516,7 @@ subtest 'profit table' => sub {
         'app_id'            => undef,
         'shortcode'         => $data->[5]{short_code},
         'longcode'          =>
-            'After the entry spot tick, your stake will grow continuously by 5% for every tick that the spot price remains within the ± 0.0246791267 % from the previous spot price.',
+            'After the entry spot tick, your stake will grow continuously by 5% for every tick that the spot price remains within the ± 0.02468% from the previous spot price.',
         'contract_type' => 'ACCU',
         'duration_type' => undef,
         'growth_rate'   => 0.05
