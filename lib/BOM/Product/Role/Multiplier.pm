@@ -1,24 +1,22 @@
 package BOM::Product::Role::Multiplier;
 
-use Moose::Role;
-
-use List::Util qw(min max first);
-use Date::Utility;
+use BOM::Config::Chronicle;
+use BOM::Config::Quants qw(get_exchangerates_limit minimum_stake_limit maximum_stake_limit);
+use BOM::Config::QuantsConfig;
+use BOM::Config::Runtime;
 use BOM::Product::Exception;
 use BOM::Product::LimitOrder;
+use BOM::Product::Utils qw(beautify_stake);
+use Date::Utility;
 use Format::Util::Numbers qw(financialrounding);
-use BOM::Config::Runtime;
-use YAML::XS qw(LoadFile);
-use BOM::Config::QuantsConfig;
-use BOM::Config::Quants qw(get_exchangerates_limit);
-use BOM::Config::Chronicle;
+use List::Util            qw(min max first);
 use Machine::Epsilon;
-use Scalar::Util qw(looks_like_number);
 use Math::Util::CalculatedValue::Validatable;
-use Time::Duration::Concise;
-use BOM::Config::Quants qw(minimum_stake_limit maximum_stake_limit);
-use Quant::Framework::Spread::Seasonality;
+use Moose::Role;
 use Quant::Framework::EconomicEventCalendar;
+use Quant::Framework::Spread::Seasonality;
+use Time::Duration::Concise;
+use YAML::XS qw(LoadFile);
 
 use constant {
     BARRIER_ADJUSTMENT_FACTOR => 0.5826,
@@ -1078,30 +1076,15 @@ sub _validate_multiplier_range {
 }
 
 sub _validate_maximum_stake {
-    my $self                 = shift;
-    my $market               = $self->underlying->market->name;
-    my $symbol               = $self->underlying->symbol;
-    my $custom_volume_limits = $self->risk_profile->raw_custom_volume_limits;
+    my $self = shift;
 
-    my @risk_profiles;
-    push @risk_profiles, $custom_volume_limits->{markets}{$market}{risk_profile};
-    push @risk_profiles, $custom_volume_limits->{symbols}{$symbol}{risk_profile};
-    if (!$risk_profiles[0] && !$risk_profiles[1]) {
-        push @risk_profiles, $self->market->{risk_profile};
-    }
-
-    my $default_max_stake = maximum_stake_limit($self->currency, 'default_landing_company', $self->underlying->market->name, $self->category->code);
-    my $limit_definitions = BOM::Config::quants()->{risk_profile};
-    my $max_stake = min($default_max_stake, map { get_exchangerates_limit($limit_definitions->{$_}{multiplier}{$self->currency}, $self->currency) }
-            grep { defined $_ } @risk_profiles);
-
-    if ($self->_user_input_stake > $max_stake) {
+    if ($self->_user_input_stake > $self->max_stake) {
         my $display_name = $self->underlying->display_name;
         return {
             message           => 'maximum stake limit',
-            message_to_client => !$max_stake
-            ? [$ERROR_MAPPING->{TradingMultiplierIsDisabled}, $display_name]
-            : [$ERROR_MAPPING->{StakeLimitExceeded},          financialrounding('price', $self->currency, $max_stake)],
+            message_to_client => $self->max_stake
+            ? [$ERROR_MAPPING->{StakeLimitExceeded},          financialrounding('price', $self->currency, $self->max_stake)]
+            : [$ERROR_MAPPING->{TradingMultiplierIsDisabled}, $display_name],
             details => {field => 'stake'},
         };
     }
@@ -1313,25 +1296,89 @@ sub _barrier_continuity_adjustment {
     return BARRIER_ADJUSTMENT_FACTOR * $self->_formula_args->{sigma} * sqrt($self->_generation_interval_in_years);
 }
 
-## The definition of minimum commission on the main contract
-## and deal cancellation is relative to minimum stake defined in quants config.
+=head2 min_stake
 
-sub _minimum_stake {
+Minimum allowable stake to buy a contract
+
+=head2 max_stake
+
+Maximum allowable stake to buy a contract
+
+=cut
+
+has [qw(min_stake max_stake)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 _build_min_stake
+
+Initialize minimum allowable stake to buy a contract
+
+=cut
+
+sub _build_min_stake {
     my $self = shift;
 
-    return minimum_stake_limit($self->currency, $self->landing_company, $self->underlying->market->name, $self->category->code);
+    # Couldn't find any formula defining min_stake for Multiplier
+    # For now, use only the default value from quants config file
+    my $default_min_stake = minimum_stake_limit($self->currency, $self->landing_company, $self->underlying->market->name, $self->category->code);
+    my $min_stake         = beautify_stake($default_min_stake, $self->currency, 1);
+
+    return min($min_stake, $self->max_stake);
 }
+
+=head2 _build_max_stake
+
+Calculate maximum allowable stake to buy a contract
+
+=cut
+
+sub _build_max_stake {
+    my $self                 = shift;
+    my $market               = $self->underlying->market->name;
+    my $symbol               = $self->underlying->symbol;
+    my $custom_volume_limits = $self->risk_profile->raw_custom_volume_limits;
+
+    my @risk_profiles;
+    push @risk_profiles, $custom_volume_limits->{markets}{$market}{risk_profile};
+    push @risk_profiles, $custom_volume_limits->{symbols}{$symbol}{risk_profile};
+    if (!$risk_profiles[0] && !$risk_profiles[1]) {
+        push @risk_profiles, $self->market->{risk_profile};
+    }
+
+    my $default_max_stake              = maximum_stake_limit($self->currency, $self->landing_company, $market, $self->category->code);
+    my $risk_profile_limit_definitions = BOM::Config::quants()->{risk_profile};
+    my @defined_risk_profiles          = grep { defined $_ } @risk_profiles;
+    my @stake_limits =
+        map { get_exchangerates_limit($risk_profile_limit_definitions->{$_}{multiplier}{$self->currency}, $self->currency) } @defined_risk_profiles;
+    my $max_stake = min($default_max_stake, @stake_limits);
+
+    return beautify_stake($max_stake, $self->currency);
+}
+
+=head2 _minimum_main_contract_commission
+
+Minimum commission for the main contract.
+Commission is relative to minimum stake defined in quants config.
+
+=head2 _minimum_cancellation_commission
+
+Minimum commission for deal cancellation of the contract.
+Commission is relative to minimum stake defined in quants config.
+
+=cut
 
 sub _minimum_main_contract_commission {
     my $self = shift;
 
-    return $self->_minimum_stake * 0.02;
+    return $self->min_stake * 0.02;
 }
 
 sub _minimum_cancellation_commission {
     my $self = shift;
 
-    return $self->_minimum_stake * 0.01;
+    return $self->min_stake * 0.01;
 }
 
 =head2 commission_multiplier

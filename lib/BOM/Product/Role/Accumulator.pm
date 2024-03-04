@@ -1,20 +1,19 @@
 package BOM::Product::Role::Accumulator;
 
 use Moose::Role;
-
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::AmericanExpiry' => {-excludes => ['_build_hit_tick']};
 
+use BOM::Config::Chronicle;
+use BOM::Config::Quants qw(minimum_stake_limit maximum_stake_limit);
+use BOM::Config::QuantsConfig;
 use BOM::Product::Exception;
 use BOM::Product::Static;
+use BOM::Product::Utils   qw(beautify_stake rounddown roundup);
 use Format::Util::Numbers qw(financialrounding roundcommon);
+use List::Util            qw(any min max first);
+use POSIX                 qw(floor ceil);
 use Scalar::Util::Numeric qw(isint);
 use YAML::XS              qw(LoadFile);
-use POSIX                 qw(floor ceil);
-use List::Util            qw(any min max first);
-use BOM::Config::Quants   qw(maximum_stake_limit);
-use BOM::Config::QuantsConfig;
-use BOM::Config::Chronicle;
-use JSON::MaybeXS qw(decode_json);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 my $config;
@@ -282,7 +281,9 @@ number of ticks recieved after entry_tick
 
 profit and loss of the contract
 
-=cut
+=head2 min_stake
+
+Minimum allowable stake to buy a contract
 
 =head2 max_stake
 
@@ -290,11 +291,12 @@ maximum allowable stake to buy a contract
 
 =cut
 
-has [qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl max_stake barrier_pip_size)]
-    => (
+has [
+    qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl min_stake max_stake barrier_pip_size)
+] => (
     is         => 'ro',
     lazy_build => 1,
-    );
+);
 
 =head2 _build_max_duration
 
@@ -550,38 +552,6 @@ sub barrier_spot_distance {
     return roundcommon($self->barrier_pip_size, $self->current_spot_high_barrier - $self->current_spot);
 }
 
-=head2 roundup
-
-round up a value
-roundup(638.4900001, 0.001) = 638.491
-
-=cut
-
-sub roundup {
-    my ($value_to_round, $precision) = @_;
-
-    $precision = 1 if $precision == 0;
-    my $res = ceil($value_to_round / $precision) * $precision;
-    #use roundcommon on the result to add trailing zeros and return a string
-    return roundcommon($precision, $res);
-}
-
-=head2 rounddown
-
-round down a value
-roundown(638.4209, 0.001) = 638.420
-
-=cut
-
-sub rounddown {
-    my ($value_to_round, $precision) = @_;
-
-    $precision = 1 if $precision == 0;
-    my $res = floor($value_to_round / $precision) * $precision;
-    #use roundcommon on the result to add trailing zeros and return a string
-    return roundcommon($precision, $res);
-}
-
 =head2 _build_pnl
 
 initializing pnl
@@ -592,6 +562,23 @@ sub _build_pnl {
     my $self = shift;
 
     return financialrounding('price', $self->currency, $self->bid_price - $self->_user_input_stake);
+}
+
+=head2 _build_min_stake
+
+Initialize minimum allowable stake to buy a contract
+
+=cut
+
+sub _build_min_stake {
+    my $self = shift;
+
+    # Couldn't find any formula defining min_stake for Accumulator
+    # For now, use only the default value from quants config file
+    my $default_min_stake = minimum_stake_limit($self->currency, $self->landing_company, $self->market->name, $self->category->code);
+    my $min_stake         = beautify_stake($default_min_stake, $self->currency, 1);
+
+    return min($min_stake, $self->max_stake);
 }
 
 =head2 _build_max_stake
@@ -606,8 +593,10 @@ sub _build_max_stake {
     my $default_max_stake          = maximum_stake_limit($self->currency, $self->landing_company, $self->market->name, $self->category->code);
     my $max_stake_per_risk_profile = $self->quants_config->get_max_stake_per_risk_profile($self->risk_level);
 
-    # maximum stake should not be greater that maximum payout
-    return min($default_max_stake, $max_stake_per_risk_profile->{$self->currency}, $self->max_payout);
+    # max_stake should not be greater than max_payout
+    my $max_stake = min($default_max_stake, $max_stake_per_risk_profile->{$self->currency}, $self->max_payout);
+
+    return beautify_stake($max_stake, $self->currency);
 }
 
 =head2 risk_level

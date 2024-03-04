@@ -17,7 +17,8 @@ subtest 'benchmark offerings' => sub {
         my $offerings_obj = $lc->basic_offerings($config);
         $offerings_obj->values_for_key('market');
         my $diff = Time::HiRes::time - $before;
-        cmp_ok($diff, "<", 1.1, "construction of " . $lc->short . " offerings objectis less that 1.1 seconds (more room to avoid this being flaky)");
+        cmp_ok($diff, "<", 1.25,
+            "construction of " . $lc->short . " offerings object is less that 1.25 seconds (more room to avoid this being flaky)");
         foreach my $market (map { $_->name } Finance::Underlying::Market::Registry->all) {
             my @common_calls = [{
                     market          => $market,

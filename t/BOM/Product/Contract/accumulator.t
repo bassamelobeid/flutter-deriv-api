@@ -300,9 +300,8 @@ subtest 'calculate_payout' => sub {
     }
 };
 
-subtest 'minmum stake' => sub {
+subtest 'minimum stake' => sub {
     $args->{amount} = 0.5;
-
     my $error = exception { produce_contract($args) };
     is $error->message_to_client->[0], 'Please enter a stake amount that\'s at least [_1].', 'message to client - Stake must be at least [_1] 1.';
     is $error->message_to_client->[1], '1.00';
@@ -311,17 +310,21 @@ subtest 'minmum stake' => sub {
     $error = exception { produce_contract($args) };
     is $error->message_to_client->[0], 'Please enter a stake amount that\'s at least [_1].', 'message to client - Stake must be at least [_1] 1.';
     is $error->message_to_client->[1], '1.00';
+
+    $args->{amount} = 1;
+    my $contract = produce_contract($args);
+    is $contract->min_stake, '1.00', 'min_stake is 1.00';
 };
 
 subtest 'maximum stake' => sub {
-    $args->{amount}    = 1000;
-    $args->{max_stake} = 500;
-
+    $args->{amount} = 10000;
     my $error = exception { produce_contract($args) };
     is $error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'maximum stake limit';
-    is $error->message_to_client->[1], '500.00';
+    is $error->message_to_client->[1], '2000.00';
 
-    delete $args->{max_stake};
+    $args->{amount} = 1000;
+    my $contract = produce_contract($args);
+    is $contract->max_stake, '2000.00', 'max_stake is 2000.00';
 };
 
 subtest 'take_profit' => sub {
