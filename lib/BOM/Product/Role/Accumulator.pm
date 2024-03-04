@@ -44,7 +44,7 @@ sub BUILD {
         BOM::Product::Exception->throw(
             error_code => 'MissingRequiredContractParams',
             error_args => ['growth_rate'],
-            details    => {field => 'basis'},
+            details    => {field => 'growth_rate'},
         );
     }
 
@@ -258,13 +258,21 @@ it is the minimum between :
     - number of ticks on which payout reaches the maximum possible amount
     - number of ticks on which payout reaches take_profit amount
 
+=head2 max_duration
+
+the maximum possible ticks that contract can be running
+
 =head2 max_payout
 
 maximum payout that client can win out of a contract
 
-=head2 max_duration
+=head2 max_stake
 
-the maximum possible ticks that contract can be running
+maximum allowable stake to buy a contract
+
+=head2 pnl
+
+profit and loss of the contract
 
 =head2 basis_spot
 
@@ -273,26 +281,34 @@ since entry_tick is the first tick of the contract there is no previous spot, so
 for a closed contract basis_spot = tick_before_close_tick
 other cases basis_spot = previous spot;
 
+=head2 tick_count
+
+number of ticks
+
 =head2 tick_count_after_entry
 
 number of ticks recieved after entry_tick
-
-=head2 pnl
-
-profit and loss of the contract
 
 =head2 min_stake
 
 Minimum allowable stake to buy a contract
 
-=head2 max_stake
+=head2 tick_size_barrier
 
-maximum allowable stake to buy a contract
+tick size used for defining high and low barrier
+
+=head2 tick_size_barrier_percentage
+
+tick size barrier in percentage
+
+=head2 barrier_pip_size
+
+pip size for barrier
 
 =cut
 
 has [
-    qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl min_stake max_stake barrier_pip_size)
+    qw(max_duration duration max_payout take_profit tick_count tick_size_barrier tick_size_barrier_percentage basis_spot tick_count_after_entry pnl min_stake max_stake barrier_pip_size)
 ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -386,6 +402,19 @@ sub _build_tick_size_barrier {
     my $self = shift;
 
     return $self->_load_config->{tick_size_barrier}{$self->underlying->symbol}{"growth_rate_" . $self->growth_rate};
+}
+
+=head2 _build_tick_size_barrier_percentage
+
+build tick_size_barrier in percentage as a string
+
+=cut
+
+sub _build_tick_size_barrier_percentage {
+    my $self = shift;
+
+    my $rounded_barrier = roundcommon(0.00001, $self->tick_size_barrier * 100);
+    return $rounded_barrier . '%';
 }
 
 =head2 _build_basis_spot

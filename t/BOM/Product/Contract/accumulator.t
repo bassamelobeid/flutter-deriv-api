@@ -132,9 +132,9 @@ subtest 'shortcode and longcode' => sub {
     is_deeply(
         $c->longcode,
         [
-            'After the entry spot tick, your stake will grow continuously by [_1]% for every tick that the spot price remains within the ± [_2] % from the previous spot price.',
+            'After the entry spot tick, your stake will grow continuously by [_1]% for every tick that the spot price remains within the ± [_2] from the previous spot price.',
             [1],
-            [2]
+            ['2.00000%']
         ],
         'longcode matches'
     );
@@ -256,6 +256,7 @@ subtest 'barrier' => sub {
         is $c->current_spot_high_barrier,      '93.840',        'current_spot_high_barrier is correct';
         is $c->barrier_spot_distance,          '1.840',         'barrier_spot_distance is correct';
         is $c->basis_spot,                     '90',            'basis_spot is correct';
+        is $c->tick_size_barrier_percentage,   '2.00000%',      'tick_size_barrier_percentage is correct';
     };
 
     subtest 'no tick recieved for date_pricing' => sub {
@@ -275,6 +276,7 @@ subtest 'barrier' => sub {
         is $c->high_barrier->supplied_barrier, '91.8',          'high supplied_barrier is correct';
         is $c->high_barrier->as_absolute,      '91.80',         'high barrier as_absolute is correct';
         is $c->basis_spot,                     '90',            'basis_spot is correct';
+        is $c->tick_size_barrier_percentage,   '2.00000%',      'tick_size_barrier_percentage is correct';
     };
 
     $args->{date_pricing} = $now;
