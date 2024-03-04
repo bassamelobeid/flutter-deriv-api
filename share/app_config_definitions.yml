@@ -408,7 +408,7 @@ payments:
           contains:
             count_per_day_per_client:
               isa: Int
-              description: 'Limits the numbers of daily purchases per day'
+              description: 'Maximum number of active orders an advertiser allowed to have in 24 hours'
               default: 3
               global: 1
             maximum_advert:
