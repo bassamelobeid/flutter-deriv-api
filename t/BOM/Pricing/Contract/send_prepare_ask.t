@@ -513,7 +513,11 @@ subtest 'send_ask MULTUP' => sub {
     note explain $result if $result->{error};
 
     $expected = {
-        'commission'          => '0.50',
+        'commission'       => '0.50',
+        'contract_details' => {
+            'minimum_stake' => '1.00',
+            'maximum_stake' => '2000.00'
+        },
         'date_expiry'         => ignore(),
         'date_start'          => ignore(),
         'multiplier'          => 10,

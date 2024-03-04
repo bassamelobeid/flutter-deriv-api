@@ -4,31 +4,22 @@ use strict;
 use warnings;
 no indirect;
 
+use BOM::Config::Redis;
+use BOM::Config::Runtime;
+use BOM::Platform::Context qw (localize request);
+use BOM::Pricing::v3::Utility;
+use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::User::Client;
+use DataDog::DogStatsd::Helper  qw(stats_timing stats_inc);
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use Format::Util::Numbers       qw/formatnumber roundcommon/;
+use JSON::MaybeXS;
+use LandingCompany::Registry;
+use List::Util   qw(max);
 use Scalar::Util qw(blessed);
 use Syntax::Keyword::Try;
-use List::MoreUtils qw(none);
-use List::Util      qw(max);
-use JSON::MaybeXS;
-use Date::Utility;
-use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
-use Time::Duration::Concise::Localize;
-use BOM::User::Client;
 
-use Format::Util::Numbers qw/formatnumber roundcommon/;
-use Scalar::Util::Numeric qw(isint);
-
-use BOM::MarketData::Types;
-use BOM::Config;
-use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Locale;
-use BOM::Config::Runtime;
-use BOM::Config::Redis;
-use BOM::Product::ContractFactory qw(produce_contract);
-use Finance::Contract::Longcode   qw( shortcode_to_parameters);
-use LandingCompany::Registry;
-use BOM::Pricing::v3::Utility;
-use Scalar::Util qw(looks_like_number);
 use feature "state";
 
 my $json = JSON::MaybeXS->new->allow_blessed;
@@ -211,6 +202,10 @@ sub _get_ask {
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order}       = $display;
                 $response->{commission}        = $contract->commission_amount;                                  # commission in payout currency amount
+                $response->{contract_details}  = {
+                    'minimum_stake' => $contract->min_stake,
+                    'maximum_stake' => $contract->max_stake,
+                };
 
                 if ($contract->cancellation) {
                     $response->{cancellation} = {
@@ -271,6 +266,8 @@ sub _get_ask {
 
                 $response->{contract_details} = {
                     'maximum_payout'        => $contract->max_payout,
+                    'minimum_stake'         => $contract->min_stake,
+                    'maximum_stake'         => $contract->max_stake,
                     'maximum_ticks'         => $contract->max_duration,
                     'tick_size_barrier'     => $contract->tick_size_barrier,
                     'high_barrier'          => $high_barrier,
