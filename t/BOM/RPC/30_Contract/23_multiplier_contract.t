@@ -1,22 +1,16 @@
 #!perl
 use strict;
 use warnings;
-use BOM::Test::RPC::QueueClient;
-use Test::Most;
-use Test::Mojo;
-use Test::MockModule;
 
-use Data::Dumper;
-use BOM::MarketData qw(create_underlying);
-use Data::UUID;
-use Date::Utility;
-
-use BOM::Pricing::v3::Contract;
-use BOM::Platform::Context                       qw (request);
+use BOM::Platform::Context                       qw(request);
+use BOM::Product::ContractFactory                qw(produce_contract);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Product::ContractFactory                qw( produce_contract );
+use BOM::Test::RPC::QueueClient;
+use Date::Utility;
+use Test::MockModule;
+use Test::Mojo;
+use Test::Most;
 
 my $now             = Date::Utility->new;
 my $landing_company = 'svg';
@@ -74,116 +68,124 @@ subtest 'multiplier - send_ask' => sub {
     delete $args->{duration};
 
     my $expected = {
-        'longcode' =>
-            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
-        'spot'                => '100.00',
-        'date_start'          => ignore(),
-        'date_expiry'         => ignore(),
+        'ask_price'        => '100.00',
+        'auth_time'        => ignore(),
+        'commission'       => '0.50',
+        'contract_details' => {
+            'maximum_stake' => '2000.00',
+            'minimum_stake' => '1.00'
+        },
         'contract_parameters' => {
-            'min_commission_amount' => '0.02',
-            'app_markup_percentage' => 0,
-            'amount_type'           => 'stake',
-            'multiplier'            => 10,
-            'currency'              => 'USD',
-            'deep_otm_threshold'    => '0.025',
-            'date_start'            => 0,
-            'proposal'              => 1,
             'amount'                => '100',
+            'amount_type'           => 'stake',
+            'app_markup_percentage' => 0,
             'base_commission'       => '0.012',
-            'underlying'            => 'R_100',
             'bet_type'              => 'MULTUP',
-            'landing_company'       => 'virtual'
+            'currency'              => 'USD',
+            'date_start'            => 0,
+            'deep_otm_threshold'    => '0.025',
+            'landing_company'       => 'virtual',
+            'min_commission_amount' => '0.02',
+            'multiplier'            => 10,
+            'proposal'              => 1,
+            'underlying'            => 'R_100',
         },
-        'auth_time'     => ignore(),
+        'date_expiry'   => ignore(),
+        'date_start'    => ignore(),
         'display_value' => '100.00',
-        'stash'         => {
-            'source_bypass_verification' => 0,
-            'valid_source'               => 1,
-            'app_markup_percentage'      => '0',
-            'market'                     => 'synthetic_index',
-            source_type                  => 'official',
-        },
-        'commission'  => '0.50',
-        'spot_time'   => ignore(),
-        'limit_order' => {
+        'limit_order'   => {
             'stop_out' => {
-                'value'        => '90.05',
                 'display_name' => 'Stop out',
+                'order_amount' => -100,
                 'order_date'   => ignore(),
-                'order_amount' => -100
+                'value'        => '90.05',
             }
         },
-        'payout'       => '0',
-        'rpc_time'     => ignore(),
-        'ask_price'    => '100.00',
-        'multiplier'   => 10,
-        skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN',
-        channel        =>
+        'longcode' =>
+            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
+        'multiplier'     => 10,
+        'payout'         => '0',
+        'rpc_time'       => ignore(),
+        'skip_streaming' => 0,
+        'spot'           => '100.00',
+        'spot_time'      => ignore(),
+        'stash'          => {
+            'app_markup_percentage'      => '0',
+            'market'                     => 'synthetic_index',
+            'source_bypass_verification' => 0,
+            'source_type'                => 'official',
+            'valid_source'               => 1,
+        },
+        'channel' =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
-        subscription_channel =>
+        'subchannel'           => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN',
+        'subscription_channel' =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN'
     };
     my $res = $c->call_ok('send_ask', $params)->has_no_error->result;
     cmp_deeply($res, $expected, 'send_ask output as expected');
 
     $expected = {
-        'longcode' =>
-            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
-        'spot'                => '100.00',
-        'date_start'          => ignore(),
-        'date_expiry'         => ignore(),
+        'ask_price'        => '100.00',
+        'auth_time'        => ignore(),
+        'commission'       => '0.50',
+        'contract_details' => {
+            'maximum_stake' => '2000.00',
+            'minimum_stake' => '1.00'
+        },
         'contract_parameters' => {
-            'min_commission_amount' => '0.02',
-            'app_markup_percentage' => 0,
-            'amount_type'           => 'stake',
-            'multiplier'            => 10,
-            'currency'              => 'USD',
-            'deep_otm_threshold'    => '0.025',
-            'limit_order'           => {'take_profit' => 10},
-            'date_start'            => 0,
-            'proposal'              => 1,
             'amount'                => '100',
+            'amount_type'           => 'stake',
+            'app_markup_percentage' => 0,
             'base_commission'       => '0.012',
-            'underlying'            => 'R_100',
             'bet_type'              => 'MULTUP',
-            'landing_company'       => 'virtual'
+            'currency'              => 'USD',
+            'date_start'            => 0,
+            'deep_otm_threshold'    => '0.025',
+            'landing_company'       => 'virtual',
+            'min_commission_amount' => '0.02',
+            'limit_order'           => {'take_profit' => 10},
+            'multiplier'            => 10,
+            'proposal'              => 1,
+            'underlying'            => 'R_100',
         },
-        'auth_time'     => ignore(),
+        'date_expiry'   => ignore(),
+        'date_start'    => ignore(),
         'display_value' => '100.00',
-        'stash'         => {
-            'source_bypass_verification' => 0,
-            'valid_source'               => 1,
-            'app_markup_percentage'      => '0',
-            'market'                     => 'synthetic_index',
-            source_type                  => 'official',
-        },
-        'commission'  => '0.50',
-        'spot_time'   => ignore(),
-        'limit_order' => {
-            'stop_out' => {
-                'value'        => '90.05',
-                'display_name' => 'Stop out',
-                'order_date'   => ignore(),
-                'order_amount' => -100
-            },
+        'limit_order'   => {
             'take_profit' => {
                 'display_name' => 'Take profit',
                 'order_amount' => 10,
                 'order_date'   => ignore(),
-                'value'        => 101.05,
+                'value'        => '101.05',
             },
+            'stop_out' => {
+                'display_name' => 'Stop out',
+                'order_amount' => -100,
+                'order_date'   => ignore(),
+                'value'        => '90.05',
+            }
         },
-        'payout'       => '0',
-        'rpc_time'     => ignore(),
-        'ask_price'    => '100.00',
-        'multiplier'   => 10,
-        skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN',
-        channel        =>
+        'longcode' =>
+            "If you select 'Up', your total profit/loss will be the percentage increase in Volatility 100 Index, multiplied by 1000, minus commissions.",
+        'multiplier'     => 10,
+        'payout'         => '0',
+        'rpc_time'       => ignore(),
+        'skip_streaming' => 0,
+        'spot'           => '100.00',
+        'spot_time'      => ignore(),
+        'stash'          => {
+            'app_markup_percentage'      => '0',
+            'market'                     => 'synthetic_index',
+            'source_bypass_verification' => 0,
+            'source_type'                => 'official',
+            'valid_source'               => 1,
+        },
+        'channel' =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","limit_order",{"take_profit":10},"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
-        subscription_channel =>
-            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","limit_order",{"take_profit":10},"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN',
+        'subchannel'           => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN',
+        'subscription_channel' =>
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company","virtual","limit_order",{"take_profit":10},"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10,EN'
     };
     $args->{limit_order}->{take_profit} = 10;
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;

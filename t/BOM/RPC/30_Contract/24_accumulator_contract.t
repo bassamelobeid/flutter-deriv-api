@@ -1,22 +1,16 @@
 #!perl
 use strict;
 use warnings;
-use BOM::Test::RPC::QueueClient;
-use Test::Most;
-use Test::Mojo;
-use Test::MockModule;
 
-use Data::Dumper;
-use BOM::MarketData qw(create_underlying);
-use Data::UUID;
-use Date::Utility;
-
-use BOM::Pricing::v3::Contract;
 use BOM::Platform::Context                       qw(request);
-use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
-use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Product::ContractFactory                qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use BOM::Test::RPC::QueueClient;
+use Date::Utility;
+use Test::MockModule;
+use Test::Mojo;
+use Test::Most;
 
 my $now             = Date::Utility->new;
 my $landing_company = 'svg';
@@ -74,51 +68,53 @@ subtest 'accumulator - send_ask' => sub {
     delete $args->{duration};
 
     my $expected = {
-        'longcode'            => ignore(),
-        'spot'                => '100.00',
-        'date_start'          => ignore(),
-        'date_expiry'         => ignore(),
-        'contract_parameters' => {
-            'min_commission_amount' => '0.02',
-            'app_markup_percentage' => 0,
-            'amount_type'           => 'stake',
-            'growth_rate'           => 0.01,
-            'currency'              => 'USD',
-            'deep_otm_threshold'    => '0.025',
-            'date_start'            => 0,
-            'proposal'              => 1,
-            'amount'                => '100',
-            'base_commission'       => '0',
-            'underlying'            => 'R_100',
-            'bet_type'              => 'ACCU',
-            'landing_company'       => 'virtual'
-        },
+        'ask_price'        => '100.00',
+        'auth_time'        => ignore(),
         "contract_details" => {
+            "barrier_spot_distance" => 0.065,
             "high_barrier"          => 100.065,
             "last_tick_epoch"       => 123123123,
             "low_barrier"           => 99.935,
             "maximum_payout"        => ignore(),
+            "maximum_stake"         => '2000.00',
             "maximum_ticks"         => ignore(),
-            "tick_size_barrier"     => ignore(),
-            "barrier_spot_distance" => 0.065,
+            "minimum_stake"         => '1.00',
+            "tick_size_barrier"     => 0.000644417416,
         },
-        'auth_time'     => ignore(),
+        'contract_parameters' => {
+            'amount'                => '100',
+            'amount_type'           => 'stake',
+            'app_markup_percentage' => 0,
+            'base_commission'       => '0',
+            'bet_type'              => 'ACCU',
+            'currency'              => 'USD',
+            'date_start'            => 0,
+            'deep_otm_threshold'    => '0.025',
+            'growth_rate'           => 0.01,
+            'landing_company'       => 'virtual',
+            'min_commission_amount' => '0.02',
+            'proposal'              => 1,
+            'underlying'            => 'R_100',
+        },
+        'date_expiry'   => ignore(),
+        'date_start'    => ignore(),
         'display_value' => '100.00',
+        'longcode'      => ignore(),
         'stash'         => {
-            'source_bypass_verification' => 0,
-            'valid_source'               => 1,
             'app_markup_percentage'      => '0',
             'market'                     => 'synthetic_index',
-            source_type                  => 'official',
+            'source_bypass_verification' => 0,
+            'source_type'                => 'official',
+            'valid_source'               => 1,
         },
+        'spot'         => '100.00',
         'spot_time'    => ignore(),
         'payout'       => '0',
         'rpc_time'     => ignore(),
-        'ask_price'    => '100.00',
         skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0,0.02,,,,,EN',
         channel        =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
+        subchannel           => 'v1,USD,100,stake,0,0.025,0,0.02,,,,,EN',
         subscription_channel =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0,0.02,,,,,EN'
     };
@@ -134,59 +130,61 @@ subtest 'accumulator - send_ask' => sub {
     cmp_deeply($res, $expected, 'send_ask output as expected');
 
     $expected = {
-        'longcode'            => ignore(),
-        'spot'                => '100.00',
-        'date_start'          => ignore(),
-        'date_expiry'         => ignore(),
-        'contract_parameters' => {
-            'min_commission_amount' => '0.02',
-            'app_markup_percentage' => 0,
-            'amount_type'           => 'stake',
-            'growth_rate'           => 0.01,
-            'currency'              => 'USD',
-            'deep_otm_threshold'    => '0.025',
-            'date_start'            => 0,
-            'proposal'              => 1,
-            'amount'                => '100',
-            'base_commission'       => '0',
-            'underlying'            => 'R_100',
-            'bet_type'              => 'ACCU',
-            'landing_company'       => 'virtual',
-            'limit_order'           => {'take_profit' => 10}
-        },
+        'ask_price'        => '100.00',
+        'auth_time'        => ignore(),
         "contract_details" => {
+            "barrier_spot_distance" => 0.065,
             "high_barrier"          => 100.065,
             "last_tick_epoch"       => 123123123,
             "low_barrier"           => 99.935,
             "maximum_payout"        => ignore(),
+            "maximum_stake"         => '2000.00',
             "maximum_ticks"         => ignore(),
-            "tick_size_barrier"     => ignore(),
-            "barrier_spot_distance" => 0.065,
+            "minimum_stake"         => '1.00',
+            "tick_size_barrier"     => 0.000644417416,
         },
-        'limit_order' => {
+        'contract_parameters' => {
+            'amount'                => '100',
+            'amount_type'           => 'stake',
+            'app_markup_percentage' => 0,
+            'base_commission'       => '0',
+            'bet_type'              => 'ACCU',
+            'currency'              => 'USD',
+            'date_start'            => 0,
+            'deep_otm_threshold'    => '0.025',
+            'growth_rate'           => 0.01,
+            'landing_company'       => 'virtual',
+            'limit_order'           => {'take_profit' => 10},
+            'min_commission_amount' => '0.02',
+            'proposal'              => 1,
+            'underlying'            => 'R_100',
+        },
+        'date_expiry'   => ignore(),
+        'date_start'    => ignore(),
+        'display_value' => '100.00',
+        'limit_order'   => {
             'take_profit' => {
                 'display_name' => 'Take profit',
                 'order_amount' => 10,
                 'order_date'   => ignore()
             },
         },
-        'auth_time'     => ignore(),
-        'display_value' => '100.00',
-        'stash'         => {
-            'source_bypass_verification' => 0,
-            'valid_source'               => 1,
+        'longcode' => ignore(),
+        'stash'    => {
             'app_markup_percentage'      => '0',
             'market'                     => 'synthetic_index',
-            source_type                  => 'official',
+            'source_bypass_verification' => 0,
+            'source_type'                => 'official',
+            'valid_source'               => 1,
         },
+        'spot'         => '100.00',
         'spot_time'    => ignore(),
         'payout'       => '0',
         'rpc_time'     => ignore(),
-        'ask_price'    => '100.00',
         skip_streaming => 0,
-        subchannel     => 'v1,USD,100,stake,0,0.025,0,0.02,,,,,EN',
         channel        =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","limit_order",{"take_profit":10},"price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
+        subchannel           => 'v1,USD,100,stake,0,0.025,0,0.02,,,,,EN',
         subscription_channel =>
             'PRICER_ARGS::["amount","100","basis","stake","contract_type","ACCU","country_code",null,"currency","USD","growth_rate","0.01","landing_company","virtual","limit_order",{"take_profit":10},"price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0,0.02,,,,,EN'
     };
