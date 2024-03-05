@@ -40,8 +40,10 @@ use Array::Utils qw(intersect array_minus);
 use Scalar::Util qw(blessed);
 use Text::Trim   qw(trim);
 use WebService::MyAffiliates;
-use Array::Utils qw(array_minus);
-use Digest::SHA  qw/sha256_hex/;
+use Array::Utils    qw(array_minus);
+use Digest::SHA     qw/sha256_hex/;
+use Digest::MD5     qw(md5_hex);
+use Locale::Country qw/code2country/;
 
 use BOM::Config;
 use BOM::Config::Onfido;
@@ -69,14 +71,14 @@ use BOM::User::PaymentRecord;
 use BOM::Rules::Engine;
 use BOM::Config::Payments::PaymentMethods;
 use BOM::Platform::Client::AntiFraud;
-use Locale::Country qw/code2country/;
 use BOM::Platform::Client::AntiFraud;
 use BOM::Platform::Utility;
-use Digest::MD5 qw(md5_hex);
 use BOM::Event::Actions::Client::IdentityVerification;
 use BOM::User::Script::AMLClientsUpdate;
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
+use Business::Config;
+use Business::Config::LandingCompany;
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -2700,7 +2702,7 @@ sub social_responsibility_check {
     # hasn't filled the FA.
     my $client_net_income = $fa_net_income ? $NET_INCOME{$fa_net_income} : "No FA filled";
 
-    my $threshold_list = first { $_->{net_income} eq $client_net_income } BOM::Config::social_responsibility_thresholds()->{limits}->@*;
+    my $threshold_list = first { $_->{net_income} eq $client_net_income } Business::Config->new()->social_responsibility_thresholds()->{limits}->@*;
 
     unless ($threshold_list) {
         $log->errorf('Net Annual Income of client %s does not much any of the values', $client->loginid);
@@ -3196,7 +3198,8 @@ sub qualifying_payment_check {
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
-    my $payment_check_limits = BOM::Config::payment_limits()->{qualifying_payment_check_limits}->{$client->landing_company->short};
+    my $payment_check_limits =
+        Business::Config::LandingCompany->new()->payment_limit()->{qualifying_payment_check_limits}->{$client->landing_company->short};
 
     my $limit_val       = $payment_check_limits->{limit_for_days};
     my $limit_cur       = $payment_check_limits->{currency};

@@ -54,8 +54,6 @@ $mock_client->mock(
 
 my $redis = BOM::Config::Redis::redis_events();
 my ($msg, $reg);
-#the social responsibility values can be found here:#
-# /home/git/regentmarkets/bom-config/share/social_responsibility_thresholds.yml #
 
 subtest 'Generic tests' => sub {
 
