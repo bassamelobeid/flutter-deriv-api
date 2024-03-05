@@ -198,7 +198,6 @@ $params->{args} = {
     platform     => 'ctrader',
 };
 $loginids{ct_real} = $c->call_ok('trading_platform_new_account', $params)->result->{account_id};
-$c->call_ok('trading_platform_new_account', $params)->result;
 
 subtest 'account list' => sub {
 

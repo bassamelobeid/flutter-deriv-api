@@ -56,7 +56,6 @@ my %ERROR_MAP = do {
         CTraderInvalidAccountType              => localize('An invalid cTrader account type was provided for account creation.'),
         CTIDGetFailed                          => localize('Failed to retrieve new or existing CTID.'),
         CTraderExistingAccountGroupMissing     => localize('Existing cTrader accounts missing group data.'),
-        CTraderExistingActiveAccount           => localize('Existing active cTrader account found.'),
         CTraderAccountCreateFailed             => localize('There was an error creating cTrader account. Please try again later.'),
         CTraderAccountLinkFailed               => localize('There was an error linking created cTrader account. Please try again later.'),
         CTraderUnsupportedCountry              => localize('cTrader unsupported country code.'),
@@ -115,6 +114,9 @@ my %ERROR_MAP = do {
         CTraderWithdrawalIncomplete   => localize('The credit to your Deriv account did not complete. Please contact our Customer Support team.'),
         CTraderTransferCompleteError  => localize('The transfer completed successfully, but an error occured when getting account details.'),
         TradingPlatformInvalidAccount => localize("This [_1] account is not available for your account."),
+        CTraderExistingAccountLimitExceeded =>
+            localize('Maximum allowed cTrader [_1] accounts per client exceeded. You can have up to [_2] cTrader accounts.'),
+        CTraderAccountCreationInProgress => localize('Your account creation is still in progress. Please wait for completion.'),
     );
 };
 
