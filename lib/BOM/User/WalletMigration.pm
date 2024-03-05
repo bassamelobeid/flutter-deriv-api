@@ -14,7 +14,7 @@ use BOM::Config::Runtime;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 
-use Log::Any qw($log);
+use Log::Any '$log', default_adapter => 'Stderr';
 
 use BOM::User;
 use BOM::User::Wallet;
@@ -240,7 +240,9 @@ method process {
     my $existing_wallets = $self->existing_wallets;
 
     for my $loginid (@account_to_upgrade) {
-        my $account_info  = $login_details->{$loginid};
+        my $account_info = $login_details->{$loginid};
+        next if $account_info->{platform} eq 'dwallet';
+
         my $wallet_params = $self->wallet_params_for($loginid);
 
         my ($lc, $type, $currency) = $wallet_params->@{qw(landing_company account_type currency)};
@@ -267,12 +269,12 @@ method process {
             $wallet_params->{client}->save;
         }
 
-        $user->migrate_loginid({
+        $user->migrate_loginid(
             loginid        => $loginid,
             wallet_loginid => $wallet_to_link->loginid,
             platform       => $account_info->{platform},
             account_type   => $account_info->{is_virtual} ? 'demo' : 'real',
-        });
+        );
     }
 
     $self->redis_rw->del(MIGRATION_KEY_PREFIX . $user->id);

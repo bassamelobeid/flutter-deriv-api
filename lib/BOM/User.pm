@@ -2097,7 +2097,7 @@ and linking trading account to the wallet account.
 
 =over 4
 
-=item * C<$args> - hashref with the following keys:
+=item * C<$args> - hash with the following keys:
 
 =over 4
 
@@ -2118,17 +2118,20 @@ Returns 1 on success, throws exception on error
 =cut
 
 sub migrate_loginid {
-    my ($self, $args) = @_;
 
-    $args->{$_} || croak "Missing $_" for qw(loginid platform account_type wallet_loginid);
+    my ($self, %args) = @_;
+
+    $args{$_} || croak "Missing $_" for qw(loginid platform account_type wallet_loginid);
 
     my ($res) = $self->dbic->run(
         fixup => sub {
             return $_->selectrow_array('select users.migrate_loginid(?,?,?,?,?)',
-                undef, $self->{id}, $args->@{qw(loginid platform account_type wallet_loginid)});
+                undef, $self->{id}, @args{qw(loginid platform account_type wallet_loginid)});
         });
 
-    croak "Unable to link $args->{loginid} to $args->{wallet_loginid}" unless $res;
+    # only should happen if we start to migration for the same user in parallel.
+    # but it should not be possible as we have redis lock preventing this.
+    croak "Unable to link $args{loginid} to $args{wallet_loginid}" unless $res;
 
     return 1;
 }
