@@ -9,13 +9,15 @@ use Test::Fatal;
 use Test::Exception;
 use Test::Deep;
 
-use BOM::Config::Onfido;
 use Locale::Codes::Country qw(country_code2code);
-use BOM::Config::Redis;
 use HTTP::Response;
 use Future::Exception;
 use JSON::MaybeXS;
 use List::Util qw(uniq);
+
+use Business::Config;
+use BOM::Config::Onfido;
+use BOM::Config::Redis;
 
 my $id_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'];
 my $ng_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport', 'Voter Id'];
@@ -42,7 +44,7 @@ subtest 'Invalid country ' => sub {
 };
 
 subtest 'disabled countries' => sub {
-    my $config = BOM::Config::onfido_disabled_countries;
+    my $config = Business::Config->new()->onfido_disabled_countries;
 
     my $disabled_countries = [map { $config->{$_} ? $_ : () } keys $config->%*];
 

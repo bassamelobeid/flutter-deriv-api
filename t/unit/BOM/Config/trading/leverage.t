@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Deep;
+use YAML::XS;
 
 use BOM::Config;
 
@@ -10,7 +11,7 @@ use constant LEVERAGE_KEYS => qw(
     stock_indices forex metals cryptocurrencies
 );
 
-my $leverage = BOM::Config::dynamic_leverage_config();
+my $leverage = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/cfd/leverage/metatrader/default.yml');
 
 subtest 'leverage stock indices' => sub {
     is_deeply($leverage->{stock_indices}, stocks_indices_structure()->{stock_indices}, 'stock indices config structure is correct');

@@ -153,24 +153,6 @@ sub backoffice {
     return $config;
 }
 
-=head2 currency_pairs_backoffice
-
-Get currency pairs information that is used on our Backoffice system
-
-Example:
-
-    $currency_pairs = BOM::Config::currency_pairs_backoffice()->{currency_pairs};
-
-Returns a hashref with a list of currency pairs used by our accounts/payments in BO
-Each pair is denoted by [currency1,currency2]
-
-=cut
-
-sub currency_pairs_backoffice {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/currency_config.yml');
-    return $config;
-}
-
 =head2 quants
 
 Get information about our trading platform configurations for various financial instruments
@@ -207,44 +189,6 @@ we have in our system
 sub payment_agent {
     my $subdir = $ENV{BOM_TEST_CONFIG} // '';
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/' . $subdir . 'share/paymentagent_config.yml');
-    return $config;
-}
-
-=head2 payment_limits
-
-Get information about payment/transaction limits of different landing companies
-
-Example:
-
-    my $config         = BOM::Config::payment_limits();
-    my $withdraw_limit = $config->{withdrawal_limits}->{iom}->{limit_for_days};
-
-Returns a hashref that contains withdraw / deposit / payment limits of various landing
-companies we have in our system
-
-=cut
-
-sub payment_limits {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/payment_limits.yml');
-    return $config;
-}
-
-=head2 client_limits
-
-Get information about client limits
-
-Example:
-
-    my $config         = BOM::Config::client_limits();
-    my $accounts_limit = $config->{max_payment_accounts_per_user};
-    my $max_balance    = $config->{max_balance}->{real}->{USD};
-
-Returns a hashref that contains trading limits of for our clients
-
-=cut
-
-sub client_limits {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/client_limits.yml');
     return $config;
 }
 
@@ -397,43 +341,6 @@ sub sanction_file {
     return "/var/lib/binary/sanctions.yml";
 }
 
-=head2 financial_assessment_fields
-
-Get all fields necessary for conducting financial assessment of the client
-
-Example:
-
-    my $config = BOM::Config::financial_assessment_fields();
-
-Returns the a hashref containing list of question and answers necessary for financial assessment
-
-=cut
-
-sub financial_assessment_fields {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/financial_assessment_structure.yml');
-    return $config;
-}
-
-=head2 social_responsibility_thresholds
-
-Get all social responsibility trading limits for our clients
-
-Example:
-
-    my $config            = BOM::Config::social_responsibility_thresholds();
-    my $client_net_income = 28000
-    my $threshold_list    = first { $_->{net_income} eq $client_net_income } $config->{limits}->@*
-
-Returns the a hashref containing list of different types of trading thresholds, when reached by
-the client puts them in `at risk` state
-
-=cut
-
-sub social_responsibility_thresholds {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/social_responsibility_thresholds.yml');
-    return $config;
-}
-
 =head2 p2p_payment_methods
 
 Payment method list for P2P.
@@ -448,17 +355,6 @@ Returns the a hashref containing list of payment methods supported for P2P trans
 
 sub p2p_payment_methods {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/p2p_payment_methods.yml');
-    return $config;
-}
-
-=head2 cft_blocked_countries
-
-CFT blocked countries list
-
-=cut
-
-sub cft_blocked_countries {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/cft_blocked_countries.yml');
     return $config;
 }
 
@@ -705,17 +601,6 @@ sub mt5_user_rights {
     return $config;
 }
 
-=head2 mt5_server_routing
-
-Config for trade server routing for MT5.
-
-=cut
-
-sub mt5_server_routing {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_server_routing_by_country.yml');
-    return $config;
-}
-
 =head2 derivez_server_routing_by_country
 
 Config for trade server routing for derivez for each countries.
@@ -768,43 +653,6 @@ Config for mt5 to deriv symbols mapping, where the key is MT5 symbol and value i
 
 sub mt5_symbols_config {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5-symbols.yml');
-    return $config;
-}
-
-=head2 onfido_supported_documents
-
-Get document types supported by onfido.
-
-Example:
-
-    my $documents = BOM::Config::onfido_supported_documents();
-
-Returns the a hashref containing list of supported documents per country by Onfido
-
-=cut
-
-sub onfido_supported_documents {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/onfido_supported_documents.yml');
-    return $config;
-}
-
-=head2 onfido_disabled_countries
-
-Get a list of disabled countries by our business rules.
-
-Onfido might support them but we rather don't
-
-Example:
-
-    my $disabled_countries = BOM::Config::onfido_disabled_countries();
-
-Returns the a hashref indexed by country code (2 letter) pointing to a boolean value that
-defines the disabled status of the country,
-
-=cut
-
-sub onfido_disabled_countries {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/onfido_disabled_countries.yml');
     return $config;
 }
 

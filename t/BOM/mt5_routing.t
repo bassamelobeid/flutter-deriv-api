@@ -8,10 +8,12 @@ use Test::Deep qw(cmp_bag);
 use Locale::Country;
 use List::Util qw(first any);
 
+use Business::Config::Country;
+
 use Brands::Countries;
 use BOM::Config;
 
-my $server_routing_config = BOM::Config::mt5_server_routing();
+my $server_routing_config = Business::Config::Country->new()->platform_server_routing('mt5');
 
 subtest 'check mt5 routing countries with our countries' => sub {
     my @routed_countries = keys %{$server_routing_config->{real}};

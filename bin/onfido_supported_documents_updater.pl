@@ -40,7 +40,7 @@ if ($dump) {
     # give ordered data back to the file
     my $data = [map { $details->{$_} } sort keys $details->%*];
 
-    DumpFile('/home/git/regentmarkets/bom-config/share/onfido_supported_documents.yml', $data);
+    DumpFile('/home/git/regentmarkets/perl-Business-Config/share/config/onfido_supported_documents.yml', $data);
 }
 
 if ($verbose) {

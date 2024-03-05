@@ -18,6 +18,8 @@ It does not exports these functions by default.
 use Syntax::Keyword::Try;
 use List::Util qw(any);
 
+use Business::Config::Country;
+
 use BOM::Config::Runtime;
 use BOM::Config;
 
@@ -315,7 +317,7 @@ Returns the whole routing config by country
 =cut
 
 sub routing_config {
-    my $routing_config = BOM::Config::mt5_server_routing();
+    my $routing_config = Business::Config::Country->new()->platform_server_routing('mt5');
 
     die "Cannot load mt5 routing config." unless $routing_config;
 
@@ -438,7 +440,7 @@ sub get_server_webapi_info {
     # [Note] p01_ts01 is the only trade server with financial trading setup. Having it in other region that is further away from our feed introduces latency.
     # some regulatory body require us to have trade server setup within their jurisdiction
 
-    # We are currently using mt5_server_routing_by_country.yml as the source of truth for the available server
+    # We are currently using business config mt5 routing.yml as the source of truth for the available server
     foreach my $server (@{$self->{server_type}}) {
         $servers{$server} = $config->{$server};
     }

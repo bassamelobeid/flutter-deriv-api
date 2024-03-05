@@ -21,5 +21,5 @@
 # For example, if status 'B' is applied, status 'A' will also be applie.
 
 hierarchy:
-  disabled: 
+  disabled:
     - allow_duplicate_signup

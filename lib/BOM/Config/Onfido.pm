@@ -35,15 +35,17 @@ use JSON::MaybeUTF8        qw(:v1);
 use Locale::Codes::Country qw(country_code2code);
 
 use Log::Any qw($log);
-use BOM::Config;
 use HTTP::Tiny;
 use Syntax::Keyword::Try;
 use JSON::MaybeXS;
-use BOM::Config::Redis;
 use YAML::XS                   qw(DumpFile);
 use DataDog::DogStatsd::Helper qw(stats_event);
 use List::Util                 qw(uniq);
 use JSON::MaybeXS              qw(encode_json decode_json);
+
+use BOM::Config;
+use BOM::Config::Redis;
+use Business::Config;
 
 =head2 supported_documents_list
 
@@ -64,7 +66,7 @@ sub supported_documents_list {
     }
 
     # fallback to static yml
-    return BOM::Config::onfido_supported_documents();
+    return Business::Config->new()->onfido_supported_documents();
 }
 
 =head2 supported_documents_for_country
@@ -130,7 +132,7 @@ sub is_disabled_country {
     # in current implementation the yml might be overriden by the automatic update,
     # an so we need a different place to store disabled countries
 
-    my $country_details = BOM::Config::onfido_disabled_countries();
+    my $country_details = Business::Config->new()->onfido_disabled_countries();
 
     $country_details->{$country_code} //= 0;
 

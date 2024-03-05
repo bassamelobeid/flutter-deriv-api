@@ -5,6 +5,7 @@ use Test::Deep;
 use Test::Exception;
 use Test::MockModule;
 
+use Business::Config;
 use BOM::Config::Onfido;
 
 subtest 'is_country_supported' => sub {
@@ -66,7 +67,7 @@ subtest 'is_disabled_country' => sub {
         ao => 1,
     };
 
-    my $mocked_config = Test::MockModule->new("BOM::Config");
+    my $mocked_config = Test::MockModule->new("Business::Config");
     $mocked_config->redefine("onfido_disabled_countries" => sub { return $mocked_disabled_countries });
 
     is(BOM::Config::Onfido::is_disabled_country('ao'), 1, "Country is disabled");
