@@ -516,8 +516,12 @@ SQL
     my $stateoptionlist = BOM::Platform::Locale::get_state_option($client->residence);
     my $stateoptions    = '<option value=""></option>';
     my $state_name      = '';
+    my $state_value     = '';
     for (@$stateoptionlist) {
-        $state_name = $_->{text} if $_->{value} eq $client->state;
+        if ($_->{value} eq BOM::User::Utility::get_valid_state(trim($client->state), $client->residence)) {
+            $state_name  = $_->{text};
+            $state_value = $_->{value};
+        }
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
 
@@ -767,7 +771,7 @@ SQL
         fatca_declaration_time                       => $client->fatca_declaration_time,
         fatca_declaration                            => $client->fatca_declaration,
         show_uploaded_documents                      => $show_uploaded_documents,
-        state_options                                => set_selected_item($client->state, $stateoptions),
+        state_options                                => set_selected_item($state_value, $stateoptions),
         client_state                                 => $state_name,
         tnc_status                                   => $tnc_status,
         tnc_versions                                 => $tnc_versions,
