@@ -25,6 +25,7 @@ use BOM::Test::Helper::Client               qw(create_client top_up);
 use BOM::Test::Helper::ExchangeRates        qw/populate_exchange_rates/;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Config;
+use Business::Config::LandingCompany;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -104,7 +105,7 @@ my $contract = produce_contract({
 
 my $mock_call = Test::MockModule->new('BOM::Product::Contract::Call');
 subtest 'IOM withdrawal limit' => sub {
-    my $withdraw_limit = BOM::Config::payment_limits()->{withdrawal_limits}->{iom}->{limit_for_days};
+    my $withdraw_limit = Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits}->{iom}->{limit_for_days};
 
     $client->payment_free_gift(
         currency     => 'GBP',

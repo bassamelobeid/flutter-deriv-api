@@ -9,6 +9,8 @@ use List::Util qw(min max first any);
 use YAML::XS   qw(LoadFile);
 use JSON::MaybeXS;
 
+use Business::Config::LandingCompany;
+
 use BOM::Config::Quants              qw(get_exchangerates_limit);
 use Format::Util::Numbers            qw/financialrounding/;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
@@ -563,7 +565,7 @@ sub _validate_iom_withdrawal_limit {
     my $self   = shift;
     my $client = shift;
 
-    my $withdrawal_limits_config = BOM::Config::payment_limits()->{withdrawal_limits}->{'iom'};
+    my $withdrawal_limits_config = Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits}->{'iom'};
     my $numdays                  = $withdrawal_limits_config->{for_days};
     my $numdayslimit             = $withdrawal_limits_config->{limit_for_days};
     my $lifetimelimit            = $withdrawal_limits_config->{lifetime_limit};
