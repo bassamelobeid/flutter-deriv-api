@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More;
 use BOM::User::FinancialAssessment;
-use BOM::Config;
+use Business::Config;
 
 my @financial_information_keys = qw/
     occupation
@@ -38,7 +38,7 @@ my @trading_experience_regulated_keys = qw/
     leverage_trading_high_risk_stop_loss
     required_initial_margin/;
 
-my $input_mapping = BOM::Config::financial_assessment_fields();
+my $input_mapping = Business::Config->new()->financial_assessment();
 
 subtest "check for all keys" => sub {
     is_deeply([sort keys %{$input_mapping->{financial_information}}], [sort @financial_information_keys], 'correct keys for financial information');
