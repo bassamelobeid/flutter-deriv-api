@@ -2155,7 +2155,6 @@ rpc get_settings => sub {
             address_line_1                 => $real_client->address_1,
             address_line_2                 => $real_client->address_2,
             address_city                   => $real_client->city,
-            address_state                  => $real_client->state,
             address_postcode               => $real_client->postcode,
             phone                          => $real_client->phone,
             place_of_birth                 => $real_client->place_of_birth,
@@ -2173,6 +2172,11 @@ rpc get_settings => sub {
                 ($client->payment_agent and $client->payment_agent->status and $client->payment_agent->status eq 'authorized') ? 1 : 0,
             %$settings,
         };
+
+        $settings->{address_state} = BOM::User::Utility::get_valid_state(trim($real_client->state), $real_client->residence);
+
+        stats_inc('bom_rpc.get_settings.override_address_state', {tags => ['client: ' . $real_client->loginid]})
+            if ($settings->{address_state} ne trim($real_client->state));
 
         $settings->{fatca_declaration} = $real_client->fatca_declaration if defined $real_client->fatca_declaration;
     }

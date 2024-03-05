@@ -1630,4 +1630,88 @@ subtest 'get settings from real with a dup account' => sub {
         'All immutable fields are included in the response (minus the secrets)';
 };
 
+subtest 'get settings returns correct address_state' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'client+state+1@test.com',
+        broker_code   => 'CR',
+        residence     => 'id',
+        address_state => 'bali'
+    });
+
+    my $expected_stat = ['bom_rpc.get_settings.override_address_state', {tags => [re('^client')]}];
+    my @stats         = ();
+
+    my $func_mock = Test::MockModule->new('BOM::RPC::v3::Accounts');
+    $func_mock->mock(
+        'stats_inc',
+        sub {
+            push @stats, @_;
+        });
+
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'x',
+    );
+
+    $user->add_client($client);
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $client->save;
+
+    my $token  = $token_gen->create_token($client->loginid, 'test token');
+    my $params = {
+        language  => 'EN',
+        token     => $token,
+        client_ip => '127.0.0.1'
+    };
+
+    my $cr_only_result = $c->tcall('get_settings', $params);
+    ok $cr_only_result->{address_state} eq 'BA', 'Long format successfully converted to value BA';
+    cmp_deeply [@stats], $expected_stat, 'stats called for override from bali to BA';
+
+    $client->state('Other');
+    $client->save;
+
+    @stats          = ();
+    $cr_only_result = $c->tcall('get_settings', $params);
+    ok $cr_only_result->{address_state} eq '', 'Empty string returned for invalid state value';
+    cmp_deeply [@stats], $expected_stat, 'stats called for override from Others to empty string';
+
+    $client->state(' BaLi ');
+    $client->save;
+
+    @stats          = ();
+    $cr_only_result = $c->tcall('get_settings', $params);
+    ok $cr_only_result->{address_state} eq 'BA', 'Trimmed and returned result successfully as BA';
+    cmp_deeply [@stats], $expected_stat, 'stats called for override from  BaLi  to BA';
+
+    $client->state('ba');
+    $client->save;
+
+    @stats          = ();
+    $cr_only_result = $c->tcall('get_settings', $params);
+    ok $cr_only_result->{address_state} eq 'BA', 'BA returned when state value is ba';
+    cmp_deeply [@stats], $expected_stat, 'stats called for override from ba to BA';
+
+    $client->state('BA');
+    $client->save;
+
+    @stats          = ();
+    $expected_stat  = [];
+    $cr_only_result = $c->tcall('get_settings', $params);
+    ok $cr_only_result->{address_state} eq 'BA', 'Empty returned for when state is empty';
+    cmp_deeply [@stats], $expected_stat, 'Did not call stats for when the address_state is correct';
+
+    $client->state('');
+    $client->save;
+
+    @stats          = ();
+    $expected_stat  = [];
+    $cr_only_result = $c->tcall('get_settings', $params);
+    ok $cr_only_result->{address_state} eq '', 'Empty returned for when state is empty';
+    cmp_deeply [@stats], $expected_stat, 'Did not call stats for when the state was empty string';
+
+    $func_mock->unmock_all;
+};
+
 done_testing();
