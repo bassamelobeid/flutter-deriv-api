@@ -79,15 +79,6 @@ my @test_pending_users = (
         'MTR100000003', '10000003', $creation_stamp->minus_time_interval('2d')->db_timestamp,
         'poa_rejected', 'mt5', 'real', 'USD', $bvi_group_attributes
     ],
-    ['MTR100000004', '10000004', $creation_stamp->db_timestamp, 'poa_outdated', 'mt5', 'real', 'USD', $bvi_group_attributes],
-    [
-        'MTR100000005', '10000005', $creation_stamp->minus_time_interval('2d')->db_timestamp,
-        'poa_outdated', 'mt5', 'real', 'USD', $bvi_group_attributes
-    ],
-    [
-        'MTR100000006', '10000006', $creation_stamp->minus_time_interval('2d')->db_timestamp,
-        'poa_outdated', 'mt5', 'real', 'USD', $svg_group_attributes
-    ],
 );
 
 my $status_update_mock = Test::MockModule->new('BOM::MT5::Script::StatusUpdate');
@@ -161,15 +152,14 @@ subtest 'grace_period_actions' => sub {
     my $verification_status = BOM::MT5::Script::StatusUpdate->new;
     $verification_status->grace_period_actions;
 
-    is $users_loaded,       6, 'correct number of clients loaded';
-    is $restricted_clients, 3, 'correct number restrictions';
+    is $users_loaded,       3, 'correct number of clients loaded';
+    is $restricted_clients, 2, 'correct number restrictions';
 
     cmp_deeply(
         \%restricted_loginids,
         {
             MTR100000002 => 1,
             MTR100000003 => 1,
-            MTR100000005 => 1,
         },
         'expected restricted loginids'
     );
@@ -668,7 +658,7 @@ subtest 'sync_status_actions' => sub {
     $test_client->binary_user_id('10000007');
     $test_client->save;
 
-    my $statuses = ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'poa_outdated'];
+    my $statuses = ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending'];
     my $dog_logs = [];
 
     $status_update_mock->mock(
@@ -778,6 +768,78 @@ subtest 'sync_status_actions' => sub {
 
     $status_update_mock->unmock_all;
     $event_mock->unmock_all;
+};
+
+subtest 'accounts with poa_outdated do not get updated' => sub {
+    my $verification_status = BOM::MT5::Script::StatusUpdate->new;
+    my $user                = BOM::User->create(
+        email    => 'poa+outdated@binary.com',
+        password => 'Test1234',
+    );
+
+    $user->add_loginid('MTR20000001', 'mt5', 'real', 'USD', {test => 'real\p01_ts01\financial\bvi_stp_usd'});
+    $user->update_loginid_status('MTR20000001', 'poa_outdated');
+
+    $user->add_loginid('MTR20000002', 'mt5', 'demo', 'USD', {test => 'real\p01_ts02\financial\labuan_stp_usd'});
+    $user->update_loginid_status('MTR20000002', 'poa_outdated');
+
+    $user->dbic->run(
+        fixup => sub {
+            $_->do('select users.upsert_poa_verification_and_issuance(?,?, ?)', undef, $user->id, '2020-10-10', '2020-10-10');
+        });
+
+    my $mock_docs = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments::Config');
+    my $boundary;
+
+    $mock_docs->mock(
+        'outdated_boundary',
+        sub {
+            my $category = shift;
+
+            is $category, 'POA', 'category is proof of address';
+
+            return Date::Utility->new($boundary) if $boundary;
+            return undef;
+        });
+
+    $boundary = '2020-10-11';
+    $verification_status->check_poa_issuance();
+
+    cmp_deeply get_loginids_status($user),
+        +{
+        MTR20000001 => 'poa_outdated',
+        MTR20000002 => 'poa_outdated',
+        },
+        'Nothing changed for poa_oudated status after check_poa_issuance';
+
+    $verification_status->grace_period_actions();
+
+    cmp_deeply get_loginids_status($user),
+        +{
+        MTR20000001 => 'poa_outdated',
+        MTR20000002 => 'poa_outdated',
+        },
+        'Nothing changed for poa_oudated status after grace_period_actions';
+
+    $verification_status->disable_users_actions();
+
+    cmp_deeply get_loginids_status($user),
+        +{
+        MTR20000001 => 'poa_outdated',
+        MTR20000002 => 'poa_outdated',
+        },
+        'Nothing changed for poa_oudated status after disable_users_actions';
+
+    $verification_status->sync_status_actions();
+
+    cmp_deeply get_loginids_status($user),
+        +{
+        MTR20000001 => 'poa_outdated',
+        MTR20000002 => 'poa_outdated',
+        },
+        'Nothing changed for poa_oudated status after sync_status_actions';
+
+    $status_update_mock->unmock_all;
 };
 
 sub get_loginids_status {

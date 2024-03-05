@@ -576,7 +576,7 @@ Returns an Array, filled with Arrayrefs for every account gathered from db
 Gathers clients with poa pending and rejected statuses within a certain period of creation, restricts and warns them
 to submit a poa verification
 
-Does not takes or returns any parameters
+Does not take or return any parameters
 
 =cut
 
@@ -584,13 +584,13 @@ Does not takes or returns any parameters
 
         my @combined = $self->gather_users({
             newest_created_at => $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd'),
-            statuses          => ['poa_pending', 'poa_rejected', 'poa_outdated'],
+            statuses          => ['poa_pending', 'poa_rejected'],
         });
 
         $self->dd_log_info('grace_period_actions',
                   "Gathered "
                 . scalar(@combined)
-                . " accounts form the DB with status ['poa_pending', 'poa_rejected', 'poa_outdated'] with the newest created at: "
+                . " accounts form the DB with status ['poa_pending', 'poa_rejected'] with the newest created at: "
                 . $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd')->datetime_ddmmmyy_hhmmss_TZ);
 
         my $loginid;
@@ -701,19 +701,17 @@ checks their latest POI and POA status and updates user.loginid table with the a
 # failed	    successful		    proof_failed                                #
 # successful	pending		        poa_pending                                 #
 # successful	failed		        poa_failed                                  #
-# successful	expired 		    poa_outdated                                #
 # successful	successful		    ''                                          #
 #-------------------------------------------------------------------------------#
 
-Does not takes or returns any parameters
+Does not take or return any parameters
 
 =cut
 
     method sync_status_actions {
         my @combined = $self->gather_users({
             newest_created_at => $now,
-            statuses          =>
-                ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'poa_outdated', 'needs_verification'],
+            statuses          => ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'needs_verification'],
         });
 
         $self->dd_log_info('sync_status_actions',
@@ -756,7 +754,7 @@ Does not takes or returns any parameters
 Gathers clients with poa_failed, poa_rejected statuses within a certain period of creation,
 sends them email reminders to resubmit POA
 
-Does not takes or returns any parameters
+Does not take or return any parameters
 
 =cut
 
@@ -838,7 +836,7 @@ Gathers clients with poa_pending statuse within a certain period of creation,
 sends them email informing them that the account will be restricted if thei don't
 submit a POA untill a certain date
 
-Does not takes or returns any parameters
+Does not take or return any parameters
 
 =cut
 
