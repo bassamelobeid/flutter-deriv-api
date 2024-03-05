@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use JSON::MaybeUTF8 qw(encode_json_utf8);
-use BOM::User::FinancialAssessment;
+use Business::Config;
 
 sub _get_by_index {
     my $h = shift;
@@ -40,7 +40,7 @@ sub get_fulfilled_hash {
 
 sub _get_with_selector {
     my $func = shift;
-    my $h    = BOM::Config::financial_assessment_fields();
+    my $h    = Business::Config->new()->financial_assessment();
     my %r    = map {
         my $inner = $_;
         map { $_ => $func->($inner->{$_}->{possible_answer}) } keys %$inner
