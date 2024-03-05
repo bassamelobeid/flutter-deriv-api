@@ -1,0 +1,27 @@
+# Ctrader available groups cofig
+real_ctrader_all_svg_std_usd:
+  account_type: real
+  market_type: all
+  landing_company_short: svg
+  sub_account_type: std
+  sub_account_category: ''
+  currency: usd
+  server: ctrader
+
+demo_ctrader_all_svg_std_usd:
+  account_type: demo
+  market_type: all
+  landing_company_short: svg
+  sub_account_type: std
+  sub_account_category: ''
+  currency: usd
+  server: ctrader
+
+real_ctrader_all_svg_std_hr_usd:
+  account_type: real
+  market_type: all
+  landing_company_short: svg
+  sub_account_type: std
+  sub_account_category: hr
+  currency: usd
+  server: ctrader

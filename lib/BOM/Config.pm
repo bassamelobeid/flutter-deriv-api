@@ -945,6 +945,32 @@ sub dynamic_leverage_config {
     return $config;
 }
 
+=head2 ctrader_general_configurations
+
+This subroutine loads the cTrader account types configuration from a YAML file. It uses a state variable to cache the configuration, ensuring that the file is only loaded once during the program's execution.
+
+=head3 Notes
+
+The configuration file is set to '/home/git/regentmarkets/bom-config/share/ctrader_general_configurations.yml'. If there's a need to load a different file or update the configuration dynamically, modifications to the subroutine would be required.
+
+=cut
+
+sub ctrader_general_configurations {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/ctrader_general_configurations.yml');
+    return $config;
+}
+
+=head2 ctrader_account_types
+
+Config for cTrader groups definition
+
+=cut
+
+sub ctrader_account_types {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/ctrader_account_types.yml');
+    return $config;
+}
+
 =head2 status_hierarchy
 
 Gets the hierarchy of statuses to define sub statuses
