@@ -31,7 +31,7 @@ my $all_expired_unsold = $vr->db->dbic->run(
             q{SELECT DISTINCT acc.client_loginid
                 FROM bet.financial_market_bet_open fmbo
                     JOIN transaction.account acc ON fmbo.account_id=acc.id
-                WHERE settlement_time < ? AND is_sold is false;},
+                WHERE purchase_time < ?::timestamp - interval '30 days';},
             {}, $date
         );
     });
