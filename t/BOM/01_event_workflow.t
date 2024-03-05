@@ -134,7 +134,7 @@ subtest 'process - generic jobs' => sub {
                 account_verification_for_pending_payout bulk_client_status_update
                 trigger_cio_broadcast crypto_cashier_transaction_updated
                 update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind mt5_archive_restore_sync sync_mt5_accounts_status
-                poa_updated poi_updated underage_client_detected mt5_archive_accounts wallet_migration_started mt5_svg_migration_requested ctrader_account_created nodejs_hello
+                poa_updated poi_updated underage_client_detected mt5_archive_accounts mt5_svg_migration_requested ctrader_account_created nodejs_hello
                 withdrawal_estimated_fee_updated p2p_settings_updated onfido_check_completed poi_claim_ownership recheck_onfido_face_similarity/
         ),
         'Correct number of actions that can be emitted'
@@ -257,6 +257,15 @@ subtest 'process - mt5 retryable jobs' => sub {
     my $action_mappings = $proc->actions;
 
     cmp_deeply([keys %$action_mappings], bag(qw/link_myaff_token_to_mt5 mt5_deposit_retry/), 'Correct number of actions that can be emitted');
+
+    is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
+};
+
+subtest 'process - generic retryable' => sub {
+    my $proc            = BOM::Event::Process->new(category => 'generic_retryable');
+    my $action_mappings = $proc->actions;
+
+    cmp_deeply([keys %$action_mappings], bag(qw/wallet_migration_started/), 'Correct number of actions that can be emitted');
 
     is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
 };

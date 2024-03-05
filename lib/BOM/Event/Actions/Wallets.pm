@@ -6,6 +6,9 @@ use warnings;
 use BOM::User;
 use BOM::User::WalletMigration;
 
+use Future::AsyncAwait;
+use Syntax::Keyword::Try;
+
 no indirect;
 
 =head1 NAME
@@ -27,15 +30,19 @@ Arguments:
 
 =cut
 
-sub wallet_migration_started {
+async sub wallet_migration_started {
     my $params = shift;
 
-    my $user      = BOM::User->new(id => $params->{user_id});
-    my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
-        app_id => $params->{app_id});
+    try {
+        my $user      = BOM::User->new(id => $params->{user_id});
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => $params->{app_id});
 
-    $migration->process();
+        $migration->process();
+    } catch ($e) {
+        die sprintf("Error processing wallet migration for user %s: %s", $params->{user_id} // 'undef', $e);
+    }
 
     return 1;
 }

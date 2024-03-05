@@ -129,7 +129,6 @@ my $action_mapping = {
         underage_client_detected                    => \&BOM::Event::Actions::Client::underage_client_detected,
         poi_claim_ownership                         => \&BOM::Event::Actions::Client::poi_claim_ownership,
         onfido_check_completed                      => \&BOM::Event::Actions::Client::onfido_check_completed,
-        wallet_migration_started                    => \&BOM::Event::Actions::Wallets::wallet_migration_started,
         mt5_svg_migration_requested                 => \&BOM::Event::Actions::MT5::mt5_svg_migration_requested,
         nodejs_hello                                => \&BOM::Event::Actions::External::nodejs_hello,
         withdrawal_estimated_fee_updated            => \&BOM::Event::Actions::CryptoCashier::withdrawal_estimated_fee_updated,
@@ -226,7 +225,9 @@ my $action_mapping = {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,
         mt5_deposit_retry       => \&BOM::Event::Actions::MT5::mt5_deposit_retry,
     },
-};
+    generic_retryable => {
+        wallet_migration_started => \&BOM::Event::Actions::Wallets::wallet_migration_started,
+    }};
 
 =head1 METHODS
 
