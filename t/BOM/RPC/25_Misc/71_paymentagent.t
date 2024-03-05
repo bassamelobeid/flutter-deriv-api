@@ -13,6 +13,8 @@ use List::Util qw( first shuffle );
 use YAML::XS;
 use Data::Dumper;
 
+use Business::Config::LandingCompany;
+
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 use BOM::Test::Helper::Client                  qw( top_up );
@@ -119,7 +121,7 @@ my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 my $payment_agent_exclusion_list = BOM::Config::Runtime->instance->app_config->payments->payment_agent_residence_check_exclusion;
 
 ## Cannot test if we do not know some edge cases:
-my $payment_withdrawal_limits = BOM::Config->payment_limits()->{withdrawal_limits};
+my $payment_withdrawal_limits = Business::Config::LandingCompany->new()->payment_limit->{withdrawal_limits};
 my $payment_transfer_limits   = BOM::Config::payment_agent()->{transaction_limits}->{transfer};
 
 my $mock_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
@@ -780,10 +782,9 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/Request too frequent/, $test);
-        modify_bom_config('payment_limits', 'RESET');
-        modify_bom_config('payment_agent',  'RESET');
+        reset_payment_limit_config();
+        reset_payment_agent_config();
         reset_transfer_testargs();
-
     };
 
 } ## end each type of currency for paymentagent_transfer
@@ -1240,64 +1241,49 @@ $mock_cashier->unmock('paymentagent_transfer');
 
 done_testing();
 
-sub modify_bom_config {
-
+sub reset_payment_agent_config {
     ## In-place modification of the items returned by BOM::Config
     ## This is needed as mocking and clone/dclone do not work well, due to items declared as 'state'
     ## We assume all config items are "hashes all the way down"
 
-    my $funcname = shift or die;
-
+    my $funcname = 'payment_agent';
     BOM::Config->can($funcname) or die "Sorry, BOM::Config does not have a function named '$funcname'";
 
     my $config = BOM::Config->$funcname;
     ref $config eq 'HASH' or die "BOM::Config->$funcname is not a hash?!\n";
 
-    if ($_[0] eq 'RESET') {
-        walk_n_reset_bom_config($config);
-        return;
-    }
+    reset_config($config);
 
-    sub walk_n_reset_bom_config {
-        my $road = shift;
-        return if !ref $road;
-        for my $key (keys %$road) {
-            walk_n_reset_bom_config($road->{$key}) if ref $road->{$key};
-            if ($key =~ /^OLD_(.+)/) {
-                $road->{$1} = delete $road->{$key};
-            }
-        }
-    }
+    return;
+}
 
-    for my $change (@_) {
-        my ($path, $value) = $change =~ /(.+)\s+=\s+(.+)/
-            or die "Format is path/to/change = value\n";
-        my $locations = [$config];
-        for my $current (split '/' => $path) {
-            if ($current eq '*') {
-                my $newlocations = [];
-                for my $loc (@$locations) {
-                    for my $key (keys %$loc) {
-                        push @$newlocations => $loc->{$key};
-                    }
-                }
-                $locations = $newlocations;
-            } else {
-                for my $loc (@$locations) {
-                    if (!exists $loc->{$current}) {
-                        die "BOM::Config->$funcname does not seem to have $current as part of $loc from path $path\n";
-                    }
-                    if (ref $loc->{$current}) {
-                        $loc = $loc->{$current};
-                    } else {
-                        $loc->{"OLD_$current"} = $loc->{$current} if not exists $loc->{"OLD_$current"};
-                        $loc->{$current} = $value;
-                    }
-                }
-            }
+sub reset_payment_limit_config {
+    ## In-place modification of the items returned by Business::Config::LandingCompany
+    ## This is needed as mocking and clone/dclone do not work well, due to items declared as 'state'
+    ## We assume all config items are "hashes all the way down"
+
+    my $funcname = 'payment_limit';
+    Business::Config::LandingCompany->can($funcname) or die "Sorry, Business::Config::LandingCompany does not have a function named '$funcname'";
+
+    my $config = Business::Config::LandingCompany->new()->$funcname;
+    ref $config eq 'HASH' or die "Business::Config::LandingCompany->$funcname is not a hash?!\n";
+
+    reset_config($config);
+
+    return;
+}
+
+sub reset_config {
+    my $config = shift;
+
+    return if !ref $config;
+
+    for my $key (keys %$config) {
+        reset_config($config->{$key}) if ref $config->{$key};
+        if ($key =~ /^OLD_(.+)/) {
+            $config->{$1} = delete $config->{$key};
         }
     }
 
     return;
 }
-

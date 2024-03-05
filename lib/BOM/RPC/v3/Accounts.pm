@@ -28,6 +28,7 @@ use BOM::User::FinancialAssessment
 use LandingCompany::Registry;
 use Format::Util::Numbers            qw/formatnumber financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
+use Business::Config::Account;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -2682,7 +2683,7 @@ rpc set_self_exclusion => sub {
             $min = $field_settings->{is_integer} ? 1 : 0;
             $max = $self_exclusion->{$field};
             if (not $is_regulated and $field eq 'max_open_bets') {
-                $max = BOM::Config::client_limits()->{max_open_bets_default};
+                $max = Business::Config::Account->new()->limit()->{max_open_bets_default};
             }
 
             return $error_sub->(localize('Please enter a number between [_1] and [_2].', $min, $max), $field)

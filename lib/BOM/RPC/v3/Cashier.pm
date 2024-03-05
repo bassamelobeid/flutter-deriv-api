@@ -22,11 +22,13 @@ use JSON::MaybeXS;
 use Text::Trim;
 use Math::BigFloat;
 
-use BOM::User qw( is_payment_agents_suspended_in_country );
+use Business::Config::LandingCompany;
 use LandingCompany::Registry;
+use ExchangeRates::CurrencyConverter qw/convert_currency in_usd offer_to_clients/;
+
+use BOM::User qw( is_payment_agents_suspended_in_country );
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Utility;
-use ExchangeRates::CurrencyConverter qw/convert_currency in_usd offer_to_clients/;
 use BOM::Config::CurrencyConfig;
 
 use BOM::RPC::Registry '-dsl';
@@ -79,7 +81,7 @@ use constant {
             TransferBlockedTradingAccounts TransferBlockedLegacy TransferBlockedClientIsVirtual RealToVirtualNotAllowed MaximumTransfers MaximumAmountTransfers
         )]};
 
-my $payment_limits = BOM::Config::payment_limits;
+my $payment_limits = Business::Config::LandingCompany->new()->payment_limit();
 
 rpc "cashier", sub {
     my $params           = shift;

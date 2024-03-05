@@ -22,6 +22,7 @@ use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 use Log::Any                         qw($log);
 use Locale::Country                  qw(country2code);
 use Brands::Countries;
+use Business::Config::Country;
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::MT5::Errors;
@@ -68,7 +69,7 @@ use constant SIX_MONTHS_IN_SECONDS => 6 * 30 * 24 * 60 * 60;
 # This is the default trading server key for
 # - demo account
 # - real financial and financial stp accounts
-# - countries that is not defined in BOM::Config::mt5_server_routing()
+# - countries that is not defined in Business::Config::Country->new()->platform_server_routing('mt5')
 my $DEFAULT_TRADING_SERVER_KEY = 'p01_ts01';
 
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
@@ -582,14 +583,14 @@ Returns a randomly selected trading server key in client's region
 sub _get_server_type {
     my ($account_type, $country, $market_type, $sub_account_category) = @_;
 
-    my $server_routing_config = BOM::Config::mt5_server_routing();
+    my $server_routing_config = Business::Config::Country->new()->platform_server_routing('mt5');
 
     # just in case we pass in the name of the country instead of the country code.
     if (length $country != 2) {
         $country = country2code($country);
     }
 
-    # We are currently using mt5_server_routing_by_country.yml as the source of truth for the available server
+    # We are currently using business config mt5 routing.yml as the source of truth for the available server
     my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type}->{servers}->{$sub_account_category};
 
     if (not defined $server_type) {
@@ -597,7 +598,7 @@ sub _get_server_type {
         $server_type = [$DEFAULT_TRADING_SERVER_KEY];
     }
 
-    # We have already sorted the server based on their geolocation and offering in mt5_server_routing_by_country.yml
+    # We have already sorted the server based on their geolocation and offering in business config mt5 routing.yml
     # We are not using symmetrical_servers anymore and just fetch the server info
     my $servers = BOM::Config::MT5->new(
         group_type           => $account_type,

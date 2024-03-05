@@ -910,9 +910,9 @@ subtest 'CR to MLT and MF account switching' => sub {
 };
 
 subtest 'new account on addtional trade server' => sub {
-    my $mocked = Test::MockModule->new('BOM::Config');
+    my $mocked = Test::MockModule->new('Business::Config::Country');
     $mocked->mock(
-        'mt5_server_routing',
+        'platform_server_routing',
         sub {
             return {
                 real => {},
