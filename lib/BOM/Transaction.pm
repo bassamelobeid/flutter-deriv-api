@@ -1348,7 +1348,13 @@ sub batch_buy {
                     if ($self->contract->can('available_orders')) {
                         $poc_parameters->{limit_order} = $self->contract->available_orders;
                     }
+
                     BOM::Transaction::Utility::set_poc_parameters($poc_parameters, $expiry_epoch);
+
+                    # start streaming newly bought contracts right away for copier account.
+                    my $pricer_args = BOM::Transaction::Utility::build_poc_pricer_args($poc_parameters);
+                    BOM::Config::Redis::redis_pricer()->set($pricer_args, 1);
+
                     $success++;
                 }
             }
@@ -1716,6 +1722,16 @@ sub sell_by_shortcode {
                         currency        => $self->contract->currency,
                         landing_company => $client->landing_company,
                     )->add_sells($client);
+
+                    # get poc parameters for contract to be sold
+                    my $poc_params = BOM::Transaction::Utility::build_poc_parameters(
+                        $client,
+                        {
+                            $res_row->{fmb}->%*,
+                            buy_transaction_id  => $res_row->{buy_tr_id},
+                            sell_transaction_id => $res_row->{txn}{id}});
+
+                    BOM::Transaction::Utility::set_poc_parameters($poc_params);
 
                     $success++;
                 }
