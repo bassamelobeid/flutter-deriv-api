@@ -3,6 +3,8 @@ package BOM::User::Script::P2PDailyMaintenance;
 use strict;
 use warnings;
 
+use Business::Config::LandingCompany;
+
 use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Config::Runtime;
@@ -76,7 +78,7 @@ sub run {
     my $all_countries     = $brand->countries_instance->countries_list;
     my $ad_config         = decode_json_utf8($app_config->payments->p2p->country_advert_config);
     my $campaigns         = decode_json_utf8($app_config->payments->p2p->email_campaign_ids);
-    my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
+    my $withdrawal_limits = Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits};
     my %bo_activation     = $redis->hgetall(AD_ACTIVATION_KEY)->@*;
     my $now               = Date::Utility->new;
     my @advertiser_ids;    # for advertisers who had updated ads

@@ -27,11 +27,19 @@ use Encode;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use POSIX                      qw(ceil);
 use JSON::MaybeUTF8            qw(encode_json_utf8 encode_json_text);
-use Finance::MIFIR::CONCAT     qw(mifir_concat);
+use Carp                       qw(croak confess);
+use Scalar::Util               qw(weaken);
+use Log::Any                   qw($log);
+use JSON::MaybeUTF8            qw(:v1);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
+use Finance::MIFIR::CONCAT qw(mifir_concat);
 
+use P2P;
+use Business::Config::Account;
+use Business::Config::Country;
+use Business::Config::LandingCompany;
 use LandingCompany::Registry;
 
 use BOM::Platform::S3Client;
@@ -70,13 +78,6 @@ use BOM::Platform::Utility qw(error_map);
 use BOM::Platform::Token::API;
 use BOM::Platform::Token;
 use BOM::User::Onfido;
-use P2P;
-use JSON::MaybeUTF8 qw(:v1);
-
-use Carp         qw(croak confess);
-use Scalar::Util qw(weaken);
-
-use Log::Any qw($log);
 
 =head1 NAME
 
@@ -1228,7 +1229,7 @@ sub fixed_max_balance {
     # Returns undef if landing company configuration asked for unlimited balance
     return undef if $self->landing_company->unlimited_balance;
 
-    my $max_bal = BOM::Config::client_limits()->{max_balance};
+    my $max_bal = Business::Config::Account->new()->limit()->{max_balance};
     my $curr    = $self->currency;
     return $self->is_virtual ? $max_bal->{virtual}{$curr} : $max_bal->{real}{$curr};
 }
@@ -1237,7 +1238,7 @@ sub get_limit_for_daily_turnover {
     my $self = shift;
 
     # turnover maxed at 500K of any currency.
-    my @limits = (BOM::Config::client_limits()->{maximum_daily_turnover}{$self->currency});
+    my @limits = (Business::Config::Account->new()->limit()->{maximum_daily_turnover}{$self->currency});
     if ($self->get_self_exclusion && $self->get_self_exclusion->max_turnover) {
         push @limits, $self->get_self_exclusion->max_turnover;
     }
@@ -1298,7 +1299,7 @@ sub get_limit_for_30day_losses {
 sub get_limit_for_open_positions {
     my $self = shift;
 
-    my @limits = BOM::Config::client_limits()->{max_open_bets_default};
+    my @limits = Business::Config::Account->new()->limit()->{max_open_bets_default};
 
     my $excl = $self->get_self_exclusion;
     if ($excl && $excl->max_open_bets) {
@@ -1351,7 +1352,7 @@ sub get_self_exclusion_until_date {
 sub get_limit_for_payout {
     my $self = shift;
 
-    my $max_payout = BOM::Config::client_limits()->{max_payout_open_positions};
+    my $max_payout = Business::Config::Account->new()->limit()->{max_payout_open_positions};
 
     return $max_payout->{$self->currency} // 0;
 }
@@ -2192,7 +2193,8 @@ sub increment_qualifying_payments {
     my $redis     = BOM::Config::Redis::redis_events();
     my $redis_key = $loginid . '_' . $args->{action} . '_qualifying_payment_check';
 
-    my $payment_check_limits = BOM::Config::payment_limits()->{qualifying_payment_check_limits}->{$self->landing_company->short};
+    my $payment_check_limits =
+        Business::Config::LandingCompany->new()->payment_limit()->{qualifying_payment_check_limits}->{$self->landing_company->short};
 
     if ($redis->exists($redis_key)) {
         # abs() is used, as withdrawal transactions have negative amount
@@ -2725,7 +2727,6 @@ sub p2p_advertiser_info {
     my ($self, %param) = @_;
 
     P2P->new(client => $self)->p2p_advertiser_info(%param);
-
 }
 
 =head2 p2p_advertiser_list
@@ -4876,7 +4877,7 @@ sub update_status_after_auth_fa {
     }
 
     if (my $p2p_advertiser = P2P->new(client => $self)->_p2p_advertiser_cached) {
-        my $limit = BOM::Config::payment_limits()->{withdrawal_limits}{$self->landing_company->short};
+        my $limit = Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits}{$self->landing_company->short};
         $self->db->dbic->run(
             fixup => sub {
                 $_->do('SELECT p2p.populate_withdrawal_limits(?, ?, NULL)', undef, $limit->{lifetime_limit}, $p2p_advertiser->{id});
@@ -6039,9 +6040,9 @@ sub payment_accounts_limit {
     my ($self, $payment_method_limit) = @_;
     my $custom_limit =
         $json->decode(BOM::Config::Runtime->instance->app_config->payments->custom_payment_accounts_limit_per_user)->{$self->user->{id}};
-    my $limits_per_broker         = BOM::Config::client_limits()->{max_client_payment_accounts_per_broker_code} // {};
+    my $limits_per_broker         = Business::Config::Account->new()->limit()->{max_client_payment_accounts_per_broker_code} // {};
     my $account_broker_code_limit = $limits_per_broker->{$self->{broker_code}};
-    my $default_limit             = BOM::Config::client_limits()->{max_payment_accounts_per_user};
+    my $default_limit             = Business::Config::Account->new()->limit()->{max_payment_accounts_per_user};
 
     return $custom_limit // $account_broker_code_limit // $payment_method_limit // $default_limit;
 }
@@ -6483,9 +6484,9 @@ applies the conditions related to visa/reversible deposits
 
 sub apply_reversible_deposit_conditions {
     my $self                  = shift;
-    my $cft_blocked_countries = BOM::Config::cft_blocked_countries();
+    my $cft_blocked_countries = Business::Config::Country->new()->cft_blocked();
 
-    return "PaymentAgentUseOtherMethod" if $cft_blocked_countries->{lc $self->residence};
+    return "PaymentAgentUseOtherMethod" if (exists $cft_blocked_countries->{lc $self->residence});
     return "PaymentAgentWithdrawSameMethod";
 }
 

@@ -424,7 +424,7 @@ sub get_trading_server {
         $server_type = ['p02_ts01'];
     }
 
-    # We have already sorted the server based on their geolocation and offering in mt5_server_routing_by_country.yml
+    # We have already sorted the server based on their geolocation and offering in using business config mt5 routing.yml
     # We are not using symmetrical_servers anymore and just fetch the server info
     my $servers = BOM::Config::MT5->new(
         group_type  => $account_type,

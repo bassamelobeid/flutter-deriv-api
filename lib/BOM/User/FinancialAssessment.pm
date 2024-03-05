@@ -7,7 +7,7 @@ use BOM::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Context qw (request);
 use BOM::Platform::Email   qw(send_email);
-use BOM::Config;
+use Business::Config;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use List::Util      qw/none all any/;
 
@@ -20,7 +20,7 @@ use constant APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD => 'APPROPRIATENESS_TESTS:
 our @EXPORT_OK = qw(update_financial_assessment build_financial_assessment is_section_complete decode_fa
     should_warn format_to_new appropriateness_tests calculate_cfd_score APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD copy_financial_assessment);
 
-my $config = BOM::Config::financial_assessment_fields();
+my $config = Business::Config->new()->financial_assessment();
 
 =head2 update_financial_assessment
 

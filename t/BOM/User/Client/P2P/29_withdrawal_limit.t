@@ -5,6 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::MockModule;
 
+use Business::Config::LandingCompany;
 use BOM::Config;
 use P2P;
 use BOM::Test::Helper::P2PWithClient;
@@ -25,8 +26,8 @@ $client->account('USD');
 BOM::Test::Helper::Client::top_up($client, $client->currency, 1000);
 $client->status->set('age_verification', 'system', 'testing');
 
-my $mock_config = Test::MockModule->new('BOM::Config');
-$mock_config->mock(payment_limits => {withdrawal_limits => {$client->landing_company->short => {lifetime_limit => 500}}});
+my $mock_config = Test::MockModule->new('Business::Config::LandingCompany');
+$mock_config->mock(payment_limit => {withdrawal_limits => {$client->landing_company->short => {lifetime_limit => 500}}});
 
 $client->payment_doughflow(
     currency          => 'USD',
