@@ -3,9 +3,6 @@
 use strict;
 use warnings;
 
-use FindBin;
-BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
-
 use Log::Any::Adapter 'DERIV',
     log_level => 'warn',
     stderr    => 'json';
