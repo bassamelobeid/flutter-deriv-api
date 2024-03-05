@@ -18,7 +18,11 @@ use Finance::MIFIR::CONCAT qw(mifir_concat);
 use Format::Util::Numbers  qw(financialrounding);
 use Scalar::Util           qw(looks_like_number);
 use Log::Any               qw($log);
+use JSON::MaybeUTF8        qw(encode_json_utf8 decode_json_utf8);
+
 use f_brokerincludeall;
+
+use Business::Config;
 
 use BOM::Config;
 use BOM::Config::Runtime;
@@ -48,8 +52,7 @@ use BOM::Platform::S3Client;
 use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
 use BOM::User::Phone;
-use Log::Any        qw($log);
-use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
+
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 use BOM::Backoffice::VirtualStatus;
 use feature 'switch';
@@ -2077,7 +2080,7 @@ sub is_fa_needs_completion {
 
 sub update_fa {
     my ($client, $section_name) = @_;
-    my $config = BOM::Config::financial_assessment_fields();
+    my $config = Business::Config->new()->financial_assessment();
     my $args   = +{
         map  { $_ => request()->param($_) }
         grep { request()->param($_) } keys $config->{$section_name}->%*
@@ -2146,7 +2149,7 @@ sub print_fa_table {
     my ($user, $client, $section_name, $self_href, $is_editable, %section) = @_;
 
     my @hdr    = ('Question', 'Answer', 'Score');
-    my $config = BOM::Config::financial_assessment_fields();
+    my $config = Business::Config->new()->financial_assessment();
 
     $is_editable = 0 if $section_name eq 'trading_experience' && $client->landing_company->short eq 'maltainvest';
     print "<form method='post' action='$self_href#$section_name'><input type='hidden' name='whattodo' value='$section_name'>"

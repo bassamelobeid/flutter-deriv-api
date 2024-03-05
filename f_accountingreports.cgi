@@ -61,7 +61,7 @@ Bar("USEFUL EXCHANGE RATES");
 print "<p>The following exchange rates are from our exchange rates listener. They are live rates as of right now ("
     . Date::Utility->new->datetime . ")<p>" . "<ul>";
 
-my $currency_pairs = BOM::Config::currency_pairs_backoffice()->{currency_pairs};
+my $currency_pairs = [['GBP', 'USD'], ['EUR', 'USD'], ['USD', 'HKD'], ['AUD', 'USD'], ['GBP', 'HKD'], ['AUD', 'HKD'], ['EUR', 'HKD'], ['BTC', 'USD']];
 
 foreach my $pair (@$currency_pairs) {
 
