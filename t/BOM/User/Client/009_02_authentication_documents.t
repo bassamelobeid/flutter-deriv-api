@@ -13,13 +13,6 @@ use Test::MockModule;
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-my $current_year    = Date::Utility->new->year;
-my $leap_year_check = sub {
-    return 0 if $current_year % 4;
-    return 1 if $current_year % 100;
-    return 0 if $current_year % 400;
-    return 1;
-};
 
 my $user = BOM::User->create(
     email    => $client->loginid . '@binary.com',
@@ -191,6 +184,8 @@ subtest 'Outdated documents' => sub {
     my $one_year_ago = Date::Utility->new->minus_time_interval('1y');
     my $now          = Date::Utility->new;
     my $best_date;
+    my $test_outdated_days;
+    my $outdated_days;
 
     my $SQL_1       = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,NULL,?::betonmarkets.client_document_origin)';
     my $sth_doc_new = $dbh->prepare($SQL_1);
@@ -234,7 +229,8 @@ subtest 'Outdated documents' => sub {
     };
 
     subtest 'With outdated best date +100' => sub {
-        $best_date = $one_year_ago->minus_time_interval('100d')->date_yyyymmdd;
+        $best_date          = $one_year_ago->minus_time_interval('100d')->date_yyyymmdd;
+        $test_outdated_days = 100;
 
         $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ftag', 'none', 'front', $best_date, 'bo');
         my $id1 = $sth_doc_new->fetch()->[0];
@@ -249,7 +245,10 @@ subtest 'Outdated documents' => sub {
 
         $sth_doc_update->execute($best_date, $id1);
 
-        my $outdated_days = $leap_year_check->() ? 101 : 100;
+        # Checking how many days are there between the best date + 1y and now
+        # If the days_between exceed by 1 day from 100 that means there is a leap day in between
+        my $days_between = Date::Utility->new($best_date)->plus_time_interval('1y')->days_between($now);
+        $outdated_days = abs($days_between) == ($test_outdated_days + 1) ? 101 : 100;
 
         $client->documents->_clear_uploaded;
         is $client->documents->outdated('proof_of_address'), $outdated_days, "PoA is outdated by $outdated_days days";
@@ -259,7 +258,8 @@ subtest 'Outdated documents' => sub {
     };
 
     subtest 'With outdated poa date +2' => sub {
-        $best_date = $one_year_ago->minus_time_interval('2d')->date_yyyymmdd;
+        $best_date          = $one_year_ago->minus_time_interval('2d')->date_yyyymmdd;
+        $test_outdated_days = 2;
 
         $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ddadd', 'none', 'front', $best_date, 'bo');
         my $id1 = $sth_doc_new->fetch()->[0];
@@ -274,7 +274,8 @@ subtest 'Outdated documents' => sub {
 
         $sth_doc_update->execute($best_date, $id1);
 
-        my $outdated_days = $leap_year_check->() ? 3 : 2;
+        my $days_between = Date::Utility->new($best_date)->plus_time_interval('1y')->days_between($now);
+        $outdated_days = abs($days_between) == ($test_outdated_days + 1) ? 3 : 2;
 
         $client->documents->_clear_uploaded;
         is $client->documents->outdated('proof_of_address'), $outdated_days, "PoA is outdated by $outdated_days days";
@@ -284,7 +285,8 @@ subtest 'Outdated documents' => sub {
     };
 
     subtest 'With outdated poa date +1' => sub {
-        $best_date = $one_year_ago->minus_time_interval('1d')->date_yyyymmdd;
+        $best_date          = $one_year_ago->minus_time_interval('1d')->date_yyyymmdd;
+        $test_outdated_days = 1;
 
         $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'ffaf', 'none', 'front', $best_date, 'bo');
         my $id1 = $sth_doc_new->fetch()->[0];
@@ -300,7 +302,9 @@ subtest 'Outdated documents' => sub {
             'expected best issue date';
 
         $sth_doc_update->execute($best_date, $id1);
-        my $outdated_days = $leap_year_check->() ? 2 : 1;
+
+        my $days_between = Date::Utility->new($best_date)->plus_time_interval('1y')->days_between($now);
+        $outdated_days = abs($days_between) == ($test_outdated_days + 1) ? 2 : 1;
 
         $client->documents->_clear_uploaded;
         is $client->documents->outdated('proof_of_address'),                                           $outdated_days, "PoA is outdated by 1 day";
@@ -310,7 +314,8 @@ subtest 'Outdated documents' => sub {
     };
 
     subtest 'With outdated poa date +3' => sub {
-        $best_date = $one_year_ago->minus_time_interval('3d')->date_yyyymmdd;
+        $best_date          = $one_year_ago->minus_time_interval('3d')->date_yyyymmdd;
+        $test_outdated_days = 3;
 
         $sth_doc_new->execute($client->loginid, 'utility_bill', 'PNG', 'yesterday', 1234, 'xxasa', 'none', 'front', $best_date, 'bo');
         my $id1 = $sth_doc_new->fetch()->[0];
@@ -326,7 +331,9 @@ subtest 'Outdated documents' => sub {
             'expected best issue date';
 
         $sth_doc_update->execute($best_date, $id1);
-        my $outdated_days = $leap_year_check->() ? 2 : 1;
+
+        my $days_between = Date::Utility->new($best_date)->plus_time_interval('1y')->days_between($now);
+        $outdated_days = abs($days_between) == ($test_outdated_days + 1) ? 2 : 1;
 
         $client->documents->_clear_uploaded;
         is $client->documents->outdated('proof_of_address'), $outdated_days, "PoA is outdated by $outdated_days day still";
@@ -347,11 +354,12 @@ subtest 'Outdated documents' => sub {
         $sth_doc_finish->execute($id1);
         $sth_doc_update->execute(undef, $id1);
 
-        my $outdated_days = $leap_year_check->() ? 2 : 1;
+        my $days_between = Date::Utility->new($best_date)->minus_time_interval('1d')->plus_time_interval('1y')->days_between($now);
+        $days_between = abs($days_between);
 
         $client->documents->_clear_uploaded;
-        is $client->documents->to_be_outdated('proof_of_address'), undef,          'Not getting outdated (already outdated)';
-        is $client->documents->outdated('proof_of_address'),       $outdated_days, "PoA is outdated by $outdated_days day still";
+        is $client->documents->to_be_outdated('proof_of_address'), undef,         'Not getting outdated (already outdated)';
+        is $client->documents->outdated('proof_of_address'),       $days_between, "PoA is outdated by $days_between day still";
         is $client->documents->best_poa_date('proof_of_address', 'best_issue_date')->date_yyyymmdd,
             $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
             'expected best issue date';
@@ -359,7 +367,7 @@ subtest 'Outdated documents' => sub {
         $sth_doc_update->execute($best_date, $id1);
 
         $client->documents->_clear_uploaded;
-        is $client->documents->outdated('proof_of_address'), $outdated_days, "PoA is outdated by $outdated_days day still";
+        is $client->documents->outdated('proof_of_address'), $days_between, "PoA is outdated by $days_between day still";
         is $client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd,
             $one_year_ago->minus_time_interval('1d')->date_yyyymmdd, 'expected best verified date';
 
@@ -559,11 +567,11 @@ subtest 'Outdated documents' => sub {
         my $sth_doc_new = $dbh->prepare($SQL);
         $sth_doc_new->execute('uploaded', $now->minus_time_interval('1d')->date_yyyymmdd);
 
-        my $outdated_days = $leap_year_check->() ? 2 : 1;
+        my $days_between = Date::Utility->new($one_year_ago->minus_time_interval('1d')->date_yyyymmdd)->plus_time_interval('1y')->days_between($now);
 
         $client->documents->_clear_uploaded;
-        is $client->documents->to_be_outdated('proof_of_address'), undef,          'already outdated';
-        is $client->documents->outdated('proof_of_address'),       $outdated_days, 'PoA is outdated';
+        is $client->documents->to_be_outdated('proof_of_address'), undef,              'already outdated';
+        is $client->documents->outdated('proof_of_address'),       abs($days_between), 'PoA is outdated';
         is $client->documents->best_issue_date('proof_of_address')->date_yyyymmdd, $one_year_ago->minus_time_interval('1d')->date_yyyymmdd,
             'expected best issue date';
     };
