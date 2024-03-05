@@ -14,12 +14,15 @@ use Log::Any qw($log);
 use BOM::Rules::Engine;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
+use BOM::Config;
 use Data::Dump 'pp';
 
 subtest "cTrader Account Creation" => sub {
-    my $ctconfig = BOM::Config::Runtime->instance->app_config->system->ctrader;
-    my $ctid     = 1001;
-    my $loginid  = 100001;
+    my $ctconfig           = BOM::Config::Runtime->instance->app_config->system->ctrader;
+    my $ctid               = 1001;
+    my $loginid            = 100001;
+    my $ctrader_config     = BOM::Config::ctrader_general_configurations();
+    my $max_accounts_limit = $ctrader_config->{new_account}->{max_accounts_limit}->{real};
 
     my $mock_apidata = {
         ctid_create                 => sub { {userId => $ctid} },
@@ -53,6 +56,10 @@ subtest "cTrader Account Creation" => sub {
             my ($self, %payload) = @_;
             return $mock_apidata->{$payload{method}}->();
         });
+
+    # Mock set method to avoid account creation locking mechanism
+    my $mocked_redis = Test::MockModule->new('RedisDB');
+    $mocked_redis->mock('set', sub { return 'OK' });
 
     subtest "cTrader Create Account" => sub {
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
@@ -93,11 +100,6 @@ subtest "cTrader Account Creation" => sub {
 
         my $response = $ctrader->new_account(%params);
         cmp_deeply($response, $expected_response, 'Can create cTrader real account');
-        cmp_deeply(
-            exception { $ctrader->new_account(%params) },
-            {error_code => 'CTraderExistingActiveAccount'},
-            'Cannot create duplicate real account'
-        );
 
         $params{account_type}              = 'demo';
         $response                          = $ctrader->new_account(%params);
@@ -106,8 +108,11 @@ subtest "cTrader Account Creation" => sub {
         cmp_deeply($response, $expected_response, 'Can create cTrader demo account');
         cmp_deeply(
             exception { $ctrader->new_account(%params) },
-            {error_code => 'CTraderExistingActiveAccount'},
-            'Cannot create duplicate demo account'
+            {
+                error_code => 'CTraderExistingAccountLimitExceeded',
+                params     => ['demo', 1]
+            },
+            'Cannot create demo account more than 1'
         );
 
         $response = $ctrader->get_account_info('CTD100001');
@@ -267,12 +272,6 @@ subtest "cTrader Account Creation" => sub {
                 market_type  => 'all'
             );
             ok $accs{$c}->{account_id}, "create $c account ok";
-
-            cmp_deeply(
-                exception { $platforms{$c}->new_account(account_type => $account_type, market_type => 'all') },
-                {error_code => 'CTraderExistingActiveAccount'},
-                "Cannot create duplicate $c account"
-            );
         }
 
         for my $c1 (sort keys %clients) {
@@ -289,6 +288,86 @@ subtest "cTrader Account Creation" => sub {
 
         }
     };
+
+    subtest "each client can create up to ${max_accounts_limit} cTrader real accounts" => sub {
+        # Create a new client and user
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $client->email('ctraderaccount_5@test.com');
+        my $user = BOM::User->create(
+            email    => $client->email,
+            password => 'test'
+        );
+        $user->add_client($client);
+        $client->set_default_account('USD');
+        $client->save;
+
+        my %params = (
+            account_type => "real",
+            market_type  => "all",
+            platform     => "ctrader"
+        );
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $client,
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(client => $client));
+        isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
+
+        for my $i (1 .. $max_accounts_limit) {
+            $ctid = 2001;
+            $loginid++;
+            my $account = $ctrader->new_account(%params);
+
+            ok $account->{account_id}, "Created cTrader real account $i";
+        }
+
+        # Attempt to create one more account (should fail)
+        cmp_deeply(
+            exception { $ctrader->new_account(%params) },
+            {
+                error_code => 'CTraderExistingAccountLimitExceeded',
+                params     => ['real', $max_accounts_limit]
+            },
+            "Cannot create more than $max_accounts_limit cTrader real accounts"
+        );
+    };
+
+    subtest 'account creation locking mechanism' => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $client->email('account_creation_lock@test.com');
+        my $user = BOM::User->create(
+            email    => $client->email,
+            password => 'test'
+        );
+        $user->add_client($client);
+        $client->set_default_account('USD');
+        $client->save;
+
+        my %params = (
+            account_type => "real",
+            market_type  => "all",
+            platform     => "ctrader"
+        );
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $client,
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(client => $client));
+        isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
+
+        # Mock the 'set' method to simulate the lock
+        $mocked_redis->mock('set', sub { return undef });
+
+        cmp_deeply(
+            exception { $ctrader->new_account(%params) },
+            {error_code => 'CTraderAccountCreationInProgress'},
+            "Cannot create cTrader real accounts when lock is present"
+        );
+    };
+
+    $mocked_redis->unmock_all();
 };
 
 subtest "cTrader Available Account" => sub {

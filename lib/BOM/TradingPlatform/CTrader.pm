@@ -30,6 +30,7 @@ use BOM::TradingPlatform::Helper::HelperCTrader qw(
     group_to_groupid
     is_valid_group
     traderid_from_traderlightlist
+    get_ctrader_account_type
 );
 
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
@@ -606,6 +607,15 @@ sub new_account {
     my $user        = $self->user;
     my $server      = $account_type;
     my $environment = $account_type eq 'real' ? 'live' : 'demo';
+    my $user_id     = $self->user->id;
+    my $redis       = BOM::Config::Redis::redis_mt5_user_write();
+
+    # Account creation lock to avoid spamming
+    my $lock_key      = "account_creation_lock:$user_id";
+    my $acquired_lock = $redis->set($lock_key, 1, 'EX', 10, 'NX');
+    if (!$acquired_lock) {
+        die +{error_code => 'CTraderAccountCreationInProgress'};
+    }
 
     die +{error_code => 'CTraderInvalidAccountType'} unless any { $account_type eq $_ } qw/real demo/;
 
@@ -624,11 +634,18 @@ sub new_account {
 
     my $group = construct_group_name($market_type, $landing_company_short, $currency);
 
+    my $group_config = get_ctrader_account_type($account_type . '_' . $group);
+
+    # Do no allow account creation without ctrader group config
+    die +{error_code => 'CTraderNotAllowed'} unless $group_config;
+
     my $wallet_loginid = $self->client->is_wallet ? $self->client->loginid : undef;
     my @loginids       = $user->get_ctrader_loginids(wallet_loginid => $wallet_loginid);
 
     my $existing_account = check_existing_account(\@loginids, $user, $group, $account_type);
-    die +{error_code => $existing_account->{error}} if $existing_account->{error};
+    die +{
+        error_code => $existing_account->{error},
+        params     => [$account_type, $existing_account->{params}]} if $existing_account->{error};
 
     # This is for dry run mode
     return {
@@ -755,6 +772,9 @@ sub new_account {
         local_account   => $user->loginid_details->{$account_id},
         ctrader_account => $trader_account
     };
+
+    # After account creation is complete, release the lock
+    $redis->del($lock_key);
 
     return $self->account_details($account);
 }

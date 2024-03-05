@@ -9,6 +9,7 @@ use Syntax::Keyword::Try;
 use Digest::SHA            qw(sha384_hex);
 use BOM::Platform::Context qw (request);
 use Log::Any               qw($log);
+use BOM::Config;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(
@@ -20,6 +21,7 @@ our @EXPORT_OK = qw(
     group_to_groupid
     is_valid_group
     traderid_from_traderlightlist
+    get_ctrader_account_type
 );
 
 use constant CTRADER_ALL_LEVERAGE => 400000;
@@ -146,11 +148,11 @@ sub construct_group_name {
 
 =head2 check_existing_account
 
-Check if existing active cTrader account already exist based on group and account type.
+Check if an existing active cTrader account already exists based on group and account type.
 
 =over 4
 
-=item * C<loginids> - List of existing ctrader account ids
+=item * C<loginids> - List of existing cTrader account ids
 
 =item * C<user> - BOM::User instance
 
@@ -164,17 +166,36 @@ Check if existing active cTrader account already exist based on group and accoun
 
 sub check_existing_account {
     my ($loginids, $user, $new_account_group, $account_type) = @_;
-    my $loginid_details = $user->loginid_details;
+    my $loginid_details                     = $user->loginid_details;
+    my $ctrader_config                      = BOM::Config::ctrader_general_configurations();
+    my $new_account_strategy_provider_group = $ctrader_config->{strategy_provider_group}->{$account_type . '_' . $new_account_group};
+    my $max_accounts_limit                  = $ctrader_config->{new_account}->{max_accounts_limit}->{$account_type};
+    my $existing_group_count                = 0;
+    my $error_type;
 
     foreach my $loginid (@$loginids) {
-        my $login_data = $loginid_details->{$loginid};
-        return {error => 'CTraderExistingAccountGroupMissing'} unless $login_data->{attributes}->{group};
-        return {error => 'CTraderExistingActiveAccount'}
-            if ($new_account_group eq $login_data->{attributes}->{group})
-            and ($account_type eq $login_data->{account_type});
+        my $login_data                               = $loginid_details->{$loginid};
+        my $existing_group                           = $login_data->{attributes}->{group};
+        my $existing_account_type                    = $login_data->{account_type};
+        my $existing_account_strategy_provider_group = $ctrader_config->{strategy_provider_group}->{$existing_account_type . '_' . $existing_group};
+
+        # Skip if there's no group information
+        next unless $login_data && $existing_group;
+
+        if ($existing_account_strategy_provider_group eq $new_account_strategy_provider_group) {
+            $existing_group_count++;
+
+            if ($existing_group_count >= $max_accounts_limit) {
+                $error_type = 'CTraderExistingAccountLimitExceeded';
+                last;    # Stop the loop as the limit is exceeded
+            }
+        }
     }
 
-    return {no_error => 1};
+    return {
+        error  => $error_type,
+        params => $max_accounts_limit
+    } if $error_type;
 }
 
 =head2 construct_new_trader_params
@@ -302,3 +323,33 @@ sub _generate_hashpassword {
     my $hashpassword = substr(sha384_hex($client->binary_user_id . 'E3xsTE6BQ=='), 0, 20);
     return $hashpassword . 'Hx_0';
 }
+
+=head2 get_ctrader_account_type
+
+Retrieve cTrader account type
+
+=over 4
+
+=item * C<group_name> (String) - The group name for which you want to retrieve the cTrader account type.
+
+=back
+
+This subroutine allows you to retrieve a cTrader account type by providing the group name. It performs the following steps:
+
+1. Converts the provided group name to lowercase for consistency.
+
+2. Looks up the cTrader account type in the configuration using the lowercase group name.
+
+Returns the cTrader account type associated with the provided group name as a scalar value. If no matching account type is found, it returns C<undef>.
+
+=cut
+
+sub get_ctrader_account_type {
+    my ($group_name) = shift;
+
+    my $group_accounttype = lc($group_name);
+
+    return BOM::Config::ctrader_account_types()->{$group_accounttype};
+}
+
+1;
