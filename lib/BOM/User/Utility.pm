@@ -32,6 +32,7 @@ use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::P2P;
 use BOM::Platform::Context qw(localize);
+use BOM::Platform::Locale;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(parse_mt5_group p2p_rate_rounding p2p_exchange_rate);
@@ -553,6 +554,33 @@ sub trim_immutable_client_fields {
         }
     }
     return \%inputs;
+}
+
+=head2 get_valid_state
+
+It attempts to return the 'value' for state if it can be obtained from validate_state, otherwise, returns empty string
+For state values 'ba', 'BA', 'bali', 'Bali' and residence 'id' - returns 'BA'
+For state values '--others--', 'please select' and residence 'id' - returns ''
+
+=over 4
+
+=item * C<$state>     -  The address_state which needs to be checked
+=item * C<$residence> -  The residence against which the state needs to be checked
+
+=back
+
+Returns the correct state value, otherwise empty string
+
+=cut
+
+sub get_valid_state {
+    my ($state, $residence) = @_;
+
+    return '' unless $state and $residence;
+
+    my $match = BOM::Platform::Locale::validate_state($state, $residence);
+
+    return uc($match->{value} // '');
 }
 
 1;
