@@ -819,6 +819,19 @@ sub ctrader_account_types {
     return $config;
 }
 
+=head2 growthbook_config
+
+    BOM::Config::growthbook_config()
+
+Loads and caches configuration for Growthbook credentials
+
+=cut
+
+sub growthbook_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/growthbook.yml');
+    return $config;
+}
+
 =head2 status_hierarchy
 
 Gets the hierarchy of statuses to define sub statuses
