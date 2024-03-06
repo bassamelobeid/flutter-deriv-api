@@ -88,6 +88,9 @@ if (my $id = $input{update}) {
             if ($input{blocked_until}) {
                 try {
                     my $dt = DateTime::Format::Pg->parse_datetime($input{blocked_until});
+                    Date::Utility->new($dt->ymd);
+                    #previous line is added to make sure exception is thrown for futuristic date like '3000-02-27' which is not detected otherwise
+                    #DateTime::Format::Pg->parse_datetime is still retained because it's better at parsing different types of date input
                     $input{blocked_until} = DateTime::Format::Pg->format_datetime($dt);
                 } catch {
                     die "Invalid date format\n";
@@ -111,9 +114,9 @@ if (my $id = $input{update}) {
             $redis->hdel(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $id) if $input{trade_band} && ($existing->{trade_band} ne $input{trade_band});
 
             if (my $blocked_until = $update->{blocked_until}) {
-                my $blocked_du = Date::Utility->new($blocked_until);
-                if ($blocked_du->is_after(Date::Utility->new)) {
-                    $redis->zadd(P2P_ADVERTISER_BLOCK_ENDS_AT, $blocked_du->epoch, $existing->{client_loginid});
+                my $blocked_du_epoch = DateTime::Format::Pg->parse_datetime($blocked_until)->epoch;
+                if ($blocked_du_epoch > time) {
+                    $redis->zadd(P2P_ADVERTISER_BLOCK_ENDS_AT, $blocked_du_epoch, $existing->{client_loginid});
                 }
             } else {
                 $redis->zrem(P2P_ADVERTISER_BLOCK_ENDS_AT, $existing->{client_loginid});
@@ -269,7 +272,7 @@ if ($output{advertiser}) {
     }
 
     if (my $blocked_until = $output{advertiser}->{blocked_until}) {
-        $output{advertiser}->{barred} = Date::Utility->new($blocked_until)->is_after(Date::Utility->new);
+        $output{advertiser}->{barred} = DateTime::Format::Pg->parse_datetime($blocked_until)->epoch > time;
     }
 
     for (qw/daily_buy daily_sell withdrawal_limit extra_sell_pending/) {
