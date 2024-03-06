@@ -26,7 +26,7 @@ jobs:
       repository: ${{ github.repository }}
       runner: self-hosted
   dependent:
-    needs: [core_unit_syntax_diff,check_dependent_tests]
+    needs: [check_dependent_tests]
     if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
     uses: ./.github/workflows/dependent.yml
     secrets: inherit
