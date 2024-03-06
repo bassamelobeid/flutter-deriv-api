@@ -30,7 +30,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::OAuth::Common;
-use BOM::OAuth::Helper     qw(request_details_string exception_string);
+use BOM::OAuth::Helper     qw(request_details_string exception_string get_request_details);
 use BOM::OAuth::Static     qw(get_message_mapping);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
@@ -42,7 +42,6 @@ use constant CTRADER_APPID => 36218;
 
 sub authorize {
     my $c = shift;
-
     # specify caching directives for the browser
     $c->res->headers->cache_control('no-store, no-cache, must-revalidate, max-age=0');
     $c->res->headers->expires('0');
@@ -84,6 +83,9 @@ sub authorize {
     # load available networks for brand
     $c->stash('login_providers' => $c->stash('brand')->login_providers);
 
+    # load request details of user for Growthbook
+    $c->stash('user_request_details' => get_request_details($c->req, $c->stash('request')));
+
     my $r          = $c->stash('request');
     my $brand_name = $c->stash('brand')->name;
     my $partnerId  = $c->param('partnerId');
@@ -101,6 +103,7 @@ sub authorize {
         is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($app->{id}),
         social_login_links        => $c->stash('social_login_links'),
         use_oneall                => $c->_use_oneall_web,
+        growthbook_request_data   => _get_growthbook_config(),
         dd_rum_config             => _datadog_config());
 
     $template_params{partnerId} = $partnerId if $partnerId;
@@ -695,6 +698,21 @@ sub format_route_param {
     my $route_param = shift;
     $route_param = defined $route_param ? uri_escape($route_param) : "";
     return $route_param;
+}
+
+=head2 _get_growthbook_config
+
+Returns the growthbook configuration.
+
+=cut
+
+sub _get_growthbook_config {
+    my $growthbook_config = BOM::Config::growthbook_config();
+
+    return {
+        IS_ENABLED => $growthbook_config->{is_growthbook_enabled} || 0,
+        CLIENT_KEY => $growthbook_config->{growthbook_client_key} || undef,
+    };
 }
 
 =head2 _is_valid_post_request

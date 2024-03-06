@@ -32,6 +32,15 @@ $mock_config->mock(
             }};
     });
 
+#mock config for growthbook service
+$mock_config->mock(
+    growthbook_config => sub {
+        return {
+            is_growthbook_enabled => 'dummy',
+            growthbook_client_key => 'dummy'
+        };
+    });
+
 my $tests = [{
         date       => Date::Utility->new->_minus_months(1)->date_yyyymmdd,
         test       => 'Date in the past should be stored in session',
@@ -80,7 +89,6 @@ for ($tests->@*) {
         my $url = "/authorize?app_id=$app_id";
         $url = $url . "&date_first_contact=$date" if $date;
         $t   = $t->get_ok($url)->content_like(qr/login/);
-
         is $session->{date_first_contact}, $date, $test if $in_session;
         ok !$session->{date_first_contact}, $test unless $in_session;
     };

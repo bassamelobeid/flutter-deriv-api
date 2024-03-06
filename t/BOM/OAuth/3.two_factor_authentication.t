@@ -63,6 +63,15 @@ $mock_config->mock(
             }};
     });
 
+#mock config for growthbook service
+$mock_config->mock(
+    growthbook_config => sub {
+        return {
+            is_growthbook_enabled => 'dummy',
+            growthbook_client_key => 'dummy'
+        };
+    });
+
 # Mock secure cookie session as false as http is used in tests.
 my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
 $mocked_cookie_session->mock(
@@ -78,7 +87,6 @@ $mock_history->mock(
 
 my $t = Test::Mojo->new('BOM::OAuth');
 $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
-
 my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';
 $t->post_ok(

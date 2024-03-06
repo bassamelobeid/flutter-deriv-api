@@ -4,9 +4,8 @@ use strict;
 use warnings;
 use MIME::Base64 qw(encode_base64 decode_base64);
 use JSON::MaybeXS;    #Using `JSON::MaybeXS` to maintain order of the result string.
-
 use Exporter qw(import);
-our @EXPORT_OK = qw(request_details_string exception_string social_login_callback_base strip_array_values);
+our @EXPORT_OK = qw(request_details_string exception_string social_login_callback_base strip_array_values get_request_details);
 
 =head2 extract_brand_from_params
 
@@ -118,18 +117,10 @@ sub request_details_string {
     my $request         = shift;
     my $request_context = shift;
 
-    my $path = $request->url->path->to_string;
+    my $path            = $request->url->path->to_string;
+    my $request_details = get_request_details($request, $request_context);
+    my $full_message    = "request to $path $request_details";
 
-    my $request_headers = $request->headers;
-
-    my $request_details = JSON::MaybeXS->new->utf8->canonical->encode({
-        IP         => $request_context->client_ip,
-        Country    => $request_context->country_code,
-        Referrer   => $request_headers->referrer,
-        User_Agent => $request_headers->user_agent,
-    });
-
-    my $full_message = "request to $path $request_details";
     return $full_message;
 }
 
@@ -212,6 +203,27 @@ sub strip_array_values {
         $res->{$key} = $hash->{$key};
     }
     return $res;
+}
+
+=head2 get_request_details
+
+Returns a hash object of IP, Country, Referrer, and User_Agent.
+
+=cut
+
+sub get_request_details {
+    my $request         = shift;
+    my $request_context = shift;
+
+    my $request_headers = $request->headers;
+    my $request_details = JSON::MaybeXS->new->utf8->canonical->encode({
+        IP         => $request_context->client_ip,
+        Country    => $request_context->country_code,
+        Referrer   => $request_headers->referrer,
+        User_Agent => $request_headers->user_agent,
+    });
+
+    return $request_details;
 }
 
 1;

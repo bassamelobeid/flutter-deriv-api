@@ -72,6 +72,15 @@ $mock_config->mock(
             }};
     });
 
+#mock config for growthbook service
+$mock_config->mock(
+    growthbook_config => sub {
+        return {
+            is_growthbook_enabled => 'dummy',
+            growthbook_client_key => 'dummy'
+        };
+    });
+
 # Mock secure cookie session to false as http is used in tests.
 my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
 $mocked_cookie_session->mock(

@@ -114,6 +114,15 @@ $mock_config->mock(
             }};
     });
 
+#mock config for growthbook service
+$mock_config->mock(
+    growthbook_config => sub {
+        return {
+            is_growthbook_enabled => 'dummy',
+            growthbook_client_key => 'dummy'
+        };
+    });
+
 my $t = Test::Mojo->new('BOM::OAuth');
 subtest 'render social login based on feature flag' => sub {
     $use_oneall = 1;

@@ -44,6 +44,15 @@ $mock_config->mock(
             }};
     });
 
+#mock config for growthbook service
+$mock_config->mock(
+    growthbook_config => sub {
+        return {
+            is_growthbook_enabled => 'dummy',
+            growthbook_client_key => 'dummy'
+        };
+    });
+
 ## create test user to login
 my $email    = 'reactivate1@binary.com';
 my $password = 'jskjd8292922';

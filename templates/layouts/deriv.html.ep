@@ -601,6 +601,80 @@
             .gap-5x {
                 gap: 1rem;
             }
+            .popup{
+                background: rgba(0, 0, 0, 0.72);
+                position: fixed;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                top: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1;
+            }
+            .popup-container{
+              display: flex;
+              width: 32.8rem;
+              padding: 16px;
+              gap: 1.6rem;
+              flex-direction: column;
+              align-items: flex-end;
+              background-color: var(--color-white);
+              border-radius: 8px;
+              margin: 0 1.6rem;
+            }
+            .popup-text{
+              display: flex;
+              flex-direction: column;
+              align-items: flex-start;
+              font-size: var(--text-size-xxs);
+              line-height: 1.8rem;
+              color: var(--color-black-3);
+              text-align: left;
+            }
+            .popup-btn{
+              background-color: var(--color-red);
+              border-radius: 4px;
+              padding: 10px 16px 10px 16px;
+              color: var(--color-white);
+              font-size: var(--text-size-xs);
+              cursor: pointer;
+              font-weight: 700;
+            }
+            #passkeysContainer{
+                width: 100%;
+            }
+            #passkeysForm{
+                margin-bottom: 0;
+            }
+            .passkey{
+                border-radius: 16px;
+                border: 2px solid var(--system-light-3-less-prominent-text, #999);
+                width: 100%;
+            }
+            .passkey-btn{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.8rem;
+                color: #333333;
+                padding: 0.5rem 1.6rem;
+            }
+            a.passkey-btn:hover{
+                text-decoration: none;
+            }
+            .passkey-text{
+                font-weight: 700;
+            }
+            @media screen and (min-width: 767px){
+                #passkeysContainer{
+                    display: none;
+                }
+            }
+            #passkeysContainer + .account-text{
+                margin-top: 17px;
+            }
         </style>
 
         <script type="text/javascript">

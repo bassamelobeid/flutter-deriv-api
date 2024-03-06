@@ -23,11 +23,6 @@
             width: 100%;
         }
     </style>
-    <div class="separator">
-        <p class="center-text social-text">
-            <%= stash('error') ? l('Perhaps you signed up with a social account?') : l('Or log in with') %>
-        </p>
-    </div>
     <div class="providers_row social_login_providers">
     <% for my $p_name ($login_providers->@*) { %>
         <% if($social_login_links->{$p_name}) { %>
