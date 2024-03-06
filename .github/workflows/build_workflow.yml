@@ -51,6 +51,7 @@ jobs:
       - 
         name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
+        if: success() || failure()
       - 
         name: Upload Test Results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
@@ -82,7 +83,7 @@ jobs:
           service-name: bom-postgres
 
   dependent:
-    needs: [ core_unit_syntax_diff , check_dependent_tests ]
+    needs: [check_dependent_tests]
     if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
     uses: ./.github/workflows/dependent.yml
     secrets: inherit
