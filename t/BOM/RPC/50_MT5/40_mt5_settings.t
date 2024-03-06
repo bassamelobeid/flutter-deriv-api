@@ -254,7 +254,7 @@ subtest 'create new account fails, when we get error during getting login list' 
             country        => 'mt',
             email          => $DETAILS{email},
             name           => $DETAILS{name},
-            investPassword => 'Abcd1234',
+            investPassword => $DETAILS{password}{investor},
             mainPassword   => $DETAILS{password}{main},
             leverage       => 100,
         },

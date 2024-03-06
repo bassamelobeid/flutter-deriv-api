@@ -743,6 +743,8 @@ async_rpc "mt5_new_account",
     my $sub_account_category    = delete $args->{sub_account_category} // 'standard';
     my $migration_request       = delete $args->{migrate};
 
+    my $trading_password = $args->{mainPassword};
+
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^all|demo|gaming|financial$/);
 
@@ -761,9 +763,23 @@ async_rpc "mt5_new_account",
         main_password   => $args->{mainPassword}   // '',
         invest_password => $args->{investPassword} // '',
     });
-    return create_error_future($passwd_validation_err) if $passwd_validation_err;
 
-    my $trading_password = $args->{mainPassword};
+    if (defined $passwd_validation_err) {
+        if ($passwd_validation_err eq 'IncorrectMT5PasswordFormat') {
+
+            #Unique case where old password conforms to old validation rules but not new ones
+            if (my $current_password = $client->user->trading_password) {
+                my $error = BOM::RPC::v3::Utility::validate_password_with_attempts($trading_password, $current_password, $client->loginid);
+                return create_error_future($error) if $error;
+
+                #MT5 Password and trading_platform_password are same
+                #But the trading_platform_password does not conform to new validation rules
+                return create_error_future('InvalidTradingPlatformPasswordFormat', {params => 'trading_platform_password_change'});
+            }
+        }
+        return create_error_future($passwd_validation_err);
+
+    }
 
     unless ($args->{dry_run}) {
         if (my $current_password = $client->user->trading_password) {

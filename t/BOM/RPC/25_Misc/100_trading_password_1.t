@@ -41,7 +41,7 @@ my $method = 'trading_platform_password_change';
 subtest 'set new trading password - no mt5 or dxtrade accounts' => sub {
     # create client
     my $client = create_client('CR');
-    $client->email('Test123@binary.com');
+    $client->email('Test1@binary.com');
     $client->set_default_account('USD');
     $client->save;
 
@@ -49,7 +49,7 @@ subtest 'set new trading password - no mt5 or dxtrade accounts' => sub {
     my $password = 'Hello123';
     my $hash_pwd = BOM::User::Password::hashpw($password);
     my $user     = BOM::User->create(
-        email    => 'Test123@binary.com',
+        email    => 'Test1@binary.com',
         password => $hash_pwd,
     );
     $user->add_client($client);
@@ -66,8 +66,8 @@ subtest 'set new trading password - no mt5 or dxtrade accounts' => sub {
     subtest 'validation' => sub {
         $params->{args}{platform} = 'mt5';
         $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
-            ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-            'weak new password');
+            ->error_message_is(
+            'Your password must be 8 to 16 characters long. It must include lowercase, uppercase letters, numbers and special characters.');
 
         $params->{args}{new_password} = 'Abcd1234';
         $params->{args}{old_password} = 'Hello123';
@@ -81,11 +81,11 @@ subtest 'set new trading password - no mt5 or dxtrade accounts' => sub {
     };
 
     subtest 'new mt5 trading password' => sub {
-        $params->{args}{new_password} = 'Abcd1234';
+        $params->{args}{new_password} = 'Abcd1234@';
 
         is($c->call_ok($method, $params)->has_no_error->result, 1, 'trading password changed successfully');
 
-        ok BOM::User::Password::checkpw('Abcd1234', $client->user->trading_password), 'mt5 trading password is set';
+        ok BOM::User::Password::checkpw('Abcd1234@', $client->user->trading_password), 'mt5 trading password is set';
 
         is $client->user->dx_trading_password, undef, 'dxtrade trading password is not set';
     };
@@ -102,7 +102,7 @@ subtest 'set new trading password - no mt5 or dxtrade accounts' => sub {
 
         ok BOM::User::Password::checkpw('Abcd123456', $client->user->dx_trading_password), 'dx trading password is set';
 
-        ok BOM::User::Password::checkpw('Abcd1234', $client->user->trading_password), 'mt5 trading password is unchanged';
+        ok BOM::User::Password::checkpw('Abcd1234@', $client->user->trading_password), 'mt5 trading password is unchanged';
 
         BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
         BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
@@ -169,7 +169,7 @@ subtest 'password change with mt5 accounts' => sub {
 
     ok BOM::User::Password::checkpw($details{password}{main}, $client->user->trading_password), 'correctly changed trading password';
 
-    my $trading_password = 'Abcd1234';
+    my $trading_password = 'Abcd1234@';
     my $invest_password  = 'Investor123@1';
     my $mock_mt5         = Test::MockModule->new('BOM::MT5::User::Async');
     $mock_mt5->mock(
@@ -214,13 +214,13 @@ subtest 'password change with mt5 accounts' => sub {
     $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')->error_message_is('That password is incorrect. Please try again.');
 
     # should fail with investor password
-    $params->{args}->{old_password} = 'Efgh4567';
+    $params->{args}->{old_password} = 'Efgh4567@';
     $params->{args}->{new_password} = $invest_password;
     $c->call_ok($method, $params)->has_error->error_code_is('SameAsInvestorPassword')
         ->error_message_is('The new password is the same as your investor password. Please take a different password.');
 
     # should pass now
-    $params->{args}->{new_password} = 'Abcd1234';
+    $params->{args}->{new_password} = 'Abcd1234@';
     is($c->call_ok($method, $params)->has_no_error->result, 1, 'user trading password changed successfully');
 
     cmp_deeply(
@@ -271,7 +271,7 @@ subtest 'password change with mt5 accounts' => sub {
         });
 
     $params->{args}->{old_password} = $trading_password;
-    $params->{args}->{new_password} = 'Xyz12345';
+    $params->{args}->{new_password} = 'Xyz12345@';
     $params->{args}->{platform}     = 'mt5';
     $c->call_ok($method, $params)
         ->has_error->error_message_is("Due to a network issue, we couldn't update your MT5 password. Please check your email for more details",
@@ -662,7 +662,8 @@ subtest 'investor password change' => sub {
     # validate new investor password
     $params->{args}->{new_password} = 'BadPassword';
     $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
-        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.');
+        ->error_message_is(
+        'Your password must be 8 to 16 characters long. It must include lowercase, uppercase letters, numbers and special characters.');
 
     # wrong old password
     $params->{args}->{new_password} = 'InvestPwd123@!';
@@ -739,7 +740,7 @@ subtest 'investor password change' => sub {
         },
     );
 
-    $params->{args}->{new_password} = 'Newpass123';
+    $params->{args}->{new_password} = 'Newpass123@';
     $c->call_ok($method, $params)->has_error->error_code_is('PlatformInvestorPasswordChangeError')
         ->error_message_like(qr/we're unable to update your investor password for the following account: $mt5_loginid./, 'password change failed');
 

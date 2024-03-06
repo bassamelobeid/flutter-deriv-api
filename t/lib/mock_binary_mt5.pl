@@ -55,12 +55,17 @@ sub cmd_UserAdd {
         error    => 'password formatting is wrong',
     } if $input->{mainPassword} eq SIMPLE_PASSWORD;
 
-    $input->{mainPassword} eq $DETAILS{password}->{main} || $input->{mainPassword} eq "Ijkl6789"
-        or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
-
-    #disable check since password is generated auto when it is not provided
-    # $input->{investPassword} eq $DETAILS{password}->{investor}
-    #    or die "UserAdd with unexpected investorPassword=$input->{investPassword}\n";
+    if ($input->{mainPassword} =~ qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])(?=.*[\!\@#\$%\^&\*\(\)\+\-\=\[\]\{\};\':\"\|\,\.<>\?_~])[ -~]{8,16}$/) {
+        return {
+            ret_code => MT_RET_OK,
+            login    => $ACCOUNTS{$input->{group}},
+        };
+    } else {
+        return {
+            ret_code => MT_RET_USR_INVALID_PASSWORD,
+            error    => 'password formatting is wrong',
+        };
+    }
 
     return {
         ret_code => MT_RET_OK,

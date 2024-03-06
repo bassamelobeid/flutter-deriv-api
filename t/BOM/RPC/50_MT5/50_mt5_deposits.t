@@ -284,7 +284,7 @@ subtest 'demo account can not be tagged as an agent' => sub {
             country          => 'af',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
-            investPassword   => 'Abcd1234',
+            investPassword   => $DETAILS{password}{investor},
             mainPassword     => $DETAILS{password}{main},
         },
     };
@@ -306,7 +306,7 @@ subtest 'virtual topup' => sub {
             country          => 'af',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
-            investPassword   => 'Abcd1234',
+            investPassword   => $DETAILS{password}{investor},
             mainPassword     => $DETAILS{password}{main},
         },
     };
@@ -564,7 +564,7 @@ subtest 'labuan withdrawal' => sub {
             country          => 'af',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
-            investPassword   => 'Abcd1234',
+            investPassword   => $DETAILS{password}{investor},
             mainPassword     => $DETAILS{password}{main},
         },
     };

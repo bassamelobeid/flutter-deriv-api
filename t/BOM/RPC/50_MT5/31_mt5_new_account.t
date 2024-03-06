@@ -404,7 +404,7 @@ SKIP: {
         $params = {
             token => $aff_token,
             args  => {
-                new_password => 'Efgh4567',
+                new_password => $DETAILS{password}{main},
                 platform     => 'mt5'
             },
         };
@@ -477,7 +477,7 @@ subtest 'check correct reason is assigned upon mt5 acc creation' => sub {
             country          => 'mt',
             email            => $new_email,
             name             => 'cat',
-            mainPassword     => 'Abcd1234',
+            mainPassword     => $DETAILS{password}{main},
             leverage         => 100,
             dry_run          => 1,
             mt5_account_type => 'financial_stp',
@@ -504,7 +504,7 @@ subtest 'check correct reason is assigned upon mt5 acc creation' => sub {
             country          => 'mt',
             email            => $new_email,
             name             => 'cat',
-            mainPassword     => 'Abcd1234',
+            mainPassword     => $DETAILS{password}{main},
             leverage         => 100,
             dry_run          => 1,
             mt5_account_type => 'financial',
@@ -531,7 +531,7 @@ subtest 'check correct reason is assigned upon mt5 acc creation' => sub {
             country          => 'mt',
             email            => $new_email,
             name             => 'cat',
-            mainPassword     => 'Abcd1234',
+            mainPassword     => $DETAILS{password}{main},
             leverage         => 100,
             dry_run          => 1,
             mt5_account_type => 'financial',

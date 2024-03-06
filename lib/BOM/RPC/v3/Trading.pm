@@ -231,7 +231,8 @@ rpc trading_platform_new_account => sub {
 
     try {
         if ($params->{args}{platform} eq 'dxtrade') {
-            my $error = BOM::RPC::v3::Utility::set_trading_password_new_account($params->{client}, $params->{args}{password});
+            my $error =
+                BOM::RPC::v3::Utility::set_trading_password_new_account($params->{client}, $params->{args}{password});
             die +{error_code => $error} if $error;
         }
 
@@ -376,9 +377,10 @@ async_rpc trading_platform_password_change => sub {
     my $user   = $client->user;
 
     try {
-        my $new_password     = $params->{args}{new_password} or die +{error_code => 'PasswordRequired'};
-        my $old_password     = $params->{args}{old_password};
-        my $platform         = $params->{args}{platform};
+        my $new_password = $params->{args}{new_password} or die +{error_code => 'PasswordRequired'};
+        my $old_password = $params->{args}{old_password};
+        my $platform     = $params->{args}{platform};
+
         my $current_password = $platform eq 'dxtrade' ? $user->dx_trading_password : $user->trading_password;
 
         if ($current_password) {
@@ -387,20 +389,22 @@ async_rpc trading_platform_password_change => sub {
             my $error = BOM::RPC::v3::Utility::validate_password_with_attempts($old_password, $current_password, $client->loginid);
             die +{error_code => $error} if $error;
 
-            $error = BOM::RPC::v3::Utility::check_password({
+            $error = BOM::RPC::v3::Utility::check_password_trading_platform({
                 email        => $client->email,
                 new_password => $new_password,
                 old_password => $old_password,
                 user_pass    => $current_password,
+                platform     => $platform,
             });
             die $error->{error} if $error;
 
         } else {
             die +{error_code => 'NoOldPassword'} if $old_password;
 
-            my $error = BOM::RPC::v3::Utility::check_password({
+            my $error = BOM::RPC::v3::Utility::check_password_trading_platform({
                 email        => $client->email,
                 new_password => $new_password,
+                platform     => $platform,
             });
             die $error->{error} if $error;
         }
@@ -441,9 +445,10 @@ async_rpc trading_platform_password_reset => auth => ['trading', 'wallet'],
         my $error = BOM::RPC::v3::Utility::is_verification_token_valid($token, $email, $CREATED_FOR{$platform})->{error};
         die $error if $error;
 
-        $error = BOM::RPC::v3::Utility::check_password({
+        $error = BOM::RPC::v3::Utility::check_password_trading_platform({
             email        => $email,
-            new_password => $new_password
+            new_password => $new_password,
+            platform     => $platform,
         });
         die $error->{error} if $error;
 

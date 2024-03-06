@@ -45,7 +45,7 @@ my $user = BOM::User->create(
     password => 'x',
 );
 
-my $trading_password = 'Abcd1234';
+my $trading_password = 'Abcd1234@';
 $user->update_trading_password($trading_password);
 
 my %args = (
@@ -184,7 +184,7 @@ $loginids{mt5_financial} = $c->call_ok('mt5_new_account', $params)->result->{log
 
 $params->{args} = {
     account_type => 'real',
-    password     => 'Abcd1234',
+    password     => 'Abcd1234@',
     market_type  => 'all',
     currency     => 'USD',
     platform     => 'dxtrade',

@@ -79,6 +79,11 @@ use constant GENERIC_DD_STATS_KEY               => 'bom.rpc.exception';
 # - all characters ASCII index should be within ( )[space] to (~)[tilde] indexes range
 use constant REGEX_PASSWORD_VALIDATION => qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$/;
 
+use constant REGEX_TRADING_PLATFORM_PASSWORD_VALIDATION => qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$/;
+
+use constant REGEX_TRADING_PLATFORM_PASSWORD_VALIDATION_MT5 =>
+    qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])(?=.*[\!\@#\$%\^&\*\(\)\+\-\=\[\]\{\};\':\"\|\,\.<>\?_~])[ -~]{8,16}$/;
+
 use constant {
     MAX_PASSWORD_CHECK_ATTEMPTS               => 5,
     CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT     => "rpc::cryptocurrency::crypto_config::client_min_amount::",
@@ -375,6 +380,69 @@ sub is_verification_token_valid {
     return $response;
 }
 
+=head2 check_password_trading_platform
+
+Description: Checks password validation for trading platforms
+
+Takes the following parameters:
+
+=over 4
+
+=item - platform: Abbreviation of the trading platform
+
+=item - email: (optional)  A short string acting as a key for this error.
+
+=item - new_password: (optional) Password to check for validation
+
+=item - old_password: (optional)  old_password if user has old password
+
+=item - user_pass: (optional) User entered password that we validate against old_password
+
+=back
+
+    Returns undef if successfully validated.
+    
+=cut
+
+sub check_password_trading_platform {
+
+    my $args         = shift;
+    my $email        = $args->{email};
+    my $new_password = $args->{new_password};
+    my $platform     = $args->{platform};
+
+    if (exists $args->{old_password} && exists $args->{user_pass}) {
+        my $old_password = $args->{old_password};
+        my $user_pass    = $args->{user_pass};
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PasswordError',
+                message_to_client => localize('That password is incorrect. Please try again.')}
+        ) unless (BOM::User::Password::checkpw($old_password, $user_pass));
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PasswordError',
+                message_to_client => localize('Current password and new password cannot be the same.')}) if ($new_password eq $old_password);
+    }
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PasswordError',
+            message_to_client => localize(
+                'Your password must be 8 to 16 characters long. It must include lowercase, uppercase letters, numbers and special characters.')}
+    ) if $platform eq 'mt5' && $new_password !~ REGEX_TRADING_PLATFORM_PASSWORD_VALIDATION_MT5;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PasswordError',
+            message_to_client => localize('Your password must be 8 to 25 characters long. It must include lowercase, uppercase letters and numbers.')}
+    ) if $platform eq 'dxtrade' && $new_password !~ REGEX_TRADING_PLATFORM_PASSWORD_VALIDATION;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PasswordError',
+            message_to_client => localize('You cannot use your email address as your password.')}) if lc $new_password eq lc $email;
+
+    return undef;
+}
+
 sub check_password {
     my $args = shift;
 
@@ -458,8 +526,8 @@ sub notify_financial_assessment {
 }
 
 =head2 validate_mt5_password
-    Validates the mt5 password must be of 8-25 characters long.
-    It must also have at least 1 character of each uppercase letters, lowercase letters, and numbers.
+    Validates the mt5 password must be of 8-16 characters long.
+    It must also have at least 1 character of each uppercase letters, lowercase letters, special characters and numbers.
     Returns error message code if check fails else undef.
 =cut
 
@@ -470,12 +538,13 @@ sub validate_mt5_password {
     my $main_pwd   = $args->{main_password};
 
     if (defined $main_pwd) {
-        return 'IncorrectMT5PasswordFormat'    if $main_pwd !~ REGEX_PASSWORD_VALIDATION;
+        return 'IncorrectMT5PasswordFormat'    if $main_pwd !~ REGEX_TRADING_PLATFORM_PASSWORD_VALIDATION_MT5;
         return 'MT5PasswordEmailLikenessError' if lc $main_pwd eq lc $email;
     }
 
     if (defined $invest_pwd) {
-        return 'IncorrectMT5PasswordFormat'    if $invest_pwd && $invest_pwd !~ REGEX_PASSWORD_VALIDATION;    # invest password can also be empty.
+        return 'IncorrectMT5PasswordFormat'
+            if $invest_pwd && $invest_pwd !~ REGEX_TRADING_PLATFORM_PASSWORD_VALIDATION_MT5;    # invest password can also be empty.
         return 'MT5PasswordEmailLikenessError' if lc $invest_pwd eq lc $email;
     }
 

@@ -64,7 +64,10 @@ my %category_message_mapping = do {
         SameAsMainPassword => localize('The new password is the same as your main password. Please take a different password.'),
         SameAsInvestorPassword     => localize('The new password is the same as your investor password. Please take a different password.'),
         IncorrectMT5PasswordFormat =>
-            localize('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.'),
+            localize('Your password must be 8 to 16 characters long. It must include lowercase, uppercase letters, numbers and special characters.'),
+        InvalidTradingPlatformPasswordFormat => localize(
+            'Please use [_1] to reset your password. Your password must be 8 to 16 characters long. It must include lowercase, uppercase letters, numbers and special characters.'
+        ),
         MT5PasswordEmailLikenessError => localize('You cannot use your email address as your password.'),
         NoMoney                       => localize('Your withdrawal is unsuccessful. Please make sure you have enough funds in your account.'),
         HaveOpenPositions             =>

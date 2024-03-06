@@ -84,7 +84,8 @@ subtest 'mt5 new account - no trading password' => sub {
     subtest 'should fail when password format is incorrect' => sub {
         $params->{args}->{mainPassword} = 's3kr1t';
         $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
-            ->error_message_is("Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.",
+            ->error_message_is(
+            "Your password must be 8 to 16 characters long. It must include lowercase, uppercase letters, numbers and special characters.",
             'Correct error message when user password did not pass mt5 password validation');
     };
 
@@ -103,6 +104,11 @@ subtest 'mt5 new account - no trading password' => sub {
         is $test_client->user->trading_password, undef, 'trading password is not saved';
 
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
+    };
+
+    subtest 'mt5_new_account without trading_platform_password_change should fail' => sub {
+        $c->call_ok($method, $params)->has_error->error_code_is('TradingPasswordRequired')
+            ->error_message_is('Please set your MT5 password using the trading_platform_password_change API.');
     };
 
     subtest 'can create new mt5 account' => sub {
@@ -129,13 +135,12 @@ subtest 'mt5 new account - has trading password' => sub {
 
     subtest 'should fail when password format is incorrect' => sub {
         $params->{args}->{mainPassword} = 's3kr1t';
-        $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
-            ->error_message_is("Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.",
+        $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')->error_message_is("That password is incorrect. Please try again.",
             'Correct error message when password did not pass mt5 password validation');
     };
 
     subtest 'should fail when trading password incorrect' => sub {
-        $params->{args}->{mainPassword} = 'Random123';
+        $params->{args}->{mainPassword} = 'Random123@';
         $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
             ->error_message_is("That password is incorrect. Please try again.", 'Correct error message when user entered the wrong trading_password');
     };
@@ -146,6 +151,43 @@ subtest 'mt5 new account - has trading password' => sub {
         is $result->{account_type}, 'financial',                                              'account_type=financial';
         is $result->{login},        'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'created in group real\p01_ts01\financial\svg_std_usd';
     };
+};
+
+subtest 'Trading password has no special characters' => sub {
+
+    my $new_email  = 'cr+' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'za'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+
+    $user->update_trading_password('Abcd1234');
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            email        => $new_email,
+            name         => $details{name},
+            mainPassword => 'Abcd1234',
+            leverage     => 100,
+        },
+    };
+
+    my $result =
+        $c->call_ok($method, $params)->has_error('InvalidTradingPlatformPasswordFormat')
+        ->error_message_is(
+        'Please use trading_platform_password_change to reset your password. Your password must be 8 to 16 characters long. It must include lowercase, uppercase letters, numbers and special characters.'
+        );
+
 };
 
 done_testing();

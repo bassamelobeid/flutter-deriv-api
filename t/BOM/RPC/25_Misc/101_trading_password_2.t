@@ -147,7 +147,7 @@ subtest 'mlt client' => sub {
         token => $token,
         args  => {
             trading_platform_password_change => 1,
-            new_password                     => 'Abcd1234',
+            new_password                     => 'Abcd1234@',
             platform                         => 'mt5'
         }};
 

@@ -95,8 +95,8 @@ our %MT5_GROUP_MAPPING = (
 
 our %ACCOUNT_DETAILS = (
     password => {
-        main     => 'Efgh4567',
-        investor => 'Abcd1234',
+        main     => 'Efgh4567@',
+        investor => 'Abcd1234@',
     },
     email           => 'test.account@binary.com',
     name            => 'Meta traderman',

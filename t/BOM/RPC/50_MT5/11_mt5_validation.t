@@ -253,9 +253,8 @@ subtest 'new account' => sub {
         ->error_message_is('You cannot use your email address as your password.', 'Correct error message for using email as mainPassword');
 
     $params->{args}->{mainPassword} = '123sdadasd';
-    $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
-        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'Correct error message for using weak mainPassword');
+    $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')->error_message_is('That password is incorrect. Please try again.',
+        'Correct error message for using weak mainPassword when trading password already set');
     $params->{args}->{mainPassword} = 'Abcd33@!';
 
     $params->{args}->{investPassword}   = 'Abcd31231233@!';

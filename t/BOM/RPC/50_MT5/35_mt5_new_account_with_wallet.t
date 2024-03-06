@@ -14,14 +14,17 @@ use Test::Warnings;
 use BOM::Config::Runtime;
 use BOM::Platform::Token::API;
 use Locale::Country::Extra;
+use Test::BOM::RPC::Accounts;
 
 # Setting up app config for demo and real server
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->system->mt5->http_proxy->demo->p01_ts04(1);
 $app_config->system->mt5->http_proxy->real->p02_ts01(1);
 
-my $m = BOM::Platform::Token::API->new;
-my $c = BOM::Test::RPC::QueueClient->new();
+my $m       = BOM::Platform::Token::API->new;
+my $c       = BOM::Test::RPC::QueueClient->new();
+my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+
 $ENV{LOG_DETAILED_EXCEPTION} = 1;
 
 subtest 'tradding accounts for wallet accounts' => sub {
@@ -70,7 +73,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
 
     my ($wallet, $token) = $wallet_generator->(qw(CRW doughflow USD));
 
-    $user->update_trading_password('Abcd1234');
+    $user->update_trading_password($DETAILS{password}{main});
 
     my $account = $c->call_ok(
         mt5_new_account => {
@@ -79,7 +82,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
                 account_type => 'gaming',
                 email        => $user->email,
                 name         => $wallet->first_name,
-                mainPassword => 'Abcd1234',
+                mainPassword => $DETAILS{password}{main},
                 leverage     => 100,
             }})->has_no_error('gaming account successfully created')->result;
 
@@ -97,7 +100,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
                 account_type => 'gaming',
                 email        => $user->email,
                 name         => $wallet->first_name,
-                mainPassword => 'Abcd1234',
+                mainPassword => $DETAILS{password}{main},
                 leverage     => 100,
             }}
     )->has_error('gaming account successfully created')->has_error('It should fail on creating duplicate account')
@@ -111,7 +114,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
                 account_type => 'demo',
                 email        => $user->email,
                 name         => $wallet->first_name,
-                mainPassword => 'Abcd1234',
+                mainPassword => $DETAILS{password}{main},
                 leverage     => 100,
             }}
     )->has_error('gaming account successfully created')->has_error('It should fail on creating duplicate account')
@@ -130,7 +133,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
                 account_type => 'gaming',
                 email        => $user->email,
                 name         => $wallet->first_name,
-                mainPassword => 'Abcd1234',
+                mainPassword => $DETAILS{password}{main},
                 leverage     => 100,
             }})->has_no_error('gaming account successfully created')->result;
 
@@ -150,7 +153,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
                 account_type => 'gaming',
                 email        => $user->email,
                 name         => $wallet->first_name,
-                mainPassword => 'Abcd1234',
+                mainPassword => $DETAILS{password}{main},
                 leverage     => 100,
             }}
     )->has_error('gaming account successfully created')->has_error('Fail to create real money account from virtual wallet')
@@ -164,7 +167,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
                 account_type => 'demo',
                 email        => $user->email,
                 name         => $wallet->first_name,
-                mainPassword => 'Abcd1234',
+                mainPassword => $DETAILS{password}{main},
                 leverage     => 100,
             }})->has_no_error('gaming account successfully created')->result;
 
@@ -184,7 +187,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
                 account_type => 'gaming',
                 email        => $user->email,
                 name         => $wallet->first_name,
-                mainPassword => 'Abcd1234',
+                mainPassword => $DETAILS{password}{main},
                 leverage     => 100,
             }}
     )->has_error('gaming account successfully created')->has_error('It should fail on creating duplicate account')
@@ -204,7 +207,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
                 company          => 'maltainvest',
                 email            => $user->email,
                 name             => $wallet->first_name,
-                mainPassword     => 'Abcd1234',
+                mainPassword     => $DETAILS{password}{main},
                 leverage         => 100,
             }})->has_no_error('gaming account successfully created')->result;
 

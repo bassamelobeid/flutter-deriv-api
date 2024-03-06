@@ -102,17 +102,15 @@ subtest 'new account with invalid main or investor password format' => sub {
         },
     };
 
-    $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong password formatting')
-        ->error_code_is('IncorrectMT5PasswordFormat', 'error code for mt5_new_account wrong password formatting')
-        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'error code for mt5_new_account wrong password formatting');
+    $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong password formatting but trading password already set')
+        ->error_code_is('PasswordError', 'error code for mt5_new_account wrong password formatting')
+        ->error_message_is('That password is incorrect. Please try again.', 'error code for mt5_new_account wrong password formatting');
 
     $params->{args}->{mainPassword}   = 'ABCDE123';
     $params->{args}->{investPassword} = 'ABCDEFGE';
-    $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong investor password formatting')
-        ->error_code_is('IncorrectMT5PasswordFormat', 'error code for mt5_new_account wrong investor password formatting')
-        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'error code for mt5_new_account wrong investor password formatting');
+    $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong investor password formatting but trading password already set')
+        ->error_code_is('PasswordError', 'error code for mt5_new_account wrong investor password formatting')
+        ->error_message_is('That password is incorrect. Please try again.', 'error code for mt5_new_account wrong investor password formatting');
 };
 
 subtest 'new account with missing signup fields' => sub {
@@ -132,7 +130,7 @@ subtest 'new account with missing signup fields' => sub {
             country          => 'mt',
             email            => $details{email},
             name             => $details{name},
-            investPassword   => 'Abcd1234',
+            investPassword   => $details{password}{investor},
             mainPassword     => $details{password}{main},
             leverage         => 100,
             company          => 'labuan'
@@ -599,7 +597,7 @@ subtest 'new account with switching' => sub {
             country        => 'mt',
             email          => $details{email},
             name           => $details{name},
-            investPassword => 'Abcd1234',
+            investPassword => $details{password}{investor},
             mainPassword   => $details{password}{main},
             leverage       => 100,
             company        => 'svg'
@@ -630,7 +628,7 @@ subtest 'MF should be allowed' => sub {
             country          => 'es',
             email            => $details{email},
             name             => $details{name},
-            investPassword   => 'Abcd1234',
+            investPassword   => $details{password}{investor},
             mainPassword     => $details{password}{main},
             company          => 'svg'
         },
@@ -680,7 +678,7 @@ subtest 'MF to MLT account switching' => sub {
             country        => 'es',
             email          => $details{email},
             name           => $details{name},
-            investPassword => 'Abcd1234',
+            investPassword => $details{password}{investor},
             mainPassword   => $details{password}{main},
             company        => 'maltainvest'
         },
@@ -744,7 +742,7 @@ subtest 'MLT to MF account switching' => sub {
             country          => 'es',
             email            => $details{email},
             name             => $details{name},
-            investPassword   => 'Abcd1234',
+            investPassword   => $details{password}{investor},
             mainPassword     => $details{password}{main},
             company          => 'maltainvest'
         },
@@ -810,7 +808,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
             country          => 'es',
             email            => $details{email},
             name             => $details{name},
-            investPassword   => 'Abcd1234',
+            investPassword   => $details{password}{investor},
             mainPassword     => $details{password}{main},
             company          => 'maltainvest'
         },
@@ -870,7 +868,7 @@ subtest 'CR to MLT and MF account switching' => sub {
             country        => 'es',
             email          => $details{email},
             name           => $details{name},
-            investPassword => 'Abcd1234',
+            investPassword => $details{password}{investor},
             mainPassword   => $details{password}{main},
             company        => 'maltainvest'
         },
@@ -893,7 +891,7 @@ subtest 'CR to MLT and MF account switching' => sub {
             country          => 'es',
             email            => $details{email},
             name             => $details{name},
-            investPassword   => 'Abcd1234',
+            investPassword   => $details{password}{investor},
             mainPassword     => $details{password}{main},
             company          => 'maltainvest'
         },
