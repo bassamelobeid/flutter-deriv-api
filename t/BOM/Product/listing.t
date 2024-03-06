@@ -53,7 +53,8 @@ subtest 'product listing - deriv dtrader' => sub {
     cmp_bag $deriv_dtrader->{$app_id}->{available_markets},
         ['Commodities', 'Cryptocurrencies', 'Forex', 'Stock Indices', 'Derived'],
         'available markets matched';
-    cmp_bag $deriv_dtrader->{$app_id}->{available_trade_types}, ['Options', 'Spreads', 'Multipliers'], 'available trade types matched';
+    cmp_bag $deriv_dtrader->{$app_id}->{available_trade_types}, ['Accumulators', 'Multipliers', 'Options', 'Spreads'],
+        'available trade types matched';
     is scalar $deriv_dtrader->{$app_id}->{product_list}->@*, 79, '79 listing';
     # check the structure
     cmp_bag [keys $deriv_dtrader->{$app_id}->{product_list}->[0]->%*],
@@ -78,7 +79,7 @@ subtest 'product listing - deriv go' => sub {
     my $deriv_go = BOM::Product::Listing->new->by_country('id', [$app_id]);
     cmp_bag $deriv_go->{$app_id}->{available_markets}, ['Cryptocurrencies', 'Forex', 'Derived', 'Commodities', 'Stock Indices'],
         'available markets matched';
-    cmp_bag $deriv_go->{$app_id}->{available_trade_types}, ['Spreads', 'Multipliers', 'Options'], 'available trade types matched';
+    cmp_bag $deriv_go->{$app_id}->{available_trade_types}, ['Accumulators', 'Multipliers', 'Options', 'Spreads'], 'available trade types matched';
     is scalar $deriv_go->{$app_id}->{product_list}->@*, 84, '84 listing';
     # check the structure
     cmp_bag [keys $deriv_go->{$app_id}->{product_list}->[0]->%*],

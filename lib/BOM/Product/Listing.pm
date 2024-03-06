@@ -377,7 +377,8 @@ sub _build_countries_instance {
 
 =head2 _get_deriv_trade_types
 
-On the platforms, the name of trade types are grouped under three major branches:
+On the platforms, the name of trade types are grouped under four major branches:
+- Accumulators
 - Multipliers
 - Options
 - CFDs
@@ -390,9 +391,10 @@ sub _get_deriv_trade_types {
     my @trade_types;
 
     my @contract_categories = $offerings->query({underlying_symbol => $symbol}, ['contract_category']);
-    push @trade_types, 'Multipliers' if (grep { $_ eq 'multiplier' } @contract_categories);
-    push @trade_types, 'Options'     if (grep { $_ !~ /(?:multiplier|callputspread)/ } @contract_categories);
-    push @trade_types, 'Spreads'     if (grep { $_ eq 'callputspread' } @contract_categories);
+    push @trade_types, 'Accumulators' if (grep { $_ eq 'accumulator' } @contract_categories);
+    push @trade_types, 'Multipliers'  if (grep { $_ eq 'multiplier' } @contract_categories);
+    push @trade_types, 'Options'      if (grep { $_ !~ /(?:accumulator|callputspread|multiplier)/ } @contract_categories);
+    push @trade_types, 'Spreads'      if (grep { $_ eq 'callputspread' } @contract_categories);
 
     return @trade_types;
 }
