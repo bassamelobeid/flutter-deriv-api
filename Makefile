@@ -3,7 +3,12 @@ D=$(CURDIR)
 export SKIP_EMAIL=1
 I=-I$D/lib -I$D -I/home/git/regentmarkets/cpan/local/lib
 P=/etc/rmg/bin/prove -v --timer $I
-PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+ifeq ($(GITHUB_ACTIONS),true)
+	EXTRA_ARGS = --merge --formatter TAP::Formatter::JUnit::PrintTxtStdout
+else
+	EXTRA_ARGS =
+endif
+PROVE=p () { $M; echo '$P' $(EXTRA_ARGS) "$$@"; $P $(EXTRA_ARGS) "$$@"; }; p
 
 test:
 	@$(PROVE) -r t/BOM
