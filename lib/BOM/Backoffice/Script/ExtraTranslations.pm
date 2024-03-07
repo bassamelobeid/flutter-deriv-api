@@ -20,6 +20,7 @@ use BOM::Product::Static;
 use BOM::User::Static;
 use BOM::OAuth::Static;
 use Finance::Contract::Longcode;
+use Business::Config;
 use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::Config::CurrencyConfig;
@@ -344,7 +345,7 @@ Adds localizable strings from bom-config/share/onfido_supported_documents.yml
 sub add_onfido_document_types {
     my $self   = shift;
     my $fh     = $self->pot_append_fh;
-    my $config = BOM::Config::onfido_supported_documents();
+    my $config = Business::Config->new->onfido_supported_documents();
 
     for my $country_config ($config->@*) {
         for ($country_config->{doc_types_list}->@*) {
