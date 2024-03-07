@@ -12,7 +12,12 @@ ALLTESTS=syntax \
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
 P=/etc/rmg/bin/prove -rv --timer -I$D/lib -I$D -I$D/t
-PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+ifeq ($(GITHUB_ACTIONS),true)
+	EXTRA_ARGS = --merge --formatter TAP::Formatter::JUnit::PrintTxtStdout
+else
+	EXTRA_ARGS =
+endif
+PROVE=p () { $M; echo '$P' $(EXTRA_ARGS) "$$@"; $P $(EXTRA_ARGS) "$$@"; }; p
 
 test: $(CORETESTS)
 
