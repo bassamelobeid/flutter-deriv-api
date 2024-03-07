@@ -3,7 +3,12 @@ TESTS=test unit syntax
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 export SKIP_EMAIL=1
 P=/etc/rmg/bin/prove -vrl --timer -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/lib -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/local/lib/perl5
-PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+ifeq ($(GITHUB_ACTIONS),true)
+	EXTRA_ARGS = --merge --formatter TAP::Formatter::JUnit::PrintTxtStdout
+else
+	EXTRA_ARGS =
+endif
+PROVE=p () { $M; echo '$P' $(EXTRA_ARGS) "$$@"; $P $(EXTRA_ARGS) "$$@"; }; p
 
 test_all: $(TESTS)
 
