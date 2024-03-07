@@ -22,8 +22,10 @@ jobs:
     secrets: inherit
     with:
       is_dependent: true
+      debianci_image: ${{ inputs.debianci_image }}
   tests:
     uses: ./.github/workflows/tests.yml
     secrets: inherit
     with:
       is_dependent: true 
+      debianci_image: ${{ inputs.debianci_image }}
