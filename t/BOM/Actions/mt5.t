@@ -228,6 +228,246 @@ subtest 'mt5 track event' => sub {
         is scalar @identify_args, 0, 'Identify is not triggered';
     };
 
+    subtest 'mt5 signup track - mt5_signup_derived' => sub {
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+        my $args = {
+            loginid            => $test_client->loginid,
+            'account_type'     => 'gaming',
+            'language'         => 'EN',
+            'mt5_group'        => 'real\\p02_ts02\\synthetic\\svg_std_usd',
+            'mt5_server'       => 'p02_ts02',
+            'mt5_login_id'     => 'MTR90000',
+            'language'         => 'EN',
+            'cs_email'         => 'test_cs@bin.com',
+            'sub_account_type' => 'financial'
+        };
+        undef @identify_args;
+        undef @track_args;
+        undef @emitter_args;
+        undef @transactional_args;
+
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
+        my $result         = $action_handler->($args);
+        ok $result, 'Success mt5 new account result';
+        BOM::Event::Process->new(category => 'track')->process({
+                type    => $emitter_args[0],
+                details => $emitter_args[1],
+                context => $emitter_args[2]})->get;
+
+        is scalar @track_args, 1;
+        my ($customer, %args) = $track_args[0]->@*;
+        my $mt5_details = parse_mt5_group($args->{mt5_group});
+        my $type_label  = $mt5_details->{market_type};
+        $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
+
+        my $sent_properties = {
+            loginid                => $test_client->loginid,
+            account_type           => 'gaming',
+            language               => 'EN',
+            mt5_group              => 'real\\p02_ts02\\synthetic\\svg_std_usd',
+            mt5_loginid            => 'MTR90000',
+            sub_account_type       => 'financial',
+            client_first_name      => $test_client->first_name,
+            type_label             => ucfirst $type_label,
+            mt5_integer_id         => '90000',
+            brand                  => 'deriv',
+            mt5_server_location    => 'South Africa',
+            mt5_server_region      => 'Africa',
+            mt5_server             => 'p02_ts02',
+            mt5_server_environment => 'Deriv-Server-02',
+            lang                   => 'ID',
+            mt5_dashboard_url      => 'https://app.deriv.com/mt5?lang=id',
+            live_chat_url          => 'https://deriv.com/id/?is_livechat_open=true'
+        };
+
+        is_deeply \%args,
+            {
+            context => {
+                active => 1,
+                app    => {name => 'deriv'},
+                locale => 'id'
+            },
+            event      => 'track_mt5_signup',
+            properties => $sent_properties
+            },
+            'properties are set properly for new mt5 account event';
+
+        is scalar(@identify_args), 0, 'Identify is not triggered';
+
+        my ($transactional_customer, $transactional_args) = @transactional_args;
+
+        is_deeply $transactional_args->{message_data}, $sent_properties, 'Transactional email data is correct';
+        is $transactional_args->{transactional_message_id}, 'mt5_signup_derived', 'Transactional email id is correct';
+
+        undef @track_args;
+
+        $args->{mt5_login_id} = '';
+        like exception { $action_handler->($args); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        is scalar @track_args,    0, 'Track is not triggered';
+        is scalar @identify_args, 0, 'Identify is not triggered';
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+    };
+
+    subtest 'mt5 signup track - mt5_signup_demo' => sub {
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+        my $args = {
+            loginid            => $test_client->loginid,
+            'account_type'     => 'demo',
+            'language'         => 'EN',
+            'mt5_group'        => 'demo\\p01_ts03\\financial\\svg_std_usd\\03',
+            'mt5_server'       => 'p01_ts03',
+            'mt5_login_id'     => 'MTR90000',
+            'language'         => 'EN',
+            'cs_email'         => 'test_cs@bin.com',
+            'sub_account_type' => 'financial'
+        };
+        undef @identify_args;
+        undef @track_args;
+        undef @emitter_args;
+        undef @transactional_args;
+
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
+        my $result         = $action_handler->($args);
+        ok $result, 'Success mt5 new account result';
+        BOM::Event::Process->new(category => 'track')->process({
+                type    => $emitter_args[0],
+                details => $emitter_args[1],
+                context => $emitter_args[2]})->get;
+
+        is scalar @track_args, 1;
+        my ($customer, %args) = $track_args[0]->@*;
+        my $mt5_details = parse_mt5_group($args->{mt5_group});
+        my $type_label  = $mt5_details->{market_type};
+        $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
+
+        my $sent_properties = {
+            loginid                => $test_client->loginid,
+            account_type           => 'demo',
+            language               => 'EN',
+            mt5_group              => 'demo\\p01_ts03\\financial\\svg_std_usd\\03',
+            mt5_loginid            => 'MTR90000',
+            sub_account_type       => 'financial',
+            client_first_name      => $test_client->first_name,
+            type_label             => ucfirst $type_label,
+            mt5_integer_id         => '90000',
+            brand                  => 'deriv',
+            mt5_server_location    => 'Frankfurt',
+            mt5_server_region      => 'Europe',
+            mt5_server             => 'p01_ts03',
+            mt5_server_environment => 'Deriv-Demo',
+            lang                   => 'ID',
+            mt5_dashboard_url      => 'https://app.deriv.com/mt5?lang=id',
+            live_chat_url          => 'https://deriv.com/id/?is_livechat_open=true'
+        };
+
+        is_deeply \%args,
+            {
+            context => {
+                active => 1,
+                app    => {name => 'deriv'},
+                locale => 'id'
+            },
+            event      => 'track_mt5_signup',
+            properties => $sent_properties
+            },
+            'properties are set properly for new mt5 account event';
+
+        is scalar(@identify_args), 0, 'Identify is not triggered';
+
+        my ($transactional_customer, $transactional_args) = @transactional_args;
+
+        is_deeply $transactional_args->{message_data}, $sent_properties, 'Transactional email data is correct';
+        is $transactional_args->{transactional_message_id}, 'mt5_signup_demo', 'Transactional email id is correct';
+
+        undef @track_args;
+
+        $args->{mt5_login_id} = '';
+        like exception { $action_handler->($args); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        is scalar @track_args,    0, 'Track is not triggered';
+        is scalar @identify_args, 0, 'Identify is not triggered';
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+    };
+
+    subtest 'mt5 signup track - mt5_signup_financial' => sub {
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+        my $args = {
+            loginid            => $test_client->loginid,
+            'account_type'     => 'financial',
+            'language'         => 'EN',
+            'mt5_group'        => 'real\\p01_ts01\\financial\\bvi_std_usd',
+            'mt5_server'       => 'p01_ts01',
+            'mt5_login_id'     => 'MTR90000',
+            'language'         => 'EN',
+            'cs_email'         => 'test_cs@bin.com',
+            'sub_account_type' => 'financial'
+        };
+        undef @identify_args;
+        undef @track_args;
+        undef @emitter_args;
+        undef @transactional_args;
+
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
+        my $result         = $action_handler->($args);
+        ok $result, 'Success mt5 new account result';
+        BOM::Event::Process->new(category => 'track')->process({
+                type    => $emitter_args[0],
+                details => $emitter_args[1],
+                context => $emitter_args[2]})->get;
+
+        is scalar @track_args, 1;
+        my ($customer, %args) = $track_args[0]->@*;
+        my $mt5_details = parse_mt5_group($args->{mt5_group});
+        my $type_label  = $mt5_details->{market_type};
+        $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
+
+        my $sent_properties = {
+            loginid                => $test_client->loginid,
+            account_type           => 'financial',
+            language               => 'EN',
+            mt5_group              => 'real\\p01_ts01\\financial\\bvi_std_usd',
+            mt5_loginid            => 'MTR90000',
+            sub_account_type       => 'financial',
+            client_first_name      => $test_client->first_name,
+            type_label             => ucfirst $type_label,
+            mt5_integer_id         => '90000',
+            brand                  => 'deriv',
+            mt5_server_location    => 'Ireland',
+            mt5_server_region      => 'Europe',
+            mt5_server             => 'p01_ts01',
+            mt5_server_environment => 'Deriv-Server',
+            lang                   => 'ID',
+            mt5_dashboard_url      => 'https://app.deriv.com/mt5?lang=id',
+            live_chat_url          => 'https://deriv.com/id/?is_livechat_open=true'
+        };
+
+        is_deeply \%args,
+            {
+            context => {
+                active => 1,
+                app    => {name => 'deriv'},
+                locale => 'id'
+            },
+            event      => 'track_mt5_signup',
+            properties => $sent_properties
+            },
+            'properties are set properly for new mt5 account event';
+
+        is scalar(@identify_args), 0, 'Identify is not triggered';
+
+        my ($transactional_customer, $transactional_args) = @transactional_args;
+
+        is_deeply $transactional_args->{message_data}, $sent_properties, 'Transactional email data is correct';
+        is $transactional_args->{transactional_message_id}, 'mt5_signup_financial', 'Transactional email id is correct';
+
+        undef @track_args;
+
+        $args->{mt5_login_id} = '';
+        like exception { $action_handler->($args); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        is scalar @track_args,    0, 'Track is not triggered';
+        is scalar @identify_args, 0, 'Identify is not triggered';
+        BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+    };
+
     subtest 'mt5 seychelles group signup track' => sub {
         my $args = {
             loginid            => $test_client->loginid,

@@ -1,10 +1,10 @@
 use Object::Pad;
 
-class BOM::Event::Transactional::Filter::NotContain;
+class BOM::Event::Transactional::Filter::NotEqual;
 
 field $property_name;
 field $property_value;
-field $key = 'not_contain';
+field $key = 'not_equal';
 
 =head2 BUILD
 
@@ -31,7 +31,7 @@ If $key found in the candidate's attributes, it'll create a filter with property
 method parse ($property_name, $property_value) {
     return if (ref $property_value ne 'HASH') || !$property_value->{$key};
 
-    return BOM::Event::Transactional::Filter::NotContain->new(
+    return BOM::Event::Transactional::Filter::NotEqual->new(
         property       => $property_name,
         property_value => $property_value->{$key});
 }
@@ -47,13 +47,7 @@ method apply ($props) {
     my $event_value = $props->{$property_name};
 
     return unless defined $event_value;
-    if (ref $property_value eq 'ARRAY') {
-        for my $value ($property_value->@*) {
-            return 0 if $event_value =~ m/$value/i;
-        }
-        return 1;
-    }
-    return $event_value !~ m/$property_value/i;
+    return lc($property_value) ne lc($event_value);
 }
 
 1;
