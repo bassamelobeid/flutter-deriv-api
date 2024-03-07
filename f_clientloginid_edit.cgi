@@ -203,11 +203,27 @@ if ($input{allow_poinc_resubmission} or $input{poinc_reason}) {
 if ($input{kyc_email_checkbox}) {
     my $poi_reason = ($input{poi_reason} || $client->status->reason('allow_poi_resubmission'));
     $poi_reason =~ s/\skyc_email$//;
-    $poi_reason = undef if $poi_reason && ($poi_reason eq "unselected" || $poi_reason eq "other");
     my $poa_reason = $input{poa_reason} || $client->status->reason('allow_poa_resubmission');
     $poa_reason =~ s/\skyc_email$//;
-    $poa_reason = undef if $poa_reason && ($poa_reason eq "unselected" || $poa_reason eq "other");
-    notify_resubmission_of_poi_poa_documents($loginid, $poi_reason, $poa_reason) if ($poi_reason || $poa_reason);
+
+    my $brand = Brands->new(name => 'deriv');
+
+    my $req = BOM::Backoffice::Request::Base->new(
+        brand_name => $brand->name,
+        app_id     => $client->source,
+        $client->user->preferred_language ? (language => $client->user->preferred_language) : (),
+    );
+
+    BOM::Backoffice::Request::request($req);
+
+    BOM::Platform::Event::Emitter::emit(
+        'notify_resubmission_of_poi_poa_documents',
+        {
+            loginid    => $loginid,
+            poi_reason => $poi_reason,
+            poa_reason => $poa_reason,
+
+        });
 }
 
 if (defined $input{run_onfido_check}) {
