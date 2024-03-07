@@ -44,6 +44,7 @@ jobs:
           make unit_test_product_contract
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
+        if: success() || failure()
       - name: Upload Test Results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
         if: success() || failure()
@@ -78,6 +79,7 @@ jobs:
           make unit_test_validation
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
+        if: success() || failure()
       - name: Upload Test Results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
         if: success() || failure()
@@ -112,6 +114,7 @@ jobs:
           make memory_test
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
+        if: success() || failure()
       - name: Upload Test Results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
         if: success() || failure()
@@ -146,6 +149,7 @@ jobs:
           make unit_test_pricing
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
+        if: success() || failure()
       - name: Upload Test Results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
         if: success() || failure()
@@ -180,21 +184,22 @@ jobs:
         run: make unit_test_product_contract_extended
       - name: Product base
         run: make unit_test_product_base
-        if: always()
+        if: success() || failure()
       - name: Product model
         run: make unit_test_product_model
-        if: always()
+        if: success() || failure()
       - name: Valatility
         run: make unit_test_volatility
-        if: always()
+        if: success() || failure()
       - name: Offerings
         run: make unit_test_offerings
-        if: always()
+        if: success() || failure()
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
+        if: success() || failure()
       - name: Upload Test Results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
-        if: always()
+        if: success() || failure()
         with:
           name: test-results-product_others
           path: /tmp/test-output/**/*.xml
@@ -228,7 +233,7 @@ jobs:
         run: |
           cd /home/git/regentmarkets/bom-quant-benchmark
           make OVRA_benchmark
-        if: always()
+        if: success() || failure()
   benchmark_SD:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
@@ -252,25 +257,25 @@ jobs:
           repository: ${{ github.repository }}
       - name: SDFX benchmark major
         run: make SDFX_benchmark_major
-        if: always()
+        if: success() || failure()
       - name: SDFX benchmark minor
         run: make SDFX_benchmark_minor
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark OTC_DJI
         run: make SDEQ_benchmark_OTC_DJI
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark OTC_FCHI
         run: make SDEQ_benchmark_OTC_FCHI
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark OTC_SPC
         run: make SDEQ_benchmark_OTC_SPC
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark SSECOMP
         run: make SDEQ_benchmark_SSECOMP
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark OTC_FTSE
         run: make SDEQ_benchmark_OTC_FTSE
-        if: always()
+        if: success() || failure()
   Pricing-Engine-Tests:
     needs: syntax_diff_unit
     runs-on: ubuntu-latest
@@ -300,42 +305,42 @@ jobs:
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Digits
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-HighLow-Ticks
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Intraday-Forex-Base
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Lookback
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Markup
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Reset
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-TickExpiry
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
           make test
-        if: always()
+        if: success() || failure()
   check_dependent_tests:
     if:  ${{ github.event_name != 'push' }}
     runs-on: ubuntu-latest
@@ -356,7 +361,7 @@ jobs:
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
           service-name: bom
   dependent:
-    needs: [Pricing-Engine-Tests,benchmark_merlin_ovra,product_contract,validation,memory_test,pricing,product_others,benchmark_SD,check_dependent_tests]
+    needs: [check_dependent_tests]
     if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
     uses: ./.github/workflows/dependent.yml
     secrets: inherit

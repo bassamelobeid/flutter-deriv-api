@@ -135,16 +135,16 @@ jobs:
         run: make unit_test_product_contract_extended
       - name: Product base
         run: make unit_test_product_base
-        if: always()
+        if: success() || failure()
       - name: Product model
         run: make unit_test_product_model
-        if: always()
+        if: success() || failure()
       - name: Valatility
         run: make unit_test_volatility
-        if: always()
+        if: success() || failure()
       - name: Offerings
         run: make unit_test_offerings
-        if: always()
+        if: success() || failure()
   benchmark_merlin_ovra:
     runs-on: ubuntu-latest
     container:
@@ -173,7 +173,7 @@ jobs:
         run: |
           cd /home/git/regentmarkets/bom-quant-benchmark
           make OVRA_benchmark
-        if: always()
+        if: success() || failure()
   benchmark_SD:
     runs-on: ubuntu-latest
     container:
@@ -196,25 +196,25 @@ jobs:
           repository: ${{ inputs.repository }}
       - name: SDFX benchmark major
         run: make SDFX_benchmark_major
-        if: always()
+        if: success() || failure()
       - name: SDFX benchmark minor
         run: make SDFX_benchmark_minor
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark OTC_DJI
         run: make SDEQ_benchmark_OTC_DJI
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark OTC_FCHI
         run: make SDEQ_benchmark_OTC_FCHI
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark OTC_SPC
         run: make SDEQ_benchmark_OTC_SPC
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark SSECOMP
         run: make SDEQ_benchmark_SSECOMP
-        if: always()
+        if: success() || failure()
       - name: SDEQ benchmark OTC_FTSE
         run: make SDEQ_benchmark_OTC_FTSE
-        if: always()
+        if: success() || failure()
   Pricing-Engine-Tests:
     runs-on: ubuntu-latest
     container:
@@ -243,39 +243,39 @@ jobs:
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Digits
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-HighLow-Ticks
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Intraday-Forex-Base
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Lookback
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Markup
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-Reset
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
           make test
-        if: always()
+        if: success() || failure()
       - name: perl-Pricing-Engine-TickExpiry
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
           make test
-        if: always()
+        if: success() || failure()
