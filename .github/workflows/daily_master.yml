@@ -3,6 +3,7 @@ run-name: Daily test on master branch
 env:
   PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
+  workflow_dispatch:
   schedule:
     - cron: '4 20 * * *'
 jobs:
