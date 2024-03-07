@@ -46,7 +46,7 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Accounts-related functionality
-            run: make accounts formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make accounts
           - 
             name: Update UID for nobody user
             uses: regentmarkets/github-actions/update-uid@master
@@ -83,7 +83,7 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Security handling
-            run: make security formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make security
 
           - 
             name: Update UID for nobody user
@@ -122,7 +122,7 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Pricing
-            run: make pricing formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make pricing
           - 
             name: Update UID for nobody user
             uses: regentmarkets/github-actions/update-uid@master
@@ -159,7 +159,7 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Uncategorised tests
-            run: make misc formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make misc
           - 
             name: Update UID for nobody user
             uses: regentmarkets/github-actions/update-uid@master
@@ -196,7 +196,7 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Run P2P tests
-            run: make p2p formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make p2p
           - 
             name: Update UID for nobody user
             uses: regentmarkets/github-actions/update-uid@master
@@ -233,7 +233,7 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Schema tests
-            run: make schema formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make schema
           - 
             name: Update UID for nobody user
             uses: regentmarkets/github-actions/update-uid@master
@@ -270,7 +270,7 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Run subscription tests
-            run: make subscriptions formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make subscriptions
           - 
             name: Update UID for nobody user
             uses: regentmarkets/github-actions/update-uid@master
@@ -307,7 +307,7 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Run backends tests
-            run: make backends formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make backends
           - 
             name: Update UID for nobody user
             uses: regentmarkets/github-actions/update-uid@master

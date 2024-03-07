@@ -45,10 +45,10 @@ jobs:
               repository: ${{ inputs.repository }}
           - 
             name: Code structure and syntax
-            run: make structure formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make structure
           - 
             name: unit tests
-            run: make unit formatter='--formatter TAP::Formatter::JUnit::PrintTxtStdout'
+            run: make unit
           - 
             name: Update UID for nobody user
             uses: regentmarkets/github-actions/update-uid@master

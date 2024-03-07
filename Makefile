@@ -4,37 +4,43 @@ export MOJO_LOG_LEVEL
 P=/etc/rmg/bin/prove --timer -v -rl
 C=PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,bom-websocket-tests,ignore,^t/' /etc/rmg/bin/prove --timer --ignore-exit -rl
 
-PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+ifeq ($(GITHUB_ACTIONS),true)
+	EXTRA_ARGS = --merge --formatter TAP::Formatter::JUnit::PrintTxtStdout
+else
+	EXTRA_ARGS =
+endif
+
+PROVE=p () { $M; echo '$P' $(EXTRA_ARGS) "$$@"; $P $(EXTRA_ARGS) "$$@"; }; p
 
 # Get versions of packages which use in Binary::WebSocketAPI and print it in cpanfile format.
 CHECK_VER = perl -MBinary::WebSocketAPI -e 'print join("\n", map { qq{requires "$$_", } .( $${$$_."::VERSION"} ? qq["== $${$$_."::VERSION"}"] : 0). q{;} } sort grep {!/^([a-z0-9:]|Binary::WebSocketAPI)/} map { s|/|::|g; s|\.pm$$||; $$_ } keys %INC) . "\n" ;'
 
 accounts:
-	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/accounts t/999_redis_keys.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/accounts t/999_redis_keys.t
 
 security:
-	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/security t/999_redis_keys.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/security t/999_redis_keys.t
 
 pricing:
-	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/pricing t/999_redis_keys.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/pricing t/999_redis_keys.t
 
 misc:
-	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/misc t/999_redis_keys.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc t/999_redis_keys.t
 
 p2p:
-	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
 
 structure:
-	@$(PROVE) --norc $(formatter) t
+	@$(PROVE) --norc t
 
 schema:
-	@$(PROVE) $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
 
 subscriptions:
-	@$(PROVE) --norc $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
+	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
 
 backends:
-	@$(PROVE) --norc $(formatter) /home/git/regentmarkets/bom-websocket-tests/v3/backends
+	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/backends
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
@@ -59,7 +65,7 @@ doc: $(msc_graphs) $(dot_graphs)
 	dot -Tpng < $< > $@
 
 unit:
-	@$(PROVE) --norc $(formatter) t/unit
+	@$(PROVE) --norc t/unit
 
 cover:
 	sed -i '/--exec/d' .proverc
