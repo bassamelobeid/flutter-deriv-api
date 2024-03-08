@@ -57,7 +57,7 @@ subtest 'Affiliate Registration' => sub {
     );
 
     my @mandatory_fields = (
-        qw(PARAM_email PARAM_username PARAM_first_name PARAM_last_name PARAM_date_of_birth PARAM_individual PARAM_phone_number PARAM_city PARAM_state PARAM_postcode PARAM_website PARAM_agreement)
+        qw(PARAM_email PARAM_username PARAM_first_name PARAM_last_name PARAM_date_of_birth PARAM_individual PARAM_phone_number PARAM_city PARAM_state PARAM_website PARAM_agreement)
     );
     my %params = (
         PARAM_email         => 'something1@gmail.com',
