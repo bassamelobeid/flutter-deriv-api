@@ -6,6 +6,7 @@ use warnings;
 use BOM::MT5::User::Async;
 use Test::MockModule;
 use Locale::Country::Extra;
+use Storable qw(dclone);
 
 my $mock_mt5;
 my $account_id = 1000;
@@ -14,7 +15,7 @@ my %accounts;
 sub mock_server {
     $mock_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
 
-    $mock_mt5->mock('get_user', sub { my $login = shift; return Future->done($accounts{$login}) });
+    $mock_mt5->mock('get_user', sub { my $login = shift; return Future->done(dclone($accounts{$login})) });
 
     $mock_mt5->mock(
         'create_user',

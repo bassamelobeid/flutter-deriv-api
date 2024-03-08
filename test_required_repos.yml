@@ -19,5 +19,6 @@
 - regentmarkets/bom-postgres-feeddb
 - regentmarkets/bom-postgres-userdb
 - regentmarkets/bom-postgres-commissiondb
+- regentmarkets/deriv-trading-platform
 - regentmarkets/p2p
 - regentmarkets/bom-postgres-ethdb
