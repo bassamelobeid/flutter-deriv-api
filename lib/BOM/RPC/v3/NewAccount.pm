@@ -1677,7 +1677,10 @@ rpc "affiliate_register_person",
                     code              => 400,
                     message_to_client => $myAff_response->{message_to_client}});
         }
-        $response = {success => 1};
+
+        $response = {
+            success           => 1,
+            affiliate_user_id => $myAff_response->{userid}};
 
     } catch ($e) {
         return BOM::RPC::v3::Utility::create_error({

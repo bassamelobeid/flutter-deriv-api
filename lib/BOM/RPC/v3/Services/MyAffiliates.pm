@@ -1,18 +1,14 @@
 package BOM::RPC::v3::Services::MyAffiliates;
 
 =head1 NAME
-
 BOM::RPC::v3::Services::MyAffiliates - helpers for MyAffiliates
 =head1 DESCRIPTION
 This module contains the helpers for dealing with MyAfiliate API service.
-
 BOM::RPC::v3::Services::MyAffiliates - helpers for MyAffiliates
-
 =cut
 
 use strict;
 use warnings;
-
 use BOM::Config;
 use BOM::MyAffiliates::WebService;
 use Syntax::Keyword::Try;
@@ -22,11 +18,9 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::Transport::HTTP;
 use JSON::XS;
 use XML::LibXML;
-
 # constants for type of account MyAffiliates
 use constant INDIVIDUAL_ACC_TYPE => 1;
 use constant BUSINESS_ACC_TYPE   => 2;
-
 my $loop;
 my $myaffiliate;
 my $myaffiliate_config;
@@ -42,24 +36,16 @@ BEGIN {
 }
 
 =head2 affiliate_add_general
-
 Common function used by both `affiliate_add_person` and `affiliate_add_company` functions
-
 =over 4
-
 =item * C<email> - C<Str> The email that entered in previous step of registration
-
 =item * C<args> - C<Hash ref> Hash ref consists of : password, first_name, last_name, term and conditions
-
 =item * C<extra_fields> - C<Hash ref> Hash ref consists of extra fields ( for business account) like company name and number
-
 =back
-
 =cut
 
 sub affiliate_add_general {
     my ($email, $args) = @_;
-
     my $fields = {
         PARAM_email          => $email,
         PARAM_username       => $args->{user_name},
@@ -72,7 +58,7 @@ sub affiliate_add_general {
         PARAM_country        => $args->{country},
         PARAM_city           => $args->{address_city},
         PARAM_state          => $args->{address_state},
-        PARAM_postcode       => $args->{address_postcode},
+        PARAM_postcode       => $args->{address_postcode} // '',
         PARAM_website        => $args->{website_url},
         PARAM_agreement      => $args->{tnc_accepted},
         PARAM_ph_countrycode => $args->{phone_code},
@@ -95,34 +81,27 @@ sub affiliate_add_general {
     if (defined($args->{password})) {
         $fields->{PARAM_password} = $args->{password};
     }
+    # Create an XML::LibXML object
+    my $parser = XML::LibXML->new();
     try {
         my $aff_id = $myaffiliate->register_affiliate(%$fields)->get;
+        my $doc    = $parser->load_xml(string => $aff_id);
+        my $userid = $doc->findvalue('//USERID') // '';
         return {
-            code => "SuccessRegister",
+            code   => "SuccessRegister",
+            userid => $userid
         };
     } catch ($e) {
         # Check if the exception variable $e is an object or not
-
         if (ref($e)) {
-
-            # Create an XML::LibXML object
-            my $parser = XML::LibXML->new();
-
             # Parse the XML string
             my $xml_doc = $parser->parse_string($e->{error_message});
-
             # Access the root element
             my $root = $xml_doc->documentElement();
-
-            # Now you can work with the XML document as needed
-            # For example, to access elements and attributes:
-
             # Access the ERROR element
             my $error_element = $root->findnodes('/ACCOUNT/INIT/ERROR')->[0];
-
             # Access the text content of the MSG element
             my $msg_content = $error_element->findvalue('./MSG');
-
             return {
                 code              => "MYAFFRuntimeError",
                 message_to_client => $msg_content
@@ -133,23 +112,15 @@ sub affiliate_add_general {
                 message_to_client => "Error in response structure"
             };
         }
-
     }
 }
 
 =head2 affiliate_add_person
-
 Register the individual affiliate via MyAffiliate API with corresponding inputs
-
 =over 4
-
 =item * C<email> - C<Str> The email that entered in previous step of registration
-
 =item * C<args> - C<Hash ref> Hash ref consists of : password, first_name, last_name, term and conditions
-
-
 =back
-
 =cut
 
 sub affiliate_add_person {
@@ -160,5 +131,4 @@ sub affiliate_add_person {
 END {
     $loop->remove($myaffiliate);
 }
-
 1;
