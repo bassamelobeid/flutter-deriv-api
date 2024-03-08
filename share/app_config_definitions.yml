@@ -336,8 +336,7 @@ payments:
               description: 'Value of x in: Rule 4: MT5 net transfer must be < x.'
               isa: Num
               global: 1
-              default: 5000
-              
+              default: 5000             
     p2p:
       description: 'Peer-to-peer payment system'
       isa: section
@@ -918,6 +917,11 @@ payments:
       isa: ArrayRef
       default: []
       global: 1
+    payment_agent_deposits_lookback:
+      description: 'Number of days in the past to aggregate net payment agent deposits to be excluded from cashier withdrawal. A value of 0 will disable this check.'
+      isa: Num
+      global: 1
+      default: 180       
 quants:
   description: "Various quants' parameters"
   isa: section
