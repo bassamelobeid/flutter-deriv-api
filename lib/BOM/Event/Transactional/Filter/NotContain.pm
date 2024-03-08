@@ -47,12 +47,6 @@ method apply ($props) {
     my $event_value = $props->{$property_name};
 
     return unless defined $event_value;
-    if (ref $property_value eq 'ARRAY') {
-        for my $value ($property_value->@*) {
-            return 0 if $event_value =~ m/$value/i;
-        }
-        return 1;
-    }
     return $event_value !~ m/$property_value/i;
 }
 

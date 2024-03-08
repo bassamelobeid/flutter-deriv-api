@@ -34,7 +34,6 @@ use YAML::XS;
 use BOM::Event::Transactional::Filter::Equal;
 use BOM::Event::Transactional::Filter::Contain;
 use BOM::Event::Transactional::Filter::NotContain;
-use BOM::Event::Transactional::Filter::NotEqual;
 use BOM::Event::Transactional::Filter::Exist;
 
 use constant CONFIG_PATH => "/home/git/regentmarkets/bom-events/config/transactional/";
@@ -42,8 +41,7 @@ use constant CONFIG_PATH => "/home/git/regentmarkets/bom-events/config/transacti
 field $map;
 field @filters = (
     BOM::Event::Transactional::Filter::Equal->new, BOM::Event::Transactional::Filter::Contain->new,
-    BOM::Event::Transactional::Filter::Exist->new, BOM::Event::Transactional::Filter::NotContain->new,
-    BOM::Event::Transactional::Filter::NotEqual->new
+    BOM::Event::Transactional::Filter::Exist->new, BOM::Event::Transactional::Filter::NotContain->new
 );
 
 =head2 load

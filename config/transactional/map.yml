@@ -22,26 +22,3 @@ p2p_archived_ad:
         exists: 1
       adverts:
         exists: 1
-mt5_signup:
-  - mt5_signup_demo:
-      brand: deriv
-      account_type: demo
-      mt5_server_environment: deriv-demo
-  - mt5_signup_derived:
-      brand: deriv
-      account_type: gaming
-      type_label:
-        contains: synthetic
-      mt5_loginid:
-        contains: mtr
-  - mt5_signup_financial:
-      brand: deriv
-      account_type: financial
-      mt5_server_environment: 
-        contains:
-          - deriv-server
-          - deriv-server-02
-      sub_account_type:
-        contains:
-          - financial
-          - financial_stp

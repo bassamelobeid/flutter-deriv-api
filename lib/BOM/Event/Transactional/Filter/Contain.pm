@@ -2,8 +2,6 @@ use Object::Pad;
 
 class BOM::Event::Transactional::Filter::Contain;
 
-use List::Util qw(any);
-
 field $property_name;
 field $property_value;
 field $key = 'contains';
@@ -46,28 +44,9 @@ And apply the filter criteria on the event's property value with respect to refe
 =cut
 
 method apply ($props) {
-    my $event_values = (ref $props->{$property_name} eq 'ARRAY') ? $props->{$property_name} : [$props->{$property_name}];
-    return unless defined $event_values;
+    my $event_value = $props->{$property_name};
 
-    for my $event_value ($event_values->@*) {
-
-        return 1 if $self->contains_value($event_value);
-    }
-
-    return 0;
-}
-
-=head2 contains_value
-
-Checks wether the event property value contains the filter property value.
-
-=cut
-
-method contains_value ($event_value) {
     return unless defined $event_value;
-
-    return any { $event_value =~ m/$_/i } @$property_value if (ref $property_value eq 'ARRAY');
-
     return $event_value =~ m/$property_value/i;
 }
 
