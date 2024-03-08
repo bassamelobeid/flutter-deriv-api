@@ -46,6 +46,7 @@ use BOM::User::FinancialAssessment qw(decode_fa);
 use BOM::User::Utility;
 use BOM::Config::MT5;
 use BOM::Config::Compliance;
+use Deriv::TradingPlatform::MT5::UserRights qw(to_array to_hash get_value get_new_account_permissions);
 requires_auth('wallet', 'trading');
 
 use constant MT5_MALTAINVEST_MOCK_LEVERAGE => 33;
@@ -55,13 +56,6 @@ use constant MT5_SVG_FINANCIAL_MOCK_LEVERAGE => 1;
 use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
-
-use constant USER_RIGHT_ENABLED        => 0x0000000000000001;
-use constant USER_RIGHT_TRAILING       => 0x0000000000000020;
-use constant USER_RIGHT_EXPERT         => 0x0000000000000040;
-use constant USER_RIGHT_API            => 0x0000000000000080;
-use constant USER_RIGHT_REPORTS        => 0x0000000000000100;
-use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 
 # Define a constant for 6 months in seconds
 use constant SIX_MONTHS_IN_SECONDS => 6 * 30 * 24 * 60 * 60;
@@ -156,7 +150,7 @@ async_rpc "mt5_login_list",
                     $_,
                     qw(account_type balance country currency display_balance email group landing_company landing_company_short),
                     qw(leverage login name market_type sub_account_type sub_account_category server server_info),
-                    qw(status webtrader_url),
+                    qw(status webtrader_url rights),
                 )
             } @logins;
 
@@ -367,6 +361,7 @@ sub mt5_accounts_lookup ($client, $account_type, $return_errors) {    ## no crit
                     $setting->{status} = $client->user->loginid_details->{$setting->{login}}->{status};
                     $setting->{status} = undef if ($setting->{status} // '') eq 'poa_outdated' and $client->risk_level_aml ne 'high';
                 }
+                $setting->{rights} = Deriv::TradingPlatform::MT5::UserRights::to_array($setting->{rights}) if exists $setting->{rights};
 
                 return Future->done($setting);
             }
@@ -703,22 +698,6 @@ sub _get_sub_account_type {
     return $sub_account_type;
 }
 
-=head2 _get_new_account_permissions
-
-Returns the MT5 new account permissions
-
-=over 4
-
-=back
-
-=cut
-
-sub _get_new_account_permissions {
-    # We have made a decision to disable trading upon mt5 account creation
-    # NOTE: Disabled trading MT5 account will not count total account quota in mt5 server
-    return USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT | USER_RIGHT_API | USER_RIGHT_REPORTS | USER_RIGHT_TRADE_DISABLED;
-}
-
 async_rpc "mt5_new_account",
     category => 'mt5',
     sub {
@@ -1053,17 +1032,17 @@ async_rpc "mt5_new_account",
         unless $client->user->trading_password;
 
     # Define the default rights for new account
-    $args->{rights} = _get_new_account_permissions;
+    $args->{rights} = Deriv::TradingPlatform::MT5::UserRights::get_new_account_permissions();
 
     # disable trading for affiliate accounts
     if ($client->landing_company->is_for_affiliates) {
-        $args->{rights} = USER_RIGHT_TRADE_DISABLED;
+        $args->{rights} = Deriv::TradingPlatform::MT5::UserRights::get_value(qw(trade_disabled));
     }
 
     # disable trading for payment agents except for demo account
     if (defined $client->payment_agent && $client->payment_agent->status eq 'authorized') {
-        $args->{rights} = USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT | USER_RIGHT_API | USER_RIGHT_REPORTS;
-        $args->{rights} = $args->{rights} | USER_RIGHT_TRADE_DISABLED unless $account_type eq 'demo';
+        $args->{rights} = Deriv::TradingPlatform::MT5::UserRights::get_value(qw(enabled trailing expert api_deprecated reports));
+        $args->{rights} = $args->{rights} | Deriv::TradingPlatform::MT5::UserRights::get_value(qw(trade_disabled)) unless $account_type eq 'demo';
     }
 
     my $additional_fields_for_migration = $migration_request ? ['comment'] : [];
@@ -2468,10 +2447,10 @@ sub _mt5_validate_and_get_amount {
                 and $action eq 'deposit'
                 and $mt5_group =~ /(?:labuan|vanuatu|bvi)/)
             {
-                my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
-                my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
-                my %rights       = map { $_ => $setting->{rights} & $known_rights{$_} ? 1 : 0 } keys %known_rights;
-                if (not $rights{enabled} or $rights{trade_disabled}) {
+
+                my $rights = Deriv::TradingPlatform::MT5::UserRights::to_hash($setting->{rights});
+
+                if (not $rights->{enabled} or $rights->{trade_disabled}) {
                     return create_error_future('MT5DepositLocked');
                 }
             }

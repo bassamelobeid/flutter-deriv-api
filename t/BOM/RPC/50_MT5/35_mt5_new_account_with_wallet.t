@@ -14,6 +14,7 @@ use Test::Warnings;
 use BOM::Config::Runtime;
 use BOM::Platform::Token::API;
 use Locale::Country::Extra;
+use Storable qw(dclone);
 use Test::BOM::RPC::Accounts;
 
 # Setting up app config for demo and real server
@@ -34,7 +35,7 @@ subtest 'tradding accounts for wallet accounts' => sub {
 
     my $mock_user_data = +{};
     # Mocking get_user to return undef to make sure user dont have any derivez account yet
-    $mock_mt5->mock('get_user', sub { return Future->done($mock_user_data->{$_[0]}); });
+    $mock_mt5->mock('get_user', sub { return Future->done(dclone($mock_user_data->{$_[0]})); });
 
     # Mocking create_user to create a new derivez user
     my $MT_counter = 1000;

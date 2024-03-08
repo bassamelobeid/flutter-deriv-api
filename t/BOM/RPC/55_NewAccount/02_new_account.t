@@ -28,6 +28,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::RPC::v3::MT5::Account;
+use Deriv::TradingPlatform::MT5::UserRights qw(get_new_account_permissions);
 use utf8;
 
 use IO::Pipe;
@@ -513,7 +514,7 @@ subtest $method => sub {
 
     subtest 'Check new account permission' => sub {
         # We have made a decision to disable trading upon mt5 account creation
-        is(BOM::RPC::v3::MT5::Account::_get_new_account_permissions, 485, 'MT5 New account permission check');
+        is(Deriv::TradingPlatform::MT5::UserRights::get_new_account_permissions(), 485, 'MT5 New account permission check');
     };
 
     subtest 'Auth client' => sub {
