@@ -25,9 +25,7 @@ use BOM::User::Utility qw(parse_mt5_group);
 use JSON::MaybeXS      qw(encode_json);
 use BOM::Config::Runtime;
 use Clone 'clone';
-
-use constant USER_RIGHT_ENABLED        => 0x0000000000000001;
-use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
+use Deriv::TradingPlatform::MT5::UserRights qw(get_value);
 
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
@@ -4242,8 +4240,9 @@ subtest 'mt5_svg_migration_requested' => sub {
             }
             ],
             'Correct color change emission (BLACK)';
-        is $update_user_call_params->{login},  'MTR1000000',                                   'Correct loginid passed to update_user';
-        is $update_user_call_params->{rights}, USER_RIGHT_TRADE_DISABLED | USER_RIGHT_ENABLED, 'Correct rights passed to update_user';
+        is $update_user_call_params->{login}, 'MTR1000000', 'Correct loginid passed to update_user';
+        is $update_user_call_params->{rights}, Deriv::TradingPlatform::MT5::UserRights::get_value(qw(trade_disabled enabled)),
+            'Correct rights passed to update_user';
 
         $update_user_call_params = undef;
         @emitter_args            = ();

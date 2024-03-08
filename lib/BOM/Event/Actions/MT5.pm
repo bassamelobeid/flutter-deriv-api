@@ -46,19 +46,18 @@ use Future;
 use Future::AsyncAwait;
 use IO::Async::Loop;
 use Net::Async::Redis;
-use ExchangeRates::CurrencyConverter qw(convert_currency);
-use Format::Util::Numbers            qw(financialrounding);
+use ExchangeRates::CurrencyConverter        qw(convert_currency);
+use Format::Util::Numbers                   qw(financialrounding);
+use Deriv::TradingPlatform::MT5::UserRights qw(get_value);
 
 use List::Util qw(sum0);
 use HTML::Entities;
 
-use constant DAYS_TO_EXPIRE            => 14;
-use constant SECONDS_IN_DAY            => 86400;
-use constant USER_RIGHT_ENABLED        => 0x0000000000000001;
-use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
-use constant COLOR_RED                 => 255;
-use constant COLOR_BLACK               => 0;
-use constant COLOR_NONE                => -1;
+use constant DAYS_TO_EXPIRE => 14;
+use constant SECONDS_IN_DAY => 86400;
+use constant COLOR_RED      => 255;
+use constant COLOR_BLACK    => 0;
+use constant COLOR_NONE     => -1;
 
 =head2 sync_info
 
@@ -210,23 +209,11 @@ sub new_mt5_signup {
 
     my $id = $data->{mt5_login_id} or die 'mt5 loginid is required';
 
-    my $cache_key  = "MT5_USER_GROUP::" . $id;
-    my $group      = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
-    my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
+    my $cache_key = "MT5_USER_GROUP::" . $id;
+    my $group     = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
 
-    my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
+    if (!$group->[0]) {
 
-    if ($group->[0]) {
-        my $status = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'rights');
-
-        my %rights;
-
-        # This should now have the following keys set:
-        # api,enabled,expert,password,reports,trailing
-        # Example: status (483 => 1E3)
-        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
-
-    } else {
         # ... and if we don't, queue up the request. This may lead to a few duplicates
         # in the queue - that's fine, we check each one to see if it's already
         # been processed.
@@ -1262,10 +1249,11 @@ async sub _archive_mt5_account {
     my ($mt5_prefix_id, $mt5_user, $bom_user) = @{$params}{qw/mt5_prefix_id mt5_user bom_user/};
 
     delete $mt5_user->{color};
+
     await BOM::MT5::User::Async::update_user({
         %{$mt5_user},
         login  => $mt5_user->{login},
-        rights => USER_RIGHT_TRADE_DISABLED
+        rights => Deriv::TradingPlatform::MT5::UserRights::get_value(qw(trade_disabled)),
     });
 
     await BOM::MT5::User::Async::user_archive($mt5_user->{login});
@@ -1711,10 +1699,9 @@ async sub mt5_archive_restore_sync {
             try {
                 delete $mt5_user->{color};
                 await BOM::MT5::User::Async::update_user({
-                    %{$mt5_user},
-                    login  => $mt5_user->{login},
-                    rights => USER_RIGHT_ENABLED
-                });
+                        %{$mt5_user},
+                        login  => $mt5_user->{login},
+                        rights => Deriv::TradingPlatform::MT5::UserRights::get_value(qw(enabled))});
             } catch ($e) {
                 _create_error($process_mt5_fail, $mt5_account, 'MT5 Error', 'MT5 restored but failed to enable trading rights.');
                 next;
@@ -2287,10 +2274,11 @@ async sub mt5_svg_migration_requested {
 
                 unless ($has_open_order_position) {
                     my $retry = 5;
+
                     await try_repeat {
                         BOM::MT5::User::Async::update_user({
                             login  => $mt5_account->{login},
-                            rights => USER_RIGHT_TRADE_DISABLED | USER_RIGHT_ENABLED
+                            rights => Deriv::TradingPlatform::MT5::UserRights::get_value(qw(trade_disabled enabled)),
                         });
 
                     }
