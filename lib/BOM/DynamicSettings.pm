@@ -491,6 +491,7 @@ sub get_settings_by_group {
                 payments.p2p_withdrawal_limit
                 payments.p2p_deposits_lookback
                 payments.payment_methods_with_poo
+                payments.payment_agent_deposits_lookback
             )
         ],
         crypto => [qw(

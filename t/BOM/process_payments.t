@@ -14,16 +14,28 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 BOM::Test::Helper::Client::top_up($client, $client->currency, 10);
+BOM::User->create(
+    email    => 'user1@test.com',
+    password => 'x'
+)->add_client($client);
 
 my $client_manual_payment = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 BOM::Test::Helper::Client::top_up($client_manual_payment, $client_manual_payment->currency, 10);
+BOM::User->create(
+    email    => 'user2@test.com',
+    password => 'x'
+)->add_client($client_manual_payment);
 
 my $client_manual_payment_transfer = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 BOM::Test::Helper::Client::top_up($client_manual_payment_transfer, $client_manual_payment_transfer->currency, 10);
+BOM::User->create(
+    email    => 'user3@test.com',
+    password => 'x'
+)->add_client($client_manual_payment_transfer);
 
 my $rule_engine                         = BOM::Rules::Engine->new(client => $client);
 my $rule_engine_manual_payment          = BOM::Rules::Engine->new(client => $client_manual_payment);
