@@ -120,6 +120,33 @@ subtest 'Authenticate MLT and MF' => sub {
     $client_mf2->sync_authentication_from_siblings;
     ok $client_mf2->get_authentication('ID_NOTARIZED'),              "Authenticated MF based on MLT has ID_NOTARIZED";
     ok mailbox_search(subject => qr/New authenticated MF from MLT/), qq/CS get an email to check TIN and MIFIR/;
+
+    $client_mlt->set_authentication('ID_PO_BOX', {status => 'pass'});
+    $client_mf2->sync_authentication_from_siblings;
+    ok $client_mf2->get_authentication('ID_PO_BOX'), "Authenticated MF based on MLT has ID_PO_BOX";
+
+};
+
+subtest 'ID_PO_BOX authenticated only for SVG' => sub {
+    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    ok $client_cr1->landing_company->short eq 'svg', 'Client is SVG';
+
+    $client_cr1->set_authentication('ID_PO_BOX', {status => 'pass'});
+    ok $client_cr1->get_authentication('ID_PO_BOX'), "SVG Client has ID_PO_BOX";
+    ok $client_cr1->fully_authenticated(),           'SVG Client is fully authenticated';
+
+    my $client_mf1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    ok $client_mf1->landing_company->short ne 'svg', 'Client is not SVG';
+    $client_cr1->set_authentication('ID_PO_BOX', {status => 'pass'});
+    ok $client_cr1->get_authentication('ID_PO_BOX'), "Non SVG Client has ID_PO_BOX";
+    ok $client_cr1->fully_authenticated(),           'Non SVG Client is not fully authenticated';
+
 };
 
 subtest 'set_authentication_and_status' => sub {
@@ -154,6 +181,15 @@ subtest 'set_authentication_and_status' => sub {
     ok !$client_cr1->status->allow_document_upload,    "Authenticated client is not allowed to upload document";
     ok $client_cr1->fully_authenticated(),             'Client is fully authenticated';
     is $client_cr1->authentication_status(), 'scans', 'expected auth status';
+
+    $client_cr1->status->clear_address_verified();
+    $client_cr1->status->_build_all;
+    $client_cr1->set_authentication_and_status('ID_PO_BOX', 'Test');
+    ok !$client_mf2->get_authentication('ID_PO_BOX'), "Client has not ID_PO_BOX";
+    ok $client_cr1->fully_authenticated(),            'Client is fully authenticated';
+    is $client_cr1->authentication_status(), 'po_box', 'expected auth status';
+    ok $client_cr1->status->address_verified, "Client is address verified";
+    is $client_cr1->get_idv_status(), 'none', 'ID_PO_BOX authentication does not affect idv status';
 
     $client_cr1->status->clear_address_verified();
     $client_cr1->status->_build_all;
@@ -373,6 +409,34 @@ subtest 'set_staff_name' => sub {
     $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'}, 'Sarah Aziziyan');
     my %client_status = map { $_ => $client->status->$_ } @{$client->status->all};
     is($client_status{"allow_document_upload"}->{"staff_name"}, 'Sarah Aziziyan', "staff_name is correct");
+};
+
+subtest 'fully_authenticated with ID_PO_BOX enabled landing company' => sub {
+    my $client = create_client();
+    my $mock   = Test::MockModule->new('BOM::User::Client');
+
+    $mock->mock(
+        'landing_company',
+        sub {
+            my $return_value = $mock->original('landing_company')->(@_);
+            $return_value->{id_po_box_enabled} = 0;
+            return $return_value;
+        });
+
+    $client->set_authentication('ID_PO_BOX', {status => 'pass'}, 'test');
+
+    ok !$client->fully_authenticated(), 'Client is notfully authenticated if id_po_box is not enabled for the landing company';
+
+    $mock->mock(
+        'landing_company',
+        sub {
+            my $return_value = $mock->original('landing_company')->(@_);
+            $return_value->{id_po_box_enabled} = 1;
+            return $return_value;
+        });
+
+    ok $client->fully_authenticated(), 'Client is fully authenticated if id_po_box has been set and enabled for the landing company';
+    $mock->unmock_all;
 };
 
 done_testing();

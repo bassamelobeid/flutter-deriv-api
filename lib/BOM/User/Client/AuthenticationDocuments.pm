@@ -1072,6 +1072,7 @@ sub get_authentication_definition {
         'CLEAR_ALL'    => 'Not authenticated',
         'ID_DOCUMENT'  => 'Authenticated with scans',
         'ID_NOTARIZED' => 'Authenticated with Notarized docs',
+        'ID_PO_BOX'    => 'Authenticated with PO BOX verified',
         'ID_ONLINE'    => 'Authenticated with online verification',
         'NEEDS_ACTION' => 'Needs Action',
         'IDV'          => 'Authenticated with IDV + POA',

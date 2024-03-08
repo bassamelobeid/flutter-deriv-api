@@ -515,7 +515,7 @@ sub sync_authentication_from_siblings {
     foreach my $cli (@siblings) {
         @allowed_lc_to_sync = @{$cli->landing_company->allowed_landing_companies_for_authentication_sync};
         if ((any { $_ eq $self->landing_company->short } @allowed_lc_to_sync) and $cli->client_authentication_method) {
-            for my $auth_method (qw/ID_DOCUMENT ID_NOTARIZED/) {
+            for my $auth_method (qw/ID_DOCUMENT ID_NOTARIZED ID_PO_BOX/) {
                 my $auth = $cli->get_authentication($auth_method);
                 if ($auth) {
                     $method = $auth->authentication_method_code;
@@ -585,6 +585,11 @@ sub set_authentication_and_status {
 
     if ($client_authentication eq 'ID_NOTARIZED') {
         $self->set_authentication('ID_NOTARIZED', {status => 'pass'}, $staff);
+        $address_verified = 1;
+    }
+
+    if ($client_authentication eq 'ID_PO_BOX') {
+        $self->set_authentication('ID_PO_BOX', {status => 'pass'}, $staff);
         $address_verified = 1;
     }
 
@@ -978,7 +983,11 @@ sub fully_authenticated {
 
     $args //= {};
 
-    for my $method (qw/ID_DOCUMENT ID_NOTARIZED ID_ONLINE/) {
+    my @methods_to_check = qw(ID_DOCUMENT ID_NOTARIZED ID_ONLINE);
+
+    push(@methods_to_check, 'ID_PO_BOX') if $self->landing_company->id_po_box_enabled;
+
+    for my $method (@methods_to_check) {
         my $auth = $self->get_authentication($method);
         return 1 if $auth and $auth->status eq 'pass';
     }
@@ -1083,6 +1092,10 @@ sub authentication_status {
     my $notarized = $self->get_authentication('ID_NOTARIZED');
 
     return 'notarized' if $notarized and $notarized->status eq 'pass';
+
+    my $po_box = $self->get_authentication('ID_PO_BOX');
+
+    return 'po_box' if $po_box and $po_box->status eq 'pass';
 
     my $id_auth = $self->get_authentication('ID_DOCUMENT');
 
