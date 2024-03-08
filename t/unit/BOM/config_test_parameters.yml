@@ -502,23 +502,6 @@
       write: *redis_config
   name: ws-redis.yml
 - args:
-    config: BOM::Config::mt5_user_rights
-    expected_config:
-      rights:
-        api_deprecated: ''
-        confirmed: ''
-        enabled: ''
-        expert: ''
-        investor: ''
-        otp_enabled: ''
-        password: ''
-        readonly: ''
-        reports: ''
-        reset_pass: ''
-        trade_disabled: ''
-        trailing: ''
-  name: mt5_user_rights.yml
-- args:
     config: BOM::Config::mt5_account_types
     expected_config:
       demo01\financial\bvi_stp_usd: &mt5_account_details

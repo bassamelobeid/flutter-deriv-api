@@ -590,17 +590,6 @@ sub redis_ws_config {
     return $config;
 }
 
-=head2 mt5_user_rights
-
-loads and caches the MT5 user rights settings
-
-=cut
-
-sub mt5_user_rights {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_user_rights.yml');
-    return $config;
-}
-
 =head2 derivez_server_routing_by_country
 
 Config for trade server routing for derivez for each countries.

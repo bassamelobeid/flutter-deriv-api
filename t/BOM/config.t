@@ -36,7 +36,6 @@ ok BOM::Config::redis_auth_config(),                'redis_auth_config';
 ok BOM::Config::redis_expiryq_config(),             'redis_expiryq_config';
 ok BOM::Config::redis_p2p_config(),                 'redis_p2p_config';
 ok BOM::Config::redis_ws_config(),                  'redis_ws_config';
-ok BOM::Config::mt5_user_rights(),                  'mt5_user_rights';
 ok BOM::Config::mt5_account_types(),                'mt5_account_types';
 ok BOM::Config::mt5_webapi_config(),                'mt5_webapi_config';
 ok BOM::Config::redis_payment_config(),             'redis_payment_config';
