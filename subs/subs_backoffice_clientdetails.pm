@@ -56,6 +56,7 @@ use BOM::Rules::Engine;
 use BOM::Platform::Doughflow;
 use BOM::User::LexisNexis;
 use BOM::Config::Compliance;
+use Deriv::TradingPlatform::MT5::UserRights qw(to_hash);
 
 my $compliance_config = BOM::Config::Compliance->new;
 
@@ -2445,20 +2446,15 @@ sub get_mt5_group_and_status {
     return unless $mt5_loginid;
 
     # If we have group information, retrieve it
-    my $cache_key  = "MT5_USER_GROUP::$mt5_loginid";
-    my $group      = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
-    my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
-
-    my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
+    my $cache_key = "MT5_USER_GROUP::$mt5_loginid";
+    my $group     = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
 
     if ($group and $group->[0]) {
         my $status = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'rights');
 
-        my %rights;
+        my $rights = Deriv::TradingPlatform::MT5::UserRights::to_hash($status->[0]);
 
-        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
-
-        if ($rights{enabled}) {
+        if ($rights->{enabled}) {
             return $group->[0], 'Enabled';
         } else {
             return $group->[0], 'Disabled';
