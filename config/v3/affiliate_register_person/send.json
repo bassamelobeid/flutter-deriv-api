@@ -10,7 +10,6 @@
     "required": [
         "affiliate_register_person",
         "address_city",
-        "address_postcode",
         "address_state",
         "address_street",
         "commission_plan",

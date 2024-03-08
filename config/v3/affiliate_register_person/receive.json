@@ -8,6 +8,10 @@
         "msg_type"
     ],
     "properties": {
+        "affiliate_user_id": {
+            "description": "Registered Affiliate ID",
+            "type": "string"
+        },
         "success": {
             "description": "Affiliate was successfully added, 0:unsuccessful 1:successful",
             "type": "integer",
