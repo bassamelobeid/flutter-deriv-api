@@ -15,6 +15,9 @@ use warnings;
 
 use Format::Util::Numbers            qw(roundcommon financialrounding formatnumber);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
+use List::Util                       qw(min max any sum);
+
+use Business::Config::LandingCompany;
 
 use Business::Config::LandingCompany;
 
@@ -246,7 +249,7 @@ rule 'withdrawal.landing_company_limits' => {
             $self->fail('WithdrawalLimitReached', params => [$wd_epoch_limit, $lc_currency]) if $wd_epoch_left <= 0;
 
             # Withdrawable amount left between the two amounts - The smaller is used
-            my $wd_left_min = List::Util::min($wd_since_left, $wd_epoch_left);
+            my $wd_left_min = min($wd_since_left, $wd_epoch_left);
 
             # Withdrawable amount is converted from the limit config currency to clients' currency and rounded
             my $wd_left = financialrounding('amount', $currency, convert_currency($wd_left_min, $lc_currency, $currency));
@@ -271,6 +274,84 @@ rule 'withdrawal.landing_company_limits' => {
         }
 
         return 1;
+    },
+};
+
+rule 'withdrawal.p2p_and_payment_agent_deposits' => {
+    description => "Prevents net P2P and PA deposits from being withdrawn via external cashiers.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $payment_type    = $args->{payment_type};
+        my $client          = $context->client($args);
+        my $client_balance  = $client->account->balance;
+        my $client_currency = $client->currency;
+        my $excluded_p2p    = 0;
+        my $excluded_pa     = 0;
+
+        # P2P excluded balance
+        # For now we prevent internal transfers of p2p to block the route of crypto withdrawal
+        if (any { $payment_type eq $_ } qw(internal_transfer doughflow paymentagent_withdraw)) {
+            my $pa = $client->payment_agent;
+
+            # A PA can only use P2P + cashier if they have been given both rights by compliance so we won't block them here.
+            unless ($pa && ($pa->status // '') eq 'authorized') {
+                $excluded_p2p = $client_balance - $client->p2p_withdrawable_balance;
+            }
+        }
+
+        # PA excluded balance
+        if (any { $payment_type eq $_ } qw(doughflow crypto_cashier)) {
+            my $lookback = BOM::Config::Runtime->instance->app_config->payments->payment_agent_deposits_lookback;
+
+            if ($lookback > 0) {
+                my $accounts = $client->db->dbic->run(
+                    fixup => sub {
+                        return $_->selectall_arrayref(
+                            'SELECT * FROM payment.payment_agent_deposit_totals(?,?)',
+                            {Slice => {}},
+                            $client->user->id, $lookback
+                        );
+                    });
+
+                # the limit is calculated from all siblings, since internal transfers are not restricted
+                my $total_net_pa_deposits = sum(map { convert_currency($_->{net_deposits}, $_->{currency}, $client_currency) } @$accounts) // 0;
+
+                if ($total_net_pa_deposits > 0) {
+                    my $total_balance = sum(map { convert_currency($_->{balance}, $_->{currency}, $client_currency) } @$accounts);
+                    my $total_limit   = max(0, $total_balance - $total_net_pa_deposits);
+                    $excluded_pa = $client_balance - $total_limit if $total_limit < $client_balance;
+                }
+            }
+        }
+
+        return 1 unless $excluded_p2p > 0 || $excluded_pa > 0;
+
+        my $wd_limit = max(0, $client_balance - ($excluded_p2p + $excluded_pa));
+        $wd_limit = financialrounding('amount', $client_currency, $wd_limit);
+
+        if (financialrounding('amount', $client_currency, abs($args->{amount})) > $wd_limit) {
+            if ($excluded_p2p > 0 && $excluded_pa > 0) {
+                if ($wd_limit == 0) {
+                    $self->fail('PAP2PDepositsWithdrawalZero');
+                } else {
+                    $self->fail('PAP2PDepositsWithdrawalLimit', params => [$wd_limit, $client_currency]);
+                }
+            } elsif ($excluded_p2p > 0) {
+                if ($wd_limit == 0) {
+                    $self->fail($payment_type eq 'internal_transfer' ? 'P2PDepositsTransferZero' : 'P2PDepositsWithdrawalZero');
+                } else {
+                    $self->fail($payment_type eq 'internal_transfer' ? 'P2PDepositsTransfer' : 'P2PDepositsWithdrawal',
+                        params => [$wd_limit, $client_currency]);
+                }
+            } elsif ($excluded_pa > 0) {
+                if ($wd_limit == 0) {
+                    $self->fail('PADepositsWithdrawalZero');
+                } else {
+                    $self->fail('PADepositsWithdrawalLimit', params => [$wd_limit, $client_currency]);
+                }
+            }
+        }
     },
 };
 

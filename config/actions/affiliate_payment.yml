@@ -58,7 +58,4 @@ validate_affiliate_payment:
           - withdrawal.less_than_balance
           - withdrawal.only_unfrozen_balance
           - withdrawal.landing_company_limits
-    - type: conditional
-      on: is_p2p_restricted
-      rules_per_value:
-        1: p2p.withdrawal_check
+          - withdrawal.p2p_and_payment_agent_deposits

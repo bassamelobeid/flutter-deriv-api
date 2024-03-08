@@ -10,6 +10,7 @@ use Syntax::Keyword::Try;
 use Format::Util::Numbers            qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Helper::Client;
 use BOM::TradingPlatform;
 
 populate_exchange_rates({
@@ -20,6 +21,7 @@ populate_exchange_rates({
     BTC => 5500,
     BCH => 320,
     LTC => 50,
+    ETH => 2000,
 });
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -581,6 +583,271 @@ subtest $rule_name => sub {
                 'Unauthed, not allowed to withdraw as limit already > EUR2000';
         };
     };
+};
+
+$rule_name = 'withdrawal.p2p_and_payment_agent_deposits';
+subtest $rule_name => sub {
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+
+    subtest 'pa only' => sub {
+        my $user = BOM::User->create(
+            email    => 'padeposits@test.com',
+            password => 'x'
+        );
+
+        my (%clients, %pas);
+        for my $cur (qw(USD BTC ETH)) {
+            $clients{$cur} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', binary_user_id => $user->id});
+            $clients{$cur}->account($cur);
+            $pas{$cur} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+            $pas{$cur}->account($cur);
+            BOM::Test::Helper::Client::top_up($pas{$cur}, $cur, sprintf('%.6f', convert_currency(1000, 'USD', $cur)));
+            $pas{$cur}->payment_agent({
+                payment_agent_name    => '',
+                email                 => '',
+                information           => '',
+                summary               => '',
+                commission_deposit    => 0,
+                commission_withdrawal => 0,
+                currency_code         => $cur,
+            });
+            $pas{$cur}->save;
+        }
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $clients{USD});
+
+        lives_ok { $rule_engine->apply_rules($rule_name, loginid => $clients{USD}->loginid, payment_type => 'doughflow', amount => -1000) }
+        'No PA deposits yet, can withdraw max';
+
+        BOM::Test::Helper::Client::top_up($clients{USD}, 'USD', 10);
+
+        $pas{USD}->payment_account_transfer(
+            toClient           => $clients{USD},
+            amount             => 100,
+            to_amount          => 100,
+            currency           => 'USD',
+            fees               => 0,
+            gateway_code       => 'payment_agent_transfer',
+            is_agent_to_client => 1,
+        );
+
+        lives_ok { $rule_engine->apply_rules($rule_name, loginid => $clients{USD}->loginid, payment_type => 'doughflow', amount => -10) }
+        'Can withdraw doughflow portion.';
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, loginid => $clients{USD}->loginid, payment_type => 'doughflow', amount => -10.01) },
+            {
+                error_code => 'PADepositsWithdrawalLimit',
+                params     => ['10.00', 'USD'],
+                rule       => $rule_name
+            },
+            'Cannot withdraw amount that includes PA deposits',
+        );
+
+        for my $type (qw(internal_transfer mt5_transfer dxtrade_transfer ctrader_transfer p2p)) {
+            lives_ok { $rule_engine->apply_rules($rule_name, loginid => $clients{USD}->loginid, payment_type => $type, amount => -10.01) }
+            "$type is not blocked.";
+        }
+
+        BOM::Test::Helper::Client::top_up($clients{BTC}, 'BTC', sprintf('%.6f', convert_currency(11, 'USD', 'BTC')));
+
+        $pas{BTC}->payment_account_transfer(
+            toClient           => $clients{BTC},
+            amount             => sprintf('%.6f', 101 / 5500),
+            to_amount          => sprintf('%.6f', 101 / 5500),
+            currency           => 'BTC',
+            fees               => 0,
+            gateway_code       => 'payment_agent_transfer',
+            is_agent_to_client => 1,
+        );
+
+        lives_ok { $rule_engine->apply_rules($rule_name, loginid => $clients{USD}->loginid, payment_type => 'doughflow', amount => -21) }
+        'can withdraw total cashier deposits of all siblings';
+
+        BOM::Test::Helper::Client::top_up($clients{USD}, 'USD', -21);
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, loginid => $clients{USD}->loginid, payment_type => 'doughflow', amount => -0.01) },
+            {
+                error_code => 'PADepositsWithdrawalZero',
+                rule       => $rule_name
+            },
+            'Fully blocked after withdrawing',
+        );
+
+        $rule_engine = BOM::Rules::Engine->new(client => $clients{BTC});
+
+        cmp_deeply(
+            exception {
+                $rule_engine->apply_rules(
+                    $rule_name,
+                    loginid      => $clients{BTC}->loginid,
+                    payment_type => 'crypto_cashier',
+                    amount       => sprintf('%.6f', -0.01 / 5500))
+            },
+            {
+                error_code => 'PADepositsWithdrawalZero',
+                rule       => $rule_name
+            },
+            'Sibling blocked after withdrawing',
+        );
+    };
+
+    my $p2p_wd_limit;
+    $mock_client->mock(p2p_withdrawable_balance => sub { $p2p_wd_limit });
+
+    subtest 'p2p only' => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => 'p2p2@test.com',
+        });
+
+        BOM::User->create(
+            email    => $client->email,
+            password => 'x',
+        )->add_client($client);
+
+        $client->account('USD');
+        BOM::Test::Helper::Client::top_up($client, 'USD', 10);
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+        my %args        = (
+            loginid      => $client->loginid,
+            payment_type => 'doughflow',
+            amount       => -10,
+        );
+
+        $p2p_wd_limit = 10;
+        ok $rule_engine->apply_rules($rule_name, %args), 'Rule passes if limit is ok';
+
+        $p2p_wd_limit = 0;
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'P2PDepositsWithdrawalZero',
+                rule       => $rule_name,
+            },
+            'Error for zero limit'
+        );
+
+        $p2p_wd_limit = 9;
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'P2PDepositsWithdrawal',
+                params     => [num(9), 'USD'],
+                rule       => $rule_name,
+            },
+            'Error for insufficient limit'
+        );
+
+        $args{payment_type} = 'internal_transfer';
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'P2PDepositsTransfer',
+                params     => [num(9), 'USD'],
+                rule       => $rule_name,
+            },
+            'Specific error code for internal_transfer, insufficient limit'
+        );
+
+        $p2p_wd_limit = 0;
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'P2PDepositsTransferZero',
+                rule       => $rule_name,
+            },
+            'Specific error code for internal_transfer, zero limit'
+        );
+
+        $client->payment_agent({status => 'applied'});
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'P2PDepositsTransferZero',
+                rule       => $rule_name,
+            },
+            'Error for applied PA'
+        );
+
+        $client->payment_agent({status => 'authorized'});
+        ok $rule_engine->apply_rules($rule_name, %args), 'Rule passes for authorized PA ';
+    };
+
+    subtest 'pa + p2p deposits' => sub {
+        my $user = BOM::User->create(
+            email    => 'p2ppadeposits@test.com',
+            password => 'x'
+        );
+
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', binary_user_id => $user->id});
+        $client->account('USD');
+
+        my $pa = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $pa->account('USD');
+        BOM::Test::Helper::Client::top_up($pa, 'USD', 1000);
+
+        $pa->payment_agent({
+            payment_agent_name    => '',
+            email                 => '',
+            information           => '',
+            summary               => '',
+            commission_deposit    => 0,
+            commission_withdrawal => 0,
+            currency_code         => 'USD',
+        });
+        $pa->save;
+
+        $pa->payment_account_transfer(
+            toClient           => $client,
+            amount             => 101,
+            to_amount          => 101,
+            currency           => 'USD',
+            fees               => 0,
+            gateway_code       => 'payment_agent_transfer',
+            is_agent_to_client => 1,
+        );
+
+        BOM::Test::Helper::Client::top_up($client, 'USD', 100);
+        $p2p_wd_limit = 101;
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+        my %args = (
+            loginid      => $client->loginid,
+            payment_type => 'doughflow',
+            amount       => -201,
+        );
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'PAP2PDepositsWithdrawalZero',
+                rule       => $rule_name,
+            },
+            'Error for zero limit'
+        );
+
+        $p2p_wd_limit = 102;
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'PAP2PDepositsWithdrawalLimit',
+                params     => [num(1), 'USD'],
+                rule       => $rule_name,
+            },
+            'Error for partial limit'
+        );
+
+        cmp_deeply(exception { $rule_engine->apply_rules($rule_name, %args, amount => -1) }, undef, 'no error for amount=limit');
+
+    };
+
 };
 
 # Subroutine to get the GBP equivalent of EUR

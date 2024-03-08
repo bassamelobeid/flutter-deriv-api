@@ -97,7 +97,7 @@ paymentagent_withdraw:
               loginid: loginid_client
               action: "'withdrawal'"
               is_internal: "'0'"
-              is_p2p_restricted: "'1'"
+              payment_type: "'paymentagent_withdraw'"
               amount: amount
               currency: currency
           - type: group
@@ -106,7 +106,7 @@ paymentagent_withdraw:
               loginid: loginid_pa
               action: "'deposit'"
               is_internal: "'0'"
-              is_p2p_restricted: "'1'"
+              payment_type: "'paymentagent_withdraw'"
               amount: amount
               currency: currency
     - paymentagent.amount_is_within_pa_limits
@@ -152,7 +152,7 @@ paymentagent_transfer:
         loginid: loginid_pa
         action: "'withdrawal'"
         is_internal: "'0'"
-        is_p2p_restricted: "'1'"
+        payment_type: "'paymentagent_transfer'"
         amount: amount
         currency: currency
     - type: group
@@ -162,7 +162,7 @@ paymentagent_transfer:
         loginid: loginid_client
         action: "'deposit'"
         is_internal: "'0'"
-        is_p2p_restricted: "'1'"
+        payment_type: "'paymentagent_transfer'"
         amount: amount
         currency: currency
     - type: group
