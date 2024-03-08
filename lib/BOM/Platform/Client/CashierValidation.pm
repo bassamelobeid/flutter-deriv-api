@@ -86,7 +86,7 @@ my %error_to_status_mapping = (
 
 # error codes passed through for crypto_cashier
 use constant CRYPTO_PASSTHROUGH_ERROR_CODES => qw(
-    PACommisionWithdrawalLimit CryptoLimitAgeVerified
+    PACommisionWithdrawalLimit CryptoLimitAgeVerified PADepositsWithdrawalZero PADepositsWithdrawalLimit
 );
 
 =head2 validate

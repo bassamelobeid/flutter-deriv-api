@@ -204,6 +204,10 @@ sub error_map {
         WithdrawalLimit => localize(
             "We're unable to process your withdrawal request because it exceeds the limit of [_1] [_2]. Please authenticate your account before proceeding with this withdrawal."
         ),
+        PaymentAgentDepositsAmountBlocked =>
+            localize('As your previous deposits were made via a payment agent, you can only withdraw up to [_1] [_2] via other payment methods.'),
+        PaymentAgentDepositsBlocked =>
+            localize('As your previous deposits were made via a payment agent, you can only withdraw via a payment agent.'),
 
         # payment agent withdraw
         PaymentagentWithdrawalNotAllowed => localize('You are not authorized for withdrawals via payment agents.'),
@@ -253,10 +257,18 @@ sub error_map {
         PATransferClientFailure   => localize('You cannot transfer to account [_1]'),
         PaymentAgentNotWithinLimits => localize('Invalid amount. Minimum is [_1], maximum is [_2].'),
 
-        P2PDepositsWithdrawal => localize('To withdraw more than [_1] [_3], please use Deriv P2P.'),
-        P2PDepositsTransfer   => localize('The maximum you can transfer is [_1] [_3]. You can withdraw the balance ([_2] [_3]) through Deriv P2P.'),
-        P2PDepositsWithdrawalZero => localize('Please use Deriv P2P to make a withdrawal.'),
-        P2PDepositsTransferZero   => localize("Please use Deriv P2P to make a withdrawal. Transfers aren't possible for your account at the moment."),
+        P2PDepositsWithdrawal     => localize('As some of your previous deposits were made via P2P, the maximum you can withdraw is [_1] [_2].'),
+        P2PDepositsTransfer       => localize('As some of your previous deposits were made via P2P, the maximum you can transfer is [_1] [_2].'),
+        PADepositsWithdrawalLimit =>
+            localize('As some of your previous deposits were made via a payment agent, the maximum you can withdraw is [_1] [_2].'),
+        PAP2PDepositsWithdrawalLimit =>
+            localize('As some of your previous deposits were made via P2P and payment agents, the maximum you can withdraw is [_1] [_2].'),
+
+        P2PDepositsWithdrawalZero => localize('As your previous deposits were made via P2P, you can only withdraw via P2P.'),
+        P2PDepositsTransferZero   => localize('As your previous deposits were made via P2P, transfers are not possible from this account.'),
+        PADepositsWithdrawalZero  => localize('As your previous deposits were made via a payment agent, you can only withdraw via a payment agent.'),
+        PAP2PDepositsWithdrawalZero =>
+            localize('As your previous deposits were made via P2P and a payment agent, you can only withdraw via those methods.'),
 
         ServiceNotAllowedForPA     => localize('This service is not available for payment agents.'),
         TransferToOtherPA          => localize('You are not allowed to transfer to other payment agents.'),
