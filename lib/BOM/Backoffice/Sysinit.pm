@@ -37,8 +37,8 @@ my $permissions = {
 
     'batch_payments.cgi'             => ['Payments', 'AccountsLimited', 'AccountsAdmin'],
     'f_makedcc.cgi'                  => ['Payments', 'AccountsAdmin'],
-    'f_makedcc_mt5_autotransfer.cgi' => ['Payments'],
-    'f_manager.cgi'                  => ['Payments', 'AccountsLimited', 'AccountsAdmin'],
+    'f_makedcc_mt5_autotransfer.cgi' => ['Payments', 'Quants'],
+    'f_manager.cgi'                  => ['Payments', 'AccountsLimited', 'AccountsAdmin', 'Quants'],
     'f_manager_confodeposit.cgi'     => ['Payments', 'AccountsLimited', 'AccountsAdmin'],
     'f_manager_crypto.cgi'           => ['Payments', 'AccountsLimited', 'AccountsAdmin'],
     'f_rescind_freegift.cgi'         => ['Payments'],
@@ -182,6 +182,7 @@ my $permissions = {
     'compliance_dashboard.cgi'                                                               => ['Compliance', 'IT'],
     'payment_agent_tier_manage.cgi'                                                          => ['Compliance'],
     'wallet_migration.cgi'                                                                   => ['CS'],
+    'mt5_bulk_deposit.cgi'                                                                   => ['Quants'],
 };
 
 sub init {

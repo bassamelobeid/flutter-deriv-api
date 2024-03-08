@@ -58,6 +58,10 @@ if (BOM::Backoffice::Auth::has_authorisation(['Payments', 'AccountsAdmin', 'Acco
             currency_options => $currency_options,
         }) || die $tt->error();
 
+    Bar("BULK MT5 DEPOSIT");
+
+    $tt->process('backoffice/account/mt5_bulk_deposit.tt') || die $tt->error();
+
     Bar("BATCH CREDIT/DEBIT CLIENTS ACCOUNT");
 
     $tt->process('backoffice/account/manager_batch_generic.tt') || die $tt->error();
