@@ -3984,8 +3984,6 @@ sub validate_payment {
 
     # todo: extend rule engine to support conditional rules matching multiple values
     my @internal = qw(internal_transfer mt5_transfer dxtrade_transfer ctrader_transfer);
-    # internal_transfer is included because it can lead to external withdrawal via crypto
-    my @p2p_restricted = qw(internal_transfer doughflow payment_agent_transfer);
 
     try {
         $rule_engine->verify_action(
@@ -3995,8 +3993,7 @@ sub validate_payment {
             action              => $action_type,
             amount              => $amount,
             has_deposits        => $self->has_deposits(),
-            is_internal         => (any { $payment_type eq $_ } @internal)       ? 1 : 0,
-            is_p2p_restricted   => (any { $payment_type eq $_ } @p2p_restricted) ? 1 : 0,
+            is_internal         => (any { $payment_type eq $_ } @internal) ? 1 : 0,
             brand               => request->brand(),
             payment_type        => $payment_type,
             underlying_action   => $payment_type . '_' . $action_type,
