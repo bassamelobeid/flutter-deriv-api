@@ -184,7 +184,7 @@
         </tr>           
         <tr>
             <td>Escrow</td>
-            <td>[% escrow %]</td>
+            <td>[% order.escrow %]</td>
         </tr>        
     </table>
 
@@ -287,7 +287,6 @@
                 <th scope="col">Login ID</th>
                 <th scope="col">Amount</th>
                 <th scope="col">TX type</th>
-                <th scope="col">Payment ID</th>
                 <th scope="col">Staff</th>
             </tr>
         </thead>
@@ -303,8 +302,7 @@
                         <td>[% t.src_loginid %]</td>
                         <td>[% t.src_amount %]</td>
                         <td>[% t.src_action_type %]</td>
-                        <td>[% t.src_payment_id %]</td>
-                        <td>[% t.src_staff %]</td>
+                        <td>[% t.staff %]</td>
                     </tr>
                     <tr>
                         <td>To</td>
@@ -312,8 +310,7 @@
                         <td>[% t.dest_loginid %]</td>
                         <td>[% t.dest_amount %]</td>
                         <td>[% t.dest_action_type %]</td>
-                        <td>[% t.dest_payment_id %]</td>
-                        <td>[% t.dest_staff %]</td>
+                        <td>[% t.staff %]</td>
                     </tr>
                 [% ELSE %]
                     <tr>

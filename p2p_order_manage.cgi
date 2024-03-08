@@ -39,6 +39,25 @@ my %dispute_reasons = (
     buyer_third_party_payment_method => 'Buyer paid with the help of third party'
 );
 
+use constant TRANSACTION_MAPPER => {
+    order_create => {
+        src_loginid  => 'seller',
+        dest_loginid => 'escrow'
+    },
+    order_complete_escrow => {
+        src_loginid  => 'escrow',
+        dest_loginid => 'seller'
+    },
+    order_complete_payment => {
+        src_loginid  => 'seller',
+        dest_loginid => 'buyer'
+    },
+    order_cancel => {
+        src_loginid  => 'escrow',
+        dest_loginid => 'seller'
+    },
+};
+
 my $db = BOM::Database::ClientDB->new({
         broker_code => $broker,
         operation   => 'backoffice_replica'
@@ -48,7 +67,7 @@ my $db_collector = BOM::Database::ClientDB->new({
         broker_code => 'FOG',
     })->db->dbic;
 
-my ($order, $escrow, $transactions, $history, $chat_messages, @verification_history);
+my ($order, $transactions, $history, $chat_messages, @verification_history);
 my $chat_messages_limit = 20;
 my $chat_page           = int($input{p} // 1);
 
@@ -131,7 +150,7 @@ if (my $id = $input{order_id}) {
         $order->{amount_display} = financialrounding('amount', $order->{account_currency}, $order->{amount});
         $order->{price_display}  = financialrounding('amount', $order->{local_currency},   $order->{rate} * $order->{amount});
         $order->{$_}             = sprintf('%.6f', $order->{$_}) + 0 for qw(rate advert_rate);
-        $escrow                  = get_escrow($broker, $order->{account_currency});
+        $order->{escrow}         = get_escrow($broker, $order->{account_currency});
 
         my $client = BOM::User::Client->new({
             loginid      => $order->{client_loginid},
@@ -157,20 +176,13 @@ if (my $id = $input{order_id}) {
 
         $transactions = $db->run(
             fixup => sub {
-                $_->selectall_arrayref(
-                    'SELECT pt.transaction_time, pt.type, 
-                        tf.id src_id, af.client_loginid src_loginid, tf.amount src_amount, tf.staff_loginid src_staff, tf.action_type src_action_type, tf.payment_id src_payment_id,
-                        tt.id dest_id, at.client_loginid dest_loginid, tt.amount dest_amount, tt.staff_loginid dest_staff, tt.action_type dest_action_type, tt.payment_id dest_payment_id
-                    FROM p2p.p2p_transaction pt 
-                        JOIN transaction.transaction tf ON tf.id = pt.from_transaction_id
-                        JOIN transaction.account af ON af.id = tf.account_id 
-                        JOIN transaction.transaction tt ON tt.id = pt.to_transaction_id
-                        JOIN transaction.account at ON at.id = tt.account_id 
-                        WHERE pt.order_id = ?
-                        ORDER BY pt.transaction_time',
-                    {Slice => {}}, $id
-                );
+                $_->selectall_arrayref('SELECT * FROM p2p.order_transaction_history(?)', {Slice => {}}, $id);
             });
+
+        foreach my $row ($transactions->@*) {
+            $row->{src_loginid}  = $order->{TRANSACTION_MAPPER->{$row->{type}}->{src_loginid}};
+            $row->{dest_loginid} = $order->{TRANSACTION_MAPPER->{$row->{type}}->{dest_loginid}};
+        }
 
         my $status_history  = $client->p2p_order_status_history($order->{id});
         my $status_by_stamp = +{map { Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss => $_->{status} } reverse $status_history->@*};
@@ -261,7 +273,6 @@ BOM::Backoffice::Request::template()->process(
     {
         broker             => $broker,
         order              => $order,
-        escrow             => $escrow,
         transactions       => $transactions,
         history            => $history,
         chat_messages      => $chat_messages,
