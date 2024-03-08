@@ -1550,7 +1550,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
             code_exit_BO("<p class=\"error\">ERROR : Could not update client details for client $encoded_loginid</p>");
 
         } elsif (!$client->is_virtual
-            && ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/))
+            && ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT|ID_PO_BOX$)/))
         {
             # sync to doughflow once we authenticate real client
             # need to do after client save so that all information is upto date

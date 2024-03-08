@@ -42,6 +42,7 @@
             <option value='CLEAR_ALL'>Not authenticated</option>
             <option value='ID_DOCUMENT'>Authenticated with scans</option>
             <option value='ID_NOTARIZED'>Authenticated with Notarized docs</option>
+            <option value='ID_PO_BOX'>Authenticated with PO BOX verified</option>
             <option value='ID_ONLINE'>Authenticated with online verification</option>
             <option value='NEEDS_ACTION' selected='selected'>Needs Action</option>
         </select>

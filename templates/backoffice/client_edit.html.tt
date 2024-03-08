@@ -635,6 +635,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 {'value' => 'CLEAR_ALL', 'short_name' => 'no', 'details' => 'Not authenticated' },
                 {'value' => 'ID_DOCUMENT', 'short_name' => 'scans', 'details' => 'Authenticated with scans' },
                 {'value' => 'ID_NOTARIZED', 'short_name' => 'notarized','details' => 'Authenticated with Notarized docs' },
+                {'value' => 'ID_PO_BOX', 'short_name' => 'po_box','details' => 'Authenticated with PO BOX verified' },
                 {'value' => 'ID_ONLINE', 'short_name' => 'online', 'details' => 'Authenticated with online verification' },
                 {'value' => 'IDV_ADDRESS', 'short_name' => 'idv_address', 'details' => 'IDV authenticated with address' },
                 {'value' => 'IDV_PHOTO', 'short_name' => 'idv_photo', 'details' => ' IDV authenticated with photo' },
@@ -1209,7 +1210,7 @@ function residence_change(sel) {
 function update_age_verification(auth_status) {
     var age_verification_status = [% IF client_age_verified %] 'yes' [% ELSE %] 'no' [% END %];
     var age_verification_element = document.getElementById('age_verification');
-    age_verification_element.value = (auth_status == 'ID_DOCUMENT' || auth_status == 'ID_NOTARIZED' || auth_status == 'ID_ONLINE') ? 'yes' : age_verification_status;
+    age_verification_element.value = (auth_status == 'ID_DOCUMENT' || auth_status == 'ID_NOTARIZED' || auth_status == 'ID_ONLINE' || auth_status == 'ID_PO_BOX') ? 'yes' : age_verification_status;
 
     if ((auth_status == 'IDV_PHOTO' || auth_status == 'IDV') && [% is_idv_validated ? 0 : 1 %]){
         alert("Client has no IDV POI verified! \nShould not grant Authenticated with IDV");
