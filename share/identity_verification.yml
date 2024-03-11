@@ -16,6 +16,11 @@ providers:
   metamap:
     selfish: 0
     display_name: Metamap
+  identity_pass:
+    selfish: 0
+    display_name: Identity Pass
+    additional: 
+      checks_per_month: 15000
 statuses:
   pending: Pending
   verified: Verified

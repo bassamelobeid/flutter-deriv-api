@@ -134,6 +134,13 @@ subtest 'identify_vetification.yml integrity check' => sub {
                 selfish      => 0,
                 display_name => 'Metamap',
             },
+            identity_pass => {
+                selfish      => 0,
+                display_name => 'Identity Pass',
+                additional   => {
+                    checks_per_month => 15000,
+                }
+            },
             data_zoo => {
                 selfish      => 1,
                 display_name => 'Data Zoo',
