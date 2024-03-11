@@ -1,0 +1,1 @@
+-[OAD(./docs/api/petstore/schema/petstore.yaml)]
