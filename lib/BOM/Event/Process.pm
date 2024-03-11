@@ -133,6 +133,10 @@ my $action_mapping = {
         mt5_svg_migration_requested                 => \&BOM::Event::Actions::MT5::mt5_svg_migration_requested,
         nodejs_hello                                => \&BOM::Event::Actions::External::nodejs_hello,
         withdrawal_estimated_fee_updated            => \&BOM::Event::Actions::CryptoCashier::withdrawal_estimated_fee_updated,
+        idv_configuration_requested                 => \&BOM::Event::Actions::External::send_idv_configuration,
+        idv_dynamic_settings_updated                => \&BOM::Event::Actions::External::send_idv_configuration,
+        idv_configuration_disable_provider          => \&BOM::Event::Actions::External::idv_configuration_disable_provider,
+        idv_configuration_enable_provider           => \&BOM::Event::Actions::External::idv_configuration_enable_provider,
         recheck_onfido_face_similarity              => \&BOM::Event::Actions::Client::recheck_onfido_face_similarity,
     },
     track => {

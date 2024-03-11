@@ -6,10 +6,12 @@ use Test::Fatal;
 use Test::MockModule;
 use Test::More;
 use Test::MockModule;
+use Test::Deep;
 
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User;
+use BOM::User::IdentityVerification;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
 
@@ -149,12 +151,21 @@ subtest 'microservice is disabled' => sub {
 
 subtest 'get provider' => sub {
     $mock_qa->mock('on_qa' => 1);
-    is BOM::Event::Actions::Client::IdentityVerification::_get_provider('qq'), 'qa', 'Expected provider for qq country';
+    is BOM::Event::Actions::Client::IdentityVerification::_has_provider('qq', 'passport'), 1, 'Expected truthy for qq country';
 
     $mock_qa->mock('on_qa' => 0);
-    is BOM::Event::Actions::Client::IdentityVerification::_get_provider('qq'), undef, 'Expected undef for unsupported country';
+    is BOM::Event::Actions::Client::IdentityVerification::_has_provider('qq', 'passport'), undef, 'Expected undef for unsupported country';
 
-    is BOM::Event::Actions::Client::IdentityVerification::_get_provider('br'), 'zaig', 'Expected provider for br country';
+    is BOM::Event::Actions::Client::IdentityVerification::_has_provider('br', 'cpf'), 1, 'Expected truthy for br country';
+
+    $redis->set(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'zaig', 1);
+    is BOM::Event::Actions::Client::IdentityVerification::_has_provider('br', 'cpf'), undef, 'Expected undef for disabled provider';
+    $redis->del(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'zaig');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw(zaig)]);
+    is BOM::Event::Actions::Client::IdentityVerification::_has_provider('br', 'cpf'), undef, 'Expected undef for disabled provider';
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw( )]);
+
     $mock_qa->unmock_all;
 };
 

@@ -146,15 +146,14 @@ async sub verify_identity {
 
     die 'No standby document found, IDV request skipped.' unless $document;
 
-    my $provider = _get_provider($document->{issuing_country}, $document->{document_type});
+    my $provider = _has_provider($document->{issuing_country}, $document->{document_type});
 
     return undef unless $provider;
 
-    my @common_datadog_tags = (sprintf('provider:%s', $provider), sprintf('country:%s', $document->{issuing_country}));
+    my @common_datadog_tags = (sprintf('document_type:%s', $document->{document_type}), sprintf('country:%s', $document->{issuing_country}));
 
     try {
-        $log->debugf('Start triggering identity verification microservice (contacting %s) for document %s associated by loginid: %s',
-            $provider, $document->{id}, $loginid);
+        $log->debugf('Start triggering identity verification microservice for document %s associated by loginid: %s', $document->{id}, $loginid);
 
         my $request_start = [Time::HiRes::gettimeofday];
 
@@ -164,7 +163,6 @@ async sub verify_identity {
             document_id  => $document->{id},
             status       => IDV_DOCUMENT_STATUS->{pending},
             messages     => [IDV_MESSAGES->{VERIFICATION_STARTED}],
-            provider     => $provider,
             request_body => encode_json_utf8 $message_payload,
         });
 
@@ -188,7 +186,6 @@ async sub verify_identity {
                 document_id => $document->{id},
                 status      => IDV_DOCUMENT_STATUS->{failed},
                 messages    => [IDV_MESSAGES->{UNAVAILABLE_MICROSERVICE}],
-                provider    => $provider,
             });
 
             $log->error('Identity Verification Microservice responded an error to our request for verify document: %d', $payload->status);
@@ -197,7 +194,6 @@ async sub verify_identity {
                 document_id => $document->{id},
                 status      => IDV_DOCUMENT_STATUS->{failed},
                 messages    => [IDV_MESSAGES->{UNAVAILABLE_MICROSERVICE}],
-                provider    => $provider,
             });
 
             $log->errorf('An error occurred while triggering IDV for document %s associated by client %s via provider %s due to %s',
@@ -289,8 +285,8 @@ Returns 1 on sucess or undef on error
 async sub verify_process {
     my $args = shift;
 
-    my ($loginid, $status, $messages, $report, $response_body, $request_body) =
-        @{$args}{qw/id status messages report response_body request_body/};
+    my ($loginid, $status, $messages, $provider, $report, $response_body, $request_body) =
+        @{$args}{qw/id status messages provider report response_body request_body/};
 
     die 'No status received.' unless $status;
 
@@ -309,7 +305,7 @@ async sub verify_process {
 
     die 'No document check found, IDV request skipped.' unless $check;
 
-    my $provider = $check->{provider};
+    return undef unless $provider;
 
     my @common_datadog_tags = (sprintf('provider:%s', $provider), sprintf('country:%s', $document->{issuing_country}));
 
@@ -695,37 +691,35 @@ sub _apply_side_effects {
     return undef;
 }
 
-=head2 _get_provider
+=head2 _has_provider
 
-Find IDV service provider based on 
-client's document issuer country.
+Check if there exists an IDV service provider based on 
+client's document issuer country and type.
 
 =over 4
 
 =item * C<issuing_country> - the document's issuing country
 
+=item * C<document_type> - the document's type
+
 =back
 
-Returns string.
+Returns 1 if found, undef otherwise.
 
 =cut
 
-sub _get_provider {
+sub _has_provider {
     my ($issuing_country, $document_type) = @_;
 
-    return 'qa' if BOM::Config::on_qa() && $issuing_country eq 'qq';
-
-    my $country_configs = Brands::Countries->new();
-    my $idv_config      = $country_configs->get_idv_config($issuing_country);
+    return 1 if BOM::Config::on_qa() && $issuing_country eq 'qq';
 
     return undef
         unless BOM::Platform::Utility::has_idv(
         country       => $issuing_country,
-        provider      => $idv_config->{provider},
         document_type => $document_type
         );
 
-    return $idv_config->{provider};
+    return 1;
 }
 
 =head2 idv_webhook_relay
@@ -981,6 +975,88 @@ sub response_hash_destructuring {
         response_body   => $response_body && ref($response_body) ? encode_json_text($response_body) : undef,
         expiration_date => $expiration_date,
     };
+}
+
+=head2 send_idv_configuration
+
+Send encoded IDV configuration bundle.
+
+=cut
+
+async sub send_idv_configuration {
+    my $config = BOM::Platform::Utility::idv_configuration();
+    BOM::Platform::Event::Emitter::emit('idv_configuration', $config);
+    DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.configuration_bundle_sent');
+    return;
+}
+
+=head2 disable_provider
+
+Disable an IDV provider as per configuration service request and send IDV configuration bundle.
+
+The information is stored in a redis key.
+The presence of this key is checked when assessing for the availability of the service.
+
+=over 4
+
+=item * C<provider> - the provider that should be disabled.
+
+=back
+
+=cut
+
+async sub disable_provider {
+    my $args = shift;
+    my ($provider) = @{$args}{qw/provider/};
+
+    die 'no provider' unless $provider;
+
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+
+    my $key = BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . $provider;
+
+    await $redis_events_write->set($key, 1);
+
+    DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.disabled_provider_' . $provider);
+
+    await send_idv_configuration();
+
+    return;
+}
+
+=head2 enable_provider
+
+Enable an IDV provider as per configuration service request and send IDV configuration bundle.
+
+The information stored in the redis key is deleted.
+
+=over 4
+
+=item * C<provider> - the provider that should be disabled.
+
+=back
+
+=cut
+
+async sub enable_provider {
+    my $args = shift;
+    my ($provider) = @{$args}{qw/provider/};
+
+    die 'no provider' unless $provider;
+
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+
+    my $key = BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . $provider;
+
+    await $redis_events_write->del($key);
+
+    DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.enabled_provider_' . $provider);
+
+    await send_idv_configuration();
+
+    return;
 }
 
 1
