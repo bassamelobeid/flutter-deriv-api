@@ -104,7 +104,7 @@ async sub set_age_verification {
     # if verification poi method is supported
 
     my @allowed_lc_to_sync;
-    for my $syncable_lc_name ($client->landing_company->allowed_landing_companies_for_age_verification_sync->@*) {
+    for my $syncable_lc_name ($client->landing_company->allowed_landing_companies_for_age_verification_sync->@*, $client->landing_company->short) {
         my $syncable_lc = LandingCompany::Registry->by_name($syncable_lc_name);
         next unless any { $_ eq $poi_method } $syncable_lc->allowed_poi_providers->@*;
         push @allowed_lc_to_sync, $syncable_lc_name;
@@ -113,6 +113,7 @@ async sub set_age_verification {
     # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
     my $user = $client->user;
     my @clients_to_update =
+        grep { $client->broker_code ne $_->broker_code }
         map { [$user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
     foreach my $client_to_update (@clients_to_update) {
         $setter->($client_to_update);
