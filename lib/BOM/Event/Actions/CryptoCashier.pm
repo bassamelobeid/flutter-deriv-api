@@ -136,6 +136,9 @@ sub withdrawal_handler {
                 transaction_url    => $txn_info->{transaction_url},
                 reference_no       => $txn_info->{id},
                 transaction_status => $txn_info->{status_code},
+                is_priority        => $txn_metadata->{is_priority}   // 0,
+                fee_paid           => $txn_metadata->{estimated_fee} // 0,
+                requested_amount   => $txn_metadata->{is_priority} ? $txn_metadata->{client_amount} : $txn_info->{amount},
             },
         );
     } catch ($e) {
@@ -165,7 +168,7 @@ sub deposit_handler {
             'crypto_deposit_email',
             {
                 loginid            => $txn_metadata->{loginid},
-                amount             => $txn_info->{client_amount} // $txn_info->{amount},
+                amount             => $txn_metadata->{client_amount} // $txn_info->{amount},
                 currency           => $txn_metadata->{currency_code},
                 transaction_hash   => $txn_info->{transaction_hash},
                 transaction_status => $txn_info->{status_code},

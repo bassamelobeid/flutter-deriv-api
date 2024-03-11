@@ -111,7 +111,63 @@ subtest 'withdrawal_handler' => sub {
                 transaction_url    => $txn_info->{transaction_url},
                 reference_no       => $txn_info->{id},
                 transaction_status => $txn_info->{status_code},
-            }
+                is_priority        => 0,
+                fee_paid           => 0,
+                requested_amount   => $txn_info->{amount}}
+        },
+    ];
+
+    my @events;
+    $mocked_event_emitter->mock(
+        emit => sub {
+            my ($event_name, $event_data) = @_;
+            push @events, {$event_name => $event_data};
+            return;
+        },
+    );
+
+    BOM::Event::Actions::CryptoCashier::withdrawal_handler($txn_info, $txn_metadata);
+    is_deeply \@events, $expected_events, 'Correct events';
+
+    $mocked_event_emitter->unmock_all;
+};
+
+subtest 'withdrawal_handler - Priority withdrawal' => sub {
+
+    my $txn_info = {
+        id                 => 1,
+        address_hash       => 'address_hash',
+        address_url        => 'address_url',
+        amount             => 1,
+        is_valid_to_cancel => 0,
+        status_code        => 'SENT',
+        status_message     => 'message',
+        submit_date        => '162',
+        transaction_hash   => 'transaction_hash',
+        transaction_type   => 'withdrawal',
+        transaction_url    => 'transaction_url',
+    };
+
+    my $txn_metadata = {
+        loginid       => 'loginid',
+        currency_code => 'ETH',
+        is_priority   => 1,
+        estimated_fee => 1,
+        client_amount => 2,
+    };
+
+    my $expected_events = [{
+            crypto_withdrawal_email => {
+                amount             => $txn_info->{amount},
+                loginid            => $txn_metadata->{loginid},
+                currency           => $txn_metadata->{currency_code},
+                transaction_hash   => $txn_info->{transaction_hash},
+                transaction_url    => $txn_info->{transaction_url},
+                reference_no       => $txn_info->{id},
+                transaction_status => $txn_info->{status_code},
+                is_priority        => $txn_metadata->{is_priority},
+                fee_paid           => $txn_metadata->{estimated_fee},
+                requested_amount   => $txn_metadata->{client_amount}}
         },
     ];
 
@@ -233,7 +289,6 @@ subtest 'deposit_confirmed_handler when client_amount is present' => sub {
         address_hash       => 'address_hash',
         address_url        => 'address_url',
         amount             => 1,
-        client_amount      => 0.5,
         is_valid_to_cancel => 0,
         status_code        => 'CONFIRMED',
         status_message     => 'message',
@@ -246,12 +301,13 @@ subtest 'deposit_confirmed_handler when client_amount is present' => sub {
     my $txn_metadata = {
         login_id      => 'login_id',
         currency_code => 'ETH',
+        client_amount => 0.5,
     };
 
     my $expected_events = [{
             crypto_deposit_email => {
                 loginid            => $txn_metadata->{loginid},
-                amount             => $txn_info->{client_amount},
+                amount             => $txn_metadata->{client_amount},
                 currency           => $txn_metadata->{currency_code},
                 transaction_hash   => $txn_info->{transaction_hash},
                 transaction_status => $txn_info->{status_code},

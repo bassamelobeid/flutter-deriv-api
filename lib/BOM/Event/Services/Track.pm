@@ -128,12 +128,13 @@ my %EVENT_PROPERTIES = (
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
     crypto_withdrawal_rejected_email_v2              =>
         [qw(loginid reject_code reject_remark meta_data fiat_account amount currency title live_chat_url reference_no )],
-    crypto_deposit_confirmed_email    => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
-    crypto_deposit_pending_email      => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
-    crypto_withdrawal_sent_email      => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
-    crypto_withdrawal_locked_email    => [qw(loginid amount currency live_chat_url title)],
-    crypto_withdrawal_cancelled_email => [qw(loginid amount currency reference_no live_chat_url title)],
-    crypto_withdrawal_reverted_email  => [qw(loginid email amount currency reference_no live_chat_url title)],
+    crypto_deposit_confirmed_email => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
+    crypto_deposit_pending_email   => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
+    crypto_withdrawal_sent_email   =>
+        [qw(loginid transaction_hash transaction_url amount currency live_chat_url title is_priority fee_paid requested_amount)],
+    crypto_withdrawal_locked_email    => [qw(loginid amount currency live_chat_url title is_priority fee_paid requested_amount)],
+    crypto_withdrawal_cancelled_email => [qw(loginid amount currency reference_no live_chat_url title is_priority fee_paid requested_amount)],
+    crypto_withdrawal_reverted_email  => [qw(loginid email amount currency reference_no live_chat_url title is_priority fee_paid requested_amount)],
 
     p2p_advert_created => [
         qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible order_expiry_period)

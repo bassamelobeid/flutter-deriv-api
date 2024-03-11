@@ -3856,6 +3856,9 @@ sub crypto_withdrawal_email {
         reference_no       => $args->{reference_no},
         live_chat_url      => request->brand->live_chat_url,
         title              => $event_mapper{$args->{transaction_status}}{title},
+        is_priority        => $args->{is_priority},
+        fee_paid           => $args->{fee_paid},
+        requested_amount   => $args->{requested_amount},
     });
 }
 
