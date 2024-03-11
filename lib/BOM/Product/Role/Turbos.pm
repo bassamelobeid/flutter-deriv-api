@@ -7,6 +7,7 @@ use Scalar::Util::Numeric qw(isint);
 use List::Util            qw/min max/;
 use YAML::XS              qw(LoadFile);
 use POSIX                 qw(ceil floor);
+use Machine::Epsilon;
 
 use BOM::Config::Redis;
 use BOM::Product::Exception;
@@ -374,6 +375,14 @@ sub _build_number_of_contracts {
     my $rounding_precision  = $self->get_rounding_precision();
     my $contract_price      = $self->_contract_price;
     my $number_of_contracts = $contract_price ? ($self->_user_input_stake / $contract_price) : $self->_contracts_limit->{min};
+
+    # if the probability is negligibly small return an error
+    my $epsilon = machine_epsilon();
+    if (abs($number_of_contracts) < $epsilon) {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidNonBinaryPrice',
+        );
+    }
 
     return roundcommon($rounding_precision, rounddown($number_of_contracts, $rounding_precision));
 }

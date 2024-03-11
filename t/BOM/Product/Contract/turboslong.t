@@ -230,6 +230,10 @@ subtest 'take_profit' => sub {
         is $c->take_profit->{amount},     10,      'take profit amount is 10';
         is $c->take_profit_barrier_value, 1771.15, 'take profit barrier value is 1771.15';
         ok !$c->is_expired, 'not expired when take profit is set at ' . $c->take_profit->{date}->epoch;
+
+        local $args->{amount} = 0;
+        $c = produce_contract($args);
+        throws_ok { $c->take_profit_barrier_value } "BOM::Product::Exception", "If the number_of_contracts is zero, a valid exception is raised";
     };
 };
 
