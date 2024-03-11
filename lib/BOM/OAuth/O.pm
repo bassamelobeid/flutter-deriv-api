@@ -30,7 +30,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::OAuth::Common;
-use BOM::OAuth::Helper     qw(request_details_string exception_string get_request_details);
+use BOM::OAuth::Helper     qw(request_details_string exception_string get_request_details build_signup_url);
 use BOM::OAuth::Static     qw(get_message_mapping);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
@@ -88,8 +88,17 @@ sub authorize {
 
     my $r          = $c->stash('request');
     my $brand_name = $c->stash('brand')->name;
-    my $partnerId  = $c->param('partnerId');
-    $partnerId = '' unless ($c->param('partnerId') // '') =~ /^[\w\-]{1,32}$/;
+
+    my $lang = lc(defang($c->stash('request')->language) // 'en');
+    $lang =~ s/_/-/;    # for cases like zh_cn, zh_tw
+
+    my $partnerId = (defined $c->param('partnerId') && $c->param('partnerId') =~ /^[\w\-]{1,32}$/) ? defang($c->param('partnerId')) : '';
+
+    my $params_signup_url = {
+        app_id    => $app_id,
+        lang      => $lang,
+        partnerId => $partnerId
+    };
 
     my %template_params = (
         template                  => $c->_get_template_name('login'),
@@ -104,9 +113,9 @@ sub authorize {
         social_login_links        => $c->stash('social_login_links'),
         use_oneall                => $c->_use_oneall_web,
         growthbook_request_data   => _get_growthbook_config(),
-        dd_rum_config             => _datadog_config());
-
-    $template_params{partnerId} = $partnerId if $partnerId;
+        dd_rum_config             => _datadog_config(),
+        signup_url                => build_signup_url($params_signup_url),
+    );
 
     try {
         $template_params{website_domain} = $c->_website_domain($app->{id});
@@ -124,7 +133,7 @@ sub authorize {
         my $login_type = $c->_get_login_type;
         # try to retrieve client from session
         if ($login_type eq 'basic') {
-            my $login = $c->_login({app => $app, social_login_bypass => $social_login_bypass}) or return;
+            my $login = $c->_login({app => $app, social_login_bypass => $social_login_bypass, params_signup_url => $params_signup_url}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
             $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
@@ -136,14 +145,14 @@ sub authorize {
 
             # Get client from Oneall Social Login.
             my $oneall_user_id = $c->session('_oneall_user_id');
-            my $login          = $c->_login({app => $app, oneall_user_id => $oneall_user_id}) or return;
+            my $login          = $c->_login({app => $app, oneall_user_id => $oneall_user_id, params_signup_url => $params_signup_url}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
             $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
         } elsif ($login_type eq 'social') {    #exact same logic as oneall
                                                # Get client from sls Social Login.
             my $sls_user_id = $c->session('_sls_user_id');
-            my $login       = $c->_login({app => $app, oneall_user_id => $sls_user_id}) or return;
+            my $login       = $c->_login({app => $app, oneall_user_id => $sls_user_id, params_signup_url => $params_signup_url}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
             $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
@@ -521,8 +530,8 @@ sub _handle_self_closed {
 
 sub _login {
     my ($c, $params) = @_;
-    my ($app, $oneall_user_id, $social_login_bypass, $passkeys_user_id) =
-        @{$params}{qw/app oneall_user_id social_login_bypass passkeys_user_id/};
+    my ($app, $oneall_user_id, $social_login_bypass, $passkeys_user_id, $params_signup_url) =
+        @{$params}{qw/app oneall_user_id social_login_bypass passkeys_user_id params_signup_url/};
 
     my $email    = trim lc(defang $c->param('email'));
     my $password = $c->param('password');
@@ -562,6 +571,7 @@ sub _login {
             social_login_links        => $c->stash('social_login_links'),
             use_oneall                => $c->_use_oneall_web,
             email_entered             => $email,
+            signup_url                => build_signup_url($params_signup_url),
         );
 
         return;

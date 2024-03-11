@@ -5,7 +5,7 @@ use warnings;
 use MIME::Base64 qw(encode_base64 decode_base64);
 use JSON::MaybeXS;    #Using `JSON::MaybeXS` to maintain order of the result string.
 use Exporter qw(import);
-our @EXPORT_OK = qw(request_details_string exception_string social_login_callback_base strip_array_values get_request_details);
+our @EXPORT_OK = qw(request_details_string exception_string social_login_callback_base strip_array_values get_request_details build_signup_url);
 
 =head2 extract_brand_from_params
 
@@ -203,6 +203,79 @@ sub strip_array_values {
         $res->{$key} = $hash->{$key};
     }
     return $res;
+}
+
+=head2 build_signup_url
+
+=head2 SYNOPSIS
+
+my $signup_url = build_signup_url($params);
+
+=head2 DESCRIPTION
+
+This subroutine generates a signup URL based on the provided parameters. The parameters should be a hash reference that includes `app_id`, `lang`, and `partnerId`.
+
+The `app_id` is used to determine the base URL for the signup page. If the `app_id` matches one of the known app IDs, the corresponding URL is used. Otherwise, the default URL "https://deriv.com/$lang/signup" is used.
+
+The `lang` parameter is used to specify the language of the signup page.
+
+The `partnerId` parameter is used to add a partner ID to the signup URL. This is only done if the `app_id` is 36218.
+
+=head2 PARAMETERS
+
+=over 4
+
+=item * C<$params> - A hash reference that should include the following keys:
+
+=over 4
+
+=item * C<app_id> - The app ID (required).
+
+=item * C<lang> - The language code (required).
+
+=item * C<partnerId> - The partner ID (optional).
+
+=back
+
+=back
+
+=head2 RETURN VALUE
+
+A string containing the signup URL.
+
+=head2 EXAMPLES
+
+    my $params = {
+            app_id    => 36218,
+            lang      => 'en',
+            partnerId => 'abcd1234',
+    };
+    my $signup_url = build_signup_url($params);
+    # $signup_url is now "https://deriv.com/en/ctrader-signup/?app_id=36218&partnerId=abcd1234"
+
+=cut
+
+sub build_signup_url {
+    my $params = shift;
+
+    my $app_id    = $params->{app_id};
+    my $lang      = $params->{lang};
+    my $partnerId = $params->{partnerId};
+
+    my %signup_urls = (
+        15284 => "https://www.binary.me/$lang/signup",
+        1411  => "https://www.deriv.me/$lang/signup",
+        30767 => "https://www.deriv.be/$lang/signup",
+        37228 => "https://deriv.com/academy-signup",                       # currently only available in English
+        36218 => "https://deriv.com/$lang/ctrader-signup/?app_id=36218",
+    );
+    my $signup_url = $signup_urls{$app_id} // "https://deriv.com/$lang/signup";
+
+    if ($app_id == 36218 && $partnerId) {
+        $signup_url .= "&partnerId=$partnerId";
+    }
+
+    return $signup_url;
 }
 
 =head2 get_request_details

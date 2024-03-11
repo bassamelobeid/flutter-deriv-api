@@ -62,35 +62,10 @@
                 <p class='error-oneall center-text'><%= stash('social_error') %></p>
             <% } %>
         <% } %>
-        <p id="signup-link" class="account-text"></p>
-     
+        <p id="signup-link" class="account-text">
+            <%== l('Don’t have an account yet? [_1]Create a new account[_2]', "<a class='account-link' href=$signup_url>", '</a>') %>
+        </p>
     </div>
-    <script>
-        var websiteDomain = '<%= $website_domain %>';
-        var app_id = '<%= $app->{id} %>';
-        var currentUrl = new URL(location.href);
-        var partnerId = currentUrl.searchParams.get('partnerId');
-        var signup_url = '';
-
-        if (partnerId && /^[\w\-]{1,32}$/.test(partnerId)) {
-            partnerId = encodeURIComponent(partnerId);    
-        } else {
-            partnerId = '';
-        }
-
-        if (app_id == 36218) {
-            if (partnerId) {
-                signup_url = `<%== l('Don’t have an account yet? [_1]Create a new account[_2]', sprintf("<a class='account-link' href='https://%s/ctrader-signup/?app_id=36218&partnerId=` + partnerId + `'>", $website_domain), '</a>') %>`;
-            } else {
-                signup_url = `<%== l('Don’t have an account yet? [_1]Create a new account[_2]', sprintf("<a class='account-link' href='https://%s/ctrader-signup/?app_id=36218'>", $website_domain), '</a>') %>`;
-            }
-        } else {
-            signup_url = `<%== l('Don’t have an account yet? [_1]Create a new account[_2]', sprintf("<a class='account-link' href='https://%s/%ssignup/'>", $website_domain, lc($language)), '</a>') %>`;
-        }
-
-        document.getElementById("signup-link").innerHTML = signup_url;
-    
-    </script>
 <% } %>
 
 <script type="text/javascript">
