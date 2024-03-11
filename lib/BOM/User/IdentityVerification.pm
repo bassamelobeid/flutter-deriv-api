@@ -24,10 +24,11 @@ use BOM::Database::UserDB;
 use Moo;
 
 use constant IDV_LOCK_PENDING               => 'IDV::LOCK::PENDING::';
-use constant IDV_REQUEST_PENDING_TTL        => 86400;                            # one day in second
+use constant IDV_REQUEST_PENDING_TTL        => 86400;                                       # one day in second
 use constant IDV_REQUEST_PER_USER_PREFIX    => 'IDV::REQUEST::PER::USER::';
 use constant IDV_EXPIRED_CHANCE_USED_PREFIX => 'IDV::EXPIRED::CHANCE::USED::';
 use constant ONE_WEEK                       => 604_800;
+use constant IDV_CONFIGURATION_OVERRIDE     => 'IDV::CONFIGURATION::OVERRIDE::DISABLE::';
 
 =head2 user_id
 
