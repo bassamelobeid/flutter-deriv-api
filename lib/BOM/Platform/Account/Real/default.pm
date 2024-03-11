@@ -104,7 +104,10 @@ sub copy_status_from_siblings {
     # We should sync age verification for allowed landing companies and other statuses to all siblings
     # Age verification sync if current client is one of existing client allowed landing companies for age verification
     for my $client (@client_list) {
-        @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
+        @allowed_lc_to_sync = (
+            $client->landing_company->allowed_landing_companies_for_age_verification_sync->@*,
+            $client->landing_company->short,    #Always sync age verification within the same landing company
+        );
         my @dup_statuses = ();
 
         @dup_statuses = @$from_dup_only if $duplicated_client && $client->loginid eq $duplicated_client->loginid;
@@ -116,6 +119,10 @@ sub copy_status_from_siblings {
             if ($status eq 'age_verification') {
                 my $cur_client_lc = $cur_client->landing_company->short;
                 next if none { $_ eq $cur_client_lc } @allowed_lc_to_sync;
+
+                # If clients in the same DB, it's already copied over by the db trigger
+                next if $cur_client->broker_code eq $client->broker_code;
+
                 my $poi_status = $client->get_poi_status({landing_company => $cur_client->landing_company->short});
                 next unless $poi_status =~ /verified|expired/;
             }
@@ -219,19 +226,6 @@ sub after_register_client {
             client => $client,
             brand  => request()->brand
         })->check();
-
-    my $client_loginid = $client->loginid;
-
-    if ($client->landing_company->short eq 'iom'
-        and (length $client->first_name < 3 or length $client->last_name < 3))
-    {
-        my $notemsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
-        $notemsg .= join("\n\t\t",
-            'first name: ' . $client->first_name,
-            'last name: ' . $client->last_name,
-            'residence: ' . Locale::Country::code2country($client->residence));
-        $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$notemsg\n");
-    }
 
     BOM::Platform::Client::IDAuthentication->new(client => $client)->run_validation('signup');
 
