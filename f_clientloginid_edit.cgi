@@ -1129,10 +1129,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         _update_mt5_status($client) if any { $auth_method eq $_ } qw/ID_DOCUMENT NEEDS_ACTION/;
     }
     if ($input{age_verification} and not $client->is_virtual) {
-        my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
+        my @allowed_lc_to_sync = (@{$client->landing_company->allowed_landing_companies_for_age_verification_sync}, $client->landing_company->short);
 
         # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
         my @clients_to_update =
+            grep { $client->broker_code ne $_->broker_code }
             map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
         push @clients_to_update, $client;
 
