@@ -42,12 +42,14 @@ subtest 'Get Filters data' => sub {
                 curp
                 dni
                 nik
+                voter_id
                 /
         },
         countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx uy cr cl pe vn id/},
-        providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) } qw/zaig smile_identity derivative_wealth data_zoo metamap/},
-        statuses  => +{map { ($_ => $idv_config->{statuses}->{$_}) } qw/pending failed refuted verified/},
-        messages  => $idv_config->{messages},
+        providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) }
+                qw/zaig smile_identity derivative_wealth data_zoo metamap identity_pass/},
+        statuses => +{map { ($_ => $idv_config->{statuses}->{$_}) } qw/pending failed refuted verified/},
+        messages => $idv_config->{messages},
         },
         'Expected data for IDV dashboard filters';
 };

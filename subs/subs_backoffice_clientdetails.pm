@@ -29,7 +29,6 @@ use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::User::Utility;
-use BOM::User::IdentityVerification;
 use BOM::Platform::Locale;
 use BOM::Platform::Context;
 use BOM::Platform::S3Client;
@@ -47,7 +46,6 @@ use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
 use BOM::Transaction::Utility;
 use BOM::User::AuditLog;
-use BOM::User::IdentityVerification;
 use BOM::Backoffice::Request qw(request);
 use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
@@ -606,7 +604,12 @@ SQL
             my $idv_report = $idv_document_check->{report};
             $idv_report = eval { decode_json_text $idv_report } if $idv_report;
 
-            if (BOM::Config::identity_verification()->{providers}{$idv_document_check->{provider}}{selfish}) {
+            my $provider         = $idv_document_check->{provider};
+            my $providers_config = BOM::Config::identity_verification()->{providers} // {};
+            my $provider_config  = $providers_config->{$provider}                    // {};
+            my $is_selfish       = $provider_config->{selfish};
+
+            if (defined $provider && $is_selfish) {
                 $idv_record->{tooltip}   = $idv_document_check->{provider} . " provider does not return personal data";
                 $idv_record->{full_name} = 'N/A';
                 $idv_record->{dob}       = 'N/A';
