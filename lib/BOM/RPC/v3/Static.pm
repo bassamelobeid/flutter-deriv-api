@@ -112,11 +112,8 @@ rpc residence_list => sub {
                 services => {
                     idv => {
                         documents_supported  => BOM::User::IdentityVerification::supported_documents($country_code),
-                        is_country_supported => BOM::Platform::Utility::has_idv(
-                            country  => $country_code,
-                            provider => $idv_config->{provider}
-                        ),
-                        has_visual_sample => $has_visual_sample
+                        is_country_supported => BOM::Platform::Utility::has_idv(country => $country_code),
+                        has_visual_sample    => $has_visual_sample
                     },
                     onfido => {
                         documents_supported  => $documents_supported,

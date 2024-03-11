@@ -52,8 +52,8 @@ subtest 'identity_verification_document_add' => sub {
         token    => $token_cr,
         language => 'EN',
         args     => {
-            issuing_country => 'ng',
-            document_type   => 'type',
+            issuing_country => 'gh',
+            document_type   => 'passport',
             document_number => 'number',
         }};
 
