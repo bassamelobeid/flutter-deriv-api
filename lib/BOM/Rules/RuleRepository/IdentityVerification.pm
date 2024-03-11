@@ -136,10 +136,11 @@ rule 'idv.check_service_availibility' => {
 
         unless ($qq_bypass) {
             $self->fail('NotSupportedCountry') unless $countries->is_idv_supported($issuing_country);
+            $self->fail('InvalidDocumentType')
+                unless exists $configs->{document_types}->{$document_type} && $configs->{document_types}->{$document_type};
             $self->fail('IdentityVerificationDisabled')
                 unless BOM::Platform::Utility::has_idv(
                 country       => $issuing_country,
-                provider      => $configs->{provider},
                 document_type => $document_type
                 );
         }
@@ -147,10 +148,6 @@ rule 'idv.check_service_availibility' => {
         my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
 
         $self->fail('NoSubmissionLeft') if $idv_model->submissions_left($client) == 0 && !$expired_bypass;
-
-        unless ($qq_bypass) {
-            $self->fail('InvalidDocumentType') unless exists $configs->{document_types}->{$document_type};
-        }
 
         return undef;
     }

@@ -593,7 +593,7 @@ subtest 'rule idv.check_service_availibility' => sub {
             },
             idv_submission_left => 1,
             has_idv             => 0,
-            idv_config          => {},
+            idv_config          => {document_types => {passport => 1}},
             error               => 'IdentityVerificationDisabled',
         },
         {
@@ -603,7 +603,7 @@ subtest 'rule idv.check_service_availibility' => sub {
             },
             idv_submission_left => 0,
             has_idv             => 1,
-            idv_config          => {},
+            idv_config          => {document_types => {passport => 1}},
             error               => 'NoSubmissionLeft',
         },
         {
@@ -638,6 +638,16 @@ subtest 'rule idv.check_service_availibility' => sub {
             idv_submission_left => 1,
             has_idv             => 1,
             idv_config          => {document_types => {passport => 1}},
+            error               => 'InvalidDocumentType',
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+            },
+            idv_submission_left => 1,
+            has_idv             => 1,
+            idv_config          => {document_types => {passport => 0}},
             error               => 'InvalidDocumentType',
         },
         {
