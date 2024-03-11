@@ -9,12 +9,12 @@ jobs:
     with: 
       repository: regentmarkets/bom-rpc
   binary-websocket-api:
-    uses: regentmarkets/binary-websocket-api/.github/workflows/base.yml@develop_ghactions
+    uses: regentmarkets/binary-websocket-api/.github/workflows/base.yml@master
     secrets: inherit
     with: 
       repository: regentmarkets/binary-websocket-api
   bom-platform:
-    uses: regentmarkets/bom-platform/.github/workflows/base.yml@develop_ghactions
+    uses: regentmarkets/bom-platform/.github/workflows/base.yml@master
     secrets: inherit
     with:
       repository: regentmarkets/bom-platform
