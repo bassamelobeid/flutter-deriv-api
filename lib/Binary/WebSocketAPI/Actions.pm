@@ -682,7 +682,7 @@ sub actions_config {
             'passkeys_list',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken client_ip user_agent /],
+                stash_params       => [qw/ jtoken client_ip user_agent domain /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -690,7 +690,7 @@ sub actions_config {
             'passkeys_login',
             {
                 category     => 'passkeys',
-                stash_params => [qw/ client_ip user_agent /],
+                stash_params => [qw/ client_ip user_agent domain /],
 
             }
         ],
@@ -698,7 +698,7 @@ sub actions_config {
             'passkeys_options',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken client_ip user_agent /],
+                stash_params       => [qw/ jtoken client_ip user_agent domain /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -706,7 +706,7 @@ sub actions_config {
             'passkeys_register_options',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken client_ip user_agent /],
+                stash_params       => [qw/ jtoken client_ip user_agent domain /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -714,7 +714,7 @@ sub actions_config {
             'passkeys_register',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken client_ip user_agent /],
+                stash_params       => [qw/ jtoken client_ip user_agent domain /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -722,7 +722,7 @@ sub actions_config {
             'passkeys_rename',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken client_ip user_agent /],
+                stash_params       => [qw/ jtoken client_ip user_agent domain /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
@@ -730,7 +730,7 @@ sub actions_config {
             'passkeys_revoke',
             {
                 category           => 'passkeys',
-                stash_params       => [qw/ jtoken client_ip user_agent /],
+                stash_params       => [qw/ jtoken client_ip user_agent domain /],
                 instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
             }
         ],
