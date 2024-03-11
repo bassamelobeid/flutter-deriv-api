@@ -10,7 +10,9 @@ use Brands::Countries;
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 use BOM::User::Client;
+use BOM::User::IdentityVerification;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(error_map create_error verify_reactivation);
@@ -344,6 +346,7 @@ sub is_idv_disabled {
     # Is IDV provider disabled
     if (defined $args{provider}) {
         return 1 if any { $args{provider} eq $_ } @$disabled_idv_providers;
+        return 1 if BOM::Config::Redis::redis_events()->get(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . $args{provider});
     }
     # Is IDV document type disabled for the specific country
     if (defined $args{country} and defined $args{document_type}) {
@@ -354,7 +357,7 @@ sub is_idv_disabled {
 
 =head2 has_idv
 
-Checks if IDV is enabled and supported for the given country + provider
+Checks if IDV is enabled and supported for the given country.
 
 =over 4
 
@@ -368,12 +371,68 @@ Returns bool
 
 sub has_idv {
     my %args            = @_;
-    my $country_configs = Brands::Countries->new();
+    my $country_configs = Brands::Countries->new;
+
     return 0 unless $country_configs->is_idv_supported($args{country} // '');
 
-    return 0 if is_idv_disabled(%args);
+    my $idv_countries = $country_configs->get_idv_config($args{country});
 
-    return 1;
+    if (defined $args{document_type}) {
+        foreach my $provider ($idv_countries->{'document_types'}->{$args{document_type}}->{'providers'}->@*) {
+            $args{provider} = $provider;
+            return 1 unless is_idv_disabled(%args);
+        }
+    } else {
+        my $country_doc_types = $idv_countries->{'document_types'};
+        foreach my $doc_type (keys %$country_doc_types) {
+            foreach my $provider ($country_doc_types->{$doc_type}->{'providers'}->@*) {
+                $args{document_type} = $doc_type;
+                $args{provider}      = $provider;
+                return 1 unless is_idv_disabled(%args);
+            }
+        }
+    }
+
+    return 0;
+}
+
+=head2 idv_configuration
+
+Builds an IDV configuration bundle.
+
+=cut
+
+sub idv_configuration {
+    my $brand_countries_obj = Brands::Countries->new;
+    my $idv_countries       = $brand_countries_obj->get_idv_config() // {};
+    my $additional_config   = BOM::Config::identity_verification()   // {};
+
+    my %config_bundle;
+
+    foreach my $country (sort keys %$idv_countries) {
+        foreach my $doc_type (sort keys %{$idv_countries->{$country}->{'document_types'}}) {
+            my $providers = $idv_countries->{$country}->{'document_types'}->{$doc_type}->{'providers'} // [];
+            $providers = [] unless ref $providers eq 'ARRAY';
+            foreach my $provider ($providers->@*) {
+                my %args = (
+                    country       => $country,
+                    provider      => $provider,
+                    document_type => $doc_type,
+                );
+
+                $config_bundle{'providers'}{$provider}{'additional'} = $additional_config->{'providers'}->{$provider}->{'additional'}
+                    if defined $additional_config->{'providers'}->{$provider}->{'additional'};
+                $config_bundle{'providers'}{$provider}{'countries'}{$country}{'documents'}{$doc_type}{'enabled'} =
+                    is_idv_disabled(%args) ? 0 : 1;
+
+                $config_bundle{'providers'}{$provider}{'countries'}{$country}{'documents'}{$doc_type}{'has_backup'} = 1
+                    if scalar $providers->@* > 1
+                    && any { $_ ne $provider && !is_idv_disabled(country => $country, provider => $_, document_type => $doc_type) } $providers->@*;
+            }
+        }
+    }
+
+    return \%config_bundle;
 }
 
 =head2 rejected_onfido_reasons
