@@ -2560,6 +2560,7 @@ sub get_dynamic_settings_list {
         crypto               => 'Cryptocurrency',
         compliance           => 'Compliance',
         anti_fraud           => 'Anti-Fraud',
+        partners             => 'Partners',
     };
 }
 

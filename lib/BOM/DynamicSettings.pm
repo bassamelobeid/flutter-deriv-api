@@ -51,7 +51,9 @@ use constant AUTHORISATIONS => {
     payment_agents       => ['IT'],
     terms_and_conditions => ['T&C'],
     internal_transfer    => ['PaymentInternalTransfer'],
-    anti_fraud           => ['AntiFraud']};
+    anti_fraud           => ['AntiFraud'],
+    partners             => ['Marketing'],
+};
 
 use constant P2P_ORDER_EXPIRE_OPTIONS => [900, 1800, 2700, 3600, 5400, 7200];
 
@@ -528,6 +530,10 @@ sub get_settings_by_group {
         ],
         anti_fraud => [qw(
                 anti_fraud.duplicate_dob_phone
+            )
+        ],
+        partners => [qw(
+                partners.enable_dynamic_works
             )
         ],
         # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
