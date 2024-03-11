@@ -35,8 +35,8 @@ Returns the passkeys options.
 
 =cut
 
-method get_options {
-    return $passkeys_client->passkeys_options();
+method get_options ($request_details) {
+    return $passkeys_client->passkeys_options($request_details);
 }
 
 =head2 get_user_details
@@ -52,7 +52,7 @@ Returns a hashref of bianry_user_id and verified (will be ignored)
 
 =cut
 
-method get_user_details ($payload) {
+method get_user_details ($payload, $request_details) {
 
     my $pub_key;
     if ($payload && !ref $payload) {
@@ -77,7 +77,7 @@ method get_user_details ($payload) {
 
     my $user_details;
     try {
-        $user_details = $passkeys_client->passkeys_login($pub_key);
+        $user_details = $passkeys_client->passkeys_login($pub_key, $request_details);
     } catch ($e) {
         die $self->to_login_error($e);
     }

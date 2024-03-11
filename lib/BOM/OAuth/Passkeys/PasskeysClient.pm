@@ -36,8 +36,9 @@ It'll die in case of RPC error. or unexpected response.
 
 =cut
 
-method passkeys_options {
-    my $request  = $self->redis_api->build_rpc_request('passkeys_options');
+method passkeys_options ($request_details) {
+    my $request = $self->redis_api->build_rpc_request('passkeys_options', undef, $request_details);
+
     my $response = $self->redis_api->call_rpc($request);
 
     my $result = $response->{response}->{result};
@@ -57,12 +58,14 @@ It'll die in case of RPC error.
 
 =item * $auth_response - The auth response from the authenticator.
 
+=item * $request_details - The request details to be set on the stash (ip, user-agent, etc).
+
 =back
 
 =cut
 
-method passkeys_login ($auth_response) {
-    my $request  = $self->redis_api->build_rpc_request('passkeys_login', {publicKeyCredential => $auth_response});
+method passkeys_login ($auth_response, $request_details) {
+    my $request  = $self->redis_api->build_rpc_request('passkeys_login', {publicKeyCredential => $auth_response}, $request_details);
     my $response = $self->redis_api->call_rpc($request);
 
     my $result = $response->{response}->{result};

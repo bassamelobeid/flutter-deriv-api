@@ -50,7 +50,7 @@ subtest 'passkeys_options' => sub {
                 };
             });
         # Test passkeys_options
-        my $options = $client->passkeys_options;
+        my $options = $client->passkeys_options(undef);
         is($options->{publicKey}, 'test_options', 'passkeys_options returns the correct options');
     };
 
@@ -97,7 +97,7 @@ subtest 'passkeys_login' => sub {
                 };
             });
 
-        my $verify_result = $client->passkeys_login('test_auth_response');
+        my $verify_result = $client->passkeys_login('test_auth_response', undef);
         is_deeply($verify_result, $test_result, 'passkeys_login returns the correct options');
     };
 

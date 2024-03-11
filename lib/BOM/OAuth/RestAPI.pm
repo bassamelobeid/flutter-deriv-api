@@ -307,11 +307,9 @@ sub login {
     my $login;
     try {
         my $method = sprintf '_perform_%s_login', $login_type;
-
         $login = $c->$method($app, $brand_name);
     } catch ($e) {
-
-        $log->warnf(build_login_error_message($e, $login_type, request_details_string($c->req, $c->stash('request'))));
+        $log->warnf(build_login_error_message($e, $login_type, request_details_string($c->req, $c->stash('request_details'))));
         return $c->_make_error($e->{code}, $e->{status});
     }
 
@@ -891,7 +889,7 @@ Returns an array of associated clients
 sub _perform_passkeys_login {
     my ($c, $app, $brand_name) = @_;
     my $passkeys_service = BOM::OAuth::Passkeys::PasskeysService->new;
-    my $user_details     = $passkeys_service->get_user_details($c->req->json->{publicKeyCredential});
+    my $user_details     = $passkeys_service->get_user_details($c->req->json->{publicKeyCredential}, $c->stash('request_details'));
     my $result           = BOM::OAuth::Common::validate_login({
         c                => $c,
         app              => $app,

@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     if(browserSupportsWebAuthn) {
         let growthbookEnabled = '<%= $growthbook_request_data->{IS_ENABLED} %>';
         if(!growthbookEnabled){
-            renderPasskeysForm();   
+            renderPasskeysForm();
         }
         else{
             let GrowthBook = window.growthbook.GrowthBook;
@@ -255,12 +255,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                 apiHost: "https://cdn.growthbook.io",
                 clientKey: '<%= $growthbook_request_data->{CLIENT_KEY} %>',
             });
-            let passkeyFeatureFlag = await checkPasskeyFeatureFlag(gb);
-            if(!passkeyFeatureFlag){
-                passkeyFeatureFlag = await setAttributesAndCheckFeatureFlag(gb);
-            }
+            let passkeyFeatureFlag = await setAttributesAndCheckFeatureFlag(gb);
+
             if(passkeyFeatureFlag){
-                renderPasskeysForm();      
+                renderPasskeysForm();
             }
         }
     } 
@@ -277,7 +275,7 @@ function passkeyBtnClickEvent(){
             let form = document.getElementById("passkeysForm");
             form.submit();
         }
-    }         
+    }
     });
 }
 
@@ -354,22 +352,12 @@ async function startWebAuthentication(publicKey) {
     }
 }
 
-async function checkPasskeyFeatureFlag(gb) {
-    try {
-        await gb.loadFeatures();
-        return gb.isOn("web_passkeys");
-    } catch (error) {
-        console.log(error);
-        return false;
-    }
-}
-
 function get_user_info() {
     try {
-        let escapedJsonString = ('<%= stash('user_request_details') %>');
+        let escapedJsonString = ('<%= $user_request_details %>');
         let unescapedJsonString = escapedJsonString.replace(/&quot;/g, '"');
         let user_info = JSON.parse(unescapedJsonString);
-        user_info.Browser = (user_info.User_Agent.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?/i) || [])[1] || '';
+        user_info.browser = (user_info.user_agent.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?/i) || [])[1] || '';
         return user_info;
     } catch (error) {
         console.error("Error parsing user info:", error);
@@ -381,10 +369,12 @@ async function setAttributesAndCheckFeatureFlag(gb) {
     try {
         let userInfo = get_user_info();
         const attributes= await gb.setAttributes({
-                country: userInfo.Country,
-                client_ip: userInfo.IP,
-                browser: userInfo.Browser,
-                user_agent: userInfo.User_Agent,
+                country: userInfo.country_code,
+                client_ip: userInfo.client_ip,
+                browser: userInfo.browser,
+                user_agent: userInfo.user_agent,
+                domain: userInfo.domain,
+                app_id: userInfo.app_id
         });
         await gb.loadFeatures();
         return gb.isOn("web_passkeys");

@@ -39,7 +39,7 @@ my $redis_api = BOM::Transport::RedisAPI->new(
     },
     req_category => 'general',
 );
-my $request = $redis_api->build_rpc_request('authorize', {'authorize' => '<token>'}, undef, 60);
+my $request = $redis_api->build_rpc_request('authorize', {'authorize' => '<token>'}, undef, undef, 60);
 my $response = $redis_api->call_rpc($request);
 The constructor allow more options:
 
@@ -156,6 +156,8 @@ Creates the request data.
 
 =item $params - The rpc method params.
 
+=item $additional_params - Additional params to be added as argument to the RPC request.
+
 =item $stash_params - The rpc method stash params.
 
 =item $req_timeout - The request timeout in seconds.
@@ -164,9 +166,10 @@ Creates the request data.
 
 =cut
 
-method build_rpc_request ($method, $params = undef, $stash_params = undef, $req_timeout = undef) {
+method build_rpc_request ($method, $params = undef, $additional_params = undef, $stash_params = undef, $req_timeout = undef) {
     my $payload = {};
-    $payload->{args} = $params ? $params : {$method => 1};
+    my $rpc_args->{args} = $params ? $params : {$method => 1};
+    $payload = {$rpc_args->%*, $additional_params->%*};
 
     my $request_data = {
         rpc        => $method,

@@ -30,7 +30,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::OAuth::Common;
-use BOM::OAuth::Helper     qw(request_details_string exception_string get_request_details build_signup_url);
+use BOM::OAuth::Helper     qw(request_details_string exception_string build_signup_url);
 use BOM::OAuth::Static     qw(get_message_mapping);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
@@ -77,14 +77,12 @@ sub authorize {
     try {
         BOM::OAuth::Helper::setup_social_login($c);
     } catch ($e) {
-        $log->errorf("Error while setup social login links: %s - %s", exception_string($e), request_details_string($c->req, $c->stash('request')));
+        $log->errorf("Error while setup social login links: %s - %s",
+            exception_string($e), request_details_string($c->req, $c->stash('request_details')));
     }
 
     # load available networks for brand
     $c->stash('login_providers' => $c->stash('brand')->login_providers);
-
-    # load request details of user for Growthbook
-    $c->stash('user_request_details' => get_request_details($c->req, $c->stash('request')));
 
     my $r          = $c->stash('request');
     my $brand_name = $c->stash('brand')->name;
@@ -113,6 +111,7 @@ sub authorize {
         social_login_links        => $c->stash('social_login_links'),
         use_oneall                => $c->_use_oneall_web,
         growthbook_request_data   => _get_growthbook_config(),
+        user_request_details      => JSON::MaybeXS->new->utf8->encode($c->stash('request_details')),
         dd_rum_config             => _datadog_config(),
         signup_url                => build_signup_url($params_signup_url),
     );
@@ -418,7 +417,7 @@ sub _passkeys_login {
     my $passkeys_user_id;
     try {
         my $passkeys_service      = BOM::OAuth::Passkeys::PasskeysService->new;
-        my $passkeys_user_details = $passkeys_service->get_user_details($c->param('publicKeyCredential'));
+        my $passkeys_user_details = $passkeys_service->get_user_details($c->param('publicKeyCredential'), $c->stash('request_details'));
         $passkeys_user_id = $passkeys_user_details->{binary_user_id};
     } catch ($e) {
         $log->errorf("Passkeys login exception - failed to get user info - %s %s", $e->{code}, ($e->{additional_info} // ""));
@@ -647,7 +646,7 @@ sub _get_client {
 sub _bad_request {
     my ($c, $error) = @_;
 
-    $log->warnf("Bad Request - $error - " . request_details_string($c->req, $c->stash('request')));
+    $log->warnf("Bad Request - $error - " . request_details_string($c->req, $c->stash('request_details')));
     return $c->throw_error('invalid_request', $error);
 }
 

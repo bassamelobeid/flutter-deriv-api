@@ -31,7 +31,7 @@ We need to rate limit this endpoint.
 sub get_options {
     my $self = shift;
     try {
-        my $options = $self->passkeys_service->get_options;
+        my $options = $self->passkeys_service->get_options($self->stash('request_details'));
         return $self->render(
             json   => $options,
             status => 200
@@ -99,7 +99,7 @@ sub _to_error_message {
     my ($self, $exception, $message) = @_;
 
     my $exception_message = exception_string($exception);
-    my $request_details   = request_details_string($self->req, $self->stash('request'));
+    my $request_details   = request_details_string($self->req, $self->stash('request_details'));
     my $result            = "Passkeys exception - ";
     if ($message) {
         $result .= "$message - ";

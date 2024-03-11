@@ -454,7 +454,7 @@ sub _to_error_message {
     my $message   = shift;
 
     my $exception_message = exception_string($exception);
-    my $request_details   = request_details_string($c->req, $c->stash('request'));
+    my $request_details   = request_details_string($c->req, $c->stash('request_details'));
     my $result            = "Social Login exception - ";
     if ($message) {
         $result .= "$message - ";

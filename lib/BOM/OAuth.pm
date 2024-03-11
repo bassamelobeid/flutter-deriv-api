@@ -55,8 +55,19 @@ sub startup {
 
             my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
             BOM::Platform::Context::request($request);
+
             $c->stash(request => $request);
             $c->stash(brand   => $request->brand);
+
+            $c->stash(
+                request_details => {
+                    client_ip    => $c->client_ip,
+                    user_agent   => $c->req->headers->user_agent,
+                    domain       => $request->domain_name,
+                    referrer     => $c->req->headers->referrer,
+                    country_code => $request->country_code,
+                    app_id       => $c->param('app_id'),
+                });
         });
 
     $app->hook(
