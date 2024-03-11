@@ -9,6 +9,7 @@ use BOM::Config::Redis;
 use BOM::Platform::Event::Emitter;
 use LandingCompany::Registry;
 use BOM::Config::AccountType::Registry;
+use BOM::User::FinancialAssessment;
 use BOM::Config::Runtime;
 
 use BOM::Platform::Account::Virtual;
@@ -22,6 +23,7 @@ use BOM::User::Client;
 
 use Carp       qw(croak);
 use List::Util qw(any none uniq);
+use Syntax::Keyword::Try;
 
 use constant {
     MIGRATION_KEY_PREFIX          => 'WALLET::MIGRATION::IN_PROGRESS::',
@@ -453,20 +455,30 @@ method create_wallet (%args) {
         virtual     => \&BOM::Platform::Account::Virtual::create_account,
     );
 
-    my $result = $signup_for{$lc}->(
-        +{
-            details => \%details,
-            user    => $user,
-        });
+    try {
+        my $result = $signup_for{$lc}->(
+            +{
+                details => \%details,
+                user    => $user,
+            });
 
-    if ($result->{error}) {
-        $log->errorf("Unable to create wallet for user %s with error %s", $user->id, $result->{error});
+        die $result if $result->{error};
+
+        my $new_wallet = $result->{client};
+
+        if ($client->financial_assessment()) {
+            BOM::User::FinancialAssessment::copy_financial_assessment($client, $new_wallet);
+        }
+
+        $new_wallet->sync_authentication_from_siblings;
+
+        delete $user->{loginid_details};
+
+        return $new_wallet;
+    } catch ($e) {
+        $log->errorf("Unable to create wallet for user %s with error %s", $user->id, $e);
         die +{error_code => "InternalServerError"};
     }
-
-    delete $user->{loginid_details};
-
-    return $result->{client};
 }
 
 =head2 reset

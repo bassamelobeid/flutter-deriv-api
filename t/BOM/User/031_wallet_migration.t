@@ -19,8 +19,9 @@ use BOM::Test::Helper::CTrader;
 use BOM::User::WalletMigration;
 
 use BOM::Config::Runtime;
+use BOM::User::FinancialAssessment qw(update_financial_assessment);
 
-plan tests => 10;
+plan tests => 11;
 
 BOM::Test::Helper::MT5::mock_server();
 BOM::Test::Helper::CTrader::mock_server();
@@ -1392,6 +1393,125 @@ subtest 'Getting migration plan' => sub {
         );
     };
 
+};
+
+subtest 'Migrate KYC verified clients' => sub {
+    subtest 'POI verified status is migrated' => sub {
+        my ($user) = create_user();
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $cr_usd->set_default_account('USD');
+        $user->add_client($cr_usd);
+
+        $cr_usd->status->set('age_verification', 'system', 'just testing');
+
+        my $error = exception {
+            $migration->process();
+        };
+
+        is($error, undef, 'No error is thrown');
+
+        my $account_links = $user->get_accounts_links();
+
+        ok($account_links->{$cr_usd->loginid}, 'Account link is created for DF account');
+
+        my $cr_wallet_id = shift($account_links->{$cr_usd->loginid}->@*)->{loginid};
+        like $cr_wallet_id, qr/^CRW\d+$/, 'Wallet id is generated for DF account';
+
+        my $cr_wallet = BOM::User::Client->get_client_instance($cr_wallet_id);
+
+        ok($cr_wallet->status->age_verification, 'POI verified status is migrated');
+    };
+
+    subtest 'Fully authenticated status is migrated' => sub {
+        my ($user) = create_user();
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $cr_usd->set_default_account('USD');
+        $user->add_client($cr_usd);
+
+        $cr_usd->status->set('age_verification', 'system', 'just testing');
+        $cr_usd->set_authentication_and_status('ID_DOCUMENT', 'Vasya Pupkin');
+
+        my $error = exception {
+            $migration->process();
+        };
+
+        is($error, undef, 'No error is thrown');
+
+        my $account_links = $user->get_accounts_links();
+
+        ok($account_links->{$cr_usd->loginid}, 'Account link is created for DF account');
+
+        my $cr_wallet_id = shift($account_links->{$cr_usd->loginid}->@*)->{loginid};
+        like $cr_wallet_id, qr/^CRW\d+$/, 'Wallet id is generated for DF account';
+
+        my $cr_wallet = BOM::User::Client->get_client_instance($cr_wallet_id);
+
+        ok($cr_wallet->fully_authenticated, 'Fully authenticated status is migrated');
+    };
+
+    subtest 'Financial Assestment is migrated correctly' => sub {
+        my ($user) = create_user();
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $cr_usd->set_default_account('USD');
+        $user->add_client($cr_usd);
+
+        my $error = exception {
+            $migration->process();
+        };
+
+        update_financial_assessment(
+            $user,
+            {
+                'cfd_trading_experience'               => '0-1 year',
+                'occupation'                           => 'Chief Executives, Senior Officials and Legislators',
+                'other_instruments_trading_frequency'  => '0-5 transactions in the past 12 months',
+                'binary_options_trading_frequency'     => '0-5 transactions in the past 12 months',
+                'forex_trading_frequency'              => '6-10 transactions in the past 12 months',
+                'forex_trading_experience'             => '0-1 year',
+                'net_income'                           => 'Less than $25,000',
+                'income_source'                        => 'Salaried Employee',
+                'employment_industry'                  => 'Construction',
+                'account_turnover'                     => 'Less than $25,000',
+                'cfd_trading_frequency'                => '0-5 transactions in the past 12 months',
+                'source_of_wealth'                     => 'Accumulation of Income/Savings',
+                'education_level'                      => 'Primary',
+                'binary_options_trading_experience'    => '0-1 year',
+                'estimated_worth'                      => 'Less than $100,000',
+                'employment_status'                    => 'Employed',
+                'other_instruments_trading_experience' => '0-1 year'
+            });
+
+        is($error, undef, 'No error is thrown');
+
+        my $account_links = $user->get_accounts_links();
+
+        ok($account_links->{$cr_usd->loginid}, 'Account link is created for DF account');
+
+        my $cr_wallet_id = shift($account_links->{$cr_usd->loginid}->@*)->{loginid};
+        like $cr_wallet_id, qr/^CRW\d+$/, 'Wallet id is generated for DF account';
+
+        my $cr_wallet = BOM::User::Client->get_client_instance($cr_wallet_id);
+
+        ok($cr_wallet->financial_assessment(), 'Financial Assestment is migrated');
+    };
 };
 
 my $user_counter = 1;

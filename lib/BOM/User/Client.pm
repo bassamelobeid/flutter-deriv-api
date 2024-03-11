@@ -507,13 +507,19 @@ sub sync_authentication_from_siblings {
     }
     my (@allowed_lc_to_sync, @siblings, $method, $status);
     # Get all siblings for a client except virtual one and itself
-    if ($self->user and not $self->is_virtual) {
-        @siblings = grep { not $_->is_virtual and $_->loginid ne $self->loginid } $self->user->clients;
+    if (!$self->is_virtual && (my $user = $self->user)) {
+        @siblings = grep { not $_->is_virtual and $_->loginid ne $self->loginid } $user->clients;
     }
     # Get authentication method and status from allowed sibling
     # Update new created account's authentication
     foreach my $cli (@siblings) {
-        @allowed_lc_to_sync = @{$cli->landing_company->allowed_landing_companies_for_authentication_sync};
+        @allowed_lc_to_sync = (
+            $cli->landing_company->allowed_landing_companies_for_authentication_sync->@*,
+            $cli->landing_company->short,    #Allow to sync to the same company
+        );
+
+        # Skip if client is in the same DB, sync had been done by db trigger
+        next if $cli->broker_code eq $self->broker_code;
         if ((any { $_ eq $self->landing_company->short } @allowed_lc_to_sync) and $cli->client_authentication_method) {
             for my $auth_method (qw/ID_DOCUMENT ID_NOTARIZED ID_PO_BOX/) {
                 my $auth = $cli->get_authentication($auth_method);
@@ -528,11 +534,6 @@ sub sync_authentication_from_siblings {
                         $self->status->clear_allow_document_upload;
                         # We should notify CS to check TIN and MIFIR for MF clients
                         _notify_cs_about_authenticated_mf($self->loginid, $cli->broker_code) if $self->landing_company->short eq 'maltainvest';
-                        # Remove unwelcome from MX once its authenticated from MF
-                        $self->status->clear_unwelcome
-                            if ($self->residence eq 'gb'
-                            and $self->landing_company->short eq 'iom'
-                            and $self->status->unwelcome);
                     } elsif ($status eq 'needs_action') {
                         $self->status->upsert('allow_document_upload', 'system', 'MARKED_AS_NEEDS_ACTION')
                             if not $cli->status->allow_document_upload;
