@@ -370,6 +370,128 @@ subtest "cTrader Account Creation" => sub {
     $mocked_redis->unmock_all();
 };
 
+subtest "cTrader Deleted Inactive Demo Account" => sub {
+    my $ctconfig = BOM::Config::Runtime->instance->app_config->system->ctrader;
+    my $ctid     = 1006;
+    my $loginid  = 100006;
+
+    my $mock_apidata = {
+        ctid_create                 => sub { {userId => $ctid} },
+        ctid_getuserid              => sub { {userId => $ctid} },
+        ctradermanager_getgrouplist => sub { [{name => 'ctrader_all_svg_std_usd', groupId => 1}] },
+        trader_create               => sub {
+            {
+                login                 => $loginid,
+                groupName             => 'ctrader_all_svg_std_usd',
+                registrationTimestamp => 123456,
+                depositCurrency       => 'USD',
+                balance               => 0,
+                moneyDigits           => 2,
+            }
+        },
+        trader_get => sub {
+            {
+                login           => $loginid,
+                depositCurrency => 'USD',
+                balance         => 0,
+            }
+        },
+        tradermanager_gettraderlightlist => sub { [{traderId => $ctid, login => $loginid}] },
+        ctid_linktrader                  => sub { {ctidTraderAccountId => $ctid} },
+        tradermanager_deposit            => sub { {balanceHistoryId    => 1} },
+    };
+
+    my $mocked_ctrader = Test::MockModule->new('BOM::TradingPlatform::CTrader');
+    $mocked_ctrader->redefine(
+        call_api => sub {
+            my ($self, %payload) = @_;
+            return $mock_apidata->{$payload{method}}->();
+        });
+
+    subtest "cTrader Demo Deleted Account" => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $client->email('ctraderdemodeletaccount@test.com');
+        my $user = BOM::User->create(
+            email    => $client->email,
+            password => 'test'
+        );
+        $user->add_client($client);
+        $client->set_default_account('USD');
+        $client->binary_user_id($user->id);
+        $client->save;
+
+        my %params = (
+            account_type => "demo",
+            market_type  => "all",
+            platform     => "ctrader"
+        );
+
+        my $ctrader = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            client      => $client,
+            user        => $user,
+            rule_engine => BOM::Rules::Engine->new(client => $client));
+        isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
+
+        my $expected_response = {
+            'landing_company_short' => 'svg',
+            'balance'               => '0.00',
+            'market_type'           => 'all',
+            'display_balance'       => '0.00',
+            'currency'              => 'USD',
+            'login'                 => '100006',
+            'account_id'            => 'CTD100006',
+            'account_type'          => 'demo',
+            'platform'              => 'ctrader',
+        };
+
+        my $response = $ctrader->new_account(%params);
+        cmp_deeply($response, $expected_response, 'Can create cTrader demo account');
+
+        $response = $ctrader->get_account_info('CTD100006');
+        is $response->{account_id},   'CTD100006', 'get_account_info account id';
+        is $response->{account_type}, 'demo',      'get_account_info account_type';
+
+        my @local_accounts = $ctrader->local_accounts();
+        is $local_accounts[0]->{status}, undef, 'Account status is undefined';
+
+        my $resp = {
+            content => {
+                error => {
+                    description => "sample description",
+                    errorCode   => "TRADER_NOT_FOUND"
+                }}};
+
+        my %args = (
+            method  => 'trader_get',
+            server  => 'real',
+            payload => {loginid => $loginid});
+
+        dies_ok { $ctrader->handle_api_error($resp, undef, %args) } 'handle_api_error method throws an exception';
+        @local_accounts = $ctrader->local_accounts();
+        is scalar @local_accounts,       1,     'Local accounts still have 1 account';
+        is $local_accounts[0]->{status}, undef, 'Account status is still undefined if it fails for real server call';
+
+        my $login_details = $client->user->loginid_details;
+        is $login_details->{'CTD100006'}->{status}, undef, 'Demo account status is archived';
+
+        $args{server} = 'demo';
+        dies_ok { $ctrader->handle_api_error($resp, undef, %args) } 'handle_api_error method throws an exception';
+        @local_accounts = $ctrader->local_accounts();
+        is scalar @local_accounts, 0, 'Local accounts now return 0 account due to demo account is archived';
+
+        $login_details = $client->user->loginid_details;
+        is $login_details->{'CTD100006'}->{status}, 'archived', 'Demo account status is archived';
+
+        $loginid++;
+
+        $expected_response->{account_id} = 'CTD100007';
+        $expected_response->{login}      = '100007';
+        $response                        = $ctrader->new_account(%params);
+        cmp_deeply($response, $expected_response, 'Can create second cTrader demo account after old account gets archived');
+    };
+};
+
 subtest "cTrader Available Account" => sub {
     subtest "cTrader Available Accounts Supported Country" => sub {
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
@@ -487,12 +609,12 @@ subtest "Error Email Filtering Test" => sub {
     my $expected_msg_email       = qq('email' => 'ww\@ww ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** ***** @');
 
     my $msgs = $log->msgs;
-    is($msgs->[0]->{level},    'warning',                       'Log message has the expected level');
-    is($msgs->[0]->{category}, 'BOM::TradingPlatform::CTrader', 'Log message has the expected category');
+    is($msgs->[2]->{level},    'warning',                       'Log message has the expected level');
+    is($msgs->[2]->{category}, 'BOM::TradingPlatform::CTrader', 'Log message has the expected category');
     my $expected_msg_regex_description = quotemeta $expected_msg_description;
     my $expected_msg_regex_email       = quotemeta $expected_msg_email;
-    like($msgs->[0]->{message}, qr/$expected_msg_regex_description/, 'Log message contains the expected error message');
-    like($msgs->[0]->{message}, qr/$expected_msg_regex_email/,       'Log message contains the expected error message');
+    like($msgs->[2]->{message}, qr/$expected_msg_regex_description/, 'Log message contains the expected error message');
+    like($msgs->[2]->{message}, qr/$expected_msg_regex_email/,       'Log message contains the expected error message');
 };
 
 done_testing();

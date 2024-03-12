@@ -1221,7 +1221,7 @@ sub is_active_loginid {
     return 0 unless $details;
 
     # Currently we have statuses only for mt5 and derivez accounts
-    return 1 unless $details->{platform} =~ /^(?:mt5|derivez)$/;
+    return 1 unless $details->{platform} =~ /^(?:mt5|derivez|ctrader)$/;
 
     # Since there are no plans to add "active" to status of active account in DB, current active accounts
     # contain status of 'undef'.

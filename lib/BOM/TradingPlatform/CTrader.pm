@@ -215,7 +215,7 @@ sub local_accounts {
     my ($self, %args) = @_;
 
     my $login_details = $self->user->loginid_details;
-    my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID && !$_->{status} } values %$login_details;
+    my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID && $self->user->is_active_loginid($_->{loginid}) } values %$login_details;
     @accounts =
         grep { $_->{wallet_loginid} ? $self->client->is_wallet && $self->client->loginid eq $_->{wallet_loginid} : !$self->client->is_wallet }
         @accounts
@@ -231,6 +231,11 @@ Called when an unexpcted cTrader API error occurs. Dies with generic error code 
 
 sub handle_api_error {
     my ($self, $resp, $error_code, %args) = @_;
+
+    if (ref $resp eq 'HASH' and ($resp->{content}->{error}->{errorCode} // '') eq 'TRADER_NOT_FOUND') {
+        $self->handle_trader_not_found_error(%args);
+    }
+
     $args{password} = '<hidden>'                            if $args{password};
     $resp           = [$resp->@{qw/content reason status/}] if ref $resp eq 'HASH';
     stats_inc('ctrader.rpc_service.api_call_fail', {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
@@ -238,6 +243,33 @@ sub handle_api_error {
     $error_message =~ s/[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+/*****/g;
     $log->warnf('%s', $error_message);
     die +{error_code => $error_code // 'CTraderGeneral'};
+}
+
+=head2 handle_trader_not_found_error
+
+Called when an TRADER_NOT_FOUND is detected. To update the demo account to archived due to cBroker automated deletion of inactive demo account.
+
+=over 4
+
+=item * C<args> Argument of API call.
+
+=back
+
+=cut
+
+sub handle_trader_not_found_error {
+    my ($self, %args) = @_;
+
+    if (($args{method} // '') eq 'trader_get' and ($args{server} // '') eq 'demo') {
+        my $account = first { ($args{payload}->{loginid} // 'unknown') eq ($_->{attributes}->{login} // '') } $self->local_accounts;
+        $self->user->update_loginid_status($account->{loginid}, 'archived')
+            if $account
+            and $account->{platform} eq PLATFORM_ID
+            and $account->{account_type} eq 'demo';
+        $log->infof('Deleted cTrader demo account processed. Archived cTrader demo account %s', $account->{loginid});
+        stats_inc('ctrader.archived_account.demo', {tags => ['server:' . $args{server}]});
+        die +{error_code => 'CTraderGeneral'};
+    }
 }
 
 =head2 deposit
