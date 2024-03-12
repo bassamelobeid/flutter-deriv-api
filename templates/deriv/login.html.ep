@@ -45,9 +45,9 @@
             </div>
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
         </form>
-        <div class="separator" id="separatorId" style ='display : none'>
+        <div class="separator" id="separatorId">
                     <p class="center-text social-text">
-                        <%= stash('error') ? l('Perhaps you signed up with a social account?') : l('Or log in with') %>
+                        <%= stash('error') ? l('Perhaps you signed up with a social account?') : l('Or continue with') %>
                     </p>
         </div>
         <div id="passkeysContainer">
@@ -280,10 +280,6 @@ function passkeyBtnClickEvent(){
 }
 
 function renderPasskeysForm(){
-    let separator = document.getElementById("separatorId");
-    if (separator) {
-        separator.style.display = "block";
-    }
     const passkeysForm = document.createElement('form');
     passkeysForm.method = 'POST';
     passkeysForm.id = 'passkeysForm';
@@ -390,5 +386,16 @@ async function setAttributesAndCheckFeatureFlag(gb) {
     let passkeysError = "<%= stash('passkeys_error') %>";
     if (passkeysError) {
         showErrorPopUp(passkeysError);
+    }
+</script>
+
+<script type="text/javascript">
+    let providerElements = document.getElementsByClassName('provider');
+    let separator = document.getElementById("separatorId");
+    if (providerElements != undefined && providerElements.length>0) {     
+        separator.classList.add("separator-show");
+    }
+    else{
+        separator.classList.remove("separator-show");
     }
 </script>

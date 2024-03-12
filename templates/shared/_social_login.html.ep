@@ -10,7 +10,7 @@
             gap: 0.8rem;
         }
         .provider a.button {
-            height: 38px;
+            height: 48px;
         }
         .account-text {
             margin-top: 17px;
@@ -19,8 +19,17 @@
             margin-top: 0;
         }
         .social_login_providers {
-            margin: 1.6rem auto;
+            margin: 0.8rem auto 1.6rem auto;
             width: 100%;
+        }
+        .provider{
+            border: none;
+        }
+        .provider#provider_google{
+            background: var(--opacity-black-75, rgba(0, 0, 0, 0.04));
+        }
+        .provider .name{
+            font-family: "IBM Plex Sans", sans-serif !important;
         }
     </style>
     <div class="providers_row social_login_providers">

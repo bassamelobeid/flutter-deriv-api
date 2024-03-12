@@ -659,7 +659,7 @@
                 justify-content: center;
                 gap: 0.8rem;
                 color: #333333;
-                padding: 0.5rem 1.6rem;
+                height: 44px;
             }
             a.passkey-btn:hover{
                 text-decoration: none;
@@ -671,7 +671,14 @@
                 #passkeysContainer{
                     display: none;
                 }
+                .separator {
+                    display: none;
+                }
             }
+            .separator-show {
+                display: block;
+            }
+            
             #passkeysContainer + .account-text{
                 margin-top: 17px;
             }
