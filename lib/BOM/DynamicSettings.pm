@@ -191,6 +191,10 @@ sub save_settings {
         print $message;
     }
 
+    my $redis = BOM::Config::Redis::redis_ws_write();
+    # the below call is added to set the restriction flag in redis for 3rd party app restriction
+    $redis->set('app_settings::restrict_third_party_apps', BOM::Config::Runtime->instance->app_config->system->suspend->restrict_third_party_apps);
+
     return wantarray ? ($success, @changed_keys) : $success;
 }
 
@@ -377,6 +381,7 @@ sub get_settings_by_group {
                 system.ctrader.suspend.deposits
                 system.ctrader.suspend.withdrawals
                 system.ctrader.suspend.user_exceptions
+                system.suspend.restrict_third_party_apps
                 email_verification.suspend.virtual_accounts
             )
         ],

@@ -18,6 +18,7 @@ use Syntax::Keyword::Try;
 use Scalar::Util             qw(looks_like_number);
 use Log::Any                 qw($log);
 use BOM::Backoffice::Sysinit ();
+use BOM::Database::Model::OAuth;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -138,6 +139,18 @@ if ($action and $action eq 'BLOCK APP') {
     } catch ($e) {
         show_form_result("JSON string provided is not valid: $e", "notify notify--warning");
     }
+} elsif ($action and $action eq 'MODIFY OFFICIAL APPS') {
+    my $official_apps = request()->param('official_app');
+    try {
+        my $result = set_official_apps_in_redis();
+        if (defined $result) {
+            show_form_result("official apps has been updated successfully", "notify");
+        } else {
+            show_form_result("No apps found to modify", "notify");
+        }
+    } catch ($e) {
+        show_form_result("some error occured while modifying official apps  $e", "notify notify--warning");
+    }
 }
 
 # deactivate app
@@ -196,4 +209,57 @@ if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
             </form>~;
 }
 
+=head2 get_official_apps
+
+Below function will fill the read-only text area to manage all apps (official) added into Database from redis
+
+Returns a join array for all official apps
+
+=cut
+
+sub get_official_apps {
+    my $official_apps = $redis->smembers('domain_based_apps::official');
+    return scalar(@$official_apps) ? join(",", @$official_apps) : '{}';
+}
+
+=head2 set_official_apps_in_redis
+
+Below function will fill the read-only text area to manage all apps (official) added into Database
+
+Returns a join array for all official apps
+
+=cut
+
+sub set_official_apps_in_redis {
+    #always fetch latest apps from Database
+    my $oauth_model = BOM::Database::Model::OAuth->new;
+    my $apps        = $oauth_model->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT app_id FROM oauth.official_apps ");
+        });
+    my @official_app_ids = map { @$_ } @$apps;
+    # Delete existing entries from Redis set (this is to avoid any decommission app id already be in redis set even after removal from DB)
+    $redis->del('domain_based_apps::official');
+    return $redis->sadd('domain_based_apps::official', @official_app_ids);
+}
+
+# add official app
+if (BOM::Backoffice::Auth::has_authorisation(['IT', 'Marketing'])) {
+    Bar(
+        'Official apps',
+        {
+            container_class => 'card',
+            title_class     => 'card__label toggle'
+        });
+    print qq~
+        <p>Official apps allowed for all opertation domain (red, blue, green etc). Expected format example: [1223,45434,122,1]</p>
+        <p>This is a read-only field only click MODIFY OFFICIAL APPS to reflect latest official app list from system</p>
+        <p><strong>NOTE FOR DEVOPS: binary_websocket_api restart is required after modifying official apps </strong></p>
+        <form action="~ . request()->url_for('backoffice/f_app_management.cgi') . qq~" method="post">
+            <label for="official_app">Official App IDs:</label>
+            <textarea id="official_app" rows="3" cols="30" name="official_app" placeholder="[]" readonly>~
+        . get_official_apps() . qq~</textarea>
+            <input type="submit" class="btn btn--primary" name="action" value="MODIFY OFFICIAL APPS" onclick="return confirm('Are you sure you want to add the app(s)?'">
+            </form>~;
+}
 code_exit_BO();
