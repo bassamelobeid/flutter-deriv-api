@@ -1746,6 +1746,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        restrict_third_party_apps:
+          description: "Restrict third-party apps access to only pre-defined allowed environments"
+          isa: Bool
+          default: 0
+          global: 1
         duplicate_poi_checks:
           description: "Suspend duplicate POI document checks"
           isa: Bool
