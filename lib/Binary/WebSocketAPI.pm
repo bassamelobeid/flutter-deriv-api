@@ -70,9 +70,14 @@ our $WS_BACKENDS;
 
 my $node_config;
 
+#official apps redis set
+our %OFFICIAL_APPS;
+
 # a hash of rpc queue configs per environment
 our %RPC_ACTIVE_QUEUES;
 
+# feature flag for App Restriction - 3 party apps
+my $is_app_restriction_enabled;
 my $redis = ws_redis_master();
 my $json  = JSON::MaybeXS->new;
 
@@ -156,6 +161,8 @@ sub get_redis_value_setup {
                     %BLOCK_ORIGINS = %{$json->decode(Encode::decode_utf8($value))};
                 } elsif ($key eq 'domain_based_apps::blocked') {
                     update_apps_blocked_from_operation_domain($value);
+                } elsif ($key eq 'app_settings::restrict_third_party_apps') {
+                    $is_app_restriction_enabled = $value;
                 }
             }
         });
@@ -282,10 +289,15 @@ sub startup {
                 status => 403
             ) if exists $BLOCK_APP_IDS{$app_id};
 
-            return $c->render(
-                json   => {error => 'AccessRestricted'},
-                status => 403
-            ) if first { $app_id == $_ } $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$node_config->{node}->{operation_domain} // ''}->@*;
+            my $operation_domain = $node_config->{node}->{operation_domain};
+            if (first { $app_id == $_ } @{$APPS_BLOCKED_FROM_OPERATION_DOMAINS{$operation_domain // ''}}) {
+                return render_access_restriction($c);
+            }
+
+            # feature flag check to validate environment restriction for apps
+            if ($is_app_restriction_enabled && check_app_restriction($app_id, $operation_domain, $app->config->{third_party_allowed_environments})) {
+                return render_access_restriction($c);
+            }
 
             my $request_origin = $c->tx->req->headers->origin // '';
             $request_origin = 'https://' . $request_origin unless $request_origin =~ /^https?:/;
@@ -480,11 +492,13 @@ sub startup {
             },
         });
 
-    get_redis_value_setup('app_id::diverted',           $log);
-    get_redis_value_setup('app_id::blocked',            $log);
-    get_redis_value_setup('origins::blocked',           $log);
-    get_redis_value_setup('domain_based_apps::blocked', $log);
-    get_redis_value_setup('rpc::logging',               $log);
+    get_redis_value_setup('app_id::diverted',                        $log);
+    get_redis_value_setup('app_id::blocked',                         $log);
+    get_redis_value_setup('origins::blocked',                        $log);
+    get_redis_value_setup('domain_based_apps::blocked',              $log);
+    get_redis_value_setup('rpc::logging',                            $log);
+    get_redis_value_setup('app_settings::restrict_third_party_apps', $log);
+    load_official_apps_from_redis('domain_based_apps::official', $log);
     backend_setup($log);
 
     return;
@@ -625,6 +639,99 @@ sub set_to_redis_master {
     $redis->set(
         $key => $value,
         $cb
+    );
+}
+
+=head2 load_official_apps_from_redis
+
+the function will fetch official app list from redis
+
+=cut
+
+sub load_official_apps_from_redis {
+    my $key = shift;
+    my $f   = Future::Mojo->new;
+
+    $redis->smembers(
+        $key,
+        sub {
+            my ($redis, $err, $official_apps) = @_;
+
+            if ($err) {
+                $log->error("Error reading domain_based_apps::official redis value: $err");
+                $f->fail($err);
+                return;
+            }
+
+            %OFFICIAL_APPS = map { $_ => 1 } @{$official_apps || []};
+
+            if (!%OFFICIAL_APPS) {
+                $log->warn("Empty or undefined set for domain_based_apps::official in Redis");
+            }
+
+            $f->done(\%OFFICIAL_APPS);
+        });
+
+    return $f;
+}
+
+=head2 is_app_official
+
+the function will check app_id is in official app list
+
+The following arguments are used
+
+=over 4
+
+=item * C<app_id> app_id 
+
+=back
+
+=cut
+
+sub is_app_official {
+    my $app_id = shift;
+    return 1 if !%OFFICIAL_APPS;    # do not restrict access in case hash is empty or undefined
+    return exists $OFFICIAL_APPS{$app_id};
+}
+
+=head2 check_app_restriction
+
+the function will manage app restriction for 3 party apps (non official) against allowed environments
+
+The following arguments are used
+
+=over 4
+
+=item * C<app_id> app_id 
+
+=item * C<operation_domain> operation_domain 
+
+=item * C<third_party_environments> third_party_environments 
+
+=back
+
+=cut
+
+sub check_app_restriction {
+    my ($app_id, $operation_domain, $third_party_environments) = @_;
+    my $is_official_app = is_app_official($app_id);
+    return 0 if $is_official_app;
+    return 1 if (!grep { $_ eq $operation_domain } @$third_party_environments);
+    return 0;
+}
+
+=head2 render_access_restriction
+
+The function will render AccessRestricted error with 403 status code
+
+=cut
+
+sub render_access_restriction {
+    my $c = shift;
+    return $c->render(
+        json   => {error => 'AccessRestricted'},
+        status => 403
     );
 }
 
