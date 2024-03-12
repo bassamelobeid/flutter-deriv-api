@@ -63,6 +63,9 @@ $on_production = 0;
 my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
+# remember to permutate the country to generate unique emails as some tests
+# don't follow the email specified, unfortunately
+
 my $vr_details = {
     CR => [{
             account_type       => 'binary',
@@ -98,6 +101,36 @@ my $vr_details = {
             myaffiliates_token => 'this is token',
             email_consent      => 1,
             lc_email_consent   => 1,
+        },
+        {
+            account_type       => 'binary',
+            email              => 'fa+self+pt@binary.com',    # self employed
+            client_password    => 'foobar',
+            residence          => 'qa',
+            address_state      => 'BIR',
+            salutation         => 'Mrs',
+            myaffiliates_token => 'this is token',
+            email_consent      => 1,
+            lc_email_consent   => 1,
+            financial_data     => {
+                occupation        => undef,
+                employment_status => 'Self-Employed'
+            },
+        },
+        {
+            account_type       => 'binary',
+            email              => 'fa+unem@binary.com',    # unemployed
+            client_password    => 'foobar',
+            residence          => 'mx',
+            address_state      => 'BIR',
+            salutation         => 'Mrs',
+            myaffiliates_token => 'this is token',
+            email_consent      => 1,
+            lc_email_consent   => 1,
+            financial_data     => {
+                occupation        => undef,
+                employment_status => 'Unemployed'
+            },
         },
     ],
 };
@@ -184,7 +217,9 @@ subtest 'create account' => sub {
                     # real acc
                     lives_ok {
                         if ($broker eq 'MF') {
-                            $real_acc = create_mf_acc($vr_client, $user, $broker);
+                            my $financial_data_override = $acc_details->{financial_data} // {};
+
+                            $real_acc = create_mf_acc($vr_client, $user, $financial_data_override);
                         } else {
                             $real_acc = create_real_acc($vr_client, $user, $broker);
                         }
@@ -225,13 +260,21 @@ subtest 'create account' => sub {
                                 };
                             });
 
-                        lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
+                        my $financial_data_override = $acc_details->{financial_data} // {};
+
+                        lives_ok { $real_acc = create_mf_acc($real_client, $user, $financial_data_override); } "create MF acc";
                         is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
                         $status_mock->unmock_all;
 
                         my $cl   = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
                         my $data = decode_fa($cl->financial_assessment());
                         is $data->{forex_trading_experience}, '0-1 year', "got the forex trading experience";
+
+                        $financial_data_override->{occupation} = $data->{employment_status};
+
+                        is $data->{occupation}, $financial_data_override->{occupation} // $financial_data{occupation}, 'Expected occupation';
+                        is $data->{employment_status}, $financial_data_override->{employment_status} // $financial_data{employment_status},
+                            'Expected employment status';
                     }
 
                     # Prepare for the email_consent-less test
@@ -965,7 +1008,9 @@ sub create_real_acc {
 }
 
 sub create_mf_acc {
-    my ($from_client, $user) = @_;
+    my ($from_client, $user, $override) = @_;
+
+    $override //= {};
 
     my %details = %real_client_details;
     $details{$_}              = $from_client->$_ for qw(email residence);
@@ -976,6 +1021,9 @@ sub create_mf_acc {
 
     my $params = \%financial_data;
     $params->{accept_risk} = 1;
+
+    $params = {$params->%*, $override->%*,};
+
     return BOM::Platform::Account::Real::maltainvest::create_account({
         account_type => $details{account_type} // 'binary',
         from_client  => $from_client,

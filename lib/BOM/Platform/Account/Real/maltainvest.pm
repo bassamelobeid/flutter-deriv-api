@@ -31,6 +31,12 @@ sub create_account {
 
     my $client = $register->{client};
 
+    my $employment_status = $params->{employment_status} // '';
+
+    if ($employment_status && ($employment_status eq 'Unemployed' || $employment_status eq 'Self-Employed')) {
+        $params->{occupation} = $employment_status;
+    }
+
     update_financial_assessment($client->user, $params, new_mf_client => 1);
 
     # after_register_client sub save client so no need to call it here
