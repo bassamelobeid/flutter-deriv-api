@@ -346,7 +346,7 @@ sub is_idv_disabled {
     # Is IDV provider disabled
     if (defined $args{provider}) {
         return 1 if any { $args{provider} eq $_ } @$disabled_idv_providers;
-        return 1 if BOM::Config::Redis::redis_events()->get(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . $args{provider});
+        return 1 if BOM::Config::Redis::redis_events()->get(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE() . $args{provider});
     }
     # Is IDV document type disabled for the specific country
     if (defined $args{country} and defined $args{document_type}) {
