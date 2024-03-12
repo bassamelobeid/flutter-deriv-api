@@ -40,7 +40,7 @@ sub do_handle_message {
                 $type    => {
                     %$response,
                     id       => $self->uuid,
-                    longcode => $c->l($response->{longcode}),
+                    longcode => $response->{longcode},
                 },
                 subscription => {id => $self->uuid},
             };
