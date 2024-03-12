@@ -498,7 +498,91 @@ subtest 'set financial assessment with occupation handled with default values' =
 
         $result = $c->tcall('get_financial_assessment', {token => $token});
         is $result->{employment_status}, 'Self-Employed', 'Employment Status Self-Employed';
-        is $result->{occupation},        'Unemployed',    "Occupation defaulted to Unemployed for Employment Status Self-Employed for $broker_code";
+        is $result->{occupation}, 'Self-Employed', "Occupation defaulted to Self-Employed for Employment Status Self-Employed for $broker_code";
+
+        subtest 'skipping the implicit employment_status' => sub {
+            $args->{financial_information}->{employment_status} = 'Pensioner';
+            $args->{financial_information}->{occupation}        = 'Managers';
+
+            $c->tcall(
+                $method,
+                {
+                    args  => $args,
+                    token => $token
+                });
+
+            my $result = $c->tcall('get_financial_assessment', {token => $token});
+            is $result->{employment_status}, 'Pensioner', 'Employment Status Self-Employed';
+            is $result->{occupation},        'Managers',  "Occupation changed to Managers for $broker_code";
+
+            delete $args->{financial_information}->{employment_status};
+            delete $args->{financial_information}->{occupation};
+
+            $c->tcall(
+                $method,
+                {
+                    args  => $args,
+                    token => $token
+                });
+
+            $result = $c->tcall('get_financial_assessment', {token => $token});
+            is $result->{employment_status}, 'Pensioner', 'Employment Status is still Pensioner';
+            is $result->{occupation},        'Managers',  "Occupation is still Managers for $broker_code";
+
+            $args->{financial_information}->{employment_status} = 'Self-Employed';
+            delete $args->{financial_information}->{occupation};
+
+            $c->tcall(
+                $method,
+                {
+                    args  => $args,
+                    token => $token
+                });
+
+            $result = $c->tcall('get_financial_assessment', {token => $token});
+            is $result->{employment_status}, 'Self-Employed', 'Employment Status changed to Self-Employed';
+            is $result->{occupation},        'Self-Employed', "Occupation defaulted to Self-Employed for $broker_code";
+
+            delete $args->{financial_information}->{employment_status};
+            delete $args->{financial_information}->{occupation};
+
+            $c->tcall(
+                $method,
+                {
+                    args  => $args,
+                    token => $token
+                });
+
+            is $result->{employment_status}, 'Self-Employed', 'Employment Status is still Self-Employed';
+            is $result->{occupation},        'Self-Employed', "Occupation is still Self-Employed for $broker_code";
+
+            $args->{financial_information}->{employment_status} = 'Unemployed';
+            delete $args->{financial_information}->{occupation};
+
+            $c->tcall(
+                $method,
+                {
+                    args  => $args,
+                    token => $token
+                });
+
+            $result = $c->tcall('get_financial_assessment', {token => $token});
+            is $result->{employment_status}, 'Unemployed', 'Employment Status changed to Unemployed';
+            is $result->{occupation},        'Unemployed', "Occupation is defaulted to Unemployed for $broker_code";
+
+            delete $args->{financial_information}->{employment_status};
+            delete $args->{financial_information}->{occupation};
+
+            $c->tcall(
+                $method,
+                {
+                    args  => $args,
+                    token => $token
+                });
+
+            is $result->{employment_status}, 'Unemployed', 'Employment Status is still Unemployed';
+            is $result->{occupation},        'Unemployed', "Occupation is still Unemployed for $broker_code";
+        };
     }
 };
 

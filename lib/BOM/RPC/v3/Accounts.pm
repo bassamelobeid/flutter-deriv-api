@@ -3632,6 +3632,13 @@ rpc set_financial_assessment => sub {
     my $financial_assessment;
     my %changed_items;
 
+    my $employment_status = $params->{args}->{financial_information}->{employment_status} // $old_financial_assessment->{employment_status};
+
+    if ($employment_status && ($employment_status eq 'Unemployed' || $employment_status eq 'Self-Employed')) {
+        $params->{args}->{financial_information}->{occupation}        //= $employment_status;
+        $params->{args}->{financial_information}->{employment_status} //= $employment_status;
+    }
+
     # Extract needed params
     foreach my $fa_information (@keys) {
         # This is kept here for a transitional state only
@@ -3647,15 +3654,11 @@ rpc set_financial_assessment => sub {
         push @sections, $fa_information;
         foreach my $key (keys %{$params->{args}->{$fa_information}}) {
             $financial_assessment->{$key} = $params->{args}->{$fa_information}->{$key};
+
             if (!exists($old_financial_assessment->{$key}) || $params->{args}->{$fa_information}->{$key} ne $old_financial_assessment->{$key}) {
                 $changed_items{$key} = $params->{args}->{$fa_information}->{$key};
             }
         }
-    }
-
-    my $employment_status = $financial_assessment->{employment_status};
-    if ($employment_status && ($employment_status eq 'Unemployed' || $employment_status eq 'Self-Employed')) {
-        $financial_assessment->{occupation} //= 'Unemployed';
     }
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
