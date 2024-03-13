@@ -1,0 +1,126 @@
+site_name: P2P
+
+# Repository
+repo_name: regentmarkets/p2p
+repo_url: https://github.com/regentmarkets/p2p
+
+nav:
+  - Home:
+      - index.md
+  # - API:
+  #     - api/index.md
+  #     - Petstore: api/petstore.md
+  #     - Person: api/person.md
+  # - Roadmap:
+  #     - roadmap/index.md
+  - Resources:
+      - resources/index.md
+  - Team:
+      - team/index.md
+  # - Updates:
+  #     - updates/index.md
+
+theme:
+  name: material
+
+  palette:
+    # Palette toggle for light mode
+    - scheme: material
+      primary: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  favicon: assets/favicon.png
+  logo: assets/p2p.png
+
+  features:
+    - announce.dismiss
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - toc.follow
+    - search.highlight
+    - search.suggest
+
+extra_css:
+  - stylesheets/extra.css
+  - stylesheets/neoteroi-mkdocs.min.css
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: squidfunk
+      repo: mkdocs-material
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/mkdocs.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - neoteroi.cards
+  - neoteroi.projects
+  - neoteroi.timeline
+  - neoteroi.spantable
+
+plugins:
+  - search
+  - neoteroi.mkdocsoad:
+      use_pymdownx: true
+  - glightbox
+
+copyright: deriv.com documentation
+
+extra:
+  generator: false
