@@ -132,15 +132,14 @@ subtest 'shortcode' => sub {
 subtest 'longcode' => sub {
     my $c = produce_contract($args);
 
-    is_deeply(
+    cmp_deeply(
         $c->longcode,
         [
-            "For 'Short', you receive a payout on [_3] if the spot price of [_1] never touches or rises above [_4]. Your payout is equal to [_5] multiplied by the absolute difference between the final price and [_4]. You may choose to sell the contract up until 15 seconds before [_3], and receive a contract value.",
+            "You will receive a payout at expiry if the spot price never breaches the barrier. The payout is equal to the payout per point multiplied by the distance between the final price and the barrier.",
             ['Volatility 25 (1s) Index'],
             ['contract start time'],
-            '10-Mar-15 00:05:00GMT',
+            ignore(),
             '351610.00',
-            '0.037660'
         ],
         'longcode matches'
     );
@@ -149,15 +148,14 @@ subtest 'longcode' => sub {
     $args->{duration} = '5t';
     my $tick_c = produce_contract($args);
 
-    is_deeply(
+    cmp_deeply(
         $tick_c->longcode,
         [
-            "For 'Short', you receive a payout in [plural,_3,%d tick,%d ticks] if the spot price of [_1] never touches or rises above [_4]. Your payout is equal to [_5] multiplied by the absolute difference between the final price and [_4]. If you choose your duration in number of ticks, you won't be able to terminate your contract early.",
+            "You will receive a payout at expiry if the spot price never breaches the barrier. The payout is equal to the payout per point multiplied by the distance between the final price and the barrier.",
             ['Volatility 25 (1s) Index'],
             ['first tick'],
             [5],
             '351610.00',
-            '0.037660'
         ],
         'longcode matches'
     );
