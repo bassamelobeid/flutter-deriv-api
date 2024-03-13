@@ -827,6 +827,14 @@ subtest 'VRTC to MLT and MF account switching' => sub {
 };
 
 subtest 'CR to MLT and MF account switching' => sub {
+    my $mock_user = Test::MockModule->new('BOM::User');
+    my $add_loginid_attributes;
+    $mock_user->mock(
+        'add_loginid',
+        sub {
+            $add_loginid_attributes = $_[5];
+            return $mock_user->original('add_loginid')->(@_);
+        });
     my $mf_switch_client = create_client('MF');
     $mf_switch_client->set_default_account('GBP');
     $mf_switch_client->residence('at');
@@ -905,10 +913,13 @@ subtest 'CR to MLT and MF account switching' => sub {
 
     $c->call_ok($method, $params)->has_no_error('financial account should be created');
     is($c->result->{account_type}, 'financial', 'account type should be financial');
+    is $add_loginid_attributes->{landing_company}, 'maltainvest', 'landing_company is maltainvest';
+    $mock_user->unmock_all;
 };
 
 subtest 'new account on addtional trade server' => sub {
-    my $mocked = Test::MockModule->new('Business::Config::Country');
+    my $mock_user = Test::MockModule->new('BOM::User');
+    my $mocked    = Test::MockModule->new('Business::Config::Country');
     $mocked->mock(
         'platform_server_routing',
         sub {
@@ -929,6 +940,14 @@ subtest 'new account on addtional trade server' => sub {
     $user->update_trading_password($details{password}{main});
     $user->add_client($new_client);
 
+    my $add_loginid_attributes;
+    $mock_user->redefine(
+        'add_loginid',
+        sub {
+            $add_loginid_attributes = $_[5];
+            return $mock_user->original('add_loginid')->(@_);
+        });
+
     my $method = 'mt5_new_account';
     my $params = {
         language => 'EN',
@@ -948,6 +967,8 @@ subtest 'new account on addtional trade server' => sub {
     is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00"');
     is($c->result->{currency},        'USD',                                                       'Currency is "USD"');
     is($c->result->{login},           'MTR' . $accounts{'real\p01_ts01\synthetic\svg_std_usd\01'}, 'login is MTR00001013');
+    is $add_loginid_attributes->{landing_company}, 'svg', 'landing_company is svg';
+    $add_loginid_attributes = undef;
 
     note('suspend mt5 real\p01_ts02. Tries to create financial account with new config.');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
@@ -960,6 +981,10 @@ subtest 'new account on addtional trade server' => sub {
     $params->{args}{mt5_account_category} = 'conventional';
     $c->call_ok($method, $params)->has_no_error('mt5 new account with new config');
     is($c->result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'login is MTR1001016');
+    is $add_loginid_attributes->{landing_company}, 'svg',                                    'landing_company is svg';
+    is $add_loginid_attributes->{group},           'real\\p01_ts01\\financial\\svg_std_usd', 'group is real\p01_ts01\financial\svg_std_usd';
+
+    $mock_user->unmock_all;
     $mocked->unmock_all;
 };
 
@@ -1519,6 +1544,7 @@ subtest 'bvi/vanuatu if poi status is verified, get_poa_status -> expired' => su
 
 subtest 'bvi/vanuatu fully authenticated' => sub {
 
+    my $mock_user  = Test::MockModule->new('BOM::User');
     my $new_email  = 'br_poi_failed_poa_verified_' . $details{email};
     my $new_client = create_client('CR', undef, {residence => 'br'});
     my $token      = $m->create_token($new_client->loginid, 'test token 2');
@@ -1557,15 +1583,21 @@ subtest 'bvi/vanuatu fully authenticated' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_bvi_financial(1);
 
     #verified in brasil and high risk
+    my $add_loginid_attributes;
+    $mock_user->mock('add_loginid', sub { $add_loginid_attributes = $_[5]; return $mock_user->original('add_loginid', @_) });
     my $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created BVI A book')->result;
     is $result->{account_type}, 'financial',                                          'account_type is financial';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std-hr_usd'}, 'created in group real\p01_ts01\financial\bvi_std-hr_usd';
+    is $add_loginid_attributes->{landing_company}, 'bvi',                                       'landing company is bvi';
+    is $add_loginid_attributes->{group},           'real\\p01_ts01\\financial\\bvi_std-hr_usd', 'group is real\p01_ts01\financial\bvi_std-hr_usd';
 
     $client_params->{args}->{company} = 'vanuatu';
     $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created Vanuatu')->result;
     is $result->{account_type}, 'financial', 'account_type is financial';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
         'created in group real\p01_ts01\financial\vanuatu_std-hr_usd';
+    is $add_loginid_attributes->{landing_company}, 'vanuatu',                             'landing company is vanuatu';
+    is $add_loginid_attributes->{group}, 'real\\p01_ts01\\financial\\vanuatu_std-hr_usd', 'group is real\p01_ts01\financial\vanuatu_std-hr_usd';
 
     $client_params->{args}->{account_type}     = 'gaming';
     $client_params->{args}->{mt5_account_type} = '';
@@ -1573,7 +1605,10 @@ subtest 'bvi/vanuatu fully authenticated' => sub {
     $result = $c->call_ok($method, $client_params)->has_no_error('gaming account successfully created BVI')->result;
     is $result->{account_type}, 'gaming',                                                 'account_type is gaming';
     is $result->{login},        'MTR' . $accounts{'real\p01_ts04\synthetic\bvi_std_usd'}, 'created in group real\p01_ts01\synthetic\bvi_std_usd';
+    is $add_loginid_attributes->{landing_company}, 'bvi',                                 'landing company is bvi';
+    is $add_loginid_attributes->{group},           'real\p01_ts04\synthetic\bvi_std_usd', 'group is real\p01_ts04\synthetic\bvi_std_usd';
 
+    $mock_user->unmock('add_loginid');
 };
 
 subtest 'countries restrictions, high-risk jurisdiction, onfido blocked' => sub {
@@ -1978,10 +2013,16 @@ subtest 'Don\'t allow creating MT5 account if there are failures in mt5_accounts
     $c->call_ok('mt5_new_account', $params)
         ->has_error->error_code_is('General', 'Should not create the account if there is an error responce from MT5.');
 
+    my $add_loginid_attributes;
+    $mock_user->redefine('add_loginid', sub { $add_loginid_attributes = $_[5]; return $mock_user->original('add_loginid')->(@_); });
+
     # NotFound and MT5AccountInactive are not considered as errors when creating MT5 account
     $mock_mt5->mock('get_user', sub { return Future->fail({error => "Somethings is not right", code => 'NotFound'}); });
     $c->call_ok('mt5_new_account', $params)->has_no_error;
 
+    is $add_loginid_attributes->{group},           'real\\p01_ts01\\financial\\bvi_std-hr_usd', 'Should be BVI hr group';
+    is $add_loginid_attributes->{landing_company}, 'bvi',                                       'Should be BVI landing company';
+    $mock_user->unmock_all;
 };
 
 done_testing();

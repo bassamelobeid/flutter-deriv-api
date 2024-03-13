@@ -1192,7 +1192,7 @@ async_rpc "mt5_new_account",
 
                     my $mt5_attributes = {
                         group           => $group,
-                        landing_company => $binary_company_name,
+                        landing_company => $landing_company_short,
                         currency        => $mt5_currency,
                         market_type     => $market_type,
                         account_type    => $acc_type,
