@@ -74,7 +74,7 @@ sub check_syntax_on_diff {
     my $result = _run_command("git fetch --no-tags origin master");
     diag($result) if $result;
 
-    my @check_files = _run_command("git diff --diff-filter=ACMRT --name-only origin/master");
+    my @check_files = _run_command("git diff --diff-filter=ACMRT --name-only origin/master | grep -v -E '^docs' ");
 
     if (scalar @check_files) {
         pass "file change detected";
@@ -109,7 +109,7 @@ sub check_syntax_all {
 
     @check_files = _run_command("find lib bin t -type f");
     check_tidy(\@check_files, \@skipped_files);
-    @check_files = _run_command('find . -name "*.yml" -o -name "*.yaml"');
+    @check_files = _run_command('find . \( -path "./.git" -o -path "./docs" \) -prune -o -type f \( -name "*.yml" -o -name "*.yaml" \) -print');
     check_yaml(@check_files);
     @check_files = _run_command("find lib -type f");
     check_log_any_adapter(@check_files);
