@@ -32,13 +32,28 @@ subtest 'passkeys options' => sub {
         $mock_passkeys_client->mock(
             'passkeys_options' => sub {
                 die {
-                    code    => 'error',
+                    code    => 'WrongResponse',
                     message => 'message'
                 };
             });
         $t->get_ok('/api/v1/passkeys/login/options')->status_is(500);
         my $json = $t->tx->res->json;
-        is($json->{error_code}, 'InternalServerError', 'Error code exists');
+        is($json->{error_code}, 'PASSKEYS_SERVICE_ERROR', 'Error code exists');
+    };
+
+    subtest 'passkeys returns error object for UserNotFound' => sub {
+        $mock_passkeys_client->mock(
+            'passkeys_options' => sub {
+                die {
+                    code    => 'UserNotFound',
+                    message => 'User not found'
+                };
+            });
+
+        $t->get_ok('/api/v1/passkeys/login/options')->status_is(400);
+
+        my $json = $t->tx->res->json;
+        is($json->{error_code}, 'PASSKEYS_NOT_FOUND', 'Error code exists');
     };
 };
 

@@ -6,7 +6,9 @@ use Log::Any qw( $log );
 use Mojo::Base 'Mojolicious::Controller';
 use Syntax::Keyword::Try;
 use BOM::Config::Redis;
-use BOM::OAuth::Helper qw(request_details_string exception_string);
+use BOM::OAuth::Helper     qw(request_details_string exception_string);
+use BOM::OAuth::Static     qw(get_message_mapping);
+use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Passkeys::PasskeysService;
 
 =head2 passkeys_service
@@ -38,16 +40,9 @@ sub get_options {
         );
     } catch ($e) {
         $log->error($self->_to_error_message($e, "Failed to get passkeys options"));
-        return $self->_render_error;
+        return $self->_render_error($e->{code}, $e->{status});
     }
 }
-
-# Error codes produced by the controller and corresponding messages.
-# Can be moved to Static.pm if needed.
-
-my $ERROR_CODES = {
-    InternalServerError => "Sorry, an error occurred while processing your request.",
-};
 
 =head2 _render_error
 
@@ -68,12 +63,12 @@ similar to _make_error in BOM::OAuth::RestAPI.
 
 sub _render_error {
     my ($self, $error_code, $status, $details) = @_;
-    $error_code //= 'InternalServerError';
+    $error_code //= 'PASSKEYS_SERVICE_ERROR';
 
     $self->render(
         json => {
             error_code => $error_code,
-            message    => $ERROR_CODES->{$error_code},
+            message    => localize(get_message_mapping()->{$error_code}),
             ($details ? (details => $details) : ()),
         },
         status => $status // 500

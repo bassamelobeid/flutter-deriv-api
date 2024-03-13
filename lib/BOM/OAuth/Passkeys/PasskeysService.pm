@@ -13,8 +13,19 @@ use BOM::OAuth::Passkeys::PasskeysClient;
 
 use constant RPC_ERROR_MAP => {
     UserNotFound              => 'PASSKEYS_NOT_FOUND',
-    AuthenticationNotVerified => 'PASSKEYS_NO_AUTHENTICATION',
     ChallengeExpired          => 'PASSKEYS_NO_AUTHENTICATION',
+    AuthenticationNotVerified => 'PASSKEYS_NOT_VERIFIED',
+    PasskeysOff               => 'PASSKEYS_OFF',
+    WrongResponse             => 'PASSKEYS_SERVICE_ERROR',
+    InternalServerError       => 'PASSKEYS_SERVICE_ERROR',
+};
+
+use constant PASSKEYS_ERROR_CODES => {
+    'PASSKEYS_NOT_FOUND'         => 400,
+    'PASSKEYS_NO_AUTHENTICATION' => 400,
+    'PASSKEYS_OFF'               => 400,
+    'PASSKEYS_NOT_VERIFIED'      => 400,
+    'PASSKEYS_SERVICE_ERROR'     => 500,
 };
 
 field $passkeys_client;
@@ -36,7 +47,11 @@ Returns the passkeys options.
 =cut
 
 method get_options ($request_details) {
-    return $passkeys_client->passkeys_options($request_details);
+    try {
+        return $passkeys_client->passkeys_options($request_details);
+    } catch ($e) {
+        die $self->map_error($e);
+    }
 }
 
 =head2 get_user_details
@@ -79,19 +94,19 @@ method get_user_details ($payload, $request_details) {
     try {
         $user_details = $passkeys_client->passkeys_login($pub_key, $request_details);
     } catch ($e) {
-        die $self->to_login_error($e);
+        die $self->map_error($e);
     }
 
     if (!($user_details && $user_details->{binary_user_id})) {
         die +{
             code   => 'NO_USER_IDENTITY',
-            status => 500
+            status => 400
         };
     }
     return $user_details;
 }
 
-=head2 to_login_error
+=head2 map_error
 
 Maps the error returned from passkeys service to the error code of the API.
 
@@ -99,16 +114,15 @@ Any unexpected error is considered as failure to receive the identity of user.
 
 =cut
 
-method to_login_error ($ex) {
+method map_error ($ex) {
     if (ref $ex eq 'HASH' && $ex->{code} && RPC_ERROR_MAP->{$ex->{code}}) {
         return {
             code   => RPC_ERROR_MAP->{$ex->{code}},
-            status => 400
-        };
+            status => PASSKEYS_ERROR_CODES->{RPC_ERROR_MAP->{$ex->{code}}}};
     }
 
     die +{
-        code            => 'NO_USER_IDENTITY',
+        code            => 'PASSKEYS_SERVICE_ERROR',
         status          => 500,
         additional_info => exception_string($ex)};
 }

@@ -820,7 +820,7 @@ subtest 'login' => sub {
                 },
                 {
                     Authorization => "Bearer $jwt_token",
-                })->status_is(500)->json_is('/error_code', 'NO_USER_IDENTITY');
+                })->status_is(400)->json_is('/error_code', 'NO_USER_IDENTITY');
         };
         subtest 'system user is able to login with passkeys' => sub {
             my $rpc_result = {
@@ -869,7 +869,7 @@ subtest 'login' => sub {
             },
             {
                 rpc_error => 'AuthenticationNotVerified',
-                error     => 'PASSKEYS_NO_AUTHENTICATION',
+                error     => 'PASSKEYS_NOT_VERIFIED',
                 title     => 'Verification failure error correctly mapped'
             },
             {
