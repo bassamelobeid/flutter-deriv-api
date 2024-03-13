@@ -7,10 +7,8 @@ repo_url: https://github.com/regentmarkets/p2p
 nav:
   - Home:
       - index.md
-  # - API:
-  #     - api/index.md
-  #     - Petstore: api/petstore.md
-  #     - Person: api/person.md
+  - API:
+      - api/index.md
   # - Roadmap:
   #     - roadmap/index.md
   - Resources:
