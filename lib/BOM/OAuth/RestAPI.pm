@@ -309,7 +309,7 @@ sub login {
         my $method = sprintf '_perform_%s_login', $login_type;
         $login = $c->$method($app, $brand_name);
     } catch ($e) {
-        $log->warnf(build_login_error_message($e, $login_type, request_details_string($c->req, $c->stash('request_details'))));
+        $log->warn(build_login_error_message($e, $login_type, request_details_string($c->req, $c->stash('request_details'))));
         return $c->_make_error($e->{code}, $e->{status});
     }
 

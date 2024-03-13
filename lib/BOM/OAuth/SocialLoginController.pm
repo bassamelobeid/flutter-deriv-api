@@ -31,7 +31,7 @@ sub redirect_to_auth_page {
 
     if ($error_code) {
         $c->session(social_error => localize(get_message_mapping()->{$error_code}, @args));
-        $log->warnf($c->_to_error_message("processing failed with error code $error_code"));
+        $log->warn($c->_to_error_message("processing failed with error code $error_code"));
     }
     my $redirect = $c->req->url->path('/oauth2/authorize')->to_abs->scheme('https');
     $c->_populate_redirect_query_params($redirect);
@@ -75,7 +75,7 @@ sub _extract_request_parametrs {
         $cookie = BOM::OAuth::Helper::get_social_login_cookie($c);
         $cookie->{query_params}->{brand} //= Brands->new(app_id => $cookie->{query_params}->{app_id})->name;    #try using app_id
     } catch ($e) {
-        $log->errorf($c->_to_error_message($e));
+        $log->error($c->_to_error_message($e));
     }
 
     my $provider = $c->stash('sls_provider');    #from callback path /callback/sls_provider.
@@ -261,7 +261,7 @@ sub callback {
         $user_data = $c->_retrieve_user_info($provider_response);    #first thing to do to invalidate auth_code.
     } catch ($e) {
         my $additional_info = "Error while retrive user info from $provider_response->{provider}";
-        $log->errorf($c->_to_error_message($e, $additional_info));
+        $log->error($c->_to_error_message($e, $additional_info));
     }
 
     try {
@@ -274,7 +274,7 @@ sub callback {
         }
         ## Bad request, could be due to missing/manipulated data..
         if ($user_data->{error}) {
-            $log->errorf($c->_to_error_message("Exchange failed with $provider_response->{provider}: $user_data->{error}"));
+            $log->error($c->_to_error_message("Exchange failed with $provider_response->{provider}: $user_data->{error}"));
             return $c->redirect_to_auth_page('NO_AUTHENTICATION');
         }
 
@@ -314,7 +314,7 @@ sub callback {
         #faild signin attempt;
         return $c->redirect_to_auth_page($res->{error}, ($res->{args} // [])->@*);
     } catch ($e) {
-        $log->errorf($c->_to_error_message($e));
+        $log->error($c->_to_error_message($e));
         stats_inc('login.social_login.error', {tags => [$c->_dd_brand_tag]});
         return $c->redirect_to_auth_page('invalid');
     }
@@ -428,7 +428,7 @@ sub get_providers {
             );
         }
     } catch ($e) {
-        $log->errorf($c->_to_error_message($e, "[REST]"));
+        $log->error($c->_to_error_message($e, "[REST]"));
     }
 
     # Return internal server error
