@@ -364,7 +364,7 @@ requires "Role::Tiny", "== 2.002004";
 requires "Role::Tiny::With", "== 2.002004";
 requires "Scalar::Util", "== 1.63";
 requires "SelectSaver", "== 1.02";
-requires "Sereal::Encoder", "== 4.018";
+requires "Sereal::Encoder", "== 5.004";
 requires "Socket", "== 2.036";
 requires "Specio", "== 0.47";
 requires "Specio::Coercion", "== 0.47";
