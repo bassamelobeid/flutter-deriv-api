@@ -571,6 +571,7 @@ sub _login {
             use_oneall                => $c->_use_oneall_web,
             email_entered             => $email,
             signup_url                => build_signup_url($params_signup_url),
+            growthbook_request_data   => _get_growthbook_config(),
         );
 
         return;

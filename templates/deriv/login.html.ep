@@ -244,7 +244,7 @@
 const { startAuthentication, browserSupportsWebAuthn } = SimpleWebAuthnBrowser;
 
 document.addEventListener('DOMContentLoaded', async function () {
-    if(browserSupportsWebAuthn) {
+    if(browserSupportsWebAuthn()) {
         let growthbookEnabled = '<%= $growthbook_request_data->{IS_ENABLED} %>';
         if(!growthbookEnabled){
             renderPasskeysForm();
