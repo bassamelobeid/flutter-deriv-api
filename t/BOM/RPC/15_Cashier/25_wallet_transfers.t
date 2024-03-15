@@ -45,8 +45,14 @@ my $user = BOM::User->create(
     password => 'x',
 );
 
+my $legacy_user = BOM::User->create(
+    email    => rand(999) . '@deriv.com',
+    password => 'x',
+);
+
 my $trading_password = 'Abcd1234@';
 $user->update_trading_password($trading_password);
+$legacy_user->update_trading_password($trading_password);
 
 my %args = (
     email                    => $user->email,
@@ -71,19 +77,19 @@ my %args = (
 );
 
 my (%accs, @tests);
-$accs{vrtc_binary} = $user->create_client(
+$accs{vrtc_binary} = $legacy_user->create_client(
     %args,
     broker_code  => 'VRTC',
     account_type => 'binary',
     currency     => 'USD'
 );
-$accs{cr_usd} = $user->create_client(
+$accs{cr_usd} = $legacy_user->create_client(
     %args,
     broker_code  => 'CR',
     account_type => 'binary',
     currency     => 'USD'
 );
-$accs{cr_btc} = $user->create_client(
+$accs{cr_btc} = $legacy_user->create_client(
     %args,
     broker_code  => 'CR',
     account_type => 'binary',
@@ -146,6 +152,68 @@ my $params = {
         mainPassword => $trading_password,
     },
 };
+$loginids{mt5_demo_legacy} = $c->call_ok('mt5_new_account', $params)->result->{login};
+
+$params->{args} = {
+    account_type => 'demo',
+    password     => $trading_password,
+    market_type  => 'all',
+    currency     => 'USD',
+    platform     => 'dxtrade',
+};
+$loginids{dx_demo_legacy} = $c->call_ok('trading_platform_new_account', $params)->result->{account_id};
+
+$params->{args} = {
+    account_type => 'demo',
+    market_type  => 'all',
+    currency     => 'USD',
+    platform     => 'ctrader',
+};
+$loginids{ct_demo_legacy} = $c->call_ok('trading_platform_new_account', $params)->result->{account_id};
+
+$params = {
+    language => 'EN',
+    token    => $tokens{cr_usd},
+    args     => {
+        account_type => 'gaming',
+        mainPassword => $trading_password,
+    },
+};
+$loginids{mt5_gaming_legacy} = $c->call_ok('mt5_new_account', $params)->result->{login};
+
+$params->{args} = {
+    account_type     => 'financial',
+    mt5_account_type => 'financial',
+    mainPassword     => $trading_password,
+};
+$loginids{mt5_financial_legacy} = $c->call_ok('mt5_new_account', $params)->result->{login};
+
+$params->{args} = {
+    account_type => 'real',
+    password     => $trading_password,
+    market_type  => 'all',
+    currency     => 'USD',
+    platform     => 'dxtrade',
+};
+$loginids{dx_real_legacy} = $c->call_ok('trading_platform_new_account', $params)->result->{account_id};
+
+$params->{args} = {
+    account_type => 'real',
+    market_type  => 'all',
+    currency     => 'USD',
+    platform     => 'ctrader',
+};
+$loginids{ct_real_legacy} = $c->call_ok('trading_platform_new_account', $params)->result->{account_id};
+$c->call_ok('trading_platform_new_account', $params)->result;
+
+$params = {
+    language => 'EN',
+    token    => $tokens{vrw},
+    args     => {
+        account_type => 'demo',
+        mainPassword => $trading_password,
+    },
+};
 $loginids{mt5_demo} = $c->call_ok('mt5_new_account', $params)->result->{login};
 
 $params->{args} = {
@@ -167,7 +235,7 @@ $loginids{ct_demo} = $c->call_ok('trading_platform_new_account', $params)->resul
 
 $params = {
     language => 'EN',
-    token    => $tokens{cr_usd},
+    token    => $tokens{crw_df},
     args     => {
         account_type => 'gaming',
         mainPassword => $trading_password,
@@ -184,7 +252,7 @@ $loginids{mt5_financial} = $c->call_ok('mt5_new_account', $params)->result->{log
 
 $params->{args} = {
     account_type => 'real',
-    password     => 'Abcd1234@',
+    password     => $trading_password,
     market_type  => 'all',
     currency     => 'USD',
     platform     => 'dxtrade',
@@ -212,12 +280,8 @@ subtest 'account list' => sub {
     $res = $c->call_ok('transfer_between_accounts', $params)->result;
 
     @logins = map { $_->{loginid} } $res->{accounts}->@*;
-    cmp_deeply \@logins, bag(@loginids{qw(cr_usd cr_btc mt5_gaming mt5_financial dx_real ct_real)}), 'CR gets all real accounts';
-
-    # link all trading accounts to DF wallet and create a linked CR standard account
-    $user->link_wallet_to_trading_account({wallet_id => $loginids{vrw},    client_id => $_}) for @loginids{qw(mt5_demo dx_demo ct_demo)};
-    $user->link_wallet_to_trading_account({wallet_id => $loginids{crw_df}, client_id => $_})
-        for @loginids{qw(mt5_gaming mt5_financial dx_real ct_real)};
+    cmp_deeply \@logins, bag(@loginids{qw(cr_usd cr_btc mt5_gaming_legacy mt5_financial_legacy dx_real_legacy ct_real_legacy)}),
+        'CR gets all real accounts';
 
     $accs{cr_standard} = $user->create_client(
         %args,
@@ -228,10 +292,6 @@ subtest 'account list' => sub {
     $loginids{cr_standard} = $accs{cr_standard}->loginid;
     $tokens{cr_standard}   = $token_api->create_token($loginids{cr_standard}, 'test', ['admin']);
     delete $user->{loginid_details};    # delete cache
-
-    $res    = $c->call_ok('transfer_between_accounts', $params)->result;
-    @logins = map { $_->{loginid} } $res->{accounts}->@*;
-    cmp_deeply \@logins, bag(@loginids{qw(cr_usd cr_btc)}), 'CR does not see accounts linked to wallet';
 
     $params->{token} = $tokens{vrtc_binary};
     $res             = $c->call_ok('transfer_between_accounts', $params)->result;
@@ -454,11 +514,11 @@ subtest 'Virtual transfers' => sub {
     $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
     $app_config->payments->transfer_between_accounts->limits->virtual(100);
 
-    $params->{token}              = $tokens{vrtc_binary};
+    $params->{token}              = $tokens{vrtc_trading};
     $params->{args}{account_from} = $loginids{vrw};
     $params->{args}{account_to}   = $loginids{vrtc_trading};
     $c->call_ok('transfer_between_accounts', $params)
-        ->error_code_is('TransferBlockedClientIsVirtual', 'VRTC token cannot perform transfer for VRW account');
+        ->error_code_is('IncompatibleClientLoginidClientFrom', 'VRTC token cannot perform transfer for VRW account');
 
     # these tests are to specifically check that we don't treat VR transfers as demo topups
     $params->{token}              = $tokens{vrw};
@@ -478,26 +538,6 @@ subtest 'Virtual transfers' => sub {
     $c->call_ok('transfer_between_accounts', $params)->error_code_is('CTraderInvalidAccount', 'Cannot transfer from real wallet to ctrader demo');
 
     delete $params->{token_type};
-
-    @tests = (
-        [vrtc_binary   => 'SameAccountNotAllowed'],
-        [vrw           => 'TransferBlockedLegacy'],
-        [vrtc_trading  => 'TransferBlockedWalletNotLinked'],
-        [mt5_demo      => 'TransferBlockedWalletNotLinked'],
-        [dx_demo       => 'DXInvalidAccount'],
-        [ct_demo       => 'CTraderInvalidAccount'],
-        [crw_df        => 'RealToVirtualNotAllowed'],
-        [crw_btc       => 'RealToVirtualNotAllowed'],
-        [cr_standard   => 'RealToVirtualNotAllowed'],
-        [crw_p2p       => 'RealToVirtualNotAllowed'],
-        [crw_pa        => 'RealToVirtualNotAllowed'],
-        [crw_pa_client => 'RealToVirtualNotAllowed'],
-        [mt5_gaming    => 'RealToVirtualNotAllowed'],
-        [mt5_financial => 'RealToVirtualNotAllowed'],
-        [dx_real       => 'DXInvalidAccount'],
-        [ct_real       => 'CTraderInvalidAccount'],
-    );
-    run_tests('vrtc_binary');
 
     @tests = (
         [vrw           => 'SameAccountNotAllowed'],

@@ -740,8 +740,8 @@ rpc "profit_table",
 rpc balance => sub {
     my $params      = shift;
     my $arg_account = $params->{args}{account} // 'current';
-
-    my @user_logins = $params->{client}->user->bom_loginids;
+    my $user        = $params->{client}->user;
+    my @user_logins = $user->bom_loginids;
 
     my $loginid = ($arg_account eq 'current' or $arg_account eq 'all') ? $params->{client}->loginid : $arg_account;
     unless (any { $loginid eq $_ } @user_logins) {
@@ -782,7 +782,13 @@ rpc balance => sub {
     #    use currency of fiat account;
     #}
     my ($has_usd, $financial_currency, $fiat_currency);
-    my $clients = $params->{client}->user->accounts_by_category(\@user_logins);
+
+    # skip wallets if the account is not fully migrated
+    my %loginid_details = $user->loginid_details->%*;
+    if (BOM::User::WalletMigration::accounts_state($user) eq 'partial') {
+        @user_logins = grep { !$loginid_details{$_}{is_wallet} } @user_logins;
+    }
+    my $clients = $user->accounts_by_category(\@user_logins);
 
     for my $sibling ($clients->{enabled}->@*) {
         next unless $sibling->account;

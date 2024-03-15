@@ -336,6 +336,11 @@ subtest $method => sub {
     };
 
     subtest 'authorize with linked wallet' => sub {
+        my $email = 'auth_wallet@example.com';
+        my $user  = BOM::User->create(
+            email    => $email,
+            password => '1234',
+        );
         # create wallet
         my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRW',
@@ -348,19 +353,18 @@ subtest $method => sub {
 
         $user->add_client($vr_wallet);
 
+        my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            date_joined => '2021-06-06 23:59:59',
+        });
+        $test_client_vr->email($email);
+        $test_client_vr->set_default_account('USD');
         $test_client_vr->deposit_virtual_funds;
-        $user->add_client($test_client_vr);
-
-        # link wallet
-        my $link_wallet_params->{token} = $token_vr;
-
-        $link_wallet_params->{args}->{wallet_id} = $vr_wallet->loginid;
-        $link_wallet_params->{args}->{client_id} = $test_client_vr->loginid;
-
-        $c->call_ok('link_wallet', $link_wallet_params)->has_no_error->result;
+        $test_client_vr->save;
+        $user->add_client($test_client_vr, $vr_wallet->loginid);
 
         # call authorize
-        $params->{token} = $token_vr;
+        my $token_vr = $params->{token} = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 
         is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
 
@@ -370,13 +374,13 @@ subtest $method => sub {
                 valid_source               => 1,
                 source_bypass_verification => 0,
                 source_type                => 'official',
-                'email'                    => 'dummy@binary.com',
+                'email'                    => $email,
                 'scopes'                   => ['read', 'admin', 'trade', 'payments'],
                 'country'                  => 'id',
                 'loginid'                  => $test_client_vr->loginid,
                 'token'                    => $token_vr,
                 'token_type'               => 'oauth_token',
-                'account_id'               => '201219',
+                'account_id'               => $test_client_vr->default_account->id,
                 'currency'                 => 'USD',
                 'landing_company_name'     => 'virtual',
                 'is_virtual'               => '1',
@@ -392,7 +396,7 @@ subtest $method => sub {
             },
             'currency'                      => 'USD',
             'local_currencies'              => {IDR => {fractional_digits => 2}},
-            'email'                         => 'dummy@binary.com',
+            'email'                         => $email,
             'scopes'                        => ['read', 'admin', 'trade', 'payments'],
             'balance'                       => '10000.00',
             'landing_company_name'          => 'virtual',
@@ -406,18 +410,6 @@ subtest $method => sub {
             'preferred_language'            => 'EN',
             'linked_to'                     => [{loginid => $vr_wallet->loginid, platform => 'dwallet'}],
             'account_list'                  => [{
-                    'currency'             => 'USD',
-                    'is_disabled'          => '0',
-                    'is_virtual'           => '0',
-                    'landing_company_name' => $landing_company,
-                    'loginid'              => $test_client->loginid,
-                    'account_type'         => 'binary',
-                    'account_category'     => 'trading',
-                    'linked_to'            => [],
-                    'created_at'           => '1623023999',
-                    'broker'               => $test_client->broker,
-                },
-                {
                     'currency'             => 'USD',
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
@@ -441,32 +433,6 @@ subtest $method => sub {
                     'created_at'           => '1623023999',
                     'broker'               => $vr_wallet->broker,
                 },
-                {
-                    'currency'             => '',
-                    'excluded_until'       => $exclude_until,
-                    'is_disabled'          => '0',
-                    'is_virtual'           => '0',
-                    'landing_company_name' => $landing_company,
-                    'loginid'              => $self_excluded_client->loginid,
-                    'account_type'         => 'trading',
-                    'account_type'         => 'binary',
-                    'account_category'     => 'trading',
-                    'linked_to'            => [],
-                    'created_at'           => '1623023999',
-                    'broker'               => $self_excluded_client->broker,
-                },
-                {
-                    'currency'             => 'USD',
-                    'is_disabled'          => '1',
-                    'is_virtual'           => '0',
-                    'landing_company_name' => $landing_company,
-                    'loginid'              => $test_client_disabled->loginid,
-                    'account_type'         => 'binary',
-                    'account_category'     => 'trading',
-                    'linked_to'            => [],
-                    'created_at'           => '1623023999',
-                    'broker'               => $test_client_disabled->broker,
-                },
             ],
         };
         cmp_deeply($c->call_ok($method, $params)->has_no_error->result,
@@ -480,13 +446,13 @@ subtest $method => sub {
                 valid_source               => 1,
                 source_bypass_verification => 0,
                 source_type                => 'official',
-                'email'                    => 'dummy@binary.com',
+                'email'                    => $email,
                 'scopes'                   => ['read', 'admin', 'trade', 'payments'],
                 'country'                  => 'id',
                 'loginid'                  => $vr_wallet->loginid,
                 'token'                    => $token_wallet,
                 'token_type'               => 'oauth_token',
-                'account_id'               => '201199',
+                'account_id'               => $vr_wallet->default_account->id,
                 'currency'                 => 'USD',
                 'landing_company_name'     => 'virtual',
                 'is_virtual'               => '1',
@@ -502,7 +468,7 @@ subtest $method => sub {
             },
             'currency'                      => 'USD',
             'local_currencies'              => {IDR => {fractional_digits => 2}},
-            'email'                         => 'dummy@binary.com',
+            'email'                         => $email,
             'scopes'                        => ['read', 'admin', 'trade', 'payments'],
             'balance'                       => '10000.00',
             'landing_company_name'          => 'virtual',
@@ -516,18 +482,6 @@ subtest $method => sub {
             'preferred_language'            => 'EN',
             'linked_to'                     => [{'loginid' => $test_client_vr->loginid, 'platform' => 'dtrade'}],
             'account_list'                  => [{
-                    'currency'             => 'USD',
-                    'is_disabled'          => '0',
-                    'is_virtual'           => '0',
-                    'landing_company_name' => $landing_company,
-                    'loginid'              => $test_client->loginid,
-                    'account_type'         => 'binary',
-                    'account_category'     => 'trading',
-                    'linked_to'            => [],
-                    'created_at'           => '1623023999',
-                    'broker'               => $test_client->broker,
-                },
-                {
                     'currency'             => 'USD',
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
@@ -551,37 +505,104 @@ subtest $method => sub {
                     'created_at'           => '1623023999',
                     'broker'               => $vr_wallet->broker,
                 },
-                {
-                    'currency'             => '',
-                    'excluded_until'       => $exclude_until,
-                    'is_disabled'          => '0',
-                    'is_virtual'           => '0',
-                    'landing_company_name' => $landing_company,
-                    'loginid'              => $self_excluded_client->loginid,
-                    'account_type'         => 'binary',
-                    'account_category'     => 'trading',
-                    'linked_to'            => [],
-                    'created_at'           => '1623023999',
-                    'broker'               => $self_excluded_client->broker,
-                },
-                {
-                    'currency'             => 'USD',
-                    'is_disabled'          => '1',
-                    'is_virtual'           => '0',
-                    'landing_company_name' => $landing_company,
-                    'loginid'              => $test_client_disabled->loginid,
-                    'account_type'         => 'binary',
-                    'account_category'     => 'trading',
-                    'linked_to'            => [],
-                    'created_at'           => '1623023999',
-                    'broker'               => $test_client_disabled->broker,
-                },
             ],
         };
 
         cmp_deeply($c->call_ok($method, $params)->has_no_error->result,
             $expected_result, 'result is correct - no upgradeable landing company, because currenct account is a wallet');
     };
+
+    subtest 'authorize with partial migration state(wallet is hidden from response)' => sub {
+        my $email = 'auth_wallet_partial@example.com';
+        my $user  = BOM::User->create(
+            email    => $email,
+            password => '1234',
+        );
+        # create wallet
+        my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRW',
+            date_joined => '2021-06-06 23:59:59'
+        });
+        $vr_wallet->email($email);
+        $vr_wallet->set_default_account('USD');
+        $vr_wallet->deposit_virtual_funds;
+        $vr_wallet->save;
+
+        $user->add_client($vr_wallet);
+
+        my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            date_joined => '2021-06-06 23:59:59',
+        });
+        $test_client_vr->email($email);
+        $test_client_vr->set_default_account('USD');
+        $test_client_vr->deposit_virtual_funds;
+        $test_client_vr->save;
+        $user->add_client($test_client_vr);
+
+        # call authorize
+        my $token_vr = $params->{token} = $oauth->store_access_token_only(1, $test_client_vr->loginid);
+
+        my $expected_result = {
+            'stash' => {
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0,
+                source_type                => 'official',
+                'email'                    => $email,
+                'scopes'                   => ['read', 'admin', 'trade', 'payments'],
+                'country'                  => 'id',
+                'loginid'                  => $test_client_vr->loginid,
+                'token'                    => $token_vr,
+                'token_type'               => 'oauth_token',
+                'account_id'               => $test_client_vr->default_account->id,
+                'currency'                 => 'USD',
+                'landing_company_name'     => 'virtual',
+                'is_virtual'               => '1',
+                'broker'                   => 'VRTC',
+                'account_tokens'           => {
+                    $test_client_vr->loginid => {
+                        token      => $token_vr,
+                        is_virtual => $test_client_vr->is_virtual,
+                        broker     => $test_client_vr->broker,
+                        app_id     => 1,
+                    }
+                },
+            },
+            'currency'                      => 'USD',
+            'local_currencies'              => {IDR => {fractional_digits => 2}},
+            'email'                         => $email,
+            'scopes'                        => ['read', 'admin', 'trade', 'payments'],
+            'balance'                       => '10000.00',
+            'landing_company_name'          => 'virtual',
+            'fullname'                      => $test_client_vr->full_name,
+            'user_id'                       => $test_client_vr->binary_user_id,
+            'loginid'                       => $test_client_vr->loginid,
+            'is_virtual'                    => '1',
+            'country'                       => 'id',
+            'landing_company_fullname'      => 'Deriv Limited',
+            'upgradeable_landing_companies' => ['svg'],
+            'preferred_language'            => 'EN',
+            'linked_to'                     => [],
+            'account_list'                  => [{
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '1',
+                    'landing_company_name' => 'virtual',
+                    'loginid'              => $test_client_vr->loginid,
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
+                    'linked_to'            => [],
+                    'created_at'           => '1623023999',
+                    'broker'               => $test_client_vr->broker,
+                },
+            ],
+        };
+        cmp_deeply($c->call_ok($method, $params)->has_no_error->result,
+            $expected_result, 'result is correct - upgradeable even if authenticated by a virtual token');
+
+    };
+
 };
 
 subtest 'update preferred language' => sub {

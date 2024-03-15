@@ -12,7 +12,6 @@ use BOM::User;
 use BOM::Test::Helper::Token;
 use Test::BOM::RPC::Accounts;
 use Test::BOM::RPC::QueueClient;
-
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 # init db
@@ -404,6 +403,67 @@ subtest 'balance' => sub {
             args  => $args,
         });
     is $result->{error}{code}, 'PermissionDenied', 'need oauth token for balance all';
+
+};
+
+subtest 'balance with partial migration state(wallet is hidden from response)' => sub {
+    my $email = 'auth_wallet_partial@example.com';
+    my $user  = BOM::User->create(
+        email    => $email,
+        password => '1234',
+    );
+    # create wallet
+    my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRW',
+    });
+
+    $vr_wallet->email($email);
+    $vr_wallet->set_default_account('USD');
+    $vr_wallet->deposit_virtual_funds;
+    $vr_wallet->save;
+    $user->add_client($vr_wallet);
+
+    my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    $test_client_vr->email($email);
+    $test_client_vr->set_default_account('USD');
+    $test_client_vr->deposit_virtual_funds;
+    $test_client_vr->save;
+    $user->add_client($test_client_vr);
+
+    # call authorize
+    my $token_vr = $m->create_token($test_client_vr->loginid, 'vr token');
+    my $args     = {
+        balance => 1,
+        account => 'all'
+    };
+
+    my $result = $c->tcall(
+        $method,
+        {
+            token      => $token_vr,
+            token_type => 'oauth_token',
+            args       => $args,
+        });
+
+    is_deeply([keys %{$result->{'accounts'}}], [$test_client_vr->loginid], 'hide wallet account balance for partial migration.');
+
+    $user->link_wallet_to_trading_account({wallet_id => $vr_wallet->loginid, client_id => $test_client_vr->loginid});
+
+    $result = $c->tcall(
+        $method,
+        {
+            token      => $token_vr,
+            token_type => 'oauth_token',
+            args       => $args,
+        });
+
+    is_deeply(
+        [sort keys %{$result->{'accounts'}}],
+        [sort $test_client_vr->loginid, $vr_wallet->loginid],
+        'will return wallet account balance for complete migration.'
+    );
 
 };
 

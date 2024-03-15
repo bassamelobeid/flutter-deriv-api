@@ -59,6 +59,7 @@ use BOM::Config::Redis;
 use BOM::Rules::Engine;
 use BOM::TradingPlatform::Helper::HelperDerivEZ;
 use BOM::Config::BrokerDatabase;
+use BOM::User::WalletMigration;
 
 requires_auth('trading', 'wallet');
 
@@ -2027,9 +2028,14 @@ sub _get_transferable_accounts {
     my $lc_short     = $client->landing_company->short;
     my @accounts     = values %$siblings;
 
+    # skip wallets if the account is not fully migrated
+    if (BOM::User::WalletMigration::accounts_state($user) eq 'partial') {
+        @accounts = grep { $_->{account_category} ne 'wallet' } @accounts;
+    }
+
     # linked trading accounts can only transfer to linked wallet, VRTC can't tranfer to anything, so no need to query for further trading accounts.
     return [sort { $a->{loginid} cmp $b->{loginid} } @accounts]
-        if $client->get_account_type->category->name eq 'standard' || ($client->is_virtual && $client->is_legacy);
+        if $client->get_account_type->name eq 'standard' || ($client->is_virtual && $client->is_legacy);
 
     if ($include_mt5) {
         my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client, $demo_or_real)->else(sub { return Future->done(); })->get;

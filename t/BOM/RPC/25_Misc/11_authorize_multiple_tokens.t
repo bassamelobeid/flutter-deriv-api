@@ -125,22 +125,22 @@ subtest "$method with multiple tokens" => sub {
 
     $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', "check tokens don't belong to user");
 
-    my $cr_login  = create_client('CR',  undef, {date_joined => '2021-06-06 23:59:59'});
-    my $cr2_login = create_client('CR',  undef, {date_joined => '2021-06-06 23:59:59'});
-    my $vr_wallet = create_client('VRW', undef, {date_joined => '2021-06-06 23:59:59'});
+    my $cr_login  = create_client('CR',   undef, {date_joined => '2021-06-06 23:59:59'});
+    my $cr2_login = create_client('CR',   undef, {date_joined => '2021-06-06 23:59:59'});
+    my $vr_login  = create_client('VRTC', undef, {date_joined => '2021-06-06 23:59:59'});
 
     $user->add_client($cr_login);
     $user->add_client($cr2_login);
-    $user->add_client($vr_wallet);
+    $user->add_client($vr_login);
 
     my $cr_loginid  = $cr_login->loginid;
     my $cr2_loginid = $cr2_login->loginid;
-    my $vrw_loginid = $vr_wallet->loginid;
+    my $vr_loginid  = $vr_login->loginid;
     my $cr_token    = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_login->loginid);
     my $cr2_token   = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr2_login->loginid);
-    my $vrw_token   = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_wallet->loginid);
+    my $vr_token    = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_login->loginid);
 
-    $params->{args}{tokens} = [$cr_token, $cr2_token, $vrw_token];
+    $params->{args}{tokens} = [$cr_token, $cr2_token, $vr_token];
 
     subtest "use valid token of other accounts of user" => sub {
         my $result = $c->call_ok($method, $params)->has_no_error->result;
@@ -177,10 +177,10 @@ subtest "$method with multiple tokens" => sub {
                         is_virtual => $cr2_login->is_virtual,
                         app_id     => 1,
                     },
-                    $vrw_loginid => {
-                        token      => $vrw_token,
-                        broker     => $vr_wallet->broker,
-                        is_virtual => $vr_wallet->is_virtual,
+                    $vr_loginid => {
+                        token      => $vr_token,
+                        broker     => $vr_login->broker,
+                        is_virtual => $vr_login->is_virtual,
                         app_id     => 1,
                     },
                     $test_client->loginid => {
@@ -246,13 +246,13 @@ subtest "$method with multiple tokens" => sub {
                     'currency'             => '',
                     'linked_to'            => [],
                     'landing_company_name' => 'virtual',
-                    'loginid'              => $vrw_loginid,
+                    'loginid'              => $vr_loginid,
                     'is_disabled'          => 0,
-                    'account_type'         => 'virtual',
-                    'account_category'     => 'wallet',
+                    'account_type'         => 'binary',
+                    'account_category'     => 'trading',
                     'is_virtual'           => 1,
                     'created_at'           => 1623023999,
-                    'broker'               => $vr_wallet->broker,
+                    'broker'               => $vr_login->broker,
 
                 },
                 {
@@ -288,7 +288,7 @@ subtest "$method with multiple tokens" => sub {
 
     subtest "api and oauth token combination" => sub {
         my $cr_api_token = BOM::Platform::Token::API->new->create_token($cr_loginid, 'Test', ['read']);
-        $params->{args}{tokens} = [$cr_api_token, $vrw_token];
+        $params->{args}{tokens} = [$cr_api_token, $vr_token];
         $c->call_ok($method, $params)
             ->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Api token provided in tokens.');
     };
@@ -302,17 +302,17 @@ subtest "$method with multiple tokens" => sub {
             });
         my ($token_mf) = $oauth->store_access_token_only(1, $test_client_mf->loginid);
 
-        $params->{args}{tokens} = [$cr_token, $vrw_token, $token_mf];
+        $params->{args}{tokens} = [$cr_token, $vr_token, $token_mf];
         $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', 'Token is not valid for current user.');
     };
 
     subtest "invalid token added" => sub {
-        $params->{args}{tokens} = [$cr_token, $vrw_token, 'xxxxxxxxxx'];
+        $params->{args}{tokens} = [$cr_token, $vr_token, 'xxxxxxxxxx'];
         $c->call_ok($method, $params)->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Unknown token.');
     };
 
     subtest "duplicated token added" => sub {
-        $params->{args}{tokens} = [$cr_token, $vrw_token, $token_mx, $token_mx];
+        $params->{args}{tokens} = [$cr_token, $vr_token, $token_mx, $token_mx];
         $c->call_ok($method, $params)->has_error->error_message_is('Invalid/duplicate token for a loginid provided.', 'Duplicate token for loginid.');
     };
 
@@ -321,7 +321,7 @@ subtest "$method with multiple tokens" => sub {
         $user->add_client($cr3_login);
         my $cr3_token = BOM::Database::Model::OAuth->new->store_access_token_only(2, $cr3_login->loginid);
 
-        $params->{args}{tokens} = [$cr_token, $vrw_token, $cr3_token];
+        $params->{args}{tokens} = [$cr_token, $vr_token, $cr3_token];
         $c->call_ok($method, $params)
             ->has_error->error_message_is('Token is not valid for current app ID.', 'Token is not valid for current app ID.');
     };
@@ -336,7 +336,7 @@ subtest "$method with multiple tokens" => sub {
 
     subtest "Add a non available account" => sub {
         $params->{args}{tokens} = [$cr2_token, $token_mx];
-        $params->{token} = $vrw_token;
+        $params->{token} = $vr_token;
         $cr2_login->status->set('duplicate_account', 1, 'test non available account');
         $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', 'Non available account.');
     };

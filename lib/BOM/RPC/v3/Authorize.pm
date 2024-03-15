@@ -22,6 +22,7 @@ use BOM::Config::Runtime;
 use BOM::Config::AccountType::Registry;
 use JSON::WebToken qw(encode_jwt);
 use BOM::User::ExecutionContext;
+use BOM::User::WalletMigration;
 
 use LandingCompany::Registry;
 
@@ -62,9 +63,8 @@ rpc authorize => sub {
                 message_to_client => BOM::Platform::Context::localize("Account is disabled.")});
     }
 
-    my $account_links = $user->get_accounts_links();
-    my $clients       = _get_clients($user, $client->get_db);
-    my $account_list  = _get_account_list($clients, $account_links);
+    my $clients      = _get_clients($user, $client->get_db);
+    my $account_list = _get_account_list($clients, $user);
     _add_details_to_account_token_list($account_list, $account_tokens);
 
     unless (_valid_loginids_for_user($account_list, [keys $account_tokens->%*])) {
@@ -91,6 +91,9 @@ rpc authorize => sub {
     my $account = $client->default_account;
 
     my @upgradeable_companies = get_client_upgradeable_landing_companies($client);
+
+    my $migration_state = BOM::User::WalletMigration::accounts_state($user);
+    my $account_links   = $migration_state eq 'complete' ? $user->get_accounts_links() : +{};
 
     return {
         fullname                      => $client->full_name,
@@ -134,7 +137,7 @@ rpc account_list => (auth => [qw(wallet trading)] => readonly => 1) => sub {
 
     my $account_links = $user->get_accounts_links();
     my $clients       = _get_clients($user);
-    my $account_list  = _get_account_list($clients, $account_links);
+    my $account_list  = _get_account_list($clients, $user);
 
     return $account_list;
 };
@@ -621,10 +624,18 @@ Gets a list of valid accounts of the user.
 =cut
 
 sub _get_account_list {
-    my ($clients, $account_links) = @_;
+    my ($clients, $user) = @_;
+
+    my $migration_state = BOM::User::WalletMigration::accounts_state($user);
+    my $account_links   = $migration_state eq 'complete' ? $user->get_accounts_links() : +{};
 
     my @account_list;
     for my $cli ($clients->@*) {
+        # Hide wallets if migration is not complete yet
+        # this will be a way for FE to identify what flow will be used
+        # to simplify the logic on FE side and not handle intermidiate state during migration
+        next if $migration_state ne 'complete' && $cli->is_wallet;
+
         my $details = $cli->get_account_details;
         $details->{broker}    = $cli->broker;
         $details->{linked_to} = $account_links->{$cli->loginid} // [];
