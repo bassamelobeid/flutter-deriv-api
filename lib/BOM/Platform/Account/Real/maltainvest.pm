@@ -39,6 +39,11 @@ sub create_account {
 
     update_financial_assessment($client->user, $params, new_mf_client => 1);
 
+    my $countries_instance = request()->brand->countries_instance;
+    if ($params->{resident_self_declaration} && $countries_instance->is_self_declaration_required($client->residence)) {
+        $client->status->setnx('resident_self_declaration', 'SYSTEM', 'Client accepted residence self-declaration');
+    }
+
     # after_register_client sub save client so no need to call it here
     if ($accept_risk) {
         $client->status->setnx('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');

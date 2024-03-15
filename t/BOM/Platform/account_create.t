@@ -6,7 +6,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Array::Utils;
 
-use Test::More (tests => 10);
+use Test::More (tests => 11);
 use Test::Exception;
 use Test::Fatal;
 use Test::Warn;
@@ -861,6 +861,103 @@ subtest 'create affiliate' => sub {
     'create CRA acc';
 
     isa_ok $aff->{client}, 'BOM::User::Affiliate', 'Expected package for CRA';
+};
+
+subtest 'create real account with resident self declaration' => sub {
+    my $broker = 'MF';
+    my ($vr_client, $user, $real_client, $real_user);
+    lives_ok {
+        my $vr_acc = create_vr_acc({
+            email           => 'test@deriv.com',
+            password        => 'okcomputer',
+            residence       => 'es',
+            email_verified  => 1,
+            email_consented => 1,
+        });
+        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+    }
+    'create VR acc';
+
+    my %details = %real_client_details;
+    $details{$_}              = $vr_client->$_ for qw(email residence);
+    $details{broker_code}     = 'MF';
+    $details{first_name}      = 'MF_' . $vr_client->broker;
+    $details{client_password} = $vr_client->password;
+    $details{phone}           = sprintf("+15417321%03d", rand(999));
+
+    my $params = \%financial_data;
+    $params->{accept_risk}               = 1;
+    $params->{resident_self_declaration} = 1;
+    $params->{residence}                 = $vr_client->residence;
+
+    lives_ok {
+        my $real_acc = BOM::Platform::Account::Real::maltainvest::create_account({
+            from_client  => $vr_client,
+            user         => $user,
+            details      => \%details,
+            country      => $vr_client->residence,
+            account_type => 'binary',
+            params       => $params,
+        });
+        ($real_client, $real_user) = @{$real_acc}{'client', 'user'};
+    }
+    "create  acc OK, after verify email";
+    is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
+
+    ok $real_client->status->resident_self_declaration, 'Resident self declaration status set';
+    is $real_client->status->reason('resident_self_declaration'), 'Client accepted residence self-declaration',
+        'Resident self declaration status reason';
+
+    delete $params->{resident_self_declaration};
+
+    lives_ok {
+        my $real_acc = BOM::Platform::Account::Real::maltainvest::create_account({
+            from_client  => $vr_client,
+            user         => $user,
+            details      => \%details,
+            country      => $vr_client->residence,
+            account_type => 'binary',
+            params       => $params,
+        });
+        ($real_client, $real_user) = @{$real_acc}{'client', 'user'};
+    }
+    "create  acc OK, after verify email";
+
+    ok !$real_client->status->resident_self_declaration, 'Resident self declaration status not set';
+
+    lives_ok {
+        my $vr_acc = create_vr_acc({
+            email           => 'test11@deriv.com',
+            password        => 'okcomputer',
+            residence       => 'de',
+            email_verified  => 1,
+            email_consented => 1,
+        });
+        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+    }
+    'create VR acc';
+    $params->{resident_self_declaration} = 1;
+    $params->{residence}                 = $vr_client->residence;
+    $details{$_}                         = $vr_client->$_ for qw(email residence);
+    $details{broker_code}                = 'MF';
+    $details{first_name}                 = 'MF_' . $vr_client->broker;
+    $details{client_password}            = $vr_client->password;
+    $details{phone}                      = sprintf("+15417321%03d", rand(999));
+
+    lives_ok {
+        my $real_acc = BOM::Platform::Account::Real::maltainvest::create_account({
+            from_client  => $vr_client,
+            user         => $user,
+            details      => \%details,
+            country      => $vr_client->residence,
+            account_type => 'binary',
+            params       => $params,
+        });
+        ($real_client, $real_user) = @{$real_acc}{'client', 'user'};
+    }
+    "create  acc OK, after verify email";
+
+    ok !$real_client->status->resident_self_declaration, 'Resident self declaration status not required';
 };
 
 subtest 'Sibling Status Sync upon creation' => sub {
