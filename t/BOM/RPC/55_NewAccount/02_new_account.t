@@ -894,6 +894,87 @@ subtest $method => sub {
         }
     };
 
+    subtest 'resident self-declaration' => sub {
+        my $password = 'Abcd33!@#';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        $email = 'new_email' . rand(999) . '@binary.com';
+        my $user_mf = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1
+        );
+
+        my $vclient = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            first_name  => 'tsett',
+            residence   => 'es',
+        });
+
+        $user_mf->add_client($vclient);
+
+        $params->{token}                             = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
+        $params->{args}->{tax_residence}             = 'es';
+        $params->{args}->{tax_identification_number} = 'MRTSVT79M29F8P9P';
+        $params->{args}->{accept_risk}               = 1;
+        $params->{args}{citizen}                     = "es";
+        $params->{args}->{currency}                  = 'EUR';
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InputValidationFailed', 'It should return error: InputValidationFailed')
+            ->error_message_is('Resident Self Declaration required for country.',
+            'It should return error_message: Resident Self Declaration required for country.')->error_details_is({residence => $vclient->residence});
+
+        delete $params->{args};
+        $params->{args} = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+    };
+
+    subtest 'new maltainvest account with resident self declaration' => sub {
+        my $password = 'Abcd33!@#';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        $email = 'new_email' . rand(999) . '@binary.com';
+        my $user_mf = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1
+        );
+
+        my $vclient = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            first_name  => 'tsett',
+            residence   => 'es',
+        });
+
+        $user_mf->add_client($vclient);
+
+        $params->{token}                             = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
+        $params->{args}->{tax_residence}             = 'es';
+        $params->{args}->{tax_identification_number} = 'MRTSVT79M29F8P9P';
+        $params->{args}->{accept_risk}               = 1;
+        $params->{args}->{citizen}                   = "es";
+        $params->{args}->{residence}                 = 'es';
+        $params->{args}->{currency}                  = 'EUR';
+        $params->{args}->{resident_self_declaration} = 1;
+        $params->{args}->{date_of_birth}             = '1986-05-10';
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
+            sub { shift->{landing_company} },
+            'Deriv Investments (Europe) Limited',
+            'It should return new account data'
+        )->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return new account data');
+
+        my $new_loginid = $rpc_ct->result->{client_id};
+        ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
+
+        my $cl = BOM::User::Client->new({loginid => $new_loginid});
+
+        ok $cl->status->resident_self_declaration, 'Resident self declaration is set';
+
+        delete $params->{args};
+        $params->{args} = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
+    };
+
     subtest 'Create new account maltainvest' => sub {
         $params->{args}->{accept_risk} = 1;
         delete $params->{args}->{non_pep_declaration};
@@ -2431,21 +2512,22 @@ subtest 'MF under Duplicated account - Spain' => sub {
 
     my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
 
-    $params->{country}                 = 'es';
-    $params->{args}->{residence}       = 'es';
-    $params->{args}->{address_line_1}  = 'sus';
-    $params->{args}->{address_city}    = 'sus';
-    $params->{args}->{client_password} = $hash_pwd;
-    $params->{args}->{subtype}         = 'real';
-    $params->{args}->{first_name}      = 'Not ES';
-    $params->{args}->{last_name}       = 'spain is all I feel';
-    $params->{args}->{date_of_birth}   = '1997-01-02';
-    $params->{args}->{email}           = $email;
-    $params->{args}->{phone}           = '+393678916703';
-    $params->{args}->{salutation}      = 'hey';
-    $params->{args}->{citizen}         = 'es';
-    $params->{args}->{accept_risk}     = 1;
-    $params->{token}                   = $auth_token;
+    $params->{country}                           = 'es';
+    $params->{args}->{residence}                 = 'es';
+    $params->{args}->{address_line_1}            = 'sus';
+    $params->{args}->{address_city}              = 'sus';
+    $params->{args}->{client_password}           = $hash_pwd;
+    $params->{args}->{subtype}                   = 'real';
+    $params->{args}->{first_name}                = 'Not ES';
+    $params->{args}->{last_name}                 = 'spain is all I feel';
+    $params->{args}->{date_of_birth}             = '1997-01-02';
+    $params->{args}->{email}                     = $email;
+    $params->{args}->{phone}                     = '+393678916703';
+    $params->{args}->{salutation}                = 'hey';
+    $params->{args}->{citizen}                   = 'es';
+    $params->{args}->{accept_risk}               = 1;
+    $params->{token}                             = $auth_token;
+    $params->{args}->{resident_self_declaration} = 1;
 
     $params->{args} = {
         $params->{args}->%*,

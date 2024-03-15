@@ -322,6 +322,13 @@ rpc new_account_maltainvest => annotate_db_calls(
 
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') unless $company;
 
+    # checking whether self-declaration requried for particular country
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InputValidationFailed',
+            message_to_client => localize("Resident Self Declaration required for country."),
+            details           => {residence => $client->residence}}
+    ) if !$args->{resident_self_declaration} && $countries_instance->is_self_declaration_required($client->residence);
+
     # this call is exclusively for maltainvest
     return BOM::RPC::v3::Utility::permission_error if ($company ne 'maltainvest');
 

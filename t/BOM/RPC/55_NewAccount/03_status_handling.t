@@ -89,6 +89,7 @@ subtest 'MF' => sub {
     $params->{args}->{accept_risk}               = 1;
     $params->{args}->{tax_residence}             = 'es';
     $params->{args}->{tax_identification_number} = 12314124;
+    $params->{args}->{resident_self_declaration} = 1;
     my $fa = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
     $params->{args}->{$_} = $fa->{$_} for keys %$fa;
 

@@ -29,6 +29,9 @@
          "tin_format" : {
             "type" : "array"
          },
+         "account_opening_self_declaration_required" : {
+            "type" : "integer"
+         },
          "text" : {
             "type" : "string"
          },

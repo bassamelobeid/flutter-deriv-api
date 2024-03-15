@@ -129,6 +129,9 @@ rpc residence_list => sub {
         } elsif (request()->country_code eq $country_code) {
             $option->{selected} = 'selected';
         }
+        if ($countries_instance->is_self_declaration_required($country_code)) {
+            $option->{account_opening_self_declaration_required} = 1;
+        }
         push @$residence_countries_list, $option;
     }
 
