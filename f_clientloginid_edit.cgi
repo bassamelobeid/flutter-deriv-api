@@ -1371,7 +1371,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
             address_postcode
             place_of_birth
             restricted_ip_address
-            salutation
             account_opening_reason
             /;
         exists $input{$_}
@@ -1382,6 +1381,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         my $secret_question = trim($input{secret_question});
         if (defined $secret_question and update_needed($client, $cli, $_, \%clients_updated)) {
             $cli->secret_question($secret_question);
+        }
+
+        if (exists $input{salutation}) {
+            if (update_needed($client, $cli, 'salutation', \%clients_updated)) {
+                $cli->salutation($input{salutation});
+                my $updated_gender = (uc $input{salutation} eq 'MR') ? 'm' : 'f';
+                $cli->gender($updated_gender);
+            }
         }
 
         my $tax_residence;
