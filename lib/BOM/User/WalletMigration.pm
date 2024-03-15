@@ -126,12 +126,9 @@ Returns the state of the migration.
 method state (%args) {
     return 'in_progress' if $self->redis->get(MIGRATION_KEY_PREFIX . $user->id);
 
-    # TODO: here we need to check if user finished migration
-    # probaly check against user.loginid table will be most reliable way
-    # should be done as part of next card
-    return 'migrated' unless $user->get_default_client->is_legacy;
-
-    return 'failed' if keys $self->existing_wallets->%*;
+    my $state = accounts_state($user);
+    return 'migrated' if $state eq 'complete';
+    return 'failed'   if $state eq 'partial';
 
     return 'eligible' if $self->is_eligible(%args);
 
@@ -177,7 +174,7 @@ method start (%args) {
 
     die {error_code => 'MigrationAlreadyInProgress'}    if $state eq 'in_progress';
     die {error_code => 'MigrationAlreadyFinished'}      if $state eq 'migrated';
-    die {error_code => 'UserIsNotEligibleForMigration'} if $state ne 'eligible' && !$args{force};
+    die {error_code => 'UserIsNotEligibleForMigration'} if $state eq 'ineligible' && !$args{force};
 
     my $is_success = $self->redis_rw->set(
         MIGRATION_KEY_PREFIX . $user->id, 1,
@@ -888,6 +885,57 @@ Returns client instance for the provided loginid, using cache when possible.
 
 method get_client_instance ($loginid) {
     return $clients{$loginid} //= BOM::User::Client->get_client_instance($loginid);
+}
+
+=head2 accounts_state
+
+Returns the state of the wallet migration for the user's accounts.
+
+This is a static method that takes the following arguments:
+
+=over 4
+
+=item * C<$user>: The user object for which the wallet migration is being performed.
+
+=back
+
+Returns one of the following values:
+
+=over 4
+
+=item * C<complete>: The user has wallets for all accounts.
+
+=item * C<partial>: The user has wallets for some accounts, but not all.
+
+=item * C<none>: The user has no wallets.
+
+=back
+
+=cut
+
+sub accounts_state {
+    my $user            = shift;
+    my $loginid_details = $user->loginid_details;
+    my ($has_wallets, $has_unlinked_accounts) = (0, 0);
+
+    for my $loginid (keys $loginid_details->%*) {
+        my $details = $loginid_details->{$loginid};
+
+        if ($details->{is_wallet}) {
+            $has_wallets = 1;
+            next;
+        }
+
+        next if $details->{wallet_loginid};
+
+        $has_unlinked_accounts = 1;
+    }
+
+    return 'partial' if $has_wallets && $has_unlinked_accounts;
+
+    return 'complete' if $has_wallets;
+
+    return 'none';
 }
 
 1;

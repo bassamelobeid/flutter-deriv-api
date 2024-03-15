@@ -21,7 +21,7 @@ use BOM::User::WalletMigration;
 use BOM::Config::Runtime;
 use BOM::User::FinancialAssessment qw(update_financial_assessment);
 
-plan tests => 11;
+plan tests => 12;
 
 BOM::Test::Helper::MT5::mock_server();
 BOM::Test::Helper::CTrader::mock_server();
@@ -135,7 +135,7 @@ subtest 'Force migration' => sub {
 
     is exception { $migration->process() }, undef, 'process() has no error';
 
-    is($migration->state, 'failed', 'state is failed');
+    is($migration->state, 'migrated', 'state is failed');
 };
 
 subtest 'Wallet creation' => sub {
@@ -1512,6 +1512,142 @@ subtest 'Migrate KYC verified clients' => sub {
 
         ok($cr_wallet->financial_assessment(), 'Financial Assestment is migrated');
     };
+};
+
+subtest 'wallet_migration_state' => sub {
+    my $mock_user = bless {}, 'BOM::User';
+
+    my @tests = ({
+            name     => 'Only VR client',
+            loginids => {
+                VRTC1001 => {
+                    is_wallet => 0,
+                },
+            },
+            expected => 'none',
+        },
+        {
+            name     => 'Only VR client + virtual wallet without link',
+            loginids => {
+                VRTC1001 => {
+                    is_wallet => 0,
+                },
+                VRW1001 => {
+                    is_wallet => 1,
+                },
+            },
+            expected => 'partial',
+        },
+        {
+            name     => 'Only VR client + virtual wallet linked',
+            loginids => {
+                VRTC1001 => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'VRW1001',
+                },
+                VRW1001 => {is_wallet => 1},
+            },
+            expected => 'complete',
+        },
+        {
+            name     => 'Virtual migrated + real money legacy',
+            loginids => {
+                VRTC1001 => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'VRW1001',
+                },
+                VRW1001 => {is_wallet => 1},
+                CR1001  => {
+                    is_wallet => 0,
+                },
+            },
+            expected => 'partial',
+        },
+        {
+            name     => 'Virtual migrated + real money not linked',
+            loginids => {
+                VRTC1001 => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'VRW1001',
+                },
+                VRW1001 => {is_wallet => 1},
+                CR1001  => {
+                    is_wallet => 0,
+                },
+                CRW1001 => {
+                    is_wallet => 1,
+                },
+            },
+            expected => 'partial',
+        },
+        {
+            name     => 'Virtual migrated + real money linked',
+            loginids => {
+                VRTC1001 => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'VRW1001',
+                },
+                VRW1001 => {is_wallet => 1},
+                CR1001  => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'CRW1001',
+                },
+                CRW1001 => {
+                    is_wallet => 1,
+                },
+            },
+            expected => 'complete',
+        },
+        {
+            name     => 'Virtual migrated + real money linked and MT5 not linked',
+            loginids => {
+                VRTC1001 => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'VRW1001',
+                },
+                VRW1001 => {is_wallet => 1},
+                CR1001  => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'CRW1001',
+                },
+                CRW1001 => {
+                    is_wallet => 1,
+                },
+                MTR1001 => {
+                    is_wallet => 0,
+                },
+            },
+            expected => 'partial',
+        },
+        {
+            name     => 'Virtual migrated + real money linked and MT5 linked',
+            loginids => {
+                VRTC1001 => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'VRW1001',
+                },
+                VRW1001 => {is_wallet => 1},
+                CR1001  => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'CRW1001',
+                },
+                CRW1001 => {
+                    is_wallet => 1,
+                },
+                MTR1001 => {
+                    is_wallet      => 0,
+                    wallet_loginid => 'CRW1001',
+                },
+            },
+            expected => 'complete',
+        },
+    );
+
+    for my $test (@tests) {
+        $mock_user->{loginid_details} = $test->{loginids};
+
+        is(BOM::User::WalletMigration::accounts_state($mock_user), $test->{expected}, "Expected wallet migration state for $test->{name}");
+    }
 };
 
 my $user_counter = 1;
