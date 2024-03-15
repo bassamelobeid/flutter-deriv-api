@@ -357,11 +357,13 @@ subtest 'mt5 track event' => sub {
             'correct exception when failed to update color field';
 
         $mocked_mt5->mock('update_user', sub { Future->done({login => "MT90000", color => 16711680}) });
+
+        $mocked_user->mock('id', sub { 1 })->mock('accounts_by_category', sub { +{enabled => [bless {id => 1}, 'BOM::User::Client']} });
         my $result = $action_handler->($args)->get;
         ok $result, 'Success mt5 color change result';
 
         $mocked_mt5->unmock('get_user');
-        $mocked_user->unmock('new');
+        $mocked_user->unmock('new')->unmock('id')->unmock('accounts_by_category');
     };
 
     subtest 'mt5 store tranactions' => sub {

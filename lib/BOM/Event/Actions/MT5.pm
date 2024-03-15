@@ -28,7 +28,7 @@ use Email::Stuffer;
 use YAML::XS;
 use Date::Utility;
 use Text::CSV;
-use List::Util qw(any all none);
+use List::Util qw(any all none first);
 use Path::Tiny;
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use JSON::MaybeXS   qw(decode_json);
@@ -309,11 +309,15 @@ async sub mt5_change_color {
     die "Could not change client $loginid color to $color" if $updated_user->{color} != ($color == -1 ? 4294967295 : $color);
     die $updated_user->{error}                             if $updated_user->{error};
 
-    my $user           = BOM::User->new(email => $user_detail->{email});
-    my $default_client = $user ? $user->get_default_client : undef;
+    my $user        = BOM::User->new(email => $user_detail->{email});
+    my $cr_accounts = $user->accounts_by_category([$user->bom_real_loginids]);
+
+    # Consider any real CR account for tracking
+    my $available_account_category = first { defined($cr_accounts->{$_}->[0]) } ('enabled', 'disabled', 'duplicated', 'self_excluded');
+    die "No real CR account found for user with binary_user_id: " . $user->id unless $available_account_category;
 
     return BOM::Event::Services::Track::mt5_change_color({
-        loginid     => ($default_client ? $default_client->loginid : undef),
+        loginid     => $cr_accounts->{$available_account_category}->[0]->loginid,
         mt5_loginid => $loginid,
         color       => $color
     });
