@@ -21,6 +21,7 @@ use BOM::Platform::Context qw( localize request );
 use BOM::User;
 use BOM::User::AuditLog;
 use BOM::Platform::Account::Virtual;
+use BOM::User::WalletMigration;
 
 # Time in seconds we'll start blocking someone for repeated bad logins from the same IP
 use constant BLOCK_MIN_DURATION => 5 * 60;
@@ -140,6 +141,11 @@ sub validate_login {
 
     # For self-closed accounts the following step is postponed until reactivation is finalized.
     notify_login($c, $client, $unknown_location, $app) unless $result->{self_closed};
+
+    # If migration is in progress, we hide wallet accounts from the client.
+    if (BOM::User::WalletMigration::accounts_state($user) eq 'partial') {
+        @clients = grep { !$_->is_wallet } @clients;
+    }
 
     return {
         clients      => \@clients,
