@@ -2338,7 +2338,6 @@ rpc set_settings => sub {
         $client->place_of_birth($birth_place)                    if $birth_place;
         $client->account_opening_reason($account_opening_reason) if $account_opening_reason;
         $client->date_of_birth($date_of_birth)                   if $date_of_birth;
-        $client->salutation($salutation)                         if $salutation;
         $client->first_name($first_name)                         if $first_name;
         $client->last_name($last_name)                           if $last_name;
         $client->secret_answer($secret_answer)                   if $secret_answer;
@@ -2352,6 +2351,13 @@ rpc set_settings => sub {
             && $client->landing_company->short eq $current_client->landing_company->short)
         {
             $client->non_pep_declaration_time(time);
+        }
+
+        #If salutation of the client is updated then update the gender aswell
+        if ($salutation) {
+            $client->salutation($salutation);
+            my $updated_gender = (uc $salutation eq 'MR') ? 'm' : 'f';
+            $client->gender($updated_gender);
         }
 
         # As per CRS/FATCA regulatory requirement we need to

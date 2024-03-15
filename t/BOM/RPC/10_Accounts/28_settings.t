@@ -1238,6 +1238,47 @@ subtest 'set_setting with feature flag' => sub {
     cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with feature flag has been set successfully');
 };
 
+subtest 'set_setting with salutation update' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        salutation  => 'Ms',
+        gender      => 'f'
+    });
+
+    ok $test_client->salutation eq 'Ms', 'Salutation is Ms';
+    ok $test_client->gender eq 'f',      'gender is set correctly as female';
+
+    my $user = BOM::User->create(
+        email    => 'test001@example.com',
+        password => $hash_pwd,
+    );
+
+    $user->add_client($test_client);
+
+    my $m      = BOM::Platform::Token::API->new;
+    my $token  = $m->create_token($test_client->loginid, 'test token');
+    my $params = {
+        language   => 'EN',
+        token      => $token,
+        client_ip  => '127.0.0.1',
+        user_agent => 'agent',
+        args       => {salutation => 'Mrs'}};
+
+    cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with salutation has been set successfully');
+
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    ok $test_client->salutation eq 'Mrs', 'Salutation is Mrs';
+    ok $test_client->gender eq 'f',       'Gender is not updated';
+
+    $params->{args} = {salutation => 'Mr'};
+    cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with salutation has been set successfully');
+
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    ok $test_client->salutation eq 'Mr', 'Salutation is Mr';
+    ok $test_client->gender eq 'm',      'Gender is updated to male';
+
+};
+
 subtest 'set_setting duplicate account' => sub {
     my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email         => 'duplicate_client1@test.com',
