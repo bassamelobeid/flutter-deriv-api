@@ -290,6 +290,7 @@ my @TRANSACTIONAL_EVENTS = qw(
     p2p_archived_ad
     mt5_inactive_account_closed
     crypto_withdrawal_sent_email
+    mt5_signup
 );
 
 my $loop = IO::Async::Loop->new;

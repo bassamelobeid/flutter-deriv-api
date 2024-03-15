@@ -5,6 +5,7 @@ use BOM::Event::Transactional::Filter::Equal;
 use BOM::Event::Transactional::Filter::Exist;
 use BOM::Event::Transactional::Filter::Contain;
 use BOM::Event::Transactional::Filter::NotContain;
+use BOM::Event::Transactional::Filter::NotEqual;
 use BOM::Event::Transactional::Mapper;
 use Test::MockModule;
 
@@ -53,6 +54,19 @@ subtest 'contains' => sub {
     ok !$res->apply({'property' => 'not found'});
 };
 
+subtest 'contains - Array support (or operation)' => sub {
+    my $filter = BOM::Event::Transactional::Filter::Contain->new;
+    my $res    = $filter->parse('property', {'contains' => ['string', 'other word']});
+    ok $res, 'parsed';
+    ok $res->apply({'property'  => 'a string'}),                     'string matched';
+    ok $res->apply({'property'  => 'other word is in this string'}), 'string matched';
+    ok !$res->apply({'property' => 'non included str'}),             'string not matched';
+    # case with array
+    ok $res->apply({'property'  => ['string',           'other word']}), 'string matched';
+    ok $res->apply({'property'  => ['other word',       'string']}),     'string matched';
+    ok !$res->apply({'property' => ['non included str', 'not here']}),   'string not matched';
+};
+
 subtest 'not contain' => sub {
     my $filter = BOM::Event::Transactional::Filter::NotContain->new;
     my $res    = $filter->parse('property', 1);
@@ -67,6 +81,29 @@ subtest 'not contain' => sub {
     ok $res, 'parsed';
     ok !$res->apply({'property' => 'a string'});
     ok $res->apply({'property'  => 'not found'});
+};
+
+subtest 'not contains - Array support (or operation)' => sub {
+    my $filter = BOM::Event::Transactional::Filter::NotContain->new;
+    my $res    = $filter->parse('property', {'not_contain' => ['string', 'other word']});
+    ok $res, 'parsed';
+    ok !$res->apply({'property' => 'a string'}),                     'string matched';
+    ok !$res->apply({'property' => 'other word is in this string'}), 'string matched';
+    ok $res->apply({'property'  => 'non included str'}),             'string not matched';
+};
+
+subtest 'NotEqual' => sub {
+    my $filter = BOM::Event::Transactional::Filter::NotEqual->new;
+    my $res    = $filter->parse('property', 'string');
+    ok !$res, 'string not parsed';
+    $res = $filter->parse('property', {hash => 'ref'});
+    ok !$res, 'hash ref not parsed';
+    $res = $filter->parse('property', ['array']);
+    ok !$res, 'not parsed';
+    $res = $filter->parse('property', {not_equal => 'ref'});
+    ok $res, 'not_equal keyword captured';
+    ok !$res->apply({'property' => 'ref'}),    'fail equal strings';
+    ok $res->apply({'property'  => 'string'}), 'string matched';
 };
 
 subtest 'mapper' => sub {
