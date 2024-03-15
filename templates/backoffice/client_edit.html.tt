@@ -125,6 +125,14 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             </td>
         </tr>
     [% END %]
+    [% IF resident_self_declaration %]
+        <tr>
+            <td class="label">[% client_residence %] Resident Declaration</td>
+            <td style="text-align:left;">
+            : [% client.date_joined %]
+            </td>
+        </tr>
+    [% END %]
     <tr>
         <td class="label">Client's Professional status</td>
         <td>: <b>[% professional_status %]</b> </td>
