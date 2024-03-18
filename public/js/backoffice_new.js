@@ -741,6 +741,27 @@ function updateChildDropdown(selectedValue, perlData) {
     }
 }
 
+function readMT5AccountsCSV(evt) {
+    var file = evt.target.files[0];
+    if (file.type !== 'text/csv') {
+        alert('Unsupported file format. Please upload a CSV file.');
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var contents = e.target.result;
+        var lines = contents.split('\n');
+        var accounts = lines.map(function(line) {
+            var columns = line.split(',');
+            return columns[0].trim();
+        }).filter(function(account) {
+            return account !== '';
+        });
+        document.getElementById('mt5accountid').value = accounts.join(',');
+    };
+    reader.readAsText(file);
+}
+
 function initCopyText() {
     document.querySelectorAll('.copy-on-click').forEach(el => {
         el.classList.add('tooltip-nowrap');

@@ -101,14 +101,16 @@ if (BOM::Backoffice::Auth::has_authorisation(['Payments'])) {
 
     Bar("Make Dual Control Code (MT5 Auto Transfer)");
     print "<p>To comply with ISO17799 requirements, deposits/withdrawals to client accounts require 2 staff members to authorise.
-One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when inputting the transaction.</p>";
+            One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when inputting the transaction.</p>"
+        . "<p>You can either manually enter the MT5 account IDs (comma separated) or upload a CSV file. If uploading a CSV file, please ensure the account list is in first column of the file (no headers needed).</p>";
     print "<form id=\"mt5AutoTransferDCC\" action=\""
         . request()->url_for('backoffice/f_makedcc_mt5_autotransfer.cgi')
         . "\" method=\"post\" class=\"bo_ajax_form\">"
         . "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
         . "<input type=\"hidden\" name=\"l\" value=\"EN\">"
         . "<div class=\"row\">"
-        . "<label>MT5 Accounts:</label><input type=\"text\" placeholder=\"[Example: MTR123456, MTR654321] (comma separate accounts)\" size=\"50\" name=\"mt5accountid\" data-lpignore=\"true\" />"
+        . "<label>MT5 Accounts:</label><input type=\"text\" id=\"mt5accountid\" placeholder=\"[Example: MTR123456, MTR654321] (comma separate accounts)\" size=\"50\" name=\"mt5accountid\" data-lpignore=\"true\" />"
+        . "<input type=\"file\" id=\"csvFile\" accept=\".csv\" onchange=\"readMT5AccountsCSV(event);\" />"
         . "</div>"
         . "<div class=\"row\"><label>Input a comment/reminder about this DCC:</label><input type=\"text\" placeholder=\"required\" size=\"50\" name=\"reminder\" data-lpignore=\"true\" /></div>"
         . "<input type=\"submit\" class='btn btn--primary' value='Make Dual Control Code (by "
