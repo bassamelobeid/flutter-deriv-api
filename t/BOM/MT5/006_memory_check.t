@@ -31,11 +31,6 @@ $mock_config->mock(
         };
     });
 
-my $key_timing;
-my $key_inc;
-my $value;
-my $tags;
-
 $mocked_async->mock(
     '_is_http_proxy_enabled_for',
     sub {
@@ -67,12 +62,10 @@ subtest 'MT5 HTTP Proxy Call memory check' => sub {
             return $response;
         });
     my $param = {param => 'something'};
-
     no_growth {
         BOM::MT5::User::Async::_invoke($cmd, $srv_type, $srv_key, 'MTD', $param)->get();
     }
-    'MT5 HTTP Proxy Call does not increase memory';
-
+    (burn_in => 20), 'MT5 HTTP Proxy Call does not increase memory';
 };
 
 $mock_config->unmock_all;
