@@ -218,7 +218,7 @@ rpc "landing_company",
     # BE CAREFUL, do not change ref since it's persistent
     my %landing_company = %{$c_config};
 
-    delete @landing_company{qw/is_signup_allowed idd_country alpha3/};
+    delete @landing_company{qw/is_signup_allowed idd_country alpha3 signup_self_declaration/};
 
     $landing_company{id} = $country;
 
