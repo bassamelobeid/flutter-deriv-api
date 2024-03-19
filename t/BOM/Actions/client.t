@@ -352,6 +352,16 @@ subtest 'upload document' => sub {
         $test_dummy->binary_user_id($test_user_dummy->id);
         $test_dummy->save;
 
+        my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+        my @metrics;
+        $dog_mock->mock(
+            'stats_inc',
+            sub {
+                push @metrics, @_ if scalar @_ == 2;
+                push @metrics, @_, undef if scalar @_ == 1;
+                return 1;
+            });
+
         my $upload_info_alter = start_document_upload($args, $test_client_alter);
 
         subtest 'client manual upload a valid poi' => sub {
@@ -367,16 +377,6 @@ subtest 'upload document' => sub {
                     by_staff        => 0,
                     email_sent      => 0,
                 }];
-
-            my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
-            my @metrics;
-            $dog_mock->mock(
-                'stats_inc',
-                sub {
-                    push @metrics, @_ if scalar @_ == 2;
-                    push @metrics, @_, undef if scalar @_ == 1;
-                    return 1;
-                });
 
             for my $test_case ($tests->@*) {
                 my ($document_type, $document_format, $by_staff, $email_sent) = @{$test_case}{qw/document_type document_format by_staff email_sent/};
@@ -584,14 +584,18 @@ subtest 'upload document' => sub {
                     ok !$redis->get(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get,
                         'email not locked down';
 
+                    @metrics = ();
+
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => $by_staff,
                             loginid                    => $test_client->loginid,
                             file_id                    => $upload_info->{file_id}})->get;
 
-                    my $loginid = $test_client->loginid;
-                    $log->contains_ok(qr/Unsupported document by onfido $args->{document_type}*/,
-                        'error log: POI document type is not supported by onfido');
+                    cmp_deeply + {@metrics},
+                        +{
+                        'event.onfido.unsupported_document' => {tags => ["document_type:$document_type", "country:COL"]},
+                        },
+                        'Expected dd metrics';
 
                     my $email = mailbox_search(subject => qr/Manual age verification needed for/);
 
@@ -1815,6 +1819,8 @@ for my $client ($test_client, $test_client_mf) {
                     },
                     'Expected dd metrics for error 500';
 
+                $log->contains_ok(qr/Internal error from Onfido -/, 'Expected log for 500 code');
+
                 $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
                 is $db_check->{status}, 'in_progress', 'check still not completed';
 
@@ -1850,6 +1856,8 @@ for my $client ($test_client, $test_client_mf) {
                     'event.onfido.client_verification.rate_limit' => undef,
                     },
                     'Expected dd metrics for error 429';
+
+                $log->contains_ok(qr/Too many requests for Onfido -/, 'Expected log for 429 code');
 
                 $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
                 is $db_check->{status}, 'in_progress', 'check still not completed';
@@ -2407,6 +2415,83 @@ for my $client ($test_client, $test_client_mf) {
 
 # come back to svg
 $check_href = $check_hash->{svg};
+
+subtest 'handle no loginid passed' => sub {
+    my $test_client_fail = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $test_client_fail->email('test_fail@deriv.com');
+    $test_client_fail->first_name('bad');
+    $test_client_fail->last_name('bunny');
+    $test_client_fail->salutation('MR');
+    $test_client_fail->save;
+
+    my $test_user_fail = BOM::User->create(
+        email          => $test_client_fail->email,
+        password       => "1234",
+        email_verified => 1,
+    )->add_client($test_client_fail);
+
+    $test_client_fail->binary_user_id($test_user_fail->id);
+    $test_client_fail->user($test_user_fail);
+    $test_client_fail->save;
+
+    my $onfido            = BOM::Event::Actions::Client::_onfido();
+    my $applicant_id      = 'newapplicant-fail';
+    my $onfido_async_mock = Test::MockModule->new(ref($onfido));
+    my $events_mock       = Test::MockModule->new('BOM::Event::Actions::Client');
+
+    $events_mock->mock(
+        '_store_applicant_documents',
+        sub {
+            return Future->done;
+        });
+    $onfido_async_mock->mock(
+        'applicant_get',
+        sub {
+            return Future->done(
+                WebService::Async::Onfido::Applicant->new(
+                    id => $applicant_id,
+                ));
+        });
+    $onfido_async_mock->mock(
+        'applicant_create',
+        sub {
+            return Future->done(
+                WebService::Async::Onfido::Applicant->new(
+                    id => $applicant_id,
+                ));
+        });
+    $onfido_async_mock->mock(
+        'check_get',
+        sub {
+            return Future->done(
+                WebService::Async::Onfido::Check->new(
+                    'href'         => '/v3.4/checks/newcheck',
+                    'results_uri'  => 'https://onfido.com/dashboard/information_requests/<REQUEST_ID>',
+                    'result'       => 'consider',
+                    'created_at'   => '2025-01-12 14:29:37',
+                    'stamp'        => '2025-01-12 14:29:37.440663',
+                    'api_type'     => 'deprecated',
+                    'download_uri' => 'http://localhost:4039/v3.4/checks/newcheck/download',
+                    'tags'         => ['automated', 'CR', undef, 'IDN', 'brand:deriv'],
+                    'applicant_id' => $applicant_id,
+                    'id'           => 'supasus',
+                    'status'       => 'complete',
+                    'onfido'       => $onfido,
+                ));
+        });
+
+    BOM::Event::Actions::Client::client_verification({
+            check_url => $check_href,
+        })->get;
+
+    $log->contains_ok(qr/Failed to process Onfido verification for NOLOGINID/, 'expected log found');
+
+    $log->clear();
+    $onfido_async_mock->unmock_all;
+    $events_mock->unmock_all;
+};
 
 subtest "Uninitialized date of birth" => sub {
     my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');

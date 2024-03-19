@@ -323,7 +323,14 @@ async sub document_upload {
             if ($is_poa_document || $is_poi_document) && !$uploaded_manually_by_staff;
 
         my $is_pow_document = any { $_ eq $document_entry->{document_type} } $client->documents->pow_types->@*;
-        $log->warnf("Unsupported document by onfido $document_entry->{document_type}") if $is_poi_document && !$is_onfido_document;
+
+        if ($is_poi_document && !$is_onfido_document) {
+            my $country     = $client->place_of_birth // $client->residence;
+            my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
+            my $tags        = ["document_type:" . $document_entry->{document_type}, "country:$country_tag"];
+
+            DataDog::DogStatsd::Helper::stats_inc('event.onfido.unsupported_document', {tags => $tags});
+        }
 
         $client->propagate_clear_status('allow_poi_resubmission') if $is_poi_document || $is_onfido_document;
 
@@ -931,18 +938,18 @@ async sub client_verification {
 
         die 'no check ID found' unless $check_id;
 
-        $check = await _onfido()->check_get(
-            check_id => $check_id,
-        );
-
-        my $applicant_id = $check->applicant_id;
-        my $result       = $check->result;
-
-        my @common_datadog_tags = (sprintf('check:%s', $result));
-
-        await _restore_request($applicant_id, $check->tags);
-
         try {
+            $check = await _onfido()->check_get(
+                check_id => $check_id,
+            );
+
+            my $applicant_id = $check->applicant_id;
+            my $result       = $check->result;
+
+            my @common_datadog_tags = (sprintf('check:%s', $result));
+
+            await _restore_request($applicant_id, $check->tags);
+
             my $age_verified;
 
             # Map to something that can be standardised across other systems
@@ -957,7 +964,7 @@ async sub client_verification {
 
             # All our checks are tagged by login ID, we don't currently retain
             # any local mapping aside from this.
-            my @tags = $check->tags->@*;
+            my @tags = grep { $_ } $check->tags->@*;
 
             my ($loginid) = grep { /^[A-Z]+[0-9]+$/ } @tags
                 or die "No login ID found in tags: @tags";
@@ -1213,7 +1220,7 @@ async sub client_verification {
 
         } catch ($e) {
             my $event_name = 'client_verification';
-            await _handle_onfido_exception($e, $client->loginid, $event_name);
+            await _handle_onfido_exception($e, $client ? $client->loginid : 'NOLOGINID', $event_name);
             die $e;
         }
     } catch ($e) {
@@ -3103,7 +3110,7 @@ async sub _check_applicant {
         $log->context->{uploaded_manually_by_staff} = $args->{staff_name} ? 1 : 0;
         $log->context->{documents}                  = join ',', $args->{documents}->@* if $args->{documents};
         $log->context->{applicant_id}               = $args->{applicant_id};
-        await _handle_onfido_exception($e, $client->loginid, $event_name, $tags);
+        await _handle_onfido_exception($e, $client ? $client->loginid : 'NOLOGINID', $event_name, $tags);
     }
 
     await Future->needs_all(_update_onfido_check_count($redis_events_write));
@@ -3136,7 +3143,7 @@ async sub _handle_onfido_exception {
             $log->errorf('Internal error from Onfido - %s', $e);
         } else {
             DataDog::DogStatsd::Helper::stats_inc("event.onfido.$event_name.onfido_acc", {tags => $tags});
-            $log->errorf('Onfido account issue error %s: %s', $payload->code, $e->message);
+            $log->errorf('Onfido account issue error %s for %s: %s', $payload->code, $loginid, $e->message);
         }
 
     } else {
