@@ -174,11 +174,11 @@ unsubscribe a streamer
 
 sub unsubscribe {
     my ($self, $subscription) = @_;
-    my $channel      = $subscription->channel;
-    my $class        = $subscription->class;
-    my $stats_tags   = [$subscription->stats_tag];
-    my $subs         = $self->channel_subscriptions->{$channel};
-    my $original_sub = delete $subs->{refaddr($subscription)} or do {
+    my $channel    = $subscription->channel;
+    my $class      = $subscription->class;
+    my $stats_tags = [$subscription->stats_tag];
+    my $subs       = $self->channel_subscriptions->{$channel};
+    delete $subs->{refaddr($subscription)} or do {
         $log->errorf('Request to unsubscribe for a %s subscription that never existed on channel [%s]', $class, $channel);
         return $self;
     };
