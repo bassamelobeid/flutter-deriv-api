@@ -50,7 +50,7 @@ BOM::Platform::S3Client instance.
 has _s3_client_instance => (
     is      => 'ro',
     default => sub {
-        my $config = BOM::Config::s3()->{binary_desk};
+        my $config = BOM::Config::s3()->{desk};
 
         die "aws_bucket is missing."            unless $config->{aws_bucket};
         die "aws_access_key_id is missing."     unless $config->{aws_access_key_id};
