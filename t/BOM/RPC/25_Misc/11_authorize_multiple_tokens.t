@@ -208,6 +208,7 @@ subtest "$method with multiple tokens" => sub {
             'linked_to'                     => [],
             'account_list'                  => [{
                     'currency'             => '',
+                    'currency_type'        => '',
                     'is_disabled'          => '0',
                     'is_virtual'           => '0',
                     'landing_company_name' => $landing_company,
@@ -222,6 +223,7 @@ subtest "$method with multiple tokens" => sub {
                     'linked_to'            => [],
                     'is_virtual'           => 0,
                     'currency'             => '',
+                    'currency_type'        => '',
                     'is_disabled'          => 0,
                     'account_category'     => 'trading',
                     'loginid'              => $cr_loginid,
@@ -239,11 +241,13 @@ subtest "$method with multiple tokens" => sub {
                     'linked_to'            => [],
                     'is_virtual'           => 0,
                     'currency'             => '',
+                    'currency_type'        => '',
                     'is_disabled'          => 0,
                     'broker'               => $cr2_login->broker,
                 },
                 {
                     'currency'             => '',
+                    'currency_type'        => '',
                     'linked_to'            => [],
                     'landing_company_name' => 'virtual',
                     'loginid'              => $vr_loginid,
@@ -257,6 +261,7 @@ subtest "$method with multiple tokens" => sub {
                 },
                 {
                     'currency'             => '',
+                    'currency_type'        => '',
                     'is_disabled'          => '0',
                     'is_virtual'           => '0',
                     'excluded_until'       => $exclude_until,
@@ -270,6 +275,7 @@ subtest "$method with multiple tokens" => sub {
                 },
                 {
                     'currency'             => 'USD',
+                    'currency_type'        => 'fiat',
                     'is_disabled'          => '1',
                     'is_virtual'           => '0',
                     'landing_company_name' => $landing_company,

@@ -162,6 +162,7 @@ subtest $method => sub {
         'linked_to'                     => [],
         'account_list'                  => [{
                 'currency'             => '',
+                'currency_type'        => '',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
@@ -174,6 +175,7 @@ subtest $method => sub {
             },
             {
                 'currency'             => '',
+                'currency_type'        => '',
                 'excluded_until'       => $exclude_until,
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
@@ -187,6 +189,7 @@ subtest $method => sub {
             },
             {
                 'currency'             => 'USD',
+                'currency_type'        => 'fiat',
                 'is_disabled'          => '1',
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
@@ -221,7 +224,8 @@ subtest $method => sub {
     $expected_result->{currency}            = $expected_result->{stash}->{currency} = 'USD';
     $expected_result->{balance}             = '1000.00';
 
-    $expected_result->{account_list}[0]->{currency} = 'USD';
+    $expected_result->{account_list}[0]->{currency}      = 'USD';
+    $expected_result->{account_list}[0]->{currency_type} = 'fiat';
 
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
@@ -411,6 +415,7 @@ subtest $method => sub {
             'linked_to'                     => [{loginid => $vr_wallet->loginid, platform => 'dwallet'}],
             'account_list'                  => [{
                     'currency'             => 'USD',
+                    'currency_type'        => 'fiat',
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
@@ -423,6 +428,7 @@ subtest $method => sub {
                 },
                 {
                     'currency'             => 'USD',
+                    'currency_type'        => 'fiat',
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
@@ -483,6 +489,7 @@ subtest $method => sub {
             'linked_to'                     => [{'loginid' => $test_client_vr->loginid, 'platform' => 'dtrade'}],
             'account_list'                  => [{
                     'currency'             => 'USD',
+                    'currency_type'        => 'fiat',
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
@@ -495,6 +502,7 @@ subtest $method => sub {
                 },
                 {
                     'currency'             => 'USD',
+                    'currency_type'        => 'fiat',
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
@@ -586,6 +594,7 @@ subtest $method => sub {
             'linked_to'                     => [],
             'account_list'                  => [{
                     'currency'             => 'USD',
+                    'currency_type'        => 'fiat',
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
