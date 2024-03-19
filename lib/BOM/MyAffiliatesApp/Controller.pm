@@ -7,9 +7,8 @@ use Path::Tiny;
 use BOM::MyAffiliates::ActivityReporter;
 use BOM::MyAffiliates::TurnoverReporter;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
-use BOM::MyAffiliates::MultiplierReporter;
 use BOM::MyAffiliates::LookbackReporter;
-use BOM::MyAffiliates::ContractsWithSpreadReporter;
+use BOM::MyAffiliates::CombinedReporter;
 use BOM::Config::Runtime;
 
 =head2 activity_report
@@ -44,12 +43,12 @@ sub turnover_report {
 
 =head2 multiplier_report
 
-Returns myaffiliates multiplier commission report.
+Returns myaffiliates combined commission report.
 
 =cut
 
 sub multiplier_report {
-    return shift->__send_file('multiplier_report');
+    return shift->__send_file('combined_report');
 }
 
 =head2 lookback_report
@@ -62,36 +61,6 @@ sub lookback_report {
     return shift->__send_file('lookback_report');
 }
 
-=head2 accumulator_report
-
-Returns myaffiliates accumulator commission report.
-
-=cut
-
-sub accumulator_report {
-    return shift->__send_file('accumulator_report');
-}
-
-=head2 vanilla_report
-
-Returns myaffiliates vanilla commission report.
-
-=cut
-
-sub vanilla_report {
-    return shift->__send_file('vanilla_report');
-}
-
-=head2 turbos_report
-
-Returns myaffiliates turbos commission report.
-
-=cut
-
-sub turbos_report {
-    return shift->__send_file('turbos_report');
-}
-
 sub __send_file {
     my ($c, $type) = @_;
 
@@ -102,23 +71,11 @@ sub __send_file {
     my ($report_class, $contract_category);
 
     my %report_mapping = (
-        'activity_report'    => {class => 'ActivityReporter'},
-        'registration'       => {class => 'GenerateRegistrationDaily'},
-        'turnover_report'    => {class => 'TurnoverReporter'},
-        'multiplier_report'  => {class => 'MultiplierReporter'},
-        'lookback_report'    => {class => 'LookbackReporter'},
-        'accumulator_report' => {
-            class    => 'ContractsWithSpreadReporter',
-            category => 'accumulator'
-        },
-        'vanilla_report' => {
-            class    => 'ContractsWithSpreadReporter',
-            category => 'vanilla'
-        },
-        'turbos_report' => {
-            class    => 'ContractsWithSpreadReporter',
-            category => 'turbos'
-        });
+        'activity_report' => {class => 'ActivityReporter'},
+        'registration'    => {class => 'GenerateRegistrationDaily'},
+        'turnover_report' => {class => 'TurnoverReporter'},
+        'combined_report' => {class => 'CombinedReporter'},
+        'lookback_report' => {class => 'LookbackReporter'});
 
     if (exists $report_mapping{$type}) {
         $report_class      = $report_mapping{$type}{class};

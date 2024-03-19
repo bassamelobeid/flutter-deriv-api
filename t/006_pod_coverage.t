@@ -19,6 +19,7 @@ my $allowed_naked_packages = {
     'BOM::MyAffiliates::MultiplierReporter'        => 4,
     'BOM::MyAffiliatesApp::Controller'             => 2,
     'BOM::MyAffiliates::LookbackReporter'          => 1,
+    'BOM::MyAffiliates::CombinedReporter'          => 3,
 
 };
 

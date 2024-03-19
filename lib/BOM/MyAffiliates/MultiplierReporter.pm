@@ -24,10 +24,8 @@ extends 'BOM::MyAffiliates::Reporter';
 
 use Text::CSV;
 use Date::Utility;
-use File::SortedSeek                 qw(numeric get_between);
 use Format::Util::Numbers            qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw(in_usd);
-use YAML::XS                         qw(LoadFile);
 use BOM::Config::Runtime;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
@@ -104,14 +102,12 @@ sub activity {
 sub computation {
     my $self = shift;
 
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-
+    my $app_config       = BOM::Config::Runtime->instance->app_config;
     my $trade_commission = {
         financial     => $app_config->get('quants.multiplier_affiliate_commission.financial'),
         non_financial => $app_config->get('quants.multiplier_affiliate_commission.non_financial')};
 
-    my $when = $self->processing_date;
-
+    my $when          = $self->processing_date;
     my $apps_by_brand = $self->get_apps_by_brand_multiplier();
     my $commission    = $self->database_mapper()->get_multiplier_commission({
         date         => $when->date_yyyymmdd,
@@ -141,6 +137,7 @@ sub computation {
         }
 
     }
+
     return $result;
 }
 
