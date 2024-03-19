@@ -1934,6 +1934,7 @@ subtest 'POI bundle' => sub {
         $stash = [
             build_document({
                     document_type   => 'selfie_with_id',
+                    document_id     => '123',
                     issuing_country => 'br',
                 })];
 
@@ -1950,6 +1951,7 @@ subtest 'POI bundle' => sub {
                     $stash = [
                         build_document({
                                 document_type   => 'selfie_with_id',
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                                 id              => 1,
@@ -1957,6 +1959,7 @@ subtest 'POI bundle' => sub {
                         ),
                         build_document({
                                 document_type   => $document_type,
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => "CR1.$document_type.2_front.jpg",
                                 id              => 2,
@@ -1969,6 +1972,7 @@ subtest 'POI bundle' => sub {
                     $stash = [
                         build_document({
                                 document_type   => 'selfie_with_id',
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                                 id              => 1,
@@ -1976,6 +1980,7 @@ subtest 'POI bundle' => sub {
                         ),
                         build_document({
                                 document_type   => $document_type,
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => "CR1.$document_type.2_front.jpg",
                                 id              => 2,
@@ -1983,6 +1988,7 @@ subtest 'POI bundle' => sub {
                         ),
                         build_document({
                                 document_type   => $document_type,
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => "CR1.$document_type.3_front.jpg",
                                 id              => 4,
@@ -1990,6 +1996,7 @@ subtest 'POI bundle' => sub {
                         ),
                         build_document({
                                 document_type   => $document_type,
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => "CR1.$document_type.4_front.jpg",
                                 id              => 4,
@@ -1997,6 +2004,7 @@ subtest 'POI bundle' => sub {
                         ),
                         build_document({
                                 document_type   => $document_type,
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => "CR1.$document_type.5_front.jpg",
                                 id              => 5,
@@ -2015,6 +2023,7 @@ subtest 'POI bundle' => sub {
                     $stash = [
                         build_document({
                                 document_type   => 'selfie_with_id',
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                                 id              => 1,
@@ -2026,6 +2035,7 @@ subtest 'POI bundle' => sub {
                             build_document({
                                     document_type   => $_,
                                     issuing_country => 'br',
+                                    document_id     => '123',
                                     file_name       => "CR1.$_.$i\_$side.jpg",
                                     id              => $i,
                                 })
@@ -2040,6 +2050,7 @@ subtest 'POI bundle' => sub {
                 $stash = [
                     build_document({
                             document_type   => 'selfie_with_id',
+                            document_id     => '123',
                             issuing_country => 'br',
                             file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                             id              => 1,
@@ -2051,6 +2062,7 @@ subtest 'POI bundle' => sub {
 
                         build_document({
                                 document_type   => $_,
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => "CR1.$_.$i\_$side.jpg",
                                 id              => $i,
@@ -2063,6 +2075,7 @@ subtest 'POI bundle' => sub {
                 $stash = [
                     build_document({
                             document_type   => 'selfie_with_id',
+                            document_id     => '123',
                             issuing_country => 'br',
                             file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                             id              => 1,
@@ -2074,6 +2087,7 @@ subtest 'POI bundle' => sub {
 
                         build_document({
                                 document_type   => $_,
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => "CR1.$_.$i\_$side.jpg",
                                 id              => $i,
@@ -2090,6 +2104,7 @@ subtest 'POI bundle' => sub {
                         $stash = [
                             build_document({
                                     document_type   => 'selfie_with_id',
+                                    document_id     => '123',
                                     issuing_country => 'br',
                                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                                     id              => 1,
@@ -2097,6 +2112,7 @@ subtest 'POI bundle' => sub {
                             ),
                             build_document({
                                     document_type   => $document_type,
+                                    document_id     => '123',
                                     issuing_country => 'br',
                                     file_name       => "CR1.$document_type.2_$side.jpg",
                                     id              => 2,
@@ -2104,6 +2120,7 @@ subtest 'POI bundle' => sub {
                             ),
                             build_document({
                                     document_type   => $document_type,
+                                    document_id     => '123',
                                     issuing_country => 'br',
                                     file_name       => "CR1.$document_type.3_$side.jpg",
                                     id              => 3,
@@ -2124,6 +2141,7 @@ subtest 'POI bundle' => sub {
                         $stash = [
                             build_document({
                                     document_type   => 'selfie_with_id',
+                                    document_id     => '123',
                                     issuing_country => 'br',
                                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                                     id              => 1,
@@ -2134,6 +2152,7 @@ subtest 'POI bundle' => sub {
 
                                 build_document({
                                         document_type   => $document_type,
+                                        document_id     => '123',
                                         issuing_country => 'br',
                                         file_name       => "CR1.$document_type.$i\_$_.jpg",
                                         id              => $i,
@@ -2155,6 +2174,7 @@ subtest 'POI bundle' => sub {
                         $stash = [
                             build_document({
                                     document_type   => 'selfie_with_id',
+                                    document_id     => '123',
                                     issuing_country => 'br',
                                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                                     id              => 1,
@@ -2165,6 +2185,7 @@ subtest 'POI bundle' => sub {
 
                                 build_document({
                                         document_type   => $document_type,
+                                        document_id     => '123',
                                         issuing_country => 'br',
                                         file_name       => "CR1.$document_type.$i\_$_.jpg",
                                         id              => $i,
@@ -2196,6 +2217,7 @@ subtest 'POI bundle' => sub {
                     $stash = [
                         build_document({
                                 document_type   => 'selfie_with_id',
+                                document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                                 id              => 1,
@@ -2203,7 +2225,44 @@ subtest 'POI bundle' => sub {
                         ),
                         build_document({
                                 document_type   => $document_type,
+                                document_id     => '123',
                                 issuing_country => 'br',
+                                file_name       => "CR1.$document_type.2_$side.jpg",
+                                id              => 2,
+                            }
+                        ),
+                    ];
+
+                    my @stash = $stash->@*;
+
+                    cmp_deeply $client->documents->pending_poi_bundle(),
+                        {
+                        selfie    => shift @stash,
+                        documents => [@stash],
+                        },
+                        'Expected bundle returned';
+                }
+            }
+        }
+    };
+
+    subtest 'valid documents with Null fields' => sub {
+        for my $document_type ($one_sided->@*) {
+            for my $side ($sides->@*) {
+                subtest $document_type => sub {
+                    $stash = [
+                        build_document({
+                                document_type   => 'selfie_with_id',
+                                document_id     => undef,
+                                issuing_country => undef,
+                                file_name       => 'CR1.selfie_with_id.1_photo.jpg',
+                                id              => 1,
+                            }
+                        ),
+                        build_document({
+                                document_type   => $document_type,
+                                document_id     => undef,
+                                issuing_country => undef,
                                 file_name       => "CR1.$document_type.2_$side.jpg",
                                 id              => 2,
                             }
@@ -2227,6 +2286,7 @@ subtest 'POI bundle' => sub {
         $stash = [
             build_document({
                     document_type   => 'selfie_with_id',
+                    document_id     => '123',
                     issuing_country => 'br',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                     id              => 1,
@@ -2234,6 +2294,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'national_identity_card',
+                    document_id     => '123',
                     issuing_country => 'br',
                     file_name       => "CR1.national_identity_card.4_front.jpg",
                     id              => 4,
@@ -2241,6 +2302,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'national_identity_card',
+                    document_id     => '123',
                     issuing_country => 'br',
                     file_name       => "CR1.national_identity_card.3_back.jpg",
                     id              => 3,
@@ -2248,6 +2310,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'passport',
+                    document_id     => '123',
                     issuing_country => 'br',
                     file_name       => "CR1.passport.10_front.jpg",
                     id              => 10,
@@ -2267,6 +2330,7 @@ subtest 'POI bundle' => sub {
         $stash = [
             build_document({
                     document_type   => 'selfie_with_id',
+                    document_id     => '123',
                     issuing_country => 'br',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                     id              => 1,
@@ -2274,6 +2338,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'national_identity_card',
+                    document_id     => '123',
                     issuing_country => 'br',
                     file_name       => "CR1.national_identity_card.4_front.jpg",
                     id              => 4,
@@ -2281,6 +2346,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'national_identity_card',
+                    document_id     => '123',
                     issuing_country => 'br',
                     file_name       => "CR1.national_identity_card.3_back.jpg",
                     id              => 3,
@@ -2288,6 +2354,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'passport',
+                    document_id     => '123',
                     issuing_country => 'br',
                     file_name       => "CR1.passport.10_front.jpg",
                     id              => 2,
@@ -2309,6 +2376,7 @@ subtest 'POI bundle' => sub {
         $stash = [
             build_document({
                     document_type   => 'selfie_with_id',
+                    document_id     => '123',
                     issuing_country => 'ru',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                     id              => 1,
@@ -2316,6 +2384,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'passport',
+                    document_id     => '123',
                     issuing_country => 'ru',
                     file_name       => "CR1.passport.2_front.jpg",
                     id              => 2,
@@ -2332,6 +2401,7 @@ subtest 'POI bundle' => sub {
         $stash = [
             build_document({
                     document_type   => 'selfie_with_id',
+                    document_id     => '123',
                     issuing_country => 'ru',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
                     id              => 1,
@@ -2339,6 +2409,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'passport',
+                    document_id     => '123',
                     issuing_country => 'ru',
                     file_name       => "CR1.passport.2_front.jpg",
                     id              => 2,
@@ -2346,6 +2417,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'selfie_with_id',
+                    document_id     => '123',
                     issuing_country => 'co',
                     file_name       => 'CR1.selfie_with_id.3_photo.jpg',
                     id              => 3,
@@ -2353,6 +2425,7 @@ subtest 'POI bundle' => sub {
             ),
             build_document({
                     document_type   => 'passport',
+                    document_id     => '123',
                     issuing_country => 'co',
                     file_name       => "CR1.passport.4_front.jpg",
                     id              => 4,

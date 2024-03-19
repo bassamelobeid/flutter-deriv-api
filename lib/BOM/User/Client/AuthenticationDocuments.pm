@@ -1611,7 +1611,9 @@ sub pending_poi_bundle {
     for my $document ($stash->@*) {
         next unless !$onfido_country || BOM::Config::Onfido::is_country_supported($document->issuing_country);
 
-        my $type = $document->document_type;
+        my $type            = $document->document_type;
+        my $document_id     = $document->document_id     // '';
+        my $issuing_country = $document->issuing_country // '';
 
         if ($type eq 'selfie_with_id') {
             $selfie = $document unless $selfie;
@@ -1622,7 +1624,7 @@ sub pending_poi_bundle {
 
         # index by document id (numbers) + country + type, so we stack related documents
 
-        my $index = join '-', $document->document_id, $document->issuing_country, $type;
+        my $index = join '-', $document_id, $issuing_country, $type;
 
         $stack->{$index} //= {};
 
