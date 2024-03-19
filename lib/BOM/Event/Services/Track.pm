@@ -1227,6 +1227,7 @@ Returns a hashref of valid properties as { name_of_the_property => value_of_the_
 
 sub valid_properties {
     my ($event, $properties) = @_;
+    return $properties if $event eq 'payops_event_email';
     my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'loginid', 'lang', 'brand'];
     my $valid_properties       = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } @$valid_event_properties};
 
