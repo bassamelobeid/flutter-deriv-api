@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 9;
+use Test::Most tests => 11;
 use File::Spec;
 use YAML::XS qw(LoadFile);
 use Test::Warnings;
@@ -26,7 +26,10 @@ use BOM::Test::Helper::ExchangeRates        qw/populate_exchange_rates/;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Config;
 use Business::Config::LandingCompany;
+use BOM::Test::Helper::FinancialAssessment;
+use BOM::User::Script::AMLClientsUpdate;
 
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -37,7 +40,6 @@ initialize_realtime_ticks_db();
 
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
-$mock_validation->mock(compliance_checks     => sub { note "mocked Transaction::Validation->compliance_checks returning nothing";     undef });
 $mock_validation->mock(check_tax_information => sub { note "mocked Transaction::Validation->check_tax_information returning nothing"; undef });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
@@ -599,6 +601,135 @@ subtest 'synthetic_age_verification_check' => sub {
     });
 
     is $tx->buy, undef, 'can buy synthetic contract when age verified';
+};
+
+subtest 'high_risk_verification_check CR account' => sub {
+    my $broker_code = 'CR';
+    my $email       = 'testingcr@test.com';
+
+    $mock_validation->unmock("check_authentication_required");
+
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => $broker_code,
+        residence   => 'id'
+    });
+    BOM::User->create(
+        email    => $email,
+        password => 'xxx'
+    )->add_client($client);
+
+    $client->aml_risk_classification('high');
+    $client->save;
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client);
+
+    my $currency = 'USD';
+    $client->set_default_account($currency);
+
+    $client->payment_free_gift(
+        amount   => 100,
+        remark   => 'free money',
+        currency => $currency
+    );
+
+    $now = Date::Utility->new;
+    my $expiry = $now->plus_time_interval('1d');
+
+    my %contract_params = (
+        underlying   => 'R_50',
+        bet_type     => 'CALL',
+        currency     => $currency,
+        payout       => 10,
+        date_start   => Date::Utility->new($now->epoch),
+        date_pricing => $now->epoch,
+        date_expiry  => $expiry,
+        entry_tick   => $random_tick,
+        current_tick => $random_tick,
+        barrier      => 'S0P',
+    );
+
+    $contract = produce_contract({%contract_params, underlying => 'R_50'});
+
+    my $tx = BOM::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        amount_type   => 'stake',
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $tx->buy;
+
+    ok !$error, "CR account buy without error.";
+    is $client->status->withdrawal_locked->{reason}, 'Pending authentication or FA', 'withdrawal lock applied on high risk';
+
+};
+
+subtest 'standard_risk_verification_check MF account' => sub {
+    my $broker_code = 'MF';
+    my $email       = 'testingmf@test.com';
+    $mock_validation->mock(_bailout_early => sub { note "mocked Transaction::Validation->_bailout_early returning nothing"; undef });
+
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => $broker_code,
+        residence   => 'es'
+    });
+    BOM::User->create(
+        email    => $email,
+        password => 'xxx'
+    )->add_client($client);
+
+    $client->aml_risk_classification('standard');
+    $client->save;
+    BOM::User::Script::AMLClientsUpdate::update_locks_high_risk_change($client);
+
+    my $currency = 'USD';
+    $client->set_default_account($currency);
+
+    $client->payment_free_gift(
+        amount   => 100,
+        remark   => 'free money',
+        currency => $currency
+    );
+
+    my %contract_params = (
+        underlying   => 'cryBTCUSD',
+        bet_type     => 'MULTUP',
+        currency     => $currency,
+        multiplier   => 50,
+        amount       => 10,
+        amount_type  => 'stake',
+        current_tick => $random_tick,
+    );
+
+    $contract = produce_contract({%contract_params, underlying => 'cryBTCUSD'});
+
+    my $tx = BOM::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        amount_type   => 'stake',
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $tx->buy;
+
+    is $error->get_type,             'FinancialAssessmentRequired',                                                               'error code ok';
+    is $error->{-message_to_client}, 'Please complete the financial assessment form to lift your withdrawal and trading limits.', 'error message ok';
+    is $client->status->withdrawal_locked->{reason}, 'FA needs to be completed';
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $client->financial_assessment({
+        data => encode_json_utf8($data),
+    });
+    $client->save();
+
+    ok $client->fully_authenticated,              'The account is fully authenticated';
+    ok $client->is_financial_assessment_complete, 'The account is FA completed';
+
+    $error = $tx->buy;
+    ok !$error, "MF account buy without error when FA completed and fully authenticated.";
 };
 
 done_testing();
