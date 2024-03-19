@@ -45,6 +45,9 @@
                      "currency" : {
                         "type" : "string"
                      },
+                     "currency_type" : {
+                        "type" : "string"
+                     },
                      "is_virtual" : {
                         "enum" : [0,1],
                         "type" : "integer"

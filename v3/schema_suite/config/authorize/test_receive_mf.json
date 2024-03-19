@@ -58,6 +58,9 @@
                      "currency" : {
                         "type" : "string"
                      },
+                     "currency_type" : {
+                        "type" : "string"
+                     },
                      "trading": {
                         "type": "object"
                      },

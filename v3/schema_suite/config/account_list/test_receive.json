@@ -26,6 +26,7 @@
                "broker",
                "created_at",
                "currency",
+               "currency_type",
                "is_disabled",
                "is_virtual",
                "landing_company_name",
@@ -66,6 +67,12 @@
                   "type": "integer"
                },
                "currency": {
+                  "type": [
+                     "null",
+                     "string"
+                  ]
+               },
+               "currency_type": {
                   "type": [
                      "null",
                      "string"
