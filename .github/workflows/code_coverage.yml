@@ -17,3 +17,5 @@ jobs:
     if: github.ref == 'refs/heads/master' || needs.check_coverage_flag.outputs.need_coverage == 'yes'
     uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
     secrets: inherit
+    with:
+      debianci_image: regentmarkets/debian-ci:gaurav-deriv_account_fix_annonimyzation_desk
