@@ -254,7 +254,7 @@ sub servers {
 
     foreach my $group_type (sort keys %$mt5_config) {
         next if $self->{group_type} and $self->{group_type} ne $group_type;
-        next if $group_type eq 'request_timeout' or $group_type eq 'mt5_http_proxy_url';
+        next if $group_type eq 'request_timeout' or $group_type eq 'mt5_http_proxy_url' or $group_type eq 'stage';
 
         foreach my $server_type (sort keys %{$mt5_config->{$group_type}}) {
             push @servers,
