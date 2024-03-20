@@ -168,7 +168,10 @@ rpc proposal_open_contract => sub {
 
     for my $poc_parameters (values %$poc_parameters_all) {
         my $res = BOM::Pricing::v3::Contract::get_bid($poc_parameters);
-        $res->{longcode} = localize($res->{longcode});
+        BOM::Pricing::v3::Utility::localize_bid_response($res);
+        if ($res->{longcode}) {
+            $res->{longcode} = localize($res->{longcode});
+        }
         $response->{$poc_parameters->{contract_id}} = $res;
 
         if (defined $contract_id && defined $res->{error}) {

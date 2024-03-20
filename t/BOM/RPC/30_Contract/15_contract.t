@@ -191,14 +191,14 @@ subtest 'get_ask' => sub {
     $params->{symbol} = "invalid symbol";
     $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     ok $result->{error}, 'error for invalid symbol';
-    is $result->{error}{code},              'ContractCreationFailure',                'error code is ContractCreationFailure';
-    is $result->{error}{message_to_client}, 'Trading is not offered for this asset.', 'correct message to client';
+    is $result->{error}{code},                 'ContractCreationFailure',                'error code is ContractCreationFailure';
+    is $result->{error}{message_to_client}[0], 'Trading is not offered for this asset.', 'correct message to client';
 
     cmp_deeply(
         BOM::Pricing::v3::Contract::_get_ask({}),
         {
             error => {
-                message_to_client => 'Missing required contract parameters (bet_type).',
+                message_to_client => ['Missing required contract parameters ([_1]).', 'bet_type'],
                 code              => "ContractCreationFailure",
                 details           => {field => 'contract_type'},
             }
@@ -223,7 +223,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time is in the past');
     is(
-        $result->{error}{message_to_client},
+        $result->{error}{message_to_client}[0],
         'Expiry time cannot be in the past.',
         'errors response is correct when date_expiry < date_start with payout_type is payout'
     );
@@ -244,7 +244,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
 
     is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time == expiry time');
     is(
-        $result->{error}{message_to_client},
+        $result->{error}{message_to_client}[0],
         'Expiry time cannot be equal to start time.',
         'errors response is correct when date_expiry = date_start with payout_type is stake'
     );

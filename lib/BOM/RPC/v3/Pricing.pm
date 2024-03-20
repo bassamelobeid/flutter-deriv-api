@@ -23,6 +23,9 @@ rpc send_ask => sub {
     my $args = dclone $params;
 
     my $response = BOM::Pricing::v3::Contract::send_ask($params);
+    if ($response->{error}) {
+        $response->{error}{message_to_client} = localize($response->{error}{message_to_client});
+    }
 
     if ($ENV{RECORD_PRICE_METRICS} and not exists $response->{error}) {
         my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode({$params->{args}->%*}, $response->{spot});
@@ -64,13 +67,20 @@ rpc send_ask => sub {
 
 rpc get_bid => sub {
     my $response = BOM::Pricing::v3::Contract::get_bid(@_);
-    $response->{longcode} = localize($response->{longcode});
+    BOM::Pricing::v3::Utility::localize_bid_response($response);
+    if ($response->{longcode}) {
+        $response->{longcode} = localize($response->{longcode});
+    }
     return $response;
 };
 
 rpc get_contract_details => sub {
     my $response = BOM::Pricing::v3::Contract::get_contract_details(@_);
-    $response->{longcode} = localize($response->{longcode});
+    if ($response->{error}) {
+        $response->{error}{message_to_client} = localize($response->{error}{message_to_client});
+    } else {
+        $response->{longcode} = localize($response->{longcode});
+    }
     return $response;
 };
 
