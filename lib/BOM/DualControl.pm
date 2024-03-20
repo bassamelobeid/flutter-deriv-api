@@ -31,6 +31,8 @@ use BOM::User;
 use BOM::Config;
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
+
 has staff => (
     is       => 'ro',
     isa      => 'Str',
@@ -76,6 +78,23 @@ sub self_tagging_control_code {
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $self->_environment));
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
+}
+
+=head2 tactical_index_control_code
+
+Generates tactical index DCC used in feed_configuration.cgi
+
+=cut
+
+sub tactical_index_control_code {
+    my ($self, $payload) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $payload, $self->_environment));
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
@@ -508,6 +527,61 @@ sub validate_payments_settings_control_code {
     $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
     return undef;
+}
+
+=head2 validate_tactical_index_control_code
+
+Validates tactical index DCC
+
+=cut
+
+sub validate_tactical_index_control_code {
+    my ($self, $incode, $payload_to_check) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_element_count($code, 5);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
+
+    my @arry    = split("_##_", $code);
+    my $payload = $arry[3];
+
+    #compare the two payloads
+    #if they are not the same, return error on which field is different
+    $payload          = decode_json_utf8($payload);
+    $payload_to_check = decode_json_utf8($payload_to_check);
+
+    my $mismatched_key;
+    foreach my $key (keys %$payload) {
+        if ($payload->{$key} ne $payload_to_check->{$key}) {
+
+            # we wanted a string of mismatched key like a, b, c
+            unless ($mismatched_key) {
+                $mismatched_key = $key;
+            } else {
+                $mismatched_key = join(", ", $mismatched_key, $key);
+            }
+        }
+    }
+
+    if ($mismatched_key) {
+        return Error::Base->cuss(
+            -type => 'Invalid Parameters',
+            -mesg =>
+                "Current parameters provided does not match with the parameters provided during code generation. Mismatched key: $mismatched_key",
+        );
+    }
+    return;
 }
 
 sub _validate_empty_code {

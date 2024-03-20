@@ -352,7 +352,7 @@ if (BOM::Backoffice::Auth::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin',
     print '</div></div>';
 }
 
-if (BOM::Backoffice::Auth::has_authorisation(['Quants'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Quants']) || BOM::Backoffice::Auth::has_authorisation(['DealingWrite'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">

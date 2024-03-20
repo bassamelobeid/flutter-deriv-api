@@ -127,5 +127,19 @@ subtest 'impersonate client dual control code' => sub {
 
 };
 
+subtest 'tactical index dual control code' => sub {
+    my $dcc1 = BOM::DualControl->new({
+            staff           => 'gabe',
+            transactiontype => 'QuantsDCC'
+        })->tactical_index_control_code("{\"field1\": \"1\", \"field2\": \"2\"}");
+
+    my $error = BOM::DualControl->new({
+            staff           => 'not_gabe',    #someone else should do the DCC
+            transactiontype => 'QuantsDCC'
+        })->validate_tactical_index_control_code($dcc1, "{\"field1\": \"1\", \"field2\": \"69\"}");
+
+    ok $error, 'Invalid Parameters Current parameters does not match with the parameters provided during code generation. field2 is different';
+};
+
 done_testing();
 
