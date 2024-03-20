@@ -384,6 +384,25 @@ subtest "/v1/payment/withdraw" => sub {
 
         call_ok('post' => '/v1/payment/withdraw' => $body)->has_no_error->response_is_deeply({payment_id => $payment_id});
     };
+    subtest "Priority withdrawal" => sub {
+        $mocked_user->mock(
+            validate_payment => sub {
+                return undef;
+            },
+        );
+        $body->{priority_fee} = 0.1;
+
+        call_ok('post' => '/v1/payment/withdraw' => $body)->has_no_error;
+
+        my $controller = BOM::Platform::CryptoCashier::Payment::API::Controller->new;
+        my $payment_id = $controller->get_payment_id_from_clientdb($body->{client_loginid}, $body->{crypto_id}, 'withdrawal');
+        $t->json_is(
+            '' => {payment_id => $payment_id},
+            'right object'
+        );
+
+        $mocked_user->unmock_all;
+    };
 };
 
 subtest "/v1/payment/revert_withdrawal" => sub {

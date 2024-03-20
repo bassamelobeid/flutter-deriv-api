@@ -65,7 +65,7 @@ subtest "get_payment_id_from_clientdb" => sub {
     my $controller = BOM::Platform::CryptoCashier::Payment::API::Controller->new();
     $controller->{client} = $crypto_client;
 
-    subtest "despoit" => sub {
+    subtest "deposit" => sub {
         is $controller->get_payment_id_from_clientdb($crypto_loginid, 55, 'deposit'), undef, 'No despoit payment found';
 
         my %payment_args = (

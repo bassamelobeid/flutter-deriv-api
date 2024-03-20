@@ -165,8 +165,9 @@ sub withdraw {
     my $amount         = $self->param('amount')         // return $self->render_error('MissingRequiredParameter', message_params => 'amount');
     my $currency_code  = $self->param('currency_code')  // return $self->render_error('MissingRequiredParameter', message_params => 'currency_code');
     my $client_loginid = $self->param('client_loginid') // return $self->render_error('MissingRequiredParameter', message_params => 'client_loginid');
+    my $priority_fee   = $self->param('priority_fee')   // '';
 
-    # apply sensible rounding for the amount for credit
+    # apply sensible rounding for the amount for debit
     $amount = financialrounding('amount', $currency_code, $amount);
 
     if (my $error = $self->init_payment_validation($currency_code, $client_loginid, $amount)) {
@@ -202,6 +203,7 @@ sub withdraw {
         crypto_id        => $crypto_id,
         transaction_hash => '',
         address          => $address,
+        priority_fee     => $priority_fee
     );
 
     my $txn = $self->{client}->payment_ctc(%payment_args);

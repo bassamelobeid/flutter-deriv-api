@@ -440,10 +440,9 @@ Each payment record has the following fields
 
 sub db_load_locked_crypto_withdrawals {
     my ($self, $excluded_currencies) = @_;
-    $excluded_currencies =~ s/^\s+//;
 
     my $crypto_api          = BOM::Platform::CryptoCashier::InternalAPI->new;
-    my $response            = $crypto_api->list_locked_crypto_withdrawals($excluded_currencies);
+    my $response            = $crypto_api->list_locked_crypto_withdrawals($excluded_currencies // '');
     my $pending_withdrawals = [];
     if ($response && ref $response eq 'HASH' && $response->{error}) {
         $log->errorf('Faild to get the pending withdrawal requests, error: %s', $response->{error}{message_to_client});
