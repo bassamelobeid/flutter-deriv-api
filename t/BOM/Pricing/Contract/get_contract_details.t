@@ -64,8 +64,4 @@ $result = BOM::Pricing::v3::Contract::get_contract_details($params);
 
 cmp_deeply($result, $error, 'Cannot create contract MULTUP');
 
-$result = BOM::Pricing::v3::Contract::localize_template_params(['msg1', 'msg2', ['msg3']]);
-
-cmp_deeply($result, ['msg1', 'msg2', 'msg3'], 'localize_template_params');
-
 done_testing;

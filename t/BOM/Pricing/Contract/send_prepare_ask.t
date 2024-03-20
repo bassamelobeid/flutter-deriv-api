@@ -216,14 +216,14 @@ subtest 'get_ask' => sub {
 
     $params->{symbol} = "invalid symbol";
     $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-    is $result->{error}{code},              'ContractCreationFailure',                'error code is ContractCreationFailure';
-    is $result->{error}{message_to_client}, 'Trading is not offered for this asset.', 'correct message to client';
+    is $result->{error}{code},                 'ContractCreationFailure',                'error code is ContractCreationFailure';
+    is $result->{error}{message_to_client}[0], 'Trading is not offered for this asset.', 'correct message to client';
 
     cmp_deeply(
         BOM::Pricing::v3::Contract::_get_ask({}),
         {
             error => {
-                message_to_client => 'Missing required contract parameters (bet_type).',
+                message_to_client => ['Missing required contract parameters ([_1]).', 'bet_type'],
                 code              => "ContractCreationFailure",
                 details           => {field => 'contract_type'},
             }
@@ -248,7 +248,7 @@ subtest 'send_ask date_expiry_smaller' => sub {
     my $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
     is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time is in the past');
     is(
-        $result->{error}{message_to_client},
+        $result->{error}{message_to_client}[0],
         'Expiry time cannot be in the past.',
         'errors response is correct when date_expiry < date_start with payout_type is payout'
     );
@@ -269,7 +269,7 @@ subtest 'send_ask date_expiry_smaller' => sub {
 
     is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time == expiry time');
     is(
-        $result->{error}{message_to_client},
+        $result->{error}{message_to_client}[0],
         'Expiry time cannot be equal to start time.',
         'errors response is correct when date_expiry = date_start with payout_type is stake'
     );
@@ -489,7 +489,7 @@ subtest 'send_ask MULTUP' => sub {
     my $expected = {
         'code'              => 'ContractCreationFailure',
         'details'           => {'field' => 'basis'},
-        'message_to_client' => 'Basis must be stake for this contract.'
+        'message_to_client' => ['Basis must be [_1] for this contract.', 'stake'],
     };
 
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
@@ -501,7 +501,7 @@ subtest 'send_ask MULTUP' => sub {
     $expected = {
         'code'              => 'ContractCreationFailure',
         'details'           => {'field' => 'duration'},
-        'message_to_client' => 'Invalid input (duration or date_expiry) for this contract type (MULTUP).'
+        'message_to_client' => ['Invalid input (duration or date_expiry) for this contract type ([_1]).', 'MULTUP'],
     };
     cmp_deeply($result->{error}, $expected, 'ContractCreationFailure duration');
 
@@ -550,7 +550,7 @@ subtest 'send_ask ACCU' => sub {
     my $expected = {
         'code'              => 'ContractCreationFailure',
         'details'           => {'field' => 'basis'},
-        'message_to_client' => 'Basis must be stake for this contract.'
+        'message_to_client' => ['Basis must be [_1] for this contract.', 'stake'],
     };
 
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
@@ -562,7 +562,7 @@ subtest 'send_ask ACCU' => sub {
     $expected = {
         'code'              => 'ContractCreationFailure',
         'details'           => {'field' => 'growth_rate'},
-        'message_to_client' => 'Missing required contract parameters (growth_rate).'
+        'message_to_client' => ['Missing required contract parameters ([_1]).', 'growth_rate'],
     };
     cmp_deeply($result->{error}, $expected, 'ContractCreationFailure growth_rate');
 

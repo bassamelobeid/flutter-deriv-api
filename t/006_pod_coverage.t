@@ -10,9 +10,9 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'BOM::Pricing::PriceDaemon'    => 6,
-    'BOM::Pricing::v3::Contract'   => 11,
+    'BOM::Pricing::v3::Contract'   => 10,
     'BOM::Pricing::v3::MarketData' => 8,
-    'BOM::Pricing::v3::Utility'    => 4,
+    'BOM::Pricing::v3::Utility'    => 5,
     'BOM::Pricing::v4::Error'      => 2,
 };
 

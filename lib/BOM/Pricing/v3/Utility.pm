@@ -6,6 +6,7 @@ use warnings;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::MaybeUTF8            qw(:v1);
 use BOM::Config::Redis;
+use BOM::Platform::Context qw(localize);
 use BOM::Product::Contract;
 use Price::Calculator;
 use Math::Util::CalculatedValue::Validatable;
@@ -208,6 +209,44 @@ sub get_poc_parameters {
     my $poc_parameters = {@{$payload}};
 
     return $poc_parameters;
+}
+
+=head2 localize_bid_response
+
+localizes display strings in bid response
+
+=cut
+
+sub localize_bid_response {
+    my $resp = shift;
+    if ($resp->{error}) {
+        $resp->{error}{message_to_client} = localize($resp->{error}{message_to_client});
+    }
+    if ($resp->{display_name}) {
+        $resp->{display_name} = localize($resp->{display_name});
+    }
+    if ($resp->{validation_error}) {
+        $resp->{validation_error} = localize($resp->{validation_error});
+    }
+    if ($resp->{limit_order}) {
+        for (keys %{$resp->{limit_order}}) {
+            $resp->{limit_order}{$_}{display_name} = localize($resp->{limit_order}{$_}{display_name});
+        }
+    }
+    if ($resp->{audit_details}) {
+        _localize_audit_details($resp->{audit_details});
+    }
+}
+
+sub _localize_audit_details {
+    my $details = shift;
+    for my $key (keys %$details) {
+        for my $detail (@{$details->{$key}}) {
+            if ($detail->{name}) {
+                $detail->{name} = localize($detail->{name});
+            }
+        }
+    }
 }
 
 1;

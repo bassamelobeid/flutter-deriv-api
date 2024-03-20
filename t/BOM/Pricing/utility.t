@@ -99,4 +99,53 @@ subtest 'get_poc_parameters' => sub {
     cmp_deeply($result, {test => 1}, 'poc_parameters matches');
 };
 
+subtest 'localize bid response' => sub {
+    my $input = {
+        display_name => ['display name [_1]', 'localized'],
+        error        => {
+            message_to_client => ['error [_1]', 'localized'],
+        },
+        limit_order => {
+            take_profit => {
+                display_name => 'Take profit',
+            },
+            another_limit => {
+                display_name => ['limits [_1]', 'localized'],
+            },
+        },
+        validation_error => ['validation error [_1]', 'localized'],
+        audit_details    => {
+            test => [{
+                    name => ['msg1 [_1] [_2]', 'msg2', ['msg3']],
+                    foo  => 7,
+                }
+            ],
+        },
+    };
+    my $expect = {
+        display_name => 'display name localized',
+        error        => {
+            message_to_client => 'error localized',
+        },
+        limit_order => {
+            take_profit => {
+                display_name => 'Take profit',
+            },
+            another_limit => {
+                display_name => 'limits localized',
+            },
+        },
+        validation_error => 'validation error localized',
+        audit_details    => {
+            test => [{
+                    name => 'msg1 msg2 msg3',
+                    foo  => 7,
+                }
+            ],
+        },
+    };
+    BOM::Pricing::v3::Utility::localize_bid_response($input);
+    cmp_deeply($input, $expect, 'bid response was localized');
+};
+
 done_testing;

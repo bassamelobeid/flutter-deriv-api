@@ -325,13 +325,19 @@ sub run {
 sub _process_price {
     my ($self, $params) = @_;
     $params->{streaming_params}->{from_pricer} = 1;
-    return BOM::Pricing::v3::Contract::send_ask({args => $params});
+    my $resp = BOM::Pricing::v3::Contract::send_ask({args => $params});
+    if ($resp->{error}) {
+        $resp->{error}{message_to_client} = localize($resp->{error}{message_to_client});
+    }
+    return $resp;
 }
 
 sub _process_bid {
     my ($self, $params) = @_;
     $params->{validation_params}->{skip_barrier_validation} = 1;
-    return BOM::Pricing::v3::Contract::send_bid($params);
+    my $resp = BOM::Pricing::v3::Contract::send_bid($params);
+    BOM::Pricing::v3::Utility::localize_bid_response($resp);
+    return $resp;
 }
 
 sub _validate_params {

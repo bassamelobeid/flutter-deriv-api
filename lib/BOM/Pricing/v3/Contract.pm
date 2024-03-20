@@ -6,9 +6,11 @@ no indirect;
 
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
-use BOM::Platform::Context qw (localize request);
+use BOM::Contract::Factory qw(produce_contract);
+use BOM::Contract::Pricer;
+use BOM::Contract::Validator;
+use BOM::Platform::Context qw (localize);
 use BOM::Pricing::v3::Utility;
-use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::User::Client;
 use DataDog::DogStatsd::Helper  qw(stats_timing stats_inc);
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
@@ -72,27 +74,10 @@ sub prepare_ask {
     return \%p2;
 }
 
-=head2 contract_metadata
-
-Extracts some generic information from a given contract.
-
-=cut
-
-sub contract_metadata {
-    my ($contract) = @_;
-    return +{
-        app_markup_percentage => $contract->app_markup_percentage,
-        ($contract->is_binary) ? (staking_limits => $contract->staking_limits) : (),    #staking limits only apply to binary
-        deep_otm_threshold    => $contract->otm_threshold,
-        base_commission       => $contract->base_commission,
-        min_commission_amount => $contract->min_commission_amount,
-    };
-}
-
 sub _get_ask {
     my ($args_copy, $app_markup_percentage) = @_;
     my $streaming_params = delete $args_copy->{streaming_params};
-    my ($contract, $response, $contract_parameters);
+    my ($contract, $response);
     my $country_code;
 
     my $tv = [Time::HiRes::gettimeofday];
@@ -106,7 +91,7 @@ sub _get_ask {
         my $details           = _get_error_details($e);
         return BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractCreationFailure',
-            message_to_client => localize(@$message_to_client),
+            message_to_client => $message_to_client,
             $details ? (details => $details) : (),
         });
     }
@@ -123,22 +108,22 @@ sub _get_ask {
             });
             $country_code = $client->residence;
         }
+        my ($valid_to_buy, $pve) = BOM::Contract::Validator->is_valid_to_buy(
+            $contract,
+            {
+                landing_company => $args_copy->{landing_company},
+                country_code    => $country_code,
+            });
 
-        if (
-            !(
-                $contract->is_valid_to_buy({
-                        landing_company => $args_copy->{landing_company},
-                        country_code    => $country_code
-                    })))
-        {
+        if (!$valid_to_buy) {
             my ($message_to_client, $code, $details);
 
-            if (my $pve = $contract->primary_validation_error) {
+            if ($pve) {
                 $details           = $pve->details;
-                $message_to_client = localize($pve->message_to_client);
+                $message_to_client = $pve->message_to_client;
                 $code              = "ContractBuyValidationError";
             } else {
-                $message_to_client = localize("Cannot validate contract.");
+                $message_to_client = "Cannot validate contract.";
                 $code              = "ContractValidationError";
             }
 
@@ -149,180 +134,27 @@ sub _get_ask {
             });
         } else {
             # We think this contract is valid to buy
-            $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
-            my $ask_price = formatnumber('price', $contract->currency, $contract->ask_price);
-
-            $response = {
-                longcode            => $contract->longcode,
-                payout              => $contract->payout,
-                ask_price           => $ask_price,
-                display_value       => $ask_price,
-                spot_time           => $contract->current_tick->epoch,
-                date_start          => $contract->date_start->epoch,
-                date_expiry         => $contract->date_expiry->epoch,
-                contract_parameters => $contract_parameters,
-            };
-
-            # We only want to return $response->{skip_streaming} from a valid RPC response
-            unless ($streaming_params->{from_pricer}) {
-                $response->{skip_streaming} = $contract->skip_streaming();
+            $response = BOM::Contract::Pricer->calc_ask_price_detailed(
+                $contract,
+                {
+                    update => $streaming_params->{from_pricer},
+                });
+            for my $k (keys %$args_copy) {
+                $response->{contract_parameters}{$k} = $args_copy->{$k} unless exists $response->{contract_parameters}{$k};
             }
-
-            if (not $contract->is_binary) {
-                $response->{contract_parameters}->{multiplier} = $contract->multiplier
-                    if $contract->can('multiplier')
-                    and not $contract->user_defined_multiplier;
-                $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
-            }
-
-            if ($contract->require_price_adjustment and $streaming_params->{from_pricer}) {
-                if ($contract->is_binary) {
-                    $response->{theo_probability} = $contract->theo_probability->amount;
-                } else {
-                    $response->{theo_price} = $contract->theo_price;
-                }
-            }
-
-            if ($contract->underlying->feed_license eq 'realtime') {
-                $response->{spot} = $contract->current_spot;
-            }
-
-            $response->{multiplier} = $contract->multiplier if $contract->can('multiplier');
-
-            if ($contract->category_code eq 'vanilla') {
-                $response->{min_stake}                   = $contract->min_stake;
-                $response->{max_stake}                   = $contract->max_stake;
-                $response->{number_of_contracts}         = $contract->number_of_contracts;
-                $response->{display_number_of_contracts} = $contract->number_of_contracts;
-                $response->{barrier_choices}             = $contract->strike_price_choices;
-            }
-
-            if ($contract->category_code eq 'multiplier') {
-                my $display = $contract->available_orders_for_display;
-                $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
-                $response->{limit_order}       = $display;
-                $response->{commission}        = $contract->commission_amount;                                  # commission in payout currency amount
-                $response->{contract_details}  = {
-                    'minimum_stake' => $contract->min_stake,
-                    'maximum_stake' => $contract->max_stake,
-                };
-
-                if ($contract->cancellation) {
-                    $response->{cancellation} = {
-                        ask_price   => $contract->cancellation_price,
-                        date_expiry => $contract->cancellation_expiry->epoch,
-                    };
-                }
-            }
-
-            if ($contract->category_code eq 'accumulator') {
-                if ($contract->take_profit) {
-                    $response->{limit_order} = {
-                        'take_profit' => {
-                            'display_name' => 'Take profit',
-                            'order_date'   => $contract->take_profit->{date}->epoch,
-                            'order_amount' => $contract->take_profit->{amount}}};
-                }
-
-                my $redis          = BOM::Config::Redis::redis_replicated_read();
-                my $underlying_key = join('::', $contract->underlying->symbol, 'growth_rate_' . $contract->growth_rate);
-                my $stat_key       = join('::', 'accumulator', 'stat_history', $underlying_key);
-
-                #if the request is coming from Websocket we should return all data(100 numbers) to build the stat chart.
-                #after that(when the request is coming from pricer) we only need to return the last value to update it
-                my $ticks_stayed_in =
-                      $streaming_params->{from_pricer}
-                    ? $redis->lrange($stat_key, -1, -1)
-                    : $redis->lrange($stat_key, 0,  -1);
-
-                my $last_tick_processed_json = $redis->hget("accumulator::previous_tick_barrier_status", $underlying_key);
-                my $last_tick_processed;
-                $last_tick_processed = decode_json($last_tick_processed_json) if $last_tick_processed_json;
-                if ($last_tick_processed && @$ticks_stayed_in) {
-                    # ticks_stayed_in does not include the latest tick yet, we
-                    # need to calculate what it should be if we include the
-                    # latest tick
-                    if ($last_tick_processed->{tick_epoch} < $contract->current_tick->epoch) {
-                        if (    $contract->current_spot > $last_tick_processed->{low_barrier}
-                            and $contract->current_spot < $last_tick_processed->{high_barrier})
-                        {
-                            # the latest tick stayed in
-                            $ticks_stayed_in->[-1]++;
-                        } else {
-                            # the latest tick got out
-                            if ($streaming_params->{from_pricer}) {
-                                $ticks_stayed_in->[-1] = 0;
-                            } else {
-                                push @{$ticks_stayed_in}, 0;
-                                pop @{$ticks_stayed_in} if @{$ticks_stayed_in} > 100;
-                            }
-                        }
-                    }
-                }
-
-                #barriers in PP should be calculated based on the current tick
-                my $high_barrier = $contract->current_spot_high_barrier;
-                my $low_barrier  = $contract->current_spot_low_barrier;
-
-                $response->{contract_details} = {
-                    'maximum_payout'               => $contract->max_payout,
-                    'minimum_stake'                => $contract->min_stake,
-                    'maximum_stake'                => $contract->max_stake,
-                    'maximum_ticks'                => $contract->max_duration,
-                    'tick_size_barrier'            => $contract->tick_size_barrier,
-                    'tick_size_barrier_percentage' => $contract->tick_size_barrier_percentage,
-                    'high_barrier'                 => $high_barrier,
-                    'low_barrier'                  => $low_barrier,
-                    'barrier_spot_distance'        => $contract->barrier_spot_distance
-                };
-                $response->{contract_details}->{ticks_stayed_in} = $ticks_stayed_in                   if @$ticks_stayed_in;
-                $response->{contract_details}->{last_tick_epoch} = $last_tick_processed->{tick_epoch} if $last_tick_processed;
-            }
-
-            if ($contract->category_code eq 'turbos') {
-                if ($contract->take_profit) {
-                    $response->{limit_order} = {
-                        'take_profit' => {
-                            'display_name' => 'Take profit',
-                            'order_date'   => $contract->take_profit->{date}->epoch,
-                            'order_amount' => $contract->take_profit->{amount}}};
-                }
-                $response->{number_of_contracts}         = $contract->number_of_contracts;
-                $response->{display_number_of_contracts} = $contract->number_of_contracts;
-                $response->{barrier_choices}             = $contract->strike_price_choices;
-                $response->{min_stake}                   = $contract->min_stake;
-                $response->{max_stake}                   = $contract->max_stake;
-            }
-
-            if (($contract->two_barriers) and ($contract->category_code ne 'accumulator')) {
-                # accumulator has its own logic
-                $response->{contract_details}->{high_barrier} = $contract->high_barrier->as_absolute;
-                $response->{contract_details}->{low_barrier}  = $contract->low_barrier->as_absolute;
-            } elsif ($contract->can('barrier') and (defined $contract->barrier)) {
-                # Contracts without "barrier" attribute is skipped
-                $response->{contract_details}->{barrier} = $contract->barrier->as_absolute;
-            }
-            # On websocket, we are setting 'basis' to payout and 'amount' to 1000 to increase the collission rate.
-            # This logic shouldn't be in websocket since it is business logic.
-            unless ($streaming_params->{from_pricer}) {
-                # To override multiplier or callputspread contracts (non-binary) just does not make any sense because
-                # the ask_price is defined by the user and the output of limit order (take profit or stop out),
-                # is dependent of the stake and multiplier provided by the client.
-                # There is no probability calculation involved. Hence, not optimising anything.
-                # Since vanilla and turbos have no payout, adding it here as well
-                $response->{skip_basis_override} = 1
-                    if $contract->code =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD|ACCU|VANILLALONGCALL|VANILLALONGPUT|TURBOSLONG|TURBOSSHORT)$/;
+            if ($streaming_params->{from_pricer}) {
+                delete $response->{skip_streaming};
             }
         }
-        my $pen = $contract->pricing_engine_name;
+        my $pen = $contract->inner_contract->pricing_engine_name;
         $pen =~ s/::/_/g;
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     } catch ($e) {
         my $message_to_client = _get_error_message($e, $args_copy, 1);
 
         return BOM::Pricing::v3::Utility::create_error({
-            message_to_client => localize(@$message_to_client),
-            code              => "ContractCreationFailure"
+            message_to_client => $message_to_client,
+            code              => "ContractCreationFailure",
         });
     }
 
@@ -379,8 +211,9 @@ sub get_bid {
         warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
 
         return BOM::Pricing::v3::Utility::create_error({
-                code              => 'GetProposalFailure',
-                message_to_client => localize('Cannot create contract')});
+            code              => 'GetProposalFailure',
+            message_to_client => 'Cannot create contract',
+        });
     }
 
     try {
@@ -390,18 +223,19 @@ sub get_bid {
         $bet_params->{sell_time}             = $sell_time              if $is_sold;
         $bet_params->{sell_price}            = $sell_price             if defined $sell_price;
         $bet_params->{current_tick}          = $params->{current_tick} if $params->{current_tick};
-        $contract                            = produce_contract($bet_params);
+        $contract                            = produce_contract($bet_params)->inner_contract;
     } catch {
         warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . $json->encode($bet_params);
 
         return BOM::Pricing::v3::Utility::create_error({
-                code              => 'GetProposalFailure',
-                message_to_client => localize('Cannot create contract')});
+            code              => 'GetProposalFailure',
+            message_to_client => 'Cannot create contract',
+        });
     }
 
     if ($contract->is_legacy) {
         return BOM::Pricing::v3::Utility::create_error({
-            message_to_client => localize($contract->longcode),
+            message_to_client => $contract->longcode,
             code              => "GetProposalFailure"
         });
     }
@@ -469,24 +303,12 @@ sub get_bid {
         _log_exception(get_bid => $e);
 
         return BOM::Pricing::v3::Utility::create_error({
-            message_to_client => localize('Sorry, an error occurred while processing your request.'),
+            message_to_client => 'Sorry, an error occurred while processing your request.',
             code              => "GetProposalFailure"
         });
     }
 
     return $response;
-}
-
-sub localize_template_params {
-    my $name = shift;
-    if (ref $name eq 'ARRAY') {
-        #Parms should be manually localized; otherwose they will be inserted into the template without localization.
-        for (my $i = 1; $i <= $#$name; $i++) {
-            localize_template_params($name->[$i]);
-            $name->[$i] = localize($name->[$i]);
-        }
-    }
-    return $name;
 }
 
 sub send_bid {
@@ -505,8 +327,9 @@ sub send_bid {
         _log_exception(send_bid => "$e (and it should be impossible for this to happen)");
 
         $response = BOM::Pricing::v3::Utility::create_error({
-                code              => 'pricing error',
-                message_to_client => localize('Unable to price the contract.')});
+            code              => 'pricing error',
+            message_to_client => 'Unable to price the contract.',
+        });
     }
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
@@ -534,7 +357,7 @@ sub send_ask {
     if (defined $params->{args}->{contract_type} and $params->{args}->{contract_type} =~ /RESET/ and defined $params->{args}->{barrier2}) {
         return BOM::Pricing::v3::Utility::create_error({
             code              => 'BarrierValidationError',
-            message_to_client => localize("barrier2 is not allowed for reset contract."),
+            message_to_client => "barrier2 is not allowed for reset contract.",
             details           => {field => 'barrier2'},
         });
     }
@@ -546,7 +369,9 @@ sub send_ask {
         _log_exception(send_ask => $e);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'pricing error',
-                message_to_client => localize('Unable to price the contract.')});
+                message_to_client => 'Unable to price the contract.',
+            },
+        );
     }
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
@@ -575,21 +400,23 @@ sub get_contract_details {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
 
         return BOM::Pricing::v3::Utility::create_error({
-                code              => 'GetContractDetails',
-                message_to_client => localize('Cannot create contract')});
+            code              => 'GetContractDetails',
+            message_to_client => 'Cannot create contract',
+        });
     }
 
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
         $bet_params->{landing_company}       = $params->{landing_company};
         $bet_params->{limit_order}           = $params->{limit_order} if $params->{limit_order};
-        $contract                            = produce_contract($bet_params);
+        $contract                            = produce_contract($bet_params)->inner_contract;
     } catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . $json->encode($bet_params);
 
         return BOM::Pricing::v3::Utility::create_error({
-                code              => 'GetContractDetails',
-                message_to_client => localize('Cannot create contract')});
+            code              => 'GetContractDetails',
+            message_to_client => 'Cannot create contract',
+        });
     }
 
     $response = {
@@ -678,7 +505,7 @@ sub _validate_offerings {
 
             return BOM::Pricing::v3::Utility::create_error({
                 code              => 'OfferingsValidationError',
-                message_to_client => localize(@{$error->{message_to_client}}),
+                message_to_client => $error->{message_to_client},
                 $details ? (details => $details) : (),
             });
         }
@@ -688,7 +515,7 @@ sub _validate_offerings {
 
         return BOM::Pricing::v3::Utility::create_error({
             code              => 'OfferingsValidationFailure',
-            message_to_client => localize(@$message_to_client),
+            message_to_client => $message_to_client,
             $details ? (details => $details) : (),
         });
     }
@@ -728,7 +555,7 @@ sub _is_valid_to_sell {
                 skip_barrier_validation => $validation_params->{skip_barrier_validation}}))
     {
         $is_valid_to_sell = 0;
-        $validation_error = localize($contract->primary_validation_error->message_to_client);
+        $validation_error = $contract->primary_validation_error->message_to_client;
         $validation_code  = $contract->primary_validation_error->code;
 
     } elsif (
@@ -742,8 +569,8 @@ sub _is_valid_to_sell {
             }))
     {
         $is_valid_to_sell = 0;
-        $validation_error = localize($cve->{error}{message_to_client});
-        $validation_code  = 'Offerings';                                  # this is not coming from MooseX::Role::Validatable::Error
+        $validation_error = $cve->{error}{message_to_client};
+        $validation_code  = 'Offerings';                        # this is not coming from MooseX::Role::Validatable::Error
     }
 
     return {
@@ -796,7 +623,7 @@ sub _build_bid_response {
         current_spot_time   => 0 + $contract->current_tick->epoch,
         contract_id         => $params->{contract_id},
         underlying          => $contract->underlying->symbol,
-        display_name        => localize($contract->underlying->display_name),
+        display_name        => $contract->underlying->display_name,
         is_expired          => $contract->is_expired,
         is_forward_starting => $contract->starts_as_forward_starting,
         is_path_dependent   => $contract->is_path_dependent,
@@ -826,7 +653,7 @@ sub _build_bid_response {
 
     $response->{multiplier} = $contract->multiplier if $contract->can('multiplier');
     unless ($params->{is_valid_to_sell}) {
-        $response->{validation_error}      = localize($params->{validation_error});
+        $response->{validation_error}      = $params->{validation_error};
         $response->{validation_error_code} = $params->{validation_error_code};
     }
     $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
@@ -880,9 +707,7 @@ sub _build_bid_response {
         # If the caller is not from price daemon, we need:
         # 1. sorted orders as array reference ($contract->available_orders) for PRICER_ARGS
         # 2. available order for display in the websocket api response ($contract->available_orders_for_display)
-        my $display = $contract->available_orders_for_display;
-        $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
-        $response->{limit_order} = $display;
+        $response->{limit_order} = $contract->available_orders_for_display;
         # commission in payout currency amount
         $response->{commission} = $contract->commission_amount;
         # deal cancellation
@@ -963,20 +788,7 @@ sub _build_bid_response {
     }
 
     if ($is_valid_to_settle || $contract->is_sold) {
-        my $localized_audit_details;
-        my $ad = $contract->audit_details($params->{sell_time});
-        foreach my $key (sort keys %$ad) {
-            my @details = @{$ad->{$key}};
-            foreach my $detail (@details) {
-                if ($detail->{name}) {
-                    my $name = $detail->{name};
-                    localize_template_params($name);
-                    $detail->{name} = localize($name);
-                }
-            }
-            $localized_audit_details->{$key} = \@details;
-        }
-        $response->{audit_details} = $localized_audit_details;
+        $response->{audit_details} = $contract->audit_details($params->{sell_time});
     }
 
     # sell_spot and sell_spot_time are updated if the contract is sold
