@@ -30,6 +30,7 @@ use BOM::User::Onfido;
 use BOM::User::LexisNexis;
 use BOM::User::SocialResponsibility;
 use BOM::Config::Runtime;
+use BOM::Config::TradingPlatform::KycStatus;
 use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
 use BOM::Platform::Redis;
 use LandingCompany::Registry;
@@ -1227,9 +1228,10 @@ sub is_active_loginid {
     # contain status of 'undef'.
     return 1 unless $details->{status};
 
+    my $kyc_status_config             = BOM::Config::TradingPlatform::KycStatus->new();
+    my @trading_platform_kyc_statuses = $kyc_status_config->get_kyc_status_list();
     return 1
-        if any { $details->{status} eq $_ }
-        qw/poa_outdated poa_pending poa_rejected poa_failed proof_failed verification_pending needs_verification migrated_with_position migrated_without_position/;
+        if any { $details->{status} eq $_ } (@trading_platform_kyc_statuses, 'migrated_with_position', 'migrated_without_position');
 
     return 0;
 }

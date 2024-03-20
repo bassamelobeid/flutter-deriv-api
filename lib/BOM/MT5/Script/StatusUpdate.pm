@@ -8,6 +8,7 @@ use BOM::Database::UserDB;
 use BOM::MT5::User::Async;
 use Date::Utility;
 use BOM::Config;
+use BOM::Config::TradingPlatform::KycStatus;
 use BOM::User::Client;
 use List::Util qw(uniq min max);
 use Log::Any   qw($log);
@@ -709,9 +710,11 @@ Does not take or return any parameters
 =cut
 
     method sync_status_actions {
-        my @combined = $self->gather_users({
+        my $kyc_status_config             = BOM::Config::TradingPlatform::KycStatus->new();
+        my @trading_platform_kyc_statuses = $kyc_status_config->get_kyc_status_list();
+        my @combined                      = $self->gather_users({
             newest_created_at => $now,
-            statuses          => ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending', 'needs_verification'],
+            statuses          => \@trading_platform_kyc_statuses,
         });
 
         $self->dd_log_info('sync_status_actions',
