@@ -103,9 +103,11 @@ try {
 
     BOM::MyAffiliates::SFTP::send_csv_via_sftp($output_filepath, 'multiplier', $reporter->brand->name);
 
+    my $num_of_record = scalar(@csv) - 1;
+
     $reporter->send_report(
         subject => 'CRON generate_affiliate_multiplier_commission_daily (' . $brand_object->name . ') for date ' . $processing_date->date_yyyymmdd,
-        message => ["Find links to download CSV that was generated:\n" . $download_url],
+        message => ["Find links to download CSV that was generated:\n" . $download_url . "\n number of record : " . $num_of_record],
     );
 } catch ($error) {
     DataDog::DogStatsd->new->event('Affiliate Multiplier Report Failed', "MultiplierReporter failed to generate csv files due: $error");

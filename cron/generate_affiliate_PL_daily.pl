@@ -64,6 +64,8 @@ $output_dir->mkpath unless $output_dir->exists;
 
 die "Unable to create $output_dir" unless $output_dir->exists;
 
+my $num_of_record = 0;
+
 while ($to_date->days_between($processing_date) >= 0) {
     my $next_date = Date::Utility->new($processing_date->epoch + 86400);
 
@@ -86,6 +88,7 @@ while ($to_date->days_between($processing_date) >= 0) {
 
     try {
         my @csv = $reporter->activity();
+        $num_of_record = scalar(@csv) - 1;
         unless (@csv) {
             $log->infof('No CSV data for affiliate turnover report for %s', $processing_date->date_yyyymmdd) unless @csv;
             push @warn_msgs, 'No CSV data for affiliate turnover report for ' . $processing_date->date_yyyymmdd unless @csv;
@@ -145,7 +148,7 @@ try {
             . ') for date range '
             . $from_date->date_yyyymmdd . ' - '
             . $to_date->date_yyyymmdd,
-        message => ["Find links to download CSV that was generated:\n" . $download_url],
+        message => ["Find links to download CSV that was generated:\n" . $download_url . "\n number of record : " . $num_of_record],
     );
 } catch ($error) {
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to upload to S3 due: $error");

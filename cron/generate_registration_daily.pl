@@ -103,6 +103,8 @@ sub run {
 
     BOM::MyAffiliates::SFTP::send_csv_via_sftp($output_filepath, 'registrations', $reporter_deriv->brand->name);
 
+    my $num_of_record = scalar(@csv) - 1;
+
     $log->debugf('Sending email for affiliate registration report');
     $reporter->send_report(
         subject => 'CRON registrations: Report for ' . Date::Utility->new->datetime_yyyymmdd_hhmmss_TZ,
@@ -111,6 +113,8 @@ sub run {
                 . join(',', $reporter->headers())
                 . '" format'
                 . "\n $reporter_download_url \n $reporter_deriv_download_url"
+                . "\n number of record : "
+                . $num_of_record
         ],
     );
 }
