@@ -16,6 +16,8 @@ use BOM::User::Utility qw(parse_mt5_group);
 use BOM::MT5::User::Async;
 use BOM::Config::Redis;
 use BOM::Config;
+use BOM::Config::TradingPlatform::KycStatus;
+use BOM::Config::TradingPlatform::Jurisdiction;
 use BOM::Event::Services::Track;
 use BOM::Event::Utility;
 use BOM::Platform::Client::Sanctions;
@@ -1528,18 +1530,22 @@ Update the loginid.status of mt5 accounts in users DB based on POI and POA.
 async sub sync_mt5_accounts_status {
     my $args = shift;
     die 'Must provide client_loginid' unless $args->{client_loginid};
-    my $client = BOM::User::Client->new({loginid => $args->{client_loginid}}) // die 'Client not found';
-    my $user   = $client->user                                                // die 'User not found';
+    my $client                        = BOM::User::Client->new({loginid => $args->{client_loginid}}) // die 'Client not found';
+    my $user                          = $client->user                                                // die 'User not found';
+    my $kyc_status_config             = BOM::Config::TradingPlatform::KycStatus->new();
+    my $jurisdiction_config           = BOM::Config::TradingPlatform::Jurisdiction->new();
+    my @trading_platform_kyc_statuses = $kyc_status_config->get_kyc_status_list();
+    my @jurisdictions_list            = $jurisdiction_config->get_verification_required_jurisdiction_list();
+    my $loginid_details               = $user->loginid_details;
 
-    my $loginid_details = $user->loginid_details;
-
-    my %jurisdiction_mt5_accounts;
+    my %mt5_accounts_by_jurisdiction;
     foreach my $loginid (keys %{$loginid_details}) {
         my $loginid_data = $loginid_details->{$loginid};
         next unless ($loginid_data->{platform} // '') eq 'mt5' and $loginid_data->{account_type} eq 'real';
         my $mt5_jurisdiction;
         if (defined $loginid_data->{attributes}->{group}) {
-            ($mt5_jurisdiction) = $loginid_data->{attributes}->{group} =~ m/(bvi|vanuatu|labuan|maltainvest)/g;
+            my $jurisdictions_regex = join('|', @jurisdictions_list);
+            ($mt5_jurisdiction) = $loginid_data->{attributes}->{group} =~ m/($jurisdictions_regex)/g;
         }
 
         next if not defined $mt5_jurisdiction;
@@ -1548,24 +1554,23 @@ async sub sync_mt5_accounts_status {
         # removals from whatever reason, it should be responsibility of the invoker if the
         # client should have been checked imho anyway
         next
-            if none { ($loginid_data->{status} // 'active') eq $_ }
-            ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', 'active', 'needs_verification');
+            if none { ($loginid_data->{status} // 'active') eq $_ } ('active', @trading_platform_kyc_statuses);
 
-        push $jurisdiction_mt5_accounts{$mt5_jurisdiction}->@*, $loginid;
+        push $mt5_accounts_by_jurisdiction{$mt5_jurisdiction}->@*, $loginid;
     }
 
     my %color_update_result;
     my %jurisdiction_update_result;
-    foreach my $jurisdiction (keys %jurisdiction_mt5_accounts) {
+    foreach my $jurisdiction (keys %mt5_accounts_by_jurisdiction) {
         my $proof_failed_with_status;
         my $rule_failed = 0;
         my $rule_engine = BOM::Rules::Engine->new(client => $client);
         try {
             $rule_engine->verify_action(
                 'mt5_jurisdiction_validation',
-                loginid              => $client->loginid,
-                new_mt5_jurisdiction => $jurisdiction,
-                loginid_details      => $loginid_details,
+                loginid          => $client->loginid,
+                mt5_jurisdiction => $jurisdiction,
+                loginid_details  => $loginid_details,
             );
         } catch ($error) {
             $proof_failed_with_status = $error->{params}->{mt5_status} if $error->{params}->{mt5_status};
@@ -1577,16 +1582,16 @@ async sub sync_mt5_accounts_status {
             next;
         }
 
-        my $mt5_ids = $jurisdiction_mt5_accounts{$jurisdiction};
+        my $mt5_ids = $mt5_accounts_by_jurisdiction{$jurisdiction};
 
         $jurisdiction_update_result{$jurisdiction} = $proof_failed_with_status;
         foreach my $mt5_id (@$mt5_ids) {
-            my $current_status = $loginid_details->{$mt5_id}->{status} // '';
             $user->update_loginid_status($mt5_id, $proof_failed_with_status // undef);
 
             my $color_code;
-            $color_code = COLOR_RED  if ($proof_failed_with_status // '') eq 'poa_failed';
-            $color_code = COLOR_NONE if $current_status eq 'poa_failed' and not defined $proof_failed_with_status;
+            $color_code = $kyc_status_config->get_kyc_status_color({status => $proof_failed_with_status, platform => 'mt5'})
+                if defined $proof_failed_with_status;
+            $color_code = $kyc_status_config->get_mt5_account_color_code({color_type => 'none'}) if not defined $proof_failed_with_status;
 
             if (defined $color_code) {
                 BOM::Platform::Event::Emitter::emit(
@@ -1603,7 +1608,7 @@ async sub sync_mt5_accounts_status {
     }
 
     return Future->done({
-        processed_mt5  => \%jurisdiction_mt5_accounts,
+        processed_mt5  => \%mt5_accounts_by_jurisdiction,
         updated_status => \%jurisdiction_update_result,
         updated_color  => \%color_update_result
     });

@@ -3551,7 +3551,7 @@ subtest 'sync_mt5_accounts_status' => sub {
         updated_status => {
             maltainvest => 'proof_failed',
         },
-        updated_color => {}
+        updated_color => {maltainvest => +BOM::Event::Actions::MT5::COLOR_RED}
         },
         'processing undef status';
 
@@ -3648,45 +3648,54 @@ subtest 'sync_mt5_accounts_status' => sub {
     ## expected result = proof_failed
     ## no color swap expected
 
-    $rule_fail  = 1;
-    $mt5_status = 'proof_failed';
+    $rule_fail = 1;
 
     for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
         for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', undef) {
-            $emissions      = [];
-            $status_updates = {};
-            $log->clear;
+            for my $mt5_rule_status ('poa_failed', 'poa_outdated', 'proof_failed', 'verification_pending', 'needs_verification') {
+                $mt5_status     = $mt5_rule_status;
+                $emissions      = [];
+                $status_updates = {};
+                $log->clear;
 
-            $extra_loginids = {
-                MTR000005 => {
-                    platform     => 'mt5',
-                    account_type => 'real',
-                    attributes   => {
-                        group => $jurisdiction,
+                $extra_loginids = {
+                    MTR000005 => {
+                        platform     => 'mt5',
+                        account_type => 'real',
+                        attributes   => {
+                            group => $jurisdiction,
+                        },
+                        status => $status,
                     },
-                    status => $status,
-                },
-            };
+                };
 
-            my $str_status = $status // 'undef';
+                my $str_status = $status // 'undef';
 
-            $result = $action_handler->($args)->get->get;
+                $result = $action_handler->($args)->get->get;
 
-            cmp_deeply $result,
-                {
-                processed_mt5 => {
-                    $jurisdiction => ['MTR000005'],
-                },
-                updated_status => {
-                    $jurisdiction => 'proof_failed',
-                },
-                updated_color => {}
-                },
-                "expected results $jurisdiction $str_status => proof_failed";
+                cmp_deeply $result,
+                    {
+                    processed_mt5 => {
+                        $jurisdiction => ['MTR000005'],
+                    },
+                    updated_status => {
+                        $jurisdiction => $mt5_rule_status,
+                    },
+                    updated_color => {$jurisdiction => +BOM::Event::Actions::MT5::COLOR_RED}
+                    },
+                    "expected results $jurisdiction $str_status => $mt5_rule_status";
 
-            cmp_deeply $emissions,                                     [], 'Empty emissions';
-            cmp_deeply $status_updates, {MTR000005 => 'proof_failed'}, 'status changed';
-            cmp_deeply $log->msgs,                                     [], 'No warnings';
+                cmp_deeply $emissions,
+                    [{
+                        mt5_change_color => {
+                            loginid => 'MTR000005',
+                            color   => +BOM::Event::Actions::MT5::COLOR_RED,
+                        }}
+                    ],
+                    'Expected change color emission';
+                cmp_deeply $status_updates, {MTR000005 => $mt5_rule_status}, 'status changed';
+                cmp_deeply $log->msgs, [], 'No warnings';
+            }
         }
     }
 
@@ -3694,61 +3703,60 @@ subtest 'sync_mt5_accounts_status' => sub {
     ## expected result = poa_failed
     ## color swap to COLOR_RED expected
 
-    $rule_fail  = 1;
-    $mt5_status = 'poa_failed';
+    $rule_fail = 1;
 
     for my $jurisdiction ('bvi', 'vanuatu', 'labuan', 'maltainvest') {
         for my $status ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending', 'poa_outdated', undef) {
-            $emissions      = [];
-            $status_updates = {};
-            $log->clear;
+            for my $mt5_rule_status ('poa_pending', 'poa_rejected') {
+                $mt5_status     = $mt5_rule_status;
+                $emissions      = [];
+                $status_updates = {};
+                $log->clear;
 
-            $extra_loginids = {
-                MTR000005 => {
-                    platform     => 'mt5',
-                    account_type => 'real',
-                    attributes   => {
-                        group => $jurisdiction,
+                $extra_loginids = {
+                    MTR000005 => {
+                        platform     => 'mt5',
+                        account_type => 'real',
+                        attributes   => {
+                            group => $jurisdiction,
+                        },
+                        status => $status,
                     },
-                    status => $status,
-                },
-            };
+                };
 
-            my $str_status = $status // 'undef';
+                my $str_status = $status // 'undef';
 
-            $result = $action_handler->($args)->get->get;
+                $result = $action_handler->($args)->get->get;
 
-            cmp_deeply $result,
-                {
-                processed_mt5 => {
-                    $jurisdiction => ['MTR000005'],
-                },
-                updated_status => {
-                    $jurisdiction => 'poa_failed',
-                },
-                updated_color => {
-                    $jurisdiction => +BOM::Event::Actions::MT5::COLOR_RED,
-                }
-                },
-                "expected results $jurisdiction $str_status => poa_failed";
+                cmp_deeply $result,
+                    {
+                    processed_mt5 => {
+                        $jurisdiction => ['MTR000005'],
+                    },
+                    updated_status => {
+                        $jurisdiction => $mt5_rule_status,
+                    },
+                    updated_color => {$jurisdiction => +BOM::Event::Actions::MT5::COLOR_NONE}
+                    },
+                    "expected results $jurisdiction $str_status => $mt5_rule_status";
 
-            cmp_deeply $emissions,
-                [{
-                    mt5_change_color => {
-                        loginid => 'MTR000005',
-                        color   => +BOM::Event::Actions::MT5::COLOR_RED,
-                    }}
-                ],
-                'Expected change color emission';
-
-            cmp_deeply $status_updates, {MTR000005 => 'poa_failed'}, 'status changed';
-            cmp_deeply $log->msgs, [], 'No warnings';
+                cmp_deeply $emissions,
+                    [{
+                        mt5_change_color => {
+                            loginid => 'MTR000005',
+                            color   => +BOM::Event::Actions::MT5::COLOR_NONE,
+                        }}
+                    ],
+                    'Expected change color emission';
+                cmp_deeply $status_updates, {MTR000005 => $mt5_rule_status}, 'status changed';
+                cmp_deeply $log->msgs, [], 'No warnings';
+            }
         }
     }
 
     ## test the statuses across jurisdictions
     ## expected result = undef status
-    ## color swap to COLOR_NONE expected if current status is poa_failed
+    ## color swap to COLOR_NONE expected if status undefined
 
     $rule_fail  = 0;
     $mt5_status = undef;
@@ -3782,19 +3790,16 @@ subtest 'sync_mt5_accounts_status' => sub {
                 updated_status => {
                     $jurisdiction => undef,
                 },
-                updated_color => {$str_status eq 'poa_failed' ? ($jurisdiction => +BOM::Event::Actions::MT5::COLOR_NONE) : (),}
+                updated_color => {$jurisdiction => +BOM::Event::Actions::MT5::COLOR_NONE}
                 },
                 "expected results $jurisdiction $str_status => undef";
 
             cmp_deeply $emissions,
-                [
-                $str_status eq 'poa_failed'
-                ? {
+                [{
                     mt5_change_color => {
                         loginid => 'MTR000005',
                         color   => +BOM::Event::Actions::MT5::COLOR_NONE,
                     }}
-                : ()
                 ],
                 'Expected change color emission';
 
