@@ -839,6 +839,21 @@ p2p_rpc p2p_order_dispute => sub {
     return $order;
 };
 
+=head2 p2p_country_list
+
+Country List.
+
+Returns available countries for p2p and their configuration.
+
+=cut
+
+p2p_rpc p2p_country_list => readonly => 1 => sub {
+    my (%args) = @_;
+
+    my $p2p = $args{p2p};
+    return $p2p->p2p_country_list($args{params}{args}->%*);
+};
+
 # Check to see if the client can has access to p2p API calls or not?
 # Does nothing if client has access or die
 sub _check_client_access {
