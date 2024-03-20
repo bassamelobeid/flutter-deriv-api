@@ -9,6 +9,7 @@ use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
 use BOM::User;
+use BOM::Config::TradingPlatform::Jurisdiction;
 
 use Date::Utility;
 
@@ -83,9 +84,8 @@ subtest $rule_name => sub {
     # jurisdiction has no limits
 
     $args = {
-        loginid              => $client_cr->loginid,
-        new_mt5_jurisdiction => 'svg',
-        loginid_details      => {
+        loginid         => $client_cr->loginid,
+        loginid_details => {
             MTR1000 => {attributes => {group => 'TEST'}},
         },
         mt5_id => 'MTR1000',
@@ -100,9 +100,8 @@ subtest $rule_name => sub {
     # mt5 id status = active
 
     $args = {
-        loginid              => $client_cr->loginid,
-        new_mt5_jurisdiction => 'bvi',
-        loginid_details      => {
+        loginid         => $client_cr->loginid,
+        loginid_details => {
             MTR1000 => {
                 attributes => {
                     group => 'bvi',
@@ -122,9 +121,8 @@ subtest $rule_name => sub {
     # mt5 id status = active
 
     $args = {
-        loginid              => $client_cr->loginid,
-        new_mt5_jurisdiction => 'bvi',
-        loginid_details      => {
+        loginid         => $client_cr->loginid,
+        loginid_details => {
             MTR1000 => {
                 attributes => {
                     group => 'bvi',
@@ -144,36 +142,10 @@ subtest $rule_name => sub {
     # mt5 id status = not verified
 
     for my $status (qw/expired none pending rejected/) {
-        for my $loginid_status (qw/poa_failed/) {
+        for my $loginid_status (qw/poa_failed poa_outdated poa_pending poa_rejected proof_failed verification_pending/, undef) {
             $args = {
-                loginid              => $client_cr->loginid,
-                new_mt5_jurisdiction => 'vanuatu',
-                loginid_details      => {
-                    MTR1000 => {
-                        attributes => {group => 'vanuatu'},
-                        status     => $loginid_status,
-                    },
-                },
-                mt5_id => 'MTR1000',
-            };
-
-            $poa_status = $status;
-
-            cmp_deeply(
-                exception { $rule_engine->apply_rules($rule_name, $args->%*) },
-                {
-                    error_code => 'POAVerificationFailed',
-                    rule       => $rule_name
-                },
-                "POA Failed status = $status, loginid status = $loginid_status"
-            );
-        }
-
-        for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/, undef) {
-            $args = {
-                loginid              => $client_cr->loginid,
-                new_mt5_jurisdiction => 'vanuatu',
-                loginid_details      => {
+                loginid         => $client_cr->loginid,
+                loginid_details => {
                     MTR1000 => {
                         attributes => {group => 'vanuatu'},
                         status     => $loginid_status,
@@ -206,9 +178,8 @@ subtest $rule_name => sub {
     # jurisdiction has limits
     # mt5 id status = verified
     $args = {
-        loginid              => $client_cr->loginid,
-        new_mt5_jurisdiction => 'vanuatu',
-        loginid_details      => {
+        loginid         => $client_cr->loginid,
+        loginid_details => {
             MTR1000 => {
                 attributes => {group => 'vanuatu'},
                 status     => 'poa_failed',
@@ -243,9 +214,8 @@ subtest $rule_name => sub {
     $client_cr->save();
 
     $args = {
-        loginid              => $client_cr->loginid,
-        new_mt5_jurisdiction => 'vanuatu',
-        loginid_details      => {
+        loginid         => $client_cr->loginid,
+        loginid_details => {
             MTR1000 => {
                 attributes => {group => 'vanuatu'},
                 status     => 'poa_failed',
@@ -264,9 +234,8 @@ subtest $rule_name => sub {
     # mt5 id status = poa_pending
 
     $args = {
-        loginid              => $client_cr->loginid,
-        new_mt5_jurisdiction => 'vanuatu',
-        loginid_details      => {
+        loginid         => $client_cr->loginid,
+        loginid_details => {
             MTR1000 => {
                 attributes => {group => 'vanuatu'},
                 status     => 'poa_pending',
@@ -285,9 +254,8 @@ subtest $rule_name => sub {
     # mt5 real from jurisdiction status is null
 
     $args = {
-        loginid              => $client_cr->loginid,
-        new_mt5_jurisdiction => 'vanuatu',
-        loginid_details      => {
+        loginid         => $client_cr->loginid,
+        loginid_details => {
             MTR1000 => {
                 attributes => {group => 'vanuatu'},
                 status     => 'poa_pending',
@@ -315,9 +283,8 @@ subtest $rule_name => sub {
 
     for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
         $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid         => $client_cr->loginid,
+            loginid_details => {
                 MTR1000 => {
                     platform       => 'mt5',
                     account_type   => 'real',
@@ -348,9 +315,8 @@ subtest $rule_name => sub {
     # accounts have been created on the boundary of vanuatu (5 days)
     for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
         $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid         => $client_cr->loginid,
+            loginid_details => {
                 MTR1000 => {
                     platform       => 'mt5',
                     account_type   => 'real',
@@ -382,9 +348,8 @@ subtest $rule_name => sub {
 
     for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
         $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid         => $client_cr->loginid,
+            loginid_details => {
                 MTR1000 => {
                     platform       => 'mt5',
                     account_type   => 'real',
@@ -426,9 +391,8 @@ subtest $rule_name => sub {
 
     for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
         $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid         => $client_cr->loginid,
+            loginid_details => {
                 MTR1000 => {
                     platform       => 'mt5',
                     account_type   => 'real',
@@ -474,9 +438,8 @@ subtest $rule_name => sub {
     # accounts have been created on the boundary of bvi (10 days)
     for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
         $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid         => $client_cr->loginid,
+            loginid_details => {
                 MTR1000 => {
                     platform       => 'mt5',
                     account_type   => 'real',
@@ -507,9 +470,8 @@ subtest $rule_name => sub {
     # accounts have been created 11 days ago
     for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
         $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid         => $client_cr->loginid,
+            loginid_details => {
                 MTR1000 => {
                     platform       => 'mt5',
                     account_type   => 'real',
@@ -548,9 +510,8 @@ subtest $rule_name => sub {
     # poi status is verified
     for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
         $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid         => $client_cr->loginid,
+            loginid_details => {
                 MTR1000 => {
                     platform       => 'mt5',
                     account_type   => 'real',
@@ -590,9 +551,8 @@ subtest $rule_name => sub {
     # poi status is not verified
     for my $loginid_status (qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending/) {
         $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid         => $client_cr->loginid,
+            loginid_details => {
                 MTR1000 => {
                     platform       => 'mt5',
                     account_type   => 'real',
@@ -678,9 +638,7 @@ subtest $rule_name => sub {
         loginid_details => {
             MTR1005 => {attributes => {group => 'maltainvest'}},
         },
-        mt5_id               => 'undef',
-        new_mt5_jurisdiction => 'maltainvest',
-        new_mt5_account      => 1,
+        mt5_jurisdiction => 'maltainvest',
     };
 
     cmp_deeply(
@@ -843,13 +801,14 @@ subtest $rule_name => sub {
     # defined group, poa status is none
     # jurisdiction has proof requirements
 
-    my %proof_requirements = +BOM::Rules::RuleRepository::MT5::JURISDICTION_PROOF_REQUIREMENT->%*;
-    my $good_status        = [qw/verified/];
-    my $pending_status     = [qw/pending/];
-    my $bad_status         = [qw/expired none rejected suspected/];
+    my $jurisdiction_config = BOM::Config::TradingPlatform::Jurisdiction->new();
+    my @jurisdictions_list  = $jurisdiction_config->get_verification_required_jurisdiction_list();
+    my $good_status         = [qw/verified/];
+    my $pending_status      = [qw/pending/];
+    my $bad_status          = [qw/expired none rejected suspected/];
 
-    for my $lc (keys %proof_requirements) {
-        my $required = +{map { $_ => 1 } $proof_requirements{$lc}->@*};
+    for my $lc (@jurisdictions_list) {
+        my $required = +{map { $_ => 1 } $jurisdiction_config->get_jurisdiction_proof_requirement($lc)};
 
         $args = {
             loginid         => $client_cr->loginid,
@@ -972,9 +931,9 @@ subtest 'Vanuatu + IDV' => sub {
 
     subtest 'new vanuatu account' => sub {
         my $args = {
-            loginid              => $client_cr->loginid,
-            new_mt5_jurisdiction => 'vanuatu',
-            loginid_details      => {
+            loginid          => $client_cr->loginid,
+            mt5_jurisdiction => 'vanuatu',
+            loginid_details  => {
 
             },
         };

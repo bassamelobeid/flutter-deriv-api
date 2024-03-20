@@ -14,37 +14,39 @@ use strict;
 use warnings;
 
 use BOM::Rules::Registry qw(rule);
+use BOM::Config::TradingPlatform::KycStatus;
+use BOM::Config::TradingPlatform::Jurisdiction;
 use Time::Moment;
 use Date::Utility;
 use List::Util qw( any all none );
-
-use constant JURISDICTION_DAYS_LIMIT => {
-    bvi     => 10,
-    vanuatu => 5
-};
-
-use constant JURISDICTION_PROOF_REQUIREMENT => {
-    bvi         => ['poi'],
-    vanuatu     => ['poi'],
-    labuan      => ['poi', 'poa'],
-    maltainvest => ['poi', 'poa']};
 
 rule 'mt5_account.account_poa_status_allowed' => {
     description => 'Checks if mt5 accounts are considered valid by poa status and jurisdiction',
     code        => sub {
         my ($self, $context, $args) = @_;
-        my $client = $context->client($args);
-        my $new_mt5_jurisdiction =
-            $args->{new_mt5_jurisdiction};    # new_mt5_jurisdiction + loginid_details as parameter for new mt5 account (without an id)
-        my $mt5_id           = $args->{mt5_id};               # mt5_id + loginid_details as parameter for existing mt5 account
-        my %loginid_details  = %{$args->{loginid_details}};
-        my $error_message    = 'POAVerificationFailed';
-        my $mt5_jurisdiction = $new_mt5_jurisdiction;
+        my $client                        = $context->client($args);
+        my $mt5_jurisdiction              = $args->{mt5_jurisdiction};
+        my $mt5_id                        = $args->{mt5_id};                                     # mt5_id will overwrite the mt5_jurisdiction
+        my %loginid_details               = %{$args->{loginid_details}};
+        my $error_message                 = 'POAVerificationFailed';
+        my $kyc_status_config             = BOM::Config::TradingPlatform::KycStatus->new();
+        my $jurisdiction_config           = BOM::Config::TradingPlatform::Jurisdiction->new();
+        my @trading_platform_kyc_statuses = $kyc_status_config->get_kyc_status_list();
+        my @jurisdictions_list            = $jurisdiction_config->get_jurisdiction_list_with_grace_period();
+
+        die 'If mt5_id is provided, mt5_jurisdiction should not be provided' if defined $mt5_id and defined $mt5_jurisdiction;
 
         if (defined $mt5_id and exists $loginid_details{$mt5_id}) {
+            return 1 if ($loginid_details{$mt5_id}->{account_type} // '') eq 'demo';
             return 1 unless defined $loginid_details{$mt5_id}->{attributes}->{group};
-            ($mt5_jurisdiction) = $loginid_details{$mt5_id}->{attributes}->{group} =~ m/(bvi|vanuatu)/g;
+            my $jurisdictions_regex = join('|', @jurisdictions_list);
+            ($mt5_jurisdiction) = $loginid_details{$mt5_id}->{attributes}->{group} =~ m/($jurisdictions_regex)/g;
         }
+
+        my $grace_period;
+        $grace_period = $jurisdiction_config->get_jurisdiction_grace_period($mt5_jurisdiction)
+            if defined $mt5_jurisdiction and $jurisdiction_config->is_jurisdiction_grace_period_enforced($mt5_jurisdiction);
+        return 1 unless defined $grace_period;
 
         my $poa_status = $client->get_poa_status(undef, $mt5_jurisdiction);
         return 1 if $poa_status eq 'verified';
@@ -53,20 +55,12 @@ rule 'mt5_account.account_poa_status_allowed' => {
             && !$client->is_high_risk
             && $client->fully_authenticated({landing_company => $mt5_jurisdiction});
 
-        if (defined $mt5_jurisdiction) {
-            return 1 unless exists JURISDICTION_DAYS_LIMIT()->{$mt5_jurisdiction};
-        } else {
-            return 1;
-        }
-
         if (defined $mt5_id) {
             my $selected_mt5_status = $loginid_details{$mt5_id}->{status} // 'active';
-            $self->fail($error_message) if $selected_mt5_status eq 'poa_failed';
 
             # active accounts might have to look back into the authentication status
             return 1
-                unless any { $selected_mt5_status eq $_ }
-                qw/poa_outdated poa_pending poa_rejected proof_failed verification_pending active needs_verification/;
+                unless any { $selected_mt5_status eq $_ } ('active', @trading_platform_kyc_statuses);
         }
 
         my @mt5_accounts =
@@ -89,7 +83,7 @@ rule 'mt5_account.account_poa_status_allowed' => {
             # look back for authentication updates (might have been outdated, etc)
             my $mt5_creation_datetime = Date::Utility->new($mt5_account->{creation_stamp});
             my $days_elapsed          = $current_datetime->days_between($mt5_creation_datetime);
-            my $poa_failed_by_expiry  = $days_elapsed <= JURISDICTION_DAYS_LIMIT()->{$mt5_jurisdiction} ? 0 : 1;
+            my $poa_failed_by_expiry  = $days_elapsed <= $grace_period ? 0 : 1;
             $self->fail($error_message, params => {mt5_status => 'poa_failed'}) if $poa_failed_by_expiry;
         }
 
@@ -104,14 +98,15 @@ rule 'mt5_account.account_proof_status_allowed' => {
     description => 'Checks if mt5 account are considered valid by poi and poa',
     code        => sub {
         my ($self, $context, $args) = @_;
-        my $client = $context->client($args);
-        my $new_mt5_jurisdiction =
-            $args->{new_mt5_jurisdiction};    # new_mt5_jurisdiction + loginid_details as parameter for new mt5 account (without an id)
-        my $mt5_id           = $args->{mt5_id};               # mt5_id + loginid_details as parameter for existing mt5 account
-        my %loginid_details  = %{$args->{loginid_details}};
-        my $error_message    = 'ProofRequirementError';
-        my $mt5_jurisdiction = $new_mt5_jurisdiction;
-        my $mt5_new_acc      = $args->{new_mt5_account};
+        my $client              = $context->client($args);
+        my $mt5_jurisdiction    = $args->{mt5_jurisdiction};
+        my $mt5_id              = $args->{mt5_id};                                                       # mt5_id will overwrite the mt5_jurisdiction
+        my %loginid_details     = %{$args->{loginid_details}};
+        my $error_message       = 'ProofRequirementError';
+        my $jurisdiction_config = BOM::Config::TradingPlatform::Jurisdiction->new();
+        my @jurisdictions_list  = $jurisdiction_config->get_verification_required_jurisdiction_list();
+
+        die 'If mt5_id is provided, mt5_jurisdiction should not be provided' if defined $mt5_id and defined $mt5_jurisdiction;
 
         my %proof_check = (
             poi => sub {
@@ -123,41 +118,36 @@ rule 'mt5_account.account_proof_status_allowed' => {
         );
 
         if (defined $mt5_id and exists $loginid_details{$mt5_id}) {
+            return 1 if ($loginid_details{$mt5_id}->{account_type} // '') eq 'demo';
             return 1 unless defined $loginid_details{$mt5_id}->{attributes}->{group};
-            ($mt5_jurisdiction) = $loginid_details{$mt5_id}->{attributes}->{group} =~ m/(bvi|vanuatu|labuan|maltainvest)/g;
+            my $jurisdictions_regex = join('|', @jurisdictions_list);
+            ($mt5_jurisdiction) = $loginid_details{$mt5_id}->{attributes}->{group} =~ m/($jurisdictions_regex)/g;
         }
 
-        if (defined $mt5_jurisdiction) {
-            return 1 unless exists JURISDICTION_PROOF_REQUIREMENT()->{$mt5_jurisdiction};
-        } else {
-            return 1;
-        }
-
-        my $required_proof = JURISDICTION_PROOF_REQUIREMENT()->{$mt5_jurisdiction};
+        my @proof_requirements;
+        @proof_requirements = $jurisdiction_config->get_jurisdiction_proof_requirement($mt5_jurisdiction) if defined $mt5_jurisdiction;
+        return 1 unless @proof_requirements;
 
         # Status to consider - verification_pending, verified, poa_failed.
 
-        my %proof_status = map { $_ => {$proof_check{$_}->($mt5_jurisdiction) => 1} } @{$required_proof};
+        my %proof_status = map { $_ => {$proof_check{$_}->($mt5_jurisdiction) => 1} } @proof_requirements;
 
         #Here checking whether we require authentication only first deposit by the client or not(In this case only for Maltainvest clients as part of DIEL flow)
         if ($client->landing_company->first_deposit_auth_check_required) {
-            $self->fail($error_message, params => {mt5_status => 'needs_verification'})
-                if ($mt5_new_acc && $proof_status{'poi'}->{'none'} && $proof_status{'poa'}->{'none'});
-
-            if (all { _is_proof_needed($proof_status{$_}) } @{$required_proof}) {
-                if (any { $proof_status{$_}->{none} } @{$required_proof}) {
+            if (all { _is_proof_needed($proof_status{$_}) } @proof_requirements) {
+                if (any { $proof_status{$_}->{none} } @proof_requirements) {
                     $self->fail($error_message, params => {mt5_status => 'needs_verification'});
-                } elsif (any { $proof_status{$_}->{pending} } @{$required_proof}) {
+                } elsif (any { $proof_status{$_}->{pending} } @proof_requirements) {
                     $self->fail($error_message, params => {mt5_status => 'verification_pending'});
                 }
             }
 
         }
 
-        $self->fail($error_message, params => {mt5_status => 'proof_failed'}) if any { _is_proof_failed($proof_status{$_}) } @{$required_proof};
+        $self->fail($error_message, params => {mt5_status => 'proof_failed'}) if any { _is_proof_failed($proof_status{$_}) } @proof_requirements;
 
         $self->fail($error_message, params => {mt5_status => 'verification_pending'})
-            if any { ($proof_status{$_}->{pending} // 0) == 1 } @{$required_proof};
+            if any { ($proof_status{$_}->{pending} // 0) == 1 } @proof_requirements;
 
         return 1;
     }
