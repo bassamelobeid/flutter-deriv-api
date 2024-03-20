@@ -1,0 +1,54 @@
+mt5_color_code:
+  red: &mt5_color_red 255 # Allow close only, restrict open position
+  none: &mt5_color_none -1 # No restriction
+
+cashier_rules:
+  enabled: &cashier_rules_enabled
+    deposit: true
+    withdrawal: true
+  disabled: &cashier_rules_disabled
+    deposit: false
+    withdrawal: false
+  deposit_only: &cashier_rules_deposit_only # Some cases client restricted past grace period, but still allowed to deposit to maintain margin
+    deposit: true
+    withdrawal: false
+  withdrawal_only: &cashier_rules_withdrawal_only
+    deposit: false
+    withdrawal: true
+
+kyc_status:
+  poa_pending: # POA Pending refers when the client has passed the mandatory proof check and waiting for POA verficiation. Only apply for BVI and Vanuatu.
+    platform:
+      mt5:
+        color_code: *mt5_color_none
+    cashier: *cashier_rules_enabled
+  poa_failed:  # POA Failed refers when the client has passed the mandatory proof check and POA verification failed. Only for the case when GRACE PERIOD is exceeded. Only apply for BVI and Vanuatu.
+    platform:
+      mt5:
+        color_code: *mt5_color_red
+    cashier: *cashier_rules_deposit_only
+  poa_outdated: # POA Outdated refers when the client has passed the mandatory proof check and POA is outdated due to days since verification exceed POA document time to live.
+    platform:
+      mt5:
+        color_code: *mt5_color_red
+    cashier: *cashier_rules_deposit_only
+  proof_failed: # Proof Failed refers when the client has failed the mandatory proof check.
+    platform:
+      mt5:
+        color_code: *mt5_color_red
+    cashier: *cashier_rules_disabled
+  verification_pending: # Verification Pending refers when the client has pending mandatory proof check.
+    platform:
+      mt5:
+        color_code: *mt5_color_red
+    cashier: *cashier_rules_disabled
+  needs_verification: # Needs Verification refers when the client has not submitted any mandatory proof documents.
+    platform:
+      mt5:
+        color_code: *mt5_color_red
+    cashier: *cashier_rules_disabled
+  poa_rejected: # Status no longer used, but kept for legacy support.
+    platform:
+      mt5:
+        color_code: *mt5_color_none
+    cashier: *cashier_rules_enabled

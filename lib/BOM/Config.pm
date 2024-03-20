@@ -839,4 +839,30 @@ sub status_hierarchy {
     return $config;
 }
 
+=head2 cfds_kyc_status_config
+
+    BOM::Config::cfds_kyc_status_config()
+
+Config for kyc status for cfds trading platform
+
+=cut
+
+sub cfds_kyc_status_config {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/cfd/know-your-customer/cfds_kyc_status.yml');
+    return $config;
+}
+
+=head2 cfds_jurisdiction_config
+
+    BOM::Config::cfds_jurisdiction_config()
+
+Config for cfds trading platform jurisdiction
+
+=cut
+
+sub cfds_jurisdiction_config {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/cfd/jurisdiction/cfds_jurisdiction.yml');
+    return $config;
+}
+
 1;
