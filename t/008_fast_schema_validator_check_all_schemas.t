@@ -36,6 +36,7 @@ my $unsupported_schemas = {
     'p2p_advertiser_payment_methods/send.json'         => 1,
     'p2p_advertiser_relations/send.json'               => 1,
     'p2p_order_create/send.json'                       => 1,
+    'p2p_country_list/receive.json'                    => 1,
     'p2p_order_info/receive.json'                      => 1,
     'p2p_order_list/receive.json'                      => 1,
     'p2p_order_review/receive.json'                    => 1,

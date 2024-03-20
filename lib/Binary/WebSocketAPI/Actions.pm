@@ -655,6 +655,12 @@ sub actions_config {
             },
         ],
         [
+            'p2p_country_list',
+            {
+                category => 'p2p',
+            },
+        ],
+        [
             'p2p_advertiser_payment_methods',
             {
                 category => 'p2p',
