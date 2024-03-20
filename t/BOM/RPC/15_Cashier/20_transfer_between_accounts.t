@@ -1851,19 +1851,24 @@ subtest 'MT5' => sub {
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_like(qr/Proof of Identity or Address requirements not met. Operation rejected./,
-        'Error message returned from inner MT5 sub when regulated account has expired documents (labuan case)');
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
+        qr/You cannot make a withdrawal because your MT5 account identity verification requirements are not met. Please contact our Customer Support team./,
+        'Error message returned from inner MT5 sub when regulated account has expired documents (labuan case)'
+        );
 
     $expired_documents = 0;
 
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_like(qr/Proof of Identity or Address requirements not met. Operation rejected./,
-        'Error message returned from inner MT5 sub when regulated binary has no expired documents but does not have valid documents (labuan case)');
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
+        qr/You cannot make a withdrawal because your MT5 account identity verification requirements are not met. Please contact our Customer Support team./,
+        'Error message returned from inner MT5 sub when regulated binary has no expired documents but does not have valid documents (labuan case)'
+        );
 
     $has_valid_documents = 1;
     $mock_client->mock(fully_authenticated => sub { return 1 });
+
+    $mock_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
+    $mock_client->mock(get_poa_status              => sub { return 'verified' });
 
     $params->{args}{account_from} = $test_client->loginid;
     $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
@@ -1871,9 +1876,6 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
-
-    $mock_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
-    $mock_client->mock(get_poa_status              => sub { return 'verified' });
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
     $params->{args}{account_to}   = $test_client->loginid;
@@ -1887,6 +1889,30 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = $test_client->loginid;
     $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
     $is_fa_complete               = 1;
+
+    subtest 'test transfer with kyc status (labuan case)' => sub {
+        $mock_client->mock(get_poi_status_jurisdiction => sub { return 'none' });
+        $mock_client->mock(get_poa_status              => sub { return 'verified' });
+
+        # Deposit Path
+        $params->{args}{account_from} = $test_client->loginid;
+        $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
+            qr/You cannot make a deposit because your MT5 account identity verification requirements are not met. Please contact our Customer Support team./,
+            'Error message returned from inner MT5 sub when regulated binary has no poi (labuan case)'
+            );
+
+        # Withdrawal Path
+        $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
+        $params->{args}{account_to}   = $test_client->loginid;
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
+            qr/You cannot make a withdrawal because your MT5 account identity verification requirements are not met. Please contact our Customer Support team./,
+            'Error message returned from inner MT5 sub when regulated binary has no poi (labuan case)'
+            );
+
+    };
 
     subtest 'transfers using an account other than authenticated client' => sub {
         $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_btc->loginid, 'test token');

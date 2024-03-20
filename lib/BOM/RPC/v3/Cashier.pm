@@ -59,6 +59,7 @@ use BOM::Config::Redis;
 use BOM::Rules::Engine;
 use BOM::TradingPlatform::Helper::HelperDerivEZ;
 use BOM::Config::BrokerDatabase;
+use BOM::Config::TradingPlatform::KycStatus;
 use BOM::User::WalletMigration;
 
 requires_auth('trading', 'wallet');
@@ -2024,9 +2025,10 @@ Returns $self
 sub _get_transferable_accounts {
     my ($client, $user, $siblings, $include_mt5) = @_;
 
-    my $demo_or_real = $client->is_virtual ? 'demo' : 'real';
-    my $lc_short     = $client->landing_company->short;
-    my @accounts     = values %$siblings;
+    my $demo_or_real      = $client->is_virtual ? 'demo' : 'real';
+    my $lc_short          = $client->landing_company->short;
+    my @accounts          = values %$siblings;
+    my $kyc_status_config = BOM::Config::TradingPlatform::KycStatus->new();
 
     # skip wallets if the account is not fully migrated
     if (BOM::User::WalletMigration::accounts_state($user) eq 'partial') {
@@ -2048,7 +2050,6 @@ sub _get_transferable_accounts {
                 next unless grep { $lc_short eq $_ } $mt_lc->mt5_require_deriv_account_at->@*;
             }
 
-            my @status_to_exclude = $client->landing_company->is_eu ? ['proof_failed'] : ['proof_failed', 'verification_pending'];
             push @accounts,
                 {
                 loginid          => $mt5_acc->{login},
@@ -2061,7 +2062,7 @@ sub _get_transferable_accounts {
                 status           => $mt5_acc->{status},
                 transfers        => 'all',
                 }
-                unless any { ($mt5_acc->{status} // '') eq $_ } @status_to_exclude;
+                unless $kyc_status_config->is_kyc_cashier_disabled({status => $mt5_acc->{status}});
         }
     }
 

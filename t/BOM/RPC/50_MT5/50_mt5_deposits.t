@@ -1082,13 +1082,14 @@ subtest 'bvi withdrawal' => sub {
     # pending POA, post grace period, fail.
     $mock_logindetails->{MTR1001018}->{creation_stamp} = '2018-02-04 07:13:52.94334';
     $c->call_ok($method, $params)->has_error('Withdrawal failed.')
-        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+        ->error_message_like(
+        qr/You cannot make a withdrawal because your MT5 account identity verification requirements are not met. Please contact our Customer Support team./
+        );
 
-    # pending POA, poa_failed, fail.
+    # pending POA, poa_failed, pass.
     $mock_logindetails->{MTR1001018}->{creation_stamp} = '2018-02-10 07:13:52.94334';
     $mock_logindetails->{MTR1001018}->{status}         = 'poa_failed';
-    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
-        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+    $c->call_ok($method, $params)->has_no_error('Withdrawal passed with out of sync mt5 status. Should be poa_pending, so withdraw allowed');
 
     $mock_logindetails->{MTR1001018}->{status} = 'poa_pending';
     # pending POA, mixed BVI and Vanuatu where vanuatu expired don't affect BVI within grace period, pass.
@@ -1102,7 +1103,9 @@ subtest 'bvi withdrawal' => sub {
     # pending POA, selected MT5 within grace period but first account expired, fail
     $mock_logindetails->{MTR1001019}->{creation_stamp} = '2018-02-04 07:13:52.94334';
     $c->call_ok($method, $params)->has_error('Withdrawal failed.')
-        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+        ->error_message_like(
+        qr/You cannot make a withdrawal because your MT5 account identity verification requirements are not met. Please contact our Customer Support team./
+        );
 
     $mock_logindetails->{MTR1001019}->{creation_stamp} = Date::Utility->new()->date_yyyymmdd;
     $c->call_ok($method, $params)->has_no_error('withdrawal ok');
@@ -1338,13 +1341,14 @@ subtest 'vanuatu withdrawal' => sub {
     # pending POA, post grace period, fail.
     $mock_logindetails->{MTR1001020}->{creation_stamp} = '2018-02-09 07:13:52.94334';
     $c->call_ok($method, $params)->has_error('Withdrawal failed.')
-        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+        ->error_message_like(
+        qr/You cannot make a withdrawal because your MT5 account identity verification requirements are not met. Please contact our Customer Support team./
+        );
 
     # pending POA, poa_failed, fail.
     $mock_logindetails->{MTR1001020}->{creation_stamp} = '2018-02-13 07:13:52.94334';
     $mock_logindetails->{MTR1001020}->{status}         = 'poa_failed';
-    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
-        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+    $c->call_ok($method, $params)->has_no_error('Withdrawal passed with out of sync mt5 status. Should be poa_pending, so withdraw allowed');
 
     # outdated POA, poa_outdated, still pass for low risk client.
     $user_client_mock->mock(
@@ -1376,7 +1380,9 @@ subtest 'vanuatu withdrawal' => sub {
     # pending POA, selected MT5 within grace period but first account expired, fail
     $mock_logindetails->{MTR1001019}->{creation_stamp} = '2018-02-09 07:13:52.94334';
     $c->call_ok($method, $params)->has_error('Withdrawal failed.')
-        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+        ->error_message_like(
+        qr/You cannot make a withdrawal because your MT5 account identity verification requirements are not met. Please contact our Customer Support team./
+        );
 
     $mock_logindetails->{MTR1001019}->{creation_stamp} = Date::Utility->new()->date_yyyymmdd;
     $c->call_ok($method, $params)->has_no_error('withdrawal ok');

@@ -46,6 +46,8 @@ use BOM::User::FinancialAssessment qw(decode_fa);
 use BOM::User::Utility;
 use BOM::Config::MT5;
 use BOM::Config::Compliance;
+use BOM::Config::TradingPlatform::Jurisdiction;
+use BOM::Config::TradingPlatform::KycStatus;
 use Deriv::TradingPlatform::MT5::UserRights qw(to_array to_hash get_value get_new_account_permissions);
 requires_auth('wallet', 'trading');
 
@@ -711,7 +713,8 @@ async_rpc "mt5_new_account",
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    my $rule_engine         = BOM::Rules::Engine->new(client => $client);
+    my $jurisdiction_config = BOM::Config::TradingPlatform::Jurisdiction->new();
 
     # extract request parameters
     my $account_type            = delete $args->{account_type};
@@ -975,14 +978,14 @@ async_rpc "mt5_new_account",
         }
 
         if (!$client->fully_authenticated({ignore_idv => $requires_poa, landing_company => $landing_company_short})) {
-            if (any { $landing_company_short eq $_ } qw/bvi vanuatu labuan maltainvest/) {
+            my @jurisdictions_list = $jurisdiction_config->get_verification_required_jurisdiction_list();
+            if (any { $landing_company_short eq $_ } @jurisdictions_list) {
                 try {
                     $rule_engine->verify_action(
                         'mt5_jurisdiction_validation',
-                        loginid              => $client->loginid,
-                        new_mt5_jurisdiction => $landing_company_short,
-                        loginid_details      => $user->loginid_details,
-                        new_mt5_account      => 1,
+                        loginid          => $client->loginid,
+                        mt5_jurisdiction => $landing_company_short,
+                        loginid_details  => $user->loginid_details
                     );
                 } catch ($error) {
                     my $failed_mt5_status = $error->{params}->{mt5_status};
@@ -2147,30 +2150,6 @@ async_rpc "mt5_withdrawal",
     }
     return create_error_future('PermissionDenied', {message => 'You are not allowed to transfer to this account.'}) unless $to_client;
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    try {
-        $rule_engine->verify_action(
-            'mt5_jurisdiction_validation',
-            loginid         => $client->loginid,
-            mt5_id          => $fm_mt5,
-            loginid_details => $client->user->loginid_details,
-        );
-    } catch ($error) {
-        my $failed_mt5_status = $error->{params}->{mt5_status};
-        if (defined $failed_mt5_status) {
-            BOM::Platform::Event::Emitter::emit(
-                'mt5_change_color',
-                {
-                    loginid => $fm_mt5,
-                    color   => 255,
-                }) if $failed_mt5_status eq 'poa_failed';
-
-            return create_error_future($error->{error_code}) unless $failed_mt5_status eq 'poa_pending';
-        } else {
-            return create_error_future($error->{error_code});
-        }
-    }
-
     return _mt5_validate_and_get_amount($client, $user, $to_loginid, $fm_mt5, $amount, $error_code, 'withdrawal', $request_currency)->then(
         sub {
             my ($response) = @_;
@@ -2300,6 +2279,11 @@ sub _mt5_validate_and_get_amount {
 
     my $err = _check_logins($user, @loginids_list);
     return $err if $err;
+
+    my $kyc_cashier_permission_check_result =
+        _kyc_cashier_permission_check({client => $authorized_client, mt5_loginid => $mt5_loginid, operation => $transfer_type});
+    return create_error_future($kyc_cashier_permission_check_result->{error_code})
+        if $kyc_cashier_permission_check_result->{error_code};
 
     my ($action, $action_counterpart, $from_loginid, $to_loginid);
     if ($error_code =~ /Withdrawal/) {
@@ -2971,6 +2955,69 @@ sub _is_mt5_ib {
     my ($mt5_accounts) = @_;
 
     return any { $_->{comment} && $_->{comment} eq 'IB' } @$mt5_accounts;
+}
+
+=head2 _kyc_cashier_permission_check
+
+Check if the client has permission to perform cashier operations on MT5 accounts based on status
+
+=over
+
+=item * C<$operation> Type of cashier operation. Example: 'deposit', 'withdrawal'
+
+=back
+
+Return error hash if the client does not have permission to perform cashier operations on MT5 accounts.
+
+=cut
+
+sub _kyc_cashier_permission_check {
+    my $args = shift;
+
+    my ($client, $mt5_loginid, $operation) = @{$args}{qw/client mt5_loginid operation/};
+    my $kyc_status_config  = BOM::Config::TradingPlatform::KycStatus->new();
+    my $mt5_current_status = $client->user->loginid_details->{$mt5_loginid}->{status};
+
+    my $resync_needed = 0;
+    my $failed_mt5_status;
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    try {
+        $rule_engine->verify_action(
+            'mt5_jurisdiction_validation',
+            loginid         => $client->loginid,
+            mt5_id          => $mt5_loginid,
+            loginid_details => $client->user->loginid_details,
+        );
+    } catch ($error) {
+        $failed_mt5_status = $error->{params}->{mt5_status};
+
+        if (defined $failed_mt5_status) {
+            $mt5_current_status = $failed_mt5_status;
+            # Status like poa_pending is valid. But resync is done anyway. In the event cron job is down, this act as backup sync call.
+            $resync_needed = 1;
+        }
+    }
+
+    if (defined $mt5_current_status and not defined $failed_mt5_status) {
+        # There is status from internal db but rule indicate it shouldn't have.
+        # MT5 status out of sync, allow cashier operation while triggering resync.
+        $mt5_current_status = undef;
+        $resync_needed      = 1;
+    }
+
+    BOM::Platform::Event::Emitter::emit('sync_mt5_accounts_status', {client_loginid => $client->loginid}) if $resync_needed;
+
+    my $cashier_operation_allowed = 1;
+    if (defined $mt5_current_status) {
+        $cashier_operation_allowed = $kyc_status_config->get_kyc_cashier_permission({status => $mt5_current_status, operation => $operation});
+    }
+
+    if (not $cashier_operation_allowed) {
+        return {error_code => 'MT5KYCDepositLocked'}    if $operation eq 'deposit';
+        return {error_code => 'MT5KYCWithdrawalLocked'} if $operation eq 'withdrawal';
+    }
+
+    return {ok => 1};
 }
 
 1;
