@@ -4344,6 +4344,7 @@ sub payment_ctc {
     my $staff            = $args{staff}     || 'system';
     my $crypto_id        = $args{crypto_id} || die "no crypto_id";
     my $transaction_hash = $args{transaction_hash};
+    my $priority_fee     = $args{priority_fee} // 0;
 
     my $action_type      = $amount > 0 ? 'deposit' : 'withdrawal';
     my $transaction_type = $args{transaction_type} || $action_type;
@@ -4358,7 +4359,8 @@ sub payment_ctc {
 
     my $txn_details = {
         $ctc_values->%*,
-        address => $args{address},
+        address      => $args{address},
+        priority_fee => $priority_fee,
     };
 
     my ($trx) = $account->add_payment_transaction({
