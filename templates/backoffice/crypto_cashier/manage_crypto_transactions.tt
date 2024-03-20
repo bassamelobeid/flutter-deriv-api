@@ -52,7 +52,7 @@
     %]
 
     [% IF status_list.$view_action %]
-        [% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&show_one_authorised=' _ show_one_authorised _ '&view_action=' _ view_action %]
+        [% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&show_one_authorised=' _ show_one_authorised _ '&view_action=' _ view_action _ '&show_priority_withdrawals=' _ show_priority_withdrawals %]
         <div class="link-group status-group">
             <span>View by Transaction Status:</span>
             [% FOREACH status IN status_list.$view_action %]
@@ -256,7 +256,7 @@
         </thead>
         <tbody>
         [% FOREACH trx IN transactions %]
-            <tr id="[% 'row_' _ trx.id %]">
+            <tr id="[% 'row_' _ trx.id %]" [% IF trx.is_priority %] style="background-color: lavender;" [% END %]>
                 [% IF view_action == 'search' %]
                     <td valign="top">
                         <b>[% trx.type FILTER ucfirst %]: </b>
@@ -281,7 +281,12 @@
                     <table class="small"><tbody>
                         <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.amount_usd %])</td></tr>
                         [% IF trx.type == 'deposit' %]
-                            [% WRAPPER info title='Amount Credited' %][% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])[% END %]
+                            [% WRAPPER info title='Amount Credited' %]
+                            [% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])
+                            [% END %]
+                        [% END %]
+                        [% IF trx.type == 'withdrawal' && (trx.status == 'PROCESSING' ||  trx.status == 'SENT')%]
+                            [% WRAPPER info title='Amount Debited' %][% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])[% END %]
                         [% END %]
                         <tr>
                             <th>Client:</th>
@@ -306,6 +311,7 @@
                     [% IF trx.type == 'withdrawal' %]
                         <tr><th>Estimated Fee:</th><td>[% trx.estimated_fee %]</td></tr>
                         <tr><th>Transaction Fee:</th><td>[% trx.fee %]</td></tr>
+                        <tr><th>Is Priority Withdrawal:</th><td>[% IF trx.is_priority %] Yes [% ELSE %] No [% END %]</td></tr>
                     [% END %]
                     </tbody></table>
                 </td>

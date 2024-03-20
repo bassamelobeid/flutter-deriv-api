@@ -45,8 +45,12 @@
     <label for="show_all_pendings"> Show all pending payouts </label>
     <input type="checkbox" id="show_one_authorised" name="show_one_authorised" [% IF show_one_authorised %] checked [% END %]>
     <label for="show_one_authorised"> Show One Authorised pending payouts </label>
+    <input type="checkbox" id="show_priority_withdrawals" name="show_priority_withdrawals" [% IF show_priority_withdrawals %] checked [% END %]>
+    <label for="show_priority_withdrawals"> Show Priority withdrawals </label>
     <br><br>
     Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>
+    <br>
+    Pending Approval Priority Payout Count : <strong> [% locked_priority_withdrawals_count %] </strong>
 <!-- Tools -->
     <br><br>
     <button type="submit" class="btn btn--primary" name="view_action" value="run">Run</button>

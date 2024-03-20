@@ -120,6 +120,9 @@
                                 [% IF trx.type == 'deposit' %]
                                    [% WRAPPER info title='Amount Credited' %][% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])[% END %]
                                 [% END %]
+                                [% IF trx.type == 'withdrawal' && (trx.status == 'PROCESSING' ||  trx.status == 'SENT')%]
+                                    [% WRAPPER info title='Amount Debited' %][% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])[% END %]
+                                [% END %]
                                 [% IF !loginid && trx.loginid %]
                                     [% WRAPPER info title='Client' %]
                                         <ul style="margin-top: 0;">
@@ -134,6 +137,9 @@
                                 [% IF trx.type == 'withdrawal'%]
                                     [% INCLUDE info title='Estimated Fee'   content=trx.estimated_fee %]
                                     [% INCLUDE info title='Transaction Fee' content=trx.fee %]
+                                    [% WRAPPER info title='Is Priority Withdrawal:' %]
+                                        [% IF trx.is_priority %]Yes[% ELSE %]No[% END %]
+                                    [% END %]
                                 [% END %]
                             </td>
                             <td valign="top">

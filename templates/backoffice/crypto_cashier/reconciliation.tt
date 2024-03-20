@@ -19,6 +19,8 @@
                 <th scope="col">Amount USD</th>
                 <th scope="col">Client Amount</th>
                 <th scope="col">Fee</th>
+                <th scope="col">Estimated Fee</th>
+                <th scope="col">is Priority</th>
                 <th scope="col">Protocol Cost</th>
                 <th scope="col">Status</th>
                 <th scope="col">Status date</th>
@@ -38,6 +40,8 @@
                 <td class="right">[% '$' _ trx.amount_usd %]</td>
                 <td class="right">[% trx.client_amount %]</td>
                 <td class="right">[% trx.fee %]</td>
+                <td class="right">[% trx.estimated_fee %]</td>
+                <td class="right">[% trx.is_priority %]</td>
                 <td class="right">[% trx.protocol_cost %]</td>
                 <td>[% trx.status %]</td>
                 <td sorttable_customkey="[% trx.status_date %]">[% trx.status_date && date.format(trx.status_date, '%Y-%m-%d %T') %]</td>

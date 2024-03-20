@@ -97,6 +97,8 @@ my $view_action = request()->param('view_action') // '';
 my $show_all_pendings = request()->param('show_all_pendings');
 # show only one step authorised
 my $show_one_authorised = request()->param('show_one_authorised');
+# show only one step authorised
+my $show_priority_withdrawals = request()->param('show_priority_withdrawals');
 
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[a-zA-Z0-9]{2,20}$/;
@@ -131,6 +133,14 @@ if ($view_action =~ /^(withdrawals|run)$/) {
     push @batch_requests, {    # Request pending total
         id     => 'get_pending',
         action => 'withdrawal/get_pending_total',
+        body   => {
+            currency_code => $currency,
+        },
+    };
+
+    push @batch_requests, {    # Request pending total
+        id     => 'get_locked_priority_withdrawals',
+        action => 'withdrawal/get_locked_priority_withdrawals_count',
         body   => {
             currency_code => $currency,
         },
@@ -240,19 +250,20 @@ my $display_transactions = sub {
     $tt->process(
         'backoffice/crypto_cashier/manage_crypto_transactions.tt',
         {
-            transactions        => $trxns,
-            broker              => $broker,
-            currency            => $currency,
-            view_action         => $view_action,
-            view_type           => $view_type,
-            controller_url      => request()->url_for('backoffice/f_manager_crypto.cgi', $pagination_qs),
-            staff               => $staff,
-            show_all_pendings   => $show_all_pendings   // '',
-            show_one_authorised => $show_one_authorised // '',
-            fetch_url           => request()->url_for('backoffice/fetch_client_details.cgi'),
-            rejection_reasons   => \@rejection_reasons_tpl,
-            update_errors       => $update_errors,
-            pagination          => $pagination_info,
+            transactions              => $trxns,
+            broker                    => $broker,
+            currency                  => $currency,
+            view_action               => $view_action,
+            view_type                 => $view_type,
+            controller_url            => request()->url_for('backoffice/f_manager_crypto.cgi', $pagination_qs),
+            staff                     => $staff,
+            show_all_pendings         => $show_all_pendings         // '',
+            show_one_authorised       => $show_one_authorised       // '',
+            show_priority_withdrawals => $show_priority_withdrawals // '',
+            fetch_url                 => request()->url_for('backoffice/fetch_client_details.cgi'),
+            rejection_reasons         => \@rejection_reasons_tpl,
+            update_errors             => $update_errors,
+            pagination                => $pagination_info,
         }) || die $tt->error() . "\n";
 };
 
@@ -366,6 +377,15 @@ $actions->{withdrawals} = sub {
                 not($_->{authorisers} and grep { /^$staff$/ } $_->{authorisers}->@*)
             }
             @$trxns;
+        }
+
+        if ($show_priority_withdrawals) {
+            # Filter priority withdrawals
+            @$trxns = grep { $_->{is_priority} } $trxns->@*;
+        }
+        if ($view_type eq 'pending') {
+            # show LOCKED
+            @$trxns = sort { $b->{is_priority} <=> $a->{is_priority} } $trxns->@*;
         }
 
         for my $update_result (($response_bodies->{update}{transaction_list} // [])->@*) {
@@ -549,6 +569,7 @@ my $response_bodies = $batch->get_response_body();
 if (my $pending_total = $response_bodies->{get_pending}{pending_total}) {
     ($pending_withdrawal_amount, $pending_estimated_fee) = @{$pending_total}{qw/ amount estimated_fee /};
 }
+my $locked_priority_withdrawals_count = $response_bodies->{get_locked_priority_withdrawals}{locked_priority_withdrawals_count};
 
 # ========== Rendering ==========
 Bar("$currency Info");
@@ -573,19 +594,21 @@ my @crypto_currencies =
 $tt->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
-        controller_url            => request()->url_for('backoffice/f_manager_crypto.cgi'),
-        currency                  => $currency,
-        all_crypto                => [@crypto_currencies],
-        cmd                       => request()->param('command') // '',
-        broker                    => $broker,
-        start_date                => $start_date->isa('Date::Utility') ? $start_date->date_yyyymmdd : $start_date,
-        end_date                  => $end_date->isa('Date::Utility')   ? $end_date->date_yyyymmdd   : $end_date,
-        show_all_pendings         => $show_all_pendings,
-        show_one_authorised       => $show_one_authorised,
-        pending_withdrawal_amount => $pending_withdrawal_amount,
-        include_new               => $show_new_addresses,
-        is_external               => $currency_info->{is_external},
-        errors                    => [@errors],
+        controller_url                    => request()->url_for('backoffice/f_manager_crypto.cgi'),
+        currency                          => $currency,
+        all_crypto                        => [@crypto_currencies],
+        cmd                               => request()->param('command') // '',
+        broker                            => $broker,
+        start_date                        => $start_date->isa('Date::Utility') ? $start_date->date_yyyymmdd : $start_date,
+        end_date                          => $end_date->isa('Date::Utility')   ? $end_date->date_yyyymmdd   : $end_date,
+        show_all_pendings                 => $show_all_pendings,
+        show_one_authorised               => $show_one_authorised,
+        show_priority_withdrawals         => $show_priority_withdrawals,
+        pending_withdrawal_amount         => $pending_withdrawal_amount,
+        locked_priority_withdrawals_count => $locked_priority_withdrawals_count,
+        include_new                       => $show_new_addresses,
+        is_external                       => $currency_info->{is_external},
+        errors                            => [@errors],
     }) || die $tt->error() . "\n";
 
 $render_action->($response_bodies)
