@@ -16,6 +16,7 @@ use Encode;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use POSIX                      qw(ceil);
 use JSON::MaybeUTF8            qw(encode_json_utf8 encode_json_text);
+use Math::BigFloat;
 
 use Business::Config::LandingCompany;
 
@@ -3800,8 +3801,8 @@ Takes the following arguments:
 sub p2p_payment_methods {
     my ($self, $country) = @_;
 
-    my $methods        = BOM::Config::p2p_payment_methods();
-    my $country_config = decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries);
+    my $methods        = $self->_p2p_payment_methods_cached;
+    my $country_config = $self->_payment_method_countries_cached;
     my $result         = {};
 
     for my $method (keys %$methods) {
@@ -4258,6 +4259,91 @@ sub p2p_withdrawable_balance {
 
     # this calcalution was tested on over 10k clients so even though it may look strange, we know it works
     return min($balance, $p2p_excluded + max(0, $balance - $p2p_excluded - $p2p_net));
+}
+
+=head2 p2p_country_list
+
+Returns P2P Country and their configuration including availaible paymment methods.
+
+Takes the following arguments:
+
+=over 4
+
+=item * country: if not provided all countries are returned
+
+=back
+
+=cut
+
+sub p2p_country_list {
+    my ($self, %param) = @_;
+
+    my $target_country = @param{qw/country/};
+
+    my $app_config        = BOM::Config::Runtime->instance->app_config;
+    my $p2p_config        = $app_config->payments->p2p;
+    my $p2p_advert_config = BOM::Config::P2P::advert_config();
+
+    my $all_countries = BOM::Config::P2P::available_countries();
+
+    die +{error_code => 'RestrictedCountry'} if ($target_country and not $all_countries->{$target_country});
+
+    my $countries = {};
+
+    for my $country (keys $all_countries->%*) {
+        next if $target_country and $target_country ne $country;
+        my $country_p2p_advert_config = $p2p_advert_config->{$country};
+
+        $countries->{$country}->{country_name}    = $all_countries->{$country};
+        $countries->{$country}->{payment_methods} = $self->p2p_payment_methods($country);
+
+        my $local_currency = BOM::Config::CurrencyConfig::local_currency_for_country(country => $country);
+        $countries->{$country}->{local_currency} = $local_currency;
+
+        $countries->{$country}->{float_rate_offset_limit} =
+            Math::BigFloat->new(BOM::Config::P2P::currency_float_range($local_currency))->bdiv(2)->bfround(-2, 'trunc')->bstr;
+
+        $countries->{$country}->{cross_border_ads_enabled} =
+            (any { lc($_) eq $country } $p2p_config->cross_border_ads_restricted_countries->@*) ? 0 : 1;
+
+        $countries->{$country}->{fixed_rate_adverts} = $country_p2p_advert_config->{fixed_ads};
+        $countries->{$country}->{float_rate_adverts} = $country_p2p_advert_config->{float_ads};
+    }
+
+    return $countries;
+}
+
+=head2 _p2p_payment_methods_cached
+
+Cache of p2p payment methods for the current client.
+
+We often need to get it more than once for a single RPC call.
+
+In tests you will need to delete this every time you update an payment methods and call another RPC method.
+
+=cut
+
+sub _p2p_payment_methods_cached {
+    my $self = shift;
+
+    return $self->{_p2p_payment_methods_cached} //= BOM::Config::p2p_payment_methods();
+}
+
+=head2 _payment_method_countries_cached
+
+Cache of p2p payment method and their countries the current client.
+
+We often need to get it more than once for a single RPC call.
+
+In tests you will need to delete this every time you update an advertiser and call another RPC method.
+
+=cut
+
+sub _payment_method_countries_cached {
+    my $self = shift;
+
+    return $self->{_payment_method_countries_cached} //=
+        decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries());
 }
 
 #### TODO: As Bill Marrioitt suggesting bellow functions should remove and use $p2p->client->sub_call explicity everywhere!
