@@ -30,15 +30,6 @@ my $redis_mock = Test::MockModule->new('Net::Async::Redis');
 my $df_queue   = [];
 my $df_partial = [];
 
-my $mocked_config = Test::MockModule->new('BOM::Config');
-$mocked_config->mock(
-    s3 => sub {
-        return {
-            document_auth => {map { $_ => 1 } qw(aws_access_key_id aws_secret_access_key aws_bucket)},
-            desk          => {map { $_ => 1 } qw(aws_access_key_id aws_secret_access_key aws_bucket)},
-        };
-    });
-
 $redis_mock->mock(
     'zadd',
     sub {
@@ -61,7 +52,7 @@ $redis_mock->mock(
 my $mock_config = Test::MockModule->new('BOM::Config');
 $mock_config->mock(
     's3' => {
-        desk => {
+        binary_desk => {
             aws_bucket            => 'dummy',
             aws_access_key_id     => 'dummy',
             aws_secret_access_key => 'dummy',
