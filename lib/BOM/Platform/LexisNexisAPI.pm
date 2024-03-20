@@ -244,6 +244,8 @@ async sub sync_all_customers {
             $customer->{alert_status} = "positive match";
         } elsif ($alert_status =~ /Potential Match/i) {
             $customer->{alert_status} = "potential match";
+        } elsif ($alert_status =~ /False Match_Config/i) {
+            $customer->{alert_status} = "false match config";
         } else {
             $customer->{alert_status} = "open";
         }

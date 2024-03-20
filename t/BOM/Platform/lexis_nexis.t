@@ -51,6 +51,26 @@ my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $user_mf->add_client($client_mf);
 
+my $user_mf2 = BOM::User->create(
+    email    => 'lexis_nexis_mf2@binary.com',
+    password => "hello",
+);
+my $client_mf2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'MF',
+    binary_user_id => $user_mf2->id,
+});
+$user_mf2->add_client($client_mf2);
+
+my $user_mf3 = BOM::User->create(
+    email    => 'lexis_nexis_mf3@binary.com',
+    password => "hello",
+);
+my $client_mf3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'MF',
+    binary_user_id => $user_mf3->id,
+});
+$user_mf3->add_client($client_mf3);
+
 my %lexis_nexis_config = (
     api_url    => 'http://localhost',
     api_key    => 'dummy',
@@ -315,6 +335,14 @@ subtest 'sync_all_customers' => sub {
                 NumRecordsProcessed => 1
             },
             {
+                RunID               => 10000003,
+                NumRecordsProcessed => 1
+            },
+            {
+                RunID               => 10000004,
+                NumRecordsProcessed => 1
+            },
+            {
                 RunID               => 20000000,
                 NumRecordsProcessed => -1
             }
@@ -326,6 +354,14 @@ subtest 'sync_all_customers' => sub {
             {
                 RunID    => 10000002,
                 RecordID => 300002
+            },
+            {
+                RunID    => 10000003,
+                RecordID => 300003
+            },
+            {
+                RunID    => 10000004,
+                RecordID => 300004
             },
         ],
         Records => [{
@@ -388,7 +424,71 @@ subtest 'sync_all_customers' => sub {
                             EntityDetails => {DateListed => "2015-10-29"},
                             DateModified  => "2016-09-19T00:00:00Z",
                             ResultDate    => "2022-12-29T08:19:45Z"
-                        }]}}]);
+                        }]}
+            },
+            {
+                RecordDetails => {
+                    AdditionalInfo => [{
+                            Label => "client_loginid",
+                            Type  => "Other",
+                            Value => "MF90000001"
+                        }
+                    ],
+                    LastUpdatedDate => "2023-12-22T11:11:26Z",
+                    RecordState     => {
+                        History => [{
+                                Event => "Alert Decision Applied",
+                                Note  => "UNDETERMINED decision was applied",
+                            },
+                            {
+                                Event => "New Note",
+                                Note  => "MT5 BVI"
+                            },
+                        ],
+                        Status => "False Match_Config"
+                    },
+                    SearchDate => "2023-12-22T10:53:50Z",
+                },
+                ResultID  => 300003,
+                Watchlist => {
+                    Matches => [{
+                            EntityDetails => {DateListed => "2015-10-05"},
+                            DateModified  => "2016-09-19T00:00:00Z",
+                            ResultDate    => "2022-12-05T08:19:45Z"
+                        }]}
+            },
+            {
+                RecordDetails => {
+                    AdditionalInfo => [{
+                            Label => "client_loginid",
+                            Type  => "Other",
+                            Value => "MF90000002"
+                        }
+                    ],
+                    LastUpdatedDate => "2023-12-12T11:11:26Z",
+                    RecordState     => {
+                        History => [{
+                                Event => "Alert Decision Applied",
+                                Note  => "ACCEPT decision was applied",
+                            },
+                            {
+                                Event => "New Note",
+                                Note  => "MT5 BVI"
+                            },
+                        ],
+                        Status => "potential match"
+                    },
+                    SearchDate => "2023-12-12T10:53:50Z",
+                },
+                ResultID  => 300004,
+                Watchlist => {
+                    Matches => [{
+                            EntityDetails => {DateListed => "2015-10-29"},
+                            DateModified  => "2016-09-15T00:00:00Z",
+                            ResultDate    => "2022-12-07T08:19:45Z"
+                        }]}
+            },
+        ]);
 
     my $result;
     lives_ok { $result = $lexis_nexis_api->sync_all_customers()->get } 'get_all_client_records method successfully executed';
@@ -417,6 +517,33 @@ subtest 'sync_all_customers' => sub {
             'client_loginid' => $client_mf->loginid,
             'date_added'     => "2022-12-31",
             'date_updated'   => "2022-12-29",
+            'note'           => "MT5 BVI",
+        },
+        'MF LexisNexis profile is saved correctly'
+    );
+
+    is_deeply(
+        $user_mf2->lexis_nexis,
+        {
+            'alert_id'       => 300003,
+            'alert_status'   => "false match config",
+            'binary_user_id' => 3,
+            'client_loginid' => $client_mf2->loginid,
+            'date_added'     => "2023-12-22",
+            'date_updated'   => "2022-12-05",
+            'note'           => "MT5 BVI",
+        },
+        'MF LexisNexis profile is saved correctly'
+    );
+    is_deeply(
+        $user_mf3->lexis_nexis,
+        {
+            'alert_id'       => 300004,
+            'alert_status'   => "potential match",
+            'binary_user_id' => 4,
+            'client_loginid' => $client_mf3->loginid,
+            'date_added'     => "2023-12-12",
+            'date_updated'   => "2022-12-07",
             'note'           => "MT5 BVI",
         },
         'MF LexisNexis profile is saved correctly'
