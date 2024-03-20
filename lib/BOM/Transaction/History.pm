@@ -193,8 +193,16 @@ sub _get_txn_remark {
     if ($gateway eq 'ctc') {
         if ($details->{transaction_type} eq 'withdraw_revert') {
             return localize('Withdrawal returned. Reference no.: [_1]', $details->{crypto_id});
+        } elsif ($details->{priority_fee} && $details->{transaction_hash}) {
+            return localize(
+                'Address: [_1], transaction: [_2], inclusive of priority fee: [_3]',
+                $details->{address},
+                $details->{transaction_hash},
+                $details->{priority_fee});
         } elsif ($details->{transaction_hash}) {
             return localize('Address: [_1], transaction: [_2]', $details->{address}, $details->{transaction_hash});
+        } elsif ($details->{priority_fee}) {
+            return localize('Address: [_1], inclusive of priority fee: [_2]', $details->{address}, $details->{priority_fee});
         } else {
             return localize('Address: [_1]', $details->{address});
         }
