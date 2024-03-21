@@ -1,8 +1,10 @@
 name: Daily master test
-run-name: Daily test on master branch 
+run-name: Daily test on master branch
 on:
+  workflow_dispatch:
+  workflow_call:
   schedule:
-    - cron: '4 20 * * *'
+    - cron: '35 11 * * *'
 jobs:
   syntax:
     uses: regentmarkets/github-actions/.github/workflows/syntax.yml@master
@@ -15,9 +17,9 @@ jobs:
     if: success() || failure()
     runs-on: ubuntu-latest
     steps:
-      - 
+      -
         name: Upload results to DataDog
         uses: regentmarkets/github-actions/datadog-publish@master
-        with: 
+        with:
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
           service-name: bom-rules
