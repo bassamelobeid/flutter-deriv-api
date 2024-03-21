@@ -35,17 +35,18 @@ get summary of deposits and withdrawals
 
 sub get_summary {
     my ($self, $args) = @_;
-    my $from_date = $args->{from_date} // '1970-01-01';
-    my $to_date   = $args->{to_date}   // Date::Utility->new()->datetime;
+    my $from_date         = $args->{from_date} // '1970-01-01';
+    my $to_date           = $args->{to_date}   // Date::Utility->new()->datetime;
+    my $internal_transfer = $args->{internal_transfer};
 
     my $dbic = $self->db->dbic;
 
     return $dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM payment.get_account_payments_summary(?,?,?)',
+                'SELECT * FROM payment.get_account_payments_summary(?,?,?,?)',
                 {Slice => {}},
-                $self->account->id, $from_date, $to_date
+                $self->account->id, $internal_transfer, $from_date, $to_date
             );
         },
     );
