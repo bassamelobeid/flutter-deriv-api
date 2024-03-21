@@ -54,6 +54,7 @@ __PACKAGE__->meta->setup(
         binary_user_id                           => { type => 'bigint' },
         non_pep_declaration_time                 => { type => 'timestamp' },
         account_type                             => { type => 'text' },
+        tin_approved_time                        => { type => 'timestamp' },
         fatca_declaration_time                   => { type => 'timestamp' },
         fatca_declaration                        => { type => 'boolean' },
     ],
