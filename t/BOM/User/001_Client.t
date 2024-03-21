@@ -1253,6 +1253,27 @@ subtest 'immutable fields for a real account having duplicate accounts' => sub {
     $cli_mock->unmock_all;
 };
 
+subtest 'test tin manual approval' => sub {
+
+    subtest 'is_tin_manually_approved' => sub {
+        my $client_tin = create_client('CR');
+        $client_tin->tax_identification_number('123456789');
+        $client_tin->save();
+
+        ok !$client_tin->is_tin_manually_approved, 'TIN is not manually approved as TIN exists';
+
+        $client_tin->tax_identification_number(undef);
+        $client_tin->save();
+        ok !$client_tin->is_tin_manually_approved, 'TIN is not manually approved as tin_approved_time doesn\'t exist';
+
+        $client_tin->tin_approved_time(Date::Utility->new()->date_yyyymmdd);
+        $client_tin->save();
+
+        ok $client_tin->is_tin_manually_approved, 'TIN is manually approved and is valid';
+    };
+
+};
+
 sub test_immutable_fields {
     my ($fields, $user, $message) = @_;
 

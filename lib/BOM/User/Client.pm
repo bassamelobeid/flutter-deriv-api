@@ -6734,4 +6734,20 @@ sub is_mt5_additional_kyc_required {
     return 0;
 }
 
+=head2 is_tin_manually_approved
+
+Returns whether the TIN is manually approved i.e the client has tin_approved_time and it has not been expired and it does not have a proper TIN
+
+=cut
+
+sub is_tin_manually_approved {
+    my ($self) = @_;
+
+    return 0 if defined $self->tax_identification_number && $self->tax_identification_number ne '';
+
+    return 1 if defined $self->tin_approved_time;
+
+    return 0;
+}
+
 1;
