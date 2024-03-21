@@ -396,31 +396,6 @@ subtest $rule_name => sub {
 
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rule applies with empty tax info';
 
-    my @invalid_tins = (
-        'approved000',  'approved 000',  'approved000',  'approved000',  'Approved 000',  'Approved000',
-        'Approved000',  'approved 0000', 'approved0000', 'Approved0000', 'approved00000', 'Approved00000',
-        'Approved0001', 'approved001',   'Aproov0000',   'aprooved000',  'Aprooved000',   'aprove0000',
-        'Aprove0000',   'aproved000',    'Aproved000',   'aproved00000', 'aproved000000', 'aproved00000000',
-        'approve000',   'Approve000',    'Approve0000',  'approved00',   'approved000',   'approved000',
-        'Approved 000', 'Approved000',   'approved0000', 'Approved0000', 'Approved00000', 'aprooved000',
-        'Aprooved000',  'aprove0000',    'aproved000',   'aproved0000',  'aproved00000',  'approvvedd000 0',
-        '000approved000'
-    );
-    for my $tin (@invalid_tins) {
-        my $args = {
-            loginid                   => $client_mf->loginid,
-            tax_identification_number => $tin,
-            tax_residence             => 'tax_res'
-        };
-        $client_mf->tax_identification_number($tin);
-        is_deeply exception { $rule_engine_mf->apply_rules($rule_name, %$args) },
-            {
-            error_code => 'TINDetailInvalid',
-            rule       => $rule_name
-            },
-            "Rule fails with TINDetailInvalid error for invalid TIN: $tin";
-    }
-
     my @valid_tins = ('APOREQD4234', 'aropved1241', '12414apved00', 'PRO21311', 'AVEPRD0000', 'APRED14314', 'APRO58ED188VED');
     for my $tin (@valid_tins) {
         my $args = {
@@ -459,6 +434,16 @@ subtest $rule_name => sub {
         tax_residence             => 'non-empty'
     };
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Applies for maltainvest with non-empty args';
+
+    $args = {
+        loginid                   => $client_cr->loginid,
+        tax_identification_number => undef,
+        tax_residence             => 'non-empty'
+    };
+
+    $client_cr->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'If tax_identification_number is not available, tin_approved_time is valid';
 
     $mock_client->unmock_all;
 };

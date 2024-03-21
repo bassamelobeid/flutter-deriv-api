@@ -211,6 +211,26 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
     $args{affiliate_plan} = 'turnover';
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes when client has the data';
 
+    $mock_lc->redefine(requirements => sub { return +{signup => [qw(tax_identification_number)]}; });
+
+    $client->tax_identification_number(undef);
+    $client->tin_approved_time(undef);
+    $client->save;
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code  => 'InsufficientAccountDetails',
+        details     => {missing => [qw(tax_identification_number)]},
+        rule        => $rule_name,
+        description => 'tax_identification_number required field(s) missing',
+        },
+        'Error when tax_identification_number is missing and client does not have a manually approved TIN';
+
+    $client->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+    $client->save;
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes when client has a manually approved TIN';
+
     $mock_lc->unmock_all;
     $client_mock->unmock_all;
 };

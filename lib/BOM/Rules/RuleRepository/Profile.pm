@@ -19,8 +19,6 @@ use Text::Trim qw(trim);
 use BOM::Platform::Context qw(localize request);
 use BOM::Rules::Registry   qw(rule);
 
-use constant INVALID_TIN_REGEX => qr/^(?i).*?a+p?p+r?o+v+e?d?[a-z\s*\d]*\s*$/;
-
 rule 'profile.date_of_birth_complies_minimum_age' => {
     description => "Fails if the date of birth (read from args, falling back to context client's) complies with the minimum age of residence country",
     code        => sub {
@@ -233,11 +231,8 @@ rule 'profile.tax_information_is_mandatory' => {
 
         my $tax_residence             = $args->{'tax_residence'}             // $client->tax_residence             // '';
         my $tax_identification_number = $args->{'tax_identification_number'} // $client->tax_identification_number // '';
-
-        if ($args->{'tax_identification_number'} && !$args->{is_set_settings}) {
-            $self->fail('TINDetailInvalid') if $args->{'tax_identification_number'} =~ INVALID_TIN_REGEX;
-        }
-        return 1 if $tax_residence && $tax_identification_number;
+        my $is_tin_manually_approved  = $args->{'is_tin_manually_approved'}  // $client->is_tin_manually_approved;
+        return 1 if $tax_residence && ($tax_identification_number || $client->is_tin_manually_approved);
 
         $self->fail('TINDetailsMandatory');
     },

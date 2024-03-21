@@ -83,6 +83,9 @@ rule 'landing_company.required_fields_are_non_empty' => {
         # Affiliate Landing Company requires extra info
         push @missing, 'affiliate_plan' if $landing_company->is_for_affiliates and not $args->{affiliate_plan};
 
+        # get tax_idenitification_number out from missing if client has a manual approved tin
+        @missing = grep { $_ ne 'tax_identification_number' } @missing if $client->is_tin_manually_approved;
+
         $self->fail(
             'InsufficientAccountDetails',
             details     => {missing => [@missing]},
