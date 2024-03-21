@@ -1639,6 +1639,7 @@ compliance:
       isa: Int
       global: 1
       default: 50
+    
 
 system:
   description: "Various parameters determining core application functionality"
@@ -2569,3 +2570,12 @@ email_verification:
           isa: Bool
           default: 0
           global: 1
+feature_flags:
+  description: "Feature flags"
+  isa: section
+  contains:
+    auto_tin_approval:
+      description: "Checkbox in Backoffice approves empty Tax identification number if Tax Identification Number is not available"
+      isa: Bool
+      default: 0
+      global: 1
