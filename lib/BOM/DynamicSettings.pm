@@ -414,6 +414,7 @@ sub get_settings_by_group {
         it => [qw(
                 cgi.allowed_languages
                 oauth.ctrader_api.white_listed_networks
+                feature_flags.auto_tin_approval
             )
         ],
         internal_transfer => [qw(

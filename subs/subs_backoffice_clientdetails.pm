@@ -711,7 +711,8 @@ SQL
 
     $idv_submissions_left = $idv_model->has_expired_document_chance() ? 1 : 0 if $idv_submissions_left <= 0 && $client->get_idv_status() eq 'expired';
 
-    my $app_config            = BOM::Config::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
     my $payment_method_config = $app_config->payments->payment_methods_with_poo;
 
     my $doughflow_methods = $client->db->dbic->run(
@@ -822,22 +823,24 @@ SQL
         proof_of_ownership_list                      => $proof_of_ownership_list,
         disallow_residence_change                    => @countries_disallow_residence_change,
         onfido_pending_request                       => BOM::User::Onfido::pending_request($client->binary_user_id),
-        onfido_supported_country => BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // '')),
-        poa_address_mismatch     => $poa_address_mismatch,
-        expected_address         => $expected_address,
-        broker_code              => $client->broker_code,
-        idv_pending_lock         => $idv_model->get_pending_lock() // -1,
-        idv_submissions_left     => $idv_submissions_left,
-        doughflow_methods        => $doughflow_methods,
-        poo_access               => $poo_access,
-        latest_poi_by            => $latest_poi_by,
-        idv_status               => $client->get_idv_status,
-        onfido_status            => $client->get_onfido_status,
-        manual_status            => $client->get_manual_poi_status,
-        is_npj                   => $is_npj,
-        onfido_pdf_url           => $onfido_pdf_url,
-        onfido_suspended         => BOM::Config::Runtime->instance->app_config->system->suspend->onfido,
-        is_idv_validated         => $client->is_idv_validated,
+        onfido_supported_country  => BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // '')),
+        poa_address_mismatch      => $poa_address_mismatch,
+        expected_address          => $expected_address,
+        broker_code               => $client->broker_code,
+        idv_pending_lock          => $idv_model->get_pending_lock() // -1,
+        idv_submissions_left      => $idv_submissions_left,
+        doughflow_methods         => $doughflow_methods,
+        poo_access                => $poo_access,
+        latest_poi_by             => $latest_poi_by,
+        idv_status                => $client->get_idv_status,
+        onfido_status             => $client->get_onfido_status,
+        manual_status             => $client->get_manual_poi_status,
+        is_npj                    => $is_npj,
+        onfido_pdf_url            => $onfido_pdf_url,
+        is_tin_manually_approved  => $client->is_tin_manually_approved,
+        auto_tin_approval_enabled => $app_config->feature_flags->auto_tin_approval,
+        onfido_suspended          => BOM::Config::Runtime->instance->app_config->system->suspend->onfido,
+        is_idv_validated          => $client->is_idv_validated,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

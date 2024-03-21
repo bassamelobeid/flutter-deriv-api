@@ -1534,8 +1534,19 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                     and not $input{tax_identification_number}
                     and not $input{tin_not_available});
                 $cli->tax_identification_number($input{tax_identification_number});
+                $cli->tin_approved_time(undef) if BOM::Config::Runtime->instance->app_config->feature_flags->auto_tin_approval;
             } elsif ($key eq 'tin_not_available') {
-                $cli->tax_identification_number("Approved000") if $input{tin_not_available};
+                if (BOM::Config::Runtime->instance->app_config->feature_flags->auto_tin_approval) {
+                    # set tin_approved_time as current time if tin_not_available is checked
+                    if ($input{tin_not_available}) {
+                        $cli->tin_approved_time(DateTime->now);
+                        $cli->tax_identification_number(undef);
+                    } else {
+                        $cli->tin_approved_time(undef);
+                    }
+                } else {
+                    $cli->tax_identification_number("Approved000") if $input{tin_not_available};
+                }
             }
         }
         _update_mt5_status($cli);
