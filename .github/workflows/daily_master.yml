@@ -3,9 +3,11 @@ run-name: Daily test on master branch
 env:
   PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
+  workflow_dispatch:
+  workflow_call:
   schedule:
-    - cron: '33 20 * * *'
-
+    - cron: '03 11 * * *'
+    
 jobs:
   syntax_unit:
     runs-on: ubuntu-latest
