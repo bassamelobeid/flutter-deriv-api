@@ -65,6 +65,76 @@ payments:
   description: "Control parameters for cashier and other payment systems"
   isa: section
   contains:
+    categories:
+      description: "Keys are payment gateway code, array values are payment type codes"
+      isa: json_string
+      default: '{
+                "account_transfer": {
+                    "internal": [ "internal_transfer", "mt5_transfer", "dxtrade_transfer" ]
+                },
+                "affiliate_reward": {
+                    "internal": [ "affiliate_reward" ]
+                },
+                "arbitrary_markup": {
+                    "internal": [ "arbitrary_markup" ]
+                },
+                "bank_wire": {
+                    "external": [ "bank_money_transfer", "external_cashier"	]
+                },
+                "ctc" : {
+                    "external": [ "crypto_cashier" ]
+                },
+                "currency_conversion_transfer": {
+                    "internal": [ "internal_transfer" ]
+                },
+                "datacash": {
+                    "external": [ "credit_debit_card", "bacs" ]
+                },
+                "doughflow": {
+                    "external": [ "external_cashier" ]
+                },
+                "envoy_transfer": {
+                    "external": [ "bank_money_transfer" ]
+                }, 
+                "epg": {
+                    "external": [ "external_cashier" ]
+                },
+                "free_gift": {
+                    "internal": [ "free_gift" ]
+                },
+                "gift_certificate": {
+                    "internal": [ "internal_transfer" ]
+                },
+                "legacy_payment": {
+                    "internal": [ "account_transfer", "adjustment", "adjustment_purchase", "adjustment_sale", "cancellation", "closed_account", "commission_paid", "compacted_statement", "dxtrade_adjustment", "free_gift", "internal_transfer", "miscellaneous", "payment_fee", "test_account", "testing", "voucher" ],
+                    "external": [ "bank_money_transfer", "credit_debit_card", "crypto_cashier", "ewallet", "local_cheque", "external_cashier"]
+                },
+                "moneta": {
+                    "external": [ "ewallet" ]
+                },
+                "moneybookers": {
+                    "external": [ "credit_debit_card", "ewallet" ]
+                },
+                "p2p": {
+                    "external": [ "internal_transfer" ]
+                },
+                "pacnet": {
+                    "external": [ "local_cheque" ]
+                },
+                "payment_agent_transfer": {
+                    "external": [ "internal_transfer" ]
+                },
+                "payment_fee": {
+                    "internal": [ "dormant_fee" , "payment_fee"]
+                },
+                "transactium_credit_debit_card": {
+                    "external": [ "credit_debit_card" ]
+                },
+                "western_union": {
+                    "external": [ "cash_transfer" ]
+                }
+              }'
+      global: 1
     payment_methods:
       isa: section
       contains:
