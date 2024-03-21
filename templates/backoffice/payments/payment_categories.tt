@@ -1,0 +1,27 @@
+<form action="[% request.url_for('backoffice/payments_category_manage.cgi') %]" method="post">
+    <input type="hidden" name="revision" value="[% revision %]"/>
+    <button type="submit" class="btn btn--primary" name="save" value="1">Save</button>
+    <hr/>
+    <table class=" alternate">
+        <thead><tr><th>Number</th><th>Payment Gateway Code</th><th>Payment Type Code</th><th>Category</th></th></tr></thead>
+    [% count = 0 %]
+    [% FOR pm_gateway IN payments.keys.sort %]
+        [% FOR pm_code IN payments.$pm_gateway.keys.sort %]
+            [% count = count+1 %]
+            <tr>
+                <td>[% count %]</td>
+                <td><b>[% pm_gateway %]</b></td>
+                <td>[% pm_code %]</td>
+                <td valign="top">
+                    <select name="pm-category_[% pm_gateway %]-[% pm_code %]">
+                        <option value="internal" [% payments.$pm_gateway.$pm_code.category == 'internal' && 'selected' %]>Internal</option>
+                        <option value="external" [% payments.$pm_gateway.$pm_code.category == 'external' && 'selected' %]>External</option>
+                    </select>
+                </td>       
+            </tr>
+        [% END %]
+    [% END %]
+    </table>
+    <hr/>
+    <button type="submit" class="btn btn--primary" name="save" value="1">Save</button>
+</form>

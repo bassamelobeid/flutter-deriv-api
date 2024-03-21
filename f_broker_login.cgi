@@ -497,6 +497,12 @@ if (BOM::Backoffice::Auth::has_authorisation(['IT', 'PaymentsAdmin'])) {
                 <a href="~
         . request()->url_for('backoffice/payments_dynamic_settings.cgi') . qq~" class="btn btn--primary">Go to Payments Dynamic Settings</a>
             </div>
+            <div class="card__content">
+                <h3>Payment Categories</h3>
+                <form action="~ . request()->url_for('backoffice/payments_category_manage.cgi') . qq~" method="get">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
         </div>
     </div>~;
 }

@@ -179,12 +179,6 @@ my $payment_type_urls = {
     ),
 };
 
-my $internal_transfer_summary = client_inernal_transfer_summary(
-    client => $client,
-    from   => $overview_from_date->datetime,
-    to     => $overview_to_date->datetime
-);
-
 my $p2p_summary;
 if (my $advertiser = $client->_p2p_advertiser_cached) {
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -279,9 +273,8 @@ BOM::Backoffice::Request::template()->process(
                 broker  => $client->broker,
             }
         ),
-        summary          => $summary,
-        internal_summary => $internal_transfer_summary,
 
+        summary           => $summary,
         total_deposits    => $total_deposits,
         total_withdrawals => $total_withdrawals,
         client            => {

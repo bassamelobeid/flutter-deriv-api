@@ -1384,62 +1384,11 @@ sub client_statement_summary {
         to_date   => $to
     });
 
-    my $summary = {};
-    foreach my $item (@$raw_summary) {
-        my ($amount, $type, $system) = @{$item}{'amount', 'action_type', 'payment_system'};
+    my $categorized_summary = payment_external_or_internal($raw_summary);
+    push @$categorized_summary, {income => $account_mapper->get_total_trades_income({from => $client->date_joined})};
 
-        if ($type) {
-            if ($system) {
+    return $categorized_summary;
 
-                $summary->{$type}->{systems}->{$system} = $amount;
-                next;
-            }
-
-            $summary->{$type}->{total} = $amount;
-            next;
-        }
-
-        $summary->{total} = $amount;
-    }
-
-    # {income} is sum of profits and losses
-    $summary->{income} = $account_mapper->get_total_trades_income({
-        from => $client->date_joined,
-    });
-
-    return $summary;
-}
-
-=head2 client_inernal_transfer_summary
-
-Returns a summary of client's internal transfers per action types (deposit, withdrawal)
-and payment types (internal tansfer, free gift, doughflow, ...).
-
-=cut
-
-sub client_inernal_transfer_summary {
-    my %args = @_;
-    my ($client, $from, $to) = @args{qw/client from to/};
-
-    my $summary = {};
-
-    return $summary unless $client->account;
-
-    my $raw_summary = $client->db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM payment.get_internal_transfer_summary(?,?,?)', {Slice => {}}, $client->account->id, $from, $to);
-        },
-    );
-
-    foreach my $item (@$raw_summary) {
-        my ($amount, $action, $type) = @{$item}{qw/amount action_type payment_type/};
-
-        $summary->{$action}->{type}->{$type} = $amount;
-        $summary->{$action}->{total} += $amount;
-        $summary->{total} += $amount;
-    }
-
-    return $summary;
 }
 
 =head2 client_payment_agent_transfer_summary
@@ -2647,6 +2596,22 @@ sub get_sibiling_account_by_currency_code {
     }
 
     return undef;
+}
+
+sub payment_external_or_internal {
+    my $args               = shift;
+    my $payments           = [];
+    my $app_config         = BOM::Config::Runtime->instance->app_config;
+    my $payment_categories = JSON::MaybeXS->new->decode($app_config->get('payments.categories'));
+    foreach my $payment ($args->@*) {
+        for my $category (qw(internal external)) {
+            $payment->{$category} = 1
+                if ($payment->{payment_gateway_code}
+                && any { $payment->{payment_type_code} eq $_ } $payment_categories->{$payment->{payment_gateway_code}}->{$category}->@*);
+        }
+        push @$payments, $payment;
+    }
+    return $payments;
 }
 
 1;

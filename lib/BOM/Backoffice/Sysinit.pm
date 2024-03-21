@@ -179,6 +179,7 @@ my $permissions = {
     'payments_dynamic_settings.cgi'       => ['Payments', 'AntiFraud'],    # will have its own validation per setting
     'payments_dynamic_settings_dcc.cgi'   => ['Payments'],
     'payment_agents_dynamic_settings.cgi' => ['IT'],
+    'payments_category_manage.cgi'        => ['Payments'],
     'dynamic_settings_audit_trail.cgi'    => ['ALL'],                      # will have its own validation per setting
 
     'quant/callputspread_barrier_multiplier/index_callputspread_barrier_multiplier.cgi'      => ['Quants',     'DealingWrite'],

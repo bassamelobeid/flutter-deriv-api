@@ -1,5 +1,5 @@
 <div class="row">
-    <p>Profit & loss since [% client.date_joined %]:&nbsp;<strong>[% currency %]&nbsp;[% summary.income %]</strong></p>
+    <p>Profit & loss since [% client.date_joined %]:&nbsp;<strong>[% currency %]&nbsp;[% FOR i IN  summary %]<b>[% i.income %]</b>[% END %]</strong></p>
 </div>
 
 <div class="row">
@@ -14,79 +14,111 @@
     </form>
 </div>
 
-<h3>Statement summary [% client_summary_ranges.from %] - [% client_summary_ranges.to %]</h3>
-<table>
-    <tbody class="top">
-    <tr>
-        [% FOR t IN ['deposits', 'withdrawals'] %]
-        <td>
-            <table class="sortable collapsed hover alternate border">
-                <tr>
-                    <th>[% t %] [% currency %]</th>
-                    <th>TOTAL: [% summary.$t.total %]</th>
-                </tr>
-                [% FOR sys_key IN summary.$t.systems.keys.sort %]
-                    [% IF sys_key != 'internal_transfer' %] 
-                    <tr>
-                        <td width="180">[% sys_key %]</td>
-                        <td width="30">[% summary.$t.systems.$sys_key %]</td>
-                    </tr>
-                    [% END %]
-                [% END %]
-                [% FOR transfer_type IN internal_summary.$t.type.keys.sort %]
-                    <tr>
-                        [% IF transfer_type_urls.$transfer_type %] 
-                            <td width="180"><a href='[% transfer_type_urls.$transfer_type %]'>[% transfer_type %]</a></td>
-                        [% ELSE %]
-                            <td width="180">[% transfer_type %]</td>
-                        [%END%]
-                        <td width="30">[% internal_summary.$t.type.$transfer_type %]</td>
-                    </tr>
-                [% END %]
-            </table>
-        </td>
-        [% END %]
-        <td>
-        [% IF p2p_summary %] 
-            <b>P2P</b>  
-            <table class="collapsed hover alternate border">
-                <tr><td>Available balance for P2P</td><td>[% p2p_summary.p2p_balance %]</td></tr>
-                <tr><td>Deposits excluded from P2P</td><td>[% p2p_summary.exclusion %]</td></tr>
-                <tr><td>Available for cashier withdrawal/internal transfer</td><td>[% p2p_summary.withdrawable_balance %]</td></tr>
-                [% IF p2p_summary.withdrawal_limit.defined %]
-                <tr><td>Account lifetime wihdrawal limit remaining</td><td>[% p2p_summary.withdrawal_limit %] (updated daily)</td></tr>
-                [% END %]
-            </table><br/>   
-        [% END %]
-        [% IF pa_summary %]
-            <b>Payment agent commision withdrawal</b>
-            [% IF pa_summary.withdrawal_allowed %]
-            <br>Tier allows unlimited withdrawals.
-            [% ELSE %]
-            <table class="collapsed hover alternate border">
-                <tr><td>Allowed to withdraw</td><td>[% pa_summary.available %]</td></tr>
-                <tr><td>Commission received</td><td>[% pa_summary.commission %]</td></tr>
-                <tr><td>Already withdrawn</td><td>[% pa_summary.payouts %]</td></tr>
-                <tr><td colspan=2><table border=0>
-                    Active PA account(s) commission-related totals:
-                    [% FOR acc IN pa_summary.accounts %]
-                    <tr><td colspan=2><b>[% acc.loginid %] ([% acc.currency %])</b></td></tr>
-                        [% IF acc.totals.size %]
-                            [% FOR total IN acc.totals %]
-                                <tr><td>[% total.payment_type %]</td><td>[% total.net %]</td></tr>
+<div>
+    <h3>Statement summary [% client_summary_ranges.from %] - [% client_summary_ranges.to %]</h3>
+    <table>
+        <tbody class="top">
+            <tr>
+                [%  total = {
+                    internal    => { deposits => 0.0, withdrawals => 0.00},
+                    external    => { deposits => 0, withdrawals => 0},
+                    }
+                %]
+                [% FOR i IN ['external', 'internal'] %]
+                    <td> 
+                        <b>[% i FILTER ucfirst %] Transactions</b>
+                        <table class="sortable collapsed hover alternate border">
+                            [% FOR d IN [ 'deposits', 'withdrawals'] %]
+                                <td style = "vertical-align: top;">
+                                    <table class="sortable collapsed hover alternate border">
+                                        <tr>
+                                        <b>[% d FILTER ucfirst %]</b>
+                                            <th>System</th><th>Doughflow Processor</th><th>Doughflow Method</th><th>Amount</th>
+                                            [% FOR t IN summary %]
+                                                <tr>
+                                                [% IF t.$i && t.action_type == d  && t.payment_type_code == 'internal_transfer' %]
+                                                        <td>[% t.payment_gateway_code %]</td>
+                                                        <td>[% t.doughflow_processor %]</td>
+                                                        <td>[% t.doughflow_method %]</td>
+                                                        <td>[% t.amount %]</td>
+                                                        [% total.$i.$d  = total.$i.$d + t.amount %]
+                                                [% ELSIF t.$i && t.action_type == d %]
+                                                        <td>[% t.payment_system %]</td>
+                                                        <td>[% t.doughflow_processor %]</td>
+                                                        <td>[% t.doughflow_method %]</td>
+                                                        <td>[% t.amount %]</td>
+                                                        [% total.$i.$d  = total.$i.$d + t.amount %]
+                                                [% END %]
+                                                </tr>
+                                            [% END %]
+                                            <tr>
+                                            <td><b>Total</b></td><td></td><td></td><td><b>[% total.$i.$d %]</b></td>
+                                            </tr>
+                                        </tr>                                
+                                    </table>
+                                </td>
                             [% END %]
-                        [% ELSE %]
-                            <tr><td colspan=2>No commission related transactions</td></tr>
-                        [% END %]    
-                    [% END %]
-                </table></td></tr>
-            </table>
-            [% END %]   
-        [% END %]        
-        </td>
-        </tr>
-    </tbody>
-</table>
+                        </table>
+                    </td>
+                [% END %]
+            </tr>
+            <tr><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td></tr>
+            <tr>
+                [% IF p2p_summary %]
+                    <td>
+                        <b>P2P Summary</b>
+                        <table class="sortable collapsed hover alternate border">
+                            <tr><td>Available balance for P2P</td><td>[% p2p_summary.p2p_balance %]</td></tr>
+                            <tr><td>Deposits excluded from P2P</td><td>[% p2p_summary.exclusion %]</td></tr>
+                            <tr><td>Available for cashier withdrawal/internal transfer</td><td>[% p2p_summary.withdrawable_balance %]</td></tr>
+                            [% IF p2p_summary.withdrawal_limit.defined %]
+                            <tr><td>Account lifetime wihdrawal limit remaining</td><td>[% p2p_summary.withdrawal_limit %] (updated daily)</td></tr>
+                            [% END %]
+                        </table>
+                    </td>
+                [% END %]
+                [% IF pa_summary %]
+                    <td>
+                    <b>Payment agent commision withdrawal</b>
+                    [% IF pa_summary.withdrawal_allowed %]
+                    <br>Tier allows unlimited withdrawals.
+                    [% ELSE %]
+                    <table class="collapsed hover alternate border">
+                        <tr><td>Allowed to withdraw</td><td>[% pa_summary.available %]</td></tr>
+                        <tr><td>Commission received</td><td>[% pa_summary.commission %]</td></tr>
+                        <tr><td>Already withdrawn</td><td>[% pa_summary.payouts %]</td></tr>
+                        <tr><td colspan=2><table border=0>
+                            Active PA account(s) commission-related totals:
+                            [% FOR acc IN pa_summary.accounts %]
+                            <tr><td colspan=2><b>[% acc.loginid %] ([% acc.currency %])</b></td></tr>
+                                [% IF acc.totals.size %]
+                                    [% FOR total IN acc.totals %]
+                                        <tr><td>[% total.payment_type %]</td><td>[% total.net %]</td></tr>
+                                    [% END %]
+                                [% ELSE %]
+                                    <tr><td colspan=2>No commission related transactions</td></tr>
+                                [% END %]    
+                            [% END %]
+                        </table></td></tr>
+                    </table>
+                    [% END %]  
+                    </td> 
+                [% END %]        
+                    
+                    <td>
+                        <b>Totals</b>
+                        <table class="sortable collapsed hover alternate border">
+                            <tr><td>External Deposits</td><td>[% total.external.deposits %]</td></tr>
+                            <tr><td>External Withdrawals</td><td>[% total.external.withdrawals %]</td></tr>
+                            <tr><td>Internal Deposits</td><td>[% total.internal.deposits %]</td></tr>
+                            <tr><td>Internal Withdrawals</td><td>[% total.internal.withdrawals %]</td></tr>
+                            <tr><td><b>Total</b></td><td><b>[% total.internal.withdrawals + total.internal.deposits + total.external.withdrawals + total.external.deposits %]</b></td></b></tr>
+                        </table>
+                    </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
 <script type="text/javascript" language="javascript">
   \$(document).ready(function() {
