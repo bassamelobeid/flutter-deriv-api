@@ -21,6 +21,11 @@ git checkout translations
 git pull --rebase
 git merge origin/master
 
+# Crowdin can not read and write to the same branch. It reads from translations, and writes to 
+# l10n_translations (this is configured as an integration in crowdin).
+git fetch origin l10n_translations
+git merge origin/l10n_translations
+
 # This is the build itself - note that Redis may
 # need to be running, since we load various modules
 # that may have init requirements
