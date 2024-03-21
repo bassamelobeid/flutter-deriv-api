@@ -69,6 +69,8 @@ my %event_stream_mapping = (
     idv_configuration                   => 'NODEJS_STREAM',
     idv_webhook                         => 'NODEJS_STREAM',
     idv_verification                    => 'NODEJS_STREAM',
+    dynamic_works_binary_trade          => 'DYNAMIC_WORKS_BINARY_OPTIONS_STREAM',
+    dynamic_works_cfd_trade             => 'DYNAMIC_WORKS_CFD_STREAM',
 );
 
 my $config = LoadFile('/etc/rmg/redis-events.yml');
@@ -102,7 +104,7 @@ True on successful emit of event, False otherwise
 =cut
 
 sub emit {
-    my ($type, $data) = @_;
+    my ($type, $data, $event) = @_;
 
     die "Missing required parameter: type." unless $type;
     die "Missing required parameter: data." unless $data;
@@ -113,7 +115,7 @@ sub emit {
         language   => $request->language,
         app_id     => $request->app_id,
     };
-
+    $event = ($event // '') eq '' ? 'event' : $event;
     my $event_data;
     try {
         $event_data = encode_json_utf8({
@@ -127,7 +129,7 @@ sub emit {
 
     if ($event_data) {
         my $stream_name = _stream_name($type);
-        _write_connection()->execute(XADD => ($stream_name, qw(MAXLEN ~ 100000), '*', 'event', $event_data));
+        _write_connection()->execute(XADD => ($stream_name, qw(MAXLEN ~ 100000), '*', $event // 'event', $event_data));
 
         # Metrics to log emitted events tagged by event type and queue name
         stats_inc(lc "event_emitter.sent", {tags => ["type:$type", "queue:$stream_name"]});
