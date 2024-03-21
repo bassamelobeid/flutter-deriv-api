@@ -3,15 +3,17 @@ run-name: Daily test on master branch
 env:
   PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
+  workflow_dispatch:
+  workflow_call:
   schedule:
-    - cron: '36 20 * * *'
+    - cron: '13 11 * * *'
 jobs:
   structure:
     uses: ./.github/workflows/structure.yml
     secrets: inherit
   tests:
     uses: ./.github/workflows/tests.yml
-    secrets: inherit  
+    secrets: inherit
   publish_test_results:
     needs: [ structure , tests ]
     if: success() || failure()
