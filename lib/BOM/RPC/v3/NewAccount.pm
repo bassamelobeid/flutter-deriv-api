@@ -375,7 +375,8 @@ rpc new_account_maltainvest => annotate_db_calls(
     my $selected_tax_residence    = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};
     my $tin_format                = $countries_instance->get_tin_format($selected_tax_residence);
     my $tax_identification_number = $args->{tax_identification_number} // '';
-    if ($tin_format) {
+    my $is_tin_manually_approved  = $client->is_tin_manually_approved;
+    if ($tin_format && !$is_tin_manually_approved) {
         stats_inc('bom_rpc.v_3.new_account_maltainvest.called_with_wrong_TIN_format.count')
             unless (any { $tax_identification_number =~ m/$_/ } @$tin_format);
     }
@@ -861,6 +862,7 @@ sub create_new_real_account {
     return $val if $val;
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     my $action      = $args->{category} eq 'wallet' ? 'new_wallet' : 'new_account';
+
     try {
         # Rules are applied on actual request arguments ($args),
         # not the initialized values ($details_ref->{details}) used for creating the client object.
@@ -1090,7 +1092,7 @@ sub _new_account_pre_process {
     delete $args->{affiliate_token} if (exists $args->{affiliate_token});
 
     my @fields_to_duplicate =
-        qw(citizen salutation first_name last_name date_of_birth residence address_line_1 address_line_2 address_city address_state address_postcode phone secret_question secret_answer place_of_birth tax_residence tax_identification_number account_opening_reason);
+        qw(citizen salutation first_name last_name date_of_birth residence address_line_1 address_line_2 address_city address_state address_postcode phone secret_question secret_answer place_of_birth tax_residence tax_identification_number tin_approved_time account_opening_reason);
 
     # copy data from the duplicate sibling if any
     my $duplicated = $client->duplicate_sibling_from_vr;
@@ -1106,6 +1108,14 @@ sub _new_account_pre_process {
             }
         }
     }
+
+    if ((defined $args->{tax_identification_number}) || defined $client->tax_identification_number) {
+        delete $args->{tin_approved_time} if $args->{tin_approved_time};
+        $client->tin_approved_time(undef);
+        $client->save;
+    }
+
+    $args->{tin_approved_time} = $args->{tin_approved_time}->strftime('%Y-%m-%d %H:%M:%S') if ref $args->{tin_approved_time} eq 'DateTime';
 
     my $error = $client->format_input_details($args);
     return $error if $error;
@@ -1139,6 +1149,7 @@ sub _new_account_pre_process {
         fatca_declaration         => undef,
         currency                  => undef,
         account_type              => undef,
+        tin_approved_time         => undef,
     );
 
     for my $field (keys %default_values) {

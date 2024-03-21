@@ -1140,6 +1140,110 @@ subtest $method => sub {
         $mock_user->unmock_all;
     };
 
+    subtest 'Create new account maltainvest with manual tin approval' => sub {
+
+        my $password = 'Abcd33!@';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+
+        $user = BOM::User->create(
+            email          => 'new_email' . rand(999) . '@binary.com',
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => $email,
+            residence   => 'de',
+        });
+        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+        $user->add_client($client);
+
+        my $params = {
+            language => 'EN',
+            source   => $app_id,
+            country  => 'ru',
+            args     => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1),
+            token    => $auth_token
+        };
+
+        $params->{args}->{accept_risk} = 1;
+        @{$params->{args}}{keys %$client_details} = values %$client_details;
+        $params->{args}->{tax_residence} = 'de,nl';
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+            ->error_details_is({missing => ["tax_identification_number"]});
+
+        $client->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+        $client->save;
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
+            sub { shift->{landing_company} },
+            'Deriv Investments (Europe) Limited',
+            'It should return new account data'
+        )->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'Account is created successfully with manual tin approval');
+
+        my $new_loginid = $rpc_ct->result->{client_id};
+
+        my $cl = BOM::User::Client->new({loginid => $new_loginid});
+
+        ok defined $cl->tin_approved_time, 'tin_approved_time is copied from previous account';
+
+    };
+
+    subtest 'Create new account maltainvest giving tax_identification_number with already approved tin' => sub {
+
+        my $password = 'Abcd33!@';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+
+        $user = BOM::User->create(
+            email          => 'new_email' . rand(999) . '@binary.com',
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => $email,
+            residence   => 'de',
+        });
+        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+        $user->add_client($client);
+
+        my $params = {
+            language => 'EN',
+            source   => $app_id,
+            country  => 'ru',
+            args     => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1),
+            token    => $auth_token
+        };
+
+        $params->{args}->{accept_risk} = 1;
+        @{$params->{args}}{keys %$client_details} = values %$client_details;
+        $params->{args}->{tax_residence}             = 'de,nl';
+        $params->{args}->{tax_identification_number} = '111222';
+
+        $client->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+        $client->save;
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
+            sub { shift->{landing_company} },
+            'Deriv Investments (Europe) Limited',
+            'It should return new account data'
+        )->result_value_is(sub { shift->{landing_company_shortcode} },
+            'maltainvest', 'Account is created successfully with existing tax_identification_number and manual tin approval');
+
+        $client = BOM::User::Client->new({loginid => $client->loginid});
+        ok !$client->tin_approved_time, 'tin_approved_time is removed if tax_idenitification_number is given';
+
+        my $new_loginid = $rpc_ct->result->{client_id};
+
+        my $cl = BOM::User::Client->new({loginid => $new_loginid});
+        ok !defined $cl->tin_approved_time, 'tin_approved_time is not copied from previous account';
+
+    };
+
     my $client_mlt;
     subtest 'Init MLT MF' => sub {
         lives_ok {

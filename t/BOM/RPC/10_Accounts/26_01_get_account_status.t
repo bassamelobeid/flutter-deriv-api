@@ -364,6 +364,28 @@ subtest 'get account status' => sub {
 
         };
 
+        subtest 'tin_manually_approved' => sub {
+            my $result                = $c->tcall('get_account_status', {token => $token_cr});
+            my $tin_manually_approved = scalar grep { $_ eq 'tin_manually_approved' } $result->{status}->@*;
+            ok !$tin_manually_approved, "tin not manually approved";
+
+            $test_client_cr->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+            $test_client_cr->save();
+
+            $result                = $c->tcall('get_account_status', {token => $token_cr});
+            $tin_manually_approved = scalar grep { $_ eq 'tin_manually_approved' } $result->{status}->@*;
+            ok $tin_manually_approved, "tin manually approved";
+
+            $test_client_cr->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+            $test_client_cr->tax_identification_number('123456789');
+            $test_client_cr->save();
+
+            $result                = $c->tcall('get_account_status', {token => $token_cr});
+            $tin_manually_approved = scalar grep { $_ eq 'tin_manually_approved' } $result->{status}->@*;
+            ok !$tin_manually_approved, "tin manually approved but tax_identification_number is present";
+
+        };
+
         subtest 'Check additional_kyc_required is triggered status for CR clients' => sub {
 
             my $password = 'Abcd33!@';

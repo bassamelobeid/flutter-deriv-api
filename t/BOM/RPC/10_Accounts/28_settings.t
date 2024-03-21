@@ -1214,6 +1214,36 @@ subtest 'set_setting with empty phone' => sub {
     cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with empty phone changed successfully');
 };
 
+subtest 'set_setting set tax_identification_number with client with tin_approved_time' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $test_client->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+    $test_client->save();
+
+    my $user = BOM::User->create(
+        email    => 'testematil1@example.com',
+        password => $hash_pwd,
+    );
+
+    $user->add_client($test_client);
+
+    my $m      = BOM::Platform::Token::API->new;
+    my $token  = $m->create_token($test_client->loginid, 'test token');
+    my $params = {
+        language   => 'EN',
+        token      => $token,
+        client_ip  => '127.0.0.1',
+        user_agent => 'agent',
+        args       => {tax_identification_number => '123456789'}};
+
+    cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with tax_identification_number changed successfully');
+    $test_client->load();
+    is $test_client->tax_identification_number, '123456789', 'tax_identification_number is set';
+    is $test_client->tin_approved_time,         undef,       'tin_approved_time is cleared';
+};
+
 subtest 'set_setting with feature flag' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',

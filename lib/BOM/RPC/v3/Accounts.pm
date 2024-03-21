@@ -1110,6 +1110,8 @@ rpc
     # Applicable to svg and non-high risk countries only Check if the client is has not filled any of the information
     push(@$status, 'mt5_additional_kyc_required') if $client->is_mt5_additional_kyc_required();
 
+    push(@$status, 'tin_manually_approved') if $client->is_tin_manually_approved;
+
     # We need to add the status of idv authentication for each mt5 jurisdiction
     $authentication->{document}->{authenticated_with_idv} = $authenticated_with_idv;
 
@@ -2213,9 +2215,6 @@ rpc set_settings => sub {
     my $tax_identification_number = $args->{'tax_identification_number'} // $current_client->tax_identification_number // '';
     my $employment_status         = $args->{'employment_status'};
 
-    #flag to check if the rule request is coming from this sub or not
-    $args->{is_set_settings} = 1;
-
     # Residence is used in validating other fields like address_state
     $args->{residence} ||= $current_client->residence;
     unless ($current_client->is_virtual) {
@@ -2379,6 +2378,7 @@ rpc set_settings => sub {
         {
             $client->tax_residence($tax_residence)                         if $tax_residence;
             $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
+            $client->tin_approved_time(undef)                              if $tax_identification_number;
         }
 
         if (not $client->save()) {

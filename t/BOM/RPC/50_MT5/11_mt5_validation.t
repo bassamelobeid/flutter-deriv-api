@@ -1794,6 +1794,76 @@ subtest 'Low risk clients, POA is outdated' => sub {
     $client_mock->unmock_all;
 };
 
+subtest 'TIN Manually approved' => sub {
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $client->residence('de');
+    $client->save();
+
+    my $user = BOM::User->create(
+        email    => 'tin+eu@deriv.com',
+        password => 'Abcd33@!',
+    );
+    $user->update_trading_password('Abcd33@!');
+    $user->add_client($client);
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    my $mf_client = create_client('MF');
+    $mf_client->set_default_account('GBP');
+    $mf_client->residence('de');
+    $mf_client->tax_residence('de');
+
+    $mf_client->tax_identification_number(undef);
+    $mf_client->account_opening_reason('speculative');
+    financial_assessment($mf_client, 'full');
+    $mf_client->save();
+
+    $user->add_client($mf_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            country          => 'mt',
+            email            => 'test.account@binary.com',
+            name             => 'TIN Tester',
+            investPassword   => 'Abcd311233@!',
+            mainPassword     => 'Abcd33@!',
+            leverage         => 100,
+        },
+    };
+
+    my $error = create_mt5_account->(
+        $c, $token,
+        $mf_client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'financial'
+        },
+        'ASK_FIX_DETAILS',
+        'Missing details as TIN is not provided'
+    );
+
+    cmp_bag($error->{details}{missing}, ['tax_identification_number'], 'Missing tax_identification_number should appear in details.');
+
+    $mf_client->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+    $mf_client->save();
+
+    my $login = create_mt5_account->(
+        $c, $token,
+        $mf_client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'financial'
+        });
+
+    is $login, $c->result->{login}, 'MT5 account is created when TIN is manually approved';
+
+};
+
 sub create_mt5_account {
     my ($c, $token, $client, $args, $expected_error, $error_message) = @_;
 
