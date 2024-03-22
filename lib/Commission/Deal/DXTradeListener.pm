@@ -1,4 +1,4 @@
-package Commission::Deal::Listener;
+package Commission::Deal::DXTradeListener;
 use strict;
 use warnings;
 
@@ -165,7 +165,7 @@ async sub start {
         try {
             # limit to one thousand inserts at a time.
             my $stream =
-                await $redis->xreadgroup('GROUP', 'mygroup', 'any', 'BLOCK', 5000, 'COUNT', 1000, 'STREAMS', $self->{redis_stream},
+                await $redis->xreadgroup('GROUP', $group, 'any', 'BLOCK', 5000, 'COUNT', 1000, 'STREAMS', $self->{redis_stream},
                 $update_stream, '>', '>');
             $log->debugf("stream received %s", $stream);
             if ($stream) {

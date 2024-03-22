@@ -108,6 +108,10 @@ Default to '/exc/rmg/redis-exchangerates.yml'
 
 The date to start the calculation from, in yyyy-mm-dd format. Useful for back calculating commissions
 
+=head2 cfd_product_name
+
+Returns the name of the CFD product based on the cfd_provider
+
 =cut
 
 sub date      { shift->{date} }
@@ -132,6 +136,11 @@ sub redis_exchangerates_config { shift->{redis_exchangerates_config} }
 sub _dbic                      { shift->{_dbic} }
 sub _clientdbs                 { shift->{_clientdbs} // {} }
 sub _exchange_rates            { shift->{_exchange_rates} }
+sub cfd_product_name           {
+    my $self = shift;
+    my %cfd_product_name = ( dxtrade => "DerivX", ctrader => "cTrader");
+    return $cfd_product_name{$self->cfd_provider};
+}
 
 =head2 new
 
@@ -477,7 +486,7 @@ async sub _make_affiliate_payment {
                 payment_type_code    => 'affiliate_reward',
                 staff_loginid        => 'commission-auto-pay',
                 status               => 'OK',
-                remark               => sprintf("Payment from DerivX %s-%s", $payment_date->day_of_month, $payment_date->month_as_string),
+                remark               => sprintf("Payment from %s %s-%s", $self->cfd_product_name, $payment_date->day_of_month, $payment_date->month_as_string),
             };
 
             if ($payment_params->{amount} <= 0) {
@@ -781,8 +790,16 @@ sub _config {
     my $self = shift;
 
     my $cfd_provider = $self->cfd_provider;
-    return BOM::Config::Runtime->instance->app_config->quants->mt5_affiliate_commission     if $cfd_provider eq 'mt5';
-    return BOM::Config::Runtime->instance->app_config->quants->dxtrade_affiliate_commission if $cfd_provider eq 'dxtrade';
+    if ($cfd_provider eq 'mt5') {
+        return BOM::Config::Runtime->instance->app_config->quants->mt5_affiliate_commission;
+    } elsif ($cfd_provider eq 'dxtrade') {
+        return BOM::Config::Runtime->instance->app_config->quants->dxtrade_affiliate_commission;
+    } elsif ($cfd_provider eq 'ctrader') {
+        return BOM::Config::Runtime->instance->app_config->quants->ctrader_affiliate_commission;
+    } else {
+        $log->infof("Unable to get commission config for CFD provider - %s", $self->cfd_provider);
+        return;
+    }
 }
 
 =head2 _get_commission_type
