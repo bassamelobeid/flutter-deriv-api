@@ -69,6 +69,10 @@ subtest 'get_kyc_cashier_permission' => sub {
             deposit    => 1,
             withdrawal => 1
         },
+        unrelated_status => {
+            deposit    => 1,
+            withdrawal => 1
+        },
     };
 
     for my $status (keys %$kyc_cashier_permission_test_list) {
@@ -80,9 +84,6 @@ subtest 'get_kyc_cashier_permission' => sub {
 
         }
     }
-
-    dies_ok { $kyc_status->get_kyc_cashier_permission({status => 'bad_status', operation => 'bad_operation'}) },
-        'dies when incorrect params is provided';
 };
 
 subtest 'get_mt5_account_color_code' => sub {
@@ -103,6 +104,7 @@ subtest 'is_kyc_cashier_disabled' => sub {
         verification_pending => 1,
         needs_verification   => 1,
         poa_rejected         => 0,
+        unrelated_status     => 0
     };
 
     for my $status (keys %$kyc_cashier_disabled_test_list) {

@@ -4,6 +4,7 @@ class BOM::Config::TradingPlatform::KycStatus;
 
 use strict;
 use warnings;
+no autovivification;
 
 =head1 NAME
 
@@ -112,6 +113,8 @@ method get_kyc_cashier_permission {
     my $args = shift;
     my ($status, $operation) = @{$args}{qw/status operation/};
 
+    return 1 unless defined $kyc_statuses->{$status};
+
     my $kyc_cashier_permission = $kyc_statuses->{$status}->{cashier}->{$operation};
 
     die "Cannot find cashier permission for $status and $operation" unless defined $kyc_cashier_permission;
@@ -163,6 +166,7 @@ method is_kyc_cashier_disabled {
     my ($status) = @{$args}{qw/status/};
 
     return 0 unless defined $status;
+    return 0 unless defined $kyc_statuses->{$status};
 
     my $deposit_permission    = $kyc_statuses->{$status}->{cashier}->{deposit};
     my $withdrawal_permission = $kyc_statuses->{$status}->{cashier}->{withdrawal};

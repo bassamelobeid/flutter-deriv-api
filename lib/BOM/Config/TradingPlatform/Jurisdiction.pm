@@ -4,6 +4,7 @@ class BOM::Config::TradingPlatform::Jurisdiction;
 
 use strict;
 use warnings;
+no autovivification;
 
 =head1 NAME
 
