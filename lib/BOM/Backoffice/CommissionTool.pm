@@ -16,6 +16,11 @@ use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Config::Redis;
 use JSON::MaybeXS qw(decode_json);
 
+my %cfd_product_display_name = (
+    dxtrade => 'DerivX',
+    ctrader => 'cTrader'
+);
+
 =head2 get_commission_by_provider
 
 Fetch commission rate details by CFD provider. (E.g. dxtrade)
@@ -25,23 +30,46 @@ Returns a hash reference of commission rate by market
 =cut
 
 sub get_commission_by_provider {
-    my $provider = shift;
+    my $provider      = shift;
+    my $provider_enum = get_enum_type('affiliate.client_provider');
+
+    die "Unsupported provider '$provider'. Currently, only [" . join(", ", @$provider_enum) . "] are supported."
+        unless grep { $_ eq $provider } @$provider_enum;
 
     my $db = BOM::Database::CommissionDB::rose_db();
 
-    my $commissions = $db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref(q{SELECT * FROM affiliate.get_commission_by_provider(?)}, undef, $provider);
-        });
+    my $commissions;
+    try {
+        $commissions = $db->dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref(q{SELECT * FROM affiliate.get_commission_by_provider(?)}, undef, $provider);
+            });
+    } catch {
+        die "Error executing database query";
+    };
 
-    die 'currently only supports dxtrade' if $provider ne 'dxtrade';
+    my $config =
+          $provider eq 'dxtrade' ? BOM::Config::Redis::redis_cfds()->hgetall('DERIVX_CONFIG::INSTRUMENT_LIST')
+        : $provider eq 'ctrader' ? BOM::Config::Redis::redis_ctrader_bridge()->hgetall('CTRADER::SYMBOL_LIST')
+        :                          undef;
 
-    my $config      = BOM::Config::Redis::redis_cfds()->hgetall('DERIVX_CONFIG::INSTRUMENT_LIST');
     my %symbols_map = $config->@*;
     my $by_market;
     foreach my $data (sort { $a->[2] cmp $b->[2] } $commissions->@*) {
         my ($account_type, $type, $symbol, $rate, $contract_size) = $data->@*;
-        my $symbol_config = decode_json($symbols_map{$symbol} // '{}');
+
+        my $symbol_config =
+            ($provider eq 'dxtrade')
+            ? decode_json($symbols_map{$symbol} // '{}')
+            : ($provider eq 'ctrader') ? (
+            decode_json((
+                    grep {
+                        eval { decode_json($_)->{symbol} eq $symbol }
+                    } values %symbols_map
+                )[0] // '{}'
+            ))
+            : decode_json('{}');
+
         if (not %$symbol_config) {
             warn "missing symbol configuration for $symbol, from provider $provider";
             next;
@@ -380,7 +408,7 @@ sub get_transaction_info {
             $_->selectall_arrayref($sql, undef, @query_args);
         });
 
-    return _pay($out) if ($pay);
+    return _pay($out, $args->{cfd_provider}) if ($pay);
 
     return {
         headers => [
@@ -412,7 +440,7 @@ Make payment to the records
 =cut
 
 sub _pay {
-    my $out = shift;
+    my ($out, $cfd_provider) = @_;
 
     # group by payment_loginid
     my %group;
@@ -460,7 +488,12 @@ sub _pay {
                     payment_type_code    => 'affiliate_reward',
                     staff_loginid        => 'commission-manual-pay',
                     status               => 'OK',
-                    remark               => sprintf("Payment from DerivX %s-%s", $payment_date->day_of_month, $payment_date->month_as_string),
+                    remark               => sprintf(
+                        "Payment from %s %s-%s",
+                        $cfd_product_display_name{$cfd_provider},
+                        $payment_date->day_of_month,
+                        $payment_date->month_as_string
+                    ),
                 };
 
                 # commission could be less than 1 cent and we can't make 0.00 payment, hence we're skipping it here.

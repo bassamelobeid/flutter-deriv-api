@@ -6,45 +6,119 @@ use Test::Deep;
 
 use BOM::Backoffice::CommissionTool;
 
-# Test cases for the save_commission subroutine
-subtest 'Test save_commission subroutine' => sub {
+sub run_test_cases {
+    my $provider = shift;
 
-    # Test 1: Missing symbol
-    my $args1 = {
-        provider        => 'dxtrade',
-        account_type    => 'standard',
-        commission_type => 'volume',
+    # Test cases for the delete_commission subroutine
+    subtest 'Test delete_commission subroutine' => sub {
+        my $args1 = {
+            provider        => $provider,
+            account_type    => 'standard',
+            commission_type => 'volume',
+        };
+        my $output1 = BOM::Backoffice::CommissionTool::delete_commission($args1);
+        is($output1->{error}, 'symbol is required', 'Missing symbol');
+
+        my $args2 = {
+            symbol          => 'IBM',
+            account_type    => 'standard',
+            commission_type => 'volume',
+        };
+        my $output2 = BOM::Backoffice::CommissionTool::delete_commission($args2);
+        is($output2->{error}, 'provider is required', 'Missing provider');
+
+        my $args3 = {
+            symbol          => 'IBM',
+            provider        => $provider,
+            commission_type => 'volume',
+        };
+        my $output3 = BOM::Backoffice::CommissionTool::delete_commission($args3);
+        is($output3->{error}, 'account_type is required', 'Missing account_type');
+
+        my $args4 = {
+            symbol       => 'IBM',
+            provider     => $provider,
+            account_type => 'standard',
+        };
+        my $output4 = BOM::Backoffice::CommissionTool::delete_commission($args4);
+        is($output4->{error}, 'commission_type is required', 'Missing commission_type');
     };
-    my $output1 = BOM::Backoffice::CommissionTool::delete_commission($args1);
-    is($output1->{error}, 'symbol is required', 'Missing symbol');
 
-    # Test 2: Missing provider
-    my $args2 = {
-        symbol          => 'IBM',
-        account_type    => 'standard',
-        commission_type => 'volume',
+    # Test cases for the save_commission subroutine
+    subtest 'Test save_commission subroutine' => sub {
+        my $args1 = {
+            provider        => $provider,
+            account_type    => 'standard',
+            commission_type => 'volume',
+        };
+        my $output1 = BOM::Backoffice::CommissionTool::save_commission($args1);
+        is($output1->{error}, 'symbol is required', 'Missing symbol');
+
+        my $args2 = {
+            symbol          => 'IBM',
+            account_type    => 'standard',
+            commission_type => 'volume',
+        };
+        my $output2 = BOM::Backoffice::CommissionTool::save_commission($args2);
+        is($output2->{error}, 'provider is required', 'Missing provider');
+
+        my $args3 = {
+            symbol          => 'IBM',
+            provider        => $provider,
+            commission_type => 'volume',
+        };
+        my $output3 = BOM::Backoffice::CommissionTool::save_commission($args3);
+        is($output3->{error}, 'account_type is required', 'Missing account_type');
+
+        my $args4 = {
+            symbol       => 'IBM',
+            provider     => $provider,
+            account_type => 'standard',
+        };
+        my $output4 = BOM::Backoffice::CommissionTool::save_commission($args4);
+        is($output4->{error}, 'commission_type is required', 'Missing commission_type');
+
+        my $args5 = {
+            symbol          => 'IBM',
+            provider        => $provider,
+            account_type    => 'standard',
+            commission_type => 'volume',
+            contract_size   => 0.1,
+            commission_rate => 1,
+        };
+        my $output5 = BOM::Backoffice::CommissionTool::save_commission($args5);
+        is($output5->{error}, 'commission_rate must be less than 1', 'Invalid commission_rate');
+
+        my $args6 = {
+            symbol          => 'IBM',
+            provider        => $provider,
+            account_type    => 'standard',
+            commission_type => 'volume',
+            contract_size   => 'a',
+            commission_rate => 1,
+        };
+        my $output6 = BOM::Backoffice::CommissionTool::save_commission($args6);
+        is($output6->{error}, 'contract_size must be numeric', 'Invalid contract_size');
+
+        my $args7 = {
+            symbol          => 'IBM',
+            provider        => $provider,
+            account_type    => 'standard',
+            commission_type => 'volume',
+            contract_size   => 1,
+            commission_rate => 'a',
+        };
+        my $output7 = BOM::Backoffice::CommissionTool::save_commission($args7);
+        is($output7->{error}, 'commission_rate must be numeric', 'Invalid commission_rate');
     };
-    my $output2 = BOM::Backoffice::CommissionTool::delete_commission($args2);
-    is($output2->{error}, 'provider is required', 'Missing provider');
+}
 
-    # Test 3: Missing account_type
-    my $args3 = {
-        symbol          => 'IBM',
-        provider        => 'Provider1',
-        commission_type => 'volume',
-    };
-    my $output3 = BOM::Backoffice::CommissionTool::delete_commission($args3);
-    is($output3->{error}, 'account_type is required', 'Missing account_type');
+subtest 'Test for provider dxtrade' => sub {
+    run_test_cases('dxtrade');
+};
 
-    # Test 4: Missing commission_type
-    my $args4 = {
-        symbol       => 'IBM',
-        provider     => 'dxtrade',
-        account_type => 'standard',
-    };
-    my $output4 = BOM::Backoffice::CommissionTool::delete_commission($args4);
-    is($output4->{error}, 'commission_type is required', 'Missing commission_type');
-
+subtest 'Test for provider ctrader' => sub {
+    run_test_cases('ctrader');
 };
 
 done_testing();
