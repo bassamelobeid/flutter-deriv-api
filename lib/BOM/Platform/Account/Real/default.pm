@@ -115,6 +115,9 @@ sub copy_status_from_siblings {
         for my $status (uniq(@$status_list, @dup_statuses)) {
             next unless $client->status->$status;
             next if $client->status->$status && $cur_client->status->$status;
+            my $applied_by = $client->status->$status->{staff_name} // 'system';
+            $applied_by = $applied_by eq 'system' ? 'system' : 'staff';
+            next unless BOM::User::Client::Status::can_copy($status, $client->broker_code, $cur_client->broker_code, $applied_by);
 
             if ($status eq 'age_verification') {
                 my $cur_client_lc = $cur_client->landing_company->short;
@@ -198,15 +201,8 @@ sub after_register_client {
         $client->user->set_tnc_approval;
         copy_status_from_siblings(
             $client,
-            [
-                'no_trading',               'withdrawal_locked',      'age_verification',        'transfers_blocked',
-                'allow_poi_resubmission',   'allow_poa_resubmission', 'potential_fraud',         'poi_name_mismatch',
-                'poi_dob_mismatch',         'cashier_locked',         'unwelcome',               'no_withdrawal_or_trading',
-                'internal_client',          'shared_payment_method',  'df_deposit_requires_poi', 'poi_name_mismatch',
-                'smarty_streets_validated', 'address_verified',       'poi_dob_mismatch',        'cooling_off_period',
-                'poi_poa_uploaded',         'poa_address_mismatch'
-            ],
-            ['financial_risk_approval']);
+            BOM::User::Client::Status::get_all_statuses_to_copy_from_siblings(),
+            BOM::User::Client::Status::get_duplicate_only_statuses_to_copy_from_siblings());
         copy_data_to_siblings($client);
 
         my $vr_loginid = $user->bom_virtual_loginid;

@@ -968,6 +968,16 @@ subtest 'Sibling Status Sync upon creation' => sub {
         residence => 'br',
     });
 
+    my $mock = Test::MockModule->new('BOM::User::Client::Status');
+
+    # Mocked to bypass the status copy configuration defined at BOM::Config::statuses_copied_from_siblings
+
+    $mock->mock(
+        'can_copy',
+        sub {
+            return 1;
+        });
+
     my $vr_client = @{$vr_account}{'client'};
     my $user      = @{$vr_account}{'user'};
 
@@ -1007,6 +1017,9 @@ subtest 'Sibling Status Sync upon creation' => sub {
                     "$status reason copied to new real client upon creation";
             }
         }
+
+        $real_client->status->_clear_all;
+        $real_client_new->status->_clear_all;
     };
 
     subtest 'Statuses that shouldn\'t be copied' => sub {
@@ -1030,6 +1043,134 @@ subtest 'Sibling Status Sync upon creation' => sub {
                 ok !$real_client_new->status->$status, "$status status not copied to new real client upon creation";
             }
         }
+
+        $real_client->status->_clear_all;
+        $real_client_new->status->_clear_all;
+    };
+
+    $mock->unmock_all;
+
+    subtest 'Using configuration to copy statuses' => sub {
+
+        sub mock_config {
+            my ($mock, $config) = @_;
+
+            $mock->mock(
+                'get_status_config',
+                sub {
+                    my $status_code = shift;
+                    return $config->{$status_code};
+                });
+        }
+
+        my $vr_config_account = create_vr_acc({
+            email     => 'someclient2@binary.com',
+            password  => 'Secret0',
+            residence => 'br',
+        });
+
+        my $vr_config_client = @{$vr_config_account}{'client'};
+
+        my $real_config_acc    = create_real_acc($vr_config_client, $vr_config_client->user, 'CR');
+        my $real_config_client = @{$real_config_acc}{'client'};
+
+        subtest 'applied_by' => sub {
+
+            mock_config(
+                $mock,
+                {
+                    'unwelcome' => {
+                        'CR_MF' => {
+                            'applied_by' => {
+                                'system' => 1,
+                                'staff'  => 1
+                            }}
+                    },
+                });
+
+            $real_config_client->status->upsert('unwelcome', 'system', 'unwelcome is now set');
+
+            my $real_acc_new    = create_real_acc($vr_config_client, $vr_config_client->user, 'MF');
+            my $real_client_new = @{$real_acc_new}{'client'};
+            ok $real_client_new->status->unwelcome, "unwelcome copied to new real client upon creation as allowed by config";
+
+            mock_config(
+                $mock,
+                {
+                    'unwelcome' => {
+                        'CR_MF' => {
+                            'applied_by' => {
+                                'system' => 0,
+                                'staff'  => 0
+                            }}
+                    },
+                });
+
+            $real_client_new->status->clear_unwelcome;
+
+            $real_acc_new    = create_real_acc($vr_config_client, $vr_config_client->user, 'MF');
+            $real_client_new = @{$real_acc_new}{'client'};
+            ok !$real_client_new->status->unwelcome, "unwelcome not copied to new real client upon creation as not allowed by config";
+
+            mock_config(
+                $mock,
+                {
+                    'unwelcome' => {
+                        'CR_MF' => {
+                            'applied_by' => {
+                                'system' => 0,
+                                'staff'  => 1
+                            }}
+                    },
+                });
+
+            $real_config_client->status->clear_unwelcome;
+            $real_config_client->status->set('unwelcome', 'staff', 'unwelcome is now set by staff');
+            $real_acc_new    = create_real_acc($vr_config_client, $vr_config_client->user, 'MF');
+            $real_client_new = @{$real_acc_new}{'client'};
+
+            ok $real_client_new->status->unwelcome, "unwelcome copied to new real client upon creation as allowed by config";
+
+            $real_config_client->status->_clear_all;
+            $real_client_new->status->_clear_all;
+
+        };
+
+        subtest 'broker_combination' => sub {
+
+            mock_config(
+                $mock,
+                {
+                    'unwelcome' => {
+                        'CR_MF' => {
+                            'applied_by' => {
+                                'system' => 0,
+                                'staff'  => 0
+                            }
+                        },
+                        'MF_CR' => {
+                            'applied_by' => {
+                                'system' => 1,
+                                'staff'  => 1
+                            }}
+                    },
+                });
+
+            $real_config_client->status->upsert('unwelcome', 'system', 'unwelcome is now set');
+            my $real_acc_new_mf    = create_real_acc($vr_config_client, $vr_config_client->user, 'MF');
+            my $real_client_new_mf = @{$real_acc_new_mf}{'client'};
+            ok !$real_client_new_mf->status->unwelcome, "unwelcome not copied to new real client upon creation as CR to MF copy is not allowed";
+
+            my $real_acc_mf    = create_real_acc($vr_config_client, $vr_config_client->user, 'MF');
+            my $real_client_mf = @{$real_acc_mf}{'client'};
+            $real_client_mf->status->upsert('unwelcome', 'system', 'unwelcome is now set');
+
+            my $real_acc_new_cr    = create_real_acc($vr_config_client, $vr_config_client->user, 'CR');
+            my $real_client_new_cr = @{$real_acc_new_cr}{'client'};
+            ok $real_client_new_cr->status->unwelcome, "unwelcome copied to new real client upon creation as MF to CR copy is allowed";
+
+        };
+
     };
 
 };
