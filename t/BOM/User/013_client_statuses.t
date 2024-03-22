@@ -567,6 +567,167 @@ subtest 'Deposit Attempt' => sub {
     ok !$client->status->deposit_attempt, 'deposit_attempt is removed';
 };
 
+subtest 'can_copy' => sub {
+    my $mock = Test::MockModule->new('BOM::User::Client::Status');
+
+    sub mock_config {
+        my ($mock, $config) = @_;
+
+        $mock->mock(
+            'get_status_config',
+            sub {
+                my $status_code = shift;
+                return $config->{$status_code};
+            });
+
+    }
+
+    subtest 'Check for applied_by' => sub {
+
+        my @test_cases = ({
+                'applied_by' => {
+                    'system' => 1,
+                    'staff'  => 1,
+                },
+                'expected' => {
+                    'system' => 1,
+                    'staff'  => 1,
+                }
+            },
+            {
+                'applied_by' => {
+                    'system' => 1,
+                    'staff'  => 0,
+                },
+                'expected' => {
+                    'system' => 1,
+                    'staff'  => 0,
+                }
+            },
+            {
+                'applied_by' => {
+                    'system' => 0,
+                    'staff'  => 1,
+                },
+                'expected' => {
+                    'system' => 0,
+                    'staff'  => 1,
+                }
+            },
+            {
+                'applied_by' => {
+                    'system' => 0,
+                    'staff'  => 0,
+                },
+                'expected' => {
+                    'system' => 0,
+                    'staff'  => 0,
+                }});
+
+        for my $test_case (@test_cases) {
+            mock_config(
+                $mock,
+                {
+                    'age_verification' => {'CR_MF' => {'applied_by' => $test_case->{'applied_by'}}},
+                });
+
+            ok BOM::User::Client::Status::can_copy('age_verification', 'CR', 'MF', 'system') == $test_case->{'expected'}->{'system'},
+                'Allowed if applied by system';
+            ok BOM::User::Client::Status::can_copy('age_verification', 'CR', 'MF', 'staff') == $test_case->{'expected'}->{'staff'},
+                'Allowed if applied by staff';
+        }
+    };
+
+    subtest 'Check for broker code' => sub {
+
+        my @broker_codes = qw(CR MF VR);
+        my @combinations = qw(CR_CR MF_MF MF_CR CR_MF VR_CR CR_VR MF_CR CR_MF);
+
+        my @test_cases = ({
+                'disallowed_combination' => 'CR_CR',
+                'allowed_combination'    => 'CR_MF',
+                'from_broker_code'       => 'CR',
+                'to_broker_code'         => 'CR',
+                'expected'               => 0,
+                'test_description'       => 'Disallowed if combination is not allowed'
+            },
+            {
+                'disallowed_combination' => 'MF_CR',
+                'allowed_combination'    => 'CR_MF',
+                'from_broker_code'       => 'MF',
+                'to_broker_code'         => 'CR',
+                'expected'               => 0,
+                'test_description'       => 'Disallowed even if reverse combination is allowed'
+            },
+            {
+                'disallowed_combination' => 'CR_CR',
+                'allowed_combination'    => 'CR_MF',
+                'from_broker_code'       => 'CR',
+                'to_broker_code'         => 'MF',
+                'expected'               => 1,
+                'test_description'       => 'Allowed if combination is allowed'
+            });
+
+        for my $test_case (@test_cases) {
+            mock_config(
+                $mock,
+                {
+                    'age_verification' => {
+                        $test_case->{'disallowed_combination'} => {
+                            'applied_by' => {
+                                'system' => 0,
+                                'staff'  => 0,
+                            }
+                        },
+                        $test_case->{'allowed_combination'} => {
+                            'applied_by' => {
+                                'system' => 1,
+                                'staff'  => 1,
+                            }}
+                    },
+                });
+
+            ok BOM::User::Client::Status::can_copy('age_verification', $test_case->{'from_broker_code'}, $test_case->{'to_broker_code'}, 'system') ==
+                $test_case->{'expected'}, $test_case->{'test_description'};
+        }
+
+    };
+
+    subtest 'Default values' => sub {
+        mock_config(
+            $mock,
+            {
+                'age_verification' => {
+                    'CR_MF' => {
+                        'applied_by' => {
+                            'system' => 0,
+                            'staff'  => 0,
+                        }}
+                },
+            });
+
+        ok BOM::User::Client::Status::can_copy('disabled', 'CR', 'MF', 'system') == 0, 'If status is not found, default would be 0';
+        ok BOM::User::Client::Status::can_copy('age_verification', 'MF', 'CR', 'staff') == 0,
+            'If broker combination is not found, default would be 1';
+
+        mock_config(
+            $mock,
+            {
+                'age_verification' => {
+                    'CR_MF' => {
+                        'applied_by' => {
+                            'system' => 0,
+                        }}
+                },
+            });
+
+        ok BOM::User::Client::Status::can_copy('age_verification', 'CR', 'MF', 'staff') == 0, 'If staff is not found, default would be 0';
+    };
+
+    $mock->unmock_all;
+
+};
+
 subtest 'Status Hierarchy' => sub {
     my $mock   = Test::MockModule->new('BOM::User::Client::Status');
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

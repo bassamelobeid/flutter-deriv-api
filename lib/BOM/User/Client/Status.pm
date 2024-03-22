@@ -11,6 +11,7 @@ use Carp                     qw( croak );
 use Array::Utils             qw(array_minus);
 
 use BOM::Config;
+use Business::Config::Account;
 
 has client_loginid => (
     is       => 'ro',
@@ -38,6 +39,8 @@ use constant STATUS_CODES => qw(
     allow_poinc_resubmission cooling_off_period poa_address_mismatch poi_poa_uploaded eligible_counterparty
     allow_duplicate_signup poi_duplicated_documents selfie_pending selfie_verified selfie_rejected resident_self_declaration
 );
+
+use constant STATUS_COPY_CONFIG => Business::Config::Account->new()->statuses_copied_from_siblings();
 
 # codes that are about to be dropped
 my @deprecated_codes = qw(
@@ -572,6 +575,99 @@ sub _get_all_clients_status {
     @{$self}{STATUS_CODES()} = ();
     @{$self}{keys %$list} = values %$list;
     return $list;
+
+}
+
+=head2 get_status_config
+
+Gets the config for the given status code
+
+Returns a hashref containing the config for the given status code
+
+=over 4
+
+=item * status_code
+
+=back
+
+=cut
+
+sub get_status_config {
+    my $status_code   = shift;
+    my $status_config = STATUS_COPY_CONFIG->{config}->{$status_code};
+    return $status_config;
+}
+
+=head2 can_copy
+
+Checks if the given status code can be copied from client belonging to one broker to another broker, 
+based on if system or staff applied it
+
+Returns 1 if it can be copied, 0 otherwise
+
+By default, all statuses can be copied, unless specified in the config
+
+=over 4
+
+=item * status_code
+
+=item * from_broker_code
+
+=item * to_broker_code
+
+=item * applied_by
+
+Only accepts `staff` or `system`
+
+=back
+
+=cut
+
+sub can_copy {
+    my ($status_code, $from_broker_code, $to_broker_code, $applied_by) = @_;
+
+    die 'Only accepts staff or system' if $applied_by ne 'staff' && $applied_by ne 'system';
+
+    my $status_config = get_status_config($status_code);
+    return 0 unless $status_config;
+
+    my $broker_concat = $from_broker_code . '_' . $to_broker_code;
+
+    return 0 unless $status_config->{$broker_concat};
+
+    return 0 unless defined $status_config->{$broker_concat}->{'applied_by'}->{$applied_by};
+
+    return $status_config->{$broker_concat}->{'applied_by'}->{$applied_by};
+
+}
+
+=head2 get_all_statuses_to_copy_from_siblings
+
+Returns all the statuses that can be copied from the siblings
+
+Returns an array ref of status codes
+
+=cut
+
+sub get_all_statuses_to_copy_from_siblings {
+    my $config                  = STATUS_COPY_CONFIG->{config};
+    my $duplicate_only_statuses = get_duplicate_only_statuses_to_copy_from_siblings();
+    my @all_statuses            = keys(%$config);
+    return [array_minus(@all_statuses, @$duplicate_only_statuses)];
+
+}
+
+=head2 get_duplicate_only_statuses_to_copy_from_siblings
+
+Returns all the statuses that can be copied from the siblings only if the sibling is a duplicate
+
+Returns an array ref of status codes
+
+=cut
+
+sub get_duplicate_only_statuses_to_copy_from_siblings {
+    my $config = STATUS_COPY_CONFIG;
+    return $config->{duplicate_only} // [];
 
 }
 

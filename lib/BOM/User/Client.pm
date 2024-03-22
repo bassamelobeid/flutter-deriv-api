@@ -662,7 +662,9 @@ Update MIFIR ID for a client using concat
 =cut
 
 sub update_mifir_id_concat {
-    my $self         = shift;
+    my $self = shift;
+    return 0 unless $self->citizen;
+    return 0 unless $self->broker_code eq 'MF';
     my $mifir_concat = request()->brand->countries_instance->is_mifir_concat_allowed($self->citizen);
     if ($mifir_concat and not defined($self->mifir_id)) {
         $self->mifir_id(
