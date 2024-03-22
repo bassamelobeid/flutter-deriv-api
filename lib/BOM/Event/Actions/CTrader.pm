@@ -5,7 +5,6 @@ use warnings;
 
 no indirect;
 
-use BOM::MyAffiliates;
 use BOM::Config;
 use BOM::TradingPlatform;
 use BOM::Database::CommissionDB;
@@ -40,7 +39,6 @@ sub ctrader_account_created {
     die 'Account type needed'   unless $params->{account_type};
 
     my $myaffiliates_config = BOM::Config::third_party()->{myaffiliates};
-    my $my_affiliates       = BOM::MyAffiliates->new();
     my $aff_webservice      = WebService::MyAffiliates->new(
         user    => $myaffiliates_config->{user},
         pass    => $myaffiliates_config->{pass},
@@ -62,7 +60,6 @@ sub ctrader_account_created {
             my $aff_id         = $affiliate->{external_affiliate_id};
             my $affiliate_user = $aff_webservice->get_user($aff_id);
             if ($affiliate_user->{STATUS} eq 'accepted') {
-                my $token  = $my_affiliates->get_token({affiliate_id => $aff_id});
                 my $client = BOM::User::Client->new({loginid => $params->{loginid}});
                 my $ct     = BOM::TradingPlatform->new(
                     platform => 'ctrader',
@@ -70,7 +67,7 @@ sub ctrader_account_created {
                 );
 
                 $ct->register_partnerid({
-                        partnerid    => $token,
+                        partnerid    => $params->{binary_user_id},
                         ctid_userid  => $params->{ctid_userid},
                         account_type => $params->{account_type}});
             }

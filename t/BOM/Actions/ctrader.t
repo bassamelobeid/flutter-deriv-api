@@ -45,7 +45,7 @@ subtest "ctrader_account_created" => sub {
             my ($self, $params) = @_;
             die unless $params->{account_type} eq 'real';
             die unless $params->{ctid_userid} == 123456;
-            die unless $params->{partnerid} eq 'abc123';
+            die unless $params->{partnerid} eq '1';
 
             return 1;
         });
