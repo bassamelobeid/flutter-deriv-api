@@ -1,0 +1,18 @@
+[% IF full_name %] <p><b>Full Name: </b>[% full_name %]</p>[% END %]
+[% IF date_of_birth %] <p><b>Date of Birth: </b>[% date_of_birth %]</p>[% END %]
+[% IF phone %]<p><b>Phone: </b>[% phone %]</p>[% END %]
+[% IF secret_question %] 
+    <p><b>Secret Question: </b>[% secret_question %]</p>
+    [% IF secret_answer %]
+        <p><b>Secret Answer: </b>[% secret_answer %]</p>
+    [% END %]
+    [% IF secret_error %]
+        <p class="notify notify--warning"><b>[% secret_error %]</b></p>
+    [% END %]
+[% END %]
+[% IF mt_logins %]
+    <p><b>MT5 Login IDs:</b></p>
+    [% FOREACH mt_login IN mt_logins %]
+        <li>[% mt_login %]</li>
+    [% END %]
+[% END %]

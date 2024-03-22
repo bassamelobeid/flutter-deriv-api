@@ -1687,6 +1687,30 @@ unless (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'
             });
         print qq~<br><a class="link" href="$comments_url">Add a new comment / View full list</a>~;
     }
+
+    Bar("CLIENT SUMMARY");
+    my $secret_answer;
+    my $secret_error;
+    try {
+        $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer) // '';
+    } catch ($e) {
+        $secret_error = 'ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.';
+    }
+
+    my @filtered_mt5_ids = grep { $loginid_details->{$_}->{attributes}->{landing_company} eq $client->landing_company->{short} } $mt_logins->@*;
+
+    my $template_data = {
+        full_name       => trim($client->full_name),
+        date_of_birth   => $client->date_of_birth,
+        phone           => $client->phone,
+        secret_question => $client->secret_question,
+        secret_answer   => $secret_answer,
+        secret_error    => $secret_error,
+        mt_logins       => @filtered_mt5_ids ? \@filtered_mt5_ids : '',
+    };
+
+    BOM::Backoffice::Request::template()->process('backoffice/client_summary.html.tt', $template_data)
+        || die BOM::Backoffice::Request::template()->error(), "\n";
 }
 
 Bar("$loginid STATUSES", {nav_link => "STATUSES"});
@@ -1739,87 +1763,87 @@ BOM::Backoffice::Request::template()->process(
         client_statuses_readonly => \%client_statuses,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
-if (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'])) {
-    code_exit_BO();
-}
+my $payment_agent;
 
-# Show Self-Exclusion link
-if (!$is_readonly) {
-    Bar("$loginid SELF-EXCLUSION SETTINGS", {nav_link => "SELF-EXCLUSION SETTINGS"});
-    print "<p><a id='self-exclusion' class=\"btn btn--primary\" href=\""
-        . request()->url_for(
-        'backoffice/f_setting_selfexclusion.cgi',
-        {
-            broker  => $broker,
-            loginid => $loginid
-        }) . "\">Configure self-exclusion settings</a> <strong>for $encoded_loginid</strong></p>";
-
-# show restricted-access fields of regulated landing company clients (accessible for compliance staff only)
-    if (BOM::Backoffice::Auth::has_authorisation(['Compliance']) and $client->landing_company->is_eu) {
-        print '<a id="self-exclusion_restricted" class="btn btn--primary" href="'
+unless (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'])) {
+    # Show Self-Exclusion link
+    if (!$is_readonly) {
+        Bar("$loginid SELF-EXCLUSION SETTINGS", {nav_link => "SELF-EXCLUSION SETTINGS"});
+        print "<p><a id='self-exclusion' class=\"btn btn--primary\" href=\""
             . request()->url_for(
-            'backoffice/f_setting_selfexclusion_restricted.cgi',
+            'backoffice/f_setting_selfexclusion.cgi',
             {
                 broker  => $broker,
                 loginid => $loginid
-            }) . '">Configure restricted self-exlcusion settings</a>';
+            }) . "\">Configure self-exclusion settings</a> <strong>for $encoded_loginid</strong></p>";
+
+        # show restricted-access fields of regulated landing company clients (accessible for compliance staff only)
+        if (BOM::Backoffice::Auth::has_authorisation(['Compliance']) and $client->landing_company->is_eu) {
+            print '<a id="self-exclusion_restricted" class="btn btn--primary" href="'
+                . request()->url_for(
+                'backoffice/f_setting_selfexclusion_restricted.cgi',
+                {
+                    broker  => $broker,
+                    loginid => $loginid
+                }) . '">Configure restricted self-exlcusion settings</a>';
+        }
     }
-}
-Bar("$loginid PAYMENT AGENT DETAILS", {nav_link => "PAYMENT AGENT DETAILS"});
+    Bar("$loginid PAYMENT AGENT DETAILS", {nav_link => "PAYMENT AGENT DETAILS"});
 
-# Show Payment-Agent details if this client is also a Payment Agent.
-my $payment_agent = $client->get_payment_agent;
-if ($payment_agent) {
-    print '<div class="row"><table class="border small">';
+    # Show Payment-Agent details if this client is also a Payment Agent.
+    $payment_agent = $client->get_payment_agent;
+    if ($payment_agent) {
+        print '<div class="row"><table class="border small">';
 
-    foreach my $field (
-        qw/payment_agent_name risk_level urls email phone_numbers information supported_payment_methods
-        commission_deposit commission_withdrawal
-        min_withdrawal max_withdrawal affiliate_id code_of_conduct_approval
-        code_of_conduct_approval_date status is_listed currency_code/
-        )
-    {
-
-        my $value     = $payment_agent->$field // '';
-        my $main_attr = $payment_agent->details_main_field->{$field};
-        $value = join ', ', (map { $_->{$main_attr} } @$value) if ref $value;
-
-        my $label = BOM::Backoffice::Utility::payment_agent_column_labels()->{$field};
-        print "<tr><td>$label</td><td>" . encode_entities($value) . "</td></tr>";
-    }
-    my $pa           = $client->get_payment_agent;
-    my $pa_countries = $pa->get_countries;
-    print "<tr><td>Target countries</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
-
-    print "<tr><td>Tier</td><td>" . encode_entities($pa->tier_details->{name}) . "</td></tr>";
-    print "<tr><td>Tier comments</td><td>" . encode_entities($pa->services_allowed_comments) . "</td></tr>";
-
-    print '</table></div>';
-}
-
-if ($client->landing_company->allows_payment_agents) {
-    print '<div><a class="'
-        . $button_type
-        . '" href="'
-        . request()->url_for(
-        'backoffice/f_setting_paymentagent.cgi',
+        foreach my $field (
+            qw/payment_agent_name risk_level urls email phone_numbers information supported_payment_methods
+            commission_deposit commission_withdrawal
+            min_withdrawal max_withdrawal affiliate_id code_of_conduct_approval
+            code_of_conduct_approval_date status is_listed currency_code/
+            )
         {
-            broker   => $broker,
-            loginid  => $loginid,
-            whattodo => $payment_agent ? "show" : "create"
-        }) . "\">Payment agent details</a> <strong>for $encoded_loginid</strong></div>";
-} else {
-    print '<div>Payment Agents are not available for this account.</div>';
-}
 
-my @sibling_pas = $payment_agent ? $payment_agent->sibling_payment_agents : ();
-if (scalar @sibling_pas > 1) {
-    print qq[<br><form action="$self_post?loginID=$encoded_loginid" id="copy_pa_form" method="post">
-    <input type="hidden" name="whattodo" value="copy_pa_details"/>
-    <input type="hidden" name="broker" value="$encoded_broker"/>
-    <input type="hidden" name="loginID" value="$encoded_loginid">
-    <input type="submit" class="btn btn--secondary" value="Copy payment agent details to sibling accounts"/>
-    </form>];
+            my $value     = $payment_agent->$field // '';
+            my $main_attr = $payment_agent->details_main_field->{$field};
+            $value = join ', ', (map { $_->{$main_attr} } @$value) if ref $value;
+
+            my $label = BOM::Backoffice::Utility::payment_agent_column_labels()->{$field};
+            print "<tr><td>$label</td><td>" . encode_entities($value) . "</td></tr>";
+        }
+        my $pa           = $client->get_payment_agent;
+        my $pa_countries = $pa->get_countries;
+        print "<tr><td>Target countries</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
+
+        print "<tr><td>Tier</td><td>" . encode_entities($pa->tier_details->{name}) . "</td></tr>";
+        print "<tr><td>Tier comments</td><td>" . encode_entities($pa->services_allowed_comments) . "</td></tr>";
+
+        print '</table></div>';
+    }
+
+    if ($client->landing_company->allows_payment_agents) {
+        print '<div><a class="'
+            . $button_type
+            . '" href="'
+            . request()->url_for(
+            'backoffice/f_setting_paymentagent.cgi',
+            {
+                broker   => $broker,
+                loginid  => $loginid,
+                whattodo => $payment_agent ? "show" : "create"
+            }) . "\">Payment agent details</a> <strong>for $encoded_loginid</strong></div>";
+    } else {
+        print '<div>Payment Agents are not available for this account.</div>';
+    }
+
+    my @sibling_pas = $payment_agent ? $payment_agent->sibling_payment_agents : ();
+    if (scalar @sibling_pas > 1) {
+        print qq[<br><form action="$self_post?loginID=$encoded_loginid" id="copy_pa_form" method="post">
+        <input type="hidden" name="whattodo" value="copy_pa_details"/>
+        <input type="hidden" name="broker" value="$encoded_broker"/>
+        <input type="hidden" name="loginID" value="$encoded_loginid">
+        <input type="submit" class="btn btn--secondary" value="Copy payment agent details to sibling accounts"/>
+        </form>];
+    }
 }
 
 my $statuses = join '/', map { uc $_ } @{$client->status->all};
@@ -1827,28 +1851,30 @@ my $name     = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
+
 Bar("CLIENT " . $client_info, {nav_link => "Client details"});
 
-my ($link_acc_msg, $link_loginid);
-if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
-    $link_loginid = $1;
-    $link_acc_msg = 'UK account, previously moved from';
-} elsif ($client->comment =~ /move UK clients to \w+ \(to (\w+)\)/) {
-    $link_loginid = $1;
-    $link_acc_msg = 'UK account, has been moved to';
-}
+unless (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'])) {
+    my ($link_acc_msg, $link_loginid);
+    if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
+        $link_loginid = $1;
+        $link_acc_msg = 'UK account, previously moved from';
+    } elsif ($client->comment =~ /move UK clients to \w+ \(to (\w+)\)/) {
+        $link_loginid = $1;
+        $link_acc_msg = 'UK account, has been moved to';
+    }
 
-if ($link_acc_msg) {
-    $link_loginid =~ /(\D+)\d+/;
-    my $link_href = request()->url_for(
-        'backoffice/f_clientloginid_edit.cgi',
-        {
-            broker  => $1,
-            loginID => $link_loginid
-        });
-    print "<div class='grd-margin-bottom'>$link_acc_msg <a href='$link_href'>" . encode_entities($link_loginid) . "</a></div>";
+    if ($link_acc_msg) {
+        $link_loginid =~ /(\D+)\d+/;
+        my $link_href = request()->url_for(
+            'backoffice/f_clientloginid_edit.cgi',
+            {
+                broker  => $1,
+                loginID => $link_loginid
+            });
+        print "<div class='grd-margin-bottom'>$link_acc_msg <a href='$link_href'>" . encode_entities($link_loginid) . "</a></div>";
+    }
 }
-
 print '<div>Corresponding accounts:</div><ul>';
 
 # show all BOM loginids for user, include disabled acc
@@ -2018,6 +2044,10 @@ try {
 } catch ($e) {
     print encode_entities($e);
 };
+
+if (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'])) {
+    code_exit_BO();
+}
 
 my $log_args = {
     broker   => $broker,
