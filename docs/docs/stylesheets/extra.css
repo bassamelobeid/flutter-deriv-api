@@ -1,0 +1,21 @@
+:root {
+  --md-primary-fg-color:        #FFFFFF;
+  --md-primary-fg-color--light: #F6F7F8;
+  --md-primary-fg-color--dark:  #EBECEF;
+
+  --md-primary-bg-color:        #20242F;
+  --md-typeset-a-color:         #282C38;
+
+  --md-footer-bg-color:         #414652;
+
+  --md-typeset-a-color:         #ff444f;
+
+  .md-typeset h3 {
+      font-weight: 300;
+  }
+}
+
+[data-md-color-accent=indigo] {
+  --md-accent-fg-color: #787D88;
+  --md-accent-fg-color--transparent: #CED0D6;
+}
