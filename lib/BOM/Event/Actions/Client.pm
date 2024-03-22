@@ -539,6 +539,43 @@ sub _notify_onfido_unsupported_document {
     return undef;
 }
 
+=head2 _notify_cs_onfido_verification_failed 
+
+Send an email to CS about onfido verification failed.
+
+=over 4
+
+=item * C<$client> - The client instance.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub _notify_cs_onfido_verification_failed {
+    my ($client)       = @_;
+    my $brand          = request()->brand;
+    my $msg            = 'POI document was rejected by Onfido. Please verify the age of the client manually.';
+    my $email_subject  = "Manual age verification needed for " . $client->loginid;
+    my $email_template = "\
+        <p>$msg</p>
+        <ul>
+            <li><b>loginid:</b> " . $client->loginid . "</li>
+            <li><b>place of birth:</b> " . (code2country($client->place_of_birth) // 'not set') . "</li>
+            <li><b>residence:</b> " . code2country($client->residence) . "</li>
+        </ul>
+        Team " . $brand->website_name . "\
+        ";
+
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
+
+    Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($email_template)->send();
+
+    return undef;
+}
+
 =head2 _upload_poa_document
 
 This subroutine handles uploading POA documents
@@ -1186,6 +1223,9 @@ async sub client_verification {
 
                 if (!$age_verified) {
                     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.not_verified', {tags => [@common_datadog_tags]});
+
+                    _notify_cs_onfido_verification_failed($client)
+                        unless (BOM::User::Onfido::submissions_left($client) > 0 || $underage_detected || $duplicated_document);
                 }
 
                 # at this point the check has been completed

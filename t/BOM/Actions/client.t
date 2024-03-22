@@ -2156,6 +2156,15 @@ for my $client ($test_client, $test_client_mf) {
                         @metrics               = ();
                         @emit_args             = ();
                         $onfido_report_filters = undef;
+
+                        my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+
+                        $mocked_onfido->mock(
+                            'submissions_left',
+                            sub {
+                                return 0;
+                            });
+
                         BOM::Event::Actions::Client::client_verification({
                                 check_url => $check_href,
                             })->get;
@@ -2171,6 +2180,9 @@ for my $client ($test_client, $test_client_mf) {
                             'event.onfido.client_verification.success' => undef,
                             },
                             'Expected dd metrics';
+
+                        my $email_onfido_failed = mailbox_search(subject => qr/Manual age verification needed for/);
+                        ok !$email_onfido_failed, 'email is not sent to cs';
 
                         $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
                         is $db_check->{status}, 'complete', 'check has been completed';
@@ -2686,6 +2698,14 @@ subtest 'Dup documents coming from Onfido' => sub {
             return Future->done($doc_hash->{$document_id});
         });
 
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+
+    $mocked_onfido->mock(
+        'submissions_left',
+        sub {
+            return 0;
+        });
+
     my $db_check = BOM::Database::UserDB::rose_db()->dbic->run(
         fixup => sub {
             my $sth =
@@ -2749,6 +2769,9 @@ subtest 'Dup documents coming from Onfido' => sub {
     ok $msg->{body} =~ /999-999-999/, 'doc number mentioned';
     ok $msg->{body} =~ /br/,          'doc country mentioned';
     ok $msg->{body} =~ /Onfido/,      'onfido mentioned';
+
+    my $email_onfido_failed = mailbox_search(subject => qr/Manual age verification needed for/);
+    ok !$email_onfido_failed, 'email is not sent to cs';
 
     my $another_loginid = $another_client->loginid;
     ok $msg->{body} =~ qr/$another_loginid/, 'another loginid mentioned';
@@ -6869,6 +6892,12 @@ subtest 'Onfido DOB checks' => sub {
         $test_client->status->_build_all();
         mailbox_clear();
 
+        $mocked_onfido->mock(
+            'submissions_left',
+            sub {
+                return 0;
+            });
+
         lives_ok {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
@@ -6920,6 +6949,9 @@ subtest 'Onfido DOB checks' => sub {
         my $msg = mailbox_search(subject => qr/Underage client detection/);
 
         ok !$msg, 'underage email not sent to CS';
+
+        my $email_onfido_failed = mailbox_search(subject => qr/Manual age verification needed for/);
+        ok !$email_onfido_failed, 'Onfido document rejected, email is not sent to cs';
 
         subtest 'it has a mt5 real account' => sub {
             $trading_platform_loginids = {
@@ -6974,7 +7006,11 @@ subtest 'Onfido DOB checks' => sub {
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
             ok $msg, 'underage email sent to CS';
+
             cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
+
+            my $email_onfido_failed = mailbox_search(subject => qr/Manual age verification needed for/);
+            ok !$email_onfido_failed, 'Onfido document rejected, email is not sent to cs';
         };
 
         subtest 'it has a mt5 demo account' => sub {
@@ -7648,6 +7684,201 @@ subtest 'Onfido Name Mismatch' => sub {
             $onfido_mocker->unmock_all();
             $mocked_report->unmock_all();
         };
+    };
+
+    $mocked_actions->unmock('_restore_request');
+    $mocked_report->unmock_all();
+    $mocked_onfido->unmock_all();
+    $mocked_emitter->unmock_all();
+};
+
+subtest 'Onfido Rejected CS notification' => sub {
+    my $mocked_actions = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mocked_actions->mock(
+        '_restore_request',
+        sub {
+            return Future->done(1);
+        });
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+
+    request($req);
+    my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions      = {};
+    $mocked_emitter->mock(
+        'emit',
+        sub {
+            my $args = {@_};
+
+            $emissions = {$emissions->%*, $args->%*};
+
+            return undef;
+        });
+
+    my $brand  = request->brand;
+    my $params = {
+        language => uc($test_client->user->preferred_language // request->language // 'en'),
+    };
+    my $underage_result = 'consider';
+    my $reported_dob    = undef;
+    my $report_result   = 'consider';
+    my $reported_first_name;
+    my $reported_last_name;
+
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+    $mocked_onfido->mock(
+        'get_all_onfido_reports',
+        sub {
+            my $reports = +{
+                test => {
+                    api_name   => 'document',
+                    properties => encode_json_utf8({
+                            date_of_birth => $reported_dob,
+                            first_name    => $reported_first_name,
+                            last_name     => $reported_last_name,
+                        }
+                    ),
+                },
+            };
+
+            return $reports;
+        });
+
+    my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+    $mocked_report->mock(
+        'new' => sub {
+            my $self = shift, my %data = @_;
+            $data{result}                                                                     = $report_result;
+            $data{properties}->{date_of_birth}                                                = $reported_dob;
+            $data{properties}->{first_name}                                                   = $reported_first_name;
+            $data{properties}->{last_name}                                                    = $reported_last_name;
+            $data{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result} = $underage_result;
+            $mocked_report->original('new')->($self, %data);
+        });
+
+    subtest 'name mismatch' => sub {
+        $underage_result = 'clear';
+        $reported_dob    = '1989-10-11';
+        $report_result   = 'clear';
+        $test_client->date_of_birth('1989-10-11');
+        $test_client->save;
+        $reported_first_name = 'Luana Maria';
+        $reported_last_name  = 'Gonzalez';
+
+        $test_client->status->clear_disabled();
+        $test_client->status->clear_age_verification();
+        $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->clear_poi_dob_mismatch();
+        $test_client->status->_build_all();
+        mailbox_clear();
+
+        $mocked_onfido->mock(
+            'submissions_left',
+            sub {
+                return 1;
+            });
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+        }
+        'the event made it alive!';
+
+        invalidate_object_cache($test_client);
+        ok !$test_client->status->age_verification, 'Not age verified';
+        ok $test_client->status->poi_name_mismatch, 'POI name mismatch status set';
+
+        my $email = mailbox_search(subject => qr/Manual age verification needed for/);
+        ok !$email, 'Onfido document rejected, email is not sent because of remaining submissions';
+
+        mailbox_clear();
+
+        $mocked_onfido->mock(
+            'submissions_left',
+            sub {
+                return 0;
+            });
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+        }
+        'the event made it alive!';
+
+        invalidate_object_cache($test_client);
+        ok !$test_client->status->age_verification, 'Not age verified';
+        ok $test_client->status->poi_name_mismatch, 'POI name mismatch status set';
+
+        $email = mailbox_search(subject => qr/Manual age verification needed for/);
+        ok $email, 'Onfido document rejected, email is sent to cs';
+
+    };
+
+    subtest 'dob mismatch' => sub {
+
+        $underage_result = 'clear';
+        $reported_dob    = '1989-10-10';
+        $report_result   = 'clear';
+        $test_client->date_of_birth('1989-10-11');
+        $test_client->save;
+        $reported_first_name = $test_client->first_name;
+        $reported_last_name  = $test_client->last_name;
+
+        $test_client->status->clear_disabled();
+        $test_client->status->clear_age_verification();
+        $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->clear_poi_dob_mismatch();
+        $test_client->status->_build_all();
+        mailbox_clear();
+
+        $mocked_onfido->mock(
+            'submissions_left',
+            sub {
+                return 1;
+            });
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+        }
+        'the event made it alive!';
+
+        invalidate_object_cache($test_client);
+        ok !$test_client->status->age_verification, 'Not age verified';
+        ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch status set';
+
+        my $email = mailbox_search(subject => qr/Manual age verification needed for/);
+        ok !$email, 'Onfido document rejected, email is not sent because of remaining submissions';
+
+        mailbox_clear();
+
+        $mocked_onfido->mock(
+            'submissions_left',
+            sub {
+                return 0;
+            });
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+        }
+        'the event made it alive!';
+
+        invalidate_object_cache($test_client);
+        ok !$test_client->status->age_verification, 'Not age verified';
+        ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch status set';
+
+        $email = mailbox_search(subject => qr/Manual age verification needed for/);
+        ok $email, 'Onfido document rejected, email is sent to CS';
+
     };
 
     $mocked_actions->unmock('_restore_request');
