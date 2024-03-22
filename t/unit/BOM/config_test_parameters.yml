@@ -613,6 +613,12 @@
       write: *redis_config
   name: redis-cfds.yml
 - args:
+    config: BOM::Config::redis_ctrader_bridge_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-ctrader-bridge.yml
+- args:
     config: BOM::Config::services_config
     expected_config:
       fraud_prevention:

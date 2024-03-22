@@ -45,5 +45,6 @@ ok BOM::Config::cashier_env(),                      'cashier_env';
 ok BOM::Config::cashier_config(),                   'cashier_config';
 ok BOM::Config::on_qa() || BOM::Config::on_ci(),    'on_qa or on_ci';
 ok BOM::Config::crypto_internal_api(),              'crypto_internal_api';
+ok BOM::Config::redis_ctrader_bridge_config(),      'redis_ctrader_bridge_config';
 
 done_testing();

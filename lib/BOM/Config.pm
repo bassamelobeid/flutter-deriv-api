@@ -697,6 +697,19 @@ sub redis_cfds_config {
     return $config;
 }
 
+=head2 redis_ctrader_bridge_config
+
+    BOM::Config::redis_ctrader_bridge_config()
+
+Loads and caches configuration for cTrader Redis instance
+
+=cut
+
+sub redis_ctrader_bridge_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-ctrader-bridge.yml');
+    return $config;
+}
+
 =head2 services_config
 
     BOM::Config::services_config()

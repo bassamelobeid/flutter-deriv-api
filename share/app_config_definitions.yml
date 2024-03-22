@@ -1394,6 +1394,34 @@ quants:
               isa: Str
               default: 'volume'
               global: 1
+    ctrader_affiliate_commission:
+      description: "Affiliate commission for cTrader"
+      isa: section
+      contains:
+        enable:
+          description: "Flag to enable in-house commission calculation for cTrader"
+          isa: Bool
+          default: 0
+          global: 1
+        enable_auto_payment:
+          description: "Flag to enable automatic commission payment for cTrader"
+          isa: Bool
+          default: 0
+          global: 1
+        type:
+          description: "Affiliate commission for cTrader"
+          isa: section
+          contains:
+            financial:
+              description: "Commission type for financial asset. E.g. volume or spread"
+              isa: Str
+              default: 'volume'
+              global: 1
+            synthetic:
+              description: "Commission type for synthetic asset. E.g. volume or spread"
+              isa: Str
+              default: 'volume'
+              global: 1
     suspend_deal_cancellation:
       description: "Allow suspension of deal cancellation by market."
       isa: section

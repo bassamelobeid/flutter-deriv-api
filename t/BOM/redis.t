@@ -32,6 +32,8 @@ isa_ok BOM::Config::Redis::redis_ws(),                        'RedisDB', 'redis_
 isa_ok BOM::Config::Redis::redis_ws_write(),                  'RedisDB', 'redis_ws_write';
 isa_ok BOM::Config::Redis::redis_payment(),                   'RedisDB', 'redis_payment';
 isa_ok BOM::Config::Redis::redis_payment_write(),             'RedisDB', 'redis_payment_write';
+isa_ok BOM::Config::Redis::redis_ctrader_bridge(),            'RedisDB', 'redis_ctrader_bridge';
+isa_ok BOM::Config::Redis::redis_ctrader_bridge_write(),      'RedisDB', 'redis_ctrader_bridge_write';
 
 # redis_rpc not working on circleci now. need special redis v6 instance
 # seems not really in use, so we ignore those 2 tests for now.
