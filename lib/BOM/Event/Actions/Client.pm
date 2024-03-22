@@ -4425,7 +4425,13 @@ sub link_affiliate_client {
 
         # notify commission deal listener about a new sign up
         my $stream = join '::', ($platform, 'real_signup');
-        BOM::Config::Redis::redis_cfds_write()->execute('xadd', $stream, '*', 'platform', $platform, 'account_id', $loginid);
+        my $redis_write;
+        if ($platform eq 'dxtrade') {
+            $redis_write = BOM::Config::Redis::redis_cfds_write();
+        } elsif ($platform eq 'ctrader') {
+            $redis_write = BOM::Config::Redis::redis_ctrader_bridge_write();
+        }
+        $redis_write->execute('xadd', $stream, '*', 'platform', $platform, 'account_id', $loginid) if $redis_write;
     } catch ($e) {
         $log->warnf("Unable to add client %s to affiliate.affiliate_client table. Error [%s]", $loginid, $e);
     }
