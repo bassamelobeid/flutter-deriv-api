@@ -7,7 +7,7 @@ jobs:
   code_coverage:
     runs-on: ubuntu-latest
     container:
-      image: regentmarkets/debian-ci:bullseye-5.38.2-pg14
+      image: ${{ vars.DEBIAN_CI }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
@@ -23,7 +23,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@upgrade/perl_5.38.2
+        uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}

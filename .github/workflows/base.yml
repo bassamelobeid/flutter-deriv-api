@@ -11,7 +11,7 @@ on:
       debianci_image:
         description: 'Docker container used by the workflow'
         required: false
-        default: regentmarkets/debian-ci:bullseye-5.38.2-pg14
+        default: ${{ vars.DEBIAN_CI }}
         type: string
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}

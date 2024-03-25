@@ -17,7 +17,7 @@ jobs:
               echo "test-path=$FILE_PATH" >> "$GITHUB_OUTPUT"
           - 
             name: Upload results to DataDog
-            uses: regentmarkets/github-actions/datadog-publish@upgrade/perl_5.38.2
+            uses: regentmarkets/github-actions/datadog-publish@master
             with: 
               datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
               service-name: binary-websocket-api

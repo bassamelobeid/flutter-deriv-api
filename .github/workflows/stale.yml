@@ -8,4 +8,4 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
-    uses: regentmarkets/github-actions/.github/workflows/stale.yml@upgrade/perl_5.38.2
+    uses: regentmarkets/github-actions/.github/workflows/stale.yml@master

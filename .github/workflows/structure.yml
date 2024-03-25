@@ -7,7 +7,7 @@ on:
         debianci_image:
           description: 'Docker container used by the workflow'
           required: false
-          default: regentmarkets/debian-ci:bullseye-5.38.2-pg14
+          default: ${{ vars.DEBIAN_CI }}
           type: string
         is_dependent:
           description: 'Boolean to check if its part of dependent test'
@@ -39,7 +39,7 @@ jobs:
         steps:
           - 
             name: setup CI step
-            uses: regentmarkets/github-actions/ci-setup@upgrade/perl_5.38.2
+            uses: regentmarkets/github-actions/ci-setup@master
             with:
               read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
               repository: ${{ inputs.repository }}
@@ -51,7 +51,7 @@ jobs:
             run: make unit
           - 
             name: Update UID for nobody user
-            uses: regentmarkets/github-actions/update-uid@upgrade/perl_5.38.2
+            uses: regentmarkets/github-actions/update-uid@master
             if: success() || failure()
           - 
             name : Upload test results                   
