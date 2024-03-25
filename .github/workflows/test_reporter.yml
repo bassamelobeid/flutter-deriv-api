@@ -11,5 +11,5 @@ jobs:
       contents: read
       actions: read
       checks: write  # create check runs
-    uses: regentmarkets/github-actions/.github/workflows/test_reporter.yml@master
+    uses: regentmarkets/github-actions/.github/workflows/test_reporter.yml@upgrade/perl_5.38.2
     
