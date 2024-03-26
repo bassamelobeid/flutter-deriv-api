@@ -339,9 +339,6 @@ sub sell_bet {
     if (defined $bet->{tick_final_count}) {
         $chld->{tick_final_count} = $bet->{tick_final_count};
     }
-    if (defined $bet->{basis_spot}) {
-        $chld->{basis_spot} = $bet->{basis_spot};
-    }
 
     @param = (
         # FMB stuff
@@ -605,9 +602,6 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
             :                                undef;
         if (defined $bet->{tick_final_count}) {
             $chld->{tick_final_count} = $bet->{tick_final_count};
-        }
-        if (defined $bet->{basis_spot}) {
-            $chld->{basis_spot} = $bet->{basis_spot};
         }
 
         push @param, (
