@@ -65,9 +65,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => $underlying->symbol,
-    epoch      => $now->epoch,
-    quote      => 100,
+    undeerlying => $underlying->symbol,
+    epoch       => $now->epoch,
+    quote       => 100,
 });
 my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_u->mock('spot_tick', sub { return $current_tick });
@@ -265,25 +265,17 @@ subtest 'test cancel functionality', sub {
     };
 
     subtest 'cancel and get back stake' => sub {
-        my $now = time;
-        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([102, $now - 1, 'R_100'], [100, $now, 'R_100'], [101, $now + 1, 'R_100']);
-
+        my $now      = time;
         my $contract = produce_contract({
-                underlying   => 'R_100',
-                bet_type     => 'MULTUP',
-                currency     => 'USD',
-                multiplier   => 10,
-                amount       => 100,
-                amount_type  => 'stake',
-                current_tick => $current_tick,
-                cancellation => '1h',
-                limit_order  => {
-                    stop_out => {
-                        order_type   => 'stop_out',
-                        order_amount => -100,
-                        order_date   => $now,
-                        basis_spot   => 100
-                    }}});
+            underlying   => 'R_100',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+            cancellation => '1h',
+        });
 
         my $txn = BOM::Transaction->new({
             client        => $cl,
