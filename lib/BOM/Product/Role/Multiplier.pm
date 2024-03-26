@@ -118,6 +118,18 @@ has multiplier => (
     default => undef,
 );
 
+=head2 next_tick_execution
+
+Next tick execution for multiplier contract.
+Will be set by pricer daemon.
+
+=cut
+
+has next_tick_execution => (
+    is      => 'ro',
+    default => undef,
+);
+
 =head2 date_expiry
 
 The expiry time of the contract. Non-binary (multiplier contract), does not have expiries.
@@ -159,20 +171,24 @@ has [qw(basis_spot take_profit stop_loss stop_out)] => (
 sub _build_basis_spot {
     my $self = shift;
 
-    my $tick = $self->_tick_accessor->tick_at($self->date_start->epoch, {allow_inconsistent => 1});
-    if ($self->pricing_new) {
-        return $self->underlying->pipsized_value($tick->quote) if defined($tick);
+    # The architecutre now is that we're putting dealing/execution
+    # logic in contract creation logic.
+    # To cater for next tick execution we had to have these workaround.
+    #
+    # Basis spot is saved in child table just for the record but not using it for pricing.
+    return $self->current_spot if $self->pricing_new;
+
+    if (my $entry_spot = $self->entry_spot) {
+        return $entry_spot;
+    } else {
+        $self->_add_error({
+            message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
+            message_to_client => [$ERROR_MAPPING->{EntryTickMissing}],
+        });
+
+        # we had to return a resonable value here so that the current_pnl() calculation is reasonable
         return $self->current_spot;
     }
-
-    # Due to abuse we need to move entry tick for financial instruments to next tick after contract start time.
-    return $self->entry_tick->quote if $self->underlying->market->name ne 'synthetic_index' && $self->entry_tick;
-
-    # We will keep synthetic indices on the current tick because of the nature of some of the synthetic indices like crash/boom. To avoid getting into dispute with clients, this is more user friendly.
-    return $self->stop_out->basis_spot if $self->stop_out and $self->stop_out->basis_spot;
-    return BOM::Product::Exception->throw(
-        error_code => 'MissingBasisSpot',
-    );
 }
 
 =head2 new_order
@@ -209,6 +225,8 @@ sub _build_stop_loss {
     }
 
     my $args = $self->_order->{stop_loss};
+    # override basis_spot if it's next tick execution
+    $args->{basis_spot} = $self->basis_spot if $self->next_tick_execution;
 
     return BOM::Product::LimitOrder->new({%$args, %{$self->_limit_order_args('stop_loss')}});
 }
@@ -223,6 +241,8 @@ sub _build_take_profit {
     }
 
     my $args = $self->_order->{take_profit};
+    # override basis_spot if it's next tick execution
+    $args->{basis_spot} = $self->basis_spot if $self->next_tick_execution;
 
     return BOM::Product::LimitOrder->new({%$args, %{$self->_limit_order_args('take_profit')}});
 }
@@ -246,7 +266,11 @@ sub _build_stop_out {
         );
     }
 
-    return BOM::Product::LimitOrder->new({%{$self->_order->{stop_out}}, %{$self->_limit_order_args('stop_out')}});
+    my $args = $self->_order->{stop_out};
+    # override basis_spot if it's next tick execution
+    $args->{basis_spot} = $self->basis_spot if $self->next_tick_execution;
+
+    return BOM::Product::LimitOrder->new({%$args, %{$self->_limit_order_args('stop_out')}});
 }
 
 =head2 sell_time
@@ -488,31 +512,48 @@ override '_build_pricing_engine_name' => sub {
     return '';
 };
 
-# basis spot is stored in the database to 100% ensure that
-# limit order calculations are always correct.
-override '_build_entry_tick' => sub {
+override _build_entry_tick => sub {
     my $self = shift;
 
-    return undef                                                        if $self->pricing_new;
-    return $self->underlying->next_tick_after($self->date_start->epoch) if $self->underlying->market->name ne 'synthetic_index';
+    return undef if $self->pricing_new;
 
-    # for synthetic indices, the entry tick is the latest available tick at contract start time.
-    my $tick = $self->underlying->tick_at($self->date_start->epoch);
-    # less wait for consistent entry tick here.
-    return undef unless $tick;
-    # due to potential inconsistent tick during pricing time (could be due to distribution delay or tick receives later in the second),
-    # we need to check it the tick that is used when the contract is bought
-    if (abs($self->basis_spot - $tick->quote) < machine_epsilon()) {
-        return $tick;
+    # for existing open positions on synthetic index, the pricing on proposal open contract is using shortcode to price.
+    # The old shortcode will not have a _N1 suffix,
+    # so they are all spot execution
+    #
+    # Since we only store spot price in child table,
+    # we need a way to get the tick using the spot price.
+    # So we will get the tick and compare it's spot price.
+    # It's not a clean nor elegant way.
+    # But, it's the only way to get the tick.
+    if ($self->underlying->market->name eq 'synthetic_index') {
+        unless ($self->next_tick_execution) {
+            my $basis_spot    = $self->_order->{stop_out}->{basis_spot};
+            my $tick_at_start = $self->underlying->tick_at($self->date_start->epoch, {allow_inconsistent => 1});
+            return $tick_at_start if abs($tick_at_start->quote - $basis_spot) < machine_epsilon();
+
+            # if it doesn't match, it has to be the tick before the start time
+            # due to feed distribution latency
+            return $self->underlying->tick_at($self->date_start->epoch - 1, {allow_inconsistent => 1});
+        }
     }
-    # if it is not the tick at $self->date_start->epoch, it has to be tick 1 second before that
-    return $self->underlying->tick_at($self->date_start->epoch - 1);
+
+    # else, we will continue to next tick execution
+    if (my $tick = $self->underlying->next_tick_after($self->date_start->epoch)) {
+        return $tick;
+    } else {
+        $self->_add_error({
+            message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
+            message_to_client => [$ERROR_MAPPING->{EntryTickMissing}],
+        });
+        return $self->current_tick;
+    }
 };
 
 override 'shortcode' => sub {
     my $self = shift;
 
-    return join '_',
+    my $shortcode = join '_',
         (
         uc $self->code,
         uc $self->underlying->symbol,
@@ -522,6 +563,11 @@ override 'shortcode' => sub {
         $self->date_expiry->epoch,
         $self->cancellation, financialrounding('price', $self->currency, $self->cancellation_tp),
         );
+
+    $shortcode = join '_', $shortcode, 'N' . $self->next_tick_execution if $self->next_tick_execution;
+
+    return $shortcode;
+
 };
 
 sub is_valid_to_sell {
