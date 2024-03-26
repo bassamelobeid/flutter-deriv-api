@@ -114,6 +114,7 @@ sub authorize {
         user_request_details      => JSON::MaybeXS->new->utf8->encode($c->stash('request_details')),
         dd_rum_config             => _datadog_config(),
         signup_url                => build_signup_url($params_signup_url),
+        firebase                  => BOM::Config::third_party()->{firebase},
     );
 
     try {
@@ -571,6 +572,7 @@ sub _login {
             use_oneall                => $c->_use_oneall_web,
             email_entered             => $email,
             signup_url                => build_signup_url($params_signup_url),
+            firebase                  => BOM::Config::third_party()->{firebase},
             growthbook_request_data   => _get_growthbook_config(),
         );
 

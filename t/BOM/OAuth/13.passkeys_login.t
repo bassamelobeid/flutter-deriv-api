@@ -98,30 +98,22 @@ subtest 'successful passkeys web login for official apps' => sub {
 };
 
 subtest 'add passkeys error to template in case of passkeys login error' => sub {
-    my %template;
-    $mock_oauth_controller->mock(
-        'render',
-        sub {
-            my ($self, %template_params) = @_;
-            %template = %template_params;
-            return $mock_oauth_controller->original('render')->(@_);
-        });
     $mock_passkeys_service->mock(
         'get_user_details' => sub {
             die {
-                code    => 'error',
+                code    => 'passkey_error',
                 message => 'message'
             };
         });
     $mock_oauth->mock('is_official_app' => sub { return 1; });
-    $t->post_ok(
+    $t = $t->post_ok(
         $url => form => {
             publicKeyCredentials => '{"id":"test"}',
             csrf_token           => 'csrf_token',
             passkeys_login       => 1,
 
         })->status_is(200);
-    is($template{passkeys_error}, 'error', 'passkeys error added to template');
+    $t->content_like(qr/passkey_error/, 'passkeys error added to template');
 };
 
 done_testing();
