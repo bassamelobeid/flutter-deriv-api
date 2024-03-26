@@ -194,29 +194,6 @@ $expected = {
 $result = BOM::Pricing::v3::Contract::_build_bid_response($params);
 cmp_deeply($result, $expected, 'build_bid_response matches');
 
-$params = {
-    'multiplier'            => 10,
-    'proposal'              => 1,
-    'date_start'            => 0,
-    'currency'              => 'USD',
-    'bet_type'              => 'MULTUP',
-    'amount'                => '100',
-    'app_markup_percentage' => 0,
-    'underlying'            => 'R_100',
-    'amount_type'           => 'stake'
-};
-$contract = BOM::Product::ContractFactory::produce_contract($params);
-$params   = {
-    contract           => $contract,
-    is_valid_to_sell   => 1,
-    is_valid_to_cancel => 1,
-};
-$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
-ok !$result->{error}, 'build_bid_response for MULTUP';
-is $result->{'underlying'},    'R_100',  'underlying R_100';
-is $result->{'bid_price'},     '100.00', 'bid_price matches';
-is $result->{'contract_type'}, 'MULTUP', 'contract_type MULTUP';
-
 my $now       = Date::Utility->new(1634775000);
 my $sell_time = Date::Utility->new(1634775100);
 my $expiry    = Date::Utility->new(1634776000);
@@ -236,6 +213,29 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $sell_time->epoch,
     quote      => 65221.23,
 });
+
+$params = {
+    'multiplier'            => 10,
+    'proposal'              => 1,
+    'date_start'            => $now,
+    'currency'              => 'USD',
+    'bet_type'              => 'MULTUP',
+    'amount'                => '100',
+    'app_markup_percentage' => 0,
+    'underlying'            => 'R_100',
+    'amount_type'           => 'stake'
+};
+$contract = BOM::Product::ContractFactory::produce_contract($params);
+$params   = {
+    contract           => $contract,
+    is_valid_to_sell   => 1,
+    is_valid_to_cancel => 1,
+};
+$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+ok !$result->{error}, 'build_bid_response for MULTUP';
+is $result->{'underlying'},    'R_100',  'underlying R_100';
+is $result->{'bid_price'},     '100.00', 'bid_price matches';
+is $result->{'contract_type'}, 'MULTUP', 'contract_type MULTUP';
 
 $params = {
     'proposal'              => 1,
