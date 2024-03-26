@@ -17,6 +17,8 @@ use Syntax::Keyword::Try;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use YAML::XS qw(LoadFile);
+use Path::Tiny;
+use Dir::Self;
 use WebService::SendBird;
 use JSON::MaybeUTF8 qw(:v1);
 use Digest::SHA     qw(hmac_sha1_hex);
@@ -581,6 +583,50 @@ sub get_valid_state {
     my $match = BOM::Platform::Locale::validate_state($state, $residence);
 
     return uc($match->{value} // '');
+}
+
+=head2 po_box_patterns
+
+A helper function that loads the C<po_box_address_patterns.yml> file carrying the PO Box regex patterns.
+
+=cut
+
+sub po_box_patterns {
+    my $path = Path::Tiny::path(__DIR__)->parent(3)->child('share', 'po_box_address_patterns.yml');
+    state $po_box_address_patterns = YAML::XS::LoadFile($path);
+    return $po_box_address_patterns;
+}
+
+=head2 has_po_box_address
+
+Checks if the address is a PO BOX address.
+
+It takes:
+
+=over 4
+
+=item * C<client> - BOM::User::Client instance
+
+=back
+
+Returns a C<boolean>.
+
+=cut
+
+sub has_po_box_address {
+    my ($client) = @_;
+
+    my $po_box_address_patterns = [map { qr/\b$_\b/i } @{po_box_patterns()}];
+
+    my $client_address = [$client->address_1, $client->address_2];
+
+    foreach my $address_line (@$client_address) {
+        foreach my $pattern (@$po_box_address_patterns) {
+            return 1 if $address_line =~ $pattern;
+        }
+    }
+
+    return 0;
 }
 
 1;

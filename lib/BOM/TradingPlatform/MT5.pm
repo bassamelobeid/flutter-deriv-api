@@ -349,7 +349,7 @@ sub available_accounts {
                 +{
                 shortcode                  => $lc->short,
                 name                       => $lc->name,
-                requirements               => $lc->requirements,
+                requirements               => $self->_get_mt5_lc_requirements($lc),
                 sub_account_type           => $account->{sub_account_type},
                 market_type                => $account->{market_type},
                 linkable_landing_companies => $lc->mt5_require_deriv_account_at,
@@ -358,6 +358,38 @@ sub available_accounts {
     }
 
     return \@trading_accounts;
+}
+
+=head2 _get_mt5_lc_requirements
+
+Gets MT5 account requirements for specified landing company. 
+For signup, only unsatisfied requirements are returned.
+
+Takes as parameter:
+
+=over 4
+
+=item * C<landing_company> - landing company to get requirements from.
+
+=back
+
+=cut
+
+sub _get_mt5_lc_requirements {
+    my ($self, $lc) = @_;
+    my $client = $self->client;
+
+    my %lc_requirements = $lc->requirements->%*;
+
+    my $unsatisfied_requirements = [];
+
+    push @$unsatisfied_requirements, grep { !defined $client->$_ } $lc_requirements{signup}->@*;
+
+    push @$unsatisfied_requirements, 'physical_address' if ($lc->physical_address_required && BOM::User::Utility::has_po_box_address($client));
+
+    $lc_requirements{signup} = $unsatisfied_requirements;
+
+    return \%lc_requirements;
 }
 
 =head1 Non-RPC methods
