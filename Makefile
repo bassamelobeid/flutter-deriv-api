@@ -2,7 +2,12 @@ TESTS=test syntax
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 P=/etc/rmg/bin/prove --merge -v --timer -rl -It/lib
-PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+ifeq ($(GITHUB_ACTIONS),true)
+	EXTRA_ARGS = --merge --formatter TAP::Formatter::JUnit::PrintTxtStdout
+else
+	EXTRA_ARGS =
+endif
+PROVE=p () { $M; echo '$P' $(EXTRA_ARGS) "$$@"; $P $(EXTRA_ARGS) "$$@"; }; p
 
 test_all: $(TESTS)
 
