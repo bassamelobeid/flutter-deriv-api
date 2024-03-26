@@ -309,7 +309,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'sub_account_type' => 'swap_free',
             'requirements'     => {
                 'withdrawal' => ['address_city', 'address_line_1'],
-                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
+                'signup'     => []
             },
             'linkable_landing_companies' => ['svg'],
         },
@@ -320,7 +320,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'sub_account_type' => 'standard',
             'requirements'     => {
                 'withdrawal' => ['address_city', 'address_line_1'],
-                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
+                'signup'     => []
             },
             'linkable_landing_companies' => ['svg'],
         },
@@ -329,7 +329,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'market_type'  => 'financial',
             'shortcode'    => 'bvi',
             'requirements' => {
-                'signup'              => ['phone', 'citizen', 'account_opening_reason'],
+                'signup'              => ['account_opening_reason'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information', 'trading_experience']},
                 'compliance'          => {
                     'mt5'             => ['fully_authenticated', 'expiration_check'],
@@ -345,7 +345,7 @@ subtest 'trading_platform_available_accounts' => sub {
                     'mt5'             => ['fully_authenticated', 'expiration_check'],
                     'tax_information' => ['tax_residence',       'tax_identification_number'],
                 },
-                'signup'              => ['citizen', 'place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
+                'signup'              => ['place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information']}
             },
             'shortcode'                  => 'vanuatu',
@@ -360,7 +360,7 @@ subtest 'trading_platform_available_accounts' => sub {
                     'mt5'             => ['fully_authenticated', 'expiration_check'],
                     'tax_information' => ['tax_residence',       'tax_identification_number']
                 },
-                'signup'              => ['citizen', 'place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
+                'signup'              => ['place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information']}
             },
             'shortcode'                  => 'vanuatu',
@@ -375,7 +375,7 @@ subtest 'trading_platform_available_accounts' => sub {
                     'tax_information' => ['tax_residence',       'tax_identification_number'],
                     'mt5'             => ['fully_authenticated', 'expiration_check']
                 },
-                'signup' => ['phone', 'citizen', 'account_opening_reason']
+                'signup' => ['account_opening_reason']
             },
             'sub_account_type'           => 'stp',
             'shortcode'                  => 'labuan',
@@ -386,7 +386,7 @@ subtest 'trading_platform_available_accounts' => sub {
         {
             'requirements' => {
                 'withdrawal' => ['address_city', 'address_line_1'],
-                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
+                'signup'     => []
             },
             'sub_account_type'           => 'standard',
             'shortcode'                  => 'svg',
@@ -401,7 +401,7 @@ subtest 'trading_platform_available_accounts' => sub {
                     'tax_information' => ['tax_residence',       'tax_identification_number']
                 },
                 'after_first_deposit' => {'financial_assessment' => ['financial_information', 'trading_experience']},
-                'signup'              => ['phone', 'citizen', 'account_opening_reason']
+                'signup'              => ['account_opening_reason']
             },
             'sub_account_type'           => 'standard',
             'shortcode'                  => 'bvi',
@@ -414,11 +414,7 @@ subtest 'trading_platform_available_accounts' => sub {
                 'compliance' => {
                     'mt5' => ['fully_authenticated', 'expiration_check'],
                 },
-                'signup' => [
-                    'salutation',     'citizen',      'tax_residence', 'tax_identification_number',
-                    'first_name',     'last_name',    'date_of_birth', 'residence',
-                    'address_line_1', 'address_city', 'account_opening_reason'
-                ]
+                'signup' => ['tax_residence', 'tax_identification_number', 'account_opening_reason']
             },
             'market_type'                => 'financial',
             'shortcode'                  => 'maltainvest',
@@ -453,11 +449,7 @@ subtest 'trading_platform_available_accounts' => sub {
 
     $expected_resp = [{
             'requirements' => {
-                'signup' => [
-                    'salutation',     'citizen',      'tax_residence', 'tax_identification_number',
-                    'first_name',     'last_name',    'date_of_birth', 'residence',
-                    'address_line_1', 'address_city', 'account_opening_reason'
-                ],
+                'signup'     => ['tax_residence', 'tax_identification_number', 'account_opening_reason'],
                 'compliance' => {'mt5' => ['fully_authenticated', 'expiration_check']}
             },
             'market_type'                => 'financial',
