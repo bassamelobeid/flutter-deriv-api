@@ -12,4 +12,3 @@ jobs:
       actions: read
       checks: write  # create check runs
     uses: regentmarkets/github-actions/.github/workflows/test_reporter.yml@master
-    
