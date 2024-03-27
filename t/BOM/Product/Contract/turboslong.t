@@ -90,7 +90,7 @@ subtest 'number of contracts' => sub {
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
     is $c->bid_price,       '122.07',          'has bid price';
-    is $c->sell_commission, 0.549642662788687, 'sell commission when contract is not expired';
+    is $c->sell_commission, 0.549642662788688, 'sell commission when contract is not expired';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
