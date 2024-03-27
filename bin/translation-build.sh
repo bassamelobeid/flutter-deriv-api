@@ -23,6 +23,7 @@ git merge origin/master
 
 # Crowdin can not read and write to the same branch. It reads from translations, and writes to 
 # l10n_translations (this is configured as an integration in crowdin).
+git remote set-branches --add origin l10n_translations
 git fetch origin l10n_translations
 git remote -v
 git branch -a
