@@ -24,6 +24,10 @@ git merge origin/master
 # Crowdin can not read and write to the same branch. It reads from translations, and writes to 
 # l10n_translations (this is configured as an integration in crowdin).
 git fetch origin l10n_translations
+git remote -v
+git branch -a
+git fetch --prune
+git branch -a
 git merge origin/l10n_translations
 
 # This is the build itself - note that Redis may
