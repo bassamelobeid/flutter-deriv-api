@@ -121,8 +121,7 @@ subtest 'available_accounts _get_mt5_lc_requirements' => sub {
     subtest 'returns physical address as missing signup requirement if client has po box address' => sub {
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
-            residence   => 'za',
-            address_1   => 'po box 123',
+            residence   => 'za'
         });
 
         my $user = BOM::User->create(
@@ -136,6 +135,9 @@ subtest 'available_accounts _get_mt5_lc_requirements' => sub {
             rule_engine => BOM::Rules::Engine->new(client => $client));
 
         isa_ok($mt5, 'BOM::TradingPlatform::MT5');
+
+        $client->address_1('po box 123');
+        $client->save;
 
         ok BOM::User::Utility::has_po_box_address($client), 'client has po box as address';
 
