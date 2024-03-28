@@ -50,9 +50,9 @@ subtest 'disabled countries' => sub {
 
     # there used to be repeated countries at config file?
     my @expected_disabled_countries = uniq(
-        'af', 'by', 'cn', 'cd', 'ir', 'iq', 'ly', 'kp', 'ru', 'sy', 'aq', 'bq', 'bv', 'io', 'cx', 'cc', 'ck', 'cw', 'fk', 'gf', 'tf', 'gp',
-        'hm', 'mq', 'yt', 'nc', 'nu', 'nf', 're', 'sh', 'pm', 'sx', 'gs', 'sj', 'tl', 'tk', 'um', 'us', 'wf', 'eh', 'ax', 'tf', 'bq', 'bv',
-        'cc', 'ck', 'cw', 'cx', 'fk', 'gp', 'gf', 'hm', 'io', 'mq', 'yt', 'nc', 'nf', 'nu', 're', 'gs', 'sh', 'sj', 'pm', 'sx', 'tl'
+        'af', 'by', 'cn', 'cd', 'ir', 'iq', 'ly', 'kp', 'ru', 'sy', 'aq', 'bq', 'bv', 'io', 'cx', 'cu', 'cc', 'ck', 'cw', 'fk', 'gf', 'tf',
+        'gp', 'hm', 'mq', 'yt', 'nc', 'nu', 'nf', 're', 'sh', 'pm', 'sx', 'gs', 'sj', 'tl', 'tk', 'um', 'us', 'wf', 'eh', 'ax', 'tf', 'bq',
+        'bv', 'cc', 'ck', 'cw', 'cx', 'fk', 'gp', 'gf', 'hm', 'io', 'mq', 'yt', 'nc', 'nf', 'nu', 're', 'gs', 'sh', 'sj', 'pm', 'sx', 'tl'
     );
 
     for my $cc (@expected_disabled_countries) {
