@@ -305,6 +305,7 @@ async sub mt5_change_color {
         die pp($e);
     }
 
+    delete $user_detail->{rights};
     $user_detail->{color} = $color;
     my $updated_user = await BOM::MT5::User::Async::update_user($user_detail);
 

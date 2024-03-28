@@ -606,6 +606,32 @@ subtest 'mt5 track event' => sub {
         $mocked_user->unmock('new')->unmock('id')->unmock('accounts_by_category');
     };
 
+    subtest 'mt5 color change removed rights' => sub {
+        my $args = {
+            loginid => 'MTR90000',
+            color   => 16711680
+        };
+
+        my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{mt5_change_color};
+
+        $mocked_mt5->mock('get_user', sub { Future->done({login => "MTR90000", email => 'test123@test.com', rights => 'test'}) });
+        my $update_user_rights;
+        $mocked_mt5->mock(
+            'update_user',
+            sub {
+                my $user_details = shift;
+                $update_user_rights = $user_details->{rights} ? 'exists' : 'deleted';
+                return Future->done({login => "MT90000", color => 123});
+            });
+
+        like exception { $action_handler->($args)->get; }, qr/Could not change client MTR90000 color to 16711680/,
+            'correct exception when failed to update color field';
+
+        is $update_user_rights, 'deleted', 'MT5 User Rights key removed';
+
+        $mocked_mt5->unmock('get_user');
+    };
+
     subtest 'mt5 store tranactions' => sub {
         my $args = {
             loginid         => $test_client->loginid,
