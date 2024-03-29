@@ -1408,14 +1408,21 @@ subtest 'basis entry slippage' => sub {
         multiplier   => 10,
         currency     => 'USD',
     };
+    $args->{limit_order} = {
+        stop_out => {
+            order_type   => 'stop_out',
+            order_amount => -100,
+            order_date   => $now->epoch,
+            basis_spot   => '100.00',
+        }};
 
     my $c = produce_contract($args);
 
     my $mocked = Test::MockModule->new('BOM::Product::Contract::Multup');
     $mocked->mock('current_spot', sub { return 102 });    # mocking condition where current spot is at T + 1
 
-    $c->stop_out;
-    $mocked->mock('pricing_new', sub { return 0 });       # mocking condition where pricing_new is false, so entry_spot is not undef
+    $args->{date_pricing} = $now->epoch + 1;
+    $c = produce_contract($args);
 
     is $c->basis_spot + 0, $c->entry_tick->quote, "basis_spot matches with entry_tick under normal circumstances";
     $mocked->unmock_all();
@@ -1429,7 +1436,7 @@ subtest 'waiting for entry tick - financial' => sub {
         bet_type     => 'MULTUP',
         underlying   => 'frxEURUSD',
         date_start   => $now,
-        date_pricing => $now->epoch + 1,
+        date_pricing => $now->epoch,
         amount_type  => 'stake',
         amount       => 100,
         multiplier   => 10,
