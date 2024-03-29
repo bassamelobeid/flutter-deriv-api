@@ -1391,6 +1391,11 @@ sub _extract_contract_specifics_for_sell {
 
     # we need to verify child table for certain contracts to avoid cases where a contract
     # is sold while it is being updated via a difference process.
+
+    # since we moved to next tick execution for multiplier,
+    # we need to repopulate the basis_spot for the contract
+    $params->{basis_spot} = $contract->basis_spot if $contract->category_code =~ /^(multiplier)$/;
+
     if ($contract->category_code =~ /^(multiplier|accumulator|turbos)$/) {
         $params->{verify_child} = _get_info_to_verify_child($params->{id}, $contract);
     }
