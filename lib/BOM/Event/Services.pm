@@ -76,7 +76,8 @@ sub onfido {
                 on_rate_limit => sub {
                     DataDog::DogStatsd::Helper::stats_inc('onfido.api.rate_limit');
                 },
-                token => BOM::Config::third_party()->{onfido}->{authorization_token} // 'test',
+                rate_limit_delay => $ENV{ONFIDO_RATE_LIMIT_DELAY},
+                token            => BOM::Config::third_party()->{onfido}->{authorization_token} // 'test',
                 $ENV{ONFIDO_URL} ? (base_uri => $ENV{ONFIDO_URL}) : ()));
         $service;
     }

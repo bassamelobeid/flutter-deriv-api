@@ -868,8 +868,11 @@ async sub ready_for_authentication {
         }
 
         my $redis_replicated_write = _redis_replicated_write();
+
         await $redis_replicated_write->connect;
         await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+
+        await $redis_events_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
         if ($resubmission_flag) {
             DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.resubmission', {tags => $tags});
@@ -877,7 +880,6 @@ async sub ready_for_authentication {
             # The following redis keys block email sending on client verification failure. We might clear them for resubmission
             my @delete_on_resubmission = (BOM::Event::Actions::Common::ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,);
 
-            await $redis_events_write->connect;
             foreach my $email_blocker (@delete_on_resubmission) {
                 await $redis_events_write->del($email_blocker);
             }
@@ -886,8 +888,13 @@ async sub ready_for_authentication {
             await $redis_replicated_write->incr(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
             await $redis_replicated_write->set(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
             await $redis_replicated_write->expire(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id, ONFIDO_RESUBMISSION_COUNTER_TTL);
+
+            await $redis_events_write->incr(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
+            await $redis_events_write->set(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
+            await $redis_events_write->expire(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id, ONFIDO_RESUBMISSION_COUNTER_TTL);
         } else {
             await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+            await $redis_events_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
         }
 
         await _save_request_context($applicant_id);
@@ -1075,10 +1082,10 @@ async sub client_verification {
 
             # Consume resubmission context
             my $redis_replicated_write = _redis_replicated_write();
-
             await $redis_replicated_write->connect;
 
             await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+            await $redis_events_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
             try {
                 my @reports;
@@ -1969,8 +1976,11 @@ async sub onfido_doc_ready_for_upload {
 
     # If the following key exists, the document is already being uploaded,
     # so we can safely drop this event.
-    my $lock_key     = join q{-} => ('ONFIDO_UPLOAD_BAG', $client_loginid, $file_checksum, $doc_type);
-    my $acquire_lock = BOM::Platform::Redis::acquire_lock($lock_key, ONFIDO_UPLOAD_TIMEOUT_SECONDS);
+    my $lock_key = join q{-} => ('ONFIDO_UPLOAD_BAG', $client_loginid, $file_checksum, $doc_type);
+
+    my $acquire_lock = await $redis_events_write->set($lock_key, 1, 'NX', 'EX', ONFIDO_UPLOAD_TIMEOUT_SECONDS);
+
+    $acquire_lock = BOM::Platform::Redis::acquire_lock($lock_key, ONFIDO_UPLOAD_TIMEOUT_SECONDS) if $acquire_lock;
 
     # send dog metric if there's an existent document
     return DataDog::DogStatsd::Helper::stats_inc('onfido.document.cannot_acquire_lock') unless $acquire_lock;
@@ -2074,6 +2084,7 @@ async sub onfido_doc_ready_for_upload {
         exception_logged();
     }
 
+    await $redis_events_write->del($lock_key);
     BOM::Platform::Redis::release_lock($lock_key);
 
     return;
@@ -4036,7 +4047,7 @@ Store current request context.
 
 =cut
 
-sub _save_request_context {
+async sub _save_request_context {
     my $applicant_id = shift;
 
     my $request     = request();
@@ -4046,8 +4057,19 @@ sub _save_request_context {
         app_id     => $request->app_id,
     };
 
-    _redis_replicated_write()
-        ->setex(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER, encode_json_utf8($context_req));
+    my $redis_replicated_write = _redis_replicated_write();
+    await $redis_replicated_write->connect;
+    await $redis_replicated_write->setex(
+        ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id,
+        TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER,
+        encode_json_utf8($context_req));
+
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+    await $redis_events_write->setex(
+        ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id,
+        TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER,
+        encode_json_utf8($context_req));
 }
 
 =head2 _restore_request
@@ -4065,11 +4087,18 @@ Restore request by stored context.
 =cut
 
 async sub _restore_request {
-    my ($applicant_id, $tags) = shift;
+    my ($applicant_id, $tags) = @_;
 
-    my $context_req = await _redis_replicated_read()->get(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    my $redis_replicated_read = _redis_replicated_read();
+    await $redis_replicated_read->connect;
 
-    my $brand = first { $_ =~ qr/^brand:/ } @$tags;
+    my $redis_events_read = _redis_events_read();
+    await $redis_events_read->connect;
+
+    my $context_req = await $redis_events_read->get(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    $context_req //= await $redis_replicated_read->get(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+
+    my $brand = first { $_ =~ qr/^brand:/ } grep { defined $_ } @$tags;
     $brand =~ s/brand:// if $brand;
 
     if ($context_req) {
@@ -4100,9 +4129,16 @@ Clear stored context
 
 =cut
 
-sub _clear_cached_context {
+async sub _clear_cached_context {
     my $applicant_id = shift;
-    _redis_replicated_write()->del(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+
+    my $redis_replicated_write = _redis_replicated_write();
+    await $redis_replicated_write->connect;
+    await $redis_replicated_write->del(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+    await $redis_events_write->del(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
 }
 
 =head2 shared_payment_method_found

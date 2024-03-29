@@ -42,6 +42,10 @@ use Locale::Codes::Country qw(country_code2code);
 use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
 use BOM::Test::Helper::P2P;
 use BOM::Platform::Utility;
+use List::Util qw/first/;
+
+# note in this test we would've hit rate limit
+$ENV{ONFIDO_RATE_LIMIT_DELAY} = 1;
 
 my $get_file_mock = Test::MockModule->new('BOM::Event::Actions::Client');
 $get_file_mock->mock(
@@ -3303,6 +3307,7 @@ subtest "document upload request context" => sub {
     $loop->add(my $services = BOM::Event::Services->new);
     my $redis_r_read  = $services->redis_replicated_read();
     my $redis_r_write = $services->redis_replicated_write();
+    my $redis_e_write = $services->redis_events_write();
 
     lives_ok {
         @metrics = ();
@@ -3380,13 +3385,14 @@ subtest "document upload request context" => sub {
     $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
     is $db_check->{status}, 'complete', 'check has been completed';
 
+    $request = request();
+
     is $context->{brand_name}, $request->brand_name, 'brand name is correct';
     is $context->{language},   $request->language,   'language is correct';
     is $context->{app_id},     $request->app_id,     'app id is correct';
 
     request($another_req);
-
-    $redis_r_write->del(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    $redis_e_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
     $redis_r_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
 
     reset_onfido_check({
@@ -3397,6 +3403,7 @@ subtest "document upload request context" => sub {
 
     lives_ok {
         @metrics = ();
+        $log->clear;
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
             })->get;
@@ -3410,12 +3417,15 @@ subtest "document upload request context" => sub {
             'event.onfido.client_verification.success'      => undef,
             },
             'Expected dd metrics';
+
+        $log->contains_ok(qr/Failed in restoring cached context ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY::/);
     }
     "client verification emitted without exception";
 
     $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
     is $db_check->{status}, 'complete', 'check has been completed';
 
+    $request = request();
     is $another_context->{brand_name}, $request->brand_name, 'brand name is correct';
     is $another_context->{language},   $request->language,   'language is correct';
     is $another_context->{app_id},     $request->app_id,     'app id is correct';
@@ -4729,8 +4739,50 @@ subtest 'edd document upload' => sub {
     is $args{properties}->{uploaded_manually_by_staff}, 0,                 'uploaded_manually_by_staff is correct';
 };
 
-subtest 'onfido resubmission' => sub {
-    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+subtest 'onfido resubmission using redis replicated' => sub {
+    $loop->add($services = BOM::Event::Services->new);
+
+    onfido_resubmission_test($services->redis_replicated_write());
+};
+
+subtest 'onfido resubmission using redis events' => sub {
+    $loop->add($services = BOM::Event::Services->new);
+
+    onfido_resubmission_test($services->redis_events_write());
+};
+
+subtest 'onfido resubmission fallbacks into redis replicated' => sub {
+    $loop->add($services = BOM::Event::Services->new);
+
+    my $redis_mock  = Test::MockModule->new('Net::Async::Redis');
+    my $get_flipper = -1;
+
+    # the first get is from redis events
+    $redis_mock->mock(
+        'get',
+        sub {
+            my (undef, $key) = @_;
+
+            # for this tests some keys are more equal
+            my $my_keys = first { $key =~ qr/$_/ } ('ONFIDO::RESUBMISSION_COUNTER::ID::*', 'ONFIDO::IS_A_RESUBMISSION::ID::*',);
+
+            return $redis_mock->original('get')->(@_) unless $my_keys;
+
+            $get_flipper = $get_flipper * -1;
+
+            return Future->done(undef) if $get_flipper == 1;
+
+            return $redis_mock->original('get')->(@_);
+        });
+
+    onfido_resubmission_test($services->redis_replicated_write());
+
+    $redis_mock->unmock_all;
+};
+
+sub onfido_resubmission_test {
+    my $redis_write = shift;
+    my $dog_mock    = Test::MockModule->new('DataDog::DogStatsd::Helper');
     my @metrics;
     $dog_mock->mock(
         'stats_inc',
@@ -4754,9 +4806,12 @@ subtest 'onfido resubmission' => sub {
     # Global counters
     use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
     use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
+    use constant ONFIDO_DAILY_LIMIT_FLAG                => 'ONFIDO_DAILY_LIMIT_FLAG::';
     $loop->add($services = BOM::Event::Services->new);
-    my $redis_write  = $services->redis_replicated_write();
     my $redis_events = $services->redis_events_write();
+
+    my $today = Date::Utility->new()->date_yyyymmdd;
+    $redis_events->del(ONFIDO_DAILY_LIMIT_FLAG . $today)->get;
     $redis_write->connect->get;
     $redis_events->connect->get;
 
@@ -4798,6 +4853,8 @@ subtest 'onfido resubmission' => sub {
 
     # For this test, we expect counter to be 0 due to empty checks
     $redis_write->set(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id, 0)->get;
+    # you are very smart and you will for sure know why we need to waste a get every single time
+    $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     my $counter   = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     my $call_args = {
         loginid      => $test_client->loginid,
@@ -4814,6 +4871,7 @@ subtest 'onfido resubmission' => sub {
         },
         'Expected dd metrics';
 
+    $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     my $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     is $counter, $counter_after, 'Resubmission discarded due to being the first check';
 
@@ -4842,6 +4900,7 @@ subtest 'onfido resubmission' => sub {
 
     # Then, we expect counter to be +1
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
+    $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     $counter   = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     $call_args = {
         loginid      => $test_client->loginid,
@@ -4859,6 +4918,7 @@ subtest 'onfido resubmission' => sub {
         'event.onfido.ready_for_authentication.resubmission' => {tags => ['country:COL']}
         },
         'Expected dd metrics';
+    $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     my $ttl = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($counter + 1, $counter_after, 'Resubmission Counter has been incremented by 1');
@@ -4866,6 +4926,7 @@ subtest 'onfido resubmission' => sub {
     my $age_below_eighteen_per_user = $redis_events->get(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
     ok(!$age_below_eighteen_per_user, 'Email blocker is gone');
 
+    $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
     my $resubmission_context = $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
     ok($resubmission_context, 'Resubmission Context is set');
 
@@ -4879,6 +4940,8 @@ subtest 'onfido resubmission' => sub {
         'event.onfido.ready_for_authentication.failure'  => {tags => ['country:COL']},
         },
         'Expected dd metrics';
+
+    $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
     my $counter_after2 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($counter_after, $counter_after2, 'Resubmission Counter has not been incremented');
 
@@ -4904,6 +4967,7 @@ subtest 'onfido resubmission' => sub {
     is($ttl, $ttl2, 'Resubmission Counter TTL has been reset to its full time again');
 
     # For this one user's onfido daily counter will be too high, so the checkup won't be made
+    $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     my $counter_after3 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, 4)->get;
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
@@ -4916,6 +4980,7 @@ subtest 'onfido resubmission' => sub {
         'event.onfido.ready_for_authentication.user_limit' => {tags => ['country:COL']}
         },
         'Expected dd metrics';
+    $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     my $counter_after4 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($counter_after3, $counter_after4, 'Resubmission Counter has not been incremented due to user limits');
 
@@ -4937,6 +5002,7 @@ subtest 'onfido resubmission' => sub {
         },
         'Expected dd metrics';
 
+    $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     my $counter_after5 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($counter_after4, $counter_after5, 'Resubmission Counter has not been incremented due to global limits');
     $redis_events->hset(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 0)->get;
@@ -4978,6 +5044,7 @@ subtest 'onfido resubmission' => sub {
         $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
         is $db_check->{status}, 'complete', 'check has been completed';
 
+        $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
         my $resubmission_context = $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
         is($resubmission_context, 0, 'Resubmission Context is deleted');
     };
@@ -5020,11 +5087,15 @@ subtest 'onfido resubmission' => sub {
         undef @emit_args;
     };
 
+    $test_client->status->clear_age_verification;
+    $test_client->status->clear_poi_name_mismatch;
+    $test_client->status->clear_poi_dob_mismatch;
+
     $mock_client->unmock('_check_applicant');
     $mock_onfido->unmock_all;
     $mock_redis->unmock_all;
     $dog_mock->unmock_all;
-};
+}
 
 subtest 'card deposits' => sub {
     ok !$test_client->status->personal_details_locked, 'personal details are not locked';
@@ -7592,6 +7663,7 @@ subtest 'Onfido Name Mismatch' => sub {
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
                 })->get;
+
             cmp_deeply + {@metrics},
                 +{
                 'onfido.api.hit'                                => undef,

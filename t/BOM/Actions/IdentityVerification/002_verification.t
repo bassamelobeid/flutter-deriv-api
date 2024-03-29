@@ -189,8 +189,11 @@ subtest 'verify identity, data is verified' => sub {
             id       => $client->loginid,
             status   => 'verified',
             messages => [],
-            provider => 'smile_identity',
-            report   => {
+            provider => {
+                name         => 'smile_identity',
+                dataProvider => 'true'
+            },
+            report => {
                 full_name => $personal_info->{FullName},
                 birthdate => $personal_info->{DOB},
             },
@@ -316,10 +319,13 @@ subtest 'address verified' => sub {
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
-            id            => $client->loginid,
-            status        => 'verified',
+            id       => $client->loginid,
+            status   => 'verified',
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
             messages      => ['ADDRESS_VERIFIED'],
-            provider      => 'zaig',
             response_body => {},
             request_body  => {},
             report        => {},
@@ -382,6 +388,7 @@ subtest 'address verified' => sub {
 };
 
 subtest 'verify_process - apply side effects' => sub {
+    my $idv_proc_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
     $encoding = {};
 
     my $email = 'test_verify_process@binary.com';
@@ -456,9 +463,12 @@ subtest 'verify_process - apply side effects' => sub {
 
     @emissions = ();
     ok $idv_proc_handler->({
-            id            => $client->loginid,
-            status        => 'verified',
-            provider      => 'zaig',
+            id       => $client->loginid,
+            status   => 'verified',
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
             messages      => ['ADDRESS_VERIFIED'],
             response_body => {},
             request_body  => {},
@@ -555,8 +565,11 @@ subtest 'testing failed status' => sub {
     ok $idv_proc_handler->({
             status   => 'failed',
             messages => [],
-            provider => 'zaig',
-            report   => {
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
+            report => {
                 full_name => "John Doe",
                 birthdate => '1988-02-13'
             },
@@ -685,8 +698,9 @@ subtest 'testing the exceptions verify_identity' => sub {
 };
 
 subtest 'testing the exceptions verify_process' => sub {
-    my $email = 'test_exceptions@binary.com';
-    my $user  = BOM::User->create(
+    my $idv_proc_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
+    my $email            = 'test_exceptions@binary.com';
+    my $user             = BOM::User->create(
         email          => $email,
         password       => "pwd123",
         email_verified => 1,
@@ -811,9 +825,12 @@ subtest 'testing refuted status' => sub {
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
-            status        => 'refuted',
-            messages      => [],
-            provider      => 'zaig',
+            status   => 'refuted',
+            messages => [],
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
             report        => {birthdate => "1988-02-12"},
             id            => $client->loginid,
             response_body => {},
@@ -927,9 +944,12 @@ subtest 'testing unavailable status' => sub {
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
-            status        => 'unavailable',
-            messages      => [],
-            provider      => 'zaig',
+            status   => 'unavailable',
+            messages => [],
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
             report        => {birthdate => "1988-02-12"},
             id            => $client->loginid,
             response_body => {},
@@ -1036,8 +1056,11 @@ subtest 'testing refuted status and underage in messages' => sub {
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['UNDERAGE'],
-            provider => 'zaig',
-            report   => {
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
+            report => {
                 full_name => "John Doe",
                 birthdate => $underage_date
             },
@@ -1167,8 +1190,11 @@ subtest 'testing refuted status and expired' => sub {
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['EXPIRED'],
-            provider => 'zaig',
-            report   => {
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
+            report => {
                 full_name   => "John Doe",
                 birthdate   => "2005-02-12",
                 expiry_date => "2009-05-12",
@@ -1237,8 +1263,6 @@ subtest 'testing refuted status and expired' => sub {
 };
 
 subtest 'testing refuted status and dob mismatch' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
-
     my $email = 'test_verify_refuted+dobmismatch@binary.com';
     my $user  = BOM::User->create(
         email          => $email,
@@ -1294,8 +1318,11 @@ subtest 'testing refuted status and dob mismatch' => sub {
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['DOB_MISMATCH'],
-            provider => 'zaig',
-            report   => {
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
+            report => {
                 full_name => "John Doe",
                 birthdate => "1997-03-12",
             },
@@ -1418,8 +1445,11 @@ subtest 'testing refuted status and name mismatch' => sub {
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['NAME_MISMATCH'],
-            provider => 'zaig',
-            report   => {
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
+            report => {
                 full_name => "John Mary Doe",
             },
             response_body => {},
@@ -1559,8 +1589,11 @@ subtest 'pictures collected from IDV' => sub {
             ok $idv_proc_handler->({
                     status   => 'refuted',
                     messages => ['NAME_MISMATCH'],
-                    provider => 'zaig',
-                    report   => {
+                    provider => {
+                        name         => 'zaig',
+                        dataProvider => 'true'
+                    },
+                    report => {
                         full_name => "John Mary Doe",
                         $what     => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
                     },
@@ -1729,8 +1762,11 @@ subtest 'pictures collected from IDV' => sub {
             ok $idv_proc_handler->({
                     status   => 'verified',
                     messages => ['NAME_MISMATCH'],
-                    provider => 'zaig',
-                    report   => {
+                    provider => {
+                        name         => 'zaig',
+                        dataProvider => 'true'
+                    },
+                    report => {
                         full_name => "John Mary Doe",
                         $what     => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
                     },
@@ -1942,8 +1978,11 @@ subtest 'pictures collected from IDV' => sub {
         ok $idv_proc_handler->({
                 status   => 'verified',
                 messages => ['NAME_MISMATCH'],
-                provider => 'zaig',
-                report   => {
+                provider => {
+                    name         => 'zaig',
+                    dataProvider => 'true'
+                },
+                report => {
                     full_name => "John Mary Doe",
                     selfie    => 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAD0lEQVR42mNk+P+/ngEIAA+AAn9nd0gSAAAAAElFTkSuQmCC',
                     document  => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
@@ -2108,6 +2147,8 @@ subtest 'pictures collected from IDV' => sub {
 };
 
 subtest 'testing callback status' => sub {
+    my $idv_proc_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
+
     my $email = 'test_callback_status@binary.com';
     my $user  = BOM::User->create(
         email          => $email,
@@ -2129,7 +2170,10 @@ subtest 'testing callback status' => sub {
     my $args = {
         id       => $client->loginid,
         status   => 'callback',
-        provider => 'metamap',
+        provider => {
+            name         => 'metamap',
+            dataProvider => 'true'
+        },
         response => {},
         message  => [],
     };
@@ -2422,10 +2466,14 @@ subtest 'integration test - webhook' => sub {
                 birthdate => '2000-01-24',
                 full_name => 'NOT THE ONE YOU ARE LOOKING FOR'
             },
-            request_body => {
-                body => {
-                    documentNumber => '111111222',
-                    callbackUrl    => 'https://qaXX.deriv.dev/idv'
+            'provider' => {
+                'name'         => 'metamap',
+                'dataProvider' => 'true'
+            },
+            'request_body' => {
+                'body' => {
+                    'documentNumber' => '111111222',
+                    'callbackUrl'    => 'https://qaXX.deriv.dev/idv'
                 },
                 url => '/govchecks/v1/ar/renaper'
             },
@@ -2446,7 +2494,6 @@ subtest 'integration test - webhook' => sub {
             },
             messages => ['NAME_MISMATCH', 'DOB_MISMATCH'],
             status   => 'refuted',
-            provider => 'metamap',
             id       => $client->loginid,
         };
 
@@ -2619,8 +2666,11 @@ subtest 'testing photo being sent as paramter - undef file type' => sub {
     ok $idv_proc_handler->({
             status   => 'verified',
             messages => ['NAME_MISMATCH'],
-            provider => 'zaig',
-            report   => {
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
+            report => {
                 full_name => "John Mary Doe",
                 photo     => "Not Available",
             },
@@ -2753,9 +2803,12 @@ subtest 'testing pending status (QA Provider special case)' => sub {
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
-            status        => 'pending',
-            messages      => [],
-            provider      => 'qa',
+            status   => 'pending',
+            messages => [],
+            provider => {
+                name         => 'qa',
+                dataProvider => 'true'
+            },
             response_body => {
                 full_name => "John Doe",
                 birthdate => "1997-03-12",
@@ -2891,8 +2944,11 @@ subtest 'IDV lookback' => sub {
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['NAME_MISMATCH', 'DOB_MISMATCH'],
-            provider => 'metamap',
-            report   => {
+            provider => {
+                name         => 'metamap',
+                dataProvider => 'false'
+            },
+            report => {
 
             },
             id => $client->loginid,
@@ -2984,9 +3040,12 @@ subtest 'IDV lookback' => sub {
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['NAME_MISMATCH', 'DOB_MISMATCH'],
-            provider => 'metamap',
-            report   => {birthdate => '1989-10-10'},
-            id       => $client->loginid,
+            provider => {
+                name         => 'metamap',
+                dataProvider => 'true'
+            },
+            report => {birthdate => '1989-10-10'},
+            id     => $client->loginid,
         })->get, 'the IDV response processed without error';
 
     ok !$action_handler->({
@@ -3049,9 +3108,12 @@ subtest 'IDV lookback' => sub {
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['NAME_MISMATCH', 'DOB_MISMATCH'],
-            provider => 'metamap',
-            report   => {full_name => 'The Chosen One'},
-            id       => $client->loginid,
+            provider => {
+                name         => 'metamap',
+                dataProvider => 'true'
+            },
+            report => {full_name => 'The Chosen One'},
+            id     => $client->loginid,
         })->get, 'the IDV response processed without error';
 
     ok !$action_handler->({
@@ -3113,8 +3175,11 @@ subtest 'IDV lookback' => sub {
     ok $idv_proc_handler->({
             status   => 'refuted',
             messages => ['NAME_MISMATCH', 'DOB_MISMATCH'],
-            provider => 'zaig',
-            report   => {
+            provider => {
+                name         => 'zaig',
+                dataProvider => 'true'
+            },
+            report => {
                 full_name => 'The Chosen One',
                 birthdate => '1989-10-10'
             },
@@ -3398,7 +3463,10 @@ subtest 'protect the json encode test' => sub {
     my $tests = [{
             title => 'No response',
             hash  => {
-                provider      => 'qa',
+                provider => {
+                    name         => 'qa',
+                    dataProvider => 'true'
+                },
                 response_body => undef,
                 request_body  => {request => 'sent'},
                 report        => {
@@ -3410,7 +3478,10 @@ subtest 'protect the json encode test' => sub {
         {
             title => 'No request',
             hash  => {
-                provider      => 'qa',
+                provider => {
+                    name         => 'qa',
+                    dataProvider => 'true'
+                },
                 response_body => {response => 'asdf'},
                 request_body  => undef,
                 report        => {
@@ -3422,7 +3493,10 @@ subtest 'protect the json encode test' => sub {
         {
             title => 'No report',
             hash  => {
-                provider      => 'qa',
+                provider => {
+                    name         => 'qa',
+                    dataProvider => 'true'
+                },
                 response_body => {response => 'asdf'},
                 request_body  => {request  => 'sent'},
                 report        => undef,
@@ -3431,7 +3505,10 @@ subtest 'protect the json encode test' => sub {
         {
             title => 'Full house',
             hash  => {
-                provider      => 'qa',
+                provider => {
+                    name         => 'qa',
+                    dataProvider => 'true'
+                },
                 response_body => {response => 'asdf'},
                 request_body  => {request  => 'sent'},
                 report        => {
@@ -3444,7 +3521,10 @@ subtest 'protect the json encode test' => sub {
         {
             title => 'Empty house',
             hash  => {
-                provider      => 'qa',
+                provider => {
+                    name         => 'qa',
+                    dataProvider => 'true'
+                },
                 response_body => undef,
                 request_body  => undef,
                 report        => undef,
@@ -3453,7 +3533,10 @@ subtest 'protect the json encode test' => sub {
         {
             title => 'Scalars at the house',
             hash  => {
-                provider      => 'qa',
+                provider => {
+                    name         => 'qa',
+                    dataProvider => 'true'
+                },
                 response_body => 'failed',
                 request_body  => 'error',
                 report        => 'what',
@@ -3511,7 +3594,11 @@ subtest 'protect the json encode test' => sub {
 
                     # a verify process is dispatched!
                     ok $idv_proc_handler->({
-                            status => $status,
+                            status   => $status,
+                            provider => {
+                                name         => 'smile_identity',
+                                dataProvider => 'true'
+                            },
                             $test->{hash}->%*,
                             id => $client->loginid,
                         })->get, 'the IDV response processed without error';

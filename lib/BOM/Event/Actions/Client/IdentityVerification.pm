@@ -95,10 +95,6 @@ $loop->add(my $services = BOM::Event::Services->new);
         return $services->http_idv();
     }
 
-    sub _redis_replicated_write {
-        return $services->redis_replicated_write();
-    }
-
     sub _redis_events_write {
         return $services->redis_events_write();
     }
@@ -285,8 +281,8 @@ Returns 1 on sucess or undef on error
 async sub verify_process {
     my $args = shift;
 
-    my ($loginid, $status, $messages, $provider, $report, $response_body, $request_body) =
-        @{$args}{qw/id status messages provider report response_body request_body/};
+    my ($loginid, $status, $messages, $report, $provider_metadata, $response_body, $request_body) =
+        @{$args}{qw/id status messages report provider response_body request_body/};
 
     die 'No status received.' unless $status;
 
@@ -304,6 +300,10 @@ async sub verify_process {
     my $check = $idv_model->get_document_check_detail($document->{id});
 
     die 'No document check found, IDV request skipped.' unless $check;
+
+    my $provider;
+
+    $provider = $provider_metadata->{name} if ref($provider_metadata) eq 'HASH';
 
     return undef unless $provider;
 

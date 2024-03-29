@@ -188,7 +188,8 @@ sub _authentication {
         die "Virtual login IDs are not allowed.\n" if $client->is_virtual;
         die "Can not find the associated user. Please check if login ID is correct.\n" unless $client->user;
 
-        my $redis = BOM::Config::Redis::redis_replicated_write();
+        my $redis            = BOM::Config::Redis::redis_events_write();
+        my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
 
         my $poi_status_reason = $poi_reason // $client->status->reason('allow_poi_resubmission') // 'unselected';
 
@@ -200,9 +201,12 @@ sub _authentication {
         # POI resubmission logic
         if ($allow_poi_resubmission) {
             #this also allows the client only 1 time to resubmit the documents
+            my $onfido_counter = $redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id)
+                // $redis_replicated->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
+
             if (   !$client->status->reason('allow_poi_resubmission')
                 && BOM::User::Onfido::submissions_left($client) == 0
-                && !$redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id))
+                && !$onfido_counter)
             {
                 BOM::Config::Redis::redis_events()->incrby(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, -1);
             }

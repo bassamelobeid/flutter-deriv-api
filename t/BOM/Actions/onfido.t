@@ -72,11 +72,11 @@ $mock_events->redefine(
     });
 
 subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
+    my $raw_photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVQYV2NgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=';
     $onfido_mocker->mock(
         'download_photo',
         sub {
-            return Future->done(
-                decode_base64('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVQYV2NgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII='));
+            return Future->done(decode_base64($raw_photo));
         });
 
     my $exceptions = 0;
@@ -101,7 +101,7 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     $f->on_ready(
         sub {
             is $exceptions, 0, 'Exception counter is ZERO';
-            my $keys = $redis_replicated->keys('*ONFIDO_UPLOAD_BAG*');
+            my $keys = [$redis_replicated->keys('*ONFIDO_UPLOAD_BAG*')->@*, $redis_events->keys('*ONFIDO_UPLOAD_BAG*')->@*];
             is scalar @$keys, 0, 'Lock released';
         });
 
@@ -111,6 +111,27 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
 
     is scalar @warnings, 0, 'Warning counter is ZERO';
     print @warnings if scalar @warnings;
+
+    subtest 'cannot acquire lock' => sub {
+        my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+        my @metrics;
+        $dog_mock->mock(
+            'stats_inc',
+            sub {
+                push @metrics, @_ if scalar @_ == 2;
+                push @metrics, @_, undef if scalar @_ == 1;
+
+                return 1;
+            });
+        my $lock_key = 'ONFIDO_UPLOAD_BAG-CR10000-10827d0a91fe2fe2220f811f1da0fdf5-photo';
+        $redis_events->set($lock_key, 1);
+        $upload_generator->()->get;
+
+        cmp_deeply [@metrics], ['onfido.document.cannot_acquire_lock', undef], 'Expected metrics while locked out';
+
+        $redis_events->del($lock_key);
+        $dog_mock->unmock_all;
+    };
 
     $onfido_mocker->unmock_all;
     $event_mocker->unmock_all;
