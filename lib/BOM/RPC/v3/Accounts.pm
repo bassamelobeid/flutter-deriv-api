@@ -79,8 +79,12 @@ use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 
 use constant DEFAULT_STATEMENT_LIMIT => 100;
 
+# IDV status message to check for report availability
+use constant IDV_REPORT_UNAVAILABLE => 'REPORT_UNAVAILABLE';
+
 # Limit the number of Landing Companies provided as arguments for kyc_auth_status
 use constant LCS_ARGUMENT_LIMIT => 20;
+
 # Expected withdrawal processing times in days [min, max].
 use constant WITHDRAWAL_PROCESSING_TIMES => {
     bank_wire => [5, 10],
@@ -1360,6 +1364,7 @@ It takes the following parameter:
 Returns hashref containing,
     - the reasons for the rejected POI attempt,
     - [IDV only] the document type of the attempt.
+    - [IDV only] a flag to indicate if the verification report is available for lookback.
 
 =back
 
@@ -1381,6 +1386,7 @@ sub _get_last_rejected {
     my $reject_reasons_catalog;
 
     my $idv_rejected_document_type;
+    my $idv_report_available;
 
     my $service_reasons;
 
@@ -1393,7 +1399,10 @@ sub _get_last_rejected {
 
         my $idv_reject_reasons;
         $idv_reject_reasons = eval { decode_json_utf8($idv_document->{status_messages} // '[]') };
-        $service_reasons    = $idv_reject_reasons;
+
+        my @filtered_reasons = ref($idv_reject_reasons) eq 'ARRAY' ? grep { defined $_ } $idv_reject_reasons->@* : ();
+        $idv_report_available = (any { $_ eq IDV_REPORT_UNAVAILABLE } @filtered_reasons) ? 0 : 1;
+        $service_reasons      = $idv_reject_reasons;
 
     } elsif ($latest_poi_by eq 'onfido') {
         my $onfido_reject_reasons;
@@ -1411,7 +1420,8 @@ sub _get_last_rejected {
 
     return {
         rejected_reasons => $last_rejected_reasons,
-        (defined $idv_rejected_document_type ? (document_type => $idv_rejected_document_type) : ())};
+        defined $idv_rejected_document_type ? (document_type    => $idv_rejected_document_type) : (),
+        defined $idv_report_available       ? (report_available => $idv_report_available)       : ()};
 }
 
 =head2 _get_available_services
@@ -1729,7 +1739,8 @@ sub _get_idv_service_detail {
     my $idv      = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
     my $document = $idv->get_last_updated_document();
     my $expiration_date;
-    my $idv_reject_reasons;
+    my $reject_reasons;
+    my $report_available;
     my $reported_properties;
 
     my $status = $client->get_idv_status($document);
@@ -1737,7 +1748,9 @@ sub _get_idv_service_detail {
     if ($document) {
         $expiration_date = eval { Date::Utility->new($document->{document_expiration_date})->epoch } if $document->{document_expiration_date};
 
-        $idv_reject_reasons = _get_last_rejected({client => $client})->{rejected_reasons} if $status eq 'rejected';
+        my $last_rejected = _get_last_rejected({client => $client});
+        $reject_reasons   = $last_rejected->{rejected_reasons} if $status eq 'rejected';
+        $report_available = $last_rejected->{report_available} if $status eq 'rejected';
     }
 
     my $submissions_left = $idv->submissions_left();
@@ -1747,10 +1760,11 @@ sub _get_idv_service_detail {
 
     return {
         submissions_left    => $submissions_left,
-        last_rejected       => $idv_reject_reasons  // [],
+        last_rejected       => $reject_reasons      // [],
         status              => $status              // 'none',
         reported_properties => $reported_properties // {},
-        defined $expiration_date ? (expiry_date => $expiration_date) : ()};
+        defined $report_available ? (report_available => $report_available) : (),
+        defined $expiration_date  ? (expiry_date      => $expiration_date)  : ()};
 }
 
 =head2 _get_authentication_poa

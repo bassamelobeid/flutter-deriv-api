@@ -106,8 +106,37 @@ subtest 'onfido validation errors' => sub {
     };
 };
 
-subtest 'onfido dos websocket api' => sub {
-    my $redis       = BOM::Config::Redis::redis_replicated_write();
+subtest 'onfido websocket api using redis replicated' => sub {
+    onfido_websocket_api_test(BOM::Config::Redis::redis_replicated_write(), 'test1', 'emailtest1@email.com');
+};
+
+subtest 'onfido websocket api using redis events' => sub {
+    onfido_websocket_api_test(BOM::Config::Redis::redis_events_write(), 'test1_2', 'emailtest1_2@email.com');
+};
+
+subtest 'onfido websocket api fallback to replicated' => sub {
+    my $redis_mock  = Test::MockModule->new('RedisDB');
+    my $get_flipper = -1;
+
+    # the first get is from redis events
+    $redis_mock->mock(
+        'get',
+        sub {
+            $get_flipper = $get_flipper * -1;
+
+            return undef if $get_flipper == 1;
+
+            return $redis_mock->original('get')->(@_);
+        });
+
+    onfido_websocket_api_test(BOM::Config::Redis::redis_replicated_write(), 'test1_3', 'emailtest1_3@email.com', $redis_mock);
+
+    $redis_mock->unmock_all;
+};
+
+sub onfido_websocket_api_test {
+    my ($redis, $applicant_id, $email, $mock) = @_;
+
     my $counter     = 0;
     my $onfido_mock = Test::MockModule->new('WebService::Async::Onfido');
     my $token_mock  = Test::MockModule->new('BOM::Config');
@@ -138,7 +167,7 @@ subtest 'onfido dos websocket api' => sub {
         sub {
             return Future->done(
                 bless {
-                    id => 'test1',
+                    id => $applicant_id,
                 },
                 'WebService::Async::Onfido::Applicant'
             );
@@ -148,7 +177,7 @@ subtest 'onfido dos websocket api' => sub {
         broker_code => 'CR',
     });
     my $user = BOM::User->create(
-        email          => 'emailtest1@email.com',
+        email          => $email,
         password       => BOM::User::Password::hashpw('asdf12345'),
         email_verified => 1,
     );
@@ -202,11 +231,16 @@ subtest 'onfido dos websocket api' => sub {
         });
 
     is $counter, 1, 'The counter should be 1';
+
+    # need to shut down the mock
+    if ($mock) {
+        $mock->unmock('get');
+    }
+
     ## check if redis indeed has the cached token (doge)
     is $redis->get(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id), 'doge', 'Token set correctly';
     # check if the redis key indeed has a ttl
     ok $redis->ttl(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id) > 0, 'TTL set';
-
-};
+}
 
 done_testing();

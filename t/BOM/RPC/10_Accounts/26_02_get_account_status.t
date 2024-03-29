@@ -141,6 +141,7 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => ["Underage", "NameMismatch"],
+                report_available    => 1,
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -157,6 +158,7 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => ["Underage"],
+                report_available    => 1,
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -189,6 +191,7 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => ["EmptyStatus"],
+                report_available    => 1,
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -205,6 +208,7 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => ["InformationLack"],
+                report_available    => 1,
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -221,6 +225,7 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => ["DocumentRejected"],
+                report_available    => 1,
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -237,6 +242,7 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => ["UnavailableIssuer"],
+                report_available    => 1,
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -253,6 +259,7 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => ["UnavailableStatus"],
+                report_available    => 1,
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -270,6 +277,7 @@ subtest 'idv details' => sub {
                 submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'rejected',
+                report_available    => 1,
                 reported_properties => {},
             }
         },
@@ -286,6 +294,7 @@ subtest 'idv details' => sub {
                 submissions_left    => 2,
                 last_rejected       => [],
                 status              => 'rejected',
+                report_available    => 1,
                 reported_properties => {},
             }
         },
@@ -301,6 +310,7 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => [],
+                report_available    => 1,
                 status              => 'rejected',
                 reported_properties => {},
             }
@@ -317,6 +327,24 @@ subtest 'idv details' => sub {
             result => {
                 submissions_left    => 2,
                 last_rejected       => [],
+                report_available    => 1,
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
+        {
+            title    => 'report not available in status messages',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000004',
+                document_type   => 'voter_id',
+                status          => 'refuted',
+                status_messages => '["REPORT_UNAVAILABLE", "NAME_MISMATCH"]',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => ['NameMismatch'],
+                report_available    => 0,
                 status              => 'rejected',
                 reported_properties => {},
             }

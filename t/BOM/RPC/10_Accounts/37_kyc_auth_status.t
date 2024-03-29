@@ -574,7 +574,8 @@ subtest 'kyc authorization status' => sub {
                             expected_result => {
                                 last_rejected => {
                                     rejected_reasons => [$idv_rejected_reasons->{$_}],
-                                    document_type    => 'passport'
+                                    document_type    => 'passport',
+                                    report_available => 1
                                 },
                                 poi_status => 'rejected',
                             },
@@ -594,7 +595,8 @@ subtest 'kyc authorization status' => sub {
                         expected_result => {
                             last_rejected => {
                                 rejected_reasons => [map { $idv_rejected_reasons->{$_} } qw/UNDERAGE NAME_MISMATCH/],
-                                document_type    => 'passport'
+                                document_type    => 'passport',
+                                report_available => 1
                             },
                             poi_status => 'rejected',
                         },
@@ -610,7 +612,8 @@ subtest 'kyc authorization status' => sub {
                         expected_result => {
                             last_rejected => {
                                 rejected_reasons => [map { $idv_rejected_reasons->{$_} } qw/UNDERAGE/],
-                                document_type    => 'passport'
+                                document_type    => 'passport',
+                                report_available => 1
                             },
                             poi_status => 'rejected',
                         },
@@ -714,7 +717,8 @@ subtest 'kyc authorization status' => sub {
                         expected_result => {
                             last_rejected => {
                                 rejected_reasons => [map { $idv_rejected_reasons->{$_} } qw/EMPTY_STATUS/],
-                                document_type    => 'passport'
+                                document_type    => 'passport',
+                                report_available => 1
                             },
                             poi_status => 'rejected',
                         },
@@ -730,7 +734,8 @@ subtest 'kyc authorization status' => sub {
                         expected_result => {
                             last_rejected => {
                                 rejected_reasons => [],
-                                document_type    => 'passport'
+                                document_type    => 'passport',
+                                report_available => 1
                             },
                             poi_status => 'rejected',
                         },
@@ -746,7 +751,8 @@ subtest 'kyc authorization status' => sub {
                         expected_result => {
                             last_rejected => {
                                 rejected_reasons => [],
-                                document_type    => 'passport'
+                                document_type    => 'passport',
+                                report_available => 1
                             },
                             poi_status => 'rejected',
                         },
@@ -762,7 +768,25 @@ subtest 'kyc authorization status' => sub {
                         expected_result => {
                             last_rejected => {
                                 rejected_reasons => [],
-                                document_type    => 'passport'
+                                document_type    => 'passport',
+                                report_available => 1
+                            },
+                            poi_status => 'rejected',
+                        },
+                    },
+                    {
+                        title                     => "Testing latest poi by: $latest_poi_by, report not available in status messages",
+                        latest_poi_by             => $latest_poi_by,
+                        idv_last_updated_document => {
+                            status          => 'refuted',
+                            status_messages => '["NAME_MISMATCH", "REPORT_UNAVAILABLE"]',
+                            document_type   => 'passport',
+                        },
+                        expected_result => {
+                            last_rejected => {
+                                rejected_reasons => [map { $idv_rejected_reasons->{$_} } qw/NAME_MISMATCH/],
+                                document_type    => 'passport',
+                                report_available => 0
                             },
                             poi_status => 'rejected',
                         },
@@ -1360,12 +1384,17 @@ subtest 'kyc authorization status' => sub {
                 $idv_mock->mock(
                     get_last_updated_document => {
                         status          => 'refuted',
-                        status_messages => "[\"NAME_MISMATCH\"]"
+                        status_messages => '["NAME_MISMATCH"]',
+                        document_type   => 'passport'
                     });
                 $idv_mock->mock(submissions_left => 0);
 
                 my $expected_response = {
-                    last_rejected      => {rejected_reasons => ['NameMismatch']},
+                    last_rejected => {
+                        rejected_reasons => ['NameMismatch'],
+                        document_type    => 'passport',
+                        report_available => 1
+                    },
                     available_services => ['onfido', 'manual'],
                     service            => 'idv',
                     status             => 'rejected',

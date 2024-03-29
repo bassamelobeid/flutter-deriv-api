@@ -30,7 +30,6 @@ use BOM::RPC::v3::Utility;
 use BOM::Config::Onfido;
 use BOM::User::Onfido;
 
-use constant ONFIDO_APPLICANT_KEY_PREFIX           => 'ONFIDO::APPLICANT::ID::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS        => qw(address_postcode residence);
 use constant ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX => 'ONFIDO::SDK::TOKEN::';
 
@@ -58,7 +57,8 @@ sub onfido_service_token {
     my $referrer = $args->{referrer};
     my $country  = $args->{country} // '';
 
-    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $redis            = BOM::Config::Redis::redis_events_write();
+    my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
 
     return Future->done({
             error => BOM::RPC::v3::Utility::create_error({
@@ -102,28 +102,29 @@ sub onfido_service_token {
                         })}) unless $applicant;
 
             # If the token exists we return it
-            if (my $token = $redis->get(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id)) {
-                return Future->done({token => $token});
-            }
-            # Else we create a token, save it to redis, and return it.
-            else {
-                $onfido->sdk_token(
-                    applicant_id => $applicant->id,
-                    referrer     => $referrer,
-                )->then(
-                    sub {
-                        my $response = shift;
-                        return Future->done({
-                                error => BOM::RPC::v3::Utility::create_error({
-                                        code              => 'TokenGeneratingError',
-                                        message_to_client => localize('Cannot generate token for [_1].', $loginid),
-                                    })}) unless exists $response->{token};
+            my $token = $redis->get(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id)
+                // $redis_replicated->get(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id);
 
-                        # 5340 seconds = 89 minutes
-                        $redis->setex(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id, 5340, $response->{token});
-                        return Future->done({token => $response->{token}});
-                    });
-            }
+            return Future->done({token => $token}) if $token;
+
+            # Else we create a token, save it to redis, and return it.
+            $onfido->sdk_token(
+                applicant_id => $applicant->id,
+                referrer     => $referrer,
+            )->then(
+                sub {
+                    my $response = shift;
+                    return Future->done({
+                            error => BOM::RPC::v3::Utility::create_error({
+                                    code              => 'TokenGeneratingError',
+                                    message_to_client => localize('Cannot generate token for [_1].', $loginid),
+                                })}) unless exists $response->{token};
+
+                    # 5340 seconds = 89 minutes
+                    $redis_replicated->setex(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id, 5340, $response->{token});
+                    $redis->setex(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id, 5340, $response->{token});
+                    return Future->done({token => $response->{token}});
+                });
         }
     )->else(
         sub {
