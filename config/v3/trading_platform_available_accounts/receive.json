@@ -19,6 +19,10 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
+                    "available_count": {
+                        "description": "The remaining number of accounts that can be created",
+                        "type": "integer"
+                    },
                     "linkable_landing_companies": {
                         "description": "A list of Deriv landing companies that can work with this account type",
                         "type": "array",
@@ -39,6 +43,10 @@
                             "gaming",
                             "all"
                         ]
+                    },
+                    "max_count": {
+                        "description": "The maximum number of accounts that can be created",
+                        "type": "integer"
                     },
                     "name": {
                         "description": "Landing Company legal name",
