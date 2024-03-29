@@ -626,6 +626,7 @@ sub rejected_identity_verification_reasons {
         'DECEASED'                      => localize("The document's owner is deceased."),
         'UNAVAILABLE_MICROSERVICE'      => localize("The verification status is not available, provider says:  Microservice unavailable."),
         'INVALID_WEBHOOK_REQUEST'       => localize("The verification status is not available, provider says: Invalid webhook request."),
+        'RETRY_MECHANISM'               => localize("The document's verification is waiting for the provider."),
     };
 }
 
@@ -651,6 +652,7 @@ sub rejected_identity_verification_reasons_error_codes {
         'REJECTED_BY_PROVIDER'          => "RejectedByProvider",
         'MALFORMED_JSON'                => "MalformedJson",
         'VERIFICATION_STARTED'          => "VerificationStarted",
+        'RETRY_MECHANISM'               => "VerificationStarted",
         'UNEXPECTED_ERROR'              => "UnexpectedError",
         'UNDESIRED_HTTP_CODE'           => "UndesiredHttpCode",
         'TIMEOUT'                       => "Timeout",
