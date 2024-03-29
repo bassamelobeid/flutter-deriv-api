@@ -22,6 +22,8 @@ use Business::Config::Country;
 
 use BOM::Config::Runtime;
 use BOM::Config;
+use feature 'state';
+use Clone qw( clone );
 
 =head2 new
 
@@ -136,6 +138,41 @@ sub server_by_id {
         server_type => $self->{server_type},
         server      => $server,
     );
+}
+
+=head2 white_label_config
+
+Get the white label config for different jurisdictions which is configured in BackOffice
+
+=cut
+
+sub white_label_config {
+
+    my ($self, $mt5_app_config, $landing_company, $platform, $stage) = @_;
+
+    state $white_label_config_name_mapping = {
+        'Deriv (SVG) LLC'                    => 'svg',
+        'Deriv Investments (Europe) Limited' => 'maltainvest',
+        'Deriv (V) Ltd'                      => 'vanuatu',
+        'Deriv (BVI) Ltd.'                   => 'bvi',
+        'Deriv (FX) Ltd'                     => 'labuan',
+        'Deriv.com Limited'                  => 'none',
+    };
+
+    my $config_name = $white_label_config_name_mapping->{$landing_company} // 'none';
+
+    my $original_links = $mt5_app_config->{white_label_links}->{$config_name};
+
+    #This ensures that any modifications related to $webtrader_url made in $white_label_config_links do not affect the data stored in $original_links.
+    my $white_label_config_links = clone($original_links);
+
+    my $webtrader_url = $white_label_config_links->webtrader_url->$stage;
+    $webtrader_url =~ s/\[platform\]/$platform/g;
+
+    $white_label_config_links->{webtrader_url} = $webtrader_url;
+
+    return $white_label_config_links;
+
 }
 
 =head2 server_by_country

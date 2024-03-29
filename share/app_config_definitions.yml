@@ -2291,6 +2291,208 @@ system:
               isa: Num
               default: 5000
               global: 1
+        white_label_links:
+          description: "Configuration for MT5 white label links"
+          isa: section
+          contains:
+            bvi:
+              description: "White label links for Deriv (BVI) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (bvi)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22631/mt5/derivbvi5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (bvi)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (bvi)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (bvi)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (bvi)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-bvi.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (bvi)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-bvi.deriv.com/terminal"
+                      global: 1
+            labuan:
+              description: "White label links for Deriv (FX) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (labuan)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22680/mt5/derivfx5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (labuan)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (labuan)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (labuan)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (labuan)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-fx.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (labuan)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-fx.deriv.com/terminal"
+                      global: 1
+            maltainvest:
+              description: "White label links for Deriv Investments (Europe) Limited"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (maltainvest)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22632/mt5/derivmt5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (maltainvest)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (maltainvest)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (maltainvest)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (maltainvest)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-mt.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (maltainvest)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-mt.deriv.com/terminal"
+                      global: 1
+            svg:
+              description: "White label links for Deriv (SVG) LLC"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22698/mt5/derivsvg5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (svg)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (svg)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-svg.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (svg)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-svg.deriv.com/terminal"
+                      global: 1
+            vanuatu:
+              description: "White label links for Deriv (V) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (vanuatu)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22628/mt5/derivvu5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (vanuatu)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (vanuatu)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (vanuatu)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (vanuatu)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-vu.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (vanuatu)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-vu.deriv.com/terminal"
+                      global: 1
+            none:
+              description: "White label download links for Deriv com Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (default)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/deriv.com.limited/mt5/deriv5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (default)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (default)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (Deriv com Ltd)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (default)"
+                      isa: Str
+                      default: "https://mt5-dev-demo-web.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (default)"
+                      isa: Str
+                      default: "https://mt5-demo-web.deriv.com/terminal"
+                      global: 1      
         white_label:
           description: "White label settings"
           isa: section
@@ -2398,7 +2600,26 @@ system:
                       description: "White label mobile Android download link (vanuatu)"
                       isa: Str
                       default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
-                      global: 1     
+                      global: 1
+                none:
+                  description: "White label download links for Deriv com Ltd"
+                  isa: section
+                  contains:
+                    windows:
+                      description: "White label windows terminal download link (default)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/web/deriv.com.limited/mt5/deriv5setup.exe"
+                      global: 1
+                    ios:
+                      description: "White label mobile iOS download link (default)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                      global: 1
+                    android:
+                      description: "White label mobile Android download link (default)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/android?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                      global: 1      
     dxtrade:
       description: "Configuration for DXTrade"
       isa: section

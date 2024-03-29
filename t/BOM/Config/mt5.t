@@ -6,6 +6,7 @@ use Test::Fatal;
 use Test::Deep;
 
 use BOM::Config::MT5;
+use BOM::Config::Runtime;
 
 subtest 'create server structure' => sub {
     my $mt5_config = BOM::Config::MT5::webapi_config();
@@ -134,6 +135,136 @@ subtest 'server name by landing company' => sub {
 
     $result = $mt5_obj->server_name_by_landing_company($group_details);
     is $result, 'DerivBVI-Server-02', 'correct server name for bvi real';
+
+};
+
+subtest 'white label config for prod' => sub {
+
+    my $mt5_obj        = BOM::Config::MT5->new();
+    my $mt5_app_config = BOM::Config::Runtime->instance->app_config->system->mt5;
+
+    my $stage = 'prod';
+
+    my %landing_companies = (
+        'Deriv (SVG) LLC' => {
+            webtrader_url => 'https://mt5-real[platform]-web-svg.deriv.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22698/mt5/derivsvg5setup.exe',
+        },
+        'Deriv (BVI) Ltd.' => {
+            webtrader_url => 'https://mt5-real[platform]-web-bvi.deriv.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22631/mt5/derivbvi5setup.exe',
+        },
+        'Deriv Investments (Europe) Limited' => {
+            webtrader_url => 'https://mt5-real[platform]-web-mt.deriv.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22632/mt5/derivmt5setup.exe',
+        },
+        'Deriv (FX) Ltd' => {
+            webtrader_url => 'https://mt5-real[platform]-web-fx.deriv.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22680/mt5/derivfx5setup.exe',
+        },
+        'Deriv (V) Ltd' => {
+            webtrader_url => 'https://mt5-real[platform]-web-vu.deriv.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22628/mt5/derivvu5setup.exe',
+        },
+        'Deriv.com Limited' => {
+            webtrader_url => 'https://mt5-demo-web.deriv.com/terminal',
+            android       => 'https://download.mql5.com/cdn/mobile/mt5/android?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03',
+            ios           => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03',
+            windows       => 'https://download.mql5.com/cdn/web/deriv.com.limited/mt5/deriv5setup.exe',
+        },
+    );
+
+    my @platforms = ('01', '02', '03');
+
+    # Iterate over the landing companies and platforms
+    for my $landing_company (keys %landing_companies) {
+        for my $platform (@platforms) {
+
+            my $white_label_links = $mt5_obj->white_label_config($mt5_app_config, $landing_company, $platform, $stage);
+
+            # Test that the URLs are the expected URLs
+            for my $link_type (keys %{$landing_companies{$landing_company}}) {
+                my $expected_url = $landing_companies{$landing_company}{$link_type};
+                $expected_url =~ s/\[platform\]/$platform/g;
+                is($white_label_links->$link_type, $expected_url, "$link_type is correct for $landing_company platform $platform");
+            }
+        }
+    }
+
+};
+
+subtest 'white label config for dev' => sub {
+
+    my $mt5_obj        = BOM::Config::MT5->new();
+    my $mt5_app_config = BOM::Config::Runtime->instance->app_config->system->mt5;
+
+    my $stage = 'dev';
+
+    my %landing_companies = (
+        'Deriv (SVG) LLC' => {
+            webtrader_url => 'https://mt5-dev-real[platform]-web-svg.regentmarkets.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22698/mt5/derivsvg5setup.exe',
+        },
+        'Deriv (BVI) Ltd.' => {
+            webtrader_url => 'https://mt5-dev-real[platform]-web-bvi.regentmarkets.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22631/mt5/derivbvi5setup.exe',
+        },
+        'Deriv Investments (Europe) Limited' => {
+            webtrader_url => 'https://mt5-dev-real[platform]-web-mt.regentmarkets.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22632/mt5/derivmt5setup.exe',
+        },
+        'Deriv (FX) Ltd' => {
+            webtrader_url => 'https://mt5-dev-real[platform]-web-fx.regentmarkets.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22680/mt5/derivfx5setup.exe',
+        },
+        'Deriv (V) Ltd' => {
+            webtrader_url => 'https://mt5-dev-real[platform]-web-vu.regentmarkets.com/terminal',
+            android => 'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03',
+            ios     => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03',
+            windows => 'https://download.mql5.com/cdn/web/22628/mt5/derivvu5setup.exe',
+        },
+        'Deriv.com Limited' => {
+            webtrader_url => 'https://mt5-dev-demo-web.regentmarkets.com/terminal',
+            android       => 'https://download.mql5.com/cdn/mobile/mt5/android?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03',
+            ios           => 'https://download.mql5.com/cdn/mobile/mt5/ios?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03',
+            windows       => 'https://download.mql5.com/cdn/web/deriv.com.limited/mt5/deriv5setup.exe',
+        },
+    );
+
+    my @platforms = ('01', '02', '03');
+
+    # Iterate over the landing companies and platforms
+    for my $landing_company (keys %landing_companies) {
+        for my $platform (@platforms) {
+
+            my $white_label_links = $mt5_obj->white_label_config($mt5_app_config, $landing_company, $platform, $stage);
+
+            # Test that the URLs are the expected URLs
+            for my $link_type (keys %{$landing_companies{$landing_company}}) {
+                my $expected_url = $landing_companies{$landing_company}{$link_type};
+                $expected_url =~ s/\[platform\]/$platform/g;
+                is($white_label_links->$link_type, $expected_url, "$link_type is correct for $landing_company platform $platform");
+            }
+        }
+    }
 
 };
 
