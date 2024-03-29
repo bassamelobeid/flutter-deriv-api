@@ -85,16 +85,10 @@ subtest 'Onfido supported documents updater' => sub {
     subtest 'clear cache' => sub {
         $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY, 'test');
         $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY,      'test');
-        $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'ARG', 'test');
-        $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'BRA', 'test');
-        $redis->set(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'COL', 'test');
         BOM::Config::Onfido::clear_supported_documents_cache();
 
         ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY), 'key deleted';
         ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY),      'key deleted';
-        ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'ARG'), 'key deleted';
-        ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'BRA'), 'key deleted';
-        ok !$redis->get(+BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_KEY . 'COL'), 'key deleted';
     };
 
     BOM::Config::Onfido::clear_supported_documents_cache();
@@ -410,7 +404,50 @@ subtest 'Onfido supported documents updater' => sub {
     $http_mock->unmock_all;
 };
 
-subtest 'document configuration with redis' => sub {
+subtest 'document configuration with redis replicated' => sub {
+    redis_test(BOM::Config::Redis::redis_replicated_write());
+};
+
+subtest 'document configuration with redis events' => sub {
+    redis_test(BOM::Config::Redis::redis_events_write());
+};
+
+subtest 'fallback to replicated' => sub {
+    my $redis_mock       = Test::MockModule->new('RedisDB');
+    my $get_flipper      = -1;
+    my $scan_all_flipper = -1;
+
+    # the first get is from redis events
+    $redis_mock->mock(
+        'get',
+        sub {
+            $get_flipper = $get_flipper * -1;
+
+            return undef if $get_flipper == 1;
+
+            return $redis_mock->original('get')->(@_);
+        });
+
+    # the first scan_all is from redis events
+    $redis_mock->mock(
+        'scan_all',
+        sub {
+            $scan_all_flipper = $scan_all_flipper * -1;
+
+            return [] if $scan_all_flipper == 1;
+
+            return $redis_mock->original('scan_all')->(@_);
+        });
+
+    redis_test(BOM::Config::Redis::redis_replicated_write());
+
+    $redis_mock->unmock_all();
+};
+
+# redis test suite
+sub redis_test {
+    my $redis = shift;    # redis to set the data around
+
     # this is bad we need the desired keys
     ok !test_country_hashref_keys({TST => {test => 1}});
 
@@ -423,7 +460,6 @@ subtest 'document configuration with redis' => sub {
             return $mock->original('supported_documents_list')->(@_);
         });
 
-    my $redis   = BOM::Config::Redis::redis_replicated_write();
     my $details = BOM::Config::Onfido::_get_country_details();
     BOM::Config::Onfido::_get_country_details() for (1 .. 10);
     is $hits, 0, 'cache hit';
@@ -518,8 +554,9 @@ subtest 'document configuration with redis' => sub {
 
     $log->contains_ok('Could not read Onfido supported documents from redis key: ONFIDO::SUPPORTED::DOCUMENTS::STASH');
 
+    BOM::Config::Onfido::clear_supported_documents_cache();
     $mock->unmock_all;
-};
+}
 
 # all hashref within the list of countries must have all the desired keys
 
