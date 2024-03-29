@@ -145,7 +145,14 @@ async_rpc "mt5_login_list",
             my $residence               = $client->residence;
             my $is_mt5_restricted_group = request()->brand->countries_instance->is_mt5_restricted_group($residence);
             my $is_mt5_ib               = _is_mt5_ib(\@logins);
-            my $app_config              = BOM::Config::Runtime->instance->app_config->system->mt5->white_label;
+
+            #to be removed after migration to new white label object
+            my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->white_label;
+
+            my $mt5_webapi_config = BOM::Config::mt5_webapi_config();
+            my $stage             = $mt5_webapi_config->{stage};
+            my $mt5_app_config    = BOM::Config::Runtime->instance->app_config->system->mt5;
+            my $mt5_config        = BOM::Config::MT5->new();
 
             @logins = map {
                 _filter_settings(
@@ -173,22 +180,25 @@ async_rpc "mt5_login_list",
                     }
                 }
 
-                my $landing_company_short = $mt5_account->{landing_company_short};
-                my @valid_short_codes     = qw(bvi labuan maltainvest svg vanuatu);
-                if ($landing_company_short && grep { $_ eq $landing_company_short } @valid_short_codes) {
-                    # Get the config for the landing company
-                    my $company_config = $app_config->{download_links}->{$landing_company_short};
+                my ($platform) = $mt5_account->{server} =~ /p(\d+)/;
+                my $white_label_links = $mt5_config->white_label_config($mt5_app_config, $mt5_account->{landing_company}, $platform, $stage);
 
-                    # Assign the config values to the MT5 account
-                    $mt5_account->{white_label} = {
-                        'download_links' => {
-                            'windows' => $company_config->windows,
-                            'ios'     => $company_config->ios,
-                            'android' => $company_config->android,
-                        },
-                        'notification' => $app_config->notification,
-                    };
-                }
+                $mt5_account->{white_label_links} = {
+                    'windows'       => $white_label_links->windows,
+                    'ios'           => $white_label_links->ios,
+                    'android'       => $white_label_links->android,
+                    'webtrader_url' => $white_label_links->webtrader_url,
+                };
+
+                #to be removed after migration to new white label object
+                $mt5_account->{white_label} = {
+                    'download_links' => {
+                        'windows' => $white_label_links->windows,
+                        'ios'     => $white_label_links->ios,
+                        'android' => $white_label_links->android,
+                    },
+                    'notification' => $app_config->notification,
+                };
             }
             return Future->done(\@logins);
         });
