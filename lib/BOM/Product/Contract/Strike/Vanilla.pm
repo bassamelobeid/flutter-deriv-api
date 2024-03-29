@@ -92,11 +92,13 @@ sub intraday_strike_price_choices {
         };
 
         my $strike_price = get_strike_for_spot_delta($volsurface_args);
-        $strike_price = roundnear($ul->pip_size * 10, ($strike_price - $current_spot));
-        $strike_price = roundcommon($ul->pip_size, $strike_price);
-        $strike_price = $strike_price >= 0 ? "+" . $strike_price : "" . $strike_price;
+        if (defined $strike_price) {
+            $strike_price = roundnear($ul->pip_size * 10, ($strike_price - $current_spot));
+            $strike_price = roundcommon($ul->pip_size, $strike_price);
+            $strike_price = $strike_price >= 0 ? "+" . $strike_price : "" . $strike_price;
 
-        push @strike_price_choices, $strike_price;
+            push @strike_price_choices, $strike_price;
+        }
     }
 
     @strike_price_choices = uniq(@strike_price_choices);
@@ -152,11 +154,14 @@ sub daily_strike_price_choices {
             premium_adjusted => $volsurface_ul->{market_convention}->{delta_premium_adjusted}};
     }
 
-    my $max_strike = get_strike_for_spot_delta($volsurface_args);
+    # Assigning it to 0 if undefined is fine.
+    # Even without //, it will somehow become '0.00' after using rounddown
+    # // is added to fix the error logs of uninitialized value
+    my $max_strike = get_strike_for_spot_delta($volsurface_args) // 0;
 
     $volsurface_args->{delta}   = (max @{$delta_array});
     $volsurface_args->{atm_vol} = $volsurface->get_surface_volatility($closest_term->[0], 90);
-    my $min_strike = get_strike_for_spot_delta($volsurface_args);
+    my $min_strike = get_strike_for_spot_delta($volsurface_args) // 0;
 
     # we will have issue where min_strike > max_strike for puts
     ($max_strike, $min_strike) = ($min_strike, $max_strike) if $min_strike > $max_strike;
@@ -181,9 +186,10 @@ sub daily_strike_price_choices {
         $strike_step_two = ($max_strike - $central_strike) / ($adjusted_n + 1);
     }
 
+    # Exclude min_strike and max_strike if their respective value is 0
     push @strike_price_choices, roundcommon($ul->pip_size, $central_strike);
-    push @strike_price_choices, roundcommon($ul->pip_size, $min_strike);
-    push @strike_price_choices, roundcommon($ul->pip_size, $max_strike);
+    push @strike_price_choices, roundcommon($ul->pip_size, $min_strike) unless $min_strike == 0;
+    push @strike_price_choices, roundcommon($ul->pip_size, $max_strike) unless $max_strike == 0;
 
     foreach my $n (1 .. $adjusted_n) {
         my $strike_price = $min_strike + $strike_step_one * $n;
