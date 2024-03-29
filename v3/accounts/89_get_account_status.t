@@ -134,7 +134,7 @@ subtest 'POI Attempts' => sub {
             $idv_model->update_document_check({
                 document_id => $doc_id_1,
                 status      => 'failed',
-                messages    => [],
+                messages    => ['REPORT_UNAVAILABLE'],
                 provider    => 'smile_identity'
             });
         }
@@ -143,10 +143,12 @@ subtest 'POI Attempts' => sub {
         my $res = $t->await::get_account_status({get_account_status => 1});
         test_schema('get_account_status', $res);
 
-        my $expected_count = 1;
-        my $count          = $res->{get_account_status}->{authentication}->{attempts}->{count};
+        my $expected_count   = 1;
+        my $count            = $res->{get_account_status}->{authentication}->{attempts}->{count};
+        my $report_available = $res->{get_account_status}->{authentication}->{identity}->{services}->{idv}->{report_available};
 
         is $count, $expected_count, 'expected count=1 for 1 attempt';
+        ok !$report_available, 'report is not available for REPORT_UNAVAILABLE in status messages';
 
         my $expected_latest_attempt_1 = {
             id            => $doc_id_1,

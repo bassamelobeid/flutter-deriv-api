@@ -35,6 +35,9 @@
                               },
                               "document_type": {
                                  "type": "string"
+                              },
+                              "report_available": {
+                                 "type": "integer"
                               }
                            }
                         },
@@ -132,6 +135,9 @@
                                  },
                                  "document_type": {
                                     "type": "string"
+                                 },
+                                 "report_available": {
+                                    "type": "integer"
                                  }
                               }
                            },

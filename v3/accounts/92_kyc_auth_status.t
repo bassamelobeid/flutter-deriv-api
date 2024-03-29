@@ -92,7 +92,8 @@ subtest 'IDV attempts' => sub {
         identity => {
             last_rejected => {
                 rejected_reasons => ['UnexpectedError'],
-                document_type    => 'national_id'
+                document_type    => 'national_id',
+                report_available => 1
             },
             available_services => ['idv', 'onfido', 'manual'],
             service            => 'idv',
@@ -107,7 +108,8 @@ subtest 'IDV attempts' => sub {
         identity => {
             last_rejected => {
                 rejected_reasons => ['UnexpectedError'],
-                document_type    => 'national_id'
+                document_type    => 'national_id',
+                report_available => 1
             },
             available_services  => ['idv', 'onfido', 'manual'],
             service             => 'idv',
@@ -218,7 +220,8 @@ subtest 'Landing Companies provided as arguments' => sub {
             identity => {
                 last_rejected => {
                     rejected_reasons => ['NameMismatch'],
-                    document_type    => 'passport'
+                    document_type    => 'passport',
+                    report_available => 1
                 },
                 available_services => ['idv', 'onfido', 'manual'],
                 service            => 'idv',
