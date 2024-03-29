@@ -127,7 +127,9 @@ my $button_type          = $is_readonly ? 'btn btn--disabled' : 'btn btn--primar
 code_exit_BO(_get_display_error_message("Access Denied: you do not have access to make this change "))
     if $is_readonly and request()->http_method eq 'POST';
 # Enabling onfido resubmission
-my $redis             = BOM::Config::Redis::redis_replicated_write();
+my $redis            = BOM::Config::Redis::redis_events_write();
+my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
+
 my $poi_status_reason = $input{poi_reason} // $client->status->reason('allow_poi_resubmission') // 'unselected';
 # Add a comment about kyc email checkbox
 $poi_status_reason = join(' ', $poi_status_reason, $input{kyc_email_checkbox} ? 'kyc_email' : ()) unless $poi_status_reason =~ /\skyc_email$/;
@@ -159,9 +161,12 @@ if ($broker ne 'MF' and defined $input{address_mismatch}) {
 # POI resubmission logic
 if ($input{allow_onfido_resubmission} or $input{poi_reason}) {
     #this also allows the client only 1 time to resubmit the documents
+    my $onfido_counter = $redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id)
+        // $redis_replicated->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
+
     if (   !$client->status->reason('allow_poi_resubmission')
         && BOM::User::Onfido::submissions_left($client) == 0
-        && !$redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id))
+        && !$onfido_counter)
     {
 
         BOM::Config::Redis::redis_events()->incrby(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, -1);
