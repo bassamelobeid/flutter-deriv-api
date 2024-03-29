@@ -346,6 +346,36 @@ sub get_settings_by_group {
                 system.mt5.suspend.real.p03_ts01.all
                 system.mt5.suspend.real.p03_ts01.deposits
                 system.mt5.suspend.real.p03_ts01.withdrawals
+                system.mt5.white_label_links.bvi.windows
+                system.mt5.white_label_links.bvi.ios
+                system.mt5.white_label_links.bvi.android
+                system.mt5.white_label_links.bvi.webtrader_url.dev
+                system.mt5.white_label_links.bvi.webtrader_url.prod
+                system.mt5.white_label_links.labuan.windows
+                system.mt5.white_label_links.labuan.ios
+                system.mt5.white_label_links.labuan.android
+                system.mt5.white_label_links.labuan.webtrader_url.dev
+                system.mt5.white_label_links.labuan.webtrader_url.prod
+                system.mt5.white_label_links.maltainvest.windows
+                system.mt5.white_label_links.maltainvest.ios
+                system.mt5.white_label_links.maltainvest.android
+                system.mt5.white_label_links.maltainvest.webtrader_url.dev
+                system.mt5.white_label_links.maltainvest.webtrader_url.prod
+                system.mt5.white_label_links.svg.windows
+                system.mt5.white_label_links.svg.ios
+                system.mt5.white_label_links.svg.android
+                system.mt5.white_label_links.svg.webtrader_url.dev
+                system.mt5.white_label_links.svg.webtrader_url.prod
+                system.mt5.white_label_links.vanuatu.windows
+                system.mt5.white_label_links.vanuatu.ios
+                system.mt5.white_label_links.vanuatu.android
+                system.mt5.white_label_links.vanuatu.webtrader_url.dev
+                system.mt5.white_label_links.vanuatu.webtrader_url.prod
+                system.mt5.white_label_links.none.windows
+                system.mt5.white_label_links.none.ios
+                system.mt5.white_label_links.none.android
+                system.mt5.white_label_links.none.webtrader_url.dev
+                system.mt5.white_label_links.none.webtrader_url.prod
                 system.mt5.white_label.notification
                 system.mt5.white_label.download_links.bvi.windows
                 system.mt5.white_label.download_links.bvi.ios
@@ -362,6 +392,9 @@ sub get_settings_by_group {
                 system.mt5.white_label.download_links.vanuatu.windows
                 system.mt5.white_label.download_links.vanuatu.ios
                 system.mt5.white_label.download_links.vanuatu.android
+                system.mt5.white_label.download_links.none.windows
+                system.mt5.white_label.download_links.none.ios
+                system.mt5.white_label.download_links.none.android
                 system.suspend.payout_freezing_funds
                 system.suspend.universal_password
                 system.dxtrade.suspend.all
