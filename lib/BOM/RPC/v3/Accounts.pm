@@ -1110,6 +1110,9 @@ rpc
     # Applicable to svg and non-high risk countries only Check if the client is has not filled any of the information
     push(@$status, 'mt5_additional_kyc_required') if $client->is_mt5_additional_kyc_required();
 
+    if ($client->fully_authenticated and not $client->fully_authenticated({ignore_idv => 1})) {
+        push(@$status, 'poa_authenticated_with_idv');
+    }
     push(@$status, 'tin_manually_approved') if $client->is_tin_manually_approved;
 
     # We need to add the status of idv authentication for each mt5 jurisdiction

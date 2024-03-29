@@ -257,7 +257,8 @@ subtest 'Fully Auth with IDV' => sub {
             'allow_document_upload',              'authenticated',
             'cashier_locked',                     'dxtrade_password_not_set',
             'financial_information_not_complete', 'mt5_additional_kyc_required',
-            'mt5_password_not_set',               'trading_experience_not_complete'
+            'mt5_password_not_set',               'poa_authenticated_with_idv',
+            'trading_experience_not_complete'
         ],
         p2p_poa_required => 0,
         p2p_status       => 'none',
