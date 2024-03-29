@@ -113,6 +113,71 @@ subtest 'rule onfido.check_name_comparison' => sub {
         },
         {
             properties => {
+                first_name => 'elon',
+                last_name  => ''
+            },
+            client => {
+                first_name => 'elon',
+                last_name  => 'musk'
+            },
+            error => undef
+        },
+        {
+            properties => {
+                first_name => 'elon',
+                last_name  => ''
+            },
+            client => {
+                first_name => 'elon',
+                last_name  => 'musk'
+            },
+            error => undef
+        },
+        {
+            properties => {
+                first_name => 'elon',
+                last_name  => undef
+            },
+            client => {
+                first_name => 'elon',
+                last_name  => 'musk'
+            },
+            error => undef
+        },
+        {
+            properties => {
+                first_name => 'elon',
+            },
+            client => {
+                first_name => 'elon',
+                last_name  => 'musk'
+            },
+            error => undef
+        },
+        {
+            properties => {
+                first_name => 'elon',
+                last_name  => 'NULL'
+            },
+            client => {
+                first_name => 'elon',
+                last_name  => 'musk'
+            },
+            error => undef
+        },
+        {
+            properties => {
+                first_name => 'elon musk',
+                last_name  => ''
+            },
+            client => {
+                first_name => 'elon',
+                last_name  => 'ceo of dogecoin'
+            },
+            error => 'NameMismatch'
+        },
+        {
+            properties => {
                 first_name => 'A B',
                 last_name  => 'C'
             },

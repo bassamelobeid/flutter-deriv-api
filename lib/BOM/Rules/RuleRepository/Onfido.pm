@@ -38,10 +38,19 @@ rule 'onfido.check_name_comparison' => {
         my $onfido_last_name  = lc unidecode(trim($properties->{last_name}  // ''));
         my $client_full_name  = $client_first_name . ' ' . $client_last_name;
         my $onfido_full_name  = $onfido_first_name . ' ' . $onfido_last_name;
-        return undef if $onfido_full_name eq $client_full_name;
 
-        $self->fail('NameMismatch') unless BOM::Rules::Comparator::Text::check_words_similarity($client_first_name, $onfido_first_name);
-        $self->fail('NameMismatch') unless BOM::Rules::Comparator::Text::check_words_similarity($client_last_name,  $onfido_last_name);
+        if ($onfido_last_name eq '' || lc($onfido_last_name) eq 'null') {
+            return undef if $onfido_first_name eq $client_first_name;
+
+            $self->fail('NameMismatch') unless BOM::Rules::Comparator::Text::check_words_similarity($client_full_name, $onfido_full_name);
+
+        } else {
+            return undef if $onfido_full_name eq $client_full_name;
+
+            $self->fail('NameMismatch')
+                unless BOM::Rules::Comparator::Text::check_words_similarity($client_first_name, $onfido_first_name)
+                && BOM::Rules::Comparator::Text::check_words_similarity($client_last_name, $onfido_last_name);
+        }
 
         #additionaly first words must match
 
