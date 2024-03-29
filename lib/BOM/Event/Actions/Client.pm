@@ -5059,7 +5059,8 @@ sub notify_resubmission_of_poi_poa_documents {
 
     if ($poa_reason) {
         my $config_poa_info = $config_email_info->{'POA Information'};
-        my $months          = $client->landing_company->poa_dated_within_months;
+        my $user            = $client->user;
+        my $months          = $user->check_poa_valid_period($client);
         $poa_layout = [];
         foreach my $layout (@{$config_poa_info->{poa_layout}}) {
 
