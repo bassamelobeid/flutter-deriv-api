@@ -991,6 +991,15 @@ subtest 'get consider reasons' => sub {
 
         is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 0, 'Missing properties in passed args';
 
+        #case when the properties last name is NULL
+
+        $properties = {
+            first_name => 'Elian',
+            last_name  => 'NULL',
+        };
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 0, 'Last name Null in passed args';
+
         #case when the first name and last name are different
 
         $properties = {

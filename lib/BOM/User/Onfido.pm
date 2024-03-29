@@ -992,7 +992,7 @@ sub update_full_name_from_reported_properties {
     my ($client) = @_;
     my $properties = reported_properties($client);
 
-    return 0 unless $properties->{first_name} && $properties->{last_name};
+    return 0 unless $properties->{first_name} && $properties->{last_name} && lc($properties->{last_name}) ne 'null';
 
     my $first_name_client = lc($client->first_name);
     my $last_name_client  = lc($client->last_name);

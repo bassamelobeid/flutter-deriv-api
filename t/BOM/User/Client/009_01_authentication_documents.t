@@ -458,9 +458,37 @@ subtest 'Onfido mapping' => sub {
     cmp_deeply $client->documents->provider_types->{onfido}, $mappings, 'Expected Onfido types mapping';
 };
 
-subtest 'poa_address_mismatch' => sub {
+subtest 'poa_address_mismatch with redis replicated' => sub {
+    poa_address_mismatch_test(BOM::Config::Redis::redis_replicated_write());
+};
+
+subtest 'poa_address_mismatch with redis events' => sub {
+    poa_address_mismatch_test(BOM::Config::Redis::redis_events_write());
+};
+
+subtest 'poa_address_mismatch fallback to replicated' => sub {
+    my $redis_mock  = Test::MockModule->new('RedisDB');
+    my $get_flipper = -1;
+
+    # the first get is from redis events
+    $redis_mock->mock(
+        'get',
+        sub {
+            $get_flipper = $get_flipper * -1;
+
+            return undef if $get_flipper == 1;
+
+            return $redis_mock->original('get')->(@_);
+        });
+
+    poa_address_mismatch_test(BOM::Config::Redis::redis_replicated_write());
+
+    $redis_mock->unmock_all();
+};
+
+sub poa_address_mismatch_test {
+    my $redis    = shift;
     my $expected = 'Main St. 123';
-    my $redis    = BOM::Config::Redis::redis_events();
     my $key      = 'POA_ADDRESS_MISMATCH::' . $client->binary_user_id;
 
     my $params_full = {
@@ -507,11 +535,35 @@ subtest 'poa_address_mismatch' => sub {
     $current_expected = $status_check->{status_code};
     is $current_expected, undef, 'Client status is undef';
 
-};
+}
 
 subtest 'is_poa_address_fixed' => sub {
-    my $redis = BOM::Config::Redis::redis_events();
-    my $key   = 'POA_ADDRESS_MISMATCH::' . $client->binary_user_id;
+    is_poa_address_fixed_test();
+};
+
+subtest 'is_poa_address_fixed fallback to replicated' => sub {
+    my $redis_mock  = Test::MockModule->new('RedisDB');
+    my $get_flipper = -1;
+
+    # the first get is from redis events
+    $redis_mock->mock(
+        'get',
+        sub {
+            $get_flipper = $get_flipper * -1;
+
+            print $get_flipper;
+
+            return undef if $get_flipper == 1;
+
+            return $redis_mock->original('get')->(@_);
+        });
+
+    is_poa_address_fixed_test();
+
+    $redis_mock->unmock_all();
+};
+
+sub is_poa_address_fixed_test {
     my @tests = ({
             title            => 'Identical Match',
             expected_address => 'Main St. 123',
@@ -566,8 +618,7 @@ subtest 'is_poa_address_fixed' => sub {
             is $client->documents->is_poa_address_fixed(), $test->{expected}, 'Address should match for this test - ' . $test->{title};
         };
     }
-
-};
+}
 
 sub upload_test_document {
     my ($document_args, $client) = @_;
@@ -891,9 +942,41 @@ subtest 'check_words_similarity' => sub {
 
 };
 
-subtest 'is upload available' => sub {
+# is upload available test suite
+
+subtest 'is upload available with redis replicated' => sub {
+    is_upload_available_test(BOM::Config::Redis::redis_replicated_write(), 'is_available@deriv.com');
+};
+
+subtest 'is upload available configuration with redis events' => sub {
+    is_upload_available_test(BOM::Config::Redis::redis_events_write(), 'is_available2@deriv.com');
+};
+
+subtest 'is upload available fallback to replicated' => sub {
+    my $redis_mock  = Test::MockModule->new('RedisDB');
+    my $get_flipper = -1;
+
+    # the first get is from redis events
+    $redis_mock->mock(
+        'get',
+        sub {
+            $get_flipper = $get_flipper * -1;
+
+            return undef if $get_flipper == 1;
+
+            return $redis_mock->original('get')->(@_);
+        });
+
+    is_upload_available_test(BOM::Config::Redis::redis_replicated_write(), 'is_available3@deriv.com');
+
+    $redis_mock->unmock_all();
+};
+
+sub is_upload_available_test {
+    my $redis = shift;
+
     my $user_cr = BOM::User->create(
-        email    => 'is_available@deriv.com',
+        email    => shift,
         password => 'secret_pwd'
     );
 
@@ -907,11 +990,10 @@ subtest 'is upload available' => sub {
 
     ok $client_model->documents->is_upload_available, 'is available if has attempts left';
 
-    my $redis = BOM::Config::Redis::redis_replicated_write();
-    my $key   = 'MAX_UPLOADS_KEY::' . $client_cr->binary_user_id;
+    my $key = 'MAX_UPLOADS_KEY::' . $client_cr->binary_user_id;
     $redis->set($key, 21,);
 
     ok !$client_model->documents->is_upload_available, 'is not available if has no attempts left';
-};
+}
 
 done_testing();

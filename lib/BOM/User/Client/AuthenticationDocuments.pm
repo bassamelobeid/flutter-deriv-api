@@ -1241,15 +1241,18 @@ Return the current expected address or C<undef> if none.
 
 sub poa_address_mismatch {
     my ($self, $args) = @_;
-    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $redis            = BOM::Config::Redis::redis_events_write();
+    my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
     my ($expected_address, $staff, $reason) = @{$args}{qw/expected_address staff reason/};
 
     if ($expected_address) {
         $self->client->status->upsert('poa_address_mismatch', $staff // 'system', $reason // 'Proof of Address mismatch detected');
         $redis->set(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id, $expected_address, 'EX', POA_ADDRES_MISMATCH_TTL);
+        $redis_replicated->set(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id, $expected_address, 'EX', POA_ADDRES_MISMATCH_TTL);
     }
 
-    return $redis->get(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
+    return $redis->get(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id)
+        // $redis_replicated->get(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
 }
 
 =head2 is_poa_address_fixed
@@ -1267,9 +1270,11 @@ Returns Boolean.
 sub is_poa_address_fixed {
     my ($self) = @_;
 
-    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $redis            = BOM::Config::Redis::redis_events_write();
+    my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
 
-    my $expected_address = $redis->get(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
+    my $expected_address = $redis->get(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id)
+        // $redis_replicated->get(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
 
     return 0 unless $expected_address;
 
@@ -1325,8 +1330,10 @@ sub poa_address_fix {
 
         $self->client->status->clear_poa_address_mismatch;
 
-        my $redis = BOM::Config::Redis::redis_replicated_write();
+        my $redis            = BOM::Config::Redis::redis_events_write();
+        my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
 
+        $redis_replicated->del(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
         $redis->del(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
 
         $self->client->status->upsert('address_verified', $staff // 'system', 'Address has been verified after address mismatch has been corrected');
@@ -1360,8 +1367,10 @@ sub poa_address_mismatch_clear {
 
         $self->client->status->clear_poa_address_mismatch;
 
-        my $redis = BOM::Config::Redis::redis_replicated_write();
+        my $redis            = BOM::Config::Redis::redis_events_write();
+        my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
 
+        $redis_replicated->del(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
         $redis->del(POA_ADDRESS_MISMATCH_KEY . $self->client->binary_user_id);
     }
 
@@ -1524,10 +1533,11 @@ Manual Upload is available for the client if:
 sub is_upload_available {
     my ($self) = @_;
 
-    my $redis        = BOM::Config::Redis::redis_replicated_write();
-    my $key          = MAX_UPLOADS_KEY . $self->client->binary_user_id;
-    my $upload_tries = $redis->get($key) // 0;
-    my $is_available = $upload_tries < MAX_UPLOAD_TRIES_PER_DAY;
+    my $redis            = BOM::Config::Redis::redis_events_write();
+    my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
+    my $key              = MAX_UPLOADS_KEY . $self->client->binary_user_id;
+    my $upload_tries     = $redis->get($key) // $redis_replicated->get($key) // 0;
+    my $is_available     = $upload_tries < MAX_UPLOAD_TRIES_PER_DAY;
 
     return $is_available;
 }
