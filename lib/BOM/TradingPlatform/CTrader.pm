@@ -677,7 +677,8 @@ sub new_account {
     my $existing_account = check_existing_account(\@loginids, $user, $group, $account_type);
     die +{
         error_code => $existing_account->{error},
-        params     => [$account_type, $existing_account->{params}]} if $existing_account->{error};
+        params     => [$account_type, $existing_account->{params}->{max_accounts_limit}]}
+        if $existing_account->{error};
 
     # This is for dry run mode
     return {
@@ -884,16 +885,33 @@ sub available_accounts {
     my $lc                    = LandingCompany::Registry->by_name($landing_company_short);
 
     my @trading_accounts;
-    push @trading_accounts,
-        +{
+    push @trading_accounts, +{
         shortcode                  => $lc->short,
         name                       => $lc->name,
         requirements               => $lc->requirements,
         sub_account_type           => 'standard',
         market_type                => 'all',
         linkable_landing_companies => $lc->mt5_require_deriv_account_at,
+        currency                   => $lc->{available_trading_platform_currency_group}->{ctrader}->[0]
+        ,    # Current assumption only one currency, to refactor on future phases
         }
         if $lc;
+
+    my $account_type = 'real';    # Phase 1 implementation only consider real account for now.
+    foreach my $trading_account (@trading_accounts) {
+        my $group = construct_group_name($trading_account->{market_type}, $trading_account->{shortcode}, delete $trading_account->{currency});
+
+        my $group_config = get_ctrader_account_type($account_type . '_' . $group);
+        die +{error_code => 'CTraderNotAllowed'} unless $group_config;
+
+        my $wallet_loginid = $self->client->is_wallet ? $self->client->loginid : undef;
+        my @loginids       = $self->user->get_ctrader_loginids(wallet_loginid => $wallet_loginid);
+
+        my $existing_account = check_existing_account(\@loginids, $self->user, $group, $account_type);
+
+        $trading_account->{available_count} = $existing_account->{params}->{available_accounts_count};
+        $trading_account->{max_count}       = $existing_account->{params}->{max_accounts_limit};
+    }
 
     return \@trading_accounts;
 }

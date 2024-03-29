@@ -194,8 +194,10 @@ sub check_existing_account {
 
     return {
         error  => $error_type,
-        params => $max_accounts_limit
-    } if $error_type;
+        params => {
+            max_accounts_limit       => $max_accounts_limit,
+            available_accounts_count => $max_accounts_limit - $existing_group_count,
+        }};
 }
 
 =head2 construct_new_trader_params

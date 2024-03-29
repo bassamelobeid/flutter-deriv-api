@@ -493,6 +493,48 @@ subtest "cTrader Deleted Inactive Demo Account" => sub {
 };
 
 subtest "cTrader Available Account" => sub {
+    my $ctid               = 1008;
+    my $loginid            = 100008;
+    my $ctrader_config     = BOM::Config::ctrader_general_configurations();
+    my $max_accounts_limit = $ctrader_config->{new_account}->{max_accounts_limit}->{real};
+
+    my $mock_apidata = {
+        ctid_create                 => sub { {userId => $ctid} },
+        ctid_getuserid              => sub { {userId => $ctid} },
+        ctradermanager_getgrouplist => sub { [{name => 'ctrader_all_svg_std_usd', groupId => 1}] },
+        trader_create               => sub {
+            {
+                login                 => $loginid,
+                groupName             => 'ctrader_all_svg_std_usd',
+                registrationTimestamp => 123456,
+                depositCurrency       => 'USD',
+                balance               => 0,
+                moneyDigits           => 2,
+            }
+        },
+        trader_get => sub {
+            {
+                login           => $loginid,
+                depositCurrency => 'USD',
+                balance         => 0,
+            }
+        },
+        tradermanager_gettraderlightlist => sub { [{traderId => $ctid, login => $loginid}] },
+        ctid_linktrader                  => sub { {ctidTraderAccountId => $ctid} },
+        tradermanager_deposit            => sub { {balanceHistoryId    => 1} },
+    };
+
+    my $mocked_ctrader = Test::MockModule->new('BOM::TradingPlatform::CTrader');
+    $mocked_ctrader->redefine(
+        call_api => sub {
+            my ($self, %payload) = @_;
+            return $mock_apidata->{$payload{method}}->();
+        });
+
+    # Mock set method to avoid account creation locking mechanism
+    my $mocked_redis = Test::MockModule->new('RedisDB');
+    $mocked_redis->mock('set', sub { return 'OK' });
+
     subtest "cTrader Available Accounts Supported Country" => sub {
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
         $client->email('ctraderaccountsupportedcountry@test.com');
@@ -508,6 +550,7 @@ subtest "cTrader Available Account" => sub {
         my $ctrader = BOM::TradingPlatform->new(
             platform    => 'ctrader',
             client      => $client,
+            user        => $user,
             rule_engine => BOM::Rules::Engine->new(client => $client));
         isa_ok($ctrader, 'BOM::TradingPlatform::CTrader');
 
@@ -521,10 +564,37 @@ subtest "cTrader Available Account" => sub {
                 },
                 shortcode        => "svg",
                 sub_account_type => "standard",
+                available_count  => 1,
+                max_count        => 1,
             },
         ];
 
         my $response = $ctrader->available_accounts();
+        cmp_deeply($response, $expected_response, 'Can get cTrader available accounts');
+
+        my $expected_new_account_response = {
+            'landing_company_short' => 'svg',
+            'balance'               => '0.00',
+            'market_type'           => 'all',
+            'display_balance'       => '0.00',
+            'currency'              => 'USD',
+            'login'                 => '100008',
+            'account_id'            => 'CTR100008',
+            'account_type'          => 'real',
+            'platform'              => 'ctrader',
+        };
+
+        my %params = (
+            account_type => "real",
+            market_type  => "all",
+            platform     => "ctrader"
+        );
+
+        $response = $ctrader->new_account(%params);
+        cmp_deeply($response, $expected_new_account_response, 'Can create cTrader real account');
+
+        $expected_response->[0]->{available_count} = 0;
+        $response = $ctrader->available_accounts();
         cmp_deeply($response, $expected_response, 'Can get cTrader available accounts');
     };
 
@@ -551,6 +621,9 @@ subtest "cTrader Available Account" => sub {
         my $response = $ctrader->available_accounts();
         cmp_deeply($response, $expected_response, 'Get nothing from cTrader available accounts');
     };
+
+    $mocked_redis->unmock_all();
+    $mocked_ctrader->unmock_all();
 };
 
 subtest "Error Email Filtering Test" => sub {
