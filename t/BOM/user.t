@@ -717,6 +717,86 @@ subtest 'is_region_eu' => sub {
 
 };
 
+subtest 'check_poa_valid_period' => sub {
+
+    my $user_01 = BOM::User->create(
+        email          => 'checkvalidpoa1@testing.com',
+        password       => $hash_pwd,
+        email_verified => 1,
+        residence      => 'co',
+    );
+
+    my $cr_client_01 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $mf_client_01 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    $user_01->add_client($cr_client_01);
+
+    is $user_01->check_poa_valid_period($cr_client_01), '12', 'poa validity is correct for CR acc';
+
+    $user_01->add_client($mf_client_01);
+
+    is $user_01->check_poa_valid_period($mf_client_01), '6', 'poa validity is corrected for CR + MF acc';
+
+    $user_01->add_loginid('MTR20000001', 'mt5', 'real', 'USD', {test => 'real\p01_ts01\financial\bvi_stp_usd'});
+
+    is $user_01->check_poa_valid_period($cr_client_01), '6', 'poa validity remains the same for reg MT5 acc';
+
+    my $user_02 = BOM::User->create(
+        email          => 'checkvalidpoa2@testing.com',
+        password       => $hash_pwd,
+        email_verified => 1,
+        residence      => 'gb',
+    );
+
+    my $cr_client_02 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $mf_client_02 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    $user_02->add_client($mf_client_02);
+
+    is $user_02->check_poa_valid_period($mf_client_02), '6', 'poa validity is correct for MF acc';
+
+    $user_02->add_client($cr_client_02);
+
+    is $user_02->check_poa_valid_period($cr_client_02), '6', 'poa validity remains the same for MF + CR acc';
+
+    $user_02->add_loginid('MTR20000002', 'mt5', 'real', 'USD', {test => 'real\p01_ts01\financial\bvi_stp_usd'});
+
+    is $user_02->check_poa_valid_period($mf_client_02), '6', 'poa validity remains the same for reg MT5 acc';
+
+    my $user_03 = BOM::User->create(
+        email          => 'checkvalidpoa3@testing.com',
+        password       => $hash_pwd,
+        email_verified => 1,
+        residence      => 'br',
+    );
+
+    my $cr_client_03 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $user_03->add_client($cr_client_03);
+
+    is $user_03->check_poa_valid_period($cr_client_03), '12', 'poa validity is correct for CR acc';
+
+    $user_03->add_loginid('MTR00003', 'mt5', 'real', 'USD', {group => 'real\p01_ts04\financial\svg'});
+
+    is $user_03->check_poa_valid_period($cr_client_03), '12', 'poa validity remains the same for CR + SVG MT5 acc';
+
+    $user_03->add_loginid('MTR20000003', 'mt5', 'real', 'USD', {test => 'real\p01_ts01\financial\bvi_stp_usd'});
+
+    is $user_03->check_poa_valid_period($cr_client_03), '12', 'poa validity remains the same for CR + reg MT5 acc';
+};
+
 subtest 'fail if mt5 api return empty login' => sub {
     my $mock = Test::MockModule->new('BOM::MT5::User::Async');
     $mock->mock('_invoke_mt5', sub { Future->done({login => ''}) });
@@ -1058,7 +1138,7 @@ subtest 'update email' => sub {
     is $user->update_email($new_email), 1,             'user email changed is OK';
     is $user->email,                    lc $new_email, 'user\'s email was updated';
 
-    for my $loginid (qw/CR10000 CR10001 CR10013/, $client_vr->loginid) {
+    for my $loginid (qw/CR10000 CR10001 CR10016/, $client_vr->loginid) {
         my $client = BOM::User::Client->new({
             loginid => $loginid,
         });

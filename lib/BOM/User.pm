@@ -2529,4 +2529,32 @@ sub documents {
     };
 }
 
+=head2 check_poa_valid_period
+
+Check the clients of the user to return the accurate validity period for their poa.
+
+Regulated accounts have priority over non regulated ones.
+
+Validity for each type of account:
+- CR = 12 months
+- MF = 6 months
+- DIEL accounts = 12 months if no EU / 6 months if EU is created
+
+=cut
+
+sub check_poa_valid_period {
+    my ($self, $curr_client) = @_;
+    my @clients = $self->clients;
+    my $has_eu;
+
+    for my $client (@clients) {
+        if ($client->is_region_eu) {
+            $has_eu = 1;
+            last;
+        }
+    }
+
+    return $has_eu ? '6' : $curr_client->landing_company->poa_dated_within_months;
+}
+
 1;
