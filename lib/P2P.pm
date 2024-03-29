@@ -176,7 +176,7 @@ sub p2p_advertiser_create {
     if ((
                ($poa_setting->enabled  && none { $self->residence eq $_ } $poa_setting->countries_excludes->@*)
             or (!$poa_setting->enabled && any { $self->residence eq $_ } $poa_setting->countries_includes->@*))
-        and (not($self->client->fully_authenticated and $self->status->age_verification)))
+        and (not($self->client->fully_authenticated({ignore_idv => 1}) and $self->status->age_verification)))
     {
         die +{error_code => 'AuthenticationRequired'};
     }

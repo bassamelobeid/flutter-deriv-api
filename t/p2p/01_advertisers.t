@@ -104,10 +104,10 @@ subtest 'advertiser in POA mandetory countries' => sub {
     );
 
     $client->status->clear_age_verification;
-    $client->set_authentication('ID_ONLINE', {status => 'pass'});
+    $client->set_authentication_and_status('IDV_PHOTO', 'Reej');
 
-    ok !$client->status->age_verification, "client has not basic verification";
-    ok $client->fully_authenticated,       "client has full authenticated";
+    ok !$client->status->age_verification,               "client has not basic verification";
+    ok !$client->fully_authenticated({ignore_idv => 1}), "client has not full authenticated with IDV for P2P";
 
     cmp_deeply(
         exception { $p2p_client->p2p_advertiser_create(name => 'advertiser POA') },
@@ -116,6 +116,8 @@ subtest 'advertiser in POA mandetory countries' => sub {
     );
 
     $client->status->set('age_verification', 'system', 'testing');
+    $client->set_authentication('ID_ONLINE', {status => 'pass'});
+
     ok $p2p_client->p2p_advertiser_create(name => 'advertiser POA'), 'create advertiser who has POA and POI verified is ok';
 
     my $client_new     = BOM::Test::Helper::Client::create_client();
