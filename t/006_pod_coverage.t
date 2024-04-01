@@ -12,10 +12,6 @@ use Test::Pod::CoverageChange;
 my $allowed_naked_packages = {
     'BOM::RPC::Registry'                    => 2,
     'BOM::RPC::Transport::Redis'            => 1,
-    'BOM::RPC::Feed::Reader'                => 5,
-    'BOM::RPC::Feed::Tick'                  => 11,
-    'BOM::RPC::Feed::Sendfile'              => 4,
-    'BOM::RPC::Feed::Writer'                => 11,
     'BOM::RPC::v3::CopyTrading'             => 0,
     'BOM::RPC::v3::P2P'                     => 2,
     'BOM::RPC::v3::Transaction'             => 6,
