@@ -26,7 +26,6 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Product::Offerings::DisplayHelper::Options;
-use BOM::Product::Offerings::DisplayHelper::CFD;
 use BOM::Product::Offerings::TradingDuration qw(generate_trading_durations);
 use LandingCompany::Registry;
 
@@ -290,7 +289,7 @@ sub generate_trading_times {
     my $date = shift;
 
     my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
-    my $tree      = BOM::Product::Offerings::DisplayHelper::CFD->new(
+    my $tree      = BOM::Product::Offerings::DisplayHelper::Options->new(
         date      => $date,
         offerings => $offerings
     )->decorate_tree(
