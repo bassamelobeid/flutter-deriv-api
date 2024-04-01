@@ -1,5 +1,16 @@
 # Welcome to the P2P Service
 
+## Roadmap & status
+
+1. Move code to new repo -> *done*
+2. Refactor bom-events (https://app.clickup.com/t/20696747/FCTARC-197) -> *in progress*
+3. Refactor backoffice (https://app.clickup.com/t/20696747/FCTARC-151) -> *not started*
+4. Design, implement and integrate P2P database (https://app.clickup.com/t/20696747/P2PS-1862) -> *in progress*
+5. Design and implement wallet migration procedure -> *not started*
+6. Design, implement API and integrate with monolith -> *not started*
+7. Inependent release -> *not started*
+
+
 ## What is P2P?
 
 P2P = Peer to Peer
