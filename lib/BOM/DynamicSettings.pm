@@ -15,7 +15,7 @@ use Format::Util::Numbers qw/formatnumber/;
 use Array::Utils          qw(:all);
 use Date::Utility;
 use Scalar::Util;
-use List::Util qw(any max none first);
+use List::Util qw(any max none first uniq);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
@@ -55,7 +55,8 @@ use constant AUTHORISATIONS => {
     partners             => ['Marketing'],
 };
 
-use constant P2P_ORDER_EXPIRE_OPTIONS => [900, 1800, 2700, 3600, 5400, 7200];
+# P2P_ORDER_EXPIRY_STEP here need to be always in sync with P2P_ORDER_EXPIRY_STEP in p2p/lib/P2P.pm
+use constant P2P_ORDER_EXPIRY_STEP => 900;
 
 sub _textify_obj {
     my $type  = shift;
@@ -140,12 +141,14 @@ sub save_settings {
                         send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
                         $values_to_set->{$s} = $new_value;
                         push @changed_keys, $s;
+
                         $message .= join('',
                             '<tbody><tr class="saved"><td class="status">&#10004;</td><td class="key-name">',
                             encode_entities($s),
                             '</td><td class="value">',
                             encode_entities($display_value),
                             '</td><td>-</td></tr>');
+
                     }
                 } catch ($e) {
                     $message .= join('',
@@ -164,7 +167,6 @@ sub save_settings {
             } else {
                 try {
                     my $log_content = "";
-
                     foreach my $key (keys %{$values_to_set}) {
 
                         my ($value, $display_value) = parse_and_refine_setting($settings->{$key}, $app_config->get_data_type($key));
@@ -635,6 +637,7 @@ sub get_settings_by_group {
                 payments.p2p.advert_counterparty_terms.join_days_steps
                 payments.p2p.advert_counterparty_terms.rating_steps
                 payments.p2p.dispute_response_time
+                payments.p2p.order_expiry_options
             )]};
 
     my $settings;
@@ -729,22 +732,22 @@ sub parse_and_refine_setting {
 sub get_extra_validations {
     my $setting = shift;
     state $setting_validators = {
-        'cgi.terms_conditions_versions'                                => \&_validate_tnc_string,
-        'payments.transfer_between_accounts.minimum.default'           => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.minimum.MT5'               => \&_validate_transfer_trading_platform,
-        'payments.transfer_between_accounts.minimum.dxtrade'           => \&_validate_transfer_trading_platform,
-        'payments.p2p.limits.maximum_advert'                           => \&_validate_positive_number,
-        'payments.p2p.limits.maximum_order'                            => \&_validate_positive_number,
-        'payments.p2p.restricted_countries'                            => \&_validate_countries,
-        'payments.p2p.cross_border_ads_restricted_countries'           => \&_validate_countries,
-        'payments.p2p.transaction_verification_countries'              => \&_validate_countries,
-        'payments.p2p.fiat_deposit_restricted_countries'               => \&_validate_countries,
-        'payments.transfer_between_accounts.limits.between_accounts'   => \&_validate_positive_number,
-        'payments.transfer_between_accounts.limits.MT5'                => \&_validate_positive_number,
-        'payments.transfer_between_accounts.limits.dxtrade'            => \&_validate_positive_number,
-        'payments.transfer_between_accounts.maximum.default'           => \&_validate_positive_number,
-        'payments.p2p.order_timeout'                                   => \&_validate_order_expiry_period,
-        'payments.transfer_between_accounts.maximum.MT5'               => \&_validate_transfer_trading_platform,
+        'cgi.terms_conditions_versions'                              => \&_validate_tnc_string,
+        'payments.transfer_between_accounts.minimum.default'         => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.minimum.MT5'             => \&_validate_transfer_trading_platform,
+        'payments.transfer_between_accounts.minimum.dxtrade'         => \&_validate_transfer_trading_platform,
+        'payments.p2p.limits.maximum_advert'                         => \&_validate_positive_number,
+        'payments.p2p.limits.maximum_order'                          => \&_validate_positive_number,
+        'payments.p2p.restricted_countries'                          => \&_validate_countries,
+        'payments.p2p.cross_border_ads_restricted_countries'         => \&_validate_countries,
+        'payments.p2p.transaction_verification_countries'            => \&_validate_countries,
+        'payments.p2p.fiat_deposit_restricted_countries'             => \&_validate_countries,
+        'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
+        'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
+        'payments.transfer_between_accounts.limits.dxtrade'          => \&_validate_positive_number,
+        'payments.transfer_between_accounts.maximum.default'         => \&_validate_positive_number,
+        'payments.p2p.order_timeout'                     => [\&_validate_positive_number, \&_validate_whole_number, \&_validate_order_expiry_period],
+        'payments.transfer_between_accounts.maximum.MT5' => \&_validate_transfer_trading_platform,
         'payments.transfer_between_accounts.maximum.dxtrade'           => \&_validate_transfer_trading_platform,
         'payments.payment_limits'                                      => \&_validate_payment_min_by_staff,
         'compliance.fake_names.corporate_patterns'                     => \&_validate_corporate_patterns,
@@ -755,6 +758,7 @@ sub get_extra_validations {
         'payments.p2p.advert_counterparty_terms.join_days_steps'       => [\&_validate_positive_number, \&_validate_whole_number],
         'payments.p2p.advert_counterparty_terms.rating_steps'          => \&_validate_positive_number,
         'payments.p2p.dispute_response_time'                           => \&_validate_positive_number,
+        'payments.p2p.order_expiry_options' => [\&_validate_positive_number, \&_validate_whole_number, \&_validate_order_expiry_options],
     };
 
     my $validations = $setting_validators->{$setting} or return ();
@@ -862,15 +866,32 @@ sub _validate_whole_number {
 
 =head2 _validate_order_expiry_period
 
-Check if order expiry period is valid.
+Check if order expiry period provided is a multiple of P2P_ORDER_EXPIRY_STEP;
 
 =cut
 
 sub _validate_order_expiry_period {
-    my $input_data = shift;
-    _validate_positive_number($input_data);
-    die 'InvalidOrderExpiryPeriod'
-        if none { $input_data == $_ } P2P_ORDER_EXPIRE_OPTIONS->@*;
+    my $new_value = shift;
+    die "$new_value is not a multiple of ${\P2P_ORDER_EXPIRY_STEP}" if ($new_value % P2P_ORDER_EXPIRY_STEP);
+    return;
+}
+
+=head2 _validate_order_expiry_options
+
+Check if order expiry options satisfies the following conditions:
+1. No duplicate
+2. Must have at least one entry
+3. Each entry must be a multiple of P2P_ORDER_EXPIRY_STEP
+
+=cut
+
+sub _validate_order_expiry_options {
+    my ($new_value, undef, $key) = @_;
+
+    die "need to have at least one entry" unless $new_value->@*;
+    die "duplicate values added to $key" if uniq($new_value->@*) != $new_value->@*;
+    my $invalid_entry = first { $_ % P2P_ORDER_EXPIRY_STEP } $new_value->@*;
+    die "$invalid_entry is not perfectly divisible by ${\P2P_ORDER_EXPIRY_STEP}" if $invalid_entry;
     return;
 }
 
