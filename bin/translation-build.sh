@@ -11,6 +11,7 @@ cd /home/git/binary-com/translations-websockets-api
 git config user.name "Automated translations build"
 git config user.email "sysadmin@binary.com"
 git checkout master
+git fetch --unshallow
 git pull --rebase
 git remote set-branches --add origin translations
 # fetch whole history for translations
