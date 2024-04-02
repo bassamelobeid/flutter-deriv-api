@@ -11,6 +11,7 @@ use Test::MockModule;
 use Log::Any::Test;
 use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(encode_json_utf8);
+use Text::Trim;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::OnfidoMock;
@@ -1099,6 +1100,25 @@ subtest 'get consider reasons' => sub {
         is length($test_client->first_name) < 50, 1,                                                  'first name was successfully trimmed';
         is $test_client->last_name,               'And This Is The Same Super Long And Suspiciously', 'last name updated';
         is length($test_client->last_name) < 50,  1,                                                  'last name was successfully trimmed';
+
+        #case when both first name and last name have leading and trailing spaces
+
+        $test_client->first_name('Trimmed first name will replace me');
+        $test_client->last_name('Trimmed last name will replace me');
+
+        $properties = {
+            first_name => ' I Was Successfully Trimmed ',
+            last_name  => ' Me Too ',
+        };
+
+        ok $properties->{first_name} ne trim($properties->{first_name}), 'first name is different than trimmed first name';
+        ok $properties->{last_name} ne trim($properties->{first_name}),  'last name is different than trimmed last name';
+
+        is BOM::User::Onfido::update_full_name_from_reported_properties($test_client), 1,                            'executed successfully';
+        is $test_client->first_name,                                                   'I Was Successfully Trimmed', 'first name updated';
+        is $test_client->first_name, trim($test_client->first_name), 'first name was successfully trimmed';
+        is $test_client->last_name,  'Me Too',                       'last name updated';
+        is $test_client->last_name,  trim($test_client->last_name),  'last name was successfully trimmed';
 
     };
 

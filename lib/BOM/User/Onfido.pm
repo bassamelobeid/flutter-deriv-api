@@ -12,6 +12,7 @@ use warnings;
 use BOM::Database::UserDB;
 use Syntax::Keyword::Try;
 use Date::Utility;
+use Text::Trim;
 use JSON::MaybeUTF8            qw(decode_json_utf8 encode_json_utf8);
 use Locale::Codes::Country     qw(country_code2code);
 use DataDog::DogStatsd::Helper qw(stats_inc);
@@ -1005,7 +1006,7 @@ sub update_full_name_from_reported_properties {
             $first_name_report = substr($first_name_report, 0, $last_space_index) if $last_space_index != -1;
         }
 
-        $client->first_name(join(" ", map { ucfirst($_) } split(/\s+/, $first_name_report)));
+        $client->first_name(trim(join(" ", map { ucfirst($_) } split(/\s+/, $first_name_report))));
     }
 
     if ($last_name_client ne $last_name_report) {
@@ -1014,7 +1015,7 @@ sub update_full_name_from_reported_properties {
             $last_name_report = substr($last_name_report, 0, $last_space_index) if $last_space_index != -1;
         }
 
-        $client->last_name(join(" ", map { ucfirst($_) } split(/\s+/, $last_name_report)));
+        $client->last_name(trim(join(" ", map { ucfirst($_) } split(/\s+/, $last_name_report))));
     }
     $client->save;
 
