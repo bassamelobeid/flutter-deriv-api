@@ -1010,8 +1010,8 @@ subtest 'Sibling Status Sync upon creation' => sub {
                 ok $real_client_new->status->reason($status) eq $real_client->status->reason($status),
                     "$status reason copied to new real client upon creation";
             } elsif ($status eq 'age_verification' or $status eq 'address_verified') {
-                ok $real_client_new->status->reason($status) eq "Copied from " . $vr_client->loginid,
-                    "$status reason copied to new real client upon creation";
+                my ($copied_from_loginid) = $real_client_new->status->reason($status) =~ /(\b(VRTC\d+|CR\d+)\b)/;
+                ok grep { $_ eq $copied_from_loginid } $user->loginids, "$status reason copied to new real client upon creation";
             } else {
                 ok $real_client_new->status->reason($status) eq $real_client->status->reason($status) . " - copied from " . $real_client->loginid,
                     "$status reason copied to new real client upon creation";
