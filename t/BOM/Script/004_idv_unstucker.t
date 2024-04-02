@@ -74,6 +74,8 @@ subtest 'empty IDV documents' => sub {
 my ($doc1, $cli1, $u1);
 my ($doc2, $cli2, $u2);
 my ($doc3, $cli3, $u3);
+my ($doc4, $cli4, $u4);
+my ($doc5, $cli5, $u5);
 
 subtest 'add some documents outside the window' => sub {
     ($doc1, $cli1, $u1) = idv_document({
@@ -97,6 +99,24 @@ subtest 'add some documents outside the window' => sub {
         type            => 'cpf',
     });
 
+    ($doc4, $cli4, $u4) = idv_document({
+        email           => 'newdoc4@test.com',
+        issuing_country => 'ar',
+        number          => '23456789',
+        type            => 'dni',
+    });
+
+    ($doc5, $cli5, $u5) = idv_document({
+        email           => 'newdoc5@test.com',
+        issuing_country => 'ar',
+        number          => '12345678',
+        type            => 'dni',
+    });
+
+    # these two are webhook based
+    set_status('deferred', $doc4->{id});
+    set_status('deferred', $doc5->{id});
+
     @emissions = ();
     @delays    = ();
     @dog_bag   = ();
@@ -105,16 +125,22 @@ subtest 'add some documents outside the window' => sub {
     my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->user->id);
     my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->user->id);
     my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->user->id);
+    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->user->id);
+    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->user->id);
 
     ok $idv_model1->get_standby_document, 'There is a standby document for client 1';
     ok $idv_model2->get_standby_document, 'There is a standby document for client 2';
     ok $idv_model3->get_standby_document, 'There is a standby document for client 3';
+    ok $idv_model4->get_standby_document, 'There is a standby document for client 4';
+    ok $idv_model5->get_standby_document, 'There is a standby document for client 5';
 
     BOM::Event::Script::IDVUnstucker::run->get;
 
     ok $idv_model1->get_standby_document, 'There is still a standby document for client 1';
     ok $idv_model2->get_standby_document, 'There is still a standby document for client 2';
     ok $idv_model3->get_standby_document, 'There is still a standby document for client 3';
+    ok $idv_model4->get_standby_document, 'There is still a standby document for client 4';
+    ok $idv_model5->get_standby_document, 'There is still a standby document for client 5';
 
     cmp_deeply [@delays], [], 'No delays';
 
@@ -137,16 +163,22 @@ subtest 'u1 to unstuck, u3 too old' => sub {
     my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->user->id);
     my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->user->id);
     my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->user->id);
+    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->user->id);
+    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->user->id);
 
     ok $idv_model1->get_standby_document, 'There is a standby document for client 1';
     ok $idv_model2->get_standby_document, 'There is a standby document for client 2';
     ok $idv_model3->get_standby_document, 'There is a standby document for client 3';
+    ok $idv_model4->get_standby_document, 'There is a standby document for client 4';
+    ok $idv_model5->get_standby_document, 'There is a standby document for client 5';
 
     BOM::Event::Script::IDVUnstucker::run->get;
 
     ok $idv_model1->get_standby_document,  'There is still a standby document for client 1';
     ok $idv_model2->get_standby_document,  'There is still a standby document for client 2';
     ok !$idv_model3->get_standby_document, 'There is no longer a standby document for client 3';
+    ok $idv_model4->get_standby_document,  'There is still a standby document for client 4';
+    ok $idv_model5->get_standby_document,  'There is still a standby document for client 5';
 
     cmp_deeply [@delays],
         [{
@@ -176,16 +208,22 @@ subtest 'u1 should not retrigger this soon' => sub {
     my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->user->id);
     my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->user->id);
     my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->user->id);
+    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->user->id);
+    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->user->id);
 
     ok $idv_model1->get_standby_document,  'There is a standby document for client 1';
     ok $idv_model2->get_standby_document,  'There is a standby document for client 2';
     ok !$idv_model3->get_standby_document, 'There is no longer a standby document for client 3';
+    ok $idv_model4->get_standby_document,  'There is a standby document for client 4';
+    ok $idv_model5->get_standby_document,  'There is a standby document for client 5';
 
     BOM::Event::Script::IDVUnstucker::run->get;
 
     ok $idv_model1->get_standby_document,  'There is still a standby document for client 1';
     ok $idv_model2->get_standby_document,  'There is still a standby document for client 2';
     ok !$idv_model3->get_standby_document, 'There is no longer a standby document for client 3';
+    ok $idv_model4->get_standby_document,  'There is still a standby document for client 4';
+    ok $idv_model5->get_standby_document,  'There is still a standby document for client 5';
 
     cmp_deeply [@delays], [], 'No delays';
 
@@ -196,12 +234,69 @@ subtest 'u1 should not retrigger this soon' => sub {
     cmp_deeply $log->msgs, [], 'No logs';
 };
 
+subtest 'deferred documents are also taken care for' => sub {
+    updated_at('1 day',            $doc4->{id});
+    updated_at('15 days 1 second', $doc5->{id});
+
+    @emissions = ();
+    @delays    = ();
+    @dog_bag   = ();
+    $log->clear;
+
+    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->user->id);
+    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->user->id);
+    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->user->id);
+    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->user->id);
+    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->user->id);
+
+    ok $idv_model1->get_standby_document,  'There is a standby document for client 1';
+    ok $idv_model2->get_standby_document,  'There is a standby document for client 2';
+    ok !$idv_model3->get_standby_document, 'There is no longer a standby document for client 3';
+    ok $idv_model4->get_standby_document,  'There is a standby document for client 4';
+    ok $idv_model5->get_standby_document,  'There is a standby document for client 5';
+
+    BOM::Event::Script::IDVUnstucker::run->get;
+
+    ok $idv_model1->get_standby_document,  'There is still a standby document for client 1';
+    ok $idv_model2->get_standby_document,  'There is still a standby document for client 2';
+    ok !$idv_model3->get_standby_document, 'There is no longer a standby document for client 3';
+    ok $idv_model4->get_standby_document,  'There is still a standby document for client 4';
+    ok !$idv_model5->get_standby_document, 'There is no longer a standby document for client 5';
+
+    cmp_deeply [@delays],
+        [{
+            after => 30,
+        }
+        ],
+        'Expected delays';
+
+    cmp_deeply [@dog_bag], ['idv.unstucker.requested'], 'Expected datadog calls';
+
+    cmp_deeply [@emissions],
+        ['idv_verification', BOM::Event::Actions::Client::IdentityVerification::idv_message_payload($cli4, $idv_model4->get_standby_document)],
+        'Expected emissions';
+
+    cmp_deeply $log->msgs, [], 'No logs';
+
+    cmp_deeply decode_json_utf8($idv_model4->get_last_updated_document->{status_messages}), ['VERIFICATION_STARTED', 'Unstuck mechanism triggered'],
+        'Expected messages';
+};
+
 sub updated_at {
     my ($interval, $id) = @_;
 
     BOM::Database::UserDB::rose_db()->dbic->run(
         fixup => sub {
             $_->do('UPDATE idv.document SET updated_at = NOW() - INTERVAL ? WHERE id = ?', undef, $interval, $id);
+        });
+}
+
+sub set_status {
+    my ($status, $id) = @_;
+
+    BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            $_->do('UPDATE idv.document SET status = ? WHERE id = ?', undef, $status, $id);
         });
 }
 
