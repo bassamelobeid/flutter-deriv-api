@@ -426,6 +426,11 @@ payments:
           isa: Int
           global: 1
           default: 3600
+        order_expiry_options:
+          description: 'List of order expiry values available for adverts'
+          isa: ArrayRef
+          global: 1
+          default: [900, 1800, 2700, 3600]
         refund_timeout:
           description: 'Number of days to wait before refunding a timed-out order automatically'
           isa: Num
