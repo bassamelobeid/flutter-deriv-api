@@ -8,6 +8,7 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use List::Util                       qw(all first any min max none pairgrep uniq reduce);
 use Array::Utils                     qw(array_minus intersect);
+use List::MoreUtils                  qw( minmax );
 use Text::Trim                       qw(trim);
 use BOM::Platform::Context           qw(localize request);
 use Format::Util::Numbers            qw(financialrounding formatnumber);
@@ -100,7 +101,8 @@ use constant {
         final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
     },
 
-    P2P_ORDER_EXPIRE_OPTIONS => {map { $_ => 1 } qw(900 1800 2700 3600 5400 7200)},
+    # P2P_ORDER_EXPIRY_STEP here need to be always in sync with P2P_ORDER_EXPIRY_STEP in bom-backoffice/lib/BOM/DynamicSettings.pm
+    P2P_ORDER_EXPIRY_STEP => 900,
 
     P2P_DB_ERR_MAP => {
         PP001 => "AdvertNotFound",
@@ -522,11 +524,6 @@ sub p2p_advert_create {
         if trim($param{payment_method})
         and (($param{payment_method_ids} and $param{payment_method_ids}->@*) or ($param{payment_method_names} and $param{payment_method_names}->@*));
 
-    if (defined($param{order_expiry_period})) {
-        if ($param{order_expiry_period} !~ /^[0-9]+$/ || !P2P_ORDER_EXPIRE_OPTIONS->{$param{order_expiry_period}}) {
-            die +{error_code => 'InvalidOrderExpiryPeriod'};
-        }
-    }
     $param{country}          = $self->residence;
     $param{account_currency} = $self->currency;
     ($param{local_currency} //= $self->local_currency) or die +{error_code => 'NoLocalCurrency'};
@@ -725,12 +722,6 @@ sub p2p_advert_update {
     )->[0];
     die +{error_code => 'AdvertNotFound'} unless $advert;
     die +{error_code => 'PermissionDenied'} if $advert->{advertiser_loginid} ne $self->loginid;
-
-    if (defined($param{order_expiry_period})) {
-        if ($param{order_expiry_period} !~ /^[0-9]+$/ || !P2P_ORDER_EXPIRE_OPTIONS->{$param{order_expiry_period}}) {
-            die +{error_code => 'InvalidOrderExpiryPeriod'};
-        }
-    }
 
     $advert->{remaining_amount} = delete $advert->{remaining};    # named differently in api vs db function
 
@@ -2159,6 +2150,7 @@ sub _validate_advert {
     $self->_validate_advert_amount(%param);
     $self->_validate_advert_rates(%param);
     $self->_validate_advert_min_max(%param);
+    $self->_validate_advert_order_expiry_period(%param);
     $self->_validate_advert_duplicates(%param);
     $self->_validate_advert_payment_method_type(%param);
     $self->_validate_advert_payment_method_ids(%param);
@@ -2315,6 +2307,34 @@ sub _validate_advert_min_max {
     }
 
     die +{error_code => 'InvalidMinMaxAmount'} if $param{min_order_amount} > $param{max_order_amount};
+}
+
+=head2 _validate_advert_order_expiry_period
+
+Check if order expiry period provided satisfies these conditions:
+(1) Must be a multiple of P2P_ORDER_EXPIRY_STEP
+(2) Must be in between max and min of order expiry options (includes default order timeout period)
+
+Point (2) will also ensure value > 0
+
+=cut
+
+sub _validate_advert_order_expiry_period {
+    my ($self, %param) = @_;
+
+    my $order_expiry_period = $param{order_expiry_period} // return;
+
+    return if (($param{old}->{order_expiry_period} // -1) == $param{order_expiry_period});
+
+    my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+    my ($min, $max) = minmax($p2p_config->order_expiry_options->@*, $p2p_config->order_timeout);
+    if (   ($order_expiry_period % P2P_ORDER_EXPIRY_STEP)
+        || $order_expiry_period < $min
+        || $order_expiry_period > $max)
+    {
+        die +{error_code => 'InvalidOrderExpiryPeriod'};
+    }
+    return 1;
 }
 
 =head2 _validate_advert_payment_contact_info
