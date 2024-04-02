@@ -329,6 +329,26 @@ sub reached_limit_check {
     return Future->done;
 }
 
+=head2 check_circuit_breaker
+
+Checks if the request is allowed to be processed or not based on the circuit breaker status.
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=item * C<$req_storage> - request storage hashref
+
+=back
+
+=cut
+
+sub check_circuit_breaker {
+    my ($c, $req_storage) = @_;
+
+    return $c->circuit_breaker($req_storage->{method});
+}
+
 =head2 get_limiting_service
 
 Takes the API call name and returns which rate limiting category it falls under
@@ -438,8 +458,7 @@ sub before_forward {
 
             # Close websocket connection if breach rate limit per connection
             if ($e eq 'CONNECTION_RATELIMIT_HIT') {
-                $c->send({json => $err_resp});
-                $c->finish(1008 => 'Policy Violation');
+                $c->stash('disconnect' => [1008 => 'Policy Violation']);
             }
 
             return Future->fail($err_resp);
@@ -501,6 +520,27 @@ sub _check_auth {
         }
     }
     return 0;
+}
+
+=head2 after_dispatch
+
+This hook is called after the request is dispatched and the response is sent to the client.
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=back
+
+=cut
+
+sub after_dispatch {
+    my $c = shift;
+
+    if ($c->stash('disconnect')) {
+        $c->finish($c->stash('disconnect')->@*);
+    }
+    return;
 }
 
 =head2 assign_ws_backend
