@@ -4,6 +4,7 @@ use utf8;
 use Test::More;
 use Test::Deep;
 use Test::Mojo;
+use Test::Warn;
 use Test::MockModule;
 use Test::MockTime qw(set_fixed_time restore_time);
 use BOM::Test::Helper::FinancialAssessment;
@@ -1155,6 +1156,29 @@ subtest 'set settings' => sub {
             ok $emitted->{poi_check_rules}, "POI check rules triggered by $poi_field update";
         }
     };
+
+    subtest 'Trimming immutable fields' => sub {
+        $params->{token} = $token_Y_cr_1;
+        $params->{args}  = {address_line_1 => ' I got trimmed '};
+        cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
+        is($c->tcall('get_settings', {token => $token_Y_cr_1})->{address_line_1}, "I got trimmed", "address was trimmed correctly");
+
+        my $mocked_utility = Test::MockModule->new('BOM::User::Utility');
+        $mocked_utility->mock('trim_immutable_client_fields' => sub { shift });
+
+        $params->{args} = {address_line_1 => ' I should fail '};
+
+        warning_like {
+            is $c->tcall($method, $params)->{error}{code}, 'InternalServerError', 'set_settings fails due to untrimmed values';
+        }
+        [
+            qr/new row for relation "client" violates check constraint "immutable_fields_are_trimmed"/,
+            qr/new row for relation "client" violates check constraint "immutable_fields_are_trimmed"/
+        ],
+            'expected database constraint violation warning';
+
+        $mocked_utility->unmock_all;
+    }
 };
 
 subtest 'set_settings on virtual account should not change real account settings' => sub {

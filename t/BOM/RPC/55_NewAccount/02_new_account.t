@@ -706,6 +706,51 @@ subtest $method => sub {
 
     };
 
+    subtest 'Create new client untrimmed fields exception' => sub {
+        $email = 'new_email' . rand(999) . '@binary.com';
+
+        $params->{args}->{email} = $email;
+
+        $params->{args}->{residence}       = 'id';
+        $params->{args}->{client_password} = 'verylongDDD1!';
+        delete $params->{token};
+
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
+        $rpc_ct->call_ok('new_account_virtual', $params)
+            ->has_no_system_error->has_no_error('If verification code is ok - account created successfully');
+
+        $params->{token} = $rpc_ct->result->{oauth_token};
+
+        $params->{args}->{currency} = 'USD';
+
+        my @fields_should_be_trimmed = grep {
+            my $element = $_;
+            not grep { $element eq $_ } qw(phone address_state date_of_birth)
+        } BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*;
+
+        foreach my $field (@fields_should_be_trimmed) {
+            $params->{args}->{$field} = "Fail with trailing whitespace ";
+        }
+
+        my $mocked_utility = Test::MockModule->new('BOM::User::Utility');
+        $mocked_utility->mock('trim_immutable_client_fields' => sub { shift });
+        warning_like {
+            $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid', 'Exception thrown for client creation.')
+                ->error_message_is('Sorry, account opening is unavailable.', 'Error message is correct.');
+        }
+        [
+            qr/new row for relation "client" violates check constraint "immutable_fields_are_trimmed"/,
+            qr/new row for relation "client" violates check constraint "immutable_fields_are_trimmed"/
+        ],
+            'expected database constraint violation warning';
+
+        $mocked_utility->unmock_all;
+    };
+
     subtest 'Create multiple accounts in CR' => sub {
         $params->{args}->{secret_answer} = 'test';
         $email = 'new_email' . rand(999) . '@binary.com';
@@ -1682,7 +1727,7 @@ $params = {
         last_name        => 'Test' . rand(999),
         first_name       => 'Test1' . rand(999),
         date_of_birth    => '1987-09-04',
-        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
+        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01',
         address_city     => 'Samara',
         address_state    => 'Papua',
         address_postcode => '112233',
@@ -1818,7 +1863,7 @@ $params = {
         last_name        => 'Test' . rand(999),
         first_name       => 'Test1' . rand(999),
         date_of_birth    => '1987-09-04',
-        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
+        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01',
         address_city     => 'Samara',
         address_state    => 'Papua',
         address_postcode => '112233',
@@ -1968,7 +2013,7 @@ $params = {
         last_name        => 'Test' . rand(999),
         first_name       => 'Test1' . rand(999),
         date_of_birth    => '1987-09-04',
-        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
+        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01',
         address_city     => 'Samara',
         address_state    => 'Papua',
         address_postcode => '112233',
@@ -2009,7 +2054,7 @@ $params = {
         last_name        => 'Test' . rand(999),
         first_name       => 'Test1' . rand(999),
         date_of_birth    => '1977-01-04',
-        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
+        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01',
         address_city     => 'Bloemfontein',
         address_state    => 'Free State',
         address_postcode => '112233',
@@ -2116,7 +2161,7 @@ $params = {
         last_name        => 'Test' . rand(999),
         first_name       => 'Test1' . rand(999),
         date_of_birth    => '1987-09-04',
-        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01 ',
+        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01',
         address_city     => 'Samara',
         address_state    => 'Papua',
         address_postcode => '112233',
