@@ -361,6 +361,7 @@ sub get_p2p_settings {
     my $result = +{
         $p2p_config->archive_ads_days ? (adverts_archive_period => $p2p_config->archive_ads_days) : (),
         order_payment_period        => floor($p2p_config->order_timeout / 60),
+        order_expiry_options        => [sort { $a <=> $b } $p2p_config->order_expiry_options->@*],
         cancellation_block_duration => $p2p_config->cancellation_barring->bar_time,
         cancellation_grace_period   => $p2p_config->cancellation_grace_period,
         cancellation_limit          => $p2p_config->cancellation_barring->count,

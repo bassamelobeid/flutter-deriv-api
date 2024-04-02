@@ -19,6 +19,8 @@ BOM::Test::Helper::P2PWithClient::create_payment_methods();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->payment_methods_enabled(1);
+$config->order_expiry_options([900, 1800, 2700, 3600]);
+$config->order_timeout(3600);
 
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -287,6 +289,22 @@ subtest 'Updating order_expiry_period of advert' => sub {
     my $initial_expiry_time = $order->{expiry_time};
 
     @emitted_events = ();
+    $config->order_expiry_options([900, 2700, 1800]);
+
+    is $advertiser->p2p_advert_update(
+        id                  => $advert->{id},
+        order_expiry_period => 3600
+    )->{order_expiry_period}, 3600, '3600 is still a valid order_expiry_period since it is the default order_timeout value';
+
+    is $order->{expiry_time}, $initial_expiry_time, "existing order expiry epoch unchanged due to change in advert's order_expiry_period";
+
+    cmp_deeply(
+        \@emitted_events,
+        [['p2p_adverts_updated', {advertiser_id => $advert->{advertiser_details}{id}}]],
+        'p2p_adverts_updated event emitted due to update of order_expiry_period'
+    );
+
+    @emitted_events = ();
     is $advertiser->p2p_advert_update(
         id                  => $advert->{id},
         order_expiry_period => 900
@@ -300,17 +318,52 @@ subtest 'Updating order_expiry_period of advert' => sub {
         'p2p_adverts_updated event emitted due to update of order_expiry_period'
     );
 
+    @emitted_events = ();
+    $config->order_timeout(1800);
+
     cmp_deeply(
         exception {
             $advertiser->p2p_advert_update(
                 id                  => $advert->{id},
-                order_expiry_period => 200
+                order_expiry_period => 3600
+            );
+        },
+        {error_code => 'InvalidOrderExpiryPeriod'},
+        "3600 not a valid order_expiry_period anymore since it's outside the range"
+    );
+
+    is $advertiser->p2p_advert_update(
+        id => $advert->{id},
+    )->{order_expiry_period}, 900, 'order_expiry_period remain unchanged because there is no update';
+    is @emitted_events, 0, 'no events emitted because no update due to unchanged field';
+
+    @emitted_events = ();
+    $config->order_expiry_options([2700, 1800]);
+
+    is $advertiser->p2p_advert_update(
+        id                  => $advert->{id},
+        order_expiry_period => 900,
+        is_active           => 0
+        )->{order_expiry_period}, 900,
+        "no error although 900 is outside the range since 900 is the ad's previous order_expiry_period value";
+
+    cmp_deeply(
+        \@emitted_events,
+        [['p2p_adverts_updated', {advertiser_id => $advert->{advertiser_details}{id}}]],
+        'p2p_adverts_updated event emitted due to update of is_active'
+    );
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_update(
+                id                  => $advert->{id},
+                order_expiry_period => $_
             );
         },
         {error_code => 'InvalidOrderExpiryPeriod'},
         'invalid order expiry time error captured correctly'
-    );
-    BOM::Test::Helper::P2PWithClient::create_escrow();
+    ) foreach (100, 200, 400, 500, 600, 7200);
+
 };
 
 subtest 'updating advert fields that will be reflected in orders' => sub {

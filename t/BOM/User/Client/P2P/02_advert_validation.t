@@ -51,6 +51,7 @@ subtest $method => sub {
         undef,
         'no error for valid params'
     );
+
 };
 
 $method = '_validate_advert_amount';
@@ -277,6 +278,85 @@ subtest $method => sub {
         },
         'Error when min order in local currency rounds to zero'
     );
+};
+
+$method = '_validate_advert_order_expiry_period';
+subtest $method => sub {
+
+    # case 1: order_timeout is higher than all order_expiry_options
+    $config->order_expiry_options([900, 1800, 2700, 3600]);
+    $config->order_timeout(7200);
+
+    my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
+    for my $order_expiry_period (900, 1800, 2700, 3600, 4500, 5400, 6300, 7200) {
+        is(
+            exception {
+                $advertiser->$method(%params, order_expiry_period => $order_expiry_period);
+            },
+            undef,
+            'no error due to invalid order expiry period'
+        );
+    }
+
+    for my $order_expiry_period (100, 600, 4400, 8100) {
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, order_expiry_period => $order_expiry_period);
+            },
+            {error_code => 'InvalidOrderExpiryPeriod'},
+            'invalid order expiry period error captured correctly'
+        );
+    }
+
+    # case 2: order_timeout is lower than all order_expiry_options
+    $config->order_expiry_options([1800, 2700, 3600]);
+    $config->order_timeout(900);
+
+    for my $order_expiry_period (900, 1800, 2700, 3600) {
+        is(
+            exception {
+                $advertiser->$method(%params, order_expiry_period => $order_expiry_period);
+            },
+            undef,
+            'no error due to invalid order expiry period'
+        );
+    }
+
+    for my $order_expiry_period (100, 600, 3000, 7200) {
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, order_expiry_period => $order_expiry_period);
+            },
+            {error_code => 'InvalidOrderExpiryPeriod'},
+            'invalid order expiry period error captured correctly'
+        );
+    }
+
+    # case 3: order_timeout is within all order_expiry_options
+
+    $config->order_timeout(3600);
+    $config->order_expiry_options([900, 1800, 2700, 3600, 4500]);
+
+    for my $order_expiry_period (900, 1800, 2700, 3600, 4500) {
+        is(
+            exception {
+                $advertiser->$method(%params, order_expiry_period => $order_expiry_period);
+            },
+            undef,
+            'no error due to invalid order expiry period'
+        );
+    }
+
+    for my $order_expiry_period (100, 600, 2400, 4000, 7200) {
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, order_expiry_period => $order_expiry_period);
+            },
+            {error_code => 'InvalidOrderExpiryPeriod'},
+            'invalid order expiry period error captured correctly'
+        );
+    }
+
 };
 
 $method = '_validate_advert_rates';

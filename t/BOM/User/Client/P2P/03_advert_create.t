@@ -34,6 +34,7 @@ $config->cancellation_barring->count(3);
 $config->cancellation_barring->period(24);
 $config->payment_methods_enabled(1);
 $config->order_timeout(3600);
+$config->order_expiry_options([900, 1800, 2700, 3600, 5400, 7200]);
 
 my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -1138,7 +1139,7 @@ subtest 'rate check' => sub {
 
 subtest 'Creating advert with custom order_expiry_period values' => sub {
     BOM::Test::Helper::P2PWithClient::create_escrow();
-    for my $order_expiry_period (900, 1800, 2700, 3600, 5400, 7200) {
+    for my $order_expiry_period (900, 1800, 2700, 3600, 4500, 5400, 6300, 7200) {
         my ($advert, $order);
         cmp_deeply(
             exception {
@@ -1159,7 +1160,7 @@ subtest 'Creating advert with custom order_expiry_period values' => sub {
         },
         {error_code => 'InvalidOrderExpiryPeriod'},
         'invalid order expiry time error captured correctly'
-    ) foreach (100, 200.15, "900.00", "abc");
+    ) foreach (100, 400, 500, 600, 8100, 9000);
 
     BOM::Test::Helper::P2PWithClient::reset_escrow();
 

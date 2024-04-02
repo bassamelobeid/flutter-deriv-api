@@ -3277,6 +3277,16 @@ sub _validate_advert_min_max {
     P2P->new(client => $self)->_validate_advert_min_max(%param);
 }
 
+=head2 _validate_advert_order_expiry_period
+
+=cut
+
+sub _validate_advert_order_expiry_period {
+    my ($self, %param) = @_;
+
+    P2P->new(client => $self)->_validate_advert_order_expiry_period(%param);
+}
+
 =head2 _validate_advert_payment_contact_info
 
 Validation of advert payment_info and contact_info fields.

@@ -48,6 +48,7 @@ subtest 'p2p_settings' => sub {
     $p2p_config->restricted_countries(['au', 'nz', 'id']);
     $p2p_config->available_for_currencies(['usd']);
     $p2p_config->cross_border_ads_restricted_countries([]);
+    $p2p_config->order_expiry_options([900, 1800, 2700, 3600]);
     %BOM::Config::CurrencyConfig::ALL_CURRENCIES = %currencies;
     $mock_currency->redefine(local_currency_for_country => sub { my %params = @_; return 'AAA' if $params{country} eq 'id' });
     BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', 'BBB,CCC');
@@ -62,6 +63,7 @@ subtest 'p2p_settings' => sub {
         maximum_advert_amount       => 7,
         maximum_order_amount        => 8,
         order_daily_limit           => 9,
+        order_expiry_options        => [900, 1800, 2700, 3600],
         order_payment_period        => 10,
         supported_currencies        => ["usd"],
         disabled                    => bool(0),
