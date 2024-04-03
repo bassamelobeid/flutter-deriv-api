@@ -67,7 +67,6 @@ sub calc_ask_price_detailed {
     if ($inner->category_code eq 'vanilla') {
         $response->{min_stake}                   = $inner->min_stake;
         $response->{max_stake}                   = $inner->max_stake;
-        $response->{number_of_contracts}         = $inner->number_of_contracts;
         $response->{display_number_of_contracts} = $inner->number_of_contracts;
         $response->{barrier_choices}             = $inner->strike_price_choices;
     }
@@ -161,7 +160,6 @@ sub calc_ask_price_detailed {
                     'order_date'   => $inner->take_profit->{date}->epoch,
                     'order_amount' => $inner->take_profit->{amount}}};
         }
-        $response->{number_of_contracts}         = $inner->number_of_contracts;
         $response->{display_number_of_contracts} = $inner->number_of_contracts;
         $response->{barrier_choices}             = $inner->strike_price_choices;
         $response->{min_stake}                   = $inner->min_stake;
