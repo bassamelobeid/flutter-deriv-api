@@ -50,7 +50,7 @@ sub get_commission_by_provider {
 
     my $config =
           $provider eq 'dxtrade' ? BOM::Config::Redis::redis_cfds()->hgetall('DERIVX_CONFIG::INSTRUMENT_LIST')
-        : $provider eq 'ctrader' ? BOM::Config::Redis::redis_ctrader_bridge()->hgetall('CTRADER::SYMBOL_LIST')
+        : $provider eq 'ctrader' ? BOM::Config::Redis::redis_ctrader()->hgetall('CTRADER::SYMBOL_LIST')
         :                          undef;
 
     my %symbols_map = $config->@*;
