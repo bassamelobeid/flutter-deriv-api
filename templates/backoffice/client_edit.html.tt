@@ -1066,6 +1066,12 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             </td>
             <td> Mark client as a Eligible Counterparty </td>
         </tr>
+        <tr>
+            <td class="label">
+                <input type="radio" name="client_categorization" value="partner" [% IF is_partner == 1 %]checked[% END %]/>
+            </td>
+            <td> Mark client as a Partner </td>
+        </tr>
     [% ELSE %]
         <tr>
             <td class="label">Facility is not available</td>

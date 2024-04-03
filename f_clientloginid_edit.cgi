@@ -1161,29 +1161,44 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
     if (exists $input{client_categorization}) {
         try {
-            if ($input{client_categorization} eq 'counterparty') {
-                set_client_status(
-                    $client, ['eligible_counterparty'],
-                    ['professional', 'professional_requested', 'professional_rejected'],
-                    'Client Marked as eligible counterparty', $clerk
-                );
-            } else {
-                my $client_categorization = $input{client_categorization} eq 'professional' ? 'professional' : 'retail';
-                goto $client_categorization;
+            my %actions = (
+                'counterparty' => sub {
+                    set_client_status(
+                        $client, ['eligible_counterparty'],
+                        ['professional', 'professional_requested', 'professional_rejected', 'partner'],
+                        'Client Marked as eligible counterparty', $clerk
+                    );
+                },
+                'partner' => sub {
+                    set_client_status(
+                        $client, ['partner'],
+                        ['professional', 'professional_requested', 'professional_rejected', 'eligible_counterparty'],
+                        'Client Marked as partner', $clerk
+                    );
+                },
+                'professional' => sub {
+                    set_client_status(
+                        $client, ['professional'],
+                        ['eligible_counterparty', 'professional_requested', 'professional_rejected', 'partner'],
+                        'Client Marked as professional as requested', $clerk
+                    );
+                },
+                'retail' => sub {
+                    my $status_to_clear = ['professional'];
+                    my $status_to_set   = ['professional_rejected'];
+                    if ($client->status->eligible_counterparty) {
+                        $status_to_clear = ['eligible_counterparty'];
+                        $status_to_set   = [];
+                    } elsif ($client->status->partner) {
+                        $status_to_clear = ['partner'];
+                    }
+                    set_client_status($client, $status_to_set, $status_to_clear, 'Revoke professional status', $clerk);
+                },
+            );
 
-                retail:
-                my $status_to_clear = $client->status->eligible_counterparty ? ['eligible_counterparty'] : ['professional'];
-                my $status_to_set   = $client->status->eligible_counterparty ? []                        : ['professional_rejected'];
-                set_client_status($client, $status_to_set, $status_to_clear, 'Revoke professional status', $clerk);
-
-                professional:
-                set_client_status(
-                    $client, ['professional'],
-                    ['eligible_counterparty', 'professional_requested', 'professional_rejected'],
-                    'Client Marked as professional as requested', $clerk
-                ) if $client_categorization eq 'professional';
-
-            }
+            my $categorization = $input{client_categorization};
+            $categorization = 'retail' unless exists $actions{$categorization};    # Default to 'retail' if not specified
+            $actions{$categorization}->();
 
         } catch ($e) {
             # Print clients that were not updated
