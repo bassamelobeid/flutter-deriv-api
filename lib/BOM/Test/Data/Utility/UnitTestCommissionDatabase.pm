@@ -8,7 +8,7 @@ sub _db_name {
 }
 
 sub _db_migrations_dir {
-    return '/home/git/regentmarkets/bom-postgres-commissiondb/config/sql';
+    return '/home/git/regentmarkets/bom-postgres-commissiondb/config/sql/';
 }
 
 sub _db_unit_tests { }

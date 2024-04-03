@@ -1,8 +1,0 @@
-Perltidy version is 20220613
-
-lib/BOM/Test/LoadTest/Proposal.pm: Begin Error Output Stream
-
-There is no previous '?' to match a ':' on line 81
-81: field $contracts_for : writer;
-                         ^
-665: To save a full .LOG file rerun with -g
