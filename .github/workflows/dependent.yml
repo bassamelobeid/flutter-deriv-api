@@ -1,0 +1,31 @@
+name: Dependent Tests
+
+on:
+  workflow_call:
+jobs:
+  bom-rpc:
+    uses: regentmarkets/bom-rpc/.github/workflows/base.yml@master
+    secrets: inherit
+    with: 
+      repository: regentmarkets/bom-rpc
+  bom-user:
+    uses: regentmarkets/bom-user/.github/workflows/base.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-user
+  bom-events:
+    uses: regentmarkets/bom-events/.github/workflows/base.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-events
+  bom-transaction:
+    uses: regentmarkets/bom-transaction/.github/workflows/base.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-transaction
+  dependent_test_status:
+    needs: [bom-rpc, bom-user, bom-events, bom-transaction]
+    if: always()
+    uses: regentmarkets/github-actions/.github/workflows/dependent-test-status.yml@master
+    with:
+      job_status: ${{ toJson(needs) }}
