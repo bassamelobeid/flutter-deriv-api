@@ -766,7 +766,6 @@ sub _build_bid_response {
                     'order_amount' => $contract->take_profit->{amount}}};
         }
         $response->{barrier}                     = $contract->display_barrier;
-        $response->{number_of_contracts}         = $contract->number_of_contracts;
         $response->{display_number_of_contracts} = $contract->number_of_contracts;
 
         # status of turbos is determined differently from other non-binary contracts
@@ -780,7 +779,6 @@ sub _build_bid_response {
     }
 
     if ($contract->category_code eq 'vanilla') {
-        $response->{number_of_contracts}         = $contract->number_of_contracts;
         $response->{display_number_of_contracts} = $contract->number_of_contracts;
     }
 
