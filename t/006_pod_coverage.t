@@ -14,7 +14,7 @@ my $allowed_naked_packages = {
     'BOM::Config::RedisTransactionLimits' => 2,
     'BOM::Config::Runtime'                => 2,
     'BOM::Config::Chronicle'              => 1,
-    'BOM::Config::Quants'                 => 1,
+    'BOM::Config::Quants'                 => 2,
     'BOM::Config::QuantsConfig'           => 6,
 };
 

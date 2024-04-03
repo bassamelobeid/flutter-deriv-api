@@ -7,19 +7,39 @@ use Test::More;
 use Test::Fatal;
 use Test::MockModule;
 use Test::Warnings;
+use Time::HiRes qw(gettimeofday tv_interval);
 
 use BOM::Config;
 use BOM::Config::Quants;
 
-my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
 # Mocking the exchange rate values with static ones in redis,
 # since they will change dynamically and cause the test cases to fail.
-$redis_exchangerates->set('limit:USD-to-AUD:10', 10);
-$redis_exchangerates->set('limit:USD-to-AUD:45', 45);
-$redis_exchangerates->set('limit:USD-to-AUD:65', 65);
-$redis_exchangerates->set('limit:USD-to-AUD:95', 95);
+my $erl_cache = BOM::Config::Quants::get_exchange_rate_limit_cache_ref;
+$erl_cache->clear;
 
-my @all_currencies = qw(EUR ETH AUD eUSDT tUSDT BTC LTC UST USDC USD GBP);
+$erl_cache->set(
+    'limit:USD-to-AUD:10' => {
+        time => [gettimeofday],
+        erl  => 10
+    });
+$erl_cache->set(
+    'limit:USD-to-AUD:45' => {
+        time => [gettimeofday],
+        erl  => 45
+    });
+$erl_cache->set(
+    'limit:USD-to-AUD:65' => {
+        time => [gettimeofday],
+        erl  => 65
+    });
+$erl_cache->set(
+    'limit:USD-to-AUD:95' => {
+        time => [gettimeofday],
+        erl  => 95
+    });
+
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+my @all_currencies      = qw(EUR ETH AUD eUSDT tUSDT BTC LTC UST USDC USD GBP);
 
 for my $currency (@all_currencies) {
     $redis_exchangerates->hmset(
@@ -110,7 +130,7 @@ subtest 'minimum_payout_limit ' => sub {
 
 };
 
-subtest 'maximum_payout_limita' => sub {
+subtest 'maximum_payout_limit' => sub {
     is BOM::Config::Quants::maximum_payout_limit("USD", "default_market", "default_contract_category"),
         $mocked_quant->{bet_limits}->{max_payout}->{default_landing_company}->{default_market}->{default_contract_category}->{USD},
         "correct arguments are passed";

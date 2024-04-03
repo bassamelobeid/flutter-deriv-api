@@ -17,6 +17,8 @@ use ExchangeRates::CurrencyConverter qw(convert_currency);
 use List::Util                       qw(max);
 use Format::Util::Numbers            qw(roundnear);
 use BOM::Config::Redis;
+use Time::HiRes qw(gettimeofday tv_interval);
+use Cache::LRU;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Log::Any                   qw($log);
@@ -25,9 +27,12 @@ use Exporter qw(import);
 our @EXPORT_OK = qw(get_exchangerates_limit market_pricing_limits minimum_payout_limit maximum_payout_limit minimum_stake_limit maximum_stake_limit);
 
 use constant {
-    TTL           => 3600,
-    MAX_DEVIATION => 0.2,
+    ERL_CACHE_EXPIRY => 10,
+    MAX_DEVIATION    => 0.2,
 };
+
+my $exchange_rate_limit_cache = Cache::LRU->new(size => 1000);
+sub get_exchange_rate_limit_cache_ref { return $exchange_rate_limit_cache; }
 
 =head2 get_exchangerates_limit
 
@@ -51,29 +56,29 @@ Returns a single number, the limit of the requested currency
 
 sub get_exchangerates_limit {
     my ($value, $currency) = @_;
-    return undef if (not(defined $value and defined $currency));
-
     my $unit = 'USD';
 
+    return undef  if (not(defined $value and defined $currency));
     return $value if ($value == 0 or $currency eq $unit);
 
-    my $key   = "limit:$unit-to-$currency:$value";
-    my $redis = BOM::Config::Redis::redis_exchangerates();
-
-    # Lazy get if exists
-    if ($redis->exists($key)) {
-        return ($redis->get($key) + 0);
+    my $key = "limit:$unit-to-$currency:$value";
+    my $price;
+    # Do we have a cache miss?
+    if (!$exchange_rate_limit_cache->get($key) || tv_interval($exchange_rate_limit_cache->get($key)->{time}) > ERL_CACHE_EXPIRY) {
+        $price = convert_currency($value + 0, $unit, $currency);
+        if (defined $price) {
+            $price = _round($price, MAX_DEVIATION);
+            $exchange_rate_limit_cache->set(
+                $key => {
+                    time => [gettimeofday],
+                    erl  => $price
+                });
+        }
+    } else {
+        $price = $exchange_rate_limit_cache->get($key)->{erl};
     }
 
-    my $redis_write = BOM::Config::Redis::redis_exchangerates_write();
-    my $price       = convert_currency($value + 0, $unit, $currency);
-    return undef if (not defined $price);
-
-    $price = _round($price, MAX_DEVIATION);
-
-    return $price if $redis_write->set($key, $price, 'EX', TTL) eq 'OK';
-
-    die 'Failed to convert ' . $value . ' amount of ' . $currency;
+    return $price;
 }
 
 =head2 _round

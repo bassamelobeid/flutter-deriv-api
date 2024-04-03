@@ -19,3 +19,4 @@ t/data/tmp
 .gitattributes
 .DS_Store
 Session.vim
+.idea
