@@ -5,6 +5,7 @@ on:
   workflow_call:
   schedule:
     - cron: '35 11 * * *'
+  pull_request:
 jobs:
   syntax:
     uses: regentmarkets/github-actions/.github/workflows/syntax.yml@master
