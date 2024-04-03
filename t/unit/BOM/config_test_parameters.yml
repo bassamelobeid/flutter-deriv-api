@@ -613,7 +613,7 @@
       write: *redis_config
   name: redis-cfds.yml
 - args:
-    config: BOM::Config::redis_ctrader_bridge_config
+    config: BOM::Config::redis_ctrader_config
     expected_config:
       read: *redis_config
       write: *redis_config

@@ -557,29 +557,29 @@ sub redis_cfds_write {
     return _redis('cfds', 'write', 10);
 }
 
-=head2 redis_ctrader_bridge
+=head2 redis_ctrader
 
-    my $redis = BOM::Config::Redis::redis_ctrader_bridge();
+    my $redis = BOM::Config::Redis::redis_ctrader();
 
 Returns a read-only L<RedisDB> handle to our CTrader Redis service.
 
 =cut
 
-sub redis_ctrader_bridge {
-    $config->{ctrader_bridge} //= BOM::Config::redis_ctrader_bridge_config();
+sub redis_ctrader {
+    $config->{ctrader_bridge} //= BOM::Config::redis_ctrader_config();
     return _redis('ctrader_bridge', 'read', 10);
 }
 
-=head2 redis_ctrader_bridge_write
+=head2 redis_ctrader_write
 
-    my $redis = BOM::Config::Redis::redis_ctrader_bridge_write();
+    my $redis = BOM::Config::Redis::redis_ctrader_write();
 
 Returns a writable L<RedisDB> handle to our CTrader Redis service.
 
 =cut
 
-sub redis_ctrader_bridge_write {
-    $config->{ctrader_bridge} //= BOM::Config::redis_ctrader_bridge_config();
+sub redis_ctrader_write {
+    $config->{ctrader_bridge} //= BOM::Config::redis_ctrader_config();
     return _redis('ctrader_bridge', 'write', 10);
 }
 
