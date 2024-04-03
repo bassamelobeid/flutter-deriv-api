@@ -97,7 +97,6 @@ subtest 'vanilla - send_ask' => sub {
         'display_number_of_contracts' => '640.90014',
         'max_stake'                   => '15',
         'min_stake'                   => '0.4',
-        'number_of_contracts'         => 640.90014,
         'rpc_time'                    => ignore(),
         'ask_price'                   => '10.00',
         skip_streaming                => 0,
@@ -180,7 +179,6 @@ subtest 'vanilla - get_bid' => sub {
         'status'                      => 'open',
         'expiry_time'                 => ignore(),
         'barrier_count'               => 1,
-        'number_of_contracts'         => '8.37887',
         'display_number_of_contracts' => '8.37887',
         'barrier'                     => '100.40',
     };
