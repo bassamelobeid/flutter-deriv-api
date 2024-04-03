@@ -2167,7 +2167,7 @@ sub update_fa {
     my ($client, $section_name) = @_;
     my $config = Business::Config->new()->financial_assessment();
     my $args   = +{
-        map  { $_ => request()->param($_) }
+        map  { $_ => decode_entities(request()->param($_)) }
         grep { request()->param($_) } keys $config->{$section_name}->%*
     };
 
