@@ -138,7 +138,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td>: <b>[% professional_status %]</b> </td>
     </tr>
     <tr>
-        <td class="bg-lightgrey" colspan="2">#AFFILIATE INFO</td>
+        <td class="bg-lightgrey" colspan="2">#MY AFFILIATE INFO</td>
     </tr>
     <tr>
         <td class="label">Affiliate Token</td>
@@ -164,10 +164,12 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <tr>
         <td class="label" style="vertical-align:middle">SEND RISK DISCLAIMER RESUBMISSION EMAIL</td>
-        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" style="vertical-align:middle" name="risk_disclaimer_email_checkbox" />
-            <span id="risk_disclaimer_email_checkbox_toggle" [% IF risk_disclaimer_email_checkbox %] style="display:inline" [% ELSE %]  style="display:none" [% END %]>    
-            <label for="risk_disclaimer_email_language">Select language:</label>
-            <select name="risk_disclaimer_email_language">
+        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" style="vertical-align:middle" name="risk_disclaimer_email_myaff_checkbox" />
+        [% risk_disclaimer_email_myaff_checkbox %]
+            <span id="risk_disclaimer_email_myaff_checkbox_toggle" [% IF risk_disclaimer_email_myaff_checkbox %] style="display:inline" [% ELSE %]  style="display:none" [% END %]>    
+            
+            <label for="risk_disclaimer_email_myaff_language">Select language:</label>
+            <select name="risk_disclaimer_email_myaff_language">
                 <option value="EN" selected>English</option>
                 <option value="ID">Indonesian</option>
                 <option value="PT">Portuguese</option>
@@ -179,7 +181,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="label"></td>
         <td>
-            <button type="submit" name="force_coc_acknowledgement" value="1" class="btn btn--primary">Force COC acknowledgement</button>
+            <button type="submit" name="force_coc_acknowledgement_myaff" value="1" class="btn btn--primary">Force COC acknowledgement</button>
         </td>
     </tr>
     
@@ -190,6 +192,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             <a class="btn btn--primary" href="[% request.url_for('backoffice/affiliate_reputation_details.cgi', {loginID => client.loginid , broker = client.broker }) %]">Affiliate reputation details</a>
         </td>
     </tr>
+    [% IF dynamic_works_enabled %]
+        [% INCLUDE 'backoffice/partners/partner_info.html.tt' client=client %]
+    [% END %]
+    
     <tr>
         <td class="bg-lightgrey" colspan="2">#AML SCREENING</td>
     </tr>

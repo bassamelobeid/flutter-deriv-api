@@ -1043,11 +1043,18 @@ if ($input{whattodo} eq 'copy_pa_details') {
     }
 }
 
+my $risk_disclaimer_email_checkbox = $input{risk_disclaimer_email_checkbox} // $input{risk_disclaimer_email_myaff_checkbox};
+my $force_coc_acknowledgement      = $input{force_coc_acknowledgement}      // $input{force_coc_acknowledgement_myaff};
+
 # AFFILIATE COC APPROVAL & RISK DISCLAIMER EMAIL
 if ($is_compliance) {
-    if ($input{risk_disclaimer_email_checkbox} eq 'on') {
+    if ($risk_disclaimer_email_checkbox eq 'on') {
         if ($client->user->affiliate) {
-            my $lang = $input{risk_disclaimer_email_language} // 'EN';
+            my $lang =
+                defined $input{risk_disclaimer_email_myaff_language}
+                ? $input{risk_disclaimer_email_myaff_language}
+                : $input{risk_disclaimer_email_language};
+            $lang = $lang // 'EN';
             notify_resubmission_of_risk_disclaimer($loginid, $lang, $clerk);
             print "<p class=\"success\">Risk Disclaimer Resubmission email (" . $lang . ") is sent to Client " . $client->loginid . "</p>";
         } else {
@@ -1055,7 +1062,7 @@ if ($is_compliance) {
         }
     }
 
-    if (defined $input{force_coc_acknowledgement}) {
+    if (defined $force_coc_acknowledgement) {
         if ($client->user->affiliate) {
             $client->user->set_affiliate_coc_approval(0);
             print "<p class=\"success\">Client " . $client->loginid . " Affiliate's Code of Conduct approval banner triggered.</p>";
@@ -1065,8 +1072,7 @@ if ($is_compliance) {
     }
 }
 
-my $skip_loop_all_clients =
-    (defined $input{force_coc_acknowledgement} || defined $input{risk_disclaimer_email_checkbox});
+my $skip_loop_all_clients = (defined $force_coc_acknowledgement || defined $risk_disclaimer_email_checkbox);
 
 # SAVE DETAILS
 # TODO:  Once we switch to userdb, we will not need to loop through all clients

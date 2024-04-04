@@ -735,6 +735,9 @@ SQL
         $is_npj = 1;
     }
 
+    BOM::Config::Runtime->instance->app_config->check_for_update();
+    my $dynamic_works_enabled = BOM::Config::Runtime->instance->app_config->partners->enable_dynamic_works;
+
     my $template_param = {
         is_readonly          => $is_readonly,
         balance              => $balance,
@@ -842,6 +845,7 @@ SQL
         auto_tin_approval_enabled          => $app_config->feature_flags->auto_tin_approval,
         onfido_suspended                   => BOM::Config::Runtime->instance->app_config->system->suspend->onfido,
         is_idv_validated                   => $client->is_idv_validated,
+        dynamic_works_enabled              => $dynamic_works_enabled,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
