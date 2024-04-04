@@ -6761,6 +6761,19 @@ sub is_tin_manually_approved {
     return 1 if defined $self->tin_approved_time;
 
     return 0;
+
+}
+
+=head2 partner_id
+
+Returns the partner id for the client, currently it returns the partner id linked with dynamic works.
+
+=cut
+
+sub partner_id {
+    my ($self) = @_;
+    # TODO: call partner hub for partner id
+    return "TEST_VALUE";
 }
 
 1;
