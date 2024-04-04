@@ -204,7 +204,7 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
 
 };
 
-subtest 'In status transfers_blocked Fiat <-> Crypto transfers are not allowed' => sub {
+subtest 'In statuses transfers_blocked and sibling_transfers_blocked Fiat <-> Crypto transfers are not allowed' => sub {
 
     my $email       = 'new_email' . rand(999) . '@binary.com';
     my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -271,6 +271,28 @@ subtest 'In status transfers_blocked Fiat <-> Crypto transfers are not allowed' 
         ->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
         'Correct error message when transfer from crypto to fiat when transfers is blocked');
 
+    $client_fiat->status->clear_transfers_blocked;
+
+    $client_fiat->status->set('sibling_transfers_blocked', 'TEST', 'Test block');
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_crypto->loginid, 'test token');
+
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
+        'Correct error message when transfer from crypto to fiat when transfers is blocked');
+
+    $amount_to_transfer = 199;
+    $params->{token}    = BOM::Platform::Token::API->new->create_token($client_crypto->loginid, 'test token');
+    $params->{args}     = {
+        account_from => $client_fiat->loginid,
+        account_to   => $client_crypto->loginid,
+        currency     => 'USD',
+        amount       => $amount_to_transfer
+    };
+
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
+        'Correct error message when transfer from crypto to fiat when transfers is blocked');
 };
 
 subtest 'Crypto <-> Crypto account transfers' => sub {

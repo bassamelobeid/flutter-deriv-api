@@ -1388,7 +1388,7 @@ sub _is_financial_assessment_complete {
     return 1 if $group =~ /^demo/;
 
     # this case doesn't follow the general rule (labuan are exclusively mt5 landing companies).
-    if (my $financial_assessment_requirements = $args{financial_assessment_requirements}) {
+    if ($args{financial_assessment_requirements}) {
         my $financial_assessment = decode_fa($client->financial_assessment());
 
         my $is_FI =
@@ -2298,17 +2298,13 @@ sub _mt5_validate_and_get_amount {
     return create_error_future($kyc_cashier_permission_check_result->{error_code})
         if $kyc_cashier_permission_check_result->{error_code};
 
-    my ($action, $action_counterpart, $from_loginid, $to_loginid);
+    my ($from_loginid, $to_loginid);
     if ($error_code =~ /Withdrawal/) {
-        $action             = 'withdrawal';
-        $action_counterpart = 'deposit';
-        $from_loginid       = $mt5_loginid;
-        $to_loginid         = $loginid;
+        $from_loginid = $mt5_loginid;
+        $to_loginid   = $loginid;
     } else {
-        $action             = 'deposit';
-        $action_counterpart = 'withdrawal';
-        $from_loginid       = $loginid;
-        $to_loginid         = $mt5_loginid;
+        $from_loginid = $loginid;
+        $to_loginid   = $mt5_loginid;
     }
 
     return _get_user_with_group($mt5_loginid)->then(
@@ -2466,7 +2462,8 @@ sub _mt5_validate_and_get_amount {
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
 
             return create_error_future('TransfersBlocked', {message => localize("Transfers are not allowed for these accounts.")})
-                if ($client->status->transfers_blocked && ($mt5_currency_type ne $source_currency_type));
+                if (($client->status->cfd_transfers_blocked)
+                || ($client->status->transfers_blocked && ($mt5_currency_type ne $source_currency_type)));
 
             unless ((LandingCompany::Registry::get_currency_type($client_currency) ne 'crypto')
                 || $mt5_currency eq $client_currency

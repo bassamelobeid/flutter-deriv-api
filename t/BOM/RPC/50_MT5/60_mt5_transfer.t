@@ -479,6 +479,62 @@ subtest 'multi currency transfers' => sub {
         $client_eur->status->clear_transfers_blocked;
     };
 
+    subtest 'MT5 Transfers with cfd_transfers_blocked and sibling_transfers_blocked status tests' => sub {
+        $client_ust->status->setnx('cfd_transfers_blocked', 'system', 'CFDs transfers are blocked');
+        $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_ust->loginid;
+        $redis->hmset(
+            'exchange_rates::UST_USD',
+            quote => $UST_USD,
+            epoch => time
+        );
+
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error('CR (crypto) -> MT5 (USD), Blocked if the client is cfd_transfers_blocked')
+            ->error_message_is('Transfers are not allowed for these accounts.');
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('MT5 (USD) -> CR (crypto), Blocked if the client is cfd_transfers_blocked')
+            ->error_message_is('Transfers are not allowed for these accounts.');
+
+        my $mock_landing = Test::MockModule->new('LandingCompany::Registry');
+        $mock_landing->mock(
+            get_currency_type => sub {
+                return 'crypto';
+            });
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error('CR (crypto) -> MT5 (crypto), Blocked if the client is cfd_transfers_blocked')
+            ->error_message_is('Transfers are not allowed for these accounts.');
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('MT5 (crypto) -> CR (crypto), Blocked if the client is cfd_transfers_blocked')
+            ->error_message_is('Transfers are not allowed for these accounts.');
+        $mock_landing->unmock('get_currency_type');
+        is LandingCompany::Registry::get_currency_type('USD'), 'fiat', 'confirm umock for the next tests';
+
+        $client_eur->status->setnx('cfd_transfers_blocked', 'system', 'CFDs transfers are blocked');
+        $manager_module->mock(
+            'deposit',
+            sub {
+                is financialrounding('amount', 'USD', shift->{amount}),
+                    financialrounding('amount', 'USD', $eur_test_amount * $EUR_USD * $after_fiat_fee),
+                    'Correct forex fee for USD<->EUR';
+                return Future->done({success => 1});
+            });
+        $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_eur->loginid;
+        $redis->hmset(
+            'exchange_rates::EUR_USD',
+            quote => $EUR_USD,
+            epoch => time - (3600 * 12));
+
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('MT5 (USD) -> CR (fiat), Blocked if the client is cfd_transfers_blocked')
+            ->error_message_is('Transfers are not allowed for these accounts.');
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error('CR (fiat) -> MT5 (USD), Blocked if the client is cfd_transfers_blocked')
+            ->error_message_is('Transfers are not allowed for these accounts.');
+
+        $client_ust->status->clear_cfd_transfers_blocked;
+        $client_eur->status->clear_cfd_transfers_blocked;
+
+        # Should not be blocked if only sibling_transfers_blocked status is applied
+        $client_eur->status->setnx('sibling_transfers_blocked', 'system', 'Siblings transfers are blocked');
+        ok $client_eur->status->sibling_transfers_blocked, 'client is sibling_transfers_blocked';
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('MT5 (USD) -> CR (fiat), Allowed if the client is sibling_transfers_blocked');
+        $c->call_ok('mt5_deposit',    $deposit_params)->has_no_error('CR (fiat) -> MT5 (USD), Allowed if the client is sibling_transfers_blocked');
+    };
+
     $mock_fees->unmock('transfer_between_accounts_fees');
     $demo_account_mock->unmock_all();
 };

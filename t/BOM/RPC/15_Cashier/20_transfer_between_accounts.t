@@ -1838,6 +1838,16 @@ subtest 'MT5' => sub {
 
     $test_client->status->clear_transfers_blocked;
 
+    # MT5 (fiat) <=> CR (fiat) is blocked if the client is cfd_transfers_blocked
+    $test_client->status->set('cfd_transfers_blocked', 'system', 'testing transfers_blocked for real -> mt5');
+
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_like(qr/Transfers are not allowed for these accounts./,
+        'Error message returned when cfd_transfers_blocked status is applied on client event with same currency types');
+
+    $test_client->status->clear_cfd_transfers_blocked;
+
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
     #set cashier locked status to make sure for MT5 -> Real transfer it is failed.
     $test_client->status->set('cashier_locked', 'system', 'test');
