@@ -45,7 +45,7 @@ my $user = BOM::User->create(
     email    => random_email_address,
     password => 'test',
 );
-my $crypto_client = create_client();
+my $crypto_client = create_client('CR');
 $crypto_client->set_default_account($currency);
 $crypto_client->save();
 $user->add_client($crypto_client);
@@ -191,8 +191,31 @@ subtest "/v1/payment/deposit" => sub {
             $body->{client_loginid}    = $crypto_loginid;
             $body->{incorrect_loginid} = undef;
             $body->{crypto_id}         = $old_value;
-
             $mocked_event->unmock_all;
+
+        };
+
+        subtest "incorrect loginid associated with an unmatched broker_code sibling account" => sub {
+            $body->{client_loginid} = undef;
+            my $old_value = $body->{crypto_id};
+            $body->{crypto_id} = 2;
+
+            # create sibling account with different broker_code
+            my $sibling_crypto_client = create_client('CRW');
+            $sibling_crypto_client->set_default_account('ETH');
+            $sibling_crypto_client->save();
+            $user->add_client($sibling_crypto_client);
+            my $sibling_crypto_loginid = $sibling_crypto_client->loginid;
+
+            $body->{incorrect_loginid} = $sibling_crypto_loginid;
+
+            my $error = create_error('SiblingAccountNotFound', message_params => $body->{crypto_id});
+            call_ok('post' => '/v1/payment/deposit' => $body)->has_error->error_code_is('SiblingAccountNotFound')
+                ->error_message_like($error->{message});
+
+            $body->{client_loginid}    = $crypto_loginid;
+            $body->{incorrect_loginid} = undef;
+            $body->{crypto_id}         = $old_value;
 
         };
 

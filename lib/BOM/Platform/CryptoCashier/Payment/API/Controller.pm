@@ -72,7 +72,9 @@ sub deposit {
             include_self                 => 0
         );
 
-        my $correct_account = first { $sibling_accounts->{$_}{currency} eq $currency_code } keys %$sibling_accounts;
+        my $correct_account = first {
+            $sibling_accounts->{$_}{currency} eq $currency_code && $sibling_accounts->{$_}{broker_code} eq $incorrect_loginid_client->broker_code
+        } keys %$sibling_accounts;
 
         return $self->render_error('SiblingAccountNotFound', message_params => $crypto_id) unless ($correct_account);
         $client_loginid = $correct_account;
