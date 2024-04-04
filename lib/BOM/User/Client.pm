@@ -1820,6 +1820,7 @@ sub get_siblings_information {
             category             => $cl->get_account_type->category->name,
             demo_account         => $cl->is_virtual,
             disabled             => $cl->status->disabled ? 1 : 0,
+            broker_code          => $cl->broker_code,
             $cl->status->duplicate_account ? (duplicate => 1) : ()}
             unless (!$include_self && ($cl->loginid eq $self->loginid));
     }

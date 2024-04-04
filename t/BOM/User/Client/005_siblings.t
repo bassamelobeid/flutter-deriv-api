@@ -431,6 +431,7 @@ subtest 'get_siblings_information' => sub {
             'currency'             => 'BTC',
             'loginid'              => $client_real->loginid,
             'landing_company_name' => 'svg',
+            'broker_code'          => 'CR',
         },
         $client_disabled->loginid => {
             'demo_account'         => 0,
@@ -441,6 +442,7 @@ subtest 'get_siblings_information' => sub {
             'currency'             => 'EUR',
             'loginid'              => $client_disabled->loginid,
             'landing_company_name' => 'svg',
+            'broker_code'          => 'CR',
         },
         $disabled_no_currency->loginid => {
             'demo_account'         => 0,
@@ -451,6 +453,7 @@ subtest 'get_siblings_information' => sub {
             'currency'             => '',
             'loginid'              => $disabled_no_currency->loginid,
             'landing_company_name' => 'svg',
+            'broker_code'          => 'CR'
         },
         $wallet_virtual->loginid => {
             'demo_account'         => 1,
@@ -461,6 +464,7 @@ subtest 'get_siblings_information' => sub {
             'currency'             => 'LTC',
             'loginid'              => $wallet_virtual->loginid,
             'landing_company_name' => 'virtual',
+            'broker_code'          => 'VRW',
         },
         $client_virtual->loginid => {
             'demo_account'         => 1,
@@ -471,6 +475,7 @@ subtest 'get_siblings_information' => sub {
             'currency'             => 'USD',
             'loginid'              => $client_virtual->loginid,
             'landing_company_name' => 'virtual',
+            'broker_code'          => 'VRTC',
         }};
 
     is_deeply $client_real->get_siblings_information(), $all_accounts, 'List of all clients with default args';
@@ -528,6 +533,7 @@ subtest 'get_siblings_information' => sub {
             'currency'             => 'ETH',
             'loginid'              => $client_duplicated->loginid,
             'landing_company_name' => 'svg',
+            'broker_code'          => 'CR',
         }
         },
         'Duplicate account is included';
