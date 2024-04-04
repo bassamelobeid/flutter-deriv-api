@@ -230,6 +230,11 @@ rule 'transfers.clients_are_not_transfer_blocked' => {
 
         my %currencies = _get_currency_info($context, $args);
 
+        # If this status is applied, we block transfers irrespective of the currency types
+        $self->fail('TransferBlocked')
+            if $context->client({loginid => $args->{loginid_from}})->status->sibling_transfers_blocked
+            || $context->client({loginid => $args->{loginid_to}})->status->sibling_transfers_blocked;
+
         return 1 if $currencies{from}->{type} eq $currencies{to}->{type};
 
         $self->fail('TransferBlocked')

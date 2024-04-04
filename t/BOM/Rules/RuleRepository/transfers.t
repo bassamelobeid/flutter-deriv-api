@@ -823,69 +823,116 @@ subtest $rule_name => sub {
         'Correct error for missing receiving loginid';
 
     my @test_cases = ({
-            currency => ['USD', 'USD'],
-            blocked  => [1,     1],
-            pass     => 1,
-            message  => 'Same curency with blocked clients is OK'
+            currency          => ['USD', 'USD'],
+            blocked           => [1,     1],
+            transfers_blocked => {
+                pass    => 1,
+                message => 'Same curency with blocked clients is OK'
+            },
+            sibling_transfers_blocked => {
+                pass    => 0,
+                message => 'Same curency with blocked clients will fail'
+            }
         },
         {
-            currency => ['USD', 'EUR'],
-            blocked  => [1,     1],
-            pass     => 1,
-            message  => 'Fiat curencies with blocked clients is OK'
+            currency          => ['USD', 'EUR'],
+            blocked           => [1,     1],
+            transfers_blocked => {
+                pass    => 1,
+                message => 'Fiat curencies with blocked clients is OK'
+            },
+            sibling_transfers_blocked => {
+                pass    => 0,
+                message => 'Fiat curencies with blocked clients will fail'
+            }
         },
         {
-            currency => ['BTC', 'ETH'],
-            blocked  => [1,     1],
-            pass     => 1,
-            message  => 'Crypto curencies with blocked clients is OK'
+            currency          => ['BTC', 'ETH'],
+            blocked           => [1,     1],
+            transfers_blocked => {
+                pass    => 1,
+                message => 'Crypto curencies with blocked clients is OK'
+            },
+            sibling_transfers_blocked => {
+                pass    => 0,
+                message => 'Crypto curencies with blocked clients will fail'
+            }
         },
         {
-            currency => ['BTC', 'USD'],
-            blocked  => [1,     1],
-            pass     => 0,
-            message  => 'Crypto-fiat with blocked clients will fail'
+            currency          => ['BTC', 'USD'],
+            blocked           => [1,     1],
+            transfers_blocked => {
+                pass    => 0,
+                message => 'Crypto-fiat with blocked clients will fail'
+            },
+            sibling_transfers_blocked => {
+                pass    => 0,
+                message => 'Crypto-fiat with blocked clients will fail'
+            }
         },
         {
-            currency => ['BTC', 'USD'],
-            blocked  => [1,     0],
-            pass     => 0,
-            message  => 'Crypto-fiat with from-client blocked will fail'
+            currency          => ['BTC', 'USD'],
+            blocked           => [1,     0],
+            transfers_blocked => {
+                pass    => 0,
+                message => 'Crypto-fiat with to-client blocked will fail'
+            },
+            sibling_transfers_blocked => {
+                pass    => 0,
+                message => 'Crypto-fiat with to-client blocked will fail'
+            }
         },
         {
-            currency => ['BTC', 'USD'],
-            blocked  => [0,     1],
-            pass     => 0,
-            message  => 'Crypto-fiat with to-client blocked will fail'
+            currency          => ['BTC', 'USD'],
+            blocked           => [0,     1],
+            transfers_blocked => {
+                pass    => 0,
+                message => 'Crypto-fiat with from-client blocked will fail'
+            },
+            sibling_transfers_blocked => {
+                pass    => 0,
+                message => 'Crypto-fiat with from-client blocked will fail'
+            }
         },
         {
-            currency => ['BTC', 'USD'],
-            blocked  => [0,     0],
-            pass     => 1,
-            message  => 'Crypto-fiat with no client blocked will pass'
+            currency          => ['BTC', 'USD'],
+            blocked           => [0,     0],
+            transfers_blocked => {
+                pass    => 1,
+                message => 'Crypto-fiat with no client blocked will pass'
+            },
+            sibling_transfers_blocked => {
+                pass    => 1,
+                message => 'Crypto-fiat with no client blocked will pass'
+            }
         },
     );
 
-    for my $test_case (@test_cases) {
-        my @test_clients = map { $clients{$_} } $test_case->{currency}->@*;
-        @args{qw/loginid_from loginid_to/} = map { $_->loginid } @test_clients;
+    for my $status_to_apply (qw(transfers_blocked sibling_transfers_blocked)) {
+        subtest $status_to_apply => sub {
+            for my $test_case (@test_cases) {
+                my @test_clients = map { $clients{$_} } $test_case->{currency}->@*;
+                @args{qw/loginid_from loginid_to/} = map { $_->loginid } @test_clients;
 
-        for (0, 1) {
-            $test_case->{blocked}->[$_]
-                ? $test_clients[$_]->status->setnx('transfers_blocked', 'test', 'test')
-                : $test_clients[$_]->status->clear_transfers_blocked;
-        }
-        $rule_engine = BOM::Rules::Engine->new(client => \@test_clients);
+                for (0, 1) {
+                    my $method = "clear_$status_to_apply";
+                    $test_case->{blocked}->[$_]
+                        ? $test_clients[$_]->status->setnx($status_to_apply, 'test', 'test')
+                        : $test_clients[$_]->status->$method;
+                }
+                $rule_engine = BOM::Rules::Engine->new(client => \@test_clients);
 
-        if ($test_case->{pass}) {
-            lives_ok { $rule_engine->apply_rules($rule_name, %args) } $test_case->{message};
-        } else {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-                {
-                rule       => $rule_name,
-                error_code => 'TransferBlocked',
-                },
-                $test_case->{message};
+                if ($test_case->{$status_to_apply}->{pass}) {
+                    lives_ok { $rule_engine->apply_rules($rule_name, %args) } $test_case->{$status_to_apply}->{message};
+                } else {
+                    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                        {
+                        rule       => $rule_name,
+                        error_code => 'TransferBlocked',
+                        },
+                        $test_case->{$status_to_apply}->{message};
+                }
+            }
         }
     }
 };
