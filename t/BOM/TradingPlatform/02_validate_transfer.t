@@ -109,6 +109,14 @@ subtest 'common' => sub {
     cmp_deeply(exception { $platform->validate_transfer(%args) }, {error_code => 'PlatformTransferBlocked'}, 'client has transfers_blocked status',);
     $client->status->clear_transfers_blocked;
 
+    $client->status->set('cfd_transfers_blocked', 'system', 'test');
+    cmp_deeply(
+        exception { $platform->validate_transfer(%args) },
+        {error_code => 'PlatformTransferBlocked'},
+        'client has cfd_transfers_blocked status',
+    );
+    $client->status->clear_cfd_transfers_blocked;
+
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['USD', 'EUR']);
     cmp_deeply(
         exception { $platform->validate_transfer(%args) },

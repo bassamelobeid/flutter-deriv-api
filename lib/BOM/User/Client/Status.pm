@@ -10,7 +10,6 @@ use Class::Method::Modifiers qw( install_modifier );
 use Carp                     qw( croak );
 use Array::Utils             qw(array_minus);
 
-use BOM::Config;
 use Business::Config::Account;
 
 has client_loginid => (
@@ -38,6 +37,7 @@ use constant STATUS_CODES => qw(
     deposit_attempt df_deposit_requires_poi smarty_streets_validated trading_hub poi_dob_mismatch
     allow_poinc_resubmission cooling_off_period poa_address_mismatch poi_poa_uploaded eligible_counterparty partner
     allow_duplicate_signup poi_duplicated_documents selfie_pending selfie_verified selfie_rejected resident_self_declaration
+    sibling_transfers_blocked cfd_transfers_blocked
 );
 
 use constant STATUS_COPY_CONFIG => Business::Config::Account->new()->statuses_copied_from_siblings();
@@ -47,7 +47,37 @@ my @deprecated_codes = qw(
     proveid_requested proveid_pending
 );
 
-use constant STATUS_CODE_HIERARCHY => BOM::Config::status_hierarchy()->{hierarchy};
+use constant STATUS_CODE_HIERARCHY => Business::Config::Account->new()->status_hierarchy()->{hierarchy};
+
+=head2 _build_sorted_copy_config
+
+Function to build a status copy config by sorting it in a parent status first way
+From the hierarchy, we obtain the parents and based on that, sort the status config array
+
+=over 4
+
+=item * tree: hashref, tree to obtain parent statuses from
+
+=back
+
+Returns an array containing the sorted status copy config
+
+=cut
+
+sub _build_sorted_copy_config {
+    my @parent_statuses = keys(shift->%*);
+    my @all_statuses    = keys(STATUS_COPY_CONFIG->{config}->%*);
+
+    # Sorts based on the lookup of parent_statuses
+    my %index;
+    @index{@parent_statuses} = (0 .. $#parent_statuses);
+    my @sorted_statuses =
+        sort { (exists $index{$a} ? $index{$a} : $#all_statuses + 1) <=> (exists $index{$b} ? $index{$b} : $#all_statuses + 1) } @all_statuses;
+
+    return @sorted_statuses;
+}
+
+use constant SORTED_STATUS_COPY_CONFIG => _build_sorted_copy_config(STATUS_CODE_HIERARCHY);
 
 =head2 _build_parent_map
 
@@ -650,11 +680,9 @@ Returns an array ref of status codes
 =cut
 
 sub get_all_statuses_to_copy_from_siblings {
-    my $config                  = STATUS_COPY_CONFIG->{config};
     my $duplicate_only_statuses = get_duplicate_only_statuses_to_copy_from_siblings();
-    my @all_statuses            = keys(%$config);
+    my @all_statuses            = SORTED_STATUS_COPY_CONFIG;
     return [array_minus(@all_statuses, @$duplicate_only_statuses)];
-
 }
 
 =head2 get_duplicate_only_statuses_to_copy_from_siblings

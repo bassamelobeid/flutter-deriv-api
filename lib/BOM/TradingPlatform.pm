@@ -237,7 +237,7 @@ sub validate_transfer {
     my $app_config = BOM::Config::Runtime->instance->app_config;
     die +{error_code => 'PlatformTransferSuspended'} if $app_config->system->suspend->payments;
     die +{error_code => 'PlatformTransferSuspended'} if $app_config->system->suspend->transfer_between_accounts;
-    die +{error_code => 'PlatformTransferBlocked'}   if $self->client->status->transfers_blocked;
+    die +{error_code => 'PlatformTransferBlocked'}   if $self->client->status->transfers_blocked || $self->client->status->cfd_transfers_blocked;
 
     die +{error_code => 'PlatformTransferNocurrency'} unless $self->client->account;
     my $local_currency = $self->client->account->currency_code;
