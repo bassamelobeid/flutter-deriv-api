@@ -778,6 +778,8 @@ sub status_op_processor {
         cryptoautorejectdisabled  => 'crypto_auto_reject_disabled',
         cryptoautoapprovedisabled => 'crypto_auto_approve_disabled',
         allowduplicatesignup      => 'allow_duplicate_signup',
+        siblingtransfersblocked   => 'sibling_transfers_blocked',
+        cfdtransfersblocked       => 'cfd_transfers_blocked',
     };
 
     if ($client_status_type && $status_map->{$client_status_type}) {

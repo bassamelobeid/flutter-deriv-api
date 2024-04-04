@@ -985,25 +985,18 @@ subtest 'Sibling Status Sync upon creation' => sub {
 
     my ($real_client) = @{$real_acc}{'client'};
 
-    my @statuses_to_be_copied = (
-        'no_trading',               'withdrawal_locked',      'age_verification',        'transfers_blocked',
-        'allow_poi_resubmission',   'allow_poa_resubmission', 'potential_fraud',         'poi_name_mismatch',
-        'poi_dob_mismatch',         'cashier_locked',         'unwelcome',               'no_withdrawal_or_trading',
-        'internal_client',          'shared_payment_method',  'df_deposit_requires_poi', 'poi_name_mismatch',
-        'smarty_streets_validated', 'address_verified',       'poi_dob_mismatch',        'cooling_off_period',
-        'poi_poa_uploaded',         'poa_address_mismatch'
-    );
+    my $statuses_to_be_copied = BOM::User::Client::Status::get_all_statuses_to_copy_from_siblings();
 
     subtest 'Statuses that should be copied' => sub {
 
-        for my $status (@statuses_to_be_copied) {
+        for my $status (@$statuses_to_be_copied) {
             $real_client->status->upsert($status, 'system', "$status is now set");
         }
 
         my $real_acc_new    = create_real_acc($vr_client, $user, 'CR');
         my $real_client_new = @{$real_acc_new}{'client'};
 
-        for my $status (@statuses_to_be_copied) {
+        for my $status (@$statuses_to_be_copied) {
             ok $real_client_new->status->$status->{staff_name} eq $real_client->status->$status->{staff_name},
                 "$status staff_name copied to new real client upon creation";
             if ($status =~ /allow_po(i|a)_resubmission/ || $status =~ /poi_(.*)_mismatch/ || $status eq 'financial_risk_approval') {
@@ -1025,7 +1018,7 @@ subtest 'Sibling Status Sync upon creation' => sub {
     subtest 'Statuses that shouldn\'t be copied' => sub {
 
         my @all_statuses              = BOM::User::Client::Status::STATUS_CODES;
-        my @statuses_not_to_be_copied = Array::Utils::array_diff(@all_statuses, @statuses_to_be_copied);
+        my @statuses_not_to_be_copied = Array::Utils::array_diff(@all_statuses, @$statuses_to_be_copied);
 
         for my $status (@statuses_not_to_be_copied) {
             $real_client->status->upsert($status, 'system', "$status is now set");
