@@ -274,6 +274,20 @@ my $UNTRUSTED_STATUS = [{
         'code'        => 'allow_duplicate_signup',
         'show_reason' => 'yes',
     },
+    {
+        'linktype'    => 'siblingtransfersblocked',
+        'comments'    => 'Transfer to Sibling account locked',
+        'code'        => 'sibling_transfers_blocked',
+        'show_reason' => 'yes',
+        'explanation' => 'Restricts transfers for client with siblings irrespective of the currency types.',
+    },
+    {
+        'linktype'    => 'cfdtransfersblocked',
+        'comments'    => 'Transfer to CFD account locked',
+        'code'        => 'cfd_transfers_blocked',
+        'show_reason' => 'yes',
+        'explanation' => 'Restricts transfers for client with CFDs.',
+    },
 
 ];
 
