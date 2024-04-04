@@ -24,10 +24,9 @@ my @all_cryptos      = LandingCompany::Registry::all_crypto_currencies();
 my $transaction_hash = trim(request()->param('transaction_hash'));
 my $to_address       = trim(request()->param('to_address'));
 my $currency_code    = request()->param('currency');
-my $broker           = request()->broker_code;
-my $clientdb         = BOM::Database::ClientDB->new({broker_code => $broker});
 my $response_bodies;
 my $sibling_account;
+my $broker_code;
 my $status;
 
 my $batch = BOM::Cryptocurrency::BatchAPI->new();
@@ -55,6 +54,9 @@ if ($transaction_hash) {
         $sibling_account = $response_bodies->{sibling_client_loginid};
         # Check if sibling account has been created in the database
         $sibling_account = get_sibiling_account_by_currency_code($client_loginid, $wrong_currency_code) if $status eq 'ERROR';
+
+        ($broker_code) = $client_loginid =~ /^([A-Z]+)\d+$/;
+
     }
 }
 
@@ -69,6 +71,7 @@ BOM::Backoffice::Request::template()->process(
         currency_options  => \@all_cryptos,
         currency_selected => $currency_code,
         status            => $status,
+        broker_code       => $broker_code,
         credit_url        => request()->url_for('backoffice/crypto_credit_wrong_currency_deposits.cgi'),
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 

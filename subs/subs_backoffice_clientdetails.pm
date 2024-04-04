@@ -2589,14 +2589,14 @@ sub get_sibiling_account_by_currency_code {
     my $client = BOM::User::Client->new({loginid => $client_loginid});
     my $user   = $client->user;
 
-    foreach my $sibling_lid ($user->bom_real_loginids) {
-        next if ($sibling_lid eq $client_loginid);
-        next unless (LandingCompany::Registry->check_broker_from_loginid($sibling_lid));
+    foreach my $sibling_loginid ($user->bom_real_loginids) {
+        next if ($sibling_loginid eq $client_loginid);
+        next unless (LandingCompany::Registry->check_broker_from_loginid($sibling_loginid));
 
-        my $sibling_client   = BOM::User::Client->new({loginid => $sibling_lid});
+        my $sibling_client   = BOM::User::Client->new({loginid => $sibling_loginid});
         my $sibling_currency = $sibling_client->default_account->currency_code;
 
-        return $sibling_lid if ($sibling_currency eq $currency_code);
+        return $sibling_loginid if ($sibling_currency eq $currency_code && $sibling_client->broker_code eq $client->broker_code);
     }
 
     return undef;

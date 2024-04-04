@@ -48,7 +48,7 @@
                 <input type="button"  onclick="credit()" class="btn btn--primary" name="credit" value="credit" />
                 <p id="process"></p>
             [% ELSE %]
-                <p>Client needs to create <b>[% data.wrong_currency %]</b> account.</p>
+                <p>Client needs to create <b>[% data.wrong_currency %] </b> account on <b>[% broker_code %]</b>.</p>
             [% END %]
         [% ELSIF status == 'PENDING' %]
             <p class ="notify notify--warning">The payment is under processing (the payment status is <b>PENDING</b>)</p>
