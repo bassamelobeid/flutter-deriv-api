@@ -38,7 +38,6 @@ jobs:
       - 
         name: json_schemas tests
         run: |
-          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make json_schemas 
       - 
         name: Update UID for nobody user
@@ -82,7 +81,6 @@ jobs:
       - 
         name : Unit tests 
         run: |
-          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make unit
       - 
         name: Update UID for nobody user
@@ -124,7 +122,6 @@ jobs:
         run: |
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make test1 
       - 
         name: Update UID for nobody user
@@ -166,7 +163,6 @@ jobs:
         run: |
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make test2 
       - 
         name: Update UID for nobody user
