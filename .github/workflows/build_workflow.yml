@@ -37,9 +37,6 @@ jobs:
         name: Code structure and syntax
         run: make syntax_diff
       - 
-        name: Enable Test Report Generation
-        run: echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
-      - 
         name: unit tests
         run: make unit
       - 
