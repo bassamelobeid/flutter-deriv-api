@@ -30,7 +30,6 @@ jobs:
         run: make syntax
       - name: unit tests
         run: |
-          echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
           make unit
   core:
     uses: regentmarkets/github-actions/.github/workflows/core.yml@master
