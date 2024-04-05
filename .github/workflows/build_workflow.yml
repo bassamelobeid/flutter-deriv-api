@@ -27,33 +27,30 @@ jobs:
     env:
       LOG_LEVEL: debug
     steps:
-      - 
+      -
         name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
-      - 
+      -
         name: Code structure and syntax
         run: |
           sudo mkdir -p /home/website/www/temp
           make syntax_diff
-      - 
-        name: Configure Test Reporting
-        run: echo '--formatter TAP::Formatter::JUnit::PrintTxtStdout' >> .proverc
-      - 
+      -
         name: unit tests
         run: make unit
-      - 
+      -
         name: Core tests
         run: make test
-      - 
+      -
         name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
         if: success() || failure()
-      - 
+      -
         name: Upload Test Results
-        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0 
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
         if: success() || failure()
         with:
           name: test-results-core_unit_syntax_diff
@@ -64,9 +61,9 @@ jobs:
     if: success() || failure()
     runs-on: ubuntu-latest
     steps:
-      - 
+      -
         name: Upload results to DataDog
         uses: regentmarkets/github-actions/datadog-publish@master
-        with: 
+        with:
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
           service-name: bom-backoffice
