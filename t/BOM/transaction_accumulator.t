@@ -531,6 +531,9 @@ subtest 'sell failure due to update' => sub {
     ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
     # create sell transaction object
 
+    $mocked_contract->mock('is_expired', sub { return 0 });
+    $mocked_contract->mock('_build_pnl', sub { return 1 });
+
     my $contract_sell = produce_contract({
         underlying   => $underlying->symbol,
         bet_type     => 'ACCU',
@@ -566,6 +569,8 @@ subtest 'sell failure due to update' => sub {
     is $error->{-mesg}, 'Contract is updated while attempting to sell', 'error mesg Contract is updated while attempting to sell';
     is $error->{-type}, 'SellFailureDueToUpdate',                       'error type SellFailureDueToUpdate';
 
+    $mocked_contract->unmock('is_expired');
+    $mocked_contract->unmock('_build_pnl');
     SKIP: {
         skip "skip running time sensitive tests for code coverage tests", 2 if $ENV{DEVEL_COVER_OPTIONS};
 

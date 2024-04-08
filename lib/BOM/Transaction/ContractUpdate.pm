@@ -130,8 +130,8 @@ sub _validate_update_parameter {
     }
 
     # Contract can be closed if any of the limit orders is breached.
-    # if contract is sold, don't proceed.
-    if ($contract->is_sold) {
+    # if contract is sold or expired, don't proceed.
+    if ($contract->is_sold or $contract->is_expired) {
         return {
             code              => 'ContractIsSold',
             message_to_client => localize('Contract has expired.'),
