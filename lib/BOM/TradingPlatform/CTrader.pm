@@ -1060,8 +1060,8 @@ sub call_api {
     };
     my $payload = encode_json_utf8(\%args);
     my $resp;
+    my $start_time = [Time::HiRes::gettimeofday];
     try {
-        my $start_time = [Time::HiRes::gettimeofday];
         $resp = $self->http->post(
             $server_url,
             {
@@ -1069,17 +1069,18 @@ sub call_api {
                 headers => $headers
             });
 
-        if (my $service_timing = $resp->{headers}{timing}) {
-            stats_timing(
-                'ctrader.rpc_service.timing',
-                (1000 * Time::HiRes::tv_interval($start_time)) - $service_timing,
-                {tags => ['method:' . $args{method}]});
-        }
+        my $end_time = [Time::HiRes::gettimeofday];
+        stats_timing('ctrader.rpc_service.timing', (1000 * Time::HiRes::tv_interval($start_time, $end_time)), {tags => ['method:' . $args{method}]});
 
         $resp->{content} = decode_json_utf8($resp->{content} || '{}');
         die unless $resp->{success} or $quiet;    # we expect some calls to fail, eg. client_get
         return $resp->{content};
     } catch ($e) {
+        my $end_time = [Time::HiRes::gettimeofday];
+        stats_timing(
+            'ctrader.rpc_service.error.timing',
+            (1000 * Time::HiRes::tv_interval($start_time, $end_time)),
+            {tags => ['method:' . $args{method}]});
         return $e if ref $e eq 'HASH';
         $self->handle_api_error($resp, undef, %args);
     }
