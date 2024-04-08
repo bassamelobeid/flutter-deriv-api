@@ -110,7 +110,8 @@ try {
     );
 } catch ($error) {
     $statsd->event('Affiliate lookbacks Report Failed', "LookbackReporter failed to generate csv files due: $error");
-    $log->warnf("LookbackReporter failed to generate csv files due to: %s", $error);
+    #this warning is not needed now since we dont have much data for lookback trades currently. We can enable it back later if needed.
+    #$log->warnf("LookbackReporter failed to generate csv files due to: %s", $error);
     exit 1;
 }
 
