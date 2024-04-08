@@ -41,13 +41,13 @@
                                                         <td>[% t.doughflow_processor %]</td>
                                                         <td>[% t.doughflow_method %]</td>
                                                         <td>[% t.amount %]</td>
-                                                        [% total.$i.$d  = total.$i.$d + t.amount %]
+                                                        [% total.$i.$d  = total.$i.$d + (t.amount || 0) %]
                                                 [% ELSIF t.$i && t.action_type == d %]
                                                         <td>[% t.payment_system %]</td>
                                                         <td>[% t.doughflow_processor %]</td>
                                                         <td>[% t.doughflow_method %]</td>
                                                         <td>[% t.amount %]</td>
-                                                        [% total.$i.$d  = total.$i.$d + t.amount %]
+                                                        [% total.$i.$d  = total.$i.$d + (t.amount || 0) %]
                                                 [% END %]
                                                 </tr>
                                             [% END %]
