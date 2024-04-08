@@ -1840,6 +1840,11 @@ system:
           isa: ArrayRef
           default: []
           global: 1
+        idv_triplets:
+          description: "Suspend IDV identity verification for a specific provider, country, document type combination e.g. identity_pass:ke:national_id"
+          isa: ArrayRef
+          default: []
+          global: 1
         access_token_sharing:
           description: "Suspend sharing OAuth token between third party apps"
           isa: Bool
