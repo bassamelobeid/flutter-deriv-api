@@ -19,35 +19,41 @@ subtest 'is idv disabled' => sub {
         document_type => 'drivers_license'
     );
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
-    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, "Should return 1 if IDV is disabled");
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, 'Should return 1 if IDV is disabled');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(0);
-    is(BOM::Platform::Utility::is_idv_disabled(%args), 0, "Should return 0 if IDV is enabled");
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 0, 'Should return 0 if IDV is enabled');
 
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries([qw(ng)]);
-    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, "Should return 1 if IDV country is disabled");
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, 'Should return 1 if IDV country is disabled');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries([qw( )]);
-    is(BOM::Platform::Utility::is_idv_disabled(%args), 0, "Should return 0 if IDV country is enabled");
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 0, 'Should return 0 if IDV country is enabled');
 
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw(smile_identity)]);
-    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, "Should return 1 if IDV provider is disabled");
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, 'Should return 1 if IDV provider is disabled');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw( )]);
 
     BOM::Config::Redis::redis_events()->set(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'smile_identity', 1);
-    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, "Should return 1 if IDV provider is disabled");
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, 'Should return 1 if IDV provider is disabled');
     BOM::Config::Redis::redis_events()->del(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'smile_identity');
 
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw(ng:drivers_license)]);
-    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, "Should return 1 if IDV document_type is disabled");
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, 'Should return 1 if IDV document_type is disabled');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw(in:drivers_license)]);
-    is(BOM::Platform::Utility::is_idv_disabled(%args), 0, "Should return 0 if IDV document_type is enabled");
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 0, 'Should return 0 if IDV document_type is enabled');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw( )]);
 
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw(smile_identity:ng:drivers_license)]);
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 1, 'Should return 1 if IDV triplet is disabled');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw(smile_identity:ng:nin_slip)]);
+    is(BOM::Platform::Utility::is_idv_disabled(%args), 0, 'Should return 0 if IDV document_type is enabled');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw( )]);
+
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw(zw:national_id)]);
-    is(BOM::Platform::Utility::is_idv_disabled('country' => 'zw'), 1, "Country should be disabled if only supported document is disabled");
+    is(BOM::Platform::Utility::is_idv_disabled('country' => 'zw'), 1, 'Country should be disabled if only supported document is disabled');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw( )]);
 
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw(ng:drivers_license ng:nin_slip ng:passport)]);
-    is(BOM::Platform::Utility::is_idv_disabled('country' => 'ng'), 1, "Country should be disabled if all supported documents are disabled");
+    is(BOM::Platform::Utility::is_idv_disabled('country' => 'ng'), 1, 'Country should be disabled if all supported documents are disabled');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw( )]);
 };
 
@@ -57,28 +63,34 @@ subtest 'has idv' => sub {
         document_type => 'passport'
     );
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
-    is(BOM::Platform::Utility::has_idv(%args), 0, "Should return 0 if IDV is disabled and supported");
+    is(BOM::Platform::Utility::has_idv(%args), 0, 'Should return 0 if IDV is disabled and supported');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(0);
-    is(BOM::Platform::Utility::has_idv(%args), 1, "Should return 1 if IDV is not disabled and supported");
+    is(BOM::Platform::Utility::has_idv(%args), 1, 'Should return 1 if IDV is not disabled and supported');
 
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw(smile_identity)]);
-    is(BOM::Platform::Utility::has_idv(%args), 1, "Should return 1 if country, document_type pair has at least one provider");
+    is(BOM::Platform::Utility::has_idv(%args), 1, 'Should return 1 if country, document_type pair has at least one provider');
     BOM::Config::Redis::redis_events()->set(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'identity_pass', 1);
-    is(BOM::Platform::Utility::has_idv(%args), 0, "Should return 0 if country, document_type pair has no provider");
+    is(BOM::Platform::Utility::has_idv(%args), 0, 'Should return 0 if country, document_type pair has no provider');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw( )]);
     BOM::Config::Redis::redis_events()->del(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'identity_pass');
 
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw(smile_identity:gh:passport)]);
+    is(BOM::Platform::Utility::has_idv(%args), 1, 'Should return 1 if triplet has backup');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw(smile_identity:gh:passport identity_pass:gh:passport)]);
+    is(BOM::Platform::Utility::has_idv(%args), 0, 'Should return 0 if all triplets disabled');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw( )]);
+
     $args{country} = 'xx';
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
-    is(BOM::Platform::Utility::has_idv(%args), 0, "Should return 0 if IDV is disabled and not supported");
+    is(BOM::Platform::Utility::has_idv(%args), 0, 'Should return 0 if IDV is disabled and not supported');
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(0);
-    is(BOM::Platform::Utility::has_idv(%args), 0, "Should return 0 if IDV is not disabled and not supported");
+    is(BOM::Platform::Utility::has_idv(%args), 0, 'Should return 0 if IDV is not disabled and not supported');
 
     delete $args{'document_type'};
     $args{country} = 'gh';
-    is(BOM::Platform::Utility::has_idv(%args), 1, "Should return 1 if IDV is not disabled and supported");
+    is(BOM::Platform::Utility::has_idv(%args), 1, 'Should return 1 if IDV is not disabled and supported');
     $args{country} = 'xx';
-    is(BOM::Platform::Utility::has_idv(%args), 0, "Should return 0 if IDV is not disabled and not supported");
+    is(BOM::Platform::Utility::has_idv(%args), 0, 'Should return 0 if IDV is not disabled and not supported');
 };
 
 subtest 'idv_configuration' => sub {
@@ -200,7 +212,7 @@ subtest 'idv_configuration' => sub {
                     countries => {
                         ng => {documents => {drivers_license => {enabled => 1}}},
                     }}}};
-        cmp_deeply $expected, $config, 'expected configuration for enabled providers';
+        cmp_deeply $config, $expected, 'expected configuration for enabled providers';
 
         BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw(py:passport)]);
         BOM::Config::Redis::redis_events()->set(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'provider_c', 1);
@@ -226,7 +238,7 @@ subtest 'idv_configuration' => sub {
                     countries => {
                         ng => {documents => {drivers_license => {enabled => 0}}},
                     }}}};
-        cmp_deeply $expected, $config, 'expected configuration for disabled document_type';
+        cmp_deeply $config, $expected, 'expected configuration for disabled document_type';
 
         BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw( )]);
         BOM::Config::Redis::redis_events()->del(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'provider_c');
@@ -260,7 +272,7 @@ subtest 'idv_configuration' => sub {
                         ng => {documents => {drivers_license => {enabled => 1}}},
                     }}}};
 
-        cmp_deeply $expected, $config, 'expected configuration for disabled provider';
+        cmp_deeply $config, $expected, 'expected configuration for disabled provider';
 
         BOM::Config::Redis::redis_events()->del(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'provider_a');
 

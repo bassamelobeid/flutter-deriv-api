@@ -321,37 +321,42 @@ Returns bool
 
 sub is_idv_disabled {
     my %args = @_;
+    my ($country, $provider, $document_type) = @args{qw/country provider document_type/};
+
     # Is IDV disabled
     return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->idv;
 
     my $disabled_idv_countries = BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries;
     my $disabled_idv_providers = BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers;
     my $disabled_idv_documents = BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types;
+    my $disabled_idv_triplets  = BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets;
 
     # Is IDV country disabled
-    if (defined $args{country}) {
-        return 1 if any { $args{country} eq $_ } @$disabled_idv_countries;
+    if (defined $country) {
+        return 1 if any { $country eq $_ } @$disabled_idv_countries;
 
         my $brand_countries_obj = Brands::Countries->new;
-        my $document_types      = $brand_countries_obj->get_idv_config($args{country})->{document_types};
+        my $document_types      = $brand_countries_obj->get_idv_config($country)->{document_types};
 
-        my $disabled_documents = 0;
-        for my $document_type (keys $document_types->%*) {
-            if (any { $args{country} . ':' . $document_type eq $_ } @$disabled_idv_documents) {
-                $disabled_documents++;
-            }
-        }
-        return 1 if scalar keys $document_types->%* == $disabled_documents;
+        my @document_types         = map { "$country:$_" } keys $document_types->%*;
+        my @disabled_idv_documents = $disabled_idv_documents->@*;
+
+        return 1 unless Array::Utils::array_minus(@document_types, @disabled_idv_documents);
     }
     # Is IDV provider disabled
-    if (defined $args{provider}) {
-        return 1 if any { $args{provider} eq $_ } @$disabled_idv_providers;
-        return 1 if BOM::Config::Redis::redis_events()->get(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE() . $args{provider});
+    if (defined $provider) {
+        return 1 if any { $provider eq $_ } @$disabled_idv_providers;
+        return 1 if BOM::Config::Redis::redis_events()->get(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE() . $provider);
     }
     # Is IDV document type disabled for the specific country
-    if (defined $args{country} and defined $args{document_type}) {
-        return 1 if any { $args{country} . ':' . $args{document_type} eq $_ } @$disabled_idv_documents;
+    if (defined $country and defined $document_type) {
+        return 1 if any { "$country:$document_type" eq $_ } @$disabled_idv_documents;
     }
+    # Is IDV triplet disabled
+    if (defined $provider and defined $country and defined $document_type) {
+        return 1 if any { "$provider:$country:$document_type" eq $_ } @$disabled_idv_triplets;
+    }
+
     return 0;
 }
 
