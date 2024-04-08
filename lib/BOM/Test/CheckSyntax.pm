@@ -152,8 +152,11 @@ sub check_syntax {
             critic_ok($file, 'test perlcritic');
             # TODO Test::Vars will complain Object::Pad fields in perl 5.38.2
             # For example, https://github.com/regentmarkets/bom-test/blob/master/lib/BOM/Test/CustomerIO/Webserver.pm#L65
-            # disable it now. will fix it later
-            #vars_ok($file, ignore_vars => ['@(Object::Pad/slots)', '@(Object::Pad/fields)']);
+            # there is a patch but not released yet. waiting for new version
+            # if there is still no new version when we upgrade perl again, we will disable it and use
+            # Perl::Critic::Policy::Variables::ProhibitUnusedVariables
+            # See https://github.com/houseabsolute/p5-Test-Vars/issues/47
+            vars_ok($file, ignore_vars => ['@(Object::Pad/slots)', '@(Object::Pad/fields)']);
             BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
