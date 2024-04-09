@@ -42,7 +42,7 @@ sub send_event {
     die 'malformed json' unless $json;
     BOM::Platform::Event::Emitter::emit(
         idv_webhook_received => {
-            data    => {json => $json},
+            data    => {body => $self->req->body},
             headers => $self->req->headers->to_hash
         });
     stats_inc("bom_platform.webhook.idv_webhook_received");

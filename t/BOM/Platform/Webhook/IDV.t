@@ -44,7 +44,7 @@ subtest 'ok test' => sub {
 
     @metrics       = ();
     $signature     = undef;
-    $expected_data = {json => $payload};
+    $expected_data = {body => encode_json($payload)};
 
     $t->post_ok(
         '/idv',
