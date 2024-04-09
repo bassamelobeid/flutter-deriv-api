@@ -8,3 +8,9 @@ jobs:
     secrets: inherit
     with:
       repository: regentmarkets/bom-backoffice
+  dependent_test_status:
+    needs: [bom-backoffice]
+    if: always()
+    uses: regentmarkets/github-actions/.github/workflows/dependent-test-status.yml@master
+    with:
+      job_status: ${{ toJson(needs)}}

@@ -17,11 +17,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
+  check_if_dependent_PR_exists:
+    uses: regentmarkets/github-actions/.github/workflows/check-dependent-PR.yml@master
+    secrets: inherit
+    with:
+      repository: ${{ inputs.repository }}
   core_unit_syntax_diff:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
     secrets: inherit
-    # Passing need_syntax_diff: 'true' to execute 'syntax_diff' during dependent test,
-    # as it is skipped by default.
+    # We wanted to skip 'syntax_diff' during DT, but some tests within it for this repo can't be skipped.
+    # Thus, set 'need_syntax_diff' to 'true' to execute 'syntax_diff' during DT.
     with:
       debianci_image: ${{ inputs.debianci_image }}
       repository: ${{ inputs.repository }}
