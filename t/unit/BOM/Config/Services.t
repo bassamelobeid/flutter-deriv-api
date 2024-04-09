@@ -134,6 +134,10 @@ subtest 'identify_vetification.yml integrity check' => sub {
                 selfish      => 0,
                 display_name => 'Metamap',
             },
+            ai_prise => {
+                selfish      => 1,
+                display_name => 'AiPrise',
+            },
             identity_pass => {
                 selfish      => 0,
                 display_name => 'Identity Pass',
