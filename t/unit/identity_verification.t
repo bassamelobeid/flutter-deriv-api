@@ -45,9 +45,11 @@ subtest 'Get Filters data' => sub {
                 voter_id
                 /
         },
-        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx uy cr cl pe vn id/},
-        providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) }
-                qw/zaig smile_identity derivative_wealth data_zoo metamap identity_pass/},
+        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx uy cr cl pe vn id bd/},
+        providers => +{
+            map { ($_ => $idv_config->{providers}->{$_}->{display_name}) }
+                qw/zaig smile_identity derivative_wealth data_zoo metamap identity_pass ai_prise/
+        },
         statuses => +{map { ($_ => $idv_config->{statuses}->{$_}) } qw/pending failed refuted verified/},
         messages => $idv_config->{messages},
         },
