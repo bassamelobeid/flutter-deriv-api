@@ -23,4 +23,9 @@ jobs:
     secrets: inherit
     with:
       repository: regentmarkets/bom-user
-
+  dependent_test_status:
+    needs: [bom-rpc, binary-websocket-api, bom-backoffice, bom-user]
+    if: always()
+    uses: regentmarkets/github-actions/.github/workflows/dependent-test-status.yml@master
+    with:
+      job_status: ${{ toJson(needs)}}
