@@ -410,10 +410,6 @@ async sub _anonymize {
 
         return "activeClient" unless ($user->valid_to_anonymize);
 
-        # Delete oneall data
-        my $oneall_user_data = $user->oneall_data;
-        return "oneallError" unless BOM::OAuth::OneAll::anonymize_user($oneall_user_data);
-
         # Delete data on close io
         return "closeIOError" unless BOM::Platform::CloseIO->new(user => $user)->anonymize_user();
 
@@ -425,7 +421,7 @@ async sub _anonymize {
 
         my $redis = _redis_payment_write();
 
-        @clients_hashref = $client->user->clients(
+        @clients_hashref = $user->clients(
             include_disabled   => 1,
             include_duplicated => 1,
         );
