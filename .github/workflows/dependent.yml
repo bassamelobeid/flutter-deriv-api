@@ -18,4 +18,9 @@ jobs:
     secrets: inherit
     with:
       repository: regentmarkets/bom-platform
-
+  dependent_test_status:
+    needs: [bom-rpc, binary-websocket-api, bom-platform]
+    if: always()
+    uses: regentmarkets/github-actions/.github/workflows/dependent-test-status.yml@master
+    with:
+      job_status: ${{ toJson(needs)}}
