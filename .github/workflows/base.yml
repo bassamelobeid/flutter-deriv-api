@@ -17,13 +17,22 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
+  check_if_dependent_PR_exists:
+    uses: regentmarkets/github-actions/.github/workflows/check-dependent-PR.yml@master
+    secrets: inherit
+    with:
+      repository: ${{ inputs.repository }}
   syntax_diff_unit:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     uses: regentmarkets/github-actions/.github/workflows/syntax_diff_unit.yml@master
     secrets: inherit
     with:
       repository: ${{ inputs.repository }}
       dependent_test: 'true'
   product_contract:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -46,6 +55,8 @@ jobs:
       - name: Product contract test
         run: make unit_test_product_contract
   validation:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -68,6 +79,8 @@ jobs:
       - name: Validation
         run: make unit_test_validation
   memory_test:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -90,6 +103,8 @@ jobs:
       - name: MemoryTest
         run: make memory_test
   pricing:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -112,6 +127,8 @@ jobs:
       - name: Pricing
         run: make unit_test_pricing
   product_others:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -146,6 +163,8 @@ jobs:
         run: make unit_test_offerings
         if: success() || failure()
   benchmark_merlin_ovra:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -175,6 +194,8 @@ jobs:
           make OVRA_benchmark
         if: success() || failure()
   benchmark_SD:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -216,6 +237,8 @@ jobs:
         run: make SDEQ_benchmark_OTC_FTSE
         if: success() || failure()
   Pricing-Engine-Tests:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
