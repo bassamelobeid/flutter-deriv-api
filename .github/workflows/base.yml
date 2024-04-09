@@ -5,16 +5,29 @@ on:
     inputs:
       repository:
         description: 'Repository name for running tests'
-        required: true
-        type: string 
+        required: false
+        default: regentmarkets/bom-websocket-tests
+        type: string
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
+  check_if_dependent_PR_exists:
+    uses: regentmarkets/github-actions/.github/workflows/check-dependent-PR.yml@master
+    secrets: inherit
+    with:
+      repository: ${{ inputs.repository }}
   build:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.DEBIAN_CI }}
+      image: ${{ inputs.debianci_image }}
       credentials:
         username: circle4regentmarkets
         password: ${{ secrets.DOCKER_PASSWORD }}
