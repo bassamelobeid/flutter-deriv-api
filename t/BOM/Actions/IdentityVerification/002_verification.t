@@ -2346,64 +2346,21 @@ subtest 'testing unexpected error' => sub {
 subtest 'unit test - idv_webhook_relay' => sub {
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{idv_webhook_received};
 
-    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
-    my @doggy_bag;
+    subtest 'Callback' => sub {
+        @emissions = ();
 
-    $dog_mock->mock(
-        'stats_inc',
-        sub {
-            push @doggy_bag, shift;
-        });
-
-    subtest 'sus callback' => sub {
-        $log->clear();
-
-        my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
-                data => {
-                    json => {
-                        test => 1,
-                    }
-                },
-                headers => {'x-sus-header' => '1234'}})->get;
-
-        $log->contains_ok(qr/no recognizable headers/, 'expected message was logged');
-    };
-
-    subtest 'MetaMap callback' => sub {
-        $log->clear();
-
-        my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
-                data => {
-                    json => {
-                        test => 1,
-                    }
-                },
+        BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
+                data    => {body           => {test => 1}},
                 headers => {'x-request-id' => '1234'}})->get;
 
-        cmp_deeply [@doggy_bag], [], 'Expected dog bag';
-
-        $log->clear();
-        @doggy_bag = ();
+        cmp_deeply [@emissions],
+            [{
+                idv_webhook => {
+                    body    => {test           => '1'},
+                    headers => {'x-request-id' => '1234'}}}
+            ],
+            'expected emissions, monolith simply forwards the request for the microservice to resolve';
     };
-
-    subtest 'MetaMap case sensitive callback' => sub {
-        $log->clear();
-
-        my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
-                data => {
-                    json => {
-                        test => 1,
-                    }
-                },
-                headers => {'x-rEqueSt-Id' => '1234'}})->get;
-
-        cmp_deeply [@doggy_bag], [], 'Expected dog bag';
-
-        $log->clear();
-        @doggy_bag = ();
-    };
-
-    $dog_mock->unmock_all();
 };
 
 subtest 'integration test - webhook' => sub {
@@ -2523,7 +2480,7 @@ subtest 'integration test - webhook' => sub {
         @emissions = ();
         my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
                 data => {
-                    json => {
+                    body => {
                         test => 1,
                     }
                 },

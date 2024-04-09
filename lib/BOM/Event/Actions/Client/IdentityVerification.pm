@@ -741,27 +741,14 @@ Returns C<undef>.
 async sub idv_webhook_relay {
     my $args = shift;
 
-    # make header comparison case insensitive
-    my $headers_lc = {map { lc($_) => $args->{headers}->{$_} } keys $args->{headers}->%*};
-
-    try {
-        # does the monolith need to know about these?
-        if ($headers_lc->{'x-request-id'}) {
-            BOM::Platform::Event::Emitter::emit(
-                'idv_webhook',
-                {
-                    headers => $args->{headers},
-                    body    => $args->{data}->{json},
-                });
-        } else {
-            die 'no recognizable headers';
-        }
-    } catch ($e) {
-        $log->errorf('Unhandled IDV exception: %s', $e);
-    }
+    BOM::Platform::Event::Emitter::emit(
+        'idv_webhook',
+        {
+            headers => $args->{headers},
+            body    => $args->{data}->{body},
+        });
 
     return undef;
-
 }
 
 =head2 _upload_photo
