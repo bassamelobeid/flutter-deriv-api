@@ -1,0 +1,33 @@
+name: Repository tests
+run-name: Repository tests
+on:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Repository name for running tests'
+        required: false
+        default: regentmarkets/bom-feed-plugin
+        type: string
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
+  cancel-in-progress: true
+jobs:
+  check_if_dependent_PR_exists:
+    uses: regentmarkets/github-actions/.github/workflows/check-dependent-PR.yml@master
+    secrets: inherit
+    with:
+      repository: ${{ inputs.repository }}
+  core_syntax_diff:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
+    uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@master
+    secrets: inherit
+    with:
+      debianci_image: ${{ inputs.debianci_image }}
+      repository: ${{ inputs.repository }}
+      dependent_test: 'true'
