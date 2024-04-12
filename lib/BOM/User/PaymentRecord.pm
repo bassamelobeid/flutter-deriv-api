@@ -5,7 +5,8 @@ use warnings;
 
 use BOM::Config::Redis;
 use Date::Utility;
-use List::Util qw/first max/;
+use List::Util                 qw/first max/;
+use DataDog::DogStatsd::Helper qw(stats_count);
 
 use constant LIFETIME_IN_DAYS           => 90;
 use constant SECONDS_IN_A_DAY           => 86400;
@@ -19,9 +20,12 @@ use constant PAYMENT_KEY_USER_ID_PREFIX => 'UID';
 use constant PAYMENT_SERIALIZE_FIELDS => [qw/pp pm pt id/];
 use constant PAYMENT_UNDEF_SYMBOL     => '^';
 
-# drop these after legacy key expiration
-use constant LEGACY_PAYMENT_KEY_PREFIX => 'PAYMENT_RECORD';
-use constant TEMP_PAYMENT_KEY_PREFIX   => 'TEMP_PAYMENT_RECORD';
+# dd key to count the zsets being trimmed
+use constant DD_PAYMENT_RECORDS_TO_TRIM     => 'payment_record.trimming.zsets';
+use constant DD_PAYMENT_RECORDS_REM_ENTRIES => 'payment_record.rem.entries';
+
+# Put a constraint into the scan command usage
+use constant SCAN_COUNT => 100;
 
 =head2 new
 
@@ -306,10 +310,15 @@ sub trimmer {
     my $keys;
 
     do {
-        ($cursor, $keys) = $redis->scan($cursor, 'MATCH', +PAYMENT_KEY_PREFIX . '*')->@*;
+        ($cursor, $keys) = $redis->scan($cursor, 'MATCH', +PAYMENT_KEY_PREFIX . '*', 'COUNT', SCAN_COUNT)->@*;
 
-        $redis->zremrangebyscore($_, '-Inf', $upper_bound) for $keys->@*;
+        stats_count(DD_PAYMENT_RECORDS_TO_TRIM, scalar $keys->@*);
 
+        for ($keys->@*) {
+            my $removed = $redis->zremrangebyscore($_, '-Inf', $upper_bound);
+
+            stats_count(DD_PAYMENT_RECORDS_REM_ENTRIES, $removed // 0);
+        }
     } while ($cursor > 0);
 
     return 1;

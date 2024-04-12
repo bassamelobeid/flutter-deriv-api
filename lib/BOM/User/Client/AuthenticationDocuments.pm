@@ -1259,10 +1259,6 @@ sub poa_address_mismatch {
 
 This sub checks to see if the newly inserted address matches the expected address saved in redis
 
-=over 4
-
-=back
-
 Returns Boolean.
 
 =cut
@@ -1351,10 +1347,6 @@ sub poa_address_fix {
 This sub clears the poa address mismatch from BO in case of mistake.
 
 Only takes effect under the C<poa_address_mismatch> status.
-
-=over 4
-
-=back
 
 Returns C<undef>.
 

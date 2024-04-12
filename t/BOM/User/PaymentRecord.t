@@ -9,6 +9,9 @@ use Digest::SHA    qw/sha256_hex/;
 use BOM::Config::Runtime;
 use BOM::User::PaymentRecord;
 
+use constant DD_PAYMENT_RECORDS_TO_TRIM     => +BOM::User::PaymentRecord::DD_PAYMENT_RECORDS_TO_TRIM;
+use constant DD_PAYMENT_RECORDS_REM_ENTRIES => +BOM::User::PaymentRecord::DD_PAYMENT_RECORDS_REM_ENTRIES;
+
 my $fields  = +BOM::User::PaymentRecord::PAYMENT_SERIALIZE_FIELDS;
 my $mock_pr = Test::MockModule->new('BOM::User::PaymentRecord');
 
@@ -324,35 +327,63 @@ subtest 'redis storage' => sub {
             };
 
             subtest 'trimmer' => sub {
+                my $payment_record_mock = Test::MockModule->new('BOM::User::PaymentRecord');
+                my @dog_bag;
+
+                $payment_record_mock->mock(
+                    'stats_count',
+                    sub {
+                        my (@params) = @_;
+
+                        push @dog_bag, @params;
+
+                        return $payment_record_mock->original('stats_count')->(@_);
+                    });
+
+                @dog_bag = ();
                 ok BOM::User::PaymentRecord::trimmer();
 
                 my $redis = BOM::User::PaymentRecord::_get_redis();
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 9, 'No records were deleted';
 
+                cmp_deeply [@dog_bag], [DD_PAYMENT_RECORDS_TO_TRIM, 1, DD_PAYMENT_RECORDS_REM_ENTRIES, 0], 'Expected datadog bag';
+
                 set_fixed_time($time + 86400 * 87);    # jump 87 days into the future
 
+                @dog_bag = ();
                 ok BOM::User::PaymentRecord::trimmer();
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 7, 'Records added 3 days (relative) ago were trimmed';
 
                 set_fixed_time($time + 86400 * 88);    # jump 88 days into the future
 
+                cmp_deeply [@dog_bag], [DD_PAYMENT_RECORDS_TO_TRIM, 1, DD_PAYMENT_RECORDS_REM_ENTRIES, 2], 'Expected datadog bag';
+
+                @dog_bag = ();
                 ok BOM::User::PaymentRecord::trimmer();
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 5, 'Records added 2 days (relative) ago were trimmed';
 
+                cmp_deeply [@dog_bag], [DD_PAYMENT_RECORDS_TO_TRIM, 1, DD_PAYMENT_RECORDS_REM_ENTRIES, 2], 'Expected datadog bag';
+
                 set_fixed_time($time + 86400 * 89);    # jump 89 days into the future
 
+                @dog_bag = ();
                 ok BOM::User::PaymentRecord::trimmer();
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 2, 'Records added yesterday (relative) ago were trimmed';
 
+                cmp_deeply [@dog_bag], [DD_PAYMENT_RECORDS_TO_TRIM, 1, DD_PAYMENT_RECORDS_REM_ENTRIES, 3], 'Expected datadog bag';
+
                 set_fixed_time($time + 86400 * 90);    # jump 90 days into the future
 
+                @dog_bag = ();
                 ok BOM::User::PaymentRecord::trimmer();
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 0, 'All records should have been trimmed';
+
+                cmp_deeply [@dog_bag], [DD_PAYMENT_RECORDS_TO_TRIM, 1, DD_PAYMENT_RECORDS_REM_ENTRIES, 2], 'Expected datadog bag';
             };
         };
     };
