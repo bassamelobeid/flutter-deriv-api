@@ -1047,6 +1047,9 @@ async sub client_verification {
 
             my $duplicated_document = await _detect_duplicated_documents($client, $reported_documents);
 
+            my $duplicated_provider;
+            $duplicated_provider = 'Onfido' if $duplicated_document;
+
             my $documents_count = 0;
 
             $documents_count += await _store_applicant_documents($client, $reported_documents, $duplicated_document);
@@ -1110,6 +1113,30 @@ async sub client_verification {
 
                 my $underage_detected = defined $minimum_accepted_age && $minimum_accepted_age ne 'clear';
 
+                # we need to consider if the submitted doc has already been used in another acc with idv
+                my $idv_model   = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+                my $cli_country = $client->place_of_birth // $client->residence;
+                my $idv_issuing_country =
+                    $reports->{document}->{properties}->{issuing_country}
+                    ? uc(country_code2code($reports->{document}->{properties}->{issuing_country}, 'alpha-3', 'alpha-2'))
+                    : $cli_country;
+                my $document_type   = $reports->{document}->{properties}->{document_type};
+                my $country_configs = Brands::Countries->new();
+
+                if (defined $document_type) {
+                    my $idv_document_type = $country_configs->onfido_equivalent_doc_type($idv_issuing_country, $document_type);
+
+                    # if there is no onfido=idv equivalent doc type then there is no need to check for duplicates for idv
+                    if (defined $idv_document_type) {
+                        $duplicated_document //= $idv_model->get_claimed_documents({
+                            issuing_country => $idv_issuing_country,
+                            type            => $idv_document_type,
+                            number          => $reports->{document}->{doc_id},
+                        });
+                        $duplicated_provider //= 'IDV';
+                    }
+                }
+
                 if ($underage_detected) {
                     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.underage_detected', {tags => [@common_datadog_tags]});
 
@@ -1117,7 +1144,7 @@ async sub client_verification {
                 } elsif ($duplicated_document || $client->status->poi_duplicated_documents) {
                     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dup_documents', {tags => [@common_datadog_tags]});
 
-                    BOM::Event::Actions::Common::handle_duplicated_documents($client, $duplicated_document, 'Onfido');
+                    BOM::Event::Actions::Common::handle_duplicated_documents($client, $duplicated_document, $duplicated_provider);
                 }
                 # Extract all clear documents to check consistency between DOBs
                 elsif (my @valid_doc = grep { (defined $_->{properties}->{date_of_birth} and $_->result eq 'clear') } @reports) {
@@ -1412,7 +1439,7 @@ async sub _extract_onfido_reported_documents {
 
 =head2 _detect_duplicated_documents
 
-Detects when the client attempts to POI using a duplicated document (this is a document already verified by another user).
+Detects when the client attempts to verify their account with a POI using a duplicated document (this is a document already verified by another user).
 
 It takes the following params:
 
