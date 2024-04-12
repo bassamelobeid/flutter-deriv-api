@@ -482,8 +482,10 @@ if ($input{document_list}) {
                 }
 
             }
-
             next;
+        } else {
+            $doc->address_mismatch(0);
+            $doc->save;
         }
 
         my $verified_date = Date::Utility->new->date_yyyymmdd;
