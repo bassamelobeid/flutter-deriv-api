@@ -323,6 +323,8 @@ sub is_idv_disabled {
     my %args = @_;
     my ($country, $provider, $document_type) = @args{qw/country provider document_type/};
 
+    BOM::Config::Runtime->instance->app_config->check_for_update();
+
     # Is IDV disabled
     return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->idv;
 
