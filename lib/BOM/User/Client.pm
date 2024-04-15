@@ -2520,6 +2520,8 @@ sub immutable_fields {
     if ($self->is_virtual) {
         my @virtual_immutable_fields = qw/residence/;
 
+        push @virtual_immutable_fields, 'email' if $self->user->has_social_signup;
+
         my $duplicated = $self->duplicate_sibling_from_vr;
 
         # note: we check for is_virtual only to address the potential infinite recursion concern
@@ -2530,6 +2532,7 @@ sub immutable_fields {
     }
 
     my @immutable = grep { $self->$_ } PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH->@*;
+    push @immutable, 'email' if $self->user->has_social_signup;
 
     if (!$self->status->personal_details_locked) {
         # Allow first and last name edition when poi name mismatch (should not be locked though)

@@ -556,8 +556,9 @@ subtest "check duplicate accounts" => sub {
 };
 
 subtest "immutable_fields and validate_immutable_fields" => sub {
-    my $email     = 'immutable@test.com';
-    my $client_vr = create_client('VRTC');
+    my $email        = 'immutable@test.com';
+    my $email_social = 'social_signup@test.com';
+    my $client_vr    = create_client('VRTC');
     $client_vr->email($email);
     $client_vr->save;
 
@@ -580,12 +581,29 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
     my $test_user = BOM::User->create(
         email          => $email,
         password       => "hello",
-        email_verified => 1,
+        email_verified => 1
     );
 
     $test_user->add_client($client_vr);
     $test_user->add_client($client_cr);
     $test_user->add_client($client_mlt);
+
+    my $test_user_social_signup = BOM::User->create(
+        email             => $email_social,
+        password          => "hello",
+        email_verified    => 1,
+        has_social_signup => 1
+    );
+
+    my $client_cr_social = create_client('CR');
+    $client_cr_social->email($email_social);
+    $client_cr_social->tax_identification_number('1234567890');
+    $client_cr_social->place_of_birth('fr');
+    $client_cr_social->tax_residence('br');
+    $client_cr_social->account_opening_reason('Speculative');
+    $client_cr_social->save;
+
+    $test_user_social_signup->add_client($client_cr_social);
 
     my $changeable_fields;
     my $mock_lc = Test::MockModule->new('LandingCompany');
@@ -859,6 +877,12 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         cmp_deeply ['address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state'], subsetof($client_cr->immutable_fields),
             'address fields are immutable - fully authenticated ';
 
+    };
+
+    subtest 'social_signup makes email immutable' => sub {
+        $client_cr_social->status->set('address_verified', 'system', 'just testing');
+        cmp_deeply ['email'], subsetof($client_cr_social->immutable_fields), 'email is immutatble for social sign up';
+        cmp_deeply ['email'], none($client_cr->immutable_fields),            'email is mutatble for sign up with email and password';
     };
 
     $mock_status->unmock_all;
