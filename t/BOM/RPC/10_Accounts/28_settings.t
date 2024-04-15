@@ -900,7 +900,16 @@ subtest 'set settings' => sub {
 
         subtest 'empty/unspecified' => sub {
             $params->{token} = $token_T_mx;
-            $params->{args}  = {
+
+            my $user_mx = BOM::User->create(
+                email    => 'dummy+test@email.com',
+                password => '12345',
+            );
+
+            $test_client_T_mx->user($user_mx);
+            $test_client_T_mx->save;
+
+            $params->{args} = {
                 %full_args,
                 address_state => 'LND',
                 citizen       => ''
