@@ -204,7 +204,6 @@ $params->{args} = {
     platform     => 'ctrader',
 };
 $loginids{ct_real_legacy} = $c->call_ok('trading_platform_new_account', $params)->result->{account_id};
-$c->call_ok('trading_platform_new_account', $params)->result;
 
 $params = {
     language => 'EN',
