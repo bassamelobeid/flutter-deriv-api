@@ -327,22 +327,25 @@ subtest 'Virtual transfers' => sub {
 
     my %expected = (
         a => {
-            loginid          => $loginids{vrw},
-            balance          => num(990),
-            account_type     => 'virtual',
-            account_category => 'wallet',
-            currency         => 'USD',
-            transfers        => 'all',
-            demo_account     => bool(1),
+            loginid               => $loginids{vrw},
+            balance               => num(990),
+            account_type          => 'virtual',
+            account_category      => 'wallet',
+            currency              => 'USD',
+            transfers             => 'all',
+            demo_account          => bool(1),
+            landing_company_short => $accs{vrw}->landing_company->short,
         },
         b => {
-            loginid          => $loginids{vrtc_trading},
-            balance          => num(10),
-            account_type     => 'standard',
-            account_category => 'trading',
-            currency         => 'USD',
-            transfers        => 'all',
-            demo_account     => bool(1),
+            loginid               => $loginids{vrtc_trading},
+            balance               => num(10),
+            account_type          => 'standard',
+            account_category      => 'trading',
+            currency              => 'USD',
+            transfers             => 'all',
+            demo_account          => bool(1),
+            landing_company_short => $accs{vrtc_trading}->landing_company->short,
+            market_type           => 'all',
         });
 
     my $res = $c->call_ok('transfer_between_accounts', $params)->has_no_error('VRW to linked VRTC ok')->result;
@@ -380,14 +383,17 @@ subtest 'Virtual transfers' => sub {
     # MT5
     $expected{a}->{balance} = num(990);
     $expected{b} = {
-        loginid          => $loginids{mt5_demo},
-        balance          => num(10010),            # mt5 demo accounts get created with 10k initial balance for now
-        account_type     => 'mt5',
-        account_category => 'trading',
-        currency         => 'USD',
-        transfers        => 'all',
-        demo_account     => bool(1),
-        mt5_group        => ignore(),
+        loginid               => $loginids{mt5_demo},
+        balance               => num(10010),            # mt5 demo accounts get created with 10k initial balance for now
+        account_type          => 'mt5',
+        account_category      => 'trading',
+        currency              => 'USD',
+        transfers             => 'all',
+        demo_account          => bool(1),
+        mt5_group             => ignore(),
+        landing_company_short => 'svg',
+        market_type           => 'synthetic',
+        sub_account_type      => 'financial',
     };
 
     $params->{token}              = $tokens{vrw};
@@ -395,7 +401,6 @@ subtest 'Virtual transfers' => sub {
     $params->{args}{account_to}   = $loginids{mt5_demo};
     $res                          = $c->call_ok('transfer_between_accounts', $params)->has_no_error('VRW to MT5 ok')->result;
     cmp_deeply $res->{accounts}, bag(values %expected), 'VRW to MT5 expected response';
-
     $params->{args}{account_from} = $loginids{mt5_demo};
     $params->{args}{account_to}   = $loginids{vrw};
     $res                          = $c->call_ok('transfer_between_accounts', $params)->has_no_error('MT5 to VRW ok')->result;
@@ -417,14 +422,15 @@ subtest 'Virtual transfers' => sub {
     # derivx
     $expected{a}->{balance} = num(990);
     $expected{b} = {
-        loginid          => $loginids{dx_demo},
-        balance          => num(10010),           # derivX demo accounts get created with 10k initial balance for now
-        account_type     => 'dxtrade',
-        account_category => 'trading',
-        currency         => 'USD',
-        transfers        => 'all',
-        demo_account     => bool(1),
-        market_type      => ignore(),
+        loginid               => $loginids{dx_demo},
+        balance               => num(10010),           # derivX demo accounts get created with 10k initial balance for now
+        account_type          => 'dxtrade',
+        account_category      => 'trading',
+        currency              => 'USD',
+        transfers             => 'all',
+        demo_account          => bool(1),
+        market_type           => 'all',
+        landing_company_short => 'svg',
     };
 
     $params->{args}{account_from} = $loginids{vrw};
@@ -453,14 +459,15 @@ subtest 'Virtual transfers' => sub {
     # ctrader
     $expected{a}->{balance} = num(990);
     $expected{b} = {
-        loginid          => $loginids{ct_demo},
-        balance          => num(10),
-        account_type     => 'ctrader',
-        account_category => 'trading',
-        currency         => 'USD',
-        transfers        => 'all',
-        demo_account     => bool(1),
-        market_type      => ignore(),
+        loginid               => $loginids{ct_demo},
+        balance               => num(10),
+        account_type          => 'ctrader',
+        account_category      => 'trading',
+        currency              => 'USD',
+        transfers             => 'all',
+        demo_account          => bool(1),
+        market_type           => 'all',
+        landing_company_short => 'svg',
     };
 
     $params->{args}{account_from} = $loginids{vrw};
@@ -577,22 +584,25 @@ subtest 'real transfers' => sub {
     # crw - standard
     my %expected = (
         a => {
-            loginid          => $loginids{crw_df},
-            balance          => num(990),
-            account_type     => 'doughflow',
-            account_category => 'wallet',
-            currency         => 'USD',
-            transfers        => 'all',
-            demo_account     => bool(0),
+            loginid               => $loginids{crw_df},
+            balance               => num(990),
+            account_type          => 'doughflow',
+            account_category      => 'wallet',
+            currency              => 'USD',
+            transfers             => 'all',
+            demo_account          => bool(0),
+            landing_company_short => $accs{crw_df}->landing_company->short,
         },
         b => {
-            loginid          => $loginids{cr_standard},
-            balance          => num(10),
-            account_type     => 'standard',
-            account_category => 'trading',
-            currency         => 'USD',
-            transfers        => 'all',
-            demo_account     => bool(0),
+            loginid               => $loginids{cr_standard},
+            balance               => num(10),
+            account_type          => 'standard',
+            account_category      => 'trading',
+            currency              => 'USD',
+            transfers             => 'all',
+            demo_account          => bool(0),
+            market_type           => 'all',
+            landing_company_short => $accs{cr_standard}->landing_company->short,
         });
 
     $params->{token} = $tokens{crw_df};
@@ -633,13 +643,14 @@ subtest 'real transfers' => sub {
     my $btc_amt = (10 - (10 * 0.05)) / 25000;
     $expected{a}->{balance} = num(990);
     $expected{b} = {
-        loginid          => $loginids{crw_btc},
-        balance          => num($btc_amt),
-        account_type     => 'crypto',
-        account_category => 'wallet',
-        currency         => 'BTC',
-        transfers        => 'all',
-        demo_account     => bool(0),
+        loginid               => $loginids{crw_btc},
+        balance               => num($btc_amt),
+        account_type          => 'crypto',
+        account_category      => 'wallet',
+        currency              => 'BTC',
+        transfers             => 'all',
+        demo_account          => bool(0),
+        landing_company_short => $accs{crw_btc}->landing_company->short,
     };
 
     $params->{token}              = $tokens{crw_df};
@@ -684,13 +695,14 @@ subtest 'real transfers' => sub {
     # crw usd - P2P
     $expected{a}->{balance} = num(990);
     $expected{b} = {
-        loginid          => $loginids{crw_p2p},
-        balance          => num(10),
-        account_type     => 'p2p',
-        account_category => 'wallet',
-        currency         => 'USD',
-        transfers        => 'deposit',
-        demo_account     => bool(0),
+        loginid               => $loginids{crw_p2p},
+        balance               => num(10),
+        account_type          => 'p2p',
+        account_category      => 'wallet',
+        currency              => 'USD',
+        transfers             => 'deposit',
+        demo_account          => bool(0),
+        landing_company_short => $accs{crw_p2p}->landing_company->short,
     };
 
     $params->{token} = $tokens{crw_df};
@@ -717,13 +729,14 @@ subtest 'real transfers' => sub {
     # crw usd - PA
     $expected{a}->{balance} = num(980);
     $expected{b} = {
-        loginid          => $loginids{crw_pa},
-        balance          => num(10),
-        account_type     => 'paymentagent',
-        account_category => 'wallet',
-        currency         => 'USD',
-        transfers        => 'deposit',
-        demo_account     => bool(0),
+        loginid               => $loginids{crw_pa},
+        balance               => num(10),
+        account_type          => 'paymentagent',
+        account_category      => 'wallet',
+        currency              => 'USD',
+        transfers             => 'deposit',
+        demo_account          => bool(0),
+        landing_company_short => $accs{crw_pa}->landing_company->short,
     };
 
     $params->{args} = {
@@ -749,14 +762,17 @@ subtest 'real transfers' => sub {
     # crw - MT5
     $expected{a}->{balance} = num(970);
     $expected{b} = {
-        loginid          => $loginids{mt5_gaming},
-        balance          => num(10),
-        account_type     => 'mt5',
-        account_category => 'trading',
-        currency         => 'USD',
-        transfers        => 'all',
-        demo_account     => bool(0),
-        mt5_group        => ignore(),
+        loginid               => $loginids{mt5_gaming},
+        balance               => num(10),
+        account_type          => 'mt5',
+        account_category      => 'trading',
+        currency              => 'USD',
+        transfers             => 'all',
+        demo_account          => bool(0),
+        mt5_group             => ignore(),
+        market_type           => 'synthetic',
+        landing_company_short => 'svg',
+        sub_account_type      => 'financial',
     };
 
     $params->{args} = {
@@ -800,14 +816,15 @@ subtest 'real transfers' => sub {
     # crw - Deriv X
     $expected{a}->{balance} = num(970);
     $expected{b} = {
-        loginid          => $loginids{dx_real},
-        balance          => num(10),
-        account_type     => 'dxtrade',
-        account_category => 'trading',
-        currency         => 'USD',
-        transfers        => 'all',
-        demo_account     => bool(0),
-        market_type      => ignore(),
+        loginid               => $loginids{dx_real},
+        balance               => num(10),
+        account_type          => 'dxtrade',
+        account_category      => 'trading',
+        currency              => 'USD',
+        transfers             => 'all',
+        demo_account          => bool(0),
+        market_type           => 'all',
+        landing_company_short => 'svg',
     };
 
     $params->{args} = {
@@ -851,14 +868,15 @@ subtest 'real transfers' => sub {
     # crw - CTrader
     $expected{a}->{balance} = num(970);
     $expected{b} = {
-        loginid          => $loginids{ct_real},
-        balance          => num(10),
-        account_type     => 'ctrader',
-        account_category => 'trading',
-        currency         => 'USD',
-        transfers        => 'all',
-        demo_account     => bool(0),
-        market_type      => ignore(),
+        loginid               => $loginids{ct_real},
+        balance               => num(10),
+        account_type          => 'ctrader',
+        account_category      => 'trading',
+        currency              => 'USD',
+        transfers             => 'all',
+        demo_account          => bool(0),
+        market_type           => 'all',
+        landing_company_short => 'svg',
     };
 
     $params->{args} = {
