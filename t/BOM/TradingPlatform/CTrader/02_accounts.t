@@ -493,8 +493,8 @@ subtest "cTrader Deleted Inactive Demo Account" => sub {
 };
 
 subtest "cTrader Available Account" => sub {
-    my $ctid               = 1008;
-    my $loginid            = 100008;
+    my $ctid               = 1013;
+    my $loginid            = 100013;
     my $ctrader_config     = BOM::Config::ctrader_general_configurations();
     my $max_accounts_limit = $ctrader_config->{new_account}->{max_accounts_limit}->{real};
 
@@ -564,8 +564,8 @@ subtest "cTrader Available Account" => sub {
                 },
                 shortcode        => "svg",
                 sub_account_type => "standard",
-                available_count  => 1,
-                max_count        => 1,
+                available_count  => 5,
+                max_count        => 5,
             },
         ];
 
@@ -578,8 +578,8 @@ subtest "cTrader Available Account" => sub {
             'market_type'           => 'all',
             'display_balance'       => '0.00',
             'currency'              => 'USD',
-            'login'                 => '100008',
-            'account_id'            => 'CTR100008',
+            'login'                 => '100013',
+            'account_id'            => 'CTR100013',
             'account_type'          => 'real',
             'platform'              => 'ctrader',
         };
@@ -593,7 +593,7 @@ subtest "cTrader Available Account" => sub {
         $response = $ctrader->new_account(%params);
         cmp_deeply($response, $expected_new_account_response, 'Can create cTrader real account');
 
-        $expected_response->[0]->{available_count} = 0;
+        $expected_response->[0]->{available_count} = 4;
         $response = $ctrader->available_accounts();
         cmp_deeply($response, $expected_response, 'Can get cTrader available accounts');
     };
