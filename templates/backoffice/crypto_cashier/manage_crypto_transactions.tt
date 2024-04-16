@@ -120,6 +120,14 @@
         text-decoration: underline;
         text-transform: uppercase;
     }
+    /* Default color for light mode */
+    .priority-withdrawal-color {
+        background-color: lavender !important;
+    }
+    /* Dark mode */
+    [data-theme="dark"] .priority-withdrawal-color {
+        background-color: darkslateblue !important;
+    }
 </style>
 <a name="transactions"></a>
 <div class="card">
@@ -256,7 +264,7 @@
         </thead>
         <tbody>
         [% FOREACH trx IN transactions %]
-            <tr id="[% 'row_' _ trx.id %]" [% IF trx.is_priority %] style="background-color: lavender;" [% END %]>
+            <tr id="[% 'row_' _ trx.id %]" [% IF trx.is_priority %] class="priority-withdrawal-color" [% END %]>
                 [% IF view_action == 'search' %]
                     <td valign="top">
                         <b>[% trx.type FILTER ucfirst %]: </b>
