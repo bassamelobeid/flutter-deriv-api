@@ -238,6 +238,7 @@
                         "enum": [
                             "financial",
                             "financial_stp",
+                            "standard",
                             "swap_free"
                         ]
                     }
