@@ -9,10 +9,12 @@ nav:
       - index.md
   - API:
       - api/index.md
+      - api/dataflow.md
   - Roadmap:
       - roadmap/index.md
   - Resources:
       - resources/index.md
+      - resources/lexicon.md
   - Team:
       - team/index.md
   - Updates:

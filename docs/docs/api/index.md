@@ -4,7 +4,7 @@
 
 Description of the current pricing architecture can be [found in wikijs](https://wikijs.deriv.cloud/en/engineering/trading-engineering/pricer/pricer-overview).
 
-We have prepared a local [dataflow chart](/api/dataflow) representing the current state of the pricing code.
+We have prepared a local [dataflow chart](dataflow.md) representing the current state of the pricing code.
 
 ## Future plan
 

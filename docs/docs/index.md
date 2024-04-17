@@ -23,7 +23,7 @@ with relative ease. We also aim to make all prices easily reproducible.
 
 ### Roadmap
 
-[Our roadmap](roadmap/)
+[Our roadmap](roadmap/index.md)
 
 
 ### Contact

@@ -1,6 +1,6 @@
 ## Current Pricing Dataflow
 
-This pricing dataflow should be greatly simplified by our [future planned API interface](/api/#future-plan).
+This pricing dataflow should be greatly simplified by our [future planned API interface](index.md#future-plan).
 
 ```mermaid
 flowchart LR
