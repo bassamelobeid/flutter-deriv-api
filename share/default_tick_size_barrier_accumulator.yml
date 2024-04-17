@@ -1,64 +1,64 @@
 #the values are in decimal
 R_10:
-  growth_rate_0.01: 0.000064441735
-  growth_rate_0.02: 0.000058122539
-  growth_rate_0.03: 0.000054649918
-  growth_rate_0.04: 0.000051720062
-  growth_rate_0.05: 0.000049358254
+  growth_rate_0.01: 0.000061255198
+  growth_rate_0.02: 0.000057252462
+  growth_rate_0.03: 0.000053692776
+  growth_rate_0.04: 0.000051086496
+  growth_rate_0.05: 0.000048625396
 R_25:
-  growth_rate_0.01: 0.000161104338
-  growth_rate_0.02: 0.000145306348
-  growth_rate_0.03: 0.000136624795
-  growth_rate_0.04: 0.000129300156
-  growth_rate_0.05: 0.000123395634
+  growth_rate_0.01: 0.000153137996
+  growth_rate_0.02: 0.000143131156
+  growth_rate_0.03: 0.000134231941
+  growth_rate_0.04: 0.00012771624
+  growth_rate_0.05: 0.000121563489
 R_50:
-  growth_rate_0.01: 0.000322208683
-  growth_rate_0.02: 0.000290612698
-  growth_rate_0.03: 0.000273249591
-  growth_rate_0.04: 0.000258600312
-  growth_rate_0.05: 0.000246791267
+  growth_rate_0.01: 0.000306275997
+  growth_rate_0.02: 0.000286262314
+  growth_rate_0.03: 0.000268463882
+  growth_rate_0.04: 0.00025543248
+  growth_rate_0.05: 0.000243126978
 R_75:
-  growth_rate_0.01: 0.000483313040
-  growth_rate_0.02: 0.000435919051
-  growth_rate_0.03: 0.000409874388
-  growth_rate_0.04: 0.000387900467
-  growth_rate_0.05: 0.000370186899
+  growth_rate_0.01: 0.000459414004
+  growth_rate_0.02: 0.000429393474
+  growth_rate_0.03: 0.000402695823
+  growth_rate_0.04: 0.000383148719
+  growth_rate_0.05: 0.000364690464
 R_100:
-  growth_rate_0.01: 0.000644417416
-  growth_rate_0.02: 0.000581225411
-  growth_rate_0.03: 0.000546499186
-  growth_rate_0.04: 0.000517200621
-  growth_rate_0.05: 0.000493582528
+  growth_rate_0.01: 0.000612552024
+  growth_rate_0.02: 0.000572524639
+  growth_rate_0.03: 0.000536927765
+  growth_rate_0.04: 0.000510864957
+  growth_rate_0.05: 0.000486253948
 1HZ10V:
-  growth_rate_0.01: 0.000045567188
-  growth_rate_0.02: 0.000041098841
-  growth_rate_0.03: 0.000038643328
-  growth_rate_0.04: 0.000036571607
-  growth_rate_0.05: 0.000034901556
+  growth_rate_0.01: 0.000043313966
+  growth_rate_0.02: 0.000040483604
+  growth_rate_0.03: 0.000037966526
+  growth_rate_0.04: 0.000036123608
+  growth_rate_0.05: 0.000034383347
 1HZ25V:
-  growth_rate_0.01: 0.000113917970
-  growth_rate_0.02: 0.000102747104
-  growth_rate_0.03: 0.000096608319
-  growth_rate_0.04: 0.000091429017
-  growth_rate_0.05: 0.000087253890
+  growth_rate_0.01: 0.000108284915
+  growth_rate_0.02: 0.000101209011
+  growth_rate_0.03: 0.000094916316
+  growth_rate_0.04: 0.00009030902
+  growth_rate_0.05: 0.000085958368
 1HZ50V:
-  growth_rate_0.01: 0.000227835941
-  growth_rate_0.02: 0.000205494208
-  growth_rate_0.03: 0.000193216639
-  growth_rate_0.04: 0.000182858034
-  growth_rate_0.05: 0.000174507779
+  growth_rate_0.01: 0.000216569832
+  growth_rate_0.02: 0.000202418022
+  growth_rate_0.03: 0.000189832631
+  growth_rate_0.04: 0.000180618039
+  growth_rate_0.05: 0.000171916735
 1HZ75V:
-  growth_rate_0.01: 0.000341753918
-  growth_rate_0.02: 0.000308241314
-  growth_rate_0.03: 0.000289824958
-  growth_rate_0.04: 0.000274287051
-  growth_rate_0.05: 0.000261761668
+  growth_rate_0.01: 0.000324854752
+  growth_rate_0.02: 0.000303627035
+  growth_rate_0.03: 0.000284748947
+  growth_rate_0.04: 0.000270927058
+  growth_rate_0.05: 0.000257875102
 1HZ100V:
-  growth_rate_0.01: 0.000455671901
-  growth_rate_0.02: 0.000410988422
-  growth_rate_0.03: 0.000386433279
-  growth_rate_0.04: 0.000365716067
-  growth_rate_0.05: 0.000349015556
+  growth_rate_0.01: 0.000433139675
+  growth_rate_0.02: 0.000404836049
+  growth_rate_0.03: 0.000379665263
+  growth_rate_0.04: 0.000361236077
+  growth_rate_0.05: 0.000343833468
 JD10:
   growth_rate_0.01: 0.000046357939
   growth_rate_0.02: 0.000041685730
