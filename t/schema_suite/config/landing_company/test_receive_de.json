@@ -59,7 +59,6 @@
             "changeable_fields": {},
             "legal_allowed_currencies": [
                "EUR",
-               "GBP",
                "USD"
             ],
             "legal_default_currency": "EUR",
@@ -243,11 +242,11 @@
             },
             "legal_allowed_currencies": {
                "items": {
-                  "pattern": "^(USD|EUR|GBP)$",
+                  "pattern": "^(USD|EUR)$",
                   "type": "string"
                },
                "type": "array",
-               "minItems": 3
+               "minItems": 2
             },
             "tin_not_mandatory" :{
                "type": "integer",

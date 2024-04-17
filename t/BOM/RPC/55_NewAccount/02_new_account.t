@@ -1138,6 +1138,14 @@ subtest $method => sub {
             $params->{args}->{$field} = "Test with trailing whitespace ";
         }
 
+        $params->{args}->{currency} = 'GBP';
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('CurrencyNotAllowed', 'Currency GBP is disabled for signup for maltainvest')
+            ->error_message_is('The provided currency GBP is not selectable at the moment.');
+
+        delete $params->{args}->{currency};
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
             'Deriv Investments (Europe) Limited',

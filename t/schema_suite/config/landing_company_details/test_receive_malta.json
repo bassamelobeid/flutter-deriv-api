@@ -90,11 +90,11 @@
          "pattern" : "^EUR$"
       },
       "legal_allowed_currencies" : {
-         "minItems" : 3,
+         "minItems" : 2,
          "type" : "array",
          "items" : {
             "type" : "string",
-            "pattern" : "^(USD|EUR|GBP)$"
+            "pattern" : "^(USD|EUR)$"
          }
       },
       "legal_allowed_markets" : {

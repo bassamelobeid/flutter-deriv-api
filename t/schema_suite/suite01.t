@@ -156,8 +156,8 @@ test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_malt
     _get_stashed('authorize/stash/token'), 'Example First Name MF', 'cz', '1';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json',
     _get_stashed('new_account_maltainvest/oauth_token'), 'cz', 'test\\\\+mf@binary.com';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
-    _get_stashed('authorize/stash/token'), '(USD|EUR|GBP)', 3;
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', _get_stashed('authorize/stash/token'),
+    '(USD|EUR|GBP)', 3;
 
 # ADMIN SCOPE CALLS (MF)
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json',

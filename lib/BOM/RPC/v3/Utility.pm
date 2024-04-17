@@ -1084,6 +1084,29 @@ sub filter_out_suspended_cryptocurrencies {
     return \@valid_payout_currencies;
 }
 
+=head2 filter_out_signup_disabled_currencies
+
+    $valid_signup_currencies = filter_out_signup_disabled_currencies($landing_company, $payout_currencies);
+
+This subroutine checks for signup disabled currencies
+
+Accepts: Landing company name, arrayref containing currencies
+
+Returns: Sorted arrayref of valid currencies.
+
+=cut
+
+sub filter_out_signup_disabled_currencies {
+    my ($landing_company_name, $payout_currencies) = @_;
+
+    my $signup_disabled_currencies = BOM::Config::CurrencyConfig::get_signup_disabled_currencies($landing_company_name);
+    my %signup_disabled_map        = map { $_ => 1 } $signup_disabled_currencies->@*;
+
+    my @valid_currencies = sort grep { !$signup_disabled_map{$_} } $payout_currencies->@*;
+
+    return \@valid_currencies;
+}
+
 =head2 check_ip_country
 
 check for difference in between IP address country and client's residence

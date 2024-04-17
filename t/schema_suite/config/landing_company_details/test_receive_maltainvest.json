@@ -123,10 +123,10 @@
       "legal_allowed_currencies" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^(USD|EUR|GBP)$",
+            "pattern" : "^(USD|EUR)$",
             "type" : "string"
          },
-         "minItems" : 3
+         "minItems" : 2
       },
       "legal_allowed_markets" : {
          "type" : "array",

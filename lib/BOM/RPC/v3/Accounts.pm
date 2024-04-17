@@ -423,6 +423,7 @@ sub __build_landing_company {
 
     # Get suspended currencies and remove them from list of legal currencies
     my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
+    my $signup_currencies = BOM::RPC::v3::Utility::filter_out_signup_disabled_currencies($lc->short, $payout_currencies);
 
     my $result = {
         shortcode                         => $lc->short,
@@ -430,7 +431,7 @@ sub __build_landing_company {
         address                           => $lc->address,
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
-        legal_allowed_currencies          => $payout_currencies,
+        legal_allowed_currencies          => $signup_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets(BOM::Config::Runtime->instance->get_offerings_config, $country),
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0,

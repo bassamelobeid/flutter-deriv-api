@@ -48,10 +48,10 @@
       "legal_allowed_currencies" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^(USD|GBP)$",
+            "pattern" : "^(USD)$",
             "type" : "string"
          },
-         "minItems" : 2
+         "minItems" : 1
       },
       "legal_allowed_markets" : {
          "items" : {

@@ -31,7 +31,16 @@ $client->save;
 $user->add_client($client);
 is $client->account, undef, 'new client has no default account';
 
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+$mf_client->email($email);
+$mf_client->save;
+
+is $mf_client->account, undef, 'new client has no default account';
+
+my ($token)    = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
 
 my $method = 'set_account_currency';
 my $params = {
@@ -58,7 +67,16 @@ subtest 'Error checks' => sub {
             'currency not applicable for this client')->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
     };
 
+    subtest 'Error for signup disabled currency' => sub {
+        $params->{token}    = $mf_token;
+        $params->{currency} = 'GBP';
+        $c->call_ok($method, $params)
+            ->has_error->error_message_is('The provided currency GBP is not selectable at the moment.', 'currency signup disabled for this client')
+            ->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
+    };
+
     subtest 'Error for currency not available on this landing company' => sub {
+        $params->{token}    = $token;
         $params->{currency} = 'JPY';
         $c->call_ok($method, $params)
             ->has_error->error_message_is('The provided currency JPY is not applicable for this account.', 'currency not applicable for this client')
