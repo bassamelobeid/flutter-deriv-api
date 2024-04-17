@@ -78,19 +78,29 @@ subtest 'Australian SVG Account' => sub {
 };
 
 subtest 'GB Account' => sub {
-    my @broker_codes = qw/MX MF/;
+    my $broker_code = 'MX';
 
-    for my $broker_code (@broker_codes) {
-        my $test_client_gb = BOM::User::Client->rnew(
-            broker_code => $broker_code,
-            residence   => 'gb',
-            citizen     => 'gb',
-            email       => 'nowthatsan@email.com',
-            loginid     => $broker_code . '235711'
-        );
+    my $test_client_gb = BOM::User::Client->rnew(
+        broker_code => $broker_code,
+        residence   => 'gb',
+        citizen     => 'gb',
+        email       => 'nowthatsan@email.com',
+        loginid     => $broker_code . '235711'
+    );
 
-        is $test_client_gb->currency, 'GBP', $broker_code . ' gb account default currency is GBP';
-    }
+    is $test_client_gb->currency, 'GBP', $broker_code . ' gb account default currency is GBP.';
+
+    $broker_code = 'MF';
+
+    $test_client_gb = BOM::User::Client->rnew(
+        broker_code => $broker_code,
+        residence   => 'gb',
+        citizen     => 'gb',
+        email       => 'nowthatsan@email.com',
+        loginid     => $broker_code . '235711'
+    );
+
+    is $test_client_gb->currency, 'EUR', $broker_code . ' gb account default currency is EUR since GBP is not allowed';
 };
 
 done_testing();
