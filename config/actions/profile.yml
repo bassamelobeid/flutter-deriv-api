@@ -66,4 +66,5 @@ set_account_currency:
     - currency.account_is_not_crypto
     - currency.is_currency_suspended
     - currency.experimental_currency
+    - currency.is_signup_enabled
     - p2p.no_open_orders

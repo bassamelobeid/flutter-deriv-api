@@ -246,6 +246,80 @@ subtest $rule_name => sub {
     };
 };
 
+$rule_name = 'currency.is_signup_enabled';
+subtest $rule_name => sub {
+    my %args = (
+        loginid      => $client_cr_usd->loginid,
+        account_type => 'binary'
+    );
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr_usd);
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule applies if currency arg is empty';
+
+    %args = (
+        loginid         => $client_cr_usd->loginid,
+        account_type    => 'binary',
+        landing_company => 'svg',
+        currency        => 'USD'
+    );
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'No problem in SVG with USD';
+
+    %args = (
+        loginid         => $client_cr_usd->loginid,
+        account_type    => 'binary',
+        landing_company => 'svg',
+        currency        => 'GBP'
+    );
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'No problem in SVG with GBP';
+
+    %args = (
+        loginid         => $client_cr_usd->loginid,
+        account_type    => 'binary',
+        landing_company => 'malta',
+        currency        => 'USD'
+    );
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'No problem in malta with USD';
+
+    %args = (
+        loginid         => $client_cr_usd->loginid,
+        account_type    => 'binary',
+        landing_company => 'malta',
+        currency        => 'GBP'
+    );
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'CurrencyNotAllowed',
+        rule       => $rule_name,
+        params     => 'GBP'
+        },
+        'Fail as GBP signup disabled for malta';
+
+    %args = (
+        loginid         => $client_cr_usd->loginid,
+        account_type    => 'binary',
+        landing_company => 'maltainvest',
+        currency        => 'USD'
+    );
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'No problem in maltainvest with USD';
+
+    %args = (
+        loginid         => $client_cr_usd->loginid,
+        account_type    => 'binary',
+        landing_company => 'maltainvest',
+        currency        => 'GBP'
+    );
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'CurrencyNotAllowed',
+        rule       => $rule_name,
+        params     => 'GBP'
+        },
+        'Fail as GBP signup disabled for maltainvest';
+};
+
 $rule_name = 'currency.is_available_for_change';
 subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => [$client_cr_usd, $client_cr_btc]);

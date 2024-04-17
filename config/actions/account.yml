@@ -22,6 +22,7 @@ new_account:
     - profile.valid_promo_code
     - profile.valid_non_pep_declaration_time
     - currency.is_available_for_new_account
+    - currency.is_signup_enabled
     - client.check_duplicate_account
     - type: conditional
       on: landing_company

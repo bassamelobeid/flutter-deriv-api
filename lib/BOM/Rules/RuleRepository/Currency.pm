@@ -260,6 +260,21 @@ rule 'currency.is_available_for_new_account' => {
     },
 };
 
+rule 'currency.is_signup_enabled' => {
+    description => "Succeeds if the selected currency is not disabled for signup.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $currency        = $args->{currency};
+        my $landing_company = $args->{landing_company} // $context->client($args)->landing_company->short;
+
+        $self->fail('CurrencyNotAllowed', params => $currency)
+            unless BOM::Config::CurrencyConfig::is_currency_signup_enabled($landing_company, $currency);
+
+        return 1;
+    },
+};
+
 rule 'currency.is_available_for_change' => {
     description => "Succeeds if the selected currency is not used by another sibling account.",
     code        => sub {
