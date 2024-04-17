@@ -250,6 +250,8 @@ subtest 'buy vanilla long options', sub {
             is $chld->{entry_spot},              '100',                     'correct entry spot price';
             is $chld->{barrier},                 '104.50',                  'correct strike price (normalized)';
             is $chld->{bid_spread},              undef,                     'bid_spread is undef here as it gets value during sell';
+            is $chld->{number_of_contracts},     '58.35815',                'correct number_of_contracts';
+            is $chld->{exit_spot},               undef,                     'correct exit spot is undef';
 
         };
 
@@ -324,6 +326,8 @@ subtest 'sell a bet', sub {
             is $chld->{entry_spot},              '100',                      'correct entry spot price';
             is $chld->{barrier},                 '104.50',                   'correct strike price (normalized)';
             is $chld->{bid_spread},              $contract->sell_commission, 'bid_spread matched';
+            is $chld->{number_of_contracts},     '58.35815',                 'correct number_of_contracts';
+            is $chld->{exit_spot},               100,                        'correct exit spot';
         };
 
         'survived';

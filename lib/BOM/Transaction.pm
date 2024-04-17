@@ -872,14 +872,16 @@ sub prepare_bet_data_for_buy {
             $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
         }
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_VANILLA) {
-        $bet_params->{ask_spread} = $contract->buy_commission;
-        $bet_params->{barrier}    = $contract->barrier->as_absolute;
-        $bet_params->{entry_spot} = $contract->entry_spot;
+        $bet_params->{ask_spread}          = $contract->buy_commission;
+        $bet_params->{barrier}             = $contract->barrier->as_absolute;
+        $bet_params->{entry_spot}          = $contract->entry_spot;
+        $bet_params->{number_of_contracts} = $contract->number_of_contracts;
 
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_TURBOS) {
-        $bet_params->{ask_spread} = $contract->buy_commission;
-        $bet_params->{barrier}    = $contract->barrier->as_absolute;
-        $bet_params->{entry_spot} = $contract->entry_spot;
+        $bet_params->{ask_spread}          = $contract->buy_commission;
+        $bet_params->{barrier}             = $contract->barrier->as_absolute;
+        $bet_params->{entry_spot}          = $contract->entry_spot;
+        $bet_params->{number_of_contracts} = $contract->number_of_contracts;
 
         if ($contract->can('take_profit') and defined $contract->take_profit) {
             $bet_params->{take_profit_order_date}   = $contract->take_profit->{date}->db_timestamp;
@@ -1434,6 +1436,10 @@ sub prepare_bet_data_for_sell {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
             data_object_params => $comment_hash,
         });
+    }
+
+    if ($quants_bet_variables && $contract->category_code =~ /^(vanilla|turbos)$/) {
+        $bet_params->{exit_spot} = $quants_bet_variables->data_object_params->{'exit_spot'};
     }
 
     return (
@@ -2506,7 +2512,7 @@ sub sell_expired_contracts {
 sub _prepare_expired_contract_for_sell {
     my ($bet, $client, $now, $stats) = @_;
 
-    my $contract;
+    my ($contract, $quants_bet_variables);
     my $failure = {fmb_id => $bet->{id}};
     try {
         my $bet_params = shortcode_to_parameters($bet->{short_code}, $client->currency);
@@ -2534,19 +2540,26 @@ sub _prepare_expired_contract_for_sell {
         if ($valid) {
             @{$bet}{qw/sell_price sell_time is_expired/} =
                 ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
+
             $bet->{quantity} = 1;
+
             _extract_contract_specifics_for_sell($contract, $bet);
+
+            $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                    data_object_params => _build_pricing_comment({
+                            contract => $contract,
+                            action   => 'autosell_expired_contract',
+                        }
+                    )->[1],
+                });
+
+            if ($contract->category_code =~ /^(vanilla|turbos)$/) {
+                $bet->{exit_spot} = $quants_bet_variables->data_object_params->{'exit_spot'};
+            }
 
             return {
                 bet                  => $bet,
-                quants_bet_variables => BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                        data_object_params => _build_pricing_comment({
-                                contract => $contract,
-                                action   => 'autosell_expired_contract',
-                            }
-                        )->[1],
-                    }
-                ),
+                quants_bet_variables => $quants_bet_variables,
             };
         } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
             # for virtual, if can't settle bet due to missing market data, sell contract with buy price

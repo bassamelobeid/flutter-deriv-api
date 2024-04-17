@@ -262,6 +262,8 @@ subtest 'buy turbos options', sub {
             is $chld->{'bid_spread'},               undef,            'bid_spread is undef';
             is $chld->{entry_spot},                 '10138.979',      'correct entry spot price';
             is $chld->{barrier},                    '10123.523',      'correct strike price (normalized)';
+            is $chld->{number_of_contracts},        '6.238109',       'correct number_of_contracts';
+            is $chld->{exit_spot},                  undef,            'correct exit spot is undef';
         };
 
     }
@@ -340,6 +342,8 @@ subtest 'sell a bet', sub {
         is $chld->{'bid_spread'},               3.58408088778611, 'bid_spread is charged for sell';
         is $chld->{entry_spot},                 '10138.979',      'correct entry spot price';
         is $chld->{barrier},                    '10123.523',      'correct strike price (normalized)';
+        is $chld->{number_of_contracts},        '6.238109',       'correct number_of_contracts';
+        is $chld->{exit_spot},                  10139.829,        'correct exit spot';
 
     };
 
