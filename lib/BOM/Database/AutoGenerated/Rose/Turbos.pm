@@ -20,6 +20,9 @@ __PACKAGE__->meta->setup(
         take_profit_order_date   => {type => 'timestamp'},
         ask_spread               => {type => 'numeric'},
         bid_spread               => {type => 'numeric'},
+        exit_spot               => {type => 'numeric'},
+        number_of_contracts      => {type => 'numeric'},
+
     ],
 
     primary_key_columns => ['financial_market_bet_id'],

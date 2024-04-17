@@ -19,6 +19,8 @@ __PACKAGE__->meta->setup(
         commission => { type => 'numeric' }, #deprecated as commission is divided to ask and bid spread now, keeping for backward compatibility
         ask_spread  => { type => 'numeric' },
         bid_spread  => { type => 'numeric' },
+        exit_spot  => {type => 'numeric'},
+        number_of_contracts => {type => 'numeric'},
     ],
 
     primary_key_columns => ['financial_market_bet_id'],

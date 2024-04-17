@@ -343,6 +343,10 @@ sub sell_bet {
         $chld->{basis_spot} = $bet->{basis_spot};
     }
 
+    if (defined $bet->{exit_spot}) {
+        $chld->{exit_spot} = $bet->{exit_spot};
+    }
+
     @param = (
         # FMB stuff
         @{$self->account_data}{qw/client_loginid currency_code/},
@@ -603,11 +607,16 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
             : defined $bet->{is_cancelled} ? {is_cancelled => $bet->{is_cancelled}}
             : $bet->{bid_spread}           ? {bid_spread => $bet->{bid_spread}}
             :                                undef;
+
         if (defined $bet->{tick_final_count}) {
             $chld->{tick_final_count} = $bet->{tick_final_count};
         }
         if (defined $bet->{basis_spot}) {
             $chld->{basis_spot} = $bet->{basis_spot};
+        }
+
+        if (defined $bet->{exit_spot}) {
+            $chld->{exit_spot} = $bet->{exit_spot};
         }
 
         push @param, (
