@@ -79,10 +79,10 @@
             "legal_allowed_currencies" : {
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(USD|EUR|GBP)$"
+                  "pattern" : "^(USD|EUR)$"
                },
                "type" : "array",
-               "minItems" : 3
+               "minItems" : 2
             }
          },
          "type" : "object"

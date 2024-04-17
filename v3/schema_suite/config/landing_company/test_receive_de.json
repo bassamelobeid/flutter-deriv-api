@@ -24,10 +24,10 @@
                   },
                   "legal_allowed_currencies" : {
                      "type" : "array",
-                     "minItems" : 3,
+                     "minItems" : 2,
                      "items" : {
                         "type" : "string",
-                        "pattern" : "^(USD|EUR|GBP)$"
+                        "pattern" : "^(USD|EUR)$"
                      }
                   },
                   "legal_allowed_contract_categories" : {

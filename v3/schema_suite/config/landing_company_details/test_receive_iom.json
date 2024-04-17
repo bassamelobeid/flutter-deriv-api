@@ -74,10 +74,10 @@
                "pattern" : "^GBP$"
             },
             "legal_allowed_currencies" : {
-               "minItems" : 2,
+               "minItems" : 1,
                "type" : "array",
                "items" : {
-                  "pattern" : "^(USD|GBP)$",
+                  "pattern" : "^(USD)$",
                   "type" : "string"
                }
             },
