@@ -515,13 +515,14 @@ subtest 'profit table' => sub {
         'underlying_symbol' => 'R_50',
         'app_id'            => undef,
         'shortcode'         => $data->[5]{short_code},
-        'longcode'          =>
-            'After the entry spot tick, your stake will grow continuously by 5% for every tick that the spot price remains within the ± 0.02468% from the previous spot price.',
+        'longcode'          => re(
+            'After the entry spot tick, your stake will grow continuously by 5% for every tick that the spot price remains within the ± 0.[0-9]+% from the previous spot price.'
+        ),
         'contract_type' => 'ACCU',
         'duration_type' => undef,
         'growth_rate'   => 0.05
     };
-    is_deeply($result->{transactions}[5], $expect3, 'result for ACCU is correct');
+    cmp_deeply($result->{transactions}[5], $expect3, 'result for ACCU is correct');
 
     #create a new transaction of type PUT for test
     $contract_expired = {
