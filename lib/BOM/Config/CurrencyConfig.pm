@@ -757,6 +757,42 @@ sub is_crypto_currency_withdrawal_suspended {
     return _is_crypto_currency_action_suspended($currency, 'cryptocurrencies_withdrawal');
 }
 
+=head2 get_signup_disabled_currencies
+
+Accepts: Landing company name
+Returns: arrayref containing the currencies for which signup is disabled for a landing company.
+
+=cut
+
+sub get_signup_disabled_currencies {
+    my $landing_company_name = shift;
+
+    my %legal_currencies    = %{LandingCompany::Registry->by_name($landing_company_name)->legal_allowed_currencies};
+    my @disabled_currencies = grep { $legal_currencies{$_}->{disable_signup} } keys %legal_currencies;
+
+    return \@disabled_currencies;
+}
+
+=head2 is_currency_signup_enabled
+
+Accepts: Landing company name, currency for which we want to check if signup is enabled
+Returns: Returns 1 if the currency is currently enabled for signup, otherwise 0.
+
+=cut
+
+sub is_currency_signup_enabled {
+    my ($landing_company_name, $currency) = @_;
+
+    return 1 unless $currency;
+    my $signup_disabled_currencies = get_signup_disabled_currencies($landing_company_name);
+
+    return 1 unless $signup_disabled_currencies->@*;
+
+    my $signup_disabled = any { $_ eq $currency } $signup_disabled_currencies->@*;
+
+    return $signup_disabled ? 0 : 1;
+}
+
 =head2 is_experimental_currency
 
 To check if the currency is experimental.
