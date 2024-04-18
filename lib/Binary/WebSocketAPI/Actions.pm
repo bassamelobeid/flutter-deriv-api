@@ -754,6 +754,7 @@ sub actions_config {
         ['trading_platform_available_accounts'],
         ['trading_platform_accounts'],
         ['trading_platform_new_account'],
+        ['trading_platforms'],
         [
             'trading_platform_deposit',
             {stash_params => [qw/ token_type /]}
