@@ -18,8 +18,23 @@ jobs:
     secrets: inherit
     with: 
       repository: regentmarkets/bom-postgres
+  bom-pricing:
+    uses: regentmarkets/bom-pricing/.github/workflows/base.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-pricing
+  bom:
+    uses: regentmarkets/bom/.github/workflows/base.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom
+  bom-transaction:
+    uses: regentmarkets/bom-transaction/.github/workflows/base.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-transaction
   dependent_test_status:
-    needs: [bom-platform, bom-rpc, bom-postgres]
+    needs: [bom-platform, bom-rpc, bom-postgres, bom-pricing, bom-transaction, bom]
     if: always()
     uses: regentmarkets/github-actions/.github/workflows/dependent-test-status.yml@master
     with:
