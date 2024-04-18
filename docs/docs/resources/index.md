@@ -1,11 +1,11 @@
 # Resources
 
 
-## Docmentation
+## Documentation
 
-- [Pricing Service Lexicon](/resources/lexicon)
+- [Pricing Service Lexicon](lexicon.md)
 
-- [WikiJS Pricer Overview](httss://wikijs.deriv.cloud/en/engineering/trading-engineering/pricer/pricer-overview)
+- [WikiJS Pricer Overview](https://wikijs.deriv.cloud/en/engineering/trading-engineering/pricer/pricer-overview)
 
 ## Code
 

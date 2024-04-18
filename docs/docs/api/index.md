@@ -2,8 +2,9 @@
 
 ## Current state
 
-Description of the current pricing architecture can be found in wikijs: https://wikijs.deriv.cloud/en/engineering/trading-engineering/pricer/pricer-overview
+Description of the current pricing architecture can be [found in wikijs](https://wikijs.deriv.cloud/en/engineering/trading-engineering/pricer/pricer-overview).
 
+We have prepared a local [dataflow chart](dataflow.md) representing the current state of the pricing code.
 
 ## Future plan
 
@@ -54,4 +55,3 @@ C4Container
   Rel(PricerC, MarketDataC, "Requests Market Data")
   Rel(AccumulatorStatsC, FeedSvc, "Receives Feed")
 ```
-

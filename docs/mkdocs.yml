@@ -1,4 +1,4 @@
-site_name: Demo
+site_name: Pricing and Market Data Business Service
 
 # Repository
 repo_name: regentmarkets/bom-pricing
@@ -9,10 +9,12 @@ nav:
       - index.md
   - API:
       - api/index.md
+      - api/dataflow.md
   - Roadmap:
       - roadmap/index.md
   - Resources:
       - resources/index.md
+      - resources/lexicon.md
   - Team:
       - team/index.md
   - Updates:
