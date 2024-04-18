@@ -10,6 +10,7 @@ use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use JSON::MaybeUTF8             qw(:v1);
 use List::Util                  qw(first);
 use Log::Any                    qw( $log );
+use Math::Random::Secure        qw(irand);
 use Scalar::Util                qw(blessed);
 use Time::HiRes                 ();
 use Syntax::Keyword::Try;
@@ -117,6 +118,8 @@ sub run {
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
+    # memory usage of the pricer grows with time, so we want to respawn them from time to time
+    my $exit_time = time + 1800 + irand(3600);
 
     # Allow ->stop and restart
     local $self->{is_running} = 1;
@@ -316,6 +319,10 @@ sub run {
             }
             $stat_count            = {};
             $current_pricing_epoch = time;
+        }
+        if (time > $exit_time) {
+            # time to hand it over to the next generation
+            return undef;
         }
         $tv = $tv_now;
     }
