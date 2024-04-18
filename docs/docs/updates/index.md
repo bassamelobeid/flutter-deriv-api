@@ -4,8 +4,9 @@
 
 ### 2024-04-18
 
-Progress continues slowly. The requirements and end goals are becoming more clear. We should be able to provide
-additional milestones on our roadmap in the near future.
+We are making progress. We have a clear understanding of the end goal in
+principle, an architectural design for the pricing and market data services,
+and a roadmap for going forward.
 
 ### 2024-03-31
 
