@@ -505,4 +505,16 @@ sub set_static_data {
     return undef;
 }
 
+=head2 trading_platforms
+
+Return static configuration about the trading platforms currently supported.
+
+=cut
+
+rpc trading_platforms => auth => [],
+    sub {
+    my $config = Business::Config::LandingCompany->new()->trading_platforms();
+    return $config->{trading_platforms}->{types};
+    };
+
 1;
