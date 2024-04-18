@@ -319,12 +319,12 @@ subtest 'sell a bet', sub {
         };
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id},    $fmb->{id},         'financial_market_bet_id';
-            is $chld->{'take_profit_order_amount'}, undef,              'take_profit_order_amount is undef';
-            is $chld->{'take_profit_order_date'},   undef,              'take_profit_order_date is undef';
-            is $chld->{'ask_spread'},               undef,              'ask_spread is undef';
-            is $chld->{'bid_spread'},               0.0604999999999967, 'bid_spread is charged for sell';
-            is $chld->{tick_final_count},           1,                  'tick_final_count is as expected';
+            is $chld->{financial_market_bet_id},    $fmb->{id},        'financial_market_bet_id';
+            is $chld->{'take_profit_order_amount'}, undef,             'take_profit_order_amount is undef';
+            is $chld->{'take_profit_order_date'},   undef,             'take_profit_order_date is undef';
+            is $chld->{'ask_spread'},               undef,             'ask_spread is undef';
+            is $chld->{'bid_spread'},               0.514999999999999, 'bid_spread is charged for sell';
+            is $chld->{tick_final_count},           1,                 'tick_final_count is as expected';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';

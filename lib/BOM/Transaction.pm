@@ -1819,10 +1819,10 @@ sub cancel {
 
         BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
         $error = 0;
-    } catch {
+    } catch ($e) {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
-        $error_status = $self->_recover($_);
+        $error_status = $self->_recover($e);
     }
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
