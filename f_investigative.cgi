@@ -12,6 +12,10 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
 use LandingCompany::Registry;
+use CGI;
+use BOM::Backoffice::FileUpload;
+use BOM::Backoffice::CustomSanctionScreening;
+
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -19,6 +23,9 @@ BrokerPresentation('INVESTIGATIVE TOOLS');
 
 my $sanctions   = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
 my @all_cryptos = LandingCompany::Registry::all_crypto_currencies();
+
+my $self = request()->url_for('backoffice/f_investigative.cgi');
+my $cgi  = CGI->new;
 
 if (request()->param('whattodo') eq 'unsanctions') {
     my $error_message;
@@ -50,6 +57,31 @@ print "<label>First name:</label><INPUT type=text size=15 maxlength=35 name=fnam
 print "<label>Last name:</label><INPUT type=text size=15 maxlength=35 name=lname value='bin Laden' data-lpignore='true' /> ";
 print "<input type=submit class='btn btn--primary' value='Query UN Sanctions database'>";
 print "</form>";
+
+Bar("Custom Sanction Screening");
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/sanction_screening.html.tt',
+    {
+        data_url => $self,
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
+
+if (BOM::Backoffice::FileUpload::is_post_request($cgi)) {
+    my $input = request()->params;
+
+    my $batch_file = BOM::Backoffice::FileUpload::get_batch_file($input->{screening_csv_file});
+    # Check if file is CSV and size is within limits
+    my $error_message = BOM::Backoffice::FileUpload::validate_file($batch_file);
+    if ($error_message) {
+        code_exit_BO($error_message);
+    }
+    my $csv_data = BOM::Backoffice::CustomSanctionScreening::read_custom_sanction_csv_file($cgi);
+    if (BOM::Backoffice::CustomSanctionScreening::save_custom_sanction_data_to_redis($csv_data)) {
+        print "<p class=\"error\">Error saving file!!</p>";
+    } else {
+        print "<p class=\"success\">File saved successfully</p>";
+    }
+}
 
 Bar("IP related");
 

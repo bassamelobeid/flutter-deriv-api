@@ -190,6 +190,7 @@ my $permissions = {
     'payment_agent_tier_manage.cgi'                                                          => ['Compliance'],
     'wallet_migration.cgi'                                                                   => ['CS'],
     'mt5_bulk_deposit.cgi'                                                                   => ['Quants'],
+    'sanction_screening_report.cgi'                                                          => ['Compliance'],
 };
 
 sub init {

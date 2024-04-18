@@ -1,0 +1,13 @@
+<p>Upload Sanction List: </p>
+<div class='row'>
+    <form id='sanction_list_uploader_from' ACTION="[% data_url %]" METHOD=POST enctype="multipart/form-data">
+            <div class='inlineLabels'><label>FILE : </label></div>
+            <input type="FILE" value="" required name="screening_csv_file" />
+            <input type=submit class="btn btn--primary" name="upload" value='Upload'>
+    </form>
+    <form id='download_form' action="[%request.url_for('backoffice/sanction_screening_report.cgi') | none %]" METHOD=POST enctype="multipart/form-data">
+        <div class='row'>
+            <input type=submit class="btn btn--primary mt-3" name="download" value='Download' style="margin-top:17px;">
+        </div>
+    </form>
+</div>

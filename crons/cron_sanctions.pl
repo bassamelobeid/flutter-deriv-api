@@ -18,6 +18,8 @@ use BOM::Config::Runtime;
 use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV);
 
+use BOM::Backoffice::CustomSanctionScreening;
+
 use constant LAST_CRON_SANCTIONS_CHECK_RUN_KEY => 'LAST_CRON_SANCTIONS_CHECK_RUN';
 
 =head2
@@ -34,6 +36,7 @@ GetOptions(
     'u|update'   => \(my $update         = 0),
     'x|export=s' => \(my $export_to      = ''),
     'c|clear'    => \(my $clear_last_run = 0),
+    'custom'     => \(my $custom         = 0),    # Check custom sanctions
 ) or die "Invalid argument\n";
 
 Log::Any::Adapter->import(qw(Stdout), log_level => $verbose ? 'info' : 'warning');
@@ -76,16 +79,22 @@ my $last_run = $redis->hget(LAST_CRON_SANCTIONS_CHECK_RUN_KEY, 'last_run_at') ||
 
 my %listdate;
 
-do_report();
+my $brand = BOM::Config->brand();
+my $csv   = Text::CSV->new({
+    eol        => "\n",
+    quote_char => undef
+});
+
+my $to_email = join ", ", map { $brand->emails($_) } qw(compliance_regs compliance_ops);
+
+$custom ? check_custom_sanctions() : do_report();
 
 sub do_report {
 
     my $result;
-    my $brand = BOM::Config->brand();
 
     my $today_date           = Date::Utility::today()->date;
     my $last_sanction_update = $validator->last_updated();
-    my $to_email             = join ", ", map { $brand->emails($_) } qw(compliance_regs compliance_ops);
 
     if (($last_run > $last_sanction_update) && !$force) {
         my $last_date                 = Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ;
@@ -105,11 +114,6 @@ sub do_report {
         (
         'Matched name,List Name,List Updated,DOB (From list),DOB (Client),Database,LoginID,First Name,Last Name,Gender,Date Joined,Residence,Citizen,Matched Reason'
         );
-
-    my $csv = Text::CSV->new({
-        eol        => "\n",
-        quote_char => undef
-    });
 
     my $csv_rows;
 
@@ -135,15 +139,7 @@ sub do_report {
 
         # CSV creation starts here
         my $filename = path($reports_path . '/' . $broker . '_daily_sanctions_report_' . $today_date . '.csv');
-        my $file     = path($filename)->openw_utf8;
-
-        $csv->print($file, \@headers);
-        $csv->print($file, $_) for @$csv_rows;
-        # CSV creation ends here
-
-        $log->infof('Wrote CSV file %s', $filename);
-
-        close $file;
+        generate_csv_file($filename, \@headers, $csv_rows);
 
         send_email({
             from       => $brand->emails('support'),
@@ -222,4 +218,78 @@ sub get_matched_clients_info_by_broker {
     }
 
     return \@csv_rows;
+}
+
+sub check_custom_sanctions {
+    my $custom_data = BOM::Backoffice::CustomSanctionScreening::retrieve_custom_sanction_data_from_redis();
+    my $data        = $custom_data->{'data'} || ();
+
+    my @csv_rows;
+    my $sinfo;
+    for my $client (@$data) {
+        my %args = %$client;
+
+        my @missing_fields;
+        push @missing_fields, 'first_name'    unless $args{first_name};
+        push @missing_fields, 'last_name'     unless $args{last_name};
+        push @missing_fields, 'date_of_birth' unless $args{date_of_birth};
+
+        if (@missing_fields) {
+            $log->warn("Skipping client: missing required field(s): " . join(', ', @missing_fields));
+            next;
+        }
+
+        $sinfo = $validator->get_sanctioned_info(\%args);
+        next unless $sinfo->{matched};
+
+        push @csv_rows,
+            [
+            $sinfo->{matched_args}->{name},
+            $sinfo->{list},
+            $listdate{$sinfo->{list}} //= Date::Utility->new($validator->last_updated($sinfo->{list}))->date,
+            (join ' ', keys $sinfo->{matched_args}->%*),
+            $args{first_name},
+            $args{last_name},
+            $args{date_of_birth},
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            $sinfo->{comment}];
+    }
+
+    unless (scalar @csv_rows) {
+        send_email({
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
+            subject => 'No sanctioned clients found for Custom at ' . Date::Utility::today()->date
+        });
+        return;
+    }
+
+    my @headers = ('Matched name,List Name,List Updated,Matched Paramiters,First Name,Last Name,Date of Birth');
+
+    # CSV creation starts here
+    my $filename = path($reports_path . '/custom_daily_sanctions_report_' . Date::Utility::today()->date . '.csv');
+    generate_csv_file($filename, \@headers, \@csv_rows);
+
+    send_email({
+        from       => $brand->emails('support'),
+        to         => $to_email,
+        subject    => 'Sanction list for Custom at ' . Date::Utility::today()->date,
+        attachment => $filename->canonpath,
+    });
+}
+
+sub generate_csv_file {
+    my ($filename, $headers, $rows) = @_;
+
+    my $file = path($filename)->openw_utf8;
+    $csv->print($file, $headers);
+    $csv->print($file, $_) for @$rows;
+    close $file;
+
+    $log->infof('Wrote CSV file %s', $filename);
 }
