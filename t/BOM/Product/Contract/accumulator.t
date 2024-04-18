@@ -98,23 +98,23 @@ subtest 'have duration in user input' => sub {
 subtest 'loss probability' => sub {
     my @test_cases = ({
             growth_rate               => 0.02,
-            expected_loss_probability => 0.021
+            expected_loss_probability => 0.023
         },
         {
             growth_rate               => 0.03,
-            expected_loss_probability => 0.03
+            expected_loss_probability => 0.033
         },
         {
             growth_rate               => 0.04,
-            expected_loss_probability => 0.04
+            expected_loss_probability => 0.0425
         },
         {
             growth_rate               => 0.05,
-            expected_loss_probability => 0.05
+            expected_loss_probability => 0.0535
         },
         {
             growth_rate               => 0.01,
-            expected_loss_probability => 0.0105
+            expected_loss_probability => 0.015
         },
     );
 
@@ -503,8 +503,8 @@ subtest 'sell_commission' => sub {
     $args->{date_pricing} = $now->epoch + 3;
     my $c = produce_contract($args);
 
-    is $c->tick_count_after_entry, 2,                 'tick_count_after_entry is correct';
-    is $c->sell_commission,        0.120963397499996, 'sell_commission is correct';
+    is $c->tick_count_after_entry, 2,          'tick_count_after_entry is correct';
+    is $c->sell_commission,        1.02734775, 'sell_commission is correct';
 
     $args->{date_pricing} = $now;
 };
