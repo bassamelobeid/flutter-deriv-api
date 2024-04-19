@@ -3,29 +3,34 @@ name : Dependent Tests
 on:
   workflow_call:
 jobs:
+  check_if_dependent_PR_exists:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.is_dependent_PR_exists.outputs.result }}
+    steps:
+      - name: check if dependent PR exists
+        id: is_dependent_PR_exists
+        uses: regentmarkets/github-actions/check-dependent-RP@master
+        with:
+          GH_TOKEN: ${{ secrets.CI_PR_LIST }}
+          DT_list: 'bom-rpc bom-pricing bom-transaction bom-marketdataautoupdater'
   bom-rpc:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !contains(fromJSON(needs.check_if_dependent_PR_exists.outputs.result), 'bom-rpc') }}
     uses: regentmarkets/bom-rpc/.github/workflows/base.yml@master
     secrets: inherit
-    with: 
-      repository: regentmarkets/bom-rpc
   bom-pricing:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !contains(fromJSON(needs.check_if_dependent_PR_exists.outputs.result), 'bom-pricing') }}
     uses: regentmarkets/bom-pricing/.github/workflows/base.yml@master
     secrets: inherit
-    with: 
-      repository: regentmarkets/bom-pricing
   bom-transaction:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !contains(fromJSON(needs.check_if_dependent_PR_exists.outputs.result), 'bom-transaction') }}
     uses: regentmarkets/bom-transaction/.github/workflows/base.yml@master
     secrets: inherit
-    with: 
-      repository: regentmarkets/bom-transaction
   bom-marketdataautoupdater:
+    needs: check_if_dependent_PR_exists
+    if: ${{ !contains(fromJSON(needs.check_if_dependent_PR_exists.outputs.result), 'bom-marketdataautoupdater') }}
     uses: regentmarkets/bom-marketdataautoupdater/.github/workflows/base.yml@master
     secrets: inherit
-    with:
-      repository: regentmarkets/bom-marketdataautoupdater
-  dependent_test_status:
-    needs: [bom-rpc, bom-pricing, bom-transaction, bom-marketdataautoupdater]
-    if: always()
-    uses: regentmarkets/github-actions/.github/workflows/dependent-test-status.yml@master
-    with:
-      job_status: ${{ toJson(needs)}}
