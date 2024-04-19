@@ -104,10 +104,28 @@ $r = update_payout(
     amount   => 1,
     fee      => '0.00',
 );
+
 is($r->code, 200, 'correct status code');
 is balance($loginid) + 0, 1, 'withdraw successful';
 
+my $trx =
+    $cli->db->dbic->run(fixup => sub { $_->selectrow_hashref("SELECT * FROM transaction.transaction ORDER BY transaction_time DESC LIMIT 1", undef) }
+    );
+
 is $last_event{type}, 'payment_withdrawal', 'event payment_withdrawal emitted';
+
+is_deeply $last_event{data},
+    {
+    loginid        => $loginid,
+    transaction_id => $trx->{id},
+    trace_id       => '103',
+    amount         => '1',
+    payment_fee    => '0',
+    currency       => 'USD',
+    payment_method => 'VISA',
+    gateway_code   => 'doughflow',
+    },
+    'event args are correct';
 
 subtest 'payment params' => sub {
     my %params = (

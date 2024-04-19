@@ -425,6 +425,7 @@ sub write_transaction_line {
                     account_identifier => $account_identifier,
                     payment_processor  => $payment_processor,    # only deposit has payment_processor
                     payment_type       => $payment_type,
+                    gateway_code       => 'doughflow',
                 }) if ($trx);
 
             # Social responsibility checks for MLT/MX clients
@@ -444,7 +445,12 @@ sub write_transaction_line {
             $payment_args{amount} = -$amount;
             $trx = $client->payment_doughflow(%payment_args);
 
-            BOM::Platform::Event::Emitter::emit('payment_withdrawal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
+            BOM::Platform::Event::Emitter::emit(
+                'payment_withdrawal',
+                {
+                    $event_args->%*,
+                    gateway_code   => 'doughflow',
+                    transaction_id => $trx->{id}}) if ($trx);
 
             # Social responsibility checks for MLT/MX clients
             $client->increment_social_responsibility_values({
