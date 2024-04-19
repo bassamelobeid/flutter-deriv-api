@@ -34,3 +34,11 @@ jobs:
         run: |
           source /etc/profile.d/perl5.sh
           make test
+  ci_test_status:
+    needs: [build]
+    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    runs-on: self-hosted
+    steps:
+      - uses: regentmarkets/github-actions/ci-test-status@master
+        with:
+          job_status: ${{ toJson(needs) }}
