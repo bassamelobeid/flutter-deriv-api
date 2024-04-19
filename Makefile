@@ -17,13 +17,28 @@ syntax_diff:
 syntax:
 	@$(PROVE) --norc t/*.t
 
+accounts:
+	@$(PROVE) t/BOM/RPC/10_Accounts t/BOM/999_redis_keys.t
+
+misc:
+	@$(PROVE) t/BOM/RPC/25_Misc t/BOM/RPC/50_Misc t/BOM/999_redis_keys.t
+
+mt5:
+	@$(PROVE) t/BOM/RPC/50_MT5 t/BOM/999_redis_keys.t
+
+transaction:
+	@$(PROVE) t/BOM/RPC/75_Transaction t/BOM/RPC/15_Cashier t/BOM/999_redis_keys.t
+
+others:
+	@$(PROVE) $$(find t/BOM/RPC -maxdepth 1 | grep -vE "(RPC|10_Accounts|75_Transaction|15_Cashier|Misc|50_MT5)$$" | sort)
+
+test: t/BOM/RPC t/BOM/999_redis_keys.t
+
 test1:
 	@$(PROVE) t/BOM/RPC/[0-4]* t/BOM/999_redis_keys.t
 
 test2:
 	@$(PROVE) t/BOM/RPC/[5-9]* t/BOM/999_redis_keys.t
-
-test: test1 test2
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
