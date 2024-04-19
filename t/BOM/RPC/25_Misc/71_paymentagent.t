@@ -126,6 +126,10 @@ my $payment_transfer_limits   = BOM::Config::payment_agent()->{transaction_limit
 
 my $mock_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 
+my $emitted_events = {};
+my $mock_events    = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock('emit' => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
+
 # Mocking all of the necessary exchange rates in redis.
 my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
 my @all_currencies      = qw(EUR ETH AUD eUSDT tUSDT BTC LTC UST USDC USD GBP);
@@ -193,13 +197,6 @@ $mock_cashier->mock(
     sub {
         my $line = (caller)[2];
         die "Wrong paymentagent function called at line $line: this is the transfer section!\n";
-    });
-
-my @emitted_args;
-my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_emitter->mock(
-    emit => sub {
-        @emitted_args = @_;
     });
 
 my $loop = 0;
@@ -766,10 +763,57 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         like($res->{error}{message_to_client}, qr/You've reached the maximum withdrawal limit/, $test);
 
+        undef $emitted_events;
         $mock_user_client->mock(fully_authenticated => 1);
         $test = 'OK when client if fully authenticated';
         $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}, undef, $test);
+
+        cmp_deeply(
+            $emitted_events->{pa_transfer_confirm},
+            [{
+                    amount        => formatnumber('amount', $test_currency, $test_amount),
+                    client_name   => $Bob->first_name . ' ' . $Bob->last_name,
+                    currency      => $test_currency,
+                    email         => $Alice->email,
+                    language      => undef,
+                    loginid       => $Bob->loginid,
+                    pa_first_name => $Alice->first_name,
+                    pa_last_name  => $Alice->last_name,
+                    pa_loginid    => $Alice->loginid,
+                    pa_name       => $Alice->payment_agent->payment_agent_name,
+                }
+            ],
+            "pa_transfer_confirm event emitted"
+        );
+
+        cmp_deeply(
+            $emitted_events->{payment_deposit},
+            [{
+                    amount             => formatnumber('amount', $test_currency, $test_amount),
+                    currency           => $test_currency,
+                    gateway_code       => "payment_agent_transfer",
+                    is_agent_to_client => 1,
+                    is_first_deposit   => $Bob->is_first_deposit_pending,
+                    loginid            => $Bob->loginid,
+                }
+            ],
+            "payment_deposit event emitted"
+        );
+
+        cmp_deeply(
+            $emitted_events->{payment_withdrawal},
+            [{
+                    amount             => formatnumber('amount', $test_currency, $test_amount),
+                    currency           => $test_currency,
+                    gateway_code       => "payment_agent_transfer",
+                    is_agent_to_client => 1,
+                    loginid            => $Alice->loginid,
+                }
+            ],
+            "payment_withdrawal event emitted"
+        );
+
         $mock_user_client->unmock('fully_authenticated');
         $mock_account->unmock('total_withdrawals');
         $test_amount += $amount_boost;
@@ -785,6 +829,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         reset_payment_limit_config();
         reset_payment_agent_config();
         reset_transfer_testargs();
+
     };
 
 } ## end each type of currency for paymentagent_transfer
@@ -1198,12 +1243,59 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $test_amount = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
         reset_withdraw_testargs();
 
+        undef $emitted_events;
         $test = 'Withdraw returns correct paymentagent_name when dry_run is off';
         $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         is($res->{paymentagent_name}, $agent_name, $test);
 
         $test = 'Withdraw returns correct status of 1 when dry_run is off';
         is($res->{status}, 1, $test);
+
+        cmp_deeply(
+            $emitted_events->{pa_withdraw_confirm},
+            [{
+                    amount         => formatnumber('amount', $test_currency, $test_amount),
+                    client_loginid => $Alice->loginid,
+                    client_name    => $Alice->first_name . ' ' . $Alice->last_name,
+                    currency       => $test_currency,
+                    email          => $Bob->email,
+                    language       => undef,
+                    loginid        => $Bob->loginid,
+                    pa_first_name  => $Bob->first_name,
+                    pa_last_name   => $Bob->last_name,
+                    pa_loginid     => $Bob->loginid,
+                    pa_name        => $Bob->full_name,
+                }
+            ],
+            "pa_withdraw_confirm event emitted"
+        );
+
+        cmp_deeply(
+            $emitted_events->{payment_deposit},
+            [{
+                    amount             => formatnumber('amount', $test_currency, $test_amount),
+                    currency           => $test_currency,
+                    gateway_code       => "payment_agent_transfer",
+                    is_agent_to_client => 0,
+                    is_first_deposit   => 0,
+                    loginid            => $Bob->loginid,
+                }
+            ],
+            "payment_deposit event emitted"
+        );
+
+        cmp_deeply(
+            $emitted_events->{payment_withdrawal},
+            [{
+                    amount             => formatnumber('amount', $test_currency, $test_amount),
+                    currency           => $test_currency,
+                    gateway_code       => "payment_agent_transfer",
+                    is_agent_to_client => 0,
+                    loginid            => $Alice->loginid,
+                }
+            ],
+            "payment_withdrawal event emitted"
+        );
 
         $test = 'Withdraw fails when request is too frequent';
         $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);

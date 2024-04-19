@@ -108,12 +108,9 @@ my $third_pa_loginid = $pa_client->loginid;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my @emitted_args;
-my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_emitter->mock(
-    emit => sub {
-        @emitted_args = @_;
-    });
+my $emitted_events = {};
+my $mock_events    = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock('emit' => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
 subtest 'paymentagent_list RPC call' => sub {
 # start test
@@ -366,23 +363,54 @@ subtest 'suspend countries' => sub {
             dry_run               => 0,
         },
     };
-    undef @emitted_args;
+
+    undef $emitted_events;
     $c->call_ok('paymentagent_transfer', $transfer_params)->has_no_error;
-    is $emitted_args[0], 'pa_transfer_confirm', 'Event=pa_transfer_confirm';
-    is_deeply $emitted_args[1],
-        {
-        email         => $af_client->email,
-        language      => 'EN',
-        loginid       => $af_client->loginid,
-        amount        => '10.00',
-        currency      => 'USD',
-        client_name   => $af_client->first_name . ' ' . $af_client->last_name,
-        pa_name       => 'Xoe',
-        pa_first_name => $pa_client->first_name,
-        pa_last_name  => $pa_client->last_name,
-        pa_loginid    => 'CR10004',
-        },
-        'event args are correct';
+
+    cmp_deeply(
+        $emitted_events->{pa_transfer_confirm},
+        [{
+                amount        => '10.00',
+                client_name   => $af_client->first_name . ' ' . $af_client->last_name,
+                currency      => $transfer_params->{args}->{currency},
+                email         => $af_client->email,
+                language      => $transfer_params->{language},
+                loginid       => $af_client->loginid,
+                pa_first_name => $pa_client->first_name,
+                pa_last_name  => $pa_client->last_name,
+                pa_loginid    => 'CR10004',
+                pa_name       => 'Xoe',
+            }
+        ],
+        "pa_transfer_confirm event emitted"
+    );
+
+    cmp_deeply(
+        $emitted_events->{payment_deposit},
+        [{
+                amount             => '10.00',
+                currency           => $transfer_params->{args}->{currency},
+                gateway_code       => "payment_agent_transfer",
+                is_agent_to_client => 1,
+                is_first_deposit   => 1,
+                loginid            => $af_client->loginid,
+            }
+        ],
+        "payment_deposit event emitted"
+    );
+
+    cmp_deeply(
+        $emitted_events->{payment_withdrawal},
+        [{
+                amount             => '10.00',
+                currency           => $transfer_params->{args}->{currency},
+                gateway_code       => "payment_agent_transfer",
+                is_agent_to_client => 1,
+                loginid            => 'CR10004',
+            }
+        ],
+        "payment_withdraw event emitted"
+    );
 
     BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries(['af']);
 

@@ -741,9 +741,7 @@ rpc paymentagent_transfer => sub {
 
     my ($error, $response);
 
-    # Send email to CS whenever a new client has been deposited via payment agent
-    # This assumes no deposit has been made and the following deposit is a success
-    my $client_has_deposits = $client_to->has_deposits;
+    my $is_first_deposit = $client_to->is_first_deposit_pending;
 
     try {
         # Payment agents right now cannot transfer to clients with different currencies
@@ -762,6 +760,7 @@ rpc paymentagent_transfer => sub {
             gateway_code       => 'payment_agent_transfer',
             is_agent_to_client => 1,
         );
+
     } catch ($e) {
         log_exception();
         my $error_message = _payment_account_transfer_error($e)
@@ -794,6 +793,28 @@ rpc paymentagent_transfer => sub {
         });
 
     $payment_agent->newly_authorized(0);    # reset the 'newly_authorized' flag
+
+    my %common_properties = (
+        amount             => formatnumber('amount', $currency, $amount),
+        currency           => $currency,
+        gateway_code       => 'payment_agent_transfer',
+        is_agent_to_client => 1,
+    );
+
+    BOM::Platform::Event::Emitter::emit(
+        'payment_deposit',
+        {
+            loginid          => $client_to->loginid,
+            is_first_deposit => $is_first_deposit,
+            %common_properties,
+        });
+
+    BOM::Platform::Event::Emitter::emit(
+        'payment_withdrawal',
+        {
+            loginid => $client_fm->loginid,
+            %common_properties,
+        });
 
     return {
         status              => 1,
@@ -1104,6 +1125,7 @@ rpc paymentagent_withdraw => sub {
             is_agent_to_client => 0,
             gateway_code       => 'payment_agent_transfer',
         );
+
     } catch ($e) {
         log_exception();
         my $error_message = _payment_account_transfer_error($e)
@@ -1137,6 +1159,28 @@ rpc paymentagent_withdraw => sub {
         });
 
     $paymentagent->newly_authorized(0);    # reset the 'newly_authorized' flag
+
+    my %common_properties = (
+        amount             => formatnumber('amount', $currency, $amount),
+        currency           => $currency,
+        gateway_code       => 'payment_agent_transfer',
+        is_agent_to_client => 0,
+    );
+
+    BOM::Platform::Event::Emitter::emit(
+        'payment_deposit',
+        {
+            loginid          => $paymentagent_loginid,
+            is_first_deposit => 0,
+            %common_properties,
+        });
+
+    BOM::Platform::Event::Emitter::emit(
+        'payment_withdrawal',
+        {
+            loginid => $client_loginid,
+            %common_properties,
+        });
 
     return {
         status            => 1,
