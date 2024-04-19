@@ -17,14 +17,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
-  check_if_dependent_PR_exists:
-    uses: regentmarkets/github-actions/.github/workflows/check-dependent-PR.yml@master
-    secrets: inherit
-    with:
-      repository: ${{ inputs.repository }}
   schema:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -49,8 +42,6 @@ jobs:
         run: |
           make json_schemas
   syntax_diff_unit:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -74,11 +65,9 @@ jobs:
           repository: ${{ inputs.repository }}
       - name: Code Structure and syntax
         run: make syntax_diff
-      - name : Unit tests 
+      - name : Unit tests
         run: make unit
   core1:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -105,8 +94,6 @@ jobs:
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           make test1
   core2:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
