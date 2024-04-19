@@ -15,6 +15,18 @@ test_all: $(TESTS)
 test:
 	@$(PROVE) t/BOM
 
+client:
+	@$(PROVE) t/BOM/Client
+
+p2p:
+	@$(PROVE) t/BOM/P2P
+
+user:
+	@$(PROVE) t/BOM/User
+
+others:
+	@$(PROVE) $$(find t/BOM -maxdepth 1 | grep -vE "/(BOM|Client|P2P|User)$$")
+
 syntax_diff:
 	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
 
