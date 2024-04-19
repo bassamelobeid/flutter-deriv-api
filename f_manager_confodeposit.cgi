@@ -303,6 +303,7 @@ try {
                 loginid           => $client->loginid,
                 is_first_deposit  => $fdp,
                 payment_processor => ($payment_type eq 'external_cashier' ? $params{payment_processor} : undef),
+                gateway_code      => $trx->{payment_gateway_code},
                 transaction_id    => $trx->{id},
             }) if $ttype eq 'CREDIT';
 
