@@ -420,6 +420,47 @@ subtest 'General event validation - filtering by brand' => sub {
             },
             'track args is properly set for cryptocashier payment_deposit'
         );
+
+        undef @track_args;
+
+        ok BOM::Event::Services::Track::track_event(
+            event      => 'payment_deposit',
+            loginid    => $test_client->loginid,
+            properties => {
+                amount             => '10',
+                currency           => 'USD',
+                is_first_deposit   => 0,
+                gateway_code       => 'payment_agent_transfer',
+                is_agent_to_client => 0,
+                loginid            => $test_client->loginid,
+            },
+            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        is @identify_args, 0, 'Segment identify is not invoked';
+        ok @track_args, 'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "payment_deposit",
+                properties => {
+                    brand              => 'deriv',
+                    amount             => '10',
+                    currency           => 'USD',
+                    lang               => 'ID',
+                    is_first_deposit   => 0,
+                    gateway_code       => 'payment_agent_transfer',
+                    is_agent_to_client => 0,
+                    loginid            => $test_client->loginid,
+                },
+            },
+            'track args is properly set for payment agent payment_deposit'
+        );
     };
 
     subtest 'payment_withdrawal' => sub {
@@ -500,6 +541,44 @@ subtest 'General event validation - filtering by brand' => sub {
                 },
             },
             'track args is properly set for cryptocashier payment_withdrawal'
+        );
+
+        undef @track_args;
+        ok BOM::Event::Services::Track::track_event(
+            event      => 'payment_withdrawal',
+            loginid    => $test_client->loginid,
+            properties => {
+                amount             => '-10',
+                currency           => 'USD',
+                loginid            => $test_client->loginid,
+                gateway_code       => 'payment_agent_transfer',
+                is_agent_to_client => 0,
+            },
+            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        is @identify_args, 0, 'Segment identify is not invoked';
+        ok @track_args, 'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "payment_withdrawal",
+                properties => {
+                    brand              => 'deriv',
+                    amount             => '-10',
+                    currency           => 'USD',
+                    lang               => 'ID',
+                    loginid            => $test_client->loginid,
+                    gateway_code       => 'payment_agent_transfer',
+                    is_agent_to_client => 0,
+                },
+            },
+            'track args is properly set for payment agent payment_withdrawal'
         );
     };
 

@@ -117,10 +117,12 @@ my %EVENT_PROPERTIES = (
     multiplier_hit_type                 => [qw(contract_id hit_type profit sell_price currency)],
     multiplier_near_expire_notification => [qw(loginid contract_id)],
     multiplier_near_dc_notification     => [qw(loginid contract_id)],
-    payment_deposit             => [qw(payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method remark)],
-    payment_withdrawal          => [qw(transaction_id trace_id amount payment_fee currency payment_method)],
-    payment_withdrawal_reversal => [qw(transaction_id trace_id amount payment_fee currency payment_method)],
-    trading_platform_account_created                 => [qw(first_name login account_id account_type market_type platform)],
+    payment_deposit                     => [
+        qw(payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method remark gateway_code is_agent_to_client)
+    ],
+    payment_withdrawal               => [qw(transaction_id trace_id amount payment_fee currency payment_method gateway_code is_agent_to_client)],
+    payment_withdrawal_reversal      => [qw(transaction_id trace_id amount payment_fee currency payment_method)],
+    trading_platform_account_created => [qw(first_name login account_id account_type market_type platform)],
     trading_platform_password_reset_request          => [qw(first_name verification_url code platform)],
     trading_platform_password_changed                => [qw(first_name contact_url type logins platform)],
     trading_platform_password_change_failed          => [qw(first_name contact_url type successful_logins failed_logins platform)],

@@ -5132,6 +5132,24 @@ subtest 'card deposits' => sub {
     $test_client->save;
 };
 
+subtest 'payment agent deposits' => sub {
+    my $event_args = {
+        loginid            => $test_client->loginid,
+        is_first_deposit   => 1,
+        amount             => 456,
+        currency           => 'USD',
+        gateway_code       => 'payment_agent_transfer',
+        is_agent_to_client => 0,
+    };
+
+    undef @emit_args;
+
+    BOM::Event::Actions::Client::payment_deposit($event_args)->get;
+
+    is @emit_args, 0, 'validations in payment_deposit subroutine are skipped for payment agent deposits';
+
+};
+
 $get_file_mock->mock(
     '_get_document_s3',
     sub {

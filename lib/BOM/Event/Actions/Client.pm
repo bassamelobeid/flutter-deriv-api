@@ -3391,6 +3391,10 @@ async sub payment_deposit {
     my $account_identifier = $args->{account_identifier};
     my $payment_method     = $args->{payment_method} // '';
     my $payment_type       = $args->{payment_type}   // '';
+    my $gateway_code       = $args->{gateway_code}   // '';
+
+    return if $gateway_code eq 'payment_agent_transfer';
+    # will skip checks for payment_agent_transfer since all validations here are only applicable for doughflow deposits
 
     $account_identifier = sha256_hex($account_identifier) if $account_identifier;
 
