@@ -4127,7 +4127,11 @@ sub smart_payment {
     $payment_gateway_code ||= $gateway_map{$payment_type}
         || die "unsupported payment_type: $payment_type";
     my $payment_handler = "payment_$payment_gateway_code";
-    return $self->$payment_handler(%args);
+
+    return {
+        $self->$payment_handler(%args)->%*,
+        payment_gateway_code => $payment_gateway_code,
+    };
 }
 
 sub payment_legacy_payment {
