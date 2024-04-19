@@ -16,3 +16,11 @@ jobs:
     with:
       repository: ${{ github.repository }}
       runner: self-hosted
+  ci_test_status:
+    needs: [core_syntax_diff]
+    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    runs-on: self-hosted
+    steps:
+      - uses: regentmarkets/github-actions/ci-test-status@master
+        with:
+          job_status: ${{ toJson(needs) }}
