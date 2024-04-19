@@ -724,7 +724,10 @@ sub create_virtual_account {
     );
 
     my $utm_tags = {};
-    @tags_list = qw(date_first_contact gclid_url signup_device utm_campaign utm_content utm_medium utm_source utm_term);
+    @tags_list = qw(date_first_contact gclid_url signup_device utm_campaign utm_content utm_medium
+        utm_source utm_term utm_ad_id utm_adgroup_id utm_adrollclk_id utm_campaign_id utm_fbcl_id
+        utm_gl_client_id utm_msclk_id);
+
     foreach my $tag (@tags_list) {
         $utm_tags->{$tag} = $args->{$tag} if $args->{$tag};
     }
