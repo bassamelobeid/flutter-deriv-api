@@ -9,7 +9,6 @@ use BOM::Config::Runtime;
 use BOM::Contract::Factory qw(produce_contract);
 use BOM::Contract::Pricer;
 use BOM::Contract::Validator;
-use BOM::Platform::Context qw (localize);
 use BOM::Pricing::v3::Utility;
 use BOM::User::Client;
 use DataDog::DogStatsd::Helper  qw(stats_timing stats_inc);
@@ -17,7 +16,6 @@ use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use Format::Util::Numbers       qw/formatnumber roundcommon/;
 use JSON::MaybeXS;
 use LandingCompany::Registry;
-use List::Util   qw(max);
 use Scalar::Util qw(blessed);
 use Syntax::Keyword::Try;
 use Time::HiRes;
@@ -228,7 +226,7 @@ sub get_bid {
         $bet_params->{sell_time}             = $sell_time              if $is_sold;
         $bet_params->{sell_price}            = $sell_price             if defined $sell_price;
         $bet_params->{current_tick}          = $params->{current_tick} if $params->{current_tick};
-        $contract                            = produce_contract($bet_params)->inner_contract;
+        $contract                            = produce_contract($bet_params);
     } catch {
         warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . $json->encode($bet_params);
 
@@ -238,7 +236,7 @@ sub get_bid {
         });
     }
 
-    if ($contract->is_legacy) {
+    if (BOM::Contract::Validator->is_legacy($contract)) {
         return BOM::Pricing::v3::Utility::create_error({
             message_to_client => $contract->longcode,
             code              => "GetProposalFailure"
@@ -254,7 +252,7 @@ sub get_bid {
 
         # we want to return immediately with a complete response in case of a data disruption because
         # we might now have a valid entry and exit tick.
-        if (not $valid_to_sell->{is_valid_to_sell} and $contract->require_manual_settlement) {
+        if (not $valid_to_sell->{is_valid_to_sell} and $contract->inner_contract->require_manual_settlement) {
             # can't just return the value when using Syntax::Keyword::Try, it breaks some tests
             # the response should be returned from outside of the try block
             $response = BOM::Pricing::v3::Utility::create_error({
@@ -262,18 +260,20 @@ sub get_bid {
                 message_to_client => $valid_to_sell->{validation_error},
             });
         } else {
-            $response = _build_bid_response({
-                contract              => $contract,
-                contract_id           => $contract_id,
-                is_valid_to_sell      => $valid_to_sell->{is_valid_to_sell},
-                is_valid_to_cancel    => $contract->is_valid_to_cancel,
-                is_sold               => $is_sold,
-                is_expired            => $is_expired,
-                sell_price            => $sell_price,
-                sell_time             => $sell_time,
-                validation_error      => $valid_to_sell->{validation_error},
-                validation_error_code => $valid_to_sell->{validation_error_code},
-            });
+            $response = BOM::Contract::Pricer->calc_bid_price_detailed(
+                $contract,
+                {
+                    is_sold    => $is_sold,
+                    is_expired => $is_expired,
+                    sell_price => $sell_price,
+                    sell_time  => $sell_time,
+                });
+            $response->{is_valid_to_sell} = $valid_to_sell->{is_valid_to_sell} ? 1 : 0;
+            unless ($valid_to_sell->{is_valid_to_sell}) {
+                $response->{validation_error}      = $valid_to_sell->{validation_error};
+                $response->{validation_error_code} = $valid_to_sell->{validation_error_code};
+            }
+            $response->{contract_id} = $contract_id;
 
             # (M)oved from bom-rpc populate_proposal_open_contract_response
             my ($transaction_ids, $buy_price, $account_id, $purchase_time) =
@@ -300,7 +300,7 @@ sub get_bid {
                 $response->{profit_percentage} = roundcommon(0.01, $profit / $main_contract_price * 100);
             }
 
-            my $pen = $contract->pricing_engine_name;
+            my $pen = $contract->inner_contract->pricing_engine_name;
             $pen =~ s/::/_/g;
             stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
         }
@@ -550,20 +550,23 @@ Returns a hashref is_valid_to_sell = boolean , validation_error = String (valida
 
 sub _is_valid_to_sell {
     my ($contract, $validation_params, $country_code) = @_;
-    my $is_valid_to_sell = 1;
-    my ($validation_error, $validation_code);
+    my ($valid_to_sell, $pve) = BOM::Contract::Validator->is_valid_to_sell(
+        $contract,
+        {
+            landing_company         => $validation_params->{landing_company},
+            country_code            => $country_code,
+            skip_barrier_validation => $validation_params->{skip_barrier_validation},
+        },
+    );
+    if (!$valid_to_sell) {
+        return {
+            is_valid_to_sell      => undef,
+            validation_error      => $pve->message_to_client,
+            validation_error_code => $pve->code,
+        };
+    }
 
     if (
-        !$contract->is_valid_to_sell({
-                landing_company         => $validation_params->{landing_company},
-                country_code            => $country_code,
-                skip_barrier_validation => $validation_params->{skip_barrier_validation}}))
-    {
-        $is_valid_to_sell = 0;
-        $validation_error = $contract->primary_validation_error->message_to_client;
-        $validation_code  = $contract->primary_validation_error->code;
-
-    } elsif (
         not $contract->is_expired
         and my $cve = _validate_offerings(
             $contract,
@@ -573,287 +576,16 @@ sub _is_valid_to_sell {
                 action          => 'sell'
             }))
     {
-        $is_valid_to_sell = 0;
-        $validation_error = $cve->{error}{message_to_client};
-        $validation_code  = 'Offerings';                        # this is not coming from MooseX::Role::Validatable::Error
+        return {
+            is_valid_to_sell      => undef,
+            validation_error      => $cve->{error}{message_to_client},
+            validation_error_code => 'Offerings',
+        };
     }
 
     return {
-        is_valid_to_sell      => $is_valid_to_sell,
-        validation_error      => $validation_error,
-        validation_error_code => $validation_code,
+        is_valid_to_sell => 1,
     };
-}
-
-=head2 _build_bid_response
-
-Description Builds the open contract response from the stored contract.
-
-Takes the following arguments as named parameters
-
-=over 4
-
-=item contract L<BOM::Product::Contract>::* type of contract varies depending on bet type
-
-=item contract_id  Integer internal identifier of the purchased Contract
-
-=item is_valid_to_sell Boolean Whether the contract can be sold back to Binary.com.
-
-=item is_sold  Boolean  Whether the contract is sold or not.
-
-=item is_expired  Boolean  Whether the contract is expired or not.
-
-=item sell_price   Numeric Price at which contract was sold, only available when contract has been sold.
-
-=item sell_time   Integer Epoch time of when the contract was sold (only present for contracts already sold).
-
-=item validation_error  String   Message to be returned on a validation error.
-
-=back
-
-Returns a contract proposal response as a  Hashref
-
-=cut
-
-my @spot_list = qw(entry_tick entry_spot exit_tick sell_spot current_spot);
-
-sub _build_bid_response {
-    my ($params)           = @_;
-    my $contract           = $params->{contract};
-    my $is_valid_to_settle = $contract->is_settleable;
-
-    # "0 +" converts string into number. This was added to ensure some fields return the value as number instead of string
-    my $response = {
-        is_valid_to_sell    => $params->{is_valid_to_sell},
-        current_spot_time   => 0 + $contract->current_tick->epoch,
-        contract_id         => $params->{contract_id},
-        underlying          => $contract->underlying->symbol,
-        display_name        => $contract->underlying->display_name,
-        is_expired          => $contract->is_expired,
-        is_forward_starting => $contract->starts_as_forward_starting,
-        is_path_dependent   => $contract->is_path_dependent,
-        is_intraday         => $contract->is_intraday,
-        date_start          => 0 + $contract->date_start->epoch,
-        date_expiry         => 0 + $contract->date_expiry->epoch,
-        date_settlement     => 0 + $contract->date_settlement->epoch,
-        currency            => $contract->currency,
-        longcode            => $contract->longcode,
-        shortcode           => $contract->shortcode,
-        contract_type       => $contract->code,
-        bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
-        is_settleable       => $is_valid_to_settle,
-        barrier_count       => $contract->two_barriers ? 2 : 1,
-        is_valid_to_cancel  => $params->{is_valid_to_cancel},
-        expiry_time         => $contract->date_expiry->epoch,
-    };
-    if (!$contract->uses_barrier) {
-        $response->{barrier_count} = 0;
-        $response->{barrier}       = undef;
-    }
-
-    if ($contract->reset_spot) {
-        $response->{reset_time}    = 0 + $contract->reset_spot->epoch;
-        $response->{reset_barrier} = $contract->underlying->pipsized_value($contract->reset_spot->quote);
-    }
-
-    $response->{multiplier} = $contract->multiplier if $contract->can('multiplier');
-    unless ($params->{is_valid_to_sell}) {
-        $response->{validation_error}      = $params->{validation_error};
-        $response->{validation_error_code} = $params->{validation_error_code};
-    }
-    $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-    $response->{tick_count}   = $contract->tick_count   if $contract->expiry_type eq 'tick';
-
-    if ($contract->is_binary) {
-        $response->{payout} = $contract->payout;
-    } elsif ($contract->can('maximum_payout')) {
-        $response->{payout} = $contract->maximum_payout;
-    }
-
-    if ($params->{is_sold} and $params->{is_expired}) {
-        # here sell_price is used to parse the status of contracts that settled from Back Office
-        # For non binary (except accumulator), there is no concept of won or lost, hence will return empty status if it is already expired and sold
-        $response->{status} = undef;
-        if ($contract->is_binary) {
-            $response->{status} = ($params->{sell_price} == $contract->payout ? "won" : "lost");
-        }
-    } elsif ($params->{is_sold} and not $params->{is_expired}) {
-        $response->{status} = 'sold';
-    } else {    # not sold
-        $response->{status} = 'open';
-    }
-
-    # overwrite the above status if contract is cancelled
-    $response->{status} = 'cancelled' if $contract->is_cancelled;
-
-    if ($contract->entry_spot) {
-        my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
-        $response->{entry_tick}      = $entry_spot;
-        $response->{entry_spot}      = $entry_spot;
-        $response->{entry_tick_time} = 0 + $contract->entry_spot_epoch;
-    }
-
-    if ($contract->two_barriers and $contract->high_barrier) {
-        # supplied_type 'difference' and 'relative' will need entry spot to calculate absolute barrier value
-        if ($contract->high_barrier->supplied_type eq 'absolute' or $contract->entry_spot) {
-            $response->{high_barrier} = $contract->high_barrier->as_absolute;
-            $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-        }
-    } elsif ($contract->can('barrier') and $contract->barrier) {
-        if ($contract->barrier->supplied_type eq 'absolute' or $contract->barrier->supplied_type eq 'digit') {
-            $response->{barrier} = $contract->barrier->as_absolute;
-        } elsif ($contract->entry_spot) {
-            $response->{barrier} = $contract->barrier->as_absolute;
-        }
-    }
-
-    # for multiplier, we want to return the orders and insurance details.
-    if ($contract->category_code eq 'multiplier') {
-        # If the caller is not from price daemon, we need:
-        # 1. sorted orders as array reference ($contract->available_orders) for PRICER_ARGS
-        # 2. available order for display in the websocket api response ($contract->available_orders_for_display)
-        $response->{limit_order} = $contract->available_orders_for_display;
-        # commission in payout currency amount
-        $response->{commission} = $contract->commission_amount;
-        # deal cancellation
-        if ($contract->cancellation) {
-            $response->{cancellation} = {
-                ask_price   => $contract->cancellation_price,
-                date_expiry => $contract->cancellation_expiry->epoch,
-            };
-        }
-    }
-
-    # for accumulator, we want to return maximum_ticks and growth_rate and limit_order.
-    if ($contract->category_code eq 'accumulator') {
-        if ($contract->take_profit) {
-            $response->{limit_order} = {
-                'take_profit' => {
-                    'display_name' => 'Take profit',
-                    'order_date'   => $contract->take_profit->{date}->epoch,
-                    'order_amount' => $contract->take_profit->{amount}}};
-        }
-        $response->{growth_rate}               = $contract->growth_rate;
-        $response->{tick_count}                = $contract->max_duration;
-        $response->{tick_passed}               = $contract->tick_count_after_entry;
-        $response->{high_barrier}              = $contract->display_high_barrier if $contract->display_high_barrier;
-        $response->{low_barrier}               = $contract->display_low_barrier  if $contract->display_low_barrier;
-        $response->{current_spot_high_barrier} = $contract->current_spot_high_barrier;
-        $response->{current_spot_low_barrier}  = $contract->current_spot_low_barrier;
-        $response->{barrier_spot_distance}     = $contract->barrier_spot_distance;
-
-        #in the first few ticks of the contract bid_price will be less than stake
-        #but we don't want to show that to users
-        $response->{bid_price} = max($response->{bid_price}, $contract->_user_input_stake) unless $contract->is_expired;
-
-        #status of accumulator is determined differently from other non-binary contracts
-        if ($params->{is_sold} and $params->{is_expired}) {
-            $response->{status} = ($contract->pnl >= 0 ? "won" : "lost");
-        } elsif ($params->{is_sold} and not $params->{is_expired}) {
-            #user can only sell the contract if pnl > 0, so it will considered as a 'win'
-            $response->{status} = 'won';
-        } else {    # not sold
-            $response->{status} = 'open';
-        }
-    }
-
-    if ($contract->category_code eq 'turbos') {
-        if ($contract->take_profit) {
-            $response->{limit_order} = {
-                'take_profit' => {
-                    'display_name' => 'Take profit',
-                    'order_date'   => $contract->take_profit->{date}->epoch,
-                    'order_amount' => $contract->take_profit->{amount}}};
-        }
-        $response->{barrier}                     = $contract->display_barrier;
-        $response->{display_number_of_contracts} = $contract->number_of_contracts;
-
-        # status of turbos is determined differently from other non-binary contracts
-        if ($params->{is_sold} and $params->{is_expired}) {
-            $response->{status} = ($contract->pnl >= 0 ? "won" : "lost");
-        } elsif ($params->{is_sold} and not $params->{is_expired}) {
-            $response->{status} = 'sold';
-        } else {
-            $response->{status} = 'open';
-        }
-    }
-
-    if ($contract->category_code eq 'vanilla') {
-        $response->{display_number_of_contracts} = $contract->number_of_contracts;
-    }
-
-    if (    $contract->exit_tick
-        and $contract->is_valid_exit_tick
-        and $contract->is_after_settlement)
-    {
-        $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
-        $response->{exit_tick_time} = 0 + $contract->exit_tick->epoch;
-    }
-
-    if ($is_valid_to_settle || $contract->is_sold) {
-        $response->{audit_details} = $contract->audit_details($params->{sell_time});
-    }
-
-    # sell_spot and sell_spot_time are updated if the contract is sold
-    # or when the contract is expired.
-    #exit_tick to be returned on these scenario:
-    # - sell back early (tick at sell time)
-    # - hit tick for an American contract
-    # - latest tick at the expiry time of a European contract.
-    # TODO: Planning to phase out sell_spot in the next API version.
-
-    my $contract_close_tick;
-    # contract expire before the expiry time
-    if ($params->{sell_time} and $params->{sell_time} < $contract->date_expiry->epoch) {
-        if (    $contract->is_path_dependent
-            and $contract->close_tick
-            and $contract->close_tick->epoch <= $params->{sell_time})
-        {
-            $contract_close_tick = $contract->close_tick;
-        }
-
-        if ((!$contract->is_path_dependent) and ($contract->can('close_tick'))) {
-            # using close_tick if the non path dependent contract has the method defined
-            # since tick_at is not reliable for sell at market contracts
-            $contract_close_tick = $contract->close_tick;
-        }
-
-        # client sold early
-        $contract_close_tick = $contract->underlying->tick_at($params->{sell_time}, {allow_inconsistent => 1})
-            unless defined $contract_close_tick;
-    } elsif ($contract->is_expired) {
-        # it could be that the contract is not sold until/after expiry for path dependent
-        $contract_close_tick = $contract->close_tick if $contract->is_path_dependent;
-        $contract_close_tick = $contract->exit_tick  if not $contract_close_tick and $contract->exit_tick and $contract->is_valid_exit_tick;
-    }
-
-    # if the contract is still open, $contract_close_tick will be undefined
-    if (defined $contract_close_tick) {
-        foreach my $key ($params->{is_sold} ? qw(sell_spot exit_tick) : qw(exit_tick)) {
-            $response->{$key} = $contract->underlying->pipsized_value($contract_close_tick->quote);
-            $response->{$key . '_time'} = 0 + $contract_close_tick->epoch;
-        }
-    }
-
-    if ($contract->tick_expiry) {
-
-        $response->{tick_stream} = $contract->tick_stream;
-
-        if ($contract->category->code eq 'highlowticks' and $contract->selected_tick) {
-            my $selected_tick = $contract->selected_tick;
-            $response->{selected_tick} = 0 + $selected_tick;
-
-            if ($contract->supplied_barrier) {
-                $response->{selected_spot} = 0 + $contract->supplied_barrier;
-            }
-        }
-    }
-
-    $response->{$_ . '_display_value'} = $contract->underlying->pipsized_value($response->{$_}) for (grep { defined $response->{$_} } @spot_list);
-    # makes sure they are numbers
-    $response->{$_} += 0 for (grep { defined $response->{$_} } @spot_list);
-
-    return $response;
 }
 
 1;

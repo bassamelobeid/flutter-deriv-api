@@ -91,6 +91,7 @@ subtest 'process_job' => sub {
 
     $params->{price_daemon_cmd} = 'bid';
     $result = $daemon->process_job($redis_pricer, $params, $params);
+    ok(!$result->{error}, "process_job returned no error");
 
     my $expected = {
         'barrier'                    => '7',

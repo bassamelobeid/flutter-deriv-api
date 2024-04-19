@@ -1,7 +1,8 @@
 use Test::Most;
 use Test::MockTime::HiRes qw(set_absolute_time);
+use BOM::Contract::Pricer;
 use BOM::Pricing::v3::Contract;
-use BOM::Product::ContractFactory;
+use BOM::Contract::Factory qw(produce_contract);
 use Test::MockModule;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -52,18 +53,17 @@ $params = {
     'amount_type'           => 'payout',
     'payout'                => '10',
 };
-my $contract = BOM::Product::ContractFactory::produce_contract($params);
+
+my $contract = produce_contract($params);
+
 $params = {
-    contract           => $contract,
-    is_valid_to_sell   => 1,
-    is_valid_to_cancel => 1,
-    is_sold            => 1,
-    sell_time          => 1634775100,
+    is_valid_to_sell => 1,
+    is_sold          => 1,
+    sell_time        => 1634775100,
 };
 my $expected = {
     'barrier_count'              => 1,
     'bid_price'                  => '6.13',
-    'contract_id'                => ignore(),
     'contract_type'              => 'RESETCALL',
     'currency'                   => 'USD',
     'current_spot'               => '963.3054',
@@ -79,8 +79,7 @@ my $expected = {
     'is_intraday'                => 1,
     'is_path_dependent'          => 0,
     'is_settleable'              => 0,
-    'is_valid_to_cancel'         => 1,
-    'is_valid_to_sell'           => 1,
+    'is_valid_to_cancel'         => 0,
     'longcode'                   => [
         "Win payout if [_1] after [_3] is strictly higher than it was at either entry or [_5].",
         ["Volatility 50 Index"],
@@ -101,7 +100,7 @@ my $expected = {
     'underlying' => 'R_50'
 };
 
-$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+$result = BOM::Contract::Pricer->calc_bid_price_detailed($contract, $params);
 cmp_deeply($result, $expected, 'build_bid_response matches');
 
 my $now_tickhighlow = Date::Utility->new('21-Oct-2021');
@@ -128,7 +127,6 @@ for my $i (0 .. 4) {
 }
 
 $params->{date_pricing} = $now_tickhighlow->plus_time_interval('5s');
-$contract = BOM::Product::ContractFactory::produce_contract($params);
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
@@ -136,9 +134,8 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 100.1,
 });
 
-$contract = BOM::Product::ContractFactory::produce_contract({%$params, selected_tick => 5});
+$contract = produce_contract({%$params, selected_tick => 5});
 $params   = {
-    contract           => $contract,
     is_valid_to_sell   => 0,
     is_valid_to_cancel => 0,
     is_sold            => 1
@@ -147,7 +144,6 @@ $params   = {
 $expected = {
     'barrier_count'              => 1,
     'bid_price'                  => '10.00',
-    'contract_id'                => ignore(),
     'contract_type'              => 'TICKHIGH',
     'currency'                   => 'USD',
     'current_spot'               => '100.1',
@@ -164,7 +160,6 @@ $expected = {
     'is_path_dependent'          => 1,
     'is_settleable'              => 1,
     'is_valid_to_cancel'         => 0,
-    'is_valid_to_sell'           => 0,
     'longcode'                   =>
         ['Win payout if tick [_5] of [_1] is the highest among all [_3] ticks.', ['Volatility 50 Index'], ['first tick'], ['5'], ['0.0001'], '5'],
     'payout'                   => 10,
@@ -185,13 +180,11 @@ $expected = {
     'exit_tick_display_value'  => ignore(),
     'exit_tick_time'           => ignore(),
     'tick_stream'              => ignore(),
-    'validation_error'         => ignore(),
-    'validation_error_code'    => ignore(),
     'sell_spot'                => '100.1',
     'sell_spot_display_value'  => '100.1000',
     'sell_spot_time'           => ignore()};
 
-$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+$result = BOM::Contract::Pricer->calc_bid_price_detailed($contract, $params);
 cmp_deeply($result, $expected, 'build_bid_response matches');
 
 my $now       = Date::Utility->new(1634775000);
@@ -225,13 +218,13 @@ $params = {
     'underlying'            => 'R_100',
     'amount_type'           => 'stake'
 };
-$contract = BOM::Product::ContractFactory::produce_contract($params);
+
+$contract = produce_contract($params);
 $params   = {
-    contract           => $contract,
     is_valid_to_sell   => 1,
     is_valid_to_cancel => 1,
 };
-$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+$result = BOM::Contract::Pricer->calc_bid_price_detailed($contract, $params);
 ok !$result->{error}, 'build_bid_response for MULTUP';
 is $result->{'underlying'},    'R_100',  'underlying R_100';
 is $result->{'bid_price'},     '100.00', 'bid_price matches';
@@ -253,15 +246,14 @@ $params = {
     'sell_price'            => 253
 };
 
-$contract = BOM::Product::ContractFactory::produce_contract($params);
+$contract = produce_contract($params);
 
 $params = {
-    contract           => $contract,
     is_valid_to_sell   => 1,
     is_valid_to_cancel => 1,
     sell_time          => $sell_time->epoch,
 };
-$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+$result = BOM::Contract::Pricer->calc_bid_price_detailed($contract, $params);
 is $result->{exit_tick_time}, $sell_time->epoch - 1, 'correct sell at market tick';
 
 done_testing;
