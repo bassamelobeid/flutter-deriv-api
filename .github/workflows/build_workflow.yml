@@ -15,3 +15,11 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ github.repository }}
+  ci_test_status:
+    needs: [core_unit_syntax_diff]
+    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: regentmarkets/github-actions/ci-test-status@master
+        with:
+          job_status: ${{ toJson(needs) }}
