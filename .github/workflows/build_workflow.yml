@@ -11,12 +11,12 @@ concurrency:
   cancel-in-progress: true
 jobs:
   check_dependent_tests:
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: self-hosted
     outputs:
       needs_dependent_test: ${{ steps.check_dependent_test.outputs.result }}
     steps:
-      -
-        name: Toggle Dependent Tests
+      - name: Toggle Dependent Tests
         id: check_dependent_test
         uses: regentmarkets/github-actions/check-dependent-test@master
   build:
@@ -44,6 +44,14 @@ jobs:
         run: make test
   dependent:
     needs: [check_dependent_tests]
-    if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
+    if: ${{ needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
     uses: ./.github/workflows/dependent.yml
     secrets: inherit
+  ci_test_status:
+    needs: [build, dependent]
+    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: regentmarkets/github-actions/ci-test-status@master
+        with:
+          job_status: ${{ toJson(needs) }}

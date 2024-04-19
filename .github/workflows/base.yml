@@ -17,14 +17,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
-  check_if_dependent_PR_exists:
-    uses: regentmarkets/github-actions/.github/workflows/check-dependent-PR.yml@master
-    secrets: inherit
-    with:
-      repository: ${{ inputs.repository }}
   build:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
