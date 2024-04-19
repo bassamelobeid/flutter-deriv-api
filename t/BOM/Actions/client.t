@@ -3692,7 +3692,7 @@ subtest 'signup event for track worker' => sub {
                 signup_device      => 'desktop',
                 utm_content        => 'synthetic-ebook',
                 utm_term           => 'term',
-                date_first_contact => '2019-11-28'
+                date_first_contact => '2019-11-28',
             }}};
     $virtual_client2->set_default_account('USD');
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{signup};
@@ -3738,6 +3738,9 @@ subtest 'signup event for track worker' => sub {
             brand         => 'deriv',
             email_consent => 1,
             lang          => 'ID',
+            utm_content   => 'synthetic-ebook',
+            utm_source    => 'direct',
+            utm_term      => 'term'
         }
         },
         'properties is properly set for virtual account signup';
@@ -4160,6 +4163,9 @@ subtest 'wallet signup event' => sub {
             brand         => 'deriv',
             email_consent => 1,
             lang          => 'ID',
+            utm_term      => 'term',
+            utm_content   => 'synthetic-ebook',
+            utm_source    => 'direct'
         }
         },
         'properties is properly set for wallet virtual account signup';

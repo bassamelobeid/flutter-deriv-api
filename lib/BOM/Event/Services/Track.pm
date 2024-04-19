@@ -47,8 +47,11 @@ my %EVENT_PROPERTIES = (
         qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
     ],
     login  => [qw (browser device ip new_signin_activity location app_name)],
-    signup =>
-        [qw (type subtype currency landing_company date_joined first_name last_name phone address age country provider email_consent user_agent)],
+    signup => [
+        qw (type subtype currency landing_company date_joined first_name last_name phone address age country provider email_consent
+            user_agent utm_campaign utm_content utm_medium utm_source utm_term utm_ad_id utm_adgroup_id utm_adrollclk_id utm_campaign_id
+            utm_fbcl_id utm_gl_client_id utm_msclk_id)
+    ],
     transfer_between_accounts => [
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
             is_to_account_pa gateway_code remark time id)
@@ -480,7 +483,10 @@ sub signup {
     $traits->{signup_brand} = request->brand_name;
 
     if ($properties->{utm_tags}) {
-        $traits->{$_} = $properties->{utm_tags}{$_} for keys $properties->{utm_tags}->%*;
+        foreach my $k (keys $properties->{utm_tags}->%*) {
+            $traits->{$k}     = $properties->{utm_tags}{$k};
+            $properties->{$k} = $properties->{utm_tags}{$k};
+        }
         delete $properties->{utm_tags};
     }
 
