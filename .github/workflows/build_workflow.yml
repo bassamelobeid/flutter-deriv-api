@@ -19,10 +19,18 @@ jobs:
     secrets: inherit 
   publish_test_results:
     needs: [ structure , tests ]
-    if: success() || failure()
+    if: ${{ !cancelled() }}
     uses: ./.github/workflows/publish_test_results.yml
     secrets: inherit 
   update_docs:
     if: github.ref == 'refs/heads/master'
     uses: ./.github/workflows/update_docs.yml
     secrets: inherit
+  ci_test_status:
+    needs: [structure, tests]
+    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: regentmarkets/github-actions/ci-test-status@master
+        with:
+          job_status: ${{ toJson(needs) }}
