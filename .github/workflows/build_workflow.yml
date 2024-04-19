@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   check_dependent_tests:
-    if:  ${{ github.event_name != 'push' }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: self-hosted
     outputs:
       needs_dependent_test: ${{ steps.check_dependent_test.outputs.result }}
@@ -27,6 +27,14 @@ jobs:
       runner: self-hosted
   dependent:
     needs: [check_dependent_tests]
-    if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
+    if: ${{ needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
     uses: ./.github/workflows/dependent.yml
     secrets: inherit
+  ci_test_status:
+    needs: [core_unit_syntax_diff, dependent]
+    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    runs-on: self-hosted
+    steps:
+      - uses: regentmarkets/github-actions/ci-test-status@master
+        with:
+          job_status: ${{ toJson(needs) }}
