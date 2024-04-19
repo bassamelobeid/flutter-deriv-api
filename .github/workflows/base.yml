@@ -17,14 +17,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
   cancel-in-progress: true
 jobs:
-  check_if_dependent_PR_exists:
-    uses: regentmarkets/github-actions/.github/workflows/check-dependent-PR.yml@master
-    secrets: inherit
-    with:
-      repository: ${{ inputs.repository }}
   syntax:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -47,8 +40,6 @@ jobs:
       - name: Code structure and syntax
         run: make syntax
   merlin:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -71,8 +62,6 @@ jobs:
       - name: Merlin
         run: make merlin_benchmark
   SDFX_benchmark_major:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -95,8 +84,6 @@ jobs:
       - name: SDFX benchmark major
         run: make SDFX_benchmark_major
   SDFX_benchmark_minor:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -119,8 +106,6 @@ jobs:
       - name: SDFX benchmark minor
         run: make SDFX_benchmark_minor
   SDEQ_benchmark_OTC_DJI:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -143,8 +128,6 @@ jobs:
       - name: SDEQ benchmark OTC_DJI
         run: make SDEQ_benchmark_OTC_DJI
   SDEQ_benchmark_OTC_FCHI:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -167,8 +150,6 @@ jobs:
       - name: SDEQ benchmark OTC_FCHI
         run: make SDEQ_benchmark_OTC_FCHI
   SDEQ_benchmark_SSECOMP:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -191,8 +172,6 @@ jobs:
       - name: SDEQ benchmark SSECOMP
         run: make SDEQ_benchmark_SSECOMP
   SDEQ_benchmark_OTC_FTSE:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -215,8 +194,6 @@ jobs:
       - name: SDEQ benchmark OTC_FTSE
         run: make SDEQ_benchmark_OTC_FTSE
   OVRA_benchmark:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -241,8 +218,6 @@ jobs:
           for i in $(seq 1 12); do echo -n "."; sleep 300; done &
           make OVRA_benchmark
   SDEQ_benchmark_OTC_SPC:
-    needs: check_if_dependent_PR_exists
-    if: ${{ !needs.check_if_dependent_PR_exists.outputs.result }}
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}

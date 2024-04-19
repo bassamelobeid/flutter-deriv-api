@@ -264,3 +264,21 @@ jobs:
   #         repository: ${{ github.repository }}
   #     - name: SDEQ benchmark OTC_N225
   #       run: make SDEQ_benchmark_OTC_N225
+  ci_test_status:
+    needs:
+      - syntax
+      - merlin
+      - SDFX_benchmark_major
+      - SDFX_benchmark_minor
+      - SDEQ_benchmark_OTC_DJI
+      - SDEQ_benchmark_OTC_FCHI
+      - SDEQ_benchmark_SSECOMP
+      - SDEQ_benchmark_OTC_FTSE
+      - OVRA_benchmark
+      - SDEQ_benchmark_OTC_SPC
+    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: regentmarkets/github-actions/ci-test-status@master
+        with:
+          job_status: ${{ toJson(needs) }}
