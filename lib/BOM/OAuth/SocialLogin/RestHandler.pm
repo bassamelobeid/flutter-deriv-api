@@ -184,7 +184,9 @@ gather the required utm tags from payload and emit signup event.
 method _track_new_user ($account, $payload) {
     # track social signup on Segment
     my $utm_tags  = {};
-    my @tags_list = qw(utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device utm_content utm_term);
+    my @tags_list = qw(date_first_contact gclid_url signup_device utm_campaign utm_content utm_medium
+        utm_source utm_term utm_ad_id utm_adgroup_id utm_adrollclk_id utm_campaign_id utm_fbcl_id
+        utm_gl_client_id utm_msclk_id);
 
     foreach my $tag (@tags_list) {
         $utm_tags->{$tag} = $payload->{$tag} if $payload->{$tag};
