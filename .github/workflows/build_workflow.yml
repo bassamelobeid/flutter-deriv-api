@@ -27,60 +27,59 @@ jobs:
     env:
       LOG_LEVEL: debug
     steps:
-      - 
-        name: setup CI step
+      - name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: ${{ github.repository }}
-      - 
-        name: Code structure and syntax
+      - name: Code structure and syntax
         run: make syntax_diff
-      - 
-        name: unit tests
+      - name: unit tests
         run: make unit
-      - 
-        name: Core tests
+      - name: Core tests
         run: |
           sudo tee -a /etc/hosts < hosts.db
           cat /etc/hosts
           make test
-      - 
-        name: Update UID for nobody user
+      - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
-        if: success() || failure()
-      - 
-        name: Upload Test Results
+        if: ${{ !cancelled() }}
+      - name: Upload Test Results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
-        if: success() || failure()
+        if: ${{ !cancelled() }}
         with:
           name: test-results-core_unit_syntax_diff
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   check_dependent_tests:
-    if:  ${{ github.event_name != 'push' }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     outputs:
       needs_dependent_test: ${{ steps.check_dependent_test.outputs.result }}
     steps:
-      -
-        name: Toggle Dependent Tests
+      - name: Toggle Dependent Tests
         id: check_dependent_test
         uses: regentmarkets/github-actions/check-dependent-test@master
   publish_test_results:
-    needs: [ core_unit_syntax_diff ]
-    if: success() || failure()
+    needs: [core_unit_syntax_diff]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - 
-        name: Upload results to DataDog
+      - name: Upload results to DataDog
         uses: regentmarkets/github-actions/datadog-publish@master
         with: 
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
           service-name: bom-postgres
-
   dependent:
     needs: [check_dependent_tests]
-    if:  ${{ github.event_name != 'push' && needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
+    if:  ${{ needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
     uses: ./.github/workflows/dependent.yml
     secrets: inherit
+  ci_test_status:
+    needs: [core_unit_syntax_diff, dependent]
+    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: regentmarkets/github-actions/ci-test-status@master
+        with:
+          job_status: ${{ toJson(needs) }}
