@@ -250,6 +250,7 @@ subtest "/v1/payment/deposit" => sub {
             amount           => financialrounding('amount', $body->{currency_code}, $body->{amount}),
             currency         => $body->{currency_code},
             remark           => $body->{address},
+            gateway_code     => 'ctc',
         };
 
         my $event;

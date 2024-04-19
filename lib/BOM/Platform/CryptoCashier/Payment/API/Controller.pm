@@ -121,6 +121,7 @@ sub deposit {
             amount           => $payment_args{amount},
             currency         => $payment_args{currency},
             remark           => $payment_args{remark},
+            gateway_code     => 'ctc',
         });
 
     return $self->render_response({
