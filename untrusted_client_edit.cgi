@@ -29,8 +29,9 @@ code_exit_BO(_get_display_error_message('Access Denied: you do not have access t
 PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 
-my $broker = request()->broker_code;
-my $clerk  = BOM::Backoffice::Auth::get_staffname();
+my $broker      = request()->broker_code;
+my $clerk       = BOM::Backoffice::Auth::get_staffname();
+my $user_groups = BOM::Backoffice::Auth::get_staff_groups();
 
 my $clientID = uc(request()->param('login_id') // '');
 my $action   = request()->param('untrusted_action');
@@ -107,6 +108,7 @@ if ($bulk_loginids) {
                 untrusted_action_type => $client_status_type,
                 reason                => $reason,
                 clerk                 => $clerk,
+                user_groups           => $user_groups,
                 file_name             => $file_name,
                 action                => $action,
                 status_code           => $status_code,
@@ -153,10 +155,11 @@ foreach my $login_id (@login_ids) {
     $client->set_db('write') if 'write' ne $old_db;
 
     my %common_args_for_execute_method = (
-        client    => $client,
-        clerk     => $clerk,
-        reason    => $reason,
-        file_name => $file_name
+        client      => $client,
+        clerk       => $clerk,
+        reason      => $reason,
+        file_name   => $file_name,
+        user_groups => $user_groups
     );
 
     # DISABLED/CLOSED CLIENT LOGIN
@@ -262,6 +265,7 @@ foreach my $login_id (@login_ids) {
             untrusted_action_type => $client_status_type,
             reason                => $reason,
             clerk                 => $clerk,
+            user_groups           => $user_groups,
         });
     # once db operation is done, set back db_operation to replica
     $client->set_db($old_db) if 'write' ne $old_db;
@@ -319,6 +323,7 @@ sub execute_set_status {
     my $encoded_reason   = encode_entities($params->{reason});
     my $encoded_clerk    = encode_entities($params->{clerk});
     my $file_name        = $params->{file_name};
+    my $user_groups      = $params->{user_groups};
 
     try {
         my $status_code = $params->{status_code};
@@ -326,6 +331,11 @@ sub execute_set_status {
             return
                 "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved, cannot override existing status reason</b>"
                 if $client->status->$status_code;
+
+            return
+                "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved, missing required permissions</b>"
+                unless $client->status->can_execute($status_code, $user_groups, 'set');
+
             $client->status->upsert($status_code, $params->{clerk}, $params->{reason});
         }
 
@@ -347,11 +357,16 @@ sub execute_remove_status {
     my $encoded_reason   = encode_entities($params->{reason});
     my $encoded_clerk    = encode_entities($params->{clerk});
     my $file_name        = $params->{file_name};
+    my $user_groups      = $params->{user_groups};
 
     try {
         if ($params->{override}) {
             $params->{override}->();
         } else {
+            return
+                "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been removed, missing required permissions</b>"
+                unless $client->status->can_execute($params->{status_code}, $user_groups, 'remove');
+
             verify_reactivation($client, $params->{status_code});
             my $client_status_cleaner_method_name = 'clear_' . $params->{status_code};
             $client->status->$client_status_cleaner_method_name;

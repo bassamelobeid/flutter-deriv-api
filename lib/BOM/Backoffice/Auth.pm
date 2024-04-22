@@ -323,4 +323,16 @@ sub get_staff_nickname {
     return undef;
 }
 
+=head2 get_staff_groups
+
+Returns the staff groups
+
+=cut
+
+sub get_staff_groups {
+    my $staff = get_staff();
+
+    return $staff ? $staff->{details}{group} : [];
+}
+
 1;

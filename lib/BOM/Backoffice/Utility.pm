@@ -176,19 +176,28 @@ sub transform_summary_status_to_html {
             }
             $result .= " <b>$ids</b></div>";
         } else {
+            my $is_error_hash = ref($summary->{error}) eq 'HASH';
+
+            my $error_to_append =
+                  $is_error_hash
+                ? $summary->{error}->{description} // $summary->{error}->{error_msg}
+                : (($summary->{error} // '') =~ s/\s+at\s+.+//r);
+
+            my $failing_rule = $is_error_hash ? $summary->{error}->{failing_rule} : 'N/A';
+
             my $fail_op = 'process';
-            $fail_op = 'remove'                                                                        if $status_op eq 'remove';
-            $fail_op = 'remove from siblings'                                                          if $status_op eq 'remove_siblings';
-            $fail_op = 'copy to siblings'                                                              if $status_op eq 'sync';
-            $fail_op = 'copy to accounts, only DISABLED ACCOUNTS can be synced to all accounts'        if $status_op eq 'sync_accounts';
-            $fail_op = 'remove from accounts, only DISABLED ACCOUNTS can be removed from all accounts' if $status_op eq 'remove_accounts';
+            $fail_op = 'remove'               if $status_op eq 'remove';
+            $fail_op = 'remove from siblings' if $status_op eq 'remove_siblings';
+            $fail_op = 'copy to siblings'     if $status_op eq 'sync';
+            $fail_op = 'copy to accounts'     if $status_op eq 'sync_accounts';
+            $fail_op = 'remove from accounts' if $status_op eq 'remove_accounts';
             $result .=
                 "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b> for $ids. Please try again.</div>";
             $result .= $summary->{error}
                 ? "<div class='notify notify--danger'><b>Failed Because</b> : "
-                . ($summary->{error}->{description} // $summary->{error}->{error_msg} // "Some error occured in $fail_op")
+                . ($error_to_append // "Some error occured in $fail_op")
                 . ".</div>
-            <div class='notify notify--danger'><b>Failed Rule</b> : $summary->{error}->{failing_rule}.</div>"
+            <div class='notify notify--danger'><b>Failed Rule</b> : $failing_rule.</div>"
                 : '';
         }
 

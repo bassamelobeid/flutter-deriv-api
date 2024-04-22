@@ -39,7 +39,10 @@ if ($client->is_virtual) {
 # some limits are not updatable in regulated landing companies
 my $regulated_lc          = $client->landing_company->is_eu;
 my $deposit_limit_enabled = $client->landing_company->deposit_limit_enabled;
-
+my $exclude_date          = {
+    "EXCLUDEUNTIL" => "exclude_until",
+    "TIMEOUTUNTIL" => "timeout_until"
+};
 my $broker = $client->broker;
 
 my $self_exclusion = $client->get_self_exclusion;
@@ -160,6 +163,20 @@ if (request()->http_method eq 'POST') {
 
     if ($client->get_self_exclusion->exclude_until) {
         $exclude_until_date = Date::Utility->new($client->get_self_exclusion->exclude_until);
+    }
+
+    for my $field (qw(EXCLUDEUNTIL TIMEOUTUNTIL)) {
+        my $date_until = request()->param($field) || undef;
+        if ($date_until) {
+            my $date_util = Date::Utility->new($date_until);
+            $date_until = $date_util->epoch;
+        }
+        my $field_param = $exclude_date->{$field};
+        for my $sibling_id ($client->user->bom_real_loginids) {
+            my $sibling = BOM::User::Client::get_instance({'loginid' => $sibling_id});
+            $sibling->set_exclusion->$field_param($date_until);
+            $sibling->save;
+        }
     }
 
     # If no change has been made in the exclude_until field, then ignore the checking

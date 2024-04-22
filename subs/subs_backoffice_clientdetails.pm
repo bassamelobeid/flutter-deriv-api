@@ -275,6 +275,36 @@ my $UNTRUSTED_STATUS = [{
         'show_reason' => 'yes',
     },
     {
+        'linktype'    => 'disabledafinvestigation',
+        'comments'    => 'Disabled - Anti Fraud - High Priority Investigation',
+        'code'        => 'disabled_af_investigation',
+        'show_reason' => 'yes',
+    },
+    {
+        'linktype'    => 'cashierlockedafinvestigation',
+        'comments'    => 'Cashier Locked - Anti Fraud - High Priority Investigation',
+        'code'        => 'cashier_locked_af_investigation',
+        'show_reason' => 'yes',
+    },
+    {
+        'linktype'    => 'nowithdrawalortradingafinvestigation',
+        'comments'    => 'Disable Withdrawal and Trading - Anti Fraud - High Priority Investigation',
+        'code'        => 'no_withdrawal_or_trading_af_investigation',
+        'show_reason' => 'yes',
+    },
+    {
+        'linktype'    => 'unwelcomeafinvestigation',
+        'comments'    => 'Unwelcome - Anti Fraud - High Priority Investigation',
+        'code'        => 'unwelcome_af_investigation',
+        'show_reason' => 'yes',
+    },
+    {
+        'linktype'    => 'notradingafinvestigation',
+        'comments'    => 'Disable Trading - Anti Fraud - High Priority Investigation',
+        'code'        => 'no_trading_af_investigation',
+        'show_reason' => 'yes',
+    },
+    {
         'linktype'    => 'siblingtransfersblocked',
         'comments'    => 'Transfer to Sibling account locked',
         'code'        => 'sibling_transfers_blocked',
