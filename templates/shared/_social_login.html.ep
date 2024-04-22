@@ -24,6 +24,7 @@
         }
         .provider_hidden {
             display: none !important;
+        }
         .provider{
             border: none;
         }
