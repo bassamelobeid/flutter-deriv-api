@@ -76,6 +76,21 @@
             0,
             1
          ]
+      },
+      "phone_number_verification": {
+         "type": "object",
+         "properties" : {
+            "verified" : {
+               "type" : "integer",
+               "enum" : [
+                  0,
+                  1
+               ]
+            },
+            "next_attempt" : {
+               "type" : "integer"
+            }
+         }
       }
    }
 }

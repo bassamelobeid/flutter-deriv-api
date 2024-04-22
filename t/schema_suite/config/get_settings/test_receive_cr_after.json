@@ -26,7 +26,8 @@
       "non_pep_declaration",
       "fatca_declaration",
       "preferred_language",
-      "trading_hub"
+      "trading_hub",
+      "phone_number_verification"
    ],
    "properties" : {
       "date_of_birth" : {
@@ -138,6 +139,21 @@
             0,
             1
          ]
+      },
+      "phone_number_verification": {
+         "type": "object",
+         "properties" : {
+            "verified" : {
+               "type" : "integer",
+               "enum" : [
+                  0,
+                  1
+               ]
+            },
+            "next_attempt" : {
+               "type" : "integer"
+            }
+         }
       }
    }
 }

@@ -2152,17 +2152,23 @@ rpc get_settings => sub {
     my $financial_assessment = $fa_client->financial_assessment() // '';
     $financial_assessment = decode_fa($financial_assessment) if $financial_assessment;
 
+    my $pnv_next_attempt = $user->pnv->next_attempt;
+
     my $settings = {
         email     => $user->email,
         country   => $country,
         residence => $country
         , # Everywhere else in our responses to FE, we pass the residence key instead of country. However, we need to still pass in country for backwards compatibility.
-        country_code       => $country_code,
-        email_consent      => ($user and $user->{email_consent}) ? 1 : 0,
-        preferred_language => $user->preferred_language,
-        trading_hub        => $client->status->trading_hub ? 1 : 0,
-        feature_flag       => $user->get_feature_flag,
-        immutable_fields   => [$client->immutable_fields()],
+        country_code              => $country_code,
+        email_consent             => ($user and $user->{email_consent}) ? 1 : 0,
+        preferred_language        => $user->preferred_language,
+        trading_hub               => $client->status->trading_hub ? 1 : 0,
+        feature_flag              => $user->get_feature_flag,
+        immutable_fields          => [$client->immutable_fields()],
+        phone_number_verification => {
+            verified => $user->pnv->verified,
+            defined $pnv_next_attempt ? (next_attempt => $pnv_next_attempt) : (),
+        },
         ($client->citizen ? (citizen => $client->citizen) : ()),
         (
               ($user and BOM::Config::third_party()->{elevio}{account_secret})
@@ -2220,6 +2226,7 @@ rpc get_settings => sub {
 
         $settings->{fatca_declaration} = $real_client->fatca_declaration if defined $real_client->fatca_declaration;
     }
+
     return $settings;
 };
 

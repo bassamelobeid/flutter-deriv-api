@@ -292,7 +292,59 @@ subtest 'get settings' => sub {
             'feature_flag'                   => {wallet => 0},
             'trading_hub'                    => 0,
             'dxtrade_user_exception'         => 0,
+            'phone_number_verification'      => {
+                'verified'     => 0,
+                'next_attempt' => 0,
+            },
         });
+
+    subtest 'PNV verified' => sub {
+        $user_Y->pnv->update(1);
+        $result = $c->tcall($method, $params);
+        note explain $result;
+        is_deeply(
+            $result,
+            {
+                'country'                        => 'Indonesia',
+                'residence'                      => 'Indonesia',
+                'salutation'                     => 'MR',
+                'is_authenticated_payment_agent' => 0,
+                'country_code'                   => 'id',
+                'date_of_birth'                  => '267408000',
+                'address_state'                  => 'LA',
+                'address_postcode'               => '232323',
+                'phone'                          => '+15417543010',
+                'last_name'                      => 'pItT',
+                'email'                          => $email_Y,
+                'address_line_2'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+                'address_city'                   => 'Beverly Hills',
+                'address_line_1'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+                'first_name'                     => 'bRaD',
+                'email_consent'                  => '0',
+                'allow_copiers'                  => '0',
+                'client_tnc_status'              => '',
+                'place_of_birth'                 => undef,
+                'tax_residence'                  => undef,
+                'tax_identification_number'      => undef,
+                'account_opening_reason'         => undef,
+                'request_professional_status'    => 0,
+                'citizen'                        => 'at',
+                'user_hash'                      => hmac_sha256_hex($user_Y->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+                'has_secret_answer'              => 1,
+                'non_pep_declaration'            => 1,
+                'fatca_declaration'              => 1,
+                'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
+                'preferred_language'             => 'FA',
+                'feature_flag'                   => {wallet => 0},
+                'trading_hub'                    => 0,
+                'dxtrade_user_exception'         => 0,
+                'phone_number_verification'      => {
+                    'verified' => 1,
+                },
+            });
+
+        $user_Y->pnv->update(0);
+    };
 
     $user_X->update_preferred_language('AZ');
     $params->{token} = $token_X_mf;
@@ -311,17 +363,21 @@ subtest 'get settings' => sub {
     is_deeply(
         $c->tcall($method, $params),
         {
-            'email'              => $email_Q,
-            'country'            => 'Indonesia',
-            'residence'          => 'Indonesia',
-            citizen              => 'at',
-            'country_code'       => 'id',
-            'email_consent'      => '0',
-            'user_hash'          => hmac_sha256_hex($user_Q->email, BOM::Config::third_party()->{elevio}->{account_secret}),
-            'immutable_fields'   => ['residence'],
-            'preferred_language' => 'EN',
-            'feature_flag'       => {wallet => 0},
-            'trading_hub'        => 0,
+            'email'                     => $email_Q,
+            'country'                   => 'Indonesia',
+            'residence'                 => 'Indonesia',
+            citizen                     => 'at',
+            'country_code'              => 'id',
+            'email_consent'             => '0',
+            'user_hash'                 => hmac_sha256_hex($user_Q->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'immutable_fields'          => ['residence'],
+            'preferred_language'        => 'EN',
+            'feature_flag'              => {wallet => 0},
+            'trading_hub'               => 0,
+            'phone_number_verification' => {
+                'verified'     => 0,
+                'next_attempt' => 0,
+            },
         },
         'vr client return less messages when it does not have real sibling'
     );
@@ -364,6 +420,10 @@ subtest 'get settings' => sub {
             'feature_flag'                   => {wallet => 0},
             'trading_hub'                    => 0,
             'dxtrade_user_exception'         => 0,
+            'phone_number_verification'      => {
+                'verified'     => 0,
+                'next_attempt' => 0,
+            },
         },
         'vr client return real account information when it has sibling'
     );
@@ -407,6 +467,10 @@ subtest 'get settings' => sub {
         'feature_flag'                   => {wallet => 0},
         'trading_hub'                    => 0,
         'dxtrade_user_exception'         => 0,
+        'phone_number_verification'      => {
+            'verified'     => 0,
+            'next_attempt' => 0,
+        },
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
 
@@ -445,6 +509,10 @@ subtest 'get settings' => sub {
         'feature_flag'                   => {wallet => 0},
         'trading_hub'                    => 0,
         'dxtrade_user_exception'         => 0,
+        'phone_number_verification'      => {
+            'verified'     => 0,
+            'next_attempt' => 0,
+        },
     };
     is_deeply($result, $expected, 'return 1 for code of conduct approval');
 
