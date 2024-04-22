@@ -29,6 +29,7 @@ use BOM::User::Affiliate;
 use BOM::User::Onfido;
 use BOM::User::LexisNexis;
 use BOM::User::SocialResponsibility;
+use BOM::User::PhoneNumberVerification;
 use BOM::Config::Runtime;
 use BOM::Config::TradingPlatform::KycStatus;
 use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
@@ -84,7 +85,7 @@ Create new record in table users.binary_user
 =cut
 
 my @fields =
-    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact utm_data preferred_language trading_password dx_trading_password);
+    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact utm_data preferred_language trading_password dx_trading_password phone_number_verified);
 
 # generate attribute accessor
 for my $k (@fields) {
@@ -101,7 +102,11 @@ sub create {
         $args{utm_data} = keys %{$args{utm_data}} ? encode_json($args{utm_data}) : undef;
     }
 
+    # pnv is not null
+    $args{phone_number_verified} //= 0;
+
     my @new_values = @args{@fields};
+
     shift @new_values;    #remove id value
     my $placeholders = join ",", ('?') x @new_values;
 
@@ -2527,6 +2532,20 @@ sub documents {
             user => $self,
         });
     };
+}
+
+=head2 pnv
+
+Accessor for the L<BOM::User::PhoneNumberVerification> package.
+
+=cut
+
+sub pnv {
+    my $self = shift;
+
+    return $self->{pnv} //= BOM::User::PhoneNumberVerification->new({
+        user => $self,
+    });
 }
 
 =head2 check_poa_valid_period
