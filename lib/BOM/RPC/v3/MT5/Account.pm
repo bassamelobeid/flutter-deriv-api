@@ -842,7 +842,8 @@ async_rpc "mt5_new_account",
             platform     => 'mt5',
         );
     } catch ($error) {
-        return create_error_future($error->{error_code}, {params => 'MT5'});
+        my $params = {params => $error->{params}} // {params => 'MT5'};
+        return create_error_future($error->{error_code}, $params);
     }
 
     return create_error_future('InvalidCompanyInput') if $binary_company_name eq 'none';

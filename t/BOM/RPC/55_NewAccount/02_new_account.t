@@ -30,6 +30,7 @@ use BOM::Config::Runtime;
 use BOM::RPC::v3::MT5::Account;
 use Deriv::TradingPlatform::MT5::UserRights qw(get_new_account_permissions);
 use utf8;
+use Syntax::Keyword::Try;
 
 use IO::Pipe;
 
@@ -46,7 +47,8 @@ set_fixed_time($fixed_time->epoch);
 
 my %emitted;
 my $emit_data;
-my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my $mock_events  = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my $mock_context = Test::MockModule->new('BOM::Rules::Context');
 $mock_events->mock(
     'emit',
     sub {
@@ -2642,9 +2644,23 @@ subtest 'MF under Duplicated account - DIEL country' => sub {
             $params = +{$orig_params->%*};
         };
 
+        my $time_duration = Date::Utility->new->plus_time_interval('1d')->epoch;
+        my $date_duration = Date::Utility->new->plus_time_interval('1d')->date;
+        $new_client2->set_exclusion->timeout_until($time_duration);
+        $new_client2->save;
+        $mock_context->redefine('client_siblings' => sub { return [$new_client2] });
+        $result =
+            $rpc_ct->call_ok('new_account_maltainvest', $params)
+            ->has_no_system_error->has_error->error_code_is('SelfExclusion', 'If password is weak it should return error')
+            ->error_message_is(
+            "You have chosen to exclude yourself from trading on our website until $date_duration. If you are unable to place a trade or deposit after your self-exclusion period, please contact us via live chat."
+            );
+        $new_client2->set_exclusion->timeout_until(Date::Utility->new->plus_time_interval('-1d')->epoch);
+        $new_client2->save;
         $result =
             $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('za mf account created successfully')->result;
         ok $result->{client_id}, 'got a client id';
+        $mock_context->unmock_all;
     };
 };
 

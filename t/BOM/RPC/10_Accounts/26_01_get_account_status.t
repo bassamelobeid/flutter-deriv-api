@@ -182,6 +182,12 @@ my $c = Test::BOM::RPC::QueueClient->new();
 my $documents_expired;
 my $documents_uploaded;
 
+my %arg_values = (
+    max_open_bets => $test_client_cr->get_limit_for_open_positions,
+    timeout_until => Date::Utility->new->plus_time_interval('1d')->epoch,
+    exclude_until => Date::Utility->new->plus_time_interval('7mo')->date,
+);
+
 my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 $documents_mock->mock(
     'expired',
@@ -340,6 +346,27 @@ subtest 'get account status' => sub {
                 supersetof('CashierNotAllowed'),
                 'CR standard gets CashierNotAllowed in cashier_validation'
             );
+            $c->tcall(
+                'set_self_exclusion',
+                {
+                    token => $token_cr,
+                    args  => \%arg_values,
+                });
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                [
+                    'allow_document_upload',       'deposit_locked',
+                    'dxtrade_password_not_set',    'financial_information_not_complete',
+                    'mt5_additional_kyc_required', 'mt5_password_not_set',
+                    'no_trading',                  'trading_experience_not_complete'
+                ],
+                "deposit is not locked correctly"
+            );
+
+            $test_client_cr->set_exclusion->timeout_until(undef);
+            $test_client_cr->set_exclusion->exclude_until(undef);
+            $test_client_cr->save;
         };
 
         subtest 'p2p status' => sub {

@@ -1098,7 +1098,10 @@ rpc
             $p2p_status = "temp_ban" if $block_time->epoch > time;
         }
     }
-
+    push(@$status, 'no_trading')
+        if $client->self_exclusion
+        and $client->self_exclusion->timeout_until
+        and $client->self_exclusion->timeout_until > time;
     my $poa_setting      = BOM::Config::Runtime->instance->app_config->payments->p2p->poa;
     my $p2p_poa_required = 0;
     if ((
@@ -2750,8 +2753,16 @@ rpc set_self_exclusion => sub {
         $client->set_exclusion->$db_field($args{$field} || undef)
             if exists $args{$field};
     }
-
     $client->save();
+
+    for my $each_sibling ($client->user->bom_real_loginids) {
+        my $sibling = BOM::User::Client->get_client_instance($each_sibling);
+        for my $field ('exclude_until', 'timeout_until') {
+            $sibling->set_exclusion->$field($args{$field} || undef)
+                if exists $args{$field};
+        }
+        $sibling->save();
+    }
 
     # RTS 12 - Financial Limits - max turover limit is mandatory for UK Clients and MLT clients
     # If the limit is set, restrictions can be lifted by removing the pertaining status.

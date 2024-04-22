@@ -78,15 +78,29 @@ my $user_mlt_mf = BOM::User->create(
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
-my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $test_client_cr   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $test_client_mf_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+    residence   => 'za',
+});
 $test_client_cr->email('cr3@binary.com');
 $test_client_cr->set_default_account('USD');
 $test_client_cr->save;
+$test_client_cr_2->email('cr4@binary.com');
+$test_client_cr_2->set_default_account('BTC');
+$test_client_cr_2->save;
+$test_client_mf_2->email('mf4@binary.com');
+$test_client_mf_2->set_default_account('USD');
+$test_client_mf_2->save;
 my $user_cr = BOM::User->create(
     email    => 'sample3@binary.com',
     password => $hash_pwd
 );
 $user_cr->add_client($test_client_cr);
+$user_cr->add_client($test_client_cr_2);
+$user_cr->add_client($test_client_disabled);
+$user_cr->add_client($test_client_mf_2);
 
 my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_loginid,                  'test token');
@@ -94,7 +108,9 @@ my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test toke
 my $token_vr       = $m->create_token($test_client_vr->loginid,       'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test token');
 
-my $token_cr = $m->create_token($test_client_cr->loginid, 'test token');
+my $token_cr   = $m->create_token($test_client_cr->loginid,   'test token');
+my $token_cr_2 = $m->create_token($test_client_cr_2->loginid, 'test token');
+my $token_mf_2 = $m->create_token($test_client_mf_2->loginid, 'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
@@ -436,6 +452,7 @@ subtest 'get and set self_exclusion' => sub {
         email   => 'compliance@deriv.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
+
     ok(!$msg, 'No email for MLT client limits without MT5 accounts');
     is($emitted->{email_subscription}, undef, 'email_subscription event not emitted');
 
@@ -492,6 +509,39 @@ subtest 'get and set self_exclusion' => sub {
     is($test_client_cr->get_limit_for_account_balance, $new_max_balance, "Correct account balance has returned");
 };
 
+subtest 'mt5_account create should be blocked' => sub {
+    @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+    my %accounts = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
+    my %details  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+
+    my $time_duration = Date::Utility->new->plus_time_interval('1d')->epoch;
+    my $method        = 'mt5_new_account';
+    my $params        = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'financial',
+            country          => 'id',
+            email            => $details{email},
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 100,
+            mt5_account_type => 'financial',
+            company          => 'svg'
+        },
+    };
+    $test_client_cr_2->set_exclusion->timeout_until($time_duration);
+    my $result = $c->tcall('mt5_new_account', $params);
+    is $result->{error}{code}, 'SelfExclusion', 'error code is MT5NotAllowed';
+
+    $params->{args}{account_type} = 'all';
+    $result = $c->tcall('mt5_new_account', $params);
+    is $result->{error}{code}, 'SelfExclusion', 'error code is MT5NotAllowed';
+
+    $test_client_cr_2->set_exclusion->timeout_until(undef);
+
+};
+
 subtest 'deposit limits disabled' => sub {
     $test_client->set_exclusion->max_deposit_daily(undef);
     $test_client->set_exclusion->max_deposit_7day(undef);
@@ -539,7 +589,7 @@ subtest 'deposit limits disabled' => sub {
     $mock_lc->unmock('deposit_limit_enabled');
 };
 
-subtest 'Set self-exclusion - CR clients' => sub {
+subtest 'Set self-exclusion - CR clients fields should be copied to siblings' => sub {
     my $method = 'set_self_exclusion';
     my $params = {
         token => $token_cr,
@@ -574,6 +624,9 @@ subtest 'Set self-exclusion - CR clients' => sub {
         like $c->tcall($method, $params)->{error}->{message_to_client}, qr/You have chosen to exclude yourself from trading on our website until/,
             "set_self_exclusion fails if client is excluded - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
+        is $c->tcall('get_self_exclusion', {token => $token_cr_2})->{$field},     $value, "get_self_exclusion returns the same value $value - $field";
+        is $c->tcall('get_self_exclusion', {token => $token_mf_2})->{$field},     $value, "get_self_exclusion returns the same value $value - $field";
+        is $c->tcall('get_self_exclusion', {token => $token_disabled})->{$field}, undef,  "get_self_exclusion returns the same value $value - $field";
 
         # remove exclude_until to proceed with tests
         $test_client_cr->set_exclusion->$field(undef);
