@@ -734,25 +734,6 @@ subtest 'Status Hierarchy' => sub {
         broker_code => 'CR',
     });
 
-    sub mock_hierarchy {
-        my ($mock, $hierarchy) = @_;
-
-        $mock->mock(
-            'children',
-            sub {
-                my ($status_code) = @_;
-                my $children = $hierarchy->{$status_code} // [];
-                return $children->@*;
-            });
-        $mock->mock(
-            'parent',
-            sub {
-                my ($status_code) = @_;
-                return BOM::User::Client::Status::_build_parent_map($hierarchy)->{$status_code};
-            });
-
-    }
-
     subtest 'Multiple Roots' => sub {
 
         mock_hierarchy(
@@ -895,10 +876,174 @@ subtest 'Status Hierarchy' => sub {
 
 };
 
-done_testing();
+subtest 'is_executable' => sub {
+    my $mock = Test::MockModule->new('BOM::User::Client::Status');
+
+    my $config = {
+        config => {
+            dummy_status => {
+                DummyGroup1 => 1,
+            },
+            dummy_status2 => {
+                DummyGroup1 => 1,
+            },
+        }
+
+    };
+
+    my $test_cases = [{
+            groups   => ['dummy_status'],
+            status   => ['non_existing_status'],
+            expected => 1,
+            message  => 'non_existing_status is not in the config -> allowed'
+        },
+        {
+            groups   => ['NonExistingGroup1', 'NonExistingGroup2'],
+            status   => 'dummy_status',
+            expected => 0,
+            message  => 'NonExistingGroup1 and NonExistingGroup2 are not in the config -> not allowed'
+        },
+        {
+            groups   => ['DummyGroup1', 'DummyGroup2'],
+            status   => 'dummy_status1',
+            expected => 1,
+            message  => 'dummy_status1 is in config with DummyGroup1 -> allowed'
+        }];
+    mock_rights($mock, $config);
+
+    for my $test_case (@$test_cases) {
+        my $groups   = $test_case->{groups};
+        my $status   = $test_case->{status};
+        my $expected = $test_case->{expected};
+        my $message  = $test_case->{message};
+
+        is BOM::User::Client::Status::is_executable($status, $groups), $expected, $message;
+    }
+
+    $mock->unmock_all;
+};
+
+subtest 'can_execute' => sub {
+    my $mock   = Test::MockModule->new('BOM::User::Client::Status');
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    mock_hierarchy(
+        $mock,
+        {
+            'age_verification'       => ['cashier_locked'],
+            'professional_requested' => ['professional', 'disabled'],
+        });
+
+    my $config = {
+        config => {
+            age_verification => {
+                DummyGroup1 => 1,
+            },
+            professional => {
+                DummyGroup2 => 1,
+            },
+            disabled => {
+                DummyGroup3 => 1,
+            },
+        }};
+    mock_rights($mock, $config);
+
+    my $set_test_cases = [{
+            status   => 'age_verification',
+            groups   => ['DummyGroup1'],
+            expected => 1,
+            message  => 'age_verification can be set by DummyGroup1'
+        },
+        {
+            status   => 'age_verification',
+            groups   => ['DummyGroup2'],
+            expected => 0,
+            message  => 'age_verification can not be set by DummyGroup2'
+        },
+        {
+            status   => 'cashier_locked',
+            groups   => ['DummyGroup1'],
+            expected => 1,
+            message  => 'cashier_locked along with parent age_verification can be set by DummyGroup1'
+        },
+        {
+            status   => 'cashier_locked',
+            groups   => ['DummyGroup2'],
+            expected => 0,
+            message  => 'cashier_locked can not be set by DummyGroup2 as age_verification is not allowed'
+        },
+        {
+            status   => 'professional',
+            groups   => ['DummyGroup2'],
+            expected => 1,
+            message  => 'professional along with parent professional_requested can be set by DummyGroup2'
+        }];
+
+    for my $test_case (@$set_test_cases) {
+        my $status   = $test_case->{status};
+        my $groups   = $test_case->{groups};
+        my $expected = $test_case->{expected};
+        my $message  = $test_case->{message};
+
+        is $client->status->can_execute($status, $groups, 'set'), $expected, $message;
+    }
+
+    # status removal test cases
+    is $client->status->can_execute('cashier_locked', ['DummyGroup1'], 'remove'), 1, 'cashier_locked can be removed by DummyGroup1';
+
+    $client->status->setnx('cashier_locked', 'test', 'test_reason');
+    is $client->status->can_execute('age_verification', ['DummyGroup1'], 'remove'), 1,
+        'age_verification can be removed by DummyGroup1 along with its child cashier_locked';
+    is $client->status->can_execute('age_verification', ['DummyGroup2'], 'remove'), 0, 'age_verification can not be removed by DummyGroup2';
+
+    $client->status->setnx('professional', 'test', 'test_reason');
+    is $client->status->can_execute('professional_requested', ['DummyGroup2'], 'remove'), 1,
+        'professional_requested can be removed by DummyGroup2 along with its child';
+    is $client->status->can_execute('professional_requested', ['DummyGroup1'], 'remove'), 0,
+        'professional_requested can not be removed by DummyGroup1 as removal of child is not allowed';
+    is $client->status->can_execute('professional', ['DummyGroup1'], 'remove'), 0, 'professional can not be removed by DummyGroup1';
+    is $client->status->can_execute('professional', ['DummyGroup2'], 'remove'), 1, 'professional can be removed by DummyGroup2';
+
+    reset_client_statuses($client);
+
+    $mock->unmock_all;
+};
 
 sub reset_client_statuses {
     my $client = shift;
     $client->status->multi_set_clear({clear => $client->status->all});
     cmp_deeply($client->status->all, [], ' client statuses reset successfully ');
 }
+
+sub mock_rights {
+    my ($mock, $config) = @_;
+
+    $mock->mock(
+        'get_status_rights_config',
+        sub {
+            my ($status_code) = @_;
+            return $config->{config}->{$status_code};
+        });
+}
+
+sub mock_hierarchy {
+    my ($mock, $hierarchy) = @_;
+
+    $mock->mock(
+        'children',
+        sub {
+            my ($status_code) = @_;
+            my $children = $hierarchy->{$status_code} // [];
+            return $children->@*;
+        });
+    $mock->mock(
+        'parent',
+        sub {
+            my ($status_code) = @_;
+            return BOM::User::Client::Status::_build_parent_map($hierarchy)->{$status_code};
+        });
+}
+
+done_testing();

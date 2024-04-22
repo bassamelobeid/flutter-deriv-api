@@ -36,11 +36,13 @@ use constant STATUS_CODES => qw(
     poi_name_mismatch crypto_auto_reject_disabled crypto_auto_approve_disabled potential_fraud
     deposit_attempt df_deposit_requires_poi smarty_streets_validated trading_hub poi_dob_mismatch
     allow_poinc_resubmission cooling_off_period poa_address_mismatch poi_poa_uploaded eligible_counterparty partner
-    allow_duplicate_signup poi_duplicated_documents selfie_pending selfie_verified selfie_rejected resident_self_declaration
-    sibling_transfers_blocked cfd_transfers_blocked
+    allow_duplicate_signup poi_duplicated_documents selfie_pending selfie_verified selfie_rejected
+    disabled_af_investigation cashier_locked_af_investigation no_withdrawal_or_trading_af_investigation
+    unwelcome_af_investigation no_trading_af_investigation resident_self_declaration sibling_transfers_blocked cfd_transfers_blocked
 );
 
-use constant STATUS_COPY_CONFIG => Business::Config::Account->new()->statuses_copied_from_siblings();
+use constant STATUS_COPY_CONFIG   => Business::Config::Account->new()->statuses_copied_from_siblings();
+use constant STATUS_RIGHTS_CONFIG => Business::Config::Account->new()->status_rights_config();
 
 # codes that are about to be dropped
 my @deprecated_codes = qw(
@@ -697,6 +699,106 @@ sub get_duplicate_only_statuses_to_copy_from_siblings {
     my $config = STATUS_COPY_CONFIG;
     return $config->{duplicate_only} // [];
 
+}
+
+=head2 get_status_rights_config
+
+Gets the status rights config for the given status code
+
+Returns a hashref containing config for the status code provided
+
+=over 4
+
+=item * status_code
+
+=back
+
+=cut
+
+sub get_status_rights_config {
+    my $status_code = shift;
+    return STATUS_RIGHTS_CONFIG->{config}->{$status_code // ''};
+}
+
+=head2 is_executable
+
+Checks if the given status code can be executed by any of the user groups
+
+=over 4
+
+=item * status_code - status code string
+
+=item * user_groups - arrayref of user groups
+
+=back
+
+Returns 1 if the status code can be executed, 0 otherwise
+
+=cut
+
+sub is_executable {
+    my ($status_code, $user_groups) = @_;
+
+    return 0 unless $status_code && $user_groups;
+
+    # If the status code is not in the config, then it can be executed by any group
+    my $status_code_config = get_status_rights_config($status_code);
+    return 1 unless $status_code_config;
+
+    # If the status code is in the config, then check if the user groups can execute the action
+    return 0 unless any { $status_code_config->{$_} } @$user_groups;
+
+    return 1;
+}
+
+=head2 can_execute
+
+Returns whether the status can be executed.
+
+Extends the checks to parent status when applying the status
+Extends the checks to sub-status when removing the status
+
+=over 4
+
+=item * C<status_code> - the status code
+
+=item * C<user_groups> - arrayref of user groups
+
+=item * C<action> - the action to be performed (set or remove)
+
+=back
+
+Returns 1 if the status can be executed, 0 otherwise.
+
+=cut
+
+sub can_execute {
+    my ($self, $status_code, $user_groups, $action) = @_;
+
+    return 0 unless $status_code;
+
+    my $statuses_to_check = [$status_code];
+
+    if ($action eq 'set') {
+        my $parent = parent($status_code);
+        push @$statuses_to_check, $parent if defined $parent;
+
+        # We want to ensure that the parent status is executable before we can apply the sub-status
+        return 1 if List::Util::all { is_executable($_, $user_groups) == 1 } @$statuses_to_check;
+    } elsif ($action eq 'remove') {
+        my @children         = children($status_code);
+        my $applied_statuses = $self->all();
+
+        # Only the applied sub-statuses will be checked
+        for my $child (@children) {
+            push @$statuses_to_check, $child if grep { $_ eq $child } @$applied_statuses;
+        }
+
+        # Since removing a parent status will remove the sub-statuses, we need to check if access is granted for all applied sub-statuses
+        return 1 if List::Util::all { is_executable($_, $user_groups) == 1 } @$statuses_to_check;
+    }
+
+    return 0;
 }
 
 1;
