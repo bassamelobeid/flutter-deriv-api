@@ -17,6 +17,7 @@
                 <div class="input-error">
                     <p class='hide error error_invalid'><%= l("That doesn't look like an email address.") %></p>
                     <p class='hide error error_required'><%= l('Email is required.') %></p>
+                    <p class='hide error error_invalid_pass'><%= l("Your email and/or password is incorrect.") %></p>
                     <% if (stash('error')) { %>
                         <p class='error'><%= stash('error') %></p>
                     <% } %>
@@ -124,7 +125,11 @@
             if (!value) {
                 showError(element, 'required');
             } else if (!regex.test(value) || !element.checkValidity()) {
-                showError(element, 'invalid');
+                if (element === txtPass) {
+                    showError(txtEmail, 'invalid_pass');
+                } else {
+                    showError(element, 'invalid');
+                }
                 raiseLabel(element, 1);
             } else {
                 hasError = false;
