@@ -12,7 +12,7 @@ Contains rules governing self-exclusions.
 
 use strict;
 use warnings;
-
+use Date::Utility;
 use BOM::Rules::Registry qw(rule);
 
 rule 'self_exclusion.not_self_excluded' => {
@@ -29,6 +29,28 @@ rule 'self_exclusion.not_self_excluded' => {
             params  => [$excluded_until],
             details => {excluded_until => $excluded_until}) if $excluded_until;
 
+        return 1;
+    },
+};
+
+rule 'self_exclusion.sibling_account_not_excluded' => {
+    description => "Fails if sibiling account is self-excuded until a certain time.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+        die 'Client is missing' unless $client;
+        my $siblings = $context->client_siblings($args);
+        push @$siblings, $client;
+        for my $sibling (@$siblings) {
+            next unless $sibling->self_exclusion;
+            my $excluded_until = $sibling->self_exclusion->timeout_until;
+            next unless $excluded_until and $excluded_until > time;
+            $excluded_until = Date::Utility->new($excluded_until)->date();
+            $self->fail(
+                'SelfExclusion',
+                params  => [$excluded_until],
+                details => {excluded_until => $excluded_until});
+        }
         return 1;
     },
 };

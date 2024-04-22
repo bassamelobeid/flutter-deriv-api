@@ -76,4 +76,40 @@ subtest "rule $rule_name" => sub {
     $mock_company->unmock_all;
 };
 
+$rule_name = 'self_exclusion.sibling_account_not_excluded';
+subtest "rule $rule_name" => sub {
+    like exception { $rule_engine->apply_rules($rule_name) }, qr//, 'loginid is required';
+
+    my $args           = {loginid => $client->loginid};
+    my $excluded_until = Date::Utility->new->plus_time_interval('1d')->epoch;
+    my $date_until     = Date::Utility->new->plus_time_interval('1d')->date;
+    my $sibiling       = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'not+legal+currency@test.deriv',
+        password => 'TRADING PASS',
+    );
+    $sibiling->set_exclusion->timeout_until($excluded_until);
+    $user->add_client($client);
+    $user->add_client($sibiling);
+    # Assuming get_siblings returns an arrayref of sibling accounts
+    my $mock_context = Test::MockModule->new('BOM::Rules::Context');
+    $mock_context->redefine('client_siblings' => sub { return [$sibiling] });
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'SelfExclusion',
+        params     => [$date_until],
+        rule       => $rule_name,
+        details    => {excluded_until => $date_until}
+        },
+        'Sibling account is already self-excluded';
+
+    $excluded_until = 0;
+    $sibiling->set_exclusion->timeout_until($excluded_until);
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Sibling account is not self-excluded now';
+    $mock_context->unmock_all;
+};
+
 done_testing();

@@ -14,9 +14,14 @@ new_mt5_dez_account:
       rules_per_value:
         real:
           - trading_account.client_should_be_real
+          - self_exclusion.sibling_account_not_excluded
         financial:
           - trading_account.client_should_be_real
+          - self_exclusion.sibling_account_not_excluded
         gaming:
           - trading_account.client_should_be_real
+          - self_exclusion.sibling_account_not_excluded
+        all:
+          - self_exclusion.sibling_account_not_excluded
         demo:
           - pass

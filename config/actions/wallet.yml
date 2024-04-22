@@ -21,6 +21,7 @@ new_wallet:
     - profile.both_secret_question_and_answer_required
     - profile.valid_profile_countries
     - profile.valid_promo_code
+    - self_exclusion.sibling_account_not_excluded
     - profile.valid_non_pep_declaration_time
     - currency.is_available_for_new_account
     - client.check_duplicate_account
@@ -74,6 +75,7 @@ activate_wallet:
           - profile.valid_profile_countries
           - profile.valid_promo_code
           - profile.valid_non_pep_declaration_time
+          - self_exclusion.sibling_account_not_excluded
           - currency.is_available_for_reactivation
           - client.check_duplicate_account
           - type: conditional

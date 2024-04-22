@@ -17,6 +17,7 @@ new_trading_account:
           - trading_account.client_support_account_creation
           - trading_account.should_complete_financial_assessment
           - trading_account.should_provide_tax_details
+          - self_exclusion.sibling_account_not_excluded
         demo:
           - trading_account.client_should_be_legacy_or_virtual_wallet
           
