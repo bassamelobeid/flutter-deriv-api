@@ -278,6 +278,26 @@ rule 'transfers.same_landing_companies' => {
     },
 };
 
+rule 'transfers.residence_or_country_restriction' => {
+    description => "Residence not restricted for internal transfers betweeen fiat/crypto and vice versa",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client_to   = $context->client({loginid => $args->{loginid_to}});
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+
+        my %currencies         = _get_currency_info($context, $args);
+        my $countries_instance = request()->brand->countries_instance;
+        my $is_transfer_allowed =
+            all { $countries_instance->is_internal_transfer_allowed({country => $client_to->$_, type => $_}) } qw(residence citizen);
+
+        if ($currencies{to}->{type} ne $currencies{from}->{type}) {
+            $self->fail('InvalidLoginidTo') unless $is_transfer_allowed;
+        }
+
+        return 1;
+    },
+};
+
 rule 'transfers.amount_is_valid' => {
     description => "checking if amount is positive and has numeric value",
     code        => sub {

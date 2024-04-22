@@ -713,6 +713,113 @@ subtest 'rule transfers.same_landing_companies' => sub {
     ok $rule_engine->apply_rules($rule_name, %$params), 'one account is wallet';
 };
 
+$rule_name = 'transfers.residence_or_country_restriction';
+subtest $rule_name => sub {
+    # restricted residence and citizenship with one un-restricted residence and citizenship
+    for my $residence (qw(ua ru id)) {
+        for my $citizen (qw(id ru ua)) {
+            next if $residence eq 'id' && $citizen eq 'id';    # skip un-restricted residence and citizenship as tested below
+            my $user = BOM::User->create(
+                email    => "test01.$residence.$citizen" . '@gmail.com',
+                password => 'abcd1234',
+            );
+            my $client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+                residence   => $residence,
+                citizen     => $citizen,
+            });
+            $user->add_client($client_1);
+            $client_1->account('USD');
+            my $client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+                residence   => $residence,
+                citizen     => $citizen,
+            });
+            $user->add_client($client_2);
+            $client_2->account('BTC');
+            my $client_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+                residence   => $residence,
+                citizen     => $citizen,
+            });
+            $user->add_client($client_3);
+            $client_3->account('ETH');
+            my $rule_engine = BOM::Rules::Engine->new(client => [$client_1, $client_2, $client_3]);
+            my %args        = (
+                loginid_from => $client_1->loginid,
+                loginid_to   => $client_2->loginid,
+            );
+            # ukraine citizens are not restricted from internal transfers when residence is other than ukraine
+            if ($residence eq 'id' and $citizen eq 'ua') {
+                ok $rule_engine->apply_rules($rule_name, %args),
+                    "Transfer from fiat to crypto is allowed for $residence residents with $citizen citizenship";
+                ok $rule_engine->apply_rules($rule_name, %args),
+                    "Transfer from crypto to fiat is allowed for $residence residents with $citizen citizenship";
+                ok $rule_engine->apply_rules($rule_name, %args),
+                    "Transfer from crypto to crypto is allowed for $residence residents with $citizen citizenship";
+                next;
+            }
+
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                {
+                rule       => $rule_name,
+                error_code => 'InvalidLoginidTo',
+                },
+                "Correct error for $residence residents restricted from transferring from fiat to crypto with $citizen citizenship";
+
+            %args = (
+                loginid_from => $client_2->loginid,
+                loginid_to   => $client_1->loginid,
+            );
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                {
+                rule       => $rule_name,
+                error_code => 'InvalidLoginidTo',
+                },
+                "Correct error for $residence residents restricted from transferring from crypto to fiat with $citizen citizenship";
+            %args = (
+                loginid_from => $client_3->loginid,
+                loginid_to   => $client_2->loginid,
+            );
+            ok $rule_engine->apply_rules($rule_name, %args),
+                "Transfer from crypto to crypto is allowed for $residence residents with $citizen citizenship";
+        }
+    }
+
+    # internal transfer for un-restricted residence and citizenship
+    my $user = BOM::User->create(
+        email    => 'test@test.com',
+        password => 'abcd1234',
+    );
+    my $client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'id',
+        citizen     => 'id',
+    });
+    $user->add_client($client_1);
+    $client_1->account('USD');
+    my $client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'id',
+        citizen     => 'id',
+    });
+    $user->add_client($client_2);
+    $client_2->account('BTC');
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_1, $client_2]);
+    my %args        = (
+        loginid_from => $client_1->loginid,
+        loginid_to   => $client_2->loginid,
+    );
+    ok $rule_engine->apply_rules($rule_name, %args), "Transfer from fiat to crypto is allowed for id residents with id citizenship";
+
+    %args = (
+        loginid_from => $client_2->loginid,
+        loginid_to   => $client_1->loginid,
+    );
+    ok $rule_engine->apply_rules($rule_name, %args), "Transfer from crypto to fiat is allowed for id residents with id citizenship";
+
+};
+
 $rule_name = 'transfers.no_different_fiat_currencies';
 subtest $rule_name => sub {
     my %clients = map {

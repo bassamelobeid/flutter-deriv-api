@@ -34,4 +34,5 @@ account_transfer:
               - client.has_currency_set
           - transfers.no_different_fiat_currencies
           - transfers.crypto_exchange_rates_availability
-          - transfers.clients_are_not_transfer_blocked    
+          - transfers.clients_are_not_transfer_blocked  
+          - transfers.residence_or_country_restriction  
