@@ -4841,8 +4841,8 @@ async sub bulk_client_status_update {
     my $loginids = $args->{loginids};
     my (@invalid_logins, @message, $status_op_summaries, $summary, $p2p_approved);
     my $properties = $args->{properties};
-    my ($operation, $client_status_type, $status_checked, $reason, $clerk, $action, $req_params, $status_code) =
-        @{$properties}{qw/status_op untrusted_action_type status_checked reason clerk action req_params status_code/};
+    my ($operation, $client_status_type, $status_checked, $reason, $clerk, $action, $req_params, $status_code, $user_groups) =
+        @{$properties}{qw/status_op untrusted_action_type status_checked reason clerk action req_params status_code user_groups/};
     my $add_regex = qr/^add|^sync/;
     my @failed_update;
 
@@ -4871,7 +4871,12 @@ async sub bulk_client_status_update {
                             "<span class='error'>ERROR:</span>&nbsp;&nbsp;Account <b>$loginid</b> cannot be marked as disabled as account has open positions. Please check account portfolio.";
                     } else {
                         if (!$client->status->disabled) {
-                            $client->status->upsert('disabled', $clerk, $reason);
+                            if ($client->status->can_execute($status_code, $user_groups, 'set')) {
+                                $client->status->upsert('disabled', $clerk, $reason);
+                            } else {
+                                $summary =
+                                    "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$loginid $reason ($clerk)</b>&nbsp;&nbsp;has not been saved, missing required permissions</b>";
+                            }
                         } else {
                             $summary = "<span class='error'>ERROR:</span>&nbsp;&nbsp;Account <b>$loginid</b> status is already marked.";
                         }
@@ -4886,15 +4891,26 @@ async sub bulk_client_status_update {
                     push @failed_update, "<tr><td>" . $summary . "</td></tr>";
                     next LOGIN;
                 }
+                unless ($client->status->can_execute($status_code, $user_groups, 'set')) {
+                    $summary =
+                        "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$loginid $reason ($clerk)</b>&nbsp;&nbsp;has not been saved, missing required permissions</b>";
+                    push @failed_update, "<tr><td>" . $summary . "</td></tr>";
+                    next LOGIN;
+                }
                 $client->status->upsert($status_code, $clerk, $reason);
                 my $m = BOM::Platform::Token::API->new;
                 $m->remove_by_loginid($client->loginid);
 
             } else {
                 if ($operation =~ $add_regex) {
-                    $client->status->upsert($status_code, $clerk, $reason);
-                    if ($status_code eq 'allow_document_upload' && $reason eq 'Pending payout request') {
-                        BOM::User::Utility::notify_submission_of_documents_for_pending_payout($client);
+                    if ($client->status->can_execute($status_code, $user_groups, 'set')) {
+                        $client->status->upsert($status_code, $clerk, $reason);
+                        if ($status_code eq 'allow_document_upload' && $reason eq 'Pending payout request') {
+                            BOM::User::Utility::notify_submission_of_documents_for_pending_payout($client);
+                        }
+                    } else {
+                        $summary =
+                            "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$loginid $reason ($clerk)</b>&nbsp;&nbsp;has not been saved, missing required permissions</b>";
                     }
                 }
             }
@@ -4912,7 +4928,8 @@ async sub bulk_client_status_update {
                     status_checked        => $status_checked,
                     untrusted_action_type => $client_status_type,
                     reason                => $reason,
-                    clerk                 => $clerk
+                    clerk                 => $clerk,
+                    user_groups           => $user_groups,
                 });
         } catch {
             $summary =
