@@ -970,7 +970,7 @@ subtest 'Sibling Status Sync upon creation' => sub {
 
     my $mock = Test::MockModule->new('BOM::User::Client::Status');
 
-    # Mocked to bypass the status copy configuration defined at BOM::Config::statuses_copied_from_siblings
+    # Mocked to bypass the status copy configuration defined at Business::Config::Account->new()->statuses_copied_from_siblings()
 
     $mock->mock(
         'can_copy',

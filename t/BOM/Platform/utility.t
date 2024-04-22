@@ -4,8 +4,10 @@ use warnings;
 use Test::Deep;
 use Test::More;
 use Test::MockModule;
+use Test::Exception;
 
 use BOM::Platform::Utility;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 subtest 'hash_to_array' => sub {
     subtest 'simple hash' => sub {
@@ -136,6 +138,40 @@ subtest 'rejected identity verification reasons' => sub {
             "Both functions return the same keys"
         );
     };
+};
+
+subtest 'check_status_application tests' => sub {
+    my $mock = Test::MockModule->new('BOM::User::Client::Status');
+
+    $mock->mock(
+        'can_execute',
+        sub {
+            my ($self, $status_code, $user_groups, $action) = @_;
+            return 1 if $status_code eq 'pass_status';
+            return 0;
+        });
+
+    my $status_code = 'pass_status';
+    my $user_groups = ['group1', 'group2'];
+    my $action      = 'set';
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
+    is BOM::Platform::Utility::check_status_application($client, $status_code, $user_groups, $action), 1, 'status_code is executable for client';
+
+    $status_code = 'fail_status';
+
+    dies_ok {
+        BOM::Platform::Utility::check_status_application($client, $status_code, $user_groups, $action);
+    }
+    'dies ok in case if status_code is not executable for client';
+
+    my $error = $@;
+    like($error->{error_msg}, qr/The action can not be performed\./, 'Error message should match');
+    is($error->{failing_rule}, 'N/A',                                                   'Failing rule should be "N/A"');
+    is($error->{description},  'Missing permissions to perform the selected operation', 'Description should match');
+
+    $mock->unmock_all;
 };
 
 done_testing;

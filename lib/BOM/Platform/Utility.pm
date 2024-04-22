@@ -770,23 +770,29 @@ sub status_op_processor {
     my $client_status_type = $args->{untrusted_action_type};
     my $reason             = $args->{reason};
     my $clerk              = $args->{clerk};
+    my $user_groups        = $args->{user_groups};
     my $status_map         = {
-        disabledlogins            => 'disabled',
-        lockcashierlogins         => 'cashier_locked',
-        unwelcomelogins           => 'unwelcome',
-        nowithdrawalortrading     => 'no_withdrawal_or_trading',
-        lockwithdrawal            => 'withdrawal_locked',
-        lockmt5withdrawal         => 'mt5_withdrawal_locked',
-        duplicateaccount          => 'duplicate_account',
-        allowdocumentupload       => 'allow_document_upload',
-        internalclient            => 'internal_client',
-        notrading                 => 'no_trading',
-        sharedpaymentmethod       => 'shared_payment_method',
-        cryptoautorejectdisabled  => 'crypto_auto_reject_disabled',
-        cryptoautoapprovedisabled => 'crypto_auto_approve_disabled',
-        allowduplicatesignup      => 'allow_duplicate_signup',
-        siblingtransfersblocked   => 'sibling_transfers_blocked',
-        cfdtransfersblocked       => 'cfd_transfers_blocked',
+        disabledlogins                       => 'disabled',
+        lockcashierlogins                    => 'cashier_locked',
+        unwelcomelogins                      => 'unwelcome',
+        nowithdrawalortrading                => 'no_withdrawal_or_trading',
+        lockwithdrawal                       => 'withdrawal_locked',
+        lockmt5withdrawal                    => 'mt5_withdrawal_locked',
+        duplicateaccount                     => 'duplicate_account',
+        allowdocumentupload                  => 'allow_document_upload',
+        internalclient                       => 'internal_client',
+        notrading                            => 'no_trading',
+        sharedpaymentmethod                  => 'shared_payment_method',
+        cryptoautorejectdisabled             => 'crypto_auto_reject_disabled',
+        cryptoautoapprovedisabled            => 'crypto_auto_approve_disabled',
+        allowduplicatesignup                 => 'allow_duplicate_signup',
+        unwelcomeafinvestigation             => 'unwelcome_af_investigation',
+        disabledafinvestigation              => 'disabled_af_investigation',
+        cashierlockedafinvestigation         => 'cashier_locked_af_investigation',
+        nowithdrawalortradingafinvestigation => 'no_withdrawal_or_trading_af_investigation',
+        notradingafinvestigation             => 'no_trading_af_investigation',
+        siblingtransfersblocked              => 'sibling_transfers_blocked',
+        cfdtransfersblocked                  => 'cfd_transfers_blocked',
     };
 
     if ($client_status_type && $status_map->{$client_status_type}) {
@@ -805,6 +811,7 @@ sub status_op_processor {
     for my $status ($status_checked->@*) {
         try {
             if ($status_op eq 'remove') {
+                check_status_application($client, $status, $user_groups, 'remove');
                 verify_reactivation($client, $status);
                 my $client_status_clearer_method_name = 'clear_' . $status;
                 $client->status->$client_status_clearer_method_name;
@@ -815,6 +822,7 @@ sub status_op_processor {
                     ids    => $loginid
                     };
             } elsif ($status_op eq 'remove_siblings' or $status_op eq 'remove_accounts') {
+                check_status_application($client, $status, $user_groups, 'remove');
 
                 my ($updated, $failed) = clear_status_from_siblings($client, $status, $status_op eq 'remove_accounts');
                 if (scalar @$updated) {
@@ -840,10 +848,22 @@ sub status_op_processor {
                 }
 
             } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
+                check_status_application($client, $status, $user_groups, 'set');
                 $status = $status_map->{$status}       ? $status_map->{$status}           : $status;
                 $reason = $reason =~ /SELECT A REASON/ ? $client->status->reason($status) : $reason;
-                my $updated_client_loginids = $client->copy_status_to_siblings($status, $clerk, $status_op eq 'sync_accounts', $reason);
-                my $siblings = join ', ', $updated_client_loginids->@*;
+
+                my $statuses_to_copy = [$status];
+                my $parent_status    = BOM::User::Client::Status::parent($status);
+
+                push @$statuses_to_copy, $parent_status if $parent_status;
+
+                my $updated_client_loginids = [];
+                for my $status_to_copy (@$statuses_to_copy) {
+                    my $login_ids = $client->copy_status_to_siblings($status_to_copy, $clerk, $status_op eq 'sync_accounts', $reason);
+                    @$updated_client_loginids = (@$updated_client_loginids, @$login_ids);
+                }
+
+                my $siblings = join ', ', uniq $updated_client_loginids->@*;
                 if (scalar $updated_client_loginids->@*) {
                     push $summary_stack->@*,
                         {
@@ -903,7 +923,10 @@ sub clear_status_from_siblings {
           $remove_accounts
         ? $client->user->clients(include_disabled => 1)
         : $client->user->clients_for_landing_company($client->landing_company->short);
-    push @siblings, $client if ($remove_accounts);
+
+    # Only add client to siblings if it is not already present in the array
+    my $present_in_siblings = any { $_->{loginid} eq $client->{loginid} } @siblings;
+    push @siblings, $client if ($remove_accounts && !$present_in_siblings);
     for my $sibling (@siblings) {
         try {
             verify_reactivation($sibling, $status);
@@ -1012,4 +1035,36 @@ sub get_fiat_sibling_account_currency_for {
     }
     return $fiat_currency;
 }
+
+=head2 check_status_application
+
+Check if the status can be applied or removed, throws an error if not
+
+=over 4
+
+=item C<client> - the client instance
+
+=item C<status> - the status to be applied or removed
+
+=item C<user_groups> - the user groups to be checked against
+
+=item C<action> - the action to be performed
+
+=back
+
+Throws an error if the status can not be applied or removed
+
+=cut
+
+sub check_status_application {
+    my ($client, $status, $user_groups, $action) = @_;
+
+    die +{
+        error_msg    => 'The action can not be performed.',
+        failing_rule => 'N/A',
+        description  => 'Missing permissions to perform the selected operation',
+        }
+        unless $client->status->can_execute($status, $user_groups, $action);
+}
+
 1;
