@@ -220,10 +220,22 @@ rpc "landing_company",
             message_to_client => localize('Unknown landing company.')}) unless $c_config;
 
     # BE CAREFUL, do not change ref since it's persistent
-    my %landing_company = %{$c_config};
+    my %required_fields = map { $_ => 1 } qw(
+        all_company
+        config
+        ctrader
+        derivez
+        dx
+        financial_company
+        gaming_company
+        is_idv_supported
+        minimum_age
+        mt
+        name
+        virtual_company
+    );
 
-    delete @landing_company{qw/is_signup_allowed idd_country alpha3 signup_self_declaration/};
-
+    my %landing_company = map { $_ => $c_config->{$_} } grep { exists $required_fields{$_} } keys %$c_config;
     $landing_company{id} = $country;
 
     foreach my $type ('gaming_company', 'financial_company') {
@@ -286,8 +298,6 @@ rpc "landing_company",
                 __build_landing_company(LandingCompany::Registry->by_name($dx_lc), $country);
         }
     }
-
-    delete $landing_company{wallet};
 
     return \%landing_company;
     };
