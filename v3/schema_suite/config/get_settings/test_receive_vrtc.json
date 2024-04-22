@@ -20,7 +20,8 @@
             "user_hash",
             "immutable_fields",
             "preferred_language",
-            "trading_hub"
+            "trading_hub",
+            "phone_number_verification"
          ],
          "properties" : {
             "email_consent" : {
@@ -79,6 +80,25 @@
                   0,
                   1
                ]
+            },
+            "phone_number_verification": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "verified"
+                ],
+                "properties": {
+                    "next_attempt": {
+                        "type": "integer"
+                    },
+                    "verified": {
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    }
+                }
             }
          }
       },
