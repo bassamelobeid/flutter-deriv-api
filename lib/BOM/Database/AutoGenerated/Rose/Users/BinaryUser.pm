@@ -25,6 +25,7 @@ __PACKAGE__->meta->setup(
         date_first_contact => { type => 'date' },
         signup_device      => { type => 'enum', check_in => [ 'mobile', 'desktop' ], db_type => 'signup_device_type' },
         preferred_language => { type => 'text' },
+        phone_number_verified => { type => 'boolean' },
     ],
 
     primary_key_columns => [ 'id' ],
