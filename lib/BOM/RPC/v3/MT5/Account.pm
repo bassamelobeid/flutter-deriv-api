@@ -2018,7 +2018,8 @@ async_rpc "mt5_deposit",
                     fees_percent              => $fees_percent,
                     fees_currency             => $fees_currency,
                     min_fee                   => $min_fee,
-                    fee_calculated_by_percent => $fee_calculated_by_percent
+                    fee_calculated_by_percent => $fee_calculated_by_percent,
+                    $response->{account_type} eq 'demo' ? (is_demo => 1) : (),    # used to add correct loginid prefix for statement history
                 );
 
                 my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(%txn_details);
@@ -2189,7 +2190,8 @@ async_rpc "mt5_withdrawal",
                 fees_currency             => $fees_currency,
                 fees_percent              => $fees_percent,
                 min_fee                   => $min_fee,
-                fee_calculated_by_percent => $fee_calculated_by_percent
+                fee_calculated_by_percent => $fee_calculated_by_percent,
+                $response->{account_type} eq 'demo' ? (is_demo => 1) : (),    # used to add correct loginid prefix for statement history
             );
 
             my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(%txn_details);

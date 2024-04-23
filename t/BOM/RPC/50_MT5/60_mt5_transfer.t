@@ -869,4 +869,71 @@ subtest 'Transfers in between MT5 and DERIVEZ' => sub {
         ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Cannot transfer from Derivez to DX');
 };
 
+subtest 'Virtual wallets' => sub {
+
+    my ($user, $wallet_generator) = BOM::Test::Helper::Client::create_wallet_factory('za');
+    my ($wallet) = $wallet_generator->(qw(VRW virtual USD));
+    BOM::Test::Helper::Client::top_up($wallet, 'USD', 1000);
+    $user->update_trading_password($DETAILS{password}{main});
+
+    my $params = {
+        language => 'EN',
+        token    => $m->create_token($wallet->loginid, 'test token'),
+        args     => {
+            account_type => 'demo',
+            country      => 'mt',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+
+    my $mt5_login = $c->call_ok('mt5_new_account', $params)->has_no_error('create demo account from VRW')->result->{login};
+
+    $params->{args} = {
+        from_binary => $wallet->loginid,
+        to_mt5      => $mt5_login,
+        amount      => 10,
+    };
+
+    $c->call_ok('mt5_deposit', $params)->has_no_error('transfer from VRW to demo MT5');
+
+    cmp_deeply(
+        _get_transaction_details($wallet->db->dbic, $c->result->{binary_transaction_id}),
+        {
+            mt5_account               => re('\d+'),
+            is_demo                   => bool(1),
+            fees                      => num(0),
+            fees_currency             => 'USD',
+            min_fee                   => undef,
+            fees_percent              => num(0),
+            fee_calculated_by_percent => undef,
+        },
+        'expected transaction details after deposit'
+    );
+
+    $params->{args} = {
+        from_mt5  => $mt5_login,
+        to_binary => $wallet->loginid,
+        amount    => 10,
+    };
+
+    $c->call_ok('mt5_withdrawal', $params)->has_no_error('transfer from demo MT5 to VRW');
+
+    cmp_deeply(
+        _get_transaction_details($wallet->db->dbic, $c->result->{binary_transaction_id}),
+        {
+            mt5_account               => re('\d+'),
+            is_demo                   => bool(1),
+            fees                      => num(0),
+            fees_currency             => 'USD',
+            min_fee                   => undef,
+            fees_percent              => num(0),
+            fee_calculated_by_percent => undef,
+        },
+        'expected transaction details after withdrawal'
+    );
+};
+
 done_testing();
