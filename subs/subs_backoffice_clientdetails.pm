@@ -816,6 +816,7 @@ SQL
         professional_status                          => get_professional_status($client),
         is_partner                                   => $client->status->partner               ? 1 : 0,
         eligible_counterparty                        => $client->status->eligible_counterparty ? 1 : 0,
+        is_per_se_professional                       => $client->status->per_se_professional   ? 1 : 0,
         show_funds_message                 => ($config->{ukgc_funds_protection} and not $client->is_virtual),
         show_risk_approval                 => ($client->landing_company->is_eu),
         client_aml_jurisdiction_risk       => $client_aml_jurisdiction_risk,

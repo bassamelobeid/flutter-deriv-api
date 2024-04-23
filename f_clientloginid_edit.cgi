@@ -1173,22 +1173,29 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                 'counterparty' => sub {
                     set_client_status(
                         $client, ['eligible_counterparty'],
-                        ['professional', 'professional_requested', 'professional_rejected', 'partner'],
+                        ['professional', 'professional_requested', 'professional_rejected', 'partner', 'per_se_professional'],
                         'Client Marked as eligible counterparty', $clerk
                     );
                 },
                 'partner' => sub {
                     set_client_status(
                         $client, ['partner'],
-                        ['professional', 'professional_requested', 'professional_rejected', 'eligible_counterparty'],
+                        ['professional', 'professional_requested', 'professional_rejected', 'eligible_counterparty', 'per_se_professional'],
                         'Client Marked as partner', $clerk
                     );
                 },
-                'professional' => sub {
+                'elective_professional' => sub {
                     set_client_status(
                         $client, ['professional'],
-                        ['eligible_counterparty', 'professional_requested', 'professional_rejected', 'partner'],
+                        ['eligible_counterparty', 'professional_requested', 'professional_rejected', 'partner', 'per_se_professional'],
                         'Client Marked as professional as requested', $clerk
+                    );
+                },
+                'per_se_professional' => sub {
+                    set_client_status(
+                        $client, ['per_se_professional'],
+                        ['eligible_counterparty', 'professional_requested', 'professional_rejected', 'partner'],
+                        'Client Marked as Professional Per se', $clerk
                     );
                 },
                 'retail' => sub {
@@ -1199,6 +1206,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                         $status_to_set   = [];
                     } elsif ($client->status->partner) {
                         $status_to_clear = ['partner'];
+                    } elsif ($client->status->per_se_professional) {
+                        $status_to_clear = ['per_se_professional'];
+                        $status_to_set   = [];
                     }
                     set_client_status($client, $status_to_set, $status_to_clear, 'Revoke professional status', $clerk);
                 },
