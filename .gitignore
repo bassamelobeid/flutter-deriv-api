@@ -23,4 +23,5 @@ nytprof.out
 *.bak
 *.csv
 .DS_Store
+.idea
 *~
