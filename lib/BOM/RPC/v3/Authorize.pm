@@ -710,9 +710,7 @@ rpc logout => annotate_db_calls(
                 # Access token already has been removed from database. User is logged out.
                 return {status => 1} unless $app_id;
 
-                foreach my $c1 ($user->clients) {
-                    $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
-                }
+                $oauth->revoke_tokens_by_loginid_app($_, $app_id) for ($user->bom_loginids);
 
                 # revoke all refresh tokens per user_id and app.
                 $oauth->revoke_refresh_tokens_by_user_app_id($user->{id}, $app_id);

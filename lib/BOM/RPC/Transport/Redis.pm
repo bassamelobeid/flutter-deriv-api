@@ -456,7 +456,7 @@ sub _dispatch_request {
     my ($self, $params) = @_;
     my $request_start = [Time::HiRes::gettimeofday];
 
-    # Take a deep clone of params to avoid any redundant data per dispathing requests.
+    # Take a deep clone of params to avoid any redundant data per dispatching requests.
     $params = dclone $params;
 
     my $result;

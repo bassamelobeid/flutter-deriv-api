@@ -257,8 +257,8 @@ rpc revoke_oauth_app => sub {
     my $oauth  = BOM::Database::Model::OAuth->new;
     my $user   = $client->user;
     my $status = 1;
-    foreach my $c1 ($user->clients) {
-        $status &&= $oauth->revoke_app($params->{args}{revoke_oauth_app}, $c1->loginid);
+    foreach my $id ($user->bom_loginids) {
+        $status &&= $oauth->revoke_app($params->{args}{revoke_oauth_app}, $id);
     }
 
     return $status;

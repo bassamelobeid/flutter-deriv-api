@@ -1426,9 +1426,7 @@ sub _get_last_rejected {
         $onfido_reject_reasons_catalog = BOM::Platform::Utility::rejected_onfido_reasons_error_codes();
         $service_reasons               = $onfido_reject_reasons;
     }
-
     $reject_reasons_catalog = $latest_poi_by eq 'manual' ? () : ($idv_reject_reasons_catalog // $onfido_reject_reasons_catalog);
-
     my $last_rejected_reasons =
         [uniq map { exists $reject_reasons_catalog->{$_} ? $reject_reasons_catalog->{$_} : () } grep { $_ } $service_reasons->@*];
 
@@ -2009,13 +2007,9 @@ rpc change_password => sub {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    # If the user doesn't exist or
-    # has no associated clients then throw exception
+    # If the user doesn't exist then throw exception
     my $user = $client->user;
-    my @clients;
-    if (not $user or not @clients = $user->clients) {
-        return BOM::RPC::v3::Utility::client_error();
-    }
+    return BOM::RPC::v3::Utility::client_error() unless $user;
 
     # Do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
@@ -2049,23 +2043,16 @@ rpc "reset_password",
     sub {
     my $params = shift;
     my $args   = $params->{args};
-    my $email  = lc(BOM::Platform::Token->new({token => $args->{verification_code}})->email // '');
+
+    my $email = lc(BOM::Platform::Token->new({token => $args->{verification_code}})->email // '');
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'reset_password')->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user = BOM::User->new(
-        email => $email,
-    );
-    my @clients = ();
-    if (not $user or not @clients = $user->clients) {
-        return BOM::RPC::v3::Utility::client_error();
-    }
-
-    # Clients are ordered by reals first, then by loginid. So the first one is used here.
-    my $client = $clients[0];
+    my $user = BOM::User->new(email => $email);
+    return BOM::RPC::v3::Utility::client_error() unless $user;
 
     if (
         my $pass_error = BOM::RPC::v3::Utility::check_password({
@@ -2075,8 +2062,12 @@ rpc "reset_password",
         return $pass_error;
     }
 
+    # Returns default, non-disabled client
+    my $client = $user->get_default_client();
+    return BOM::RPC::v3::Utility::client_error() unless $client;
+
     try {
-        $client->user->update_user_password($args->{new_password}, 'reset_password');
+        $user->update_user_password($args->{new_password}, 'reset_password');
         _send_reset_password_confirmation_email($client, 'reset_password');
     } catch {
         log_exception();
@@ -2175,7 +2166,11 @@ rpc get_settings => sub {
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
             : ())};
 
-    my @clients = grep { $_ and not $_->is_virtual } $user->clients(include_disabled => 0), $client->duplicate_sibling_from_vr;
+    my @clients = grep { $_ and not $_->is_virtual } $user->clients(
+        include_disabled => 0,
+        include_virtual  => 0
+        ),
+        $client->duplicate_sibling_from_vr;
 
     if ($cooling_off_period > 0) {
         $settings->{cooling_off_expiration_date} = time + $cooling_off_period;
@@ -3817,9 +3812,11 @@ rpc get_financial_assessment => sub {
     my $args   = $params->{args};
     my $client = $params->{client};
 
-    # We should return FA for VRTC that has financial or gaming account
-    # Since we have independent financial and gaming.
-    my @siblings = grep { not $_->is_virtual } $client->user->clients(include_disabled => 0);
+    # Find suitable siblings to extract FA data from, not disabled, not virtual
+    my @siblings = $client->user->clients(
+        include_disabled => 0,
+        include_virtual  => 0
+    );
 
     if ($client->is_virtual and not @siblings) {
         # grab from dup account
