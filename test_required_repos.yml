@@ -4,7 +4,9 @@
 - regentmarkets/bom
 - regentmarkets/bom-config
 - regentmarkets/bom-cryptocurrency
+- regentmarkets/bom-events
 - regentmarkets/bom-market
+- regentmarkets/bom-oauth
 - regentmarkets/bom-platform
 - regentmarkets/bom-postgres
 - regentmarkets/bom-rpc
