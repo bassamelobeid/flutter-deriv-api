@@ -23,7 +23,6 @@ sub create_account {
     my $date_first_contact     = $details->{date_first_contact};
     my $brand_name             = $details->{brand_name} // request()->brand->name;
     my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
-    my $account_opening_reason = $args->{account_opening_reason} // '';
 
     my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};    # default to 'trading'
     my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name)
@@ -45,15 +44,16 @@ sub create_account {
             if $category eq 'trading' && $user->bom_virtual_loginid;          # a virtual trading client already exists
     }
 
-    if ($account_opening_reason eq 'affiliate') {
-        if ($residence eq 'ir' || $residence eq 'kp') {    # only North-korea and Iran do not allow to open affilate partner account
-            return {error => {code => 'invalid residence'}};
-        }
-    } else {
-        # we will also check for `is_signup_allowed`
-        if ($residence && ($brand_country_instance->restricted_country($residence) || !$brand_country_instance->is_signup_allowed($residence))) {
-            return {error => {code => 'invalid residence'}};
-        }
+    # we should check for restricted_country
+    # we will also check for `is_signup_allowed` && `is_partner_signup_allowed`
+    return {error => {code => 'invalid residence'}} unless $residence;
+
+    if ($brand_country_instance->restricted_country($residence)) {
+        return {error => {code => 'invalid residence'}};
+    }
+
+    if (!$brand_country_instance->is_partner_signup_allowed($residence) && !$brand_country_instance->is_signup_allowed($residence)) {
+        return {error => {code => 'invalid residence'}};
     }
 
     # set virtual company if residence is provided otherwise use brand name to infer the broker code

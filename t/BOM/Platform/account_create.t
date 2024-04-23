@@ -6,7 +6,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Array::Utils;
 
-use Test::More (tests => 11);
+use Test::More (tests => 12);
 use Test::Exception;
 use Test::Fatal;
 use Test::Warn;
@@ -353,12 +353,25 @@ subtest 'create account' => sub {
 
     # create virtual wallet client
     my ($vr_wallet_client, $user_wallet, $vr_wallet_acc);
+
+    $vr_wallet_acc = BOM::Platform::Account::Virtual::create_account({
+            details => {
+                email        => 'foo+noresidence@binary.com',
+                account_type => 'virtual'
+            }});
+
+    my $expected = {error => {code => "invalid residence"}};
+
+    is_deeply($vr_wallet_acc, $expected, 'error: invalid residence');
+
     lives_ok {
         $vr_wallet_acc = BOM::Platform::Account::Virtual::create_account({
                 details => {
-                    email        => 'foo+noresidence@binary.com',
-                    account_type => 'virtual'
+                    email        => 'foo+residense@binary.com',
+                    account_type => 'virtual',
+                    residence    => 'id'
                 }});
+
         ($vr_wallet_client, $user_wallet) = @{$vr_wallet_acc}{'client', 'user'};
 
     }
@@ -415,7 +428,8 @@ subtest 'create account' => sub {
         my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
                     email        => 'not_email_verified1@binary.com',
-                    account_type => 'binary'
+                    account_type => 'binary',
+                    residence    => 'id'
                 }});
         ok $vr_acc_n->{user}->email_verified, 'User is email verified when email_verified detail is not provided as default is 1';
 
@@ -423,7 +437,8 @@ subtest 'create account' => sub {
                 details => {
                     email          => 'also_not_email_verified2@binary.com',
                     email_verified => 0,
-                    account_type   => 'binary'
+                    account_type   => 'binary',
+                    residence      => 'id'
                 }});
         ok !$vr_acc_n->{user}->email_verified, 'User is not email verified when email_verified=0 detail is provided';
 
@@ -431,7 +446,8 @@ subtest 'create account' => sub {
                 details => {
                     email          => 'email_verifie3d@binary.com',
                     email_verified => 1,
-                    account_type   => 'binary'
+                    account_type   => 'binary',
+                    residence      => 'id'
                 }});
         ok $vr_acc_n->{user}->email_verified, 'User is email verified when email_verified=1 detail is provided';
     };
@@ -441,7 +457,8 @@ subtest 'create account' => sub {
                 details => {
                     email              => 'foo1+datecontact@binary.com',
                     date_first_contact => Date::Utility->today->plus_time_interval('1d')->date_yyyymmdd,
-                    account_type       => 'binary'
+                    account_type       => 'binary',
+                    residence          => 'id'
                 }});
         is($vr_acc_n->{user}->date_first_contact, '2016-02-29', 'Date in future set to today');
 
@@ -449,7 +466,8 @@ subtest 'create account' => sub {
                 details => {
                     email              => 'foo5+datecontact@binary.com',
                     date_first_contact => '2016-13-40',
-                    account_type       => 'binary'
+                    account_type       => 'binary',
+                    residence          => 'id'
                 }});
         is($vr_acc_n->{user}->date_first_contact, '2016-02-29', 'Invalid date gets set to today');
 
@@ -457,7 +475,8 @@ subtest 'create account' => sub {
                 details => {
                     email              => 'foo2+datecontact@binary.com',
                     date_first_contact => Date::Utility->today->date_yyyymmdd,
-                    account_type       => 'binary'
+                    account_type       => 'binary',
+                    residence          => 'id'
                 }});
         isa_ok($vr_acc_n->{client}, 'BOM::User::Client', 'No error when today');
 
@@ -465,7 +484,8 @@ subtest 'create account' => sub {
                 details => {
                     email              => 'foo3+datecontact@binary.com',
                     date_first_contact => Date::Utility->today->minus_time_interval('40d')->date_yyyymmdd,
-                    account_type       => 'binary'
+                    account_type       => 'binary',
+                    residence          => 'id'
                 }});
         is($vr_acc_n->{user}->date_first_contact, '2016-01-30', 'When over 30 days old date_first_contact is 30 days old');
 
@@ -473,7 +493,8 @@ subtest 'create account' => sub {
                 details => {
                     email              => 'foo4+datecontact@binary.com',
                     date_first_contact => Date::Utility->today->minus_time_interval('20d')->date_yyyymmdd,
-                    account_type       => 'binary'
+                    account_type       => 'binary',
+                    residence          => 'id'
                 }});
         isa_ok($vr_acc_n->{client}, 'BOM::User::Client', 'No error when under 30 days old ');
     };
@@ -581,8 +602,8 @@ subtest 'create account' => sub {
                         }
 
                         my ($client, $user) = @{$real_acc}{qw/client user/};
-                        is(defined $user,   1,            "Social login user with residence $user->residence has been created");
-                        is($client->broker, $broker_code, "Successfully created real account $client->loginid");
+                        is(defined $user,   1,            sprintf("Social login user with residence %s has been created", $client->residence));
+                        is($client->broker, $broker_code, sprintf("Successfully created real account %s",                 $client->loginid));
                     };
                 }
             };
@@ -669,11 +690,11 @@ subtest 'create account' => sub {
                         }
 
                         my ($client) = @{$real_acc}{qw/client/};
-                        is($client->broker, $broker_code, "Successfully created real account $client->loginid");
+                        is($client->broker, $broker_code, sprintf("Successfully created real account %s", $client->loginid));
 
                         if ($mf_acc) {
                             my ($mf_client) = @{$mf_acc}{qw/client/};
-                            is($mf_client->broker, 'MF', "Successfully created real account $mf_client->loginid");
+                            is($mf_client->broker, 'MF', sprintf("Successfully created real account %s", $mf_client->loginid));
                         }
                     };
                 }
@@ -1206,6 +1227,75 @@ subtest 'email verification for virtual accounts' => sub {
 
 };
 
+subtest 'create partner in restrited countries' => sub {
+    my $mock_countries            = Test::MockModule->new('Brands::Countries');
+    my $is_restricted             = 1;
+    my $is_partner_signup_allowed = 0;
+    my $is_signup_allowed         = 1;
+    $mock_countries->redefine(restricted_country        => sub { return $is_restricted });
+    $mock_countries->redefine(is_signup_allowed         => sub { return $is_signup_allowed });
+    $mock_countries->redefine(is_partner_signup_allowed => sub { return $is_partner_signup_allowed });
+
+    my $res = create_vr_acc({
+        email     => 'partner_00_1@binary.com',
+        password  => 'okcomputer',
+        residence => 'br',
+    });
+
+    my $expected = {error => {code => "invalid residence"}};
+    is_deeply($res, $expected, 'error: reason real account sign up not allowed');
+
+    $is_restricted             = 0;
+    $is_partner_signup_allowed = 0;
+    $is_signup_allowed         = 0;
+
+    $res = create_vr_acc({
+        email     => 'partner_00_1@binary.com',
+        password  => 'okcomputer',
+        residence => 'br',
+    });
+    $expected = {error => {code => "invalid residence"}};
+    is_deeply($res, $expected, 'error: reason signup not allowed and restricted country');
+
+    $is_restricted             = 1;
+    $is_partner_signup_allowed = 0;
+    $is_signup_allowed         = 0;
+
+    $res = create_vr_acc({
+        email     => 'partner_00_1@binary.com',
+        password  => 'okcomputer',
+        residence => 'br',
+    });
+    $expected = {error => {code => "invalid residence"}};
+    is_deeply($res, $expected, 'error: reason restricted country');
+
+    $is_restricted             = 0;
+    $is_partner_signup_allowed = 1;
+    $is_signup_allowed         = 0;
+
+    $res = create_vr_acc({
+        email     => 'partner_00_1@binary.com',
+        password  => 'okcomputer',
+        residence => 'br',
+    });
+
+    ok $res, 'sign up allowed for partner registration even if real is not allowed';
+
+    $is_restricted             = 1;
+    $is_partner_signup_allowed = 1;
+    $is_signup_allowed         = 1;
+
+    $res = create_vr_acc({
+        email     => 'partner_00_2@binary.com',
+        password  => 'okcomputer',
+        residence => 'br',
+    });
+
+    ok $res, 'sign up allowed for partner registration even if it is restricted country';
+
+    $mock_countries->unmock_all();
+};
+
 sub create_vr_acc {
     my $args = shift;
     return BOM::Platform::Account::Virtual::create_account({
@@ -1265,4 +1355,4 @@ sub create_mf_acc {
     });
 }
 
-$idauth_mocked->unmock_all
+$idauth_mocked->unmock_all;
