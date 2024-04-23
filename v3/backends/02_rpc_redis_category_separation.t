@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper                          qw(build_wsapi_test call_instrospection test_schema);
 use BOM::Config::Redis;
+use Binary::WebSocketAPI;
 
 use BOM::Test::Script::RpcRedis;
 
@@ -126,6 +127,9 @@ sub send_request {
     my ($request, $expected_msg_type, $wait_for) = @_;
 
     $wait_for //= BOOT_TIMEOUT + 1;
+    if ($wait_for != 0 && defined Binary::WebSocketAPI::RPC_TIMEOUT_DEFAULT) {
+        $wait_for += Binary::WebSocketAPI::RPC_TIMEOUT_DEFAULT->{offset} + $wait_for * Binary::WebSocketAPI::RPC_TIMEOUT_DEFAULT->{percentage};
+    }
 
     $api->send_ok({json => $request});
 

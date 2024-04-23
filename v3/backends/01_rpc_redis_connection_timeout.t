@@ -10,6 +10,7 @@ use Mojo::IOLoop;
 
 use BOM::Test::Helper qw(build_wsapi_test call_instrospection);
 use BOM::Config::Redis;
+use Binary::WebSocketAPI;
 
 use BOM::Test::Script::RpcRedis;
 
@@ -55,7 +56,7 @@ SKIP: {
         my $rpc_redis = BOM::Test::Script::RpcRedis->new();
 
         my $request = {states_list => 'be'};
-        ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';
+        ok my $response = send_request($request, 'states_list'), 'Response is received after switching to consumer groups';
         ok !$response->{error},             'There is no error in response';
         ok $response = pop @queue_requests, 'Request was handled via consumer groups backend';
         is_deeply $response->{args}, $request, "Request and Response's args are equal";
@@ -69,7 +70,7 @@ SKIP: {
         $redis->flushdb();
 
         ok $response = send_request($request, 'states_list'), 'Response received after stopping Consumer';
-        ok $response->{error},                                'Response contains error paramater';
+        ok $response->{error},                                'Response contains error parameter';
         is $response->{error}->{code}, 'WrongResponse', 'Response error is WrongResponse because of timeout and as our expectation';
 
         my $stream_len = $redis->execute("XLEN", "general");
@@ -94,7 +95,7 @@ SKIP: {
         $timeout = 0;
         Mojo::IOLoop->timer(BOOT_TIMEOUT + 1 => sub { ++$timeout });
         Mojo::IOLoop->one_tick while !($timeout or scalar($api->{messages}->@*));
-        ok scalar($api->{messages}->@*), 'Message is received for not expired request immedietly after running Cosnumer';
+        ok scalar($api->{messages}->@*), 'Message is received for not expired request immediately after running Consumer';
 
         is_deeply call_instrospection('backend', ['states_list', 'http'])->{error}, "Backend 'http' was not found. Available backends: rpc_redis",
             'Backend swithed back to http';
@@ -111,7 +112,7 @@ subtest 'redis connnection loss' => sub {
     my $rpc_redis = BOM::Test::Script::RpcRedis->new();
 
     my $request = {states_list => 'be'};
-    ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';
+    ok my $response = send_request($request, 'states_list'), 'Response is received after switching to consumer groups';
     ok !$response->{error},             'There is no error in response';
     ok $response = pop @queue_requests, 'Request was handled via consumer groups backend';
     is_deeply $response->{args}, $request, "Request and Response's args are equal";
@@ -119,13 +120,16 @@ subtest 'redis connnection loss' => sub {
 
     my $client_name_before = $redis->execute("CLIENT", "GETNAME");
 
+    my $wait_for //= BOOT_TIMEOUT + 1;
+    $wait_for += Binary::WebSocketAPI::RPC_TIMEOUT_DEFAULT->{offset} + $wait_for * Binary::WebSocketAPI::RPC_TIMEOUT_DEFAULT->{percentage};
+
     # disconnecting from Redis
     $redis->execute("CLIENT", "KILL", 'SKIPME', 'no');
-    ok $response = send_request($request, 'states_list', 0), 'Response is recieved after killing redis client';
+    ok $response = send_request($request, 'states_list', 0), 'Response is received after killing redis client';
     my $timeout = 0;
-    Mojo::IOLoop->timer(BOOT_TIMEOUT + 1 => sub { ++$timeout });
+    Mojo::IOLoop->timer($wait_for => sub { ++$timeout });
     Mojo::IOLoop->one_tick while !($timeout or scalar($api->{messages}->@*));
-    ok scalar($api->{messages}->@*), 'Message is received for not expired request immedietly after running Cosnumer';
+    ok scalar($api->{messages}->@*), 'Message is received for not expired request immediately after running Consumer';
 
     is $redis->execute("CLIENT", "GETNAME"), $client_name_before, 'Consumer claim same client name as before killing';
     $rpc_redis->stop_script();
@@ -135,6 +139,9 @@ sub send_request {
     my ($request, $expected_msg_type, $wait_for) = @_;
 
     $wait_for //= BOOT_TIMEOUT + 1;
+    if ($wait_for != 0 && defined Binary::WebSocketAPI::RPC_TIMEOUT_DEFAULT) {
+        $wait_for += Binary::WebSocketAPI::RPC_TIMEOUT_DEFAULT->{offset} + $wait_for * Binary::WebSocketAPI::RPC_TIMEOUT_DEFAULT->{percentage};
+    }
 
     $api->send_ok({json => $request});
 
