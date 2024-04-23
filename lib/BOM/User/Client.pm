@@ -6728,6 +6728,10 @@ Returns 1 if additional_kyc_ else 0.
 sub is_mt5_additional_kyc_required {
     my ($self) = @_;
     return 0 if $self->landing_company->short ne 'svg';
+
+    # Skip is_mt5_additional_kyc_required if the client doesn't have an MT5 account
+    return 0 unless $self->user->get_mt5_loginids;
+
     # get the trading plaforms supported from here
     my $platform = BOM::TradingPlatform->new(
         platform => 'mt5',
