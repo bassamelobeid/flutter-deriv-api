@@ -25,3 +25,5 @@ log/*
 tags
 *~
 .DS_Store
+.idea
+/scripts_local/

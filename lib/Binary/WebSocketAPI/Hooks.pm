@@ -850,6 +850,69 @@ sub on_client_disconnect {
     return;
 }
 
+=head2 rpc_timeout_extension
+
+Checks if there is an introspection requirement to extend the timeout for a specific RPC call.
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=item * C<$req_storage> hash - Request parameter storage
+
+=back
+
+Returns nothing.
+
+=cut
+
+sub rpc_timeout_extension {
+    my ($c, $req_storage) = @_;
+    if ($Binary::WebSocketAPI::RPC_TIMEOUT_EXTENSION) {
+        my $category = $req_storage->{category} // Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME();
+        my $rpc      = $req_storage->{name};
+
+        foreach my $element ($Binary::WebSocketAPI::RPC_TIMEOUT_EXTENSION->@*) {
+            if (   (!$element->{category} || $category =~ /$element->{category}/)
+                && (!$element->{rpc} || $rpc =~ /$element->{rpc}/))
+            {
+                $req_storage->{rpc_timeout_extend_offset}     = $element->{offset}     // 0;
+                $req_storage->{rpc_timeout_extend_percentage} = $element->{percentage} // 0;
+                last;
+            }
+        }
+    }
+    return;
+}
+
+=head2 rpc_throttling
+
+If introspection throttling is enabled, this hook will randomly drop messages based on the
+configured throttle percentage.
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=item * C<$req_storage> hash - Request parameter storage
+
+=back
+
+Returns nothing.
+
+=cut
+
+sub rpc_throttling {
+    if (int(rand(100)) < $Binary::WebSocketAPI::RPC_THROTTLE->{throttle}) {
+        $Binary::WebSocketAPI::RPC_THROTTLE->{requests_dropped}++;
+        $log->debug("rpc_throttling hook dropped message due to throttling");
+        die "Message dropped due to throttling";
+    } else {
+        $Binary::WebSocketAPI::RPC_THROTTLE->{requests_passed}++;
+    }
+    return;
+}
+
 sub introspection_before_forward {
     my ($c, $req_storage) = @_;
     my %args_copy = %{$req_storage->{origin_args}};

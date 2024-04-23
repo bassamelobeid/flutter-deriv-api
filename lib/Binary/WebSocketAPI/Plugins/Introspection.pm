@@ -17,7 +17,7 @@ use POSIX qw(strftime);
 
 use JSON::MaybeXS;
 use JSON::MaybeUTF8       qw(encode_json_utf8);
-use Scalar::Util          qw(blessed);
+use Scalar::Util          qw(blessed looks_like_number);
 use Variable::Disposition qw(retain_future);
 use Socket                qw(:crlf);
 use Proc::ProcessTable;
@@ -32,6 +32,20 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 use constant MAX_REQUEST_SECONDS => 5;
 
 use constant INTROSPECTION_CHANNEL => 'introspection';
+
+use constant EXPIRY_HELP_STRING => <<'END_HELP';
+The 'timeout_extension' data should be a JSON string with the following format:
+[
+  {
+    "category": "string",           // A string pattern, regex to match for category, ("" == .*)
+    "rpc": "string",                // A string pattern, regex to match for rpc name, ("" == .*)
+    "offset": <number>,             // A number between 0 and 60, inclusive, indicating the offset.
+    "percentage": <integer>         // An integer between 0 and 100, inclusive, indicating the percentage.
+  },
+    // More entries can follow with the same structure.
+]
+Note: Ensure that all integer values are actual numbers (not strings), and strings should be enclosed in quotes.
+END_HELP
 
 my $json = JSON::MaybeXS->new;
 
@@ -721,6 +735,205 @@ command block_app_in_domain => sub {
         return _get_apps_blocked_from_operation_domain();
     }
 };
+
+=head2 throttle
+
+Will throttle the number of requests being passed through to the rpc workers by
+a given integer percentage. e.g throttle 5 will mean that 5% of incoming requests
+are just dropped, there will be no error response, we don't want the client to
+retry as this is a temporary measure to reduce load.
+
+=over 4
+
+=item * C<value> - %age throttle value to use.
+
+=back
+
+Returns the logging configuration.
+
+=cut
+
+command throttle => sub {
+    my ($self, $app, $throttle) = @_;
+    my $redis = ws_redis_master();
+    my $f     = Future::Mojo->new;
+
+    $redis->get(
+        'rpc::throttle',
+        sub {
+            my ($redis, $err, $current_throttle) = @_;
+            if ($err) {
+                $log->errorf('Error reading RPC throttle config from Redis: %s', $err);
+                return $f->fail($err);
+            }
+            if (defined $throttle) {
+                if ($throttle =~ /^\d+$/ && $throttle >= 0 && $throttle <= 100) {
+                    $redis->set(
+                        'rpc::throttle' => $throttle,
+                        sub {
+                            my ($redis, $err) = @_;
+                            unless ($err) {
+                                $Binary::WebSocketAPI::RPC_THROTTLE->{throttle}         = $throttle;
+                                $Binary::WebSocketAPI::RPC_THROTTLE->{requests_dropped} = 0;
+                                $Binary::WebSocketAPI::RPC_THROTTLE->{requests_passed}  = 0;
+                                $f->done({
+                                    %$Binary::WebSocketAPI::RPC_THROTTLE,
+                                    message => "Passed/Dropped counts have been reset to 0 after setting throttle value"
+                                });
+                                return;
+                            }
+                            $log->errorf('Redis error when setting RPC throttle value - %s', $err);
+                            $f->fail($err, throttle => $throttle);
+                        });
+                } else {
+                    return $f->fail("Usage: throttle [value 0-100], was passed: " . $throttle);
+                }
+            } else {
+                if (defined $current_throttle) {
+                    $f->done({%$Binary::WebSocketAPI::RPC_THROTTLE, throttle => $current_throttle});
+                } else {
+                    $f->done({
+                        %$Binary::WebSocketAPI::RPC_THROTTLE,
+                        message => "No throttle value found in redis for rpc::throttle, instance value provided"
+                    });
+                }
+            }
+        });
+    return $f;
+};
+
+=head2 timeout_extension
+
+Will extend the internal expiry time of calls placed into the RPC queues for a given category/
+rpc. There are two types of extension, absolute and percentage. However the external deadline
+advertised in redis will be the same. The idea is that under heavy load an rpc worker can pickup
+a job that has almost expired and additional time is given for it in bws to complete, whereas
+without the extension it might have picked up a job that was impossible to complete in the
+timeframe and work would have been lost as bws would have timed out and responded failure to the
+client
+
+=over 4
+
+=item * C<value> - %age throttle value to use.
+
+=back
+
+Returns the logging configuration.
+
+=cut
+
+command timeout_extension => sub {
+    my ($self, $app, $timeout_extension_json) = @_;
+    my $redis = ws_redis_master();
+    my $f     = Future::Mojo->new;
+
+    $redis->get(
+        'rpc::timeout_extension',
+        sub {
+            my ($redis, $err, $config) = @_;
+            if ($err) {
+                $log->errorf('Error reading RPC throttle config from Redis: %s', $err);
+                return $f->fail($err);
+            }
+
+            if (defined $timeout_extension_json) {
+                # Decode JSON string into a Perl hash
+                my $data;
+                try {
+                    $data = decode_json($timeout_extension_json);
+                } catch {
+                    return $f->fail("Invalid structure: json parse failure.\n" . EXPIRY_HELP_STRING . "\n");
+                };
+
+                # Validate the top-level structure is a hash with 'timeout_extension' key
+                unless (ref $data eq 'ARRAY') {
+                    return $f->fail("Invalid structure: top level is not an array.\n" . EXPIRY_HELP_STRING . "\n");
+                }
+
+                # Iterate over each element in the 'timeout_extension' array
+                foreach my $item (@{$data}) {
+                    # Validate each item is a hash with specific keys
+                    unless (ref $item eq 'HASH'
+                        && exists $item->{category}
+                        && exists $item->{rpc}
+                        && exists $item->{offset}
+                        && exists $item->{percentage})
+                    {
+                        return $f->fail(
+                            "Invalid item structure in 'timeout_extension', array elements should be hash type.\n" . EXPIRY_HELP_STRING . "\n");
+                    }
+
+                    # Validate 'category' is a string and a regex
+                    unless (is_string($item->{category})) {
+                        return $f->fail("Invalid data: 'category' is not a string.\n" . EXPIRY_HELP_STRING . "\n");
+                    }
+                    unless (eval { qr/$item->{category}/; 1 } || 0) {
+                        return $f->fail("Invalid data: 'category' is not a valid regex.\n" . EXPIRY_HELP_STRING . "\n");
+                    }
+
+                    # Validate 'rpc' is a string and a regex
+                    unless (is_string($item->{rpc})) {
+                        return $f->fail("Invalid data: 'rpc' is not a string.\n" . EXPIRY_HELP_STRING . "\n");
+                    }
+                    unless (eval { qr/$item->{rpc}/; 1 } || 0) {
+                        return $f->fail("Invalid data: 'rpc' is not a valid regex.\n" . EXPIRY_HELP_STRING . "\n");
+                    }
+
+                    # Validate 'offset' is an integer between 0 and 60
+                    unless ($item->{offset} =~ /^\d+$/ && $item->{offset} >= 0 && $item->{offset} <= 60) {
+                        return $f->fail("Invalid data: 'offset' is not an integer between 0 and 60.\n" . EXPIRY_HELP_STRING . "\n");
+                    }
+
+                    # Validate 'percentage' is an integer between 0 and 100
+                    unless ($item->{percentage} =~ /^\d+$/ && $item->{percentage} >= 0 && $item->{percentage} <= 100) {
+                        return $f->fail("Invalid data: 'percentage' is not an integer between 0 and 100.\n" . EXPIRY_HELP_STRING . "\n");
+                    }
+                }
+                # %Binary::WebSocketAPI::RPC_TIMEOUT_EXTENSION = $data->{timeout_extension}->@*;
+                # $f->done({ timeout_extension => $data->{timeout_extension} });
+                # return
+                $redis->set(
+                    'rpc::timeout_extension' => Encode::encode_utf8($json->encode($data)),
+                    sub {
+                        my ($redis, $err) = @_;
+                        unless ($err) {
+                            $Binary::WebSocketAPI::RPC_TIMEOUT_EXTENSION = $data;
+                            $f->done({timeout_extension => $data});
+                            return;
+                        }
+                        $log->errorf('Redis error when setting RPC timeout_extension values - %s', $err);
+                        $f->fail($err, timeout_extension => $data);
+                    });
+
+            } else {
+                if (defined $config) {
+                    $f->done({timeout_extension => $json->decode(Encode::decode_utf8($config))});
+                } else {
+                    $f->done({
+                        timeout_extension => $Binary::WebSocketAPI::RPC_TIMEOUT_EXTENSION,
+                        message           => "No expiry extension value found in redis for rpc::timeout_extension, instance value provided"
+                    });
+                }
+            }
+        });
+    return $f;
+};
+
+=head2 is_string
+
+Returns 1 if the passed in var is a string, 0 otherwise.
+
+=cut
+
+sub is_string {
+    my ($var) = @_;
+
+    # Check if it's a reference or an object
+    return 0 if ref($var) || blessed($var);
+
+    # Check if it doesn't look like a number
+    return !looks_like_number($var);
+}
 
 sub _get_apps_blocked_from_operation_domain {
     return Binary::WebSocketAPI::get_apps_blocked_from_operation_domain()->then(

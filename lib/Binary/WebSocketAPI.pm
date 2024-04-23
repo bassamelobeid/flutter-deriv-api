@@ -46,6 +46,12 @@ die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of
 
 use constant VALID_BRANDS  => qw(binary deriv);
 use constant DEFAULT_BRAND => 'deriv';
+use constant RPC_TIMEOUT_DEFAULT => {
+    rpc        => '',
+    category   => '',
+    offset     => 1,
+    percentage => 10
+};
 
 # These are the apps that are hardcoded to point to a different server pool.
 # This list is overwritten by Redis.
@@ -61,6 +67,14 @@ our %APPS_BLOCKED_FROM_OPERATION_DOMAINS;
 
 # Keys are RPC calls that we want RPC to log, controlled by redis too.
 our %RPC_LOGGING;
+
+# RPC load controls
+our $RPC_THROTTLE = {
+    requests_dropped => 0,
+    requests_passed  => 0,
+    throttle         => 0
+};
+our $RPC_TIMEOUT_EXTENSION = [RPC_TIMEOUT_DEFAULT];
 
 # API method (action) settings stored in a hash
 our $WS_ACTIONS;
@@ -153,7 +167,11 @@ sub get_redis_value_setup {
 
                 $log->debug("Have $key_display applying: $value");
 
-                if ($key eq 'app_id::diverted') {
+                if ($key eq 'rpc::throttle') {
+                    $RPC_THROTTLE->{throttle} = $value;
+                } elsif ($key eq 'rpc::timeout_extension') {
+                    $RPC_TIMEOUT_EXTENSION = $json->decode(Encode::decode_utf8($value));
+                } elsif ($key eq 'app_id::diverted') {
                     %DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($value))};
                 } elsif ($key eq 'app_id::blocked') {
                     %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($value))};
@@ -423,9 +441,10 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::start_timing,             \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::ignore_queue_separations, \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
-                \&Binary::WebSocketAPI::Hooks::assign_ws_backend,        \&Binary::WebSocketAPI::Hooks::check_app_id,
+                \&Binary::WebSocketAPI::Hooks::rpc_throttling,               \&Binary::WebSocketAPI::Hooks::start_timing,
+                \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::ignore_queue_separations,
+                \&Binary::WebSocketAPI::Hooks::introspection_before_forward, \&Binary::WebSocketAPI::Hooks::assign_ws_backend,
+                \&Binary::WebSocketAPI::Hooks::check_app_id,                 \&Binary::WebSocketAPI::Hooks::rpc_timeout_extension,
                 \&Binary::WebSocketAPI::Hooks::check_circuit_breaker,
             ],
             before_call => [
@@ -500,6 +519,8 @@ sub startup {
     get_redis_value_setup('origins::blocked',                        $log);
     get_redis_value_setup('domain_based_apps::blocked',              $log);
     get_redis_value_setup('rpc::logging',                            $log);
+    get_redis_value_setup('rpc::throttle',                           $log);
+    get_redis_value_setup('rpc::timeout_extension',                  $log);
     get_redis_value_setup('app_settings::restrict_third_party_apps', $log);
     load_official_apps_from_redis('domain_based_apps::official', $log);
     backend_setup($log);
