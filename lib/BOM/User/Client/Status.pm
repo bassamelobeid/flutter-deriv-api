@@ -38,7 +38,7 @@ use constant STATUS_CODES => qw(
     allow_poinc_resubmission cooling_off_period poa_address_mismatch poi_poa_uploaded eligible_counterparty partner
     allow_duplicate_signup poi_duplicated_documents selfie_pending selfie_verified selfie_rejected
     disabled_af_investigation cashier_locked_af_investigation no_withdrawal_or_trading_af_investigation
-    unwelcome_af_investigation no_trading_af_investigation resident_self_declaration sibling_transfers_blocked cfd_transfers_blocked
+    unwelcome_af_investigation no_trading_af_investigation resident_self_declaration sibling_transfers_blocked cfd_transfers_blocked per_se_professional
 );
 
 use constant STATUS_COPY_CONFIG   => Business::Config::Account->new()->statuses_copied_from_siblings();
