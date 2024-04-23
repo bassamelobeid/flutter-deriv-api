@@ -485,9 +485,10 @@ sub validate_payment_agent_details {
         unless $skip_coc_validation or $args->{code_of_conduct_approval};
 
     # duplicate name
+    my @loginids = $client->user->bom_loginids;
     for my $found_pa ($self->get_payment_agents_by_name($args->{payment_agent_name})->@*) {
         # skip clients of the same user
-        next if List::Util::any { $found_pa->{client_loginid} eq $_->loginid } $client->user->clients;
+        next if List::Util::any { $found_pa->{client_loginid} eq $_ } @loginids;
 
         die $error_sub->(
             'DuplicateName', 'payment_agent_name',

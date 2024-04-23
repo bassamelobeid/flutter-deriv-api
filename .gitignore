@@ -18,3 +18,5 @@ nytprof.out
 *.bs
 /_eumm/
 *.swp
+.idea
+.DS_Store

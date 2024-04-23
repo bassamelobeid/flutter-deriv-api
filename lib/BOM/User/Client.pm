@@ -451,7 +451,7 @@ sub set_authentication {
     # Get all siblings for a client except virtual one and itself
     if ($self->user and not $self->is_virtual) {
         @clients_to_update =
-            grep { not $_->is_virtual and $_->loginid ne $self->loginid } $self->user->clients;
+            grep { $_->loginid ne $self->loginid } $self->user->clients(include_virtual => 0);
     }
     # Push the client to the list.
     push(@clients_to_update, $self);
@@ -508,7 +508,7 @@ sub sync_authentication_from_siblings {
     my (@allowed_lc_to_sync, @siblings, $method, $status);
     # Get all siblings for a client except virtual one and itself
     if (!$self->is_virtual && (my $user = $self->user)) {
-        @siblings = grep { not $_->is_virtual and $_->loginid ne $self->loginid } $user->clients;
+        @siblings = grep { $_->loginid ne $self->loginid } $self->user->clients(include_virtual => 0);
     }
     # Get authentication method and status from allowed sibling
     # Update new created account's authentication
@@ -1785,12 +1785,9 @@ sub get_siblings_information {
     my @clients = $user->clients(
         include_disabled   => $include_disabled,
         include_duplicated => $include_duplicated,
+        include_virtual    => $include_virtual,
         db_operation       => $self->get_db,
     );
-
-    unless ($include_virtual) {
-        @clients = grep { not $_->is_virtual } @clients;
-    }
 
     unless ($include_wallet) {
         # filter out wallet accounts
@@ -2600,14 +2597,18 @@ sub immutable_fields {
         $auth = 1;
     }
 
-    my @siblings = $self->user ? $self->user->clients(include_duplicated => 1) : ($self);
+    my @siblings =
+        $self->user
+        ? $self->user->clients(
+        include_duplicated => 1,
+        include_virtual    => 0
+        )
+        : ($self);
 
     # we will push here all the fields that should be spared from immutability
     my @changeable = ();
 
     for my $sibling (@siblings) {
-        next if $sibling->is_virtual;
-
         # we will grab immutable fields from duplicated accounts as they are
         if ($sibling->status->duplicate_account) {
             # note this would be an infinite recursive call for a non `duplicate_account`
@@ -6551,12 +6552,14 @@ Gets the real duplicated sibling of the client, giving more priority to MF clien
 sub duplicate_sibling {
     my ($self) = @_;
 
-    my @clients = $self->user->clients(include_duplicated => 1);
+    my @clients = $self->user->clients(
+        include_duplicated => 1,
+        include_virtual    => 0
+    );
 
     my @dup_candidates = sort {
         ($a->date_joined ? Date::Utility->new($a->date_joined)->epoch : 0) < ($b->date_joined ? Date::Utility->new($b->date_joined)->epoch : 0);
-    } grep { $_->status->duplicate_account && !$_->is_virtual && $_->status->reason('duplicate_account') =~ /Duplicate account - currency change/ }
-        @clients;
+    } grep { $_->status->duplicate_account && $_->status->reason('duplicate_account') =~ /Duplicate account - currency change/ } @clients;
 
     my $duplicated = first { $_->landing_company->short eq 'maltainvest' } @dup_candidates;
 

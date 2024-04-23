@@ -861,7 +861,12 @@ Return an ARRAY reference that is a list of clients in following order
 
 sub get_clients_in_sorted_order {
     my ($self, %args) = @_;
-    my $account_lists    = $self->accounts_by_category([$self->bom_loginids], %args);
+
+    # Note to avoid binding real/virtual DBs with client creation calls then if include_virtual is 0
+    # then accounts_by_category will NOT return any virtual clients. We will filter the account list here
+    my @loginids = ($args{include_virtual} // 1) ? $self->bom_loginids : $self->bom_real_loginids;
+
+    my $account_lists    = $self->accounts_by_category(\@loginids, %args);
     my @allowed_statuses = qw(enabled virtual self_excluded disabled);
     push @allowed_statuses, 'duplicated' if ($args{include_duplicated});
 
@@ -986,25 +991,53 @@ Act as replacement for using "$siblings[0]" or "$clients[0]"
 
 =back
 
-Returns An array of L<BOM::User::Client> s
+Returns a BOM::User::Client s
 
 =cut
 
 sub get_default_client {
     my ($self, %args) = @_;
 
-    return $self->{_default_client_include_disabled} if exists($self->{_default_client_include_disabled}) && $args{include_disabled};
-    return $self->{_default_client_without_disabled} if exists($self->{_default_client_without_disabled}) && !$args{include_disabled};
+    my $cache_key =
+        '_default_client' . ($args{include_disabled} ? '_include_disabled' : '') . ($args{include_duplicated} ? '_include_duplicated' : '');
 
-    my $client_lists = $self->accounts_by_category([$self->bom_loginids], %args);
-    my %tmp;
-    foreach my $k (keys %$client_lists) {
-        $tmp{$k} = pop(@{$client_lists->{$k}});
+    return $self->{$cache_key} if exists($self->{$cache_key});
+
+    # This includes non bom clients as well but because we use bom_loginids list then this
+    # will ensure that we only get bom clients, we just need the details for sorting.
+    my $all_login_details = $self->loginid_details;
+
+    # Our preference is for non-virtual first, within that non-wallet accounts first after that alpha order
+    my @sorted_loginids = sort {
+               $all_login_details->{$a}->{is_virtual} <=> $all_login_details->{$b}->{is_virtual}
+            || $all_login_details->{$a}->{is_wallet}  <=> $all_login_details->{$a}->{is_wallet}
+            || $a cmp $b
+    } $self->bom_loginids();
+
+    # Instantiate client instances until we find one that suits, we need to model the old behaviour
+    # where if all else fails you can have a self excluded client, we can only know that when we
+    # instantiate the client.
+    #
+    # Preference is enabled // [disabled] // virtual // self_excluded // [duplicated];
+    #
+    my @prospective_clients = ();
+    foreach my $loginid (@sorted_loginids) {
+        my $prospective_client = $self->get_client_instance($loginid, 'replica');
+        if (
+            $prospective_client
+            && (   ($args{include_disabled} || !$prospective_client->status->disabled)
+                && ($args{include_duplicated} || !$prospective_client->status->duplicate_account)))
+        {
+            # If its self excluded then we need to check if we have a better candidate
+            push(@prospective_clients, $prospective_client);
+            last unless $prospective_client->get_self_exclusion_until_date;
+        }
     }
-    $self->{_default_client_include_disabled} = $tmp{enabled} // $tmp{disabled} // $tmp{virtual} // $tmp{self_excluded} // $tmp{duplicated};
-    $self->{_default_client_without_disabled} = $tmp{enabled} // $tmp{virtual}  // $tmp{self_excluded};
-    return $self->{_default_client_include_disabled} if $args{include_disabled};
-    return $self->{_default_client_without_disabled};
+
+    # Get the best prospective client
+    $self->{$cache_key} = pop(@prospective_clients);
+
+    return $self->{$cache_key};
 }
 
 sub failed_login {
@@ -1145,7 +1178,7 @@ sub update_totp_fields {
     # revoke tokens if 2FA is updated
     if ($user_is_totp_enabled xor $new_is_totp_enabled) {
         my $oauth = BOM::Database::Model::OAuth->new;
-        $oauth->revoke_tokens_by_loignid_and_ua_fingerprint($_->loginid, $args{ua_fingerprint}) for ($self->clients);
+        $oauth->revoke_tokens_by_loignid_and_ua_fingerprint($_, $args{ua_fingerprint}) for ($self->bom_loginids);
         $oauth->revoke_refresh_tokens_by_user_id($self->id);
     }
 
@@ -1803,12 +1836,9 @@ sub update_user_password {
     my $hash_pw = BOM::User::Password::hashpw($new_password);
     $self->update_password($hash_pw);
 
-    my $oauth   = BOM::Database::Model::OAuth->new;
-    my @clients = $self->clients;
-    for my $client (@clients) {
-        $client->password($hash_pw);
-        $client->save;
-        $oauth->revoke_tokens_by_loginid($client->loginid);
+    my $oauth = BOM::Database::Model::OAuth->new;
+    for my $loginid ($self->loginids) {
+        $oauth->revoke_tokens_by_loginid($loginid);
     }
 
     # revoke refresh_token

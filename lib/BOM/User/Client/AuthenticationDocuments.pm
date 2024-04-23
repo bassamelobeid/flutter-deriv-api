@@ -167,14 +167,13 @@ sub _build_uploaded {
     my %documents          = ();
 
     my @siblings = $self->client->user->clients(
+        include_virtual    => 0,
         include_disabled   => 1,
         include_duplicated => 1,
         db_operation       => $self->client->get_db,
     );
 
     for my $each_sibling (@siblings) {
-        next if $each_sibling->is_virtual;
-
         foreach my $single_document ($each_sibling->client_authentication_document) {
             my $doc_status = $single_document->status // '';
             my $origin     = $single_document->origin // 'legacy';

@@ -302,7 +302,7 @@ subtest 'duplicate_sibling_from_vr' => sub {
     $user_mock->mock(
         'clients',
         sub {
-            return @siblings;
+            return grep { !$_->is_virtual } @siblings;
         });
 
     $client_mock->mock(
@@ -322,7 +322,7 @@ subtest 'duplicate_sibling_from_vr' => sub {
 
     $client->broker('VRTC');
 
-    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client wihtout siblings';
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client without siblings';
 
     my $sibling = BOM::User::Client->rnew;
     $sibling->loginid('SIB001');
@@ -336,10 +336,10 @@ subtest 'duplicate_sibling_from_vr' => sub {
 
     $client->broker('VRTC');
 
-    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client wihtout real siblings';
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client without real siblings';
 
     $sibling->broker('MX');
-    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client wihtout real duplicated siblings';
+    is $client->duplicate_sibling_from_vr, undef, 'No siblings from a vr client without real duplicated siblings';
 
     $duplicate_account = {
         staff  => 'test',
@@ -418,7 +418,7 @@ subtest 'duplicate_sibling' => sub {
     $user_mock->mock(
         'clients',
         sub {
-            return @siblings;
+            return grep { !$_->is_virtual } @siblings;
         });
     $client_mock->mock(
         'status',
@@ -433,7 +433,7 @@ subtest 'duplicate_sibling' => sub {
     $client->broker('MX');
     $client->residence('gb');
 
-    is $client->duplicate_sibling, undef, 'No siblings from a vr client wihtout siblings';
+    is $client->duplicate_sibling, undef, 'No siblings from a vr client without siblings';
 
     my $sibling = BOM::User::Client->rnew;
     $sibling->loginid('SIB001');
@@ -441,9 +441,9 @@ subtest 'duplicate_sibling' => sub {
     $sibling->broker('VRTC');
     $sibling->residence('gb');
 
-    is $client->duplicate_sibling, undef, 'No siblings from a vr client wihtout real siblings';
+    is $client->duplicate_sibling, undef, 'No siblings from a vr client without real siblings';
     $sibling->broker('MX');
-    is $client->duplicate_sibling, undef, 'No siblings from a vr client wihtout real duplicated siblings';
+    is $client->duplicate_sibling, undef, 'No siblings from a vr client without real duplicated siblings';
 
     $duplicate_account = {
         staff  => 'test',
