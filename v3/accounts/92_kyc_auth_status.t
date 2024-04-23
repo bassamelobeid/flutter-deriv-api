@@ -256,6 +256,7 @@ sub create_vr_account {
                 client_password => $args->{client_password},
                 account_type    => 'binary',
                 email_verified  => 1,
+                residence       => 'id'
             },
         });
 
