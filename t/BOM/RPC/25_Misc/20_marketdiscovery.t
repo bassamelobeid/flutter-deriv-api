@@ -34,7 +34,7 @@ subtest "active_symbols - translation" => sub {
             submarket_display_name => 'Paires mineures',
         },
         IT => {
-            market_display_name    => 'Forex',
+            market_display_name    => 'Devisenhandel',
             submarket_display_name => 'Coppie minori',
         },
     );
