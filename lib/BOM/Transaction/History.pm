@@ -103,12 +103,8 @@ sub get_transaction_history {
         # Get localized user-friendly payment remark
         $txn->{payment_remark} = _get_txn_remark($txn, $client) // _get_txn_type_remark($txn) // $txn->{payment_remark};
 
-        my $txn_account_transfer_details = get_account_transfer_details($txn, $client);
-
-        if ($txn_account_transfer_details) {
-            $txn->{fees} = $txn_account_transfer_details->{fees};
-            $txn->{from} = $txn_account_transfer_details->{from};
-            $txn->{to}   = $txn_account_transfer_details->{to};
+        if (my $transfer_details = get_account_transfer_details($txn, $client)) {
+            $txn = {%$txn, %$transfer_details};
         }
     }
 
@@ -395,93 +391,40 @@ Returns a hashref with following structure:
 sub get_account_transfer_details {
     my ($txn, $client) = @_;
 
-    return undef unless $txn->{details};
+    return undef unless ($txn->{payment_gateway_code} // '') eq 'account_transfer';
+    my $details = $txn->{details} or return undef;
 
-    my $gateway = $txn->{payment_gateway_code} // '';
+    if (($txn->{payment_type_code} // '') ne 'internal_transfer') {
+        my $cfd_account;
 
-    return undef unless $gateway eq 'account_transfer';
+        # historically, only the numeric portion of MT5 logins was stored, the is_demo flag was added later
+        if ($details->{mt5_account} || $details->{derivez_account}) {
+            my $prefix = $details->{derivez_account} ? 'EZ' : 'MT';
+            $prefix .= ($details->{is_demo} ? 'D' : 'R');
+            $cfd_account = $prefix . ($details->{mt5_account} // $details->{derivez_account});
+        } else {
+            $cfd_account = $details->{dxtrade_account_id} // $details->{ctrader_account_id};
+        }
 
-    my $payment_type = $txn->{payment_type_code} // '';
-
-    return undef unless $payment_type =~ /^(?:internal_transfer|mt5_transfer)$/;
-
-    my $details = $txn->{details};
-
-    if ($payment_type eq 'mt5_transfer') {
-        my $response = get_mt5_transfer_details($txn, $client);
-
-        if ($response) {
-            $details->{from_login} = $response->{from_login};
-            $details->{to_login}   = $response->{to_login};
+        if ($txn->{amount} > 0) {
+            $details->{from_login} = $cfd_account;
+            $details->{to_login}   = $client->loginid;
+        } else {
+            $details->{from_login} = $client->loginid;
+            $details->{to_login}   = $cfd_account;
         }
     }
 
     return {
         fees => {
-            percentage => ($details->{fees_percent}  // 0.0),
-            minimum    => ($details->{min_fee}       // '0.0'),
-            currency   => ($details->{fees_currency} // ''),
-            amount => ($details->{fees_currency} and $details->{fees}) ? formatnumber('amount', $details->{fees_currency}, $details->{fees}) : 0.0,
+            percentage => $details->{fees_percent} // 0,
+            minimum    => $details->{min_fee}      // 0,
+            amount     => formatnumber('amount', $details->{fees_currency} // 'USD', $details->{fees} // 0),
+            currency   => $details->{fees_currency} // '',
         },
-        from => {
-            loginid => $details->{from_login},
-        },
-        to => {
-            loginid => $details->{to_login},
-        },
+        from => {loginid => $details->{from_login}},
+        to   => {loginid => $details->{to_login}},
     };
-}
-
-=head2 get_mt5_transfer_details
-
-Get mt5 details for the transfer transaction.
-Populates from and to details as we don't have those
-in database.
-
-Takes the following arguments
-
-=over 4
-
-=item * C<txn> - hashref containing details of transaction
-
-=item * C<client> - client object
-
-=back
-
-Returns a hashref with following structure:
-
-    {
-        from_login => "CR9000",
-        to_login   => "MTR100,
-    }
-
-=cut
-
-sub get_mt5_transfer_details {
-    my ($txn, $client) = @_;
-
-    return undef unless $txn->{details};
-
-    my $details = $txn->{details};
-
-    my $response;
-    # deposit to client account if amount is positive
-    if ($txn->{amount} > 0) {
-        $response->{to_login} = $client->loginid;
-
-        # We need to handle derivez transfer details here since we still using mt5_transfer for derivez
-        $response->{from_login} = 'MTR' . $details->{mt5_account}     if $details->{mt5_account};
-        $response->{from_login} = 'EZR' . $details->{derivez_account} if $details->{derivez_account};
-    } else {
-        # withdraw from client account
-        $response->{from_login} = $client->loginid;
-
-        # We need to handle derivez transfer details here since we still using mt5_transfer for derivez
-        $response->{to_login} = 'MTR' . $details->{mt5_account}     if $details->{mt5_account};
-        $response->{to_login} = 'EZR' . $details->{derivez_account} if $details->{derivez_account};
-    }
-
-    return $response;
 }
 
 1;

@@ -250,7 +250,7 @@ ok !$res, 'client does not have an account';
 
 $default_account->unmock('default_account');
 
-subtest 'transfer between accounts' => sub {
+subtest 'internal transfers' => sub {
     my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => 'tba+1@binary.com'
@@ -340,5 +340,128 @@ subtest 'transfer between accounts' => sub {
     cmp_deeply($output, $res, 'Correct structure');
 };
 
+subtest 'get_account_transfer_details' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
+    my $txn = {};
+    is BOM::Transaction::History::get_account_transfer_details($txn, $client), undef, 'undef details is ok';
+
+    $txn = {
+        payment_gateway_code => 'legacy_payment',
+        amount               => -1,
+        details              => {
+            mt5_account   => 1234,
+            fees          => undef,
+            min_fee       => undef,
+            fees_percent  => undef,
+            fees_currency => undef,
+        },
+    };
+
+    is BOM::Transaction::History::get_account_transfer_details($txn, $client), undef, 'non-account_transfer is undef';
+
+    $txn->{payment_gateway_code} = 'account_transfer';
+
+    cmp_deeply(
+        BOM::Transaction::History::get_account_transfer_details($txn, $client),
+        {
+            from => {loginid => $client->loginid},
+            to   => {loginid => 'MTR1234'},
+            fees => {
+                amount     => '0.00',
+                currency   => '',
+                minimum    => 0,
+                percentage => 0,
+            }
+        },
+        'MT5 transfer'
+    );
+
+    $txn->{amount} = 1;
+
+    cmp_deeply(
+        BOM::Transaction::History::get_account_transfer_details($txn, $client),
+        {
+            from => {loginid => 'MTR1234'},
+            to   => {loginid => $client->loginid},
+            fees => ignore(),
+        },
+        'MT5 transfer other direction'
+    );
+
+    $txn->{details}{is_demo} = 1;
+
+    cmp_deeply(
+        BOM::Transaction::History::get_account_transfer_details($txn, $client),
+        {
+            from => {loginid => 'MTD1234'},
+            to   => {loginid => $client->loginid},
+            fees => ignore(),
+        },
+        'MT5 demo'
+    );
+
+    $txn->{details}{derivez_account} = delete $txn->{details}{mt5_account};
+
+    cmp_deeply(
+        BOM::Transaction::History::get_account_transfer_details($txn, $client),
+        {
+            from => {loginid => 'EZD1234'},
+            to   => {loginid => $client->loginid},
+            fees => ignore(),
+        },
+        'DerivEZ demo'
+    );
+
+    delete $txn->{details}{is_demo};
+    $txn->{amount} = -1;
+
+    cmp_deeply(
+        BOM::Transaction::History::get_account_transfer_details($txn, $client),
+        {
+            from => {loginid => $client->loginid},
+            to   => {loginid => 'EZR1234'},
+            fees => ignore(),
+        },
+        'DerivEZ real other direction'
+    );
+
+    $txn->{details} = {
+        dxtrade_account_id => 'DXR4321',
+        fees               => 0.0123,
+        min_fee            => 0.0001,
+        fees_percent       => 3.4,
+        fees_currency      => 'BTC',
+    };
+
+    cmp_deeply(
+        BOM::Transaction::History::get_account_transfer_details($txn, $client),
+        {
+            from => {loginid => $client->loginid},
+            to   => {loginid => 'DXR4321'},
+            fees => {
+                amount     => '0.01230000',
+                currency   => 'BTC',
+                minimum    => 0.0001,
+                percentage => 3.4,
+            }
+        },
+        'DerivX with fees'
+    );
+
+    $txn->{amount}  = 1;
+    $txn->{details} = {ctrader_account_id => 'CTD2345'};
+
+    cmp_deeply(
+        BOM::Transaction::History::get_account_transfer_details($txn, $client),
+        {
+            from => {loginid => 'CTD2345'},
+            to   => {loginid => $client->loginid},
+            fees => ignore(),
+        },
+        'CTrader'
+    );
+};
+
 done_testing();
-1;
+
