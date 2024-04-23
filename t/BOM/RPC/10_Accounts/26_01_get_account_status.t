@@ -92,6 +92,9 @@ $user_cr->add_client($test_client_cr);
 $user_cr->add_client($test_client_cr_2);
 $user_cr->add_client($test_client_p2p);
 
+# Add mt5 account to return mt5_additional_kyc_required tag
+$user_cr->add_loginid("MTR1234", 'mt5', 'real', 'USD', {group => 'test/test'});
+
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
@@ -429,7 +432,12 @@ subtest 'get account status' => sub {
                     residence     => 'id',
                     secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
             my $auth_token = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-            my $result     = $c->tcall('get_account_status', {token => $auth_token});
+
+            # Add mt5 account to return mt5_additional_kyc_required tag
+            $user->add_client($client_cr1);
+            $user->add_loginid("MTR12345", 'mt5', 'real', 'USD', {group => 'test/test'});
+
+            my $result = $c->tcall('get_account_status', {token => $auth_token});
 
             ## Check if mt5_additional_kyc_required is in list of status
             my $is_triggered = scalar grep { $_ eq 'mt5_additional_kyc_required' } $result->{status}->@*;
@@ -4222,6 +4230,9 @@ subtest 'Social identity provider' => sub {
 
     my $token_cr = $m->create_token($client_cr->loginid, 'test token');
 
+    # Add mt5 account to return mt5_additional_kyc_required tag
+    $user->add_loginid("MTR123456", 'mt5', 'real', 'USD', {group => 'test/test'});
+
     my $result = $c->tcall($method, {token => $token_cr});
     cmp_deeply(
         $result,
@@ -4330,6 +4341,9 @@ subtest 'affiliate code of conduct' => sub {
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     $user->add_client($client);
+
+    # Add mt5 account to return mt5_additional_kyc_required tag
+    $user->add_loginid("MTR123467", 'mt5', 'real', 'USD', {group => 'test/test'});
 
     $client->user->set_affiliate_id('aff123');
     is $client->user->affiliate_coc_approval_required, undef, 'new affiliate, coc_approval is undef';

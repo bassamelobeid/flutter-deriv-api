@@ -68,6 +68,9 @@ subtest 'check cryptocurrencies cashier' => sub {
         $client_obj->{client}->save();
     }
 
+    # Add mt5 account to return mt5_additional_kyc_required tag
+    $user->add_loginid("MTR1234", 'mt5', 'real', 'USD', {group => 'test/test'});
+
     my $token_UST = $m->create_token($client_UST->loginid, 'test token');
     my $token_USD = $m->create_token($client_USD->loginid, 'test token');
     my $token_BTC = $m->create_token($client_BTC->loginid, 'test token');

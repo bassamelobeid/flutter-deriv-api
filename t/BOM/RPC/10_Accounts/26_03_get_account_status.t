@@ -249,6 +249,9 @@ subtest 'Fully Auth with IDV' => sub {
     $client->set_authentication_and_status('IDV_PHOTO', 'Sadwichito');
     ok $client->fully_authenticated, 'Fully authenticated';
 
+    # Add mt5 account to return mt5_additional_kyc_required tag
+    $user->add_loginid("MTR123", 'mt5', 'real', 'USD', {group => 'test/test'});
+
     my $token  = $m->create_token($client->loginid, 'test token');
     my $result = $c->tcall('get_account_status', {token => $token});
     cmp_deeply $result,
@@ -1110,6 +1113,9 @@ subtest "suspended onfido" => sub {
     $user->add_client($client);
     $client->set_default_account('USD');
     $client->save();
+
+    # Add mt5 account to return mt5_additional_kyc_required tag
+    $user->add_loginid("MTR1234", 'mt5', 'real', 'USD', {group => 'test/test'});
 
     my $token = $m->create_token($client->loginid, 'test token');
 
