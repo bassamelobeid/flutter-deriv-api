@@ -24,13 +24,13 @@ git merge origin/master
 
 # Crowdin can not read and write to the same branch. It reads from translations, and writes to 
 # l10n_translations (this is configured as an integration in crowdin).
+# We tried to merge those files in, but this caused a lot of conflicts, so instead we do a checkout of
+# the po files. This copies thoes files from the branch, overwrites the local ones and stages them for
+# commit
+
 git remote set-branches --add origin l10n_translations
 git fetch origin l10n_translations
-git remote -v
-git branch -a
-git fetch --prune
-git branch -a
-git merge origin/l10n_translations
+git checkout origin/l10n_translations -- 'src/locales/*.po'
 
 # This is the build itself - note that Redis may
 # need to be running, since we load various modules
