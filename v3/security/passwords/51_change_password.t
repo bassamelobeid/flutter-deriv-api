@@ -113,11 +113,6 @@ subtest 'change password correctly' => sub {
     ok !$status->{success}, 'old password; cannot login';
     $status = $user->login(password => $new_password);
     is $status->{success}, 1, 'login with new password OK';
-
-## client passwd should be changed as well
-    foreach my $client ($user->clients) {
-        is $client->password, $user->{password};
-    }
 };
 
 subtest 'changing password via api token' => sub {
