@@ -123,7 +123,7 @@ rpc residence_list => sub {
             }};
 
         if ($countries_instance->restricted_country($country_code)
-            || !$countries_instance->is_signup_allowed($country_code))
+            || (!$countries_instance->is_signup_allowed($country_code) && !$countries_instance->is_partner_signup_allowed($country_code)))
         {
             $option->{disabled} = 'DISABLED';
         } elsif (request()->country_code eq $country_code) {
