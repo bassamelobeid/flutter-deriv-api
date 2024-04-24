@@ -47,6 +47,8 @@ use BOM::Config::P2P;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use LandingCompany::Registry;
+use Business::Config::Country;
+use Locale::Country::Extra;
 
 use constant WEBSITE_STATUS_KEY_NAMESPACE => 'WEBSITE_STATUS';
 use constant WEBSITE_CONFIG_KEY_NAMESPACE => 'WEBSITE_CONFIG';
@@ -77,23 +79,28 @@ Returns an array of hashes, sorted by country name. Each contains the following:
 rpc residence_list => sub {
     my $residence_countries_list;
 
-    my $countries_instance = request()->brand->countries_instance;
-    my $countries          = $countries_instance->countries;
+    my $countries = Locale::Country::Extra->new();
 
-    foreach my $country_selection (
-        sort { $a->{translated_name} cmp $b->{translated_name} }
-        map  { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} } $countries->all_country_codes
-        )
-    {
-        my $country_code = $country_selection->{code};
-        next if $country_code eq '';
-        my $country_name       = $country_selection->{translated_name};
-        my $phone_idd          = $countries_instance->idd_code_for_country($country_code);
-        my $tin_format         = $countries_instance->get_tin_format($country_code);
-        my $idv_config         = $countries_instance->get_idv_config($country_code) // {};
-        my $idv_docs_supported = $idv_config->{document_types}                      // {};
-        my $has_visual_sample  = $idv_config->{has_visual_sample}                   // 0;
-        my $app_config         = BOM::Config::Runtime->instance->app_config;
+    my $country_list = Business::Config::Country->new()->list();
+
+    my @sorted_list =
+        sort { $a->{name} cmp $b->{name} }
+        map  { +{code => $_, name => $countries->localized_code2country($_, request()->language) // $country_list->{$_}->{name},} }
+        keys $country_list->%*;
+
+    foreach my $country_data (@sorted_list) {
+        my $country_code = $country_data->{code};
+        next unless $country_code;
+
+        my $country_name   = $country_data->{name};
+        my $country_config = $country_list->{$country_code};
+        my $phone_idd      = $country_config->{phone_idd};
+        my $tin_format     = $country_config->{common_reporting_standard}->{tax}->{tin_format};
+
+        my $poi_config        = $country_config->{know_your_customer}->{authentication}->{identity_verification};
+        my $has_visual_sample = $poi_config->{provider}->{idv}->{has_visual_sample};
+
+        my $app_config = BOM::Config::Runtime->instance->app_config;
         $app_config->check_for_update;
         my $onfido_suspended    = $app_config->system->suspend->onfido;
         my $documents_supported = BOM::User::Onfido::supported_documents($country_code);
@@ -103,17 +110,21 @@ rpc residence_list => sub {
             delete $documents_supported->{identification_number_document};
             $documents_supported->{national_identity_card} = {display_name => 'National Identity Card'};
         }
+
+        my $has_tin_format = scalar $tin_format->@*;
+
         my $option = {
             value => $country_code,
             text  => $country_name,
-            $phone_idd  ? (phone_idd  => $phone_idd)  : (),
-            $tin_format ? (tin_format => $tin_format) : (),
+            $phone_idd      ? (phone_idd  => $phone_idd)  : (),
+            $has_tin_format ? (tin_format => $tin_format) : (),
+            # KYC in general is highly dependent on feature flags and dynamic config
             identity => {
                 services => {
                     idv => {
                         documents_supported  => BOM::User::IdentityVerification::supported_documents($country_code),
                         is_country_supported => BOM::Platform::Utility::has_idv(country => $country_code),
-                        has_visual_sample    => $has_visual_sample
+                        has_visual_sample    => $has_visual_sample ? 1 : 0,
                     },
                     onfido => {
                         documents_supported  => $documents_supported,
@@ -122,16 +133,15 @@ rpc residence_list => sub {
                 },
             }};
 
-        if ($countries_instance->restricted_country($country_code)
-            || (!$countries_instance->is_signup_allowed($country_code) && !$countries_instance->is_partner_signup_allowed($country_code)))
-        {
-            $option->{disabled} = 'DISABLED';
-        } elsif (request()->country_code eq $country_code) {
-            $option->{selected} = 'selected';
-        }
-        if ($countries_instance->is_self_declaration_required($country_code)) {
-            $option->{account_opening_self_declaration_required} = 1;
-        }
+        my $landing_company = $country_config->{landing_company};
+        my $signup_config   = $country_config->{signup};
+        my $allowed_country = $landing_company->{default} ne 'none';
+        my $disabled        = !$allowed_country || (!$signup_config->{account} && !$signup_config->{partners});
+
+        $option->{disabled}                                  = 'DISABLED' if $disabled;
+        $option->{selected}                                  = 'selected' if request()->country_code eq $country_code && !$option->{disabled};
+        $option->{account_opening_self_declaration_required} = 1          if $signup_config->{self_declaration};
+
         push @$residence_countries_list, $option;
     }
 

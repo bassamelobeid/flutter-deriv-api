@@ -805,55 +805,12 @@ subtest 'test static subs' => sub {
     $mock_static->unmock("STATIC_CACHE_TTL");
 };
 
-subtest 'test real / partener signup' => sub {
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-    $mock_countries->redefine(
-        restricted_country => sub {
-            my ($self, $country) = @_;
-            return 1 ? $country eq 'cn' : 0;
-        });
-    $mock_countries->redefine(
-        is_signup_allowed => sub {
-            my ($self, $country) = @_;
-            if ($country eq 'cn') {
-                return 1;
-            }
-            if ($country eq 'lb') {
-                return 1;
-            }
-            if ($country eq 'gb') {
-                return 1;
-            }
-            return 0;
-        });
-    $mock_countries->redefine(
-        is_partner_signup_allowed => sub {
-            my ($self, $country) = @_;
-            if ($country eq 'cn') {
-                return 1;
-            }
-            if ($country eq 'id') {
-                return 1;
-            }
-            if ($country eq 'gb') {
-                return 1;
-            }
-            return 0;
-        });
+subtest 'disabled countries' => sub {
+    my $result   = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
+    my @disabled = map { ($_->{disabled} ? $_->{value} : ()) } $result->@*;
 
-    my $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
-    my $index  = +{map { (delete $_->{value} => $_) } $result->@*};
-
-    is($index->{cn}->{disabled}, "DISABLED", 'country is disabled');
-
-    ok(!exists $index->{lb}->{disabled} || $index->{lb}->{disabled} ne "DISABLED", 'country is not disabled in real sign up');
-    ok(!exists $index->{id}->{disabled} || $index->{id}->{disabled} ne "DISABLED", 'country is not disabled for partners');
-    ok(!exists $index->{gb}->{disabled} || $index->{gb}->{disabled} ne "DISABLED", 'country is not disabled for both partners or real');
-
-    is($index->{fr}->{disabled}, "DISABLED", 'country is disabled');
-
-    $mock_countries->unmock_all();
-
+    cmp_bag [@disabled], [qw/ae an as be by ca cu gb gg gu hk im ir je jo kp ky mm mp mt my pr py rw sg sy um us vi vu/],
+        'Expected disabled countries';
 };
 
 done_testing();
