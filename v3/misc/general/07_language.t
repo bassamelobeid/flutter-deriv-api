@@ -11,7 +11,10 @@ my $t   = build_wsapi_test();
 my $res = $t->await::residence_list({residence_list => 1});
 is $res->{msg_type}, 'residence_list';
 ok $res->{residence_list};
-is_deeply $res->{residence_list}->[104], {
+
+my $countries = +{ map { ($_->{value} => $_)} $res->{residence_list}->@* };
+
+is_deeply $countries->{ir}, {
     disabled  => 'DISABLED',
     value     => 'ir',
     text      => 'Iran',
@@ -41,9 +44,9 @@ is_deeply $res->{residence_list}->[104], {
 $t   = build_wsapi_test({language => 'RU'});
 $res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
+$countries = +{ map { ($_->{value} => $_)} $res->{residence_list}->@* };
 
-is_deeply $res->{residence_list}->[0],
-    {
+is_deeply $countries->{au}, {
     value     => 'au',
     text      => decode_utf8('Австралия'),
     phone_idd => '61',
@@ -82,8 +85,9 @@ is_deeply $res->{residence_list}->[0],
 $t   = build_wsapi_test();
 $res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
-is_deeply $res->{residence_list}->[104],
-    {
+$countries = +{ map { ($_->{value} => $_)} $res->{residence_list}->@* };
+
+is_deeply $countries->{ir}, {
     disabled  => 'DISABLED',
     value     => 'ir',
     text      => 'Iran',
