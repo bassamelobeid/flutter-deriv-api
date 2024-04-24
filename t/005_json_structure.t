@@ -70,28 +70,32 @@ my $order;
 
 my $order_general = {
     other => {
-        '$schema'            => 1,
-        title                => 2,
-        description          => 3,
-        beta                 => 4,
-        deprecated           => 4,
-        hidden               => 5,
-        type                 => 6,
-        auth_required        => 7,
-        auth_scopes          => 8,
-        pattern              => 9,
-        default              => 10,
-        enum                 => 11,
-        examples             => 12,
-        additionalProperties => 13,
-        minProperties        => 14,
-        required             => 15,
-        properties           => 16,
-        if                   => 17,
-        then                 => 18,
-        else                 => 19,
-        passthrough          => 101,
-        req_id               => 102,
+        '$schema'             => 1,
+        '$comment'            => 1,
+        '$ref'                => 1,
+        title                 => 2,
+        description           => 3,
+        beta                  => 4,
+        deprecated            => 4,
+        hidden                => 5,
+        type                  => 6,
+        auth_required         => 7,
+        auth_scopes           => 8,
+        pattern               => 9,
+        default               => 10,
+        enum                  => 11,
+        examples              => 12,
+        additionalProperties  => 13,
+        unevaluatedProperties => 13,
+        minProperties         => 14,
+        required              => 15,
+        properties            => 16,
+        if                    => 17,
+        then                  => 18,
+        else                  => 19,
+        passthrough           => 101,
+        req_id                => 102,
+        '$defs'               => 1000,
     },
     properties => {
         subscription => 101,
@@ -113,7 +117,7 @@ sub sort_elements {
         return [sort { ($order->{properties}{$a} // 99) <=> ($order->{properties}{$b} // 99) or $a cmp $b } @$ref];
     } elsif (ref $ref eq 'ARRAY' and all { ref eq 'HASH' } @$ref) {
         return [map { sort_elements($_) } @$ref];
-    } elsif (ref $ref eq 'ARRAY' and $parent ne 'enum') {
+    } elsif (ref $ref eq 'ARRAY' and $parent !~ '^(enum|examples)$') {
         return [sort { looks_like_number($a); looks_like_number($a) ? $a <=> $b : $a cmp $b } @$ref];
     } elsif (ref $ref eq 'HASH') {
         my $type = ($parent // '') eq 'properties' ? $parent : 'other';
@@ -259,7 +263,7 @@ subtest 'type and description' => sub {
         # There would be thousands of messages since we're recursively test the
         # properties. Hence, going with this approach to suppress ok messages
         # and report only the errors.
-        push $errors->{$path}->@*, "$path has type."        unless $node->{type} // $node->{oneOf} // $node->{anyOf};
+        push $errors->{$path}->@*, "$path has type."        unless $node->{type} // $node->{const} // $node->{oneOf} // $node->{anyOf};
         push $errors->{$path}->@*, "$path has description." unless $node->{description};
         push $errors->{$path}->@*, "$path description starts with capital letter."
             unless $node->{description} =~ /^((\[|\()[A-Z].*(\]|\)) |)[A-Z0-9`]/;

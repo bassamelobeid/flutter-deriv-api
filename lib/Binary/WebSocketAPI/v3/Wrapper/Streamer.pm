@@ -511,60 +511,90 @@ trading_platform_asset_listing wrapper to handle subscription
 sub trading_platform_asset_listing {
     my ($c, $req_storage) = @_;
 
+    # 1. All '//' constructs in the code block below stay here for backward compatibility.
+    #    Once WS schema is changed to require corresponding fields and drop legacy ones,
+    #    the defaulting code could be removed.
+    # 2. This defaulting code is written only once here, RPC dropped backward compatibility.
+    # 3. This code is not "generally correct" but with data validation against schema it is OK.
+    local *_plural = sub { my $in = shift; return ref $in eq 'ARRAY' ? $in : [$in]; };
+    my $args                  = $req_storage->{args};
+    my $is_legacy_eu_region   = ($args->{region} // 'row') eq 'eu';
+    my $is_legacy_brief_type  = ($args->{type}   // 'full') eq 'brief';
+    my $platform              = _plural($args->{platform});
+    my $server                = _plural($args->{server}                // ($is_legacy_eu_region ? 'p01_ts01' : 'p02_ts02'));
+    my $account_type          = _plural($args->{account_type}          // 'real');
+    my $landing_company_short = _plural($args->{landing_company_short} // ($is_legacy_eu_region ? 'maltainvest' : 'svg'));
+    my $market_type           = _plural($args->{market_type}           // ($is_legacy_eu_region ? 'financial'   : 'synthetic'));
+    my $sub_account_type      = _plural($args->{sub_account_type}      // 'financial');
+    my $sub_account_category  = _plural($args->{sub_account_category}  // '');
+    my $limit                 = $args->{limit} // ($is_legacy_brief_type ? 30 : undef);
+    my $unique                = $args->{unique};
+    my $requested_fields      = $args->{requested_fields};
+
+    my $filter_by = $args->{filter_by} // {};
+    $filter_by = {map { $_ => _plural($filter_by->{$_}) } keys %$filter_by};
+
+    my $original_args   = $args;
+    my $normalized_args = {
+        platform              => $platform,
+        server                => $server,
+        account_type          => $account_type,
+        landing_company_short => $landing_company_short,
+        market_type           => $market_type,
+        sub_account_type      => $sub_account_type,
+        sub_account_category  => $sub_account_category,
+        filter_by             => $filter_by,
+        requested_fields      => $requested_fields,
+        unique                => $unique,
+        (defined $limit ? (limit => $limit) : ()),
+    };
+
     my $type = 'trading_platform_asset_listing';
     $c->call_rpc({
-            args        => $req_storage->{args},
             method      => $type,
             msg_type    => $type,
+            args        => $normalized_args,
             call_params => {
                 token          => $c->stash('token'),
                 account_tokens => $c->stash('account_tokens'),
                 language       => $c->stash('language'),
-                platform       => $req_storage->{args}{platform},
-                region         => $req_storage->{args}{region},
-                type           => $req_storage->{args}{type},
             },
             success => sub {
                 my ($c, $api_response, $req_storage) = @_;
-                # the input parameter is a base currency which means the exchange rates provided by this API
-                # will the quoted currency (E.g. the amount required to exchange for 1 base currency)
+                return unless $req_storage->{args}{subscribe};
 
-                if ($req_storage->{args}{subscribe}) {
+                my $worker = Binary::WebSocketAPI::v3::Subscription::AssetListing->new(
+                    c               => $c,
+                    type            => $type,
+                    args            => $original_args,
+                    normalized_args => $normalized_args,
+                );
 
-                    my ($platform, $type, $region) = @{$req_storage->{args}}{'platform', 'type', 'region'};
-                    my $subscription_asset = $type ? join('_', ($platform, $region, $type)) : join('_', ($platform, $region));
-
-                    my $worker = Binary::WebSocketAPI::v3::Subscription::AssetListing->new(
-                        c      => $c,
-                        type   => $type,
-                        args   => $req_storage->{args},
-                        symbol => $subscription_asset,
-                    );
-
-                    unless ($worker->already_registered) {
-                        $worker->register;
-                        $req_storage->{id} = $worker->uuid();
-                        $worker->subscribe();
-                    }
+                unless ($worker->already_registered) {
+                    $worker->register;
+                    $req_storage->{id} = $worker->uuid();
+                    $worker->subscribe();
                 }
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
 
-                return $api_response if $rpc_response->{error};
+                $req_storage->{args} = $original_args;
+                return $api_response if $rpc_response->{error} || !$req_storage->{args}{subscribe};
 
-                if ($req_storage->{args}->{subscribe}) {
-
-                    if ($req_storage->{id}) {
-                        $api_response->{subscription}->{id} = $req_storage->{id};
-                    } else {
-                        $api_response = $c->new_error($type, 'AlreadySubscribed', $c->l('You are already subscribed to asset listing'));
-                    }
-
+                if ($req_storage->{id}) {
+                    $api_response->{subscription}->{id} = $req_storage->{id};
+                } else {
+                    $api_response = $c->new_error($type, 'AlreadySubscribed', $c->l('You are already subscribed to asset listing'));
                 }
 
                 return $api_response;
-            }
+            },
+            rpc_failure_cb => sub {
+                my ($c, undef, $req_storage, undef) = @_;
+                $req_storage->{args} = $original_args;
+                return undef;
+            },
         });
     return;
 }
