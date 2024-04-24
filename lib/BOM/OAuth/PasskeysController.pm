@@ -7,7 +7,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Syntax::Keyword::Try;
 use BOM::Config::Redis;
 use BOM::OAuth::Helper     qw(request_details_string exception_string);
-use BOM::OAuth::Static     qw(get_message_mapping);
+use BOM::OAuth::Static     qw(get_message_mapping get_error_message_titles);
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Passkeys::PasskeysService;
 
@@ -69,6 +69,7 @@ sub _render_error {
         json => {
             error_code => $error_code,
             message    => localize(get_message_mapping()->{$error_code}),
+            title      => localize(get_error_message_titles()->{$error_code}),
             ($details ? (details => $details) : ()),
         },
         status => $status // 500

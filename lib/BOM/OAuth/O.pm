@@ -31,7 +31,7 @@ use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::OAuth::Common;
 use BOM::OAuth::Helper     qw(request_details_string exception_string build_signup_url);
-use BOM::OAuth::Static     qw(get_message_mapping);
+use BOM::OAuth::Static     qw(get_message_mapping get_error_message_titles);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
 use BOM::User::AuditLog;
@@ -422,7 +422,8 @@ sub _passkeys_login {
         $passkeys_user_id = $passkeys_user_details->{binary_user_id};
     } catch ($e) {
         $log->errorf("Passkeys login exception - failed to get user info - %s %s", $e->{code}, ($e->{additional_info} // ""));
-        $template_params{passkeys_error} = localize(get_message_mapping()->{$e->{code}} // $e->{code});
+        $template_params{passkeys_error}       = localize(get_message_mapping()->{$e->{code}} // $e->{code});
+        $template_params{passkeys_error_title} = localize(get_error_message_titles()->{$e->{code}});
         $c->render(%template_params);
         return;    # to keep it consistent we need to return undef;
     }

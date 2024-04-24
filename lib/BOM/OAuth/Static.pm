@@ -6,7 +6,7 @@ use warnings;
 use Exporter qw( import );
 our @EXPORT_OK = qw(
     get_message_mapping  get_api_errors_mapping  get_valid_device_types
-    get_valid_login_types
+    get_valid_login_types get_error_message_titles
 );
 
 =head1 NAME
@@ -42,17 +42,20 @@ my $config = {
         INVALID_PROVIDER     => "The email address you provided is already registered with your [_1] account.",
         'duplicate email'    =>
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
-        InvalidBrand               => "Brand is invalid.",
-        invalid                    => "Sorry, an error occurred. Please try again later.",
-        SUSPICIOUS_BLOCKED         => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
-        INVALID_CREDENTIALS        => "Your email and/or password is incorrect. Perhaps you signed up with a social account?",
-        AccountUnavailable         => 'Your account is deactivated. Please contact us via live chat.',
-        INVALID_FIELD_VALUE        => 'The request contains an invalid value. Please check your input and try again.',
-        PASSKEYS_NOT_FOUND         => 'Your passkey is no longer available. Please remove it from your account settings.',
+        InvalidBrand        => "Brand is invalid.",
+        invalid             => "Sorry, an error occurred. Please try again later.",
+        SUSPICIOUS_BLOCKED  => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
+        INVALID_CREDENTIALS => "Your email and/or password is incorrect. Perhaps you signed up with a social account?",
+        AccountUnavailable  => 'Your account is deactivated. Please contact us via live chat.',
+        INVALID_FIELD_VALUE => 'The request contains an invalid value. Please check your input and try again.',
+        PASSKEYS_NOT_FOUND  =>
+            "We couldn't sign you in using that passkey as it is not linked to your Deriv account. Remove the existing passkey from your iCloud Keychain or Google Password Manager and create a new passkey.",
         PASSKEYS_NO_AUTHENTICATION => 'Failed to authenticate with passkeys. Please try again later',
-        PASSKEYS_OFF               => 'The Passkeys service is currently unavailable. Please try again later.',
-        PASSKEYS_NOT_VERIFIED      => 'We could not verify your login. Please verify your passkey in account settings.',
-        PASSKEYS_SERVICE_ERROR     => 'An error occurred with passkey login. Alternatively, please use your password or social login.',
+        PASSKEYS_OFF               => "We're experiencing a temporary issue in processing your request. Please try again later.",
+        PASSKEYS_NOT_VERIFIED      =>
+            'Your passkey login is taking longer than expected. Try again later, or log in with email, Google, Facebook, or Apple.',
+        PASSKEYS_SERVICE_ERROR =>
+            'Your passkey login is taking longer than expected. Try again later, or log in with email, Google, Facebook, or Apple.',
     },
     api_errors => {
         INVALID_USER               => "Invalid user.",
@@ -82,26 +85,35 @@ my $config = {
         INVALID_RESIDENCE    => "Sorry, our service is currently unavailable in your region.",
         DUPLICATE_EMAIL      =>
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
-        NO_APP_TOKEN_FOUND         => "There is no token defined for this application.",
-        MISSING_ONE_TIME_PASSWORD  => "Please provide an authentication code.",
-        TFA_FAILURE                => "Invalid authentication code.",
-        INVALID_REDIRECTION        => "Destination app id can't be source app id.",
-        INVALID_SCOPES             => "Redirection failed to the requested app.",
-        INVALID_URL_PARAMS         => "The provided parameters are invalid.",
-        TOO_MANY_PARAMETERS        => "Too Many Parameters are provided.",
-        TOO_MANY_ATTEMPTS          => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
-        ACCOUNT_UNAVAILABLE        => 'Your account is deactivated. Please contact us via live chat.',
-        NO_SELF_CLOSED_ACCOUNT     => 'activate account flag was provided, no self closed accounts were found.',
-        INVALID_FIELD_VALUE        => 'The request contains an invalid value. Please check your input and try again.',
-        PASSKEYS_NOT_FOUND         => 'Your passkey is no longer available. Please remove it from your account settings.',
+        NO_APP_TOKEN_FOUND        => "There is no token defined for this application.",
+        MISSING_ONE_TIME_PASSWORD => "Please provide an authentication code.",
+        TFA_FAILURE               => "Invalid authentication code.",
+        INVALID_REDIRECTION       => "Destination app id can't be source app id.",
+        INVALID_SCOPES            => "Redirection failed to the requested app.",
+        INVALID_URL_PARAMS        => "The provided parameters are invalid.",
+        TOO_MANY_PARAMETERS       => "Too Many Parameters are provided.",
+        TOO_MANY_ATTEMPTS         => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
+        ACCOUNT_UNAVAILABLE       => 'Your account is deactivated. Please contact us via live chat.',
+        NO_SELF_CLOSED_ACCOUNT    => 'activate account flag was provided, no self closed accounts were found.',
+        INVALID_FIELD_VALUE       => 'The request contains an invalid value. Please check your input and try again.',
+        PASSKEYS_NOT_FOUND        =>
+            "We couldn't sign you in using that passkey as it is not linked to your Deriv account. Remove the existing passkey from your iCloud Keychain or Google Password Manager and create a new passkey.",
         PASSKEYS_NO_AUTHENTICATION => 'Failed to authenticate with passkeys. Please try again later',
-        PASSKEYS_OFF               => 'The Passkeys service is currently unavailable. Please try again later.',
-        PASSKEYS_NOT_VERIFIED      => 'We could not verify your login. Please verify your passkey in account settings.',
-        PASSKEYS_SERVICE_ERROR     => 'An error occurred with passkey login. Alternatively, please use your password or social login.',
+        PASSKEYS_OFF               => "We're experiencing a temporary issue in processing your request. Please try again later.",
+        PASSKEYS_NOT_VERIFIED      =>
+            'Your passkey login is taking longer than expected. Try again later, or log in with email, Google, Facebook, or Apple.',
+        PASSKEYS_SERVICE_ERROR =>
+            'Your passkey login is taking longer than expected. Try again later, or log in with email, Google, Facebook, or Apple.',
     },
     api_error_mappings => {
         LoginTooManyAttempts => 'TOO_MANY_ATTEMPTS',
         AccountUnavailable   => 'ACCOUNT_UNAVAILABLE',
+    },
+    error_message_titles => {
+        PASSKEYS_NOT_FOUND     => 'Check your passkey',
+        PASSKEYS_OFF           => 'Unable to process your request',
+        PASSKEYS_NOT_VERIFIED  => 'Something went wrong',
+        PASSKEYS_SERVICE_ERROR => 'Something went wrong',
     }};
 
 =head2 get_message_mapping
@@ -130,6 +142,16 @@ sub get_api_errors_mapping {
     }
 
     return $errors;
+}
+
+=head2 get_error_message_titles
+
+Return mapping for error message titles
+
+=cut
+
+sub get_error_message_titles {
+    return $config->{error_message_titles};
 }
 
 =head2 get_valid_device_types

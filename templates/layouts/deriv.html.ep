@@ -624,6 +624,25 @@
               border-radius: 8px;
               margin: 0 1.6rem;
             }
+            .popup-title{
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+              padding: 0px;
+              gap: 16px;
+              width: 296px;
+              height: 20px;
+              flex: none;
+              order: 0;
+              align-self: stretch;
+              flex-grow: 0;
+              z-index: 2;
+              font-family: "IBM Plex Sans";
+              font-size: 14px;
+              font-weight: 700;
+              line-height: 20px;
+              text-align: left;
+            }
             .popup-text{
               display: flex;
               flex-direction: column;

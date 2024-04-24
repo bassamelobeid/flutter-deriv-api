@@ -310,11 +310,12 @@ function renderPasskeysForm(){
     passkeyBtnClickEvent();
 }
 
-function showErrorPopUp(errorMessage) {
+function showErrorPopUp(errorMessage, errorTitle) {
     const errorDiv = document.createElement('div');
     errorDiv.className = "popup";
     errorDiv.innerHTML = `
         <div class="popup-container">
+            <div class="popup-title">${errorTitle}</div>
             <div class="popup-text">${errorMessage}</div>
             <div class="popup-btn" onclick="clickOK()">Ok</div>
         </div>
@@ -332,13 +333,13 @@ async function fetchOptionsFromServer() {
         const response = await fetch('api/v1/passkeys/login/options');
         const options = await response.json();
         if(options.message && options.error_code){
-            showErrorPopUp(options.message);
+            showErrorPopUp(options.message, options.title);
         }
         else{
             return options;
         }
     } catch (error) {
-        showErrorPopUp(error);
+        showErrorPopUp(error, "Error");
     }
 }
 
@@ -348,7 +349,7 @@ async function startWebAuthentication(publicKey) {
     } catch (error) {
         //escape timed out or cancel error
         if (error.code != "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY") {
-            showErrorPopUp("Sorry, an error occurred. Please try again later.");
+            showErrorPopUp("Sorry, an error occurred. Please try again later.", "Error");
         }
     }
 }
@@ -390,7 +391,8 @@ async function setAttributesAndCheckFeatureFlag(gb) {
 <script>
     let passkeysError = "<%= stash('passkeys_error') %>";
     if (passkeysError) {
-        showErrorPopUp(passkeysError);
+        let passkeysErrorTitle = '<%= stash("passkeys_error_title") %>';
+        showErrorPopUp(passkeysError, passkeysErrorTitle);
     }
 </script>
 
