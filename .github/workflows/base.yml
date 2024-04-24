@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         test_name: [structure, security, accounts, misc, pricing, p2p, schema, backends]
-    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@need_upload_result_for_make_test
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
     secrets: inherit
     with:
       test_name: ${{ matrix.test_name }}
