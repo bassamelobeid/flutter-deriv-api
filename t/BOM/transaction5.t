@@ -46,60 +46,66 @@ subtest 'validate client error message' => sub {
     my $mock_cal = Test::MockModule->new('Finance::Calendar');
     $mock_cal->mock('is_open_at', sub { 0 });
 
-    my $now      = Date::Utility->new;
-    my $contract = produce_contract({
-        underlying => $underlying,
-        bet_type   => 'CALL',
-        currency   => $currency,
-        payout     => 1000,
-        #    date_start   => $now,
-        duration     => '5d',
-        current_tick => $tick,
-        barrier      => 'S0P',
-    });
+    my $now = Date::Utility->new;
+    SKIP: {
+        if ($now->epoch >= $now->truncate_to_day->epoch and $now->epoch <= $now->truncate_to_day->plus_time_interval('10m')->epoch) {
+            skip 'skipping tests to try out synthetic indices because of trading blackout period in the first 10 minutes.';
+        }
 
-    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => $currency,
+            payout       => 1000,
+            date_start   => $now,
+            date_pricing => $now,
+            duration     => '5d',
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
 
-    my $transaction = BOM::Transaction->new({
-        client        => $cr,
-        contract      => $contract,
-        purchase_date => $contract->date_start,
-    });
+        my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
-    my $error = BOM::Transaction::Validation->new({
-            clients     => [$cr],
-            transaction => $transaction
-        })->_is_valid_to_buy($cr);
+        my $transaction = BOM::Transaction->new({
+            client        => $cr,
+            contract      => $contract,
+            purchase_date => $contract->date_start,
+        });
 
-    like($error->{-message_to_client}, qr/Try out the Synthetic Indices/, 'CR client got message about Synthetic Indices');
+        my $error = BOM::Transaction::Validation->new({
+                clients     => [$cr],
+                transaction => $transaction
+            })->_is_valid_to_buy($cr);
+
+        like($error->{-message_to_client}, qr/Try out the Synthetic Indices/, 'CR client got message about Synthetic Indices');
 
 # same params, but new object - not to hold prev error
-    $contract = produce_contract({
-        underlying   => $underlying,
-        bet_type     => 'CALL',
-        currency     => $currency,
-        payout       => 1000,
-        date_start   => $now,
-        date_pricing => $now,
-        duration     => '5d',
-        current_tick => $tick,
-        barrier      => 'S0P',
-    });
-    my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
+        $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => $currency,
+            payout       => 1000,
+            date_start   => $now,
+            date_pricing => $now,
+            duration     => '5d',
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+        my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
 
-    $transaction = BOM::Transaction->new({
-        client        => $mf,
-        contract      => $contract,
-        purchase_date => $contract->date_start,
-    });
+        $transaction = BOM::Transaction->new({
+            client        => $mf,
+            contract      => $contract,
+            purchase_date => $contract->date_start,
+        });
 
-    $error = BOM::Transaction::Validation->new({
-            clients     => [$mf],
-            transaction => $transaction
-        })->_is_valid_to_buy($mf);
+        $error = BOM::Transaction::Validation->new({
+                clients     => [$mf],
+                transaction => $transaction
+            })->_is_valid_to_buy($mf);
 
-    like($error->{-message_to_client}, qr/Try out the Synthetic Indices/, 'MF client got message about Synthetic Indices');
-
+        like($error->{-message_to_client}, qr/Try out the Synthetic Indices/, 'MF client got message about Synthetic Indices');
+    }
 };
 
-done_testing;
+done_testing();

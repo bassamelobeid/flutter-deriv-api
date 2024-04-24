@@ -277,6 +277,8 @@ subtest 'test cancel functionality', sub {
                 amount_type  => 'stake',
                 current_tick => $current_tick,
                 cancellation => '1h',
+                date_start   => $now,
+                date_pricing => $now,
                 limit_order  => {
                     stop_out => {
                         order_type   => 'stop_out',
