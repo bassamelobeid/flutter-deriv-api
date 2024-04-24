@@ -287,8 +287,10 @@ rule 'transfers.residence_or_country_restriction' => {
 
         my %currencies         = _get_currency_info($context, $args);
         my $countries_instance = request()->brand->countries_instance;
+        my @types              = $client_to->citizen ? qw(residence citizen) : qw(residence);
+
         my $is_transfer_allowed =
-            all { $countries_instance->is_internal_transfer_allowed({country => $client_to->$_, type => $_}) } qw(residence citizen);
+            all { $countries_instance->is_internal_transfer_allowed({country => $client_to->$_, type => $_}) } @types;
 
         if ($currencies{to}->{type} ne $currencies{from}->{type}) {
             $self->fail('InvalidLoginidTo') unless $is_transfer_allowed;

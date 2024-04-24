@@ -818,6 +818,64 @@ subtest $rule_name => sub {
     );
     ok $rule_engine->apply_rules($rule_name, %args), "Transfer from crypto to fiat is allowed for id residents with id citizenship";
 
+    # Empty citizenship value should be only checked against residence
+
+    $user = BOM::User->create(
+        email    => 'test1@test.com',
+        password => 'abcd1234',
+    );
+    $client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'id',
+        citizen     => '',
+    });
+    $user->add_client($client_1);
+    $client_1->account('USD');
+    $client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'id',
+        citizen     => '',
+    });
+    $user->add_client($client_2);
+    $client_2->account('BTC');
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_1, $client_2]);
+    %args        = (
+        loginid_from => $client_1->loginid,
+        loginid_to   => $client_2->loginid,
+    );
+    ok $rule_engine->apply_rules($rule_name, %args), "Transfer from fiat to crypto is allowed for id residents with empty citizenship";
+
+    $client_1->citizen(undef);
+    $client_2->citizen(undef);
+
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_1, $client_2]);
+
+    ok $rule_engine->apply_rules($rule_name, %args), "Transfer from fiat to crypto is allowed for id residents with citizenship undefined";
+
+    $client_1->residence('ua');
+    $client_2->residence('ua');
+
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_1, $client_2]);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        rule       => $rule_name,
+        error_code => 'InvalidLoginidTo',
+        },
+        'Correct error for ua residents restricted from transferring from fiat to crypto with empty citizenship';
+
+    $client_1->residence('ru');
+    $client_2->residence('ru');
+
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_1, $client_2]);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        rule       => $rule_name,
+        error_code => 'InvalidLoginidTo',
+        },
+        'Correct error for ru residents restricted from transferring from fiat to crypto with empty citizenship';
+
 };
 
 $rule_name = 'transfers.no_different_fiat_currencies';
