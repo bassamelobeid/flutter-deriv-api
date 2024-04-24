@@ -55,7 +55,11 @@ subtest 'Examples not requiring auth work without error' => sub {
         confirm_email
     );
 
-    my @requires_other_services = ('crypto_config', 'ticks', 'crypto_estimations');
+    my @requires_other_services = qw(
+        crypto_config
+        ticks
+        crypto_estimations
+    );
 
     for my $call_name (sort { $a cmp $b } path($SCHEMA_DIR)->children) {
         next if any { $call_name =~ /\/$_$/ } (@contains_fake_example, @requires_other_services);
