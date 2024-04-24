@@ -10,27 +10,30 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 jobs:
-  structure:
-    uses: ./.github/workflows/structure.yml
+  core:
+    uses: ./.github/workflows/base.yml
     secrets: inherit
-  tests:
-    needs: structure
-    uses: ./.github/workflows/tests.yml
-    secrets: inherit 
+    with:
+      need_upload_result: true
   publish_test_results:
-    needs: [ structure , tests ]
+    needs: [core]
     if: ${{ !cancelled() }}
     uses: ./.github/workflows/publish_test_results.yml
     secrets: inherit 
   update_docs:
     if: github.ref == 'refs/heads/master'
-    uses: ./.github/workflows/update_docs.yml
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    with:
+      need_service: false
+      need_upload_result: false
+      test_name: update_docs
     secrets: inherit
   ci_test_status:
-    needs: [structure, tests]
-    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    needs: [core]
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: regentmarkets/github-actions/ci-test-status@master
         with:
           job_status: ${{ toJson(needs) }}
+

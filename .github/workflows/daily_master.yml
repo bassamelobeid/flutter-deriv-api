@@ -8,17 +8,20 @@ on:
   schedule:
     - cron: '13 11 * * *'
 jobs:
-  structure:
-    uses: ./.github/workflows/structure.yml
+  core:
+    uses: ./.github/workflows/base.yml
     secrets: inherit
-  tests:
-    uses: ./.github/workflows/tests.yml
-    secrets: inherit
+    with:
+      need_upload_result: true
   publish_test_results:
-    needs: [ structure , tests ]
-    if: success() || failure()
+    needs: [core]
+    if: ${{ !cancelled() }}
     uses: ./.github/workflows/publish_test_results.yml
     secrets: inherit
   update_docs:
-    uses: ./.github/workflows/update_docs.yml
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    with:
+      need_service: false
+      need_upload_result: false
+      test_name: update_docs
     secrets: inherit

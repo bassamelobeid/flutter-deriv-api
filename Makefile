@@ -1,7 +1,7 @@
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 MOJO_LOG_LEVEL?=info
 export MOJO_LOG_LEVEL
-P=/etc/rmg/bin/prove --timer -v -rl
+P=/etc/rmg/bin/prove --timer -rlv
 C=PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,bom-websocket-tests,ignore,^t/' /etc/rmg/bin/prove --timer --ignore-exit -rl
 
 ifeq ($(GITHUB_ACTIONS),true)
@@ -36,14 +36,15 @@ structure:
 schema:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
 
-subscriptions:
-	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
-
 backends:
 	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/backends
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
+
+update_docs:
+	echo  "Updating API Playground schema documentation"
+	script/websocket_schema_update.sh
 
 test: structure schema accounts security pricing misc p2p
 
