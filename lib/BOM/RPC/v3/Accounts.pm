@@ -1006,8 +1006,14 @@ rpc
     push(@$status, 'poa_expiring_soon') if $client->documents->poa_outdated_look_ahead();
 
     my $age_verif_client = $duplicated // $client;
-    # build the structure that details the idv authentication status for each mt5 jurisdiction
+    # build the structure that details the authentication status for each mt5 jurisdiction
     my $lc = [map { $_->short } LandingCompany::Registry->get_all];
+
+    my $verified_jurisdiction = +{};
+
+    for ($lc->@*) {
+        $verified_jurisdiction->{$_} = $client->fully_authenticated({landing_company => $_}) ? 1 : 0;
+    }
 
     my $authenticated_with_idv = +{};
 
@@ -1132,6 +1138,9 @@ rpc
         push(@$status, 'poa_authenticated_with_idv');
     }
     push(@$status, 'tin_manually_approved') if $client->is_tin_manually_approved;
+
+    # We need to add the authentication status for each mt5 jurisdiction
+    $authentication->{document}->{verified_jurisdiction} = $verified_jurisdiction;
 
     # We need to add the status of idv authentication for each mt5 jurisdiction
     $authentication->{document}->{authenticated_with_idv} = $authenticated_with_idv;
