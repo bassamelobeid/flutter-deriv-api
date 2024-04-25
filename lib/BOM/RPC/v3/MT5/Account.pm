@@ -2917,15 +2917,18 @@ sub _eligible_to_migrate {
     my $landing_company_short = $mt5_account->{landing_company_short};
     my $group                 = $mt5_account->{group};
 
-    # Step 1: Check eligibility based on sub-account category and landing company
+    # Step 1: Check if account is already migrated
+    return if $mt5_account->{status} and grep { $_ eq $mt5_account->{status} } ('migrated_with_position', 'migrated_without_position');
+
+    # Step 2: Check eligibility based on sub-account category and landing company
     if ($sub_account_category =~ /^(swap_free|swap_free_high_risk)$/ || $landing_company_short ne 'svg' || $group =~ /demo/) {
         return;    # Not eligible
     }
 
-    # Step 2: Check eligibility based on POI status
+    # Step 3: Check eligibility based on POI status
     return unless $client->get_poi_status({landing_company => $landing_company_short}) eq 'verified';    # Not eligible if POI is not verified
 
-    # Step 3: Check eligibility based on POA status
+    # Step 4: Check eligibility based on POA status
     return 'bvi'
         if $client->poa_authenticated_with_idv({landing_company => $landing_company_short});    # Eligible for 'bvi' if POA is authenticated with IDV
 
@@ -2933,7 +2936,7 @@ sub _eligible_to_migrate {
         my $current_epoch  = Date::Utility->new->truncate_to_day;
         my $document_epoch = $client->documents->best_issue_date;
 
-        # Step 4: Check if the document's best_issue_date is within the last 6 months
+        # Step 5: Check if the document's best_issue_date is within the last 6 months
         return (($current_epoch->epoch - $document_epoch->epoch) <= SIX_MONTHS_IN_SECONDS) ? 'vanuatu' : 'bvi' if $document_epoch;
     }
 
