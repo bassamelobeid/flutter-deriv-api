@@ -582,8 +582,9 @@ sub actions_config {
                 category => 'payment',
             }
         ],
-        ['payout_currencies', {stash_params       => [qw/ token account_tokens landing_company_name /]}],
-        ['ping',              {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
+        ['payout_currencies', {stash_params => [qw/ token account_tokens landing_company_name /]}],
+        ['phone_number_challenge'],
+        ['ping', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['portfolio'],
         ['profit_table'],
         [
