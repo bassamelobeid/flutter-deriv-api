@@ -37,6 +37,7 @@ use BOM::RPC::v3::Trading;
 use BOM::RPC::v3::Wallets;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::IdentityVerification;
+use BOM::RPC::v3::PhoneNumberVerification;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Transaction::Validation;
 use BOM::User::Client;

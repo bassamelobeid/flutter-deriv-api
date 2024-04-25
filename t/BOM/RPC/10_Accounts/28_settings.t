@@ -197,6 +197,10 @@ my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'get_settings';
 subtest 'get settings' => sub {
+    my $time = time;
+
+    set_fixed_time($time);
+
     my $poi_name_mismatch;
     my $poi_dob_mismatch;
     my $personal_details_locked;
@@ -294,7 +298,7 @@ subtest 'get settings' => sub {
             'dxtrade_user_exception'         => 0,
             'phone_number_verification'      => {
                 'verified'     => 0,
-                'next_attempt' => 0,
+                'next_attempt' => $time,
             },
         });
 
@@ -376,7 +380,7 @@ subtest 'get settings' => sub {
             'trading_hub'               => 0,
             'phone_number_verification' => {
                 'verified'     => 0,
-                'next_attempt' => 0,
+                'next_attempt' => $time,
             },
         },
         'vr client return less messages when it does not have real sibling'
@@ -422,7 +426,7 @@ subtest 'get settings' => sub {
             'dxtrade_user_exception'         => 0,
             'phone_number_verification'      => {
                 'verified'     => 0,
-                'next_attempt' => 0,
+                'next_attempt' => $time,
             },
         },
         'vr client return real account information when it has sibling'
@@ -469,7 +473,7 @@ subtest 'get settings' => sub {
         'dxtrade_user_exception'         => 0,
         'phone_number_verification'      => {
             'verified'     => 0,
-            'next_attempt' => 0,
+            'next_attempt' => $time,
         },
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
@@ -511,7 +515,7 @@ subtest 'get settings' => sub {
         'dxtrade_user_exception'         => 0,
         'phone_number_verification'      => {
             'verified'     => 0,
-            'next_attempt' => 0,
+            'next_attempt' => $time,
         },
     };
     is_deeply($result, $expected, 'return 1 for code of conduct approval');
