@@ -1420,4 +1420,31 @@ subtest 'user loginid_details skip invalid broker code' => sub {
     cmp_deeply($result, $expected_result, 'loginid_details is as expected');
 };
 
+subtest 'validate database operation' => sub {
+    my $client_cr_new_read = undef;
+    lives_ok {
+        $client_cr_new_read = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+
+        $client_cr_new_read->email($email);
+        $client_cr_new_read->save;
+    }
+    'creating client for db operation';
+
+    my $user_readonly = BOM::User->new(
+        email        => $email,
+        db_operation => 'replica',
+    );
+
+    Test::Warnings::allow_warnings(1);
+    dies_ok { $user_readonly->add_client($client_cr_new_read) } 'die as trying to write on readonly mode';
+    Test::Warnings::allow_warnings(0);
+
+    lives_ok {
+        $user->add_client($client_cr_new_read);
+    }
+    'able to add client with write mode';
+};
+
 done_testing();

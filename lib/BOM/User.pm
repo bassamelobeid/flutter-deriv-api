@@ -63,13 +63,40 @@ use constant {
     EZR_REGEX => qr/^EZ[DR]?(?=\d+$)/,
 };
 
+use constant DEFAULT_DATABASE_OPERATION => 'write';
+
+=head2 get_dbic_key
+
+Returns a key for the user context based on the database operation provided
+defaults to write
+
+=cut
+
+sub get_dbic_key {
+    my $self = shift;
+
+    return 'dbic_' . ($self->{db_operation} // DEFAULT_DATABASE_OPERATION);
+}
+
+=head2 set_db_operation
+
+Setter method for database operation, defaults to write
+
+=cut
+
+sub set_db_operation {
+    my ($self, $operation) = @_;
+    $self->{db_operation} //= ($operation // DEFAULT_DATABASE_OPERATION);
+    return $self->{db_operation};
+}
+
 sub dbic {
     my ($self, %params) = @_;
 
     # Cache connection to the database for object methods calls
     # This helps to avoid setting audit context every time we get connection from global cache
     if (ref $self) {
-        my $key = 'dbic_' . ($params{db_operation} // 'write');
+        my $key = $self->get_dbic_key();
         $self->{$key} //= BOM::Database::UserDB::rose_db(%params)->dbic;
         return $self->{$key};
     }
@@ -156,7 +183,7 @@ sub new {
 
     my $v = $args{$k};
 
-    my $dbic = $class->dbic;
+    my $dbic = $class->dbic(operation => $args{db_operation});
     my $self = $dbic->run(
         fixup => sub {
             $_->selectrow_hashref("select * from users.get_user_by_$k(?)", undef, $v);    ## SQL safe($k)
@@ -165,7 +192,10 @@ sub new {
     return undef unless $self;
 
     my $user = bless $self, $class;
-    $user->{dbic_write} = $dbic;
+    # set the database operation for the object
+    $self->set_db_operation($args{db_operation});
+
+    $user->{$self->get_dbic_key()} = $dbic;
 
     if ($context && $k eq 'loginid') {
         # We don't have index by loginid in registry, so we need to check if user is already there
@@ -2129,7 +2159,7 @@ sub get_accounts_links {
 
 =head2 migrate_loginid
 
-Migrates a trading account to wallet flow by populating information in users.loginid table 
+Migrates a trading account to wallet flow by populating information in users.loginid table
 and linking trading account to the wallet account.
 
 =over 4
