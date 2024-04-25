@@ -27,6 +27,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use BOM::Config::Runtime;
+use BOM::User::Client;
 use Storable qw(dclone);
 
 BOM::Backoffice::Sysinit::init();
@@ -164,7 +165,11 @@ if ($r->param('update_limit')) {
     @limit_dates_array = split ', ', $limit_dates if $limit_dates;
 
     if (my $id = $r->param('client_loginid')) {
+        my $client = eval { BOM::User::Client::get_instance({'loginid' => $id, db_operation => 'backoffice_replica'}) };
+        code_exit_BO("Error: Wrong Login ID ($id) - could not get client instance.") if not $client;
+
         my $comment = $r->param('comment');
+
         foreach my $limit_date (@limit_dates_array) {
             # A clone of origial %ref.
             my $ref_c = dclone(\%ref);

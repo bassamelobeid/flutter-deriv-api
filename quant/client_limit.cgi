@@ -112,14 +112,12 @@ sub get_limited_client_list {
 
     my $limit_profile  = BOM::Config::quants()->{risk_profile};
     my %known_profiles = map { $_ => 1 } keys %$limit_profile;
-
     my @client_output;
+
     foreach my $client_loginid (keys %$custom_client_limits) {
         my $client = eval { BOM::User::Client::get_instance({'loginid' => $client_loginid, db_operation => 'backoffice_replica'}) };
-        if (not $client) {
-            print "Error: Wrong Login ID ($client_loginid) could not get client instance";
-            code_exit_BO();
-        }
+        next if not $client;
+
         my $binary_user_id = $client->binary_user_id;
         my %data           = %{$custom_client_limits->{$client_loginid}};
         my $reason         = $data{reason};
