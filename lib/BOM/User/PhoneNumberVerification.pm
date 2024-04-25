@@ -11,6 +11,10 @@ use warnings;
 use Moo;
 
 use constant PNV_NEXT_PREFIX => 'PHONE::NUMBER::VERIFICATION::NEXT::';
+use constant PNV_OTP_PREFIX  => 'PHONE::NUMBER::VERIFICATION::OTP::';
+use constant TEN_MINUTES     => 600;                                     # 10 minutes in seconds
+use constant ONE_HOUR        => 3600;                                    # 1 hour in seconds
+use constant SPAM_TOO_MUCH   => 5;
 
 =head2 user
 
@@ -66,9 +70,11 @@ sub next_attempt {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    my $next = $redis->get(PNV_NEXT_PREFIX . $self->user->id) // 0;
+    my $ttl = $redis->ttl(PNV_NEXT_PREFIX . $self->user->id) // 0;
 
-    return $next;
+    $ttl = 0 if $ttl < 0;
+
+    return time + $ttl;
 }
 
 =head2 update
@@ -96,6 +102,53 @@ sub update {
         });
 
     return undef;
+}
+
+=head2 generate_otp
+
+Generates a new OTP and updates the redis state of the client verification.
+
+Returns the new OTP as C<string>.
+
+=cut
+
+sub generate_otp {
+    my ($self) = @_;
+
+    # yes, the mocked OTP is just the user id
+    my $otp = $self->user->id;
+
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    # this OTP will be valid for a whole minute
+    $redis->set(PNV_OTP_PREFIX . $self->user->id, $otp, 'EX', TEN_MINUTES);
+
+    return $otp;
+}
+
+=head2 increase_attempts
+
+Increses the number of attempts made by the current user.
+Adjust the next attempt timestamp accordingly.
+
+=cut
+
+sub increase_attempts {
+    my ($self)   = @_;
+    my $redis    = BOM::Config::Redis::redis_events_write();
+    my $attempts = $redis->get(PNV_NEXT_PREFIX . $self->user->id) // 0;
+
+    # the next attempt will be unlocked as soon as the OTP expires
+    my $next_attempt = TEN_MINUTES;
+
+    # unless the client spams too much
+    $next_attempt = ONE_HOUR unless $attempts < SPAM_TOO_MUCH;
+
+    $attempts++;
+
+    $redis->set(PNV_NEXT_PREFIX . $self->user->id, $attempts, 'EX', $next_attempt);
+
+    return $attempts;
 }
 
 1
