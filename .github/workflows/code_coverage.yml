@@ -12,12 +12,8 @@ concurrency:
 jobs:
   check_coverage_flag:
     uses: regentmarkets/github-actions/.github/workflows/check_coverage_flag.yml@master
-    with:
-      runner: self-hosted
   code_coverage:
     needs: check_coverage_flag
     if: github.ref == 'refs/heads/master' || needs.check_coverage_flag.outputs.need_coverage == 'yes'
     uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
     secrets: inherit
-    with:
-      runner: self-hosted

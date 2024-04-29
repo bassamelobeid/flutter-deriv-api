@@ -12,7 +12,7 @@ concurrency:
 jobs:
   check_dependent_tests:
     if: ${{ github.event_name == 'pull_request' }}
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       needs_dependent_test: ${{ steps.check_dependent_test.outputs.result }}
     steps:
@@ -24,7 +24,6 @@ jobs:
     secrets: inherit
     with:
       repository: ${{ github.repository }}
-      runner: self-hosted
   dependent:
     needs: [check_dependent_tests]
     if: ${{ needs.check_dependent_tests.outputs.needs_dependent_test == 'true' }}
@@ -32,8 +31,8 @@ jobs:
     secrets: inherit
   ci_test_status:
     needs: [core_unit_syntax_diff, dependent]
-    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
-    runs-on: self-hosted
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
     steps:
       - uses: regentmarkets/github-actions/ci-test-status@master
         with:

@@ -9,5 +9,3 @@ jobs:
       issues: write
       pull-requests: write
     uses: regentmarkets/github-actions/.github/workflows/stale.yml@master
-    with:
-      runner: self-hosted
