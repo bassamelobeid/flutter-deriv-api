@@ -704,8 +704,8 @@ sub actions_config {
         ['trading_durations', {stash_params => [qw/ token account_tokens /]}],
         ['trading_platform_accounts'],
         ['trading_platform_asset_listing', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::trading_platform_asset_listing}],
-        ['trading_platform_available_accounts', {stash_params => [qw/ token /]}],
-        ['trading_platform_deposit',            {stash_params => [qw/ token_type /]}],
+        ['trading_platform_available_accounts'],
+        ['trading_platform_deposit', {stash_params => [qw/ token_type /]}],
         [
             'trading_platform_investor_password_change',
             {

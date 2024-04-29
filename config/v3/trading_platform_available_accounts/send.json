@@ -4,7 +4,10 @@
     "description": "The company allows client to create trading account with multiple counter parties.",
     "hidden": 1,
     "type": "object",
-    "auth_required": 0,
+    "auth_required": 1,
+    "auth_scopes": [
+        "read"
+    ],
     "additionalProperties": false,
     "required": [
         "trading_platform_available_accounts",
@@ -18,10 +21,6 @@
             "enum": [
                 1
             ]
-        },
-        "country_code": {
-            "description": "[Optional] Country code for which available accounts are returned. If not specified (deprecated) the current user residence country is used or (not deprecated) country code corresponding to the caller IP address is used.",
-            "type": "string"
         },
         "platform": {
             "description": "Name of trading platform.",
