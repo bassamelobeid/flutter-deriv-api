@@ -4,9 +4,7 @@ use strict;
 use warnings;
 no indirect;
 
-use List::Util qw(any all first);
-use Data::Compare;
-use Math::Cartesian::Product;
+use List::Util qw(any first);
 
 use Syntax::Keyword::Try;
 
@@ -383,12 +381,11 @@ sub _get_mt5_lc_requirements {
 
     my %lc_requirements = $lc->requirements->%*;
 
-    # We also support the use case when $client is undefined in C<available_accounts> sub,
-    # we we have to support it here. In this case all signup requirements are considered to be unsatisfied.
     my $unsatisfied_requirements = [];
-    push @$unsatisfied_requirements, grep { !$client || !defined $client->$_ } $lc_requirements{signup}->@*;
-    push @$unsatisfied_requirements, 'physical_address'
-        if $lc->physical_address_required && (!$client || BOM::User::Utility::has_po_box_address($client));
+
+    push @$unsatisfied_requirements, grep { !defined $client->$_ } $lc_requirements{signup}->@*;
+
+    push @$unsatisfied_requirements, 'physical_address' if ($lc->physical_address_required && BOM::User::Utility::has_po_box_address($client));
 
     $lc_requirements{signup} = $unsatisfied_requirements;
 
@@ -569,49 +566,26 @@ Returns a Future object holding an MT5 account info on success, throws exception
 =cut
 
 sub get_assets {
-    my ($self, %args) = @_;
-    local *_get_arg = sub {
-        my $name = shift;
-        my $val  = $args{$name} // die "$name is not provided";
-        die "$name is not an ARRAY" unless ref $val eq 'ARRAY';
-        $val;
-    };
-
-    my $server                = _get_arg('server');
-    my $account_type          = _get_arg('account_type');
-    my $landing_company_short = _get_arg('landing_company_short');
-    my $market_type           = _get_arg('market_type');
-    my $sub_account_type      = _get_arg('sub_account_type');
-    my $sub_account_category  = _get_arg('sub_account_category');
-    my $filter_by             = $args{filter_by} // {};
-    my $requested_fields      = $args{requested_fields};
-    my $limit                 = $args{limit};
-    my $unique                = $args{unique};
+    my ($self, $type, $region) = @_;
 
     my $redis                 = BOM::Config::Redis::redis_mt5_user();
+    my $asset_listing         = decode_json($redis->get('MT5::ASSETS') // '{}');
     my $suspended_underlyings = BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy;
 
-    my @res     = ();
-    my @product = cartesian { 1 } ($server, $account_type, $landing_company_short, $market_type, $sub_account_type, $sub_account_category);
-    foreach my $tuple (@product) {
-        last if defined $limit and scalar(@res) == $limit;
-        my $asset_keys = decode_json($redis->get(join '::', 'asset_listing::mt5', @$tuple) // '[]');
-        foreach my $asset_key ($asset_keys->@*) {
-            my $asset           = decode_json($redis->get($asset_key));    # Not too efficient, should check the actual impact
-            my $asset_shortcode = $asset->{shortcode};
-            next if grep { /^$asset_shortcode$/ } $suspended_underlyings->@*;
-            $asset->{symbol} = localize($asset->{symbol});
-            next if any {
-                my $asset_val = $asset->{$_};
-                not any { $asset_val eq $_ } $filter_by->{$_}->@*
-            } keys $filter_by->%*;
-            $asset = +{%$asset{$requested_fields->@*}} if defined $requested_fields;
-            next                                       if $unique && any { Compare($asset, $_) } @res;
-            # next if $unique && any { my $cmp = Compare($asset, $_); print STDERR "cmp=$cmp"; $cmp } @res;
-            push @res, $asset;
-            # Do not pre-filter asset_keys instead, as some of them could be suspended
-            last if defined $limit and scalar(@res) == $limit;
-        }
+    my @res = ();
+
+    for my $asset ($asset_listing->{assets}->@*) {
+
+        my @tokens              = split(",", $asset->{availability});
+        my %region_availability = map { $_ => 1 } @tokens;
+        my $asset_shortcode     = $asset->{shortcode};
+        next if grep { /^$asset_shortcode$/ } $suspended_underlyings->@*;
+        next unless $region_availability{$region};
+        next if $type eq 'brief' and $asset->{display_order} == 10000;
+        my %new_asset = map { lc $_ => $asset->{$_} } keys $asset->%*;
+        $new_asset{symbol} = localize($new_asset{symbol});
+        delete $new_asset{availability};
+        push @res, \%new_asset;
     }
 
     return \@res;
