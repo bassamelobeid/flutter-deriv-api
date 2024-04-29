@@ -662,8 +662,6 @@ subtest 'Closed account' => sub {
         $user_mock->unmock_all;
         $func_mock->unmock_all;
     };
-
-    $client->status->clear_disabled;
 };
 
 subtest 'withdrawal validation' => sub {
@@ -695,9 +693,8 @@ subtest 'bom-rules validation' => sub {
     my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
     $mock_events->mock(emit => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
-    my $mock_rules          = Test::MockModule->new('BOM::Rules::Engine');
-    my $apply_rules_invoked = 0;
-    $mock_rules->mock(apply_rules => sub { $apply_rules_invoked = 1; die {error_code => 'dummy'} });
+    my $mock_rules = Test::MockModule->new('BOM::Rules::Engine');
+    $mock_rules->mock(apply_rules => sub { {'error' => 'dummy'} });
 
     $params[1]->{args}->{verify_email} = $client->email;
     $params[1]->{server_name}          = 'binary.com';
@@ -707,25 +704,22 @@ subtest 'bom-rules validation' => sub {
     $params[1]->{token} = $token;
     undef $emitted_events;
 
-    for my $type (qw( paymentagent_withdraw )) {
+    for my $type (qw( paymentagent_withdraw payment_withdraw)) {
         $params[1]->{args}->{type} = $type;
         my $res = $rpc_ct->call_ok(@params)->has_no_system_error->result;
-        ok $apply_rules_invoked, $type . ' has bom-rules validation';
-        $apply_rules_invoked = 0;
+        ok exists $res->{error}, $type . ' has bom-rules validation';
     }
 
     is $emitted_events, undef, 'no events emitted';
 
-    for my $type (qw(payment_withdraw account_opening reset_password)) {
+    for my $type (qw(account_opening reset_password)) {
         $params[1]->{args}->{type} = $type;
         $rpc_ct->call_ok(@params)
             ->has_no_system_error->has_no_error->result_is_deeply($expected_result, $type . ' does not have bom-rules validation');
     }
 };
 
-subtest 'Reset password for not existing user' => sub {
-    $client->status->set('disabled', 1, 'test disabled');
-
+subtest 'Reset password for not exists user' => sub {
     my @emitted;
     no warnings 'redefine';
     local *BOM::Platform::Event::Emitter::emit = sub { @emitted = @_ };
@@ -741,8 +735,6 @@ subtest 'Reset password for not existing user' => sub {
     ok($emitted[1]->{properties}, 'Properties are set');
     is($emitted[1]->{properties}{email}, lc $params[1]->{args}->{verify_email}, 'email is set');
     is $emitted[1]->{properties}{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
-
-    $client->status->clear_disabled;
 };
 
 subtest 'Affiliate self tagging requests' => sub {
