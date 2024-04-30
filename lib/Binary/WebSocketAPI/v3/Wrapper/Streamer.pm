@@ -458,6 +458,7 @@ sub exchange_rates {
                 account_tokens  => $c->stash('account_tokens'),
                 base_currency   => $req_storage->{args}{base_currency},
                 target_currency => $req_storage->{args}{target_currency},
+                include_spread  => $req_storage->{args}{include_spread},
             },
             success => sub {
                 my ($c, $api_response, $req_storage) = @_;

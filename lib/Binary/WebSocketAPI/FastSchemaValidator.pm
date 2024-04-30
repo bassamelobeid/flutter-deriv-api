@@ -56,7 +56,7 @@ sub _prepare_fast_validate_part {
     }
     if ($type eq 'object') {
         _check_for_unknown_keys($path, $schema,
-            [@basic_keys, 'properties', 'required', 'additionalProperties', 'patternProperties', 'minProperties', 'maxProperties']);
+            [@basic_keys, 'properties', 'required', 'additionalProperties', 'patternProperties', 'minProperties', 'maxProperties', 'oneOf']);
         my $additional_properties;
         my $pattern_properties = {};
 
