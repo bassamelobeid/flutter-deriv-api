@@ -36,7 +36,7 @@
          "required": [
             "tin_format",
             "tin_format_description",
-            "mifir"
+            "mifir_automation"
          ],
          "properties": {
             "tin_format": {
@@ -45,7 +45,7 @@
             "tin_format_description": {
                "type": "string"
             },
-            "mifir": {
+            "mifir_automation": {
                "type": "object"
             }
          },
