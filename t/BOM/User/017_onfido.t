@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Test::MockTime qw( :all );
 use Test::Exception;
 use Test::NoWarnings;
@@ -25,15 +25,31 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 
+my $test_client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+
 my $test_user = BOM::User->create(
     email          => $test_client->email,
     password       => "hello",
     email_verified => 1,
 );
+
+my $test_user_2 = BOM::User->create(
+    email          => '2' . $test_client_2->email,
+    password       => "hello",
+    email_verified => 1,
+);
+
 $test_user->add_client($test_client);
+$test_user_2->add_client($test_client_2);
 $test_client->place_of_birth('cn');
 $test_client->binary_user_id($test_user->id);
 $test_client->save;
+
+$test_client_2->place_of_birth('id');
+$test_client_2->binary_user_id($test_user_2->id);
+$test_client_2->save;
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
@@ -65,6 +81,24 @@ my $app2 = $onfido->applicant_create(
     last_name  => $test_client->last_name,
     email      => $test_client->email,
     gender     => $test_client->gender,
+    dob        => '1980-01-22',
+    country    => 'GBR',
+    addresses  => [{
+            building_number => '100',
+            street          => 'Main Street',
+            town            => 'London',
+            postcode        => 'SW4 6EH',
+            country         => 'GBR',
+        }
+    ],
+)->get;
+
+my $app3 = $onfido->applicant_create(
+    title      => 'Mr',
+    first_name => $test_client_2->first_name,
+    last_name  => $test_client_2->last_name,
+    email      => $test_client_2->email,
+    gender     => $test_client_2->gender,
     dob        => '1980-01-22',
     country    => 'GBR',
     addresses  => [{
@@ -259,6 +293,75 @@ subtest 'store & fetch report' => sub {
     lives_ok { $result = BOM::User::Onfido::get_all_onfido_reports($test_client->binary_user_id, $check->id) } "get report ok";
 
     is_deeply([sort keys %$result], [sort map { $_->id } @all_report], 'getting all reports ok');
+};
+
+subtest 'get filtered onfido entries' => sub {
+    lives_ok { BOM::User::Onfido::store_onfido_applicant($app3, $test_client_2->binary_user_id); } 'store app3 ';
+    my $check = $onfido->applicant_check(
+        applicant_id => $app3->id,
+        # We don't want Onfido to start emailing people
+        suppress_form_emails => 1,
+        # Used for reporting and filtering in the web interface
+        tags => ['tag1', 'tag2'],
+        # On v3 we need to specify the array of documents
+        document_ids => [$doc1->id],
+        # On v3 we need to specify the report names
+        report_names               => [qw/document facial_similarity_photo/],
+        suppress_from_email        => 0,
+        charge_applicant_for_check => 0,
+        status                     => 'complete',
+    )->get;
+    lives_ok { BOM::User::Onfido::store_onfido_check($app3->id, $check); } 'Storing onfido check should pass';
+    my @all_report = $check->reports->as_list->get;
+
+    for my $report (@all_report) {
+
+        $report->{breakdown}  = {};
+        $report->{properties} = {
+            "test"          => "test1",
+            "document_type" => "passport1"
+        };
+        lives_ok { BOM::User::Onfido::store_onfido_report($check, $report) } 'store report ok';
+    }
+    $check = $onfido->applicant_check(
+        applicant_id => $app3->id,
+        # We don't want Onfido to start emailing people
+        suppress_form_emails => 1,
+        # Used for reporting and filtering in the web interface
+        tags => ['tag1', 'tag2'],
+        # On v3 we need to specify the array of documents
+        document_ids => [$doc2->id],
+        # On v3 we need to specify the report names
+        report_names               => [qw/document facial_similarity_photo/],
+        suppress_from_email        => 0,
+        charge_applicant_for_check => 0,
+        status                     => 'complete',
+    )->get;
+    lives_ok { BOM::User::Onfido::store_onfido_check($app3->id, $check); } 'Storing onfido check should pass';
+    @all_report = $check->reports->as_list->get;
+
+    for my $report (@all_report) {
+
+        $report->{breakdown}  = {};
+        $report->{properties} = {
+            "test"          => "test2",
+            "document_type" => "passport2"
+        };
+        lives_ok { BOM::User::Onfido::store_onfido_report($check, $report) } 'store report ok';
+    }
+    cmp_deeply $test_user_2->get_onfido_user_reports(),
+        {
+        "passport1" => {
+            "test"          => "test1",
+            "document_type" => "passport1"
+        },
+        "passport2" => {
+            "test"          => "test2",
+            "document_type" => "passport2"
+        }
+        },
+        'get_onfido_user_reports should return a hashref';
+
 };
 
 subtest 'limits per user' => sub {
@@ -1430,7 +1533,7 @@ subtest 'PDF status' => sub {
 
     # add more checks
 
-    for my $i (1 .. $limit) {
+    for my $i (1 .. $limit - 2) {
         my $obj_check = $onfido->applicant_check(
             applicant_id => $app1->id,
             # We don't want Onfido to start emailing people

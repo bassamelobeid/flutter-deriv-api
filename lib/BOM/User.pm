@@ -2203,6 +2203,31 @@ sub migrate_loginid {
     return 1;
 }
 
+=head2 get_onfido_user_reports
+
+Migrates a trading account to wallet flow by populating information in users.loginid table 
+and linking trading account to the wallet account.
+
+=cut
+
+sub get_onfido_user_reports {
+    my ($self) = @_;
+
+    my %doc_type_hash;
+    my ($result) = $self->dbic->run(
+        fixup => sub {
+            return $_->selectall_arrayref('select * from users.get_onfido_documents_properties(?)', {Slice => {}}, $self->{id});
+        });
+
+    foreach my $hash (@$result) {
+        $hash = decode_json($hash->{"properties"});
+        next unless $hash->{'document_type'};
+        my $doc_type = $hash->{'document_type'};
+        $doc_type_hash{$doc_type} = $hash;
+    }
+    return {%doc_type_hash};
+}
+
 =head2 get_trading_platform_loginids
 
 Get all the recorded loginids for the given trading platform.

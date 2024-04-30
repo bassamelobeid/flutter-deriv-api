@@ -75,8 +75,8 @@ $mock_lc->mock('skip_authentication', sub { 0 });
 
 $client_mx->set_authentication_and_status('ID_DOCUMENT', 'test');
 
-is($client_mx->is_verification_required(), 0, 'authentication is not required if age verified and fully auth');
-is($client_mx->update_mifir_id_concat(),   0, 'mifir id is not set for Broker code is not MF');
+is($client_mx->is_verification_required(), 0,     'authentication is not required if age verified and fully auth');
+is($client_mx->mifir_id,                   undef, 'mifir id is not set');
 
 $mock_lc->unmock_all;
 $client_mx->status->clear_age_verification;
@@ -179,20 +179,60 @@ subtest 'update mifir id' => sub {
     )->add_client($client);
 
     is(defined($client->mifir_id), "", 'mifir id is not set');
-    $client->update_mifir_id_concat();
+    $client->update_mifir_id();
     ok($client->mifir_id, 'mifir id is set');
     is($client->mifir_id, 'AT19780623BRAD#PITT#', 'mifir id is correct');
     $client->first_name('Grad');
-    $client->update_mifir_id_concat();
+    $client->update_mifir_id();
     is($client->mifir_id, 'AT19780623BRAD#PITT#', 'mifir id is not changed if already set');
     $client->mifir_id(undef);
     $client->citizen('us');
-    $client->update_mifir_id_concat();
+    $client->update_mifir_id();
     is($client->mifir_id, undef, 'mifir id is not changed if citizenship is not part of eu set');
     $client->citizen('za');
     $client->set_authentication_and_status('ID_DOCUMENT', 'test');
     is($client->mifir_id, 'ZA19780623GRAD#PITT#', 'mifir id is set for diel  if not already set');
+    $client->mifir_id(undef);
+    $client->citizen('sk');
+    $user_mock->mock(
+        'get_onfido_user_reports',
+        sub {
+            return {
+                'national_identity_card' => {
+                    "gender"           => "Female",
+                    "document_type"    => "national_identity_card",
+                    "document_numbers" => [{
+                            "type"  => "document_number",
+                            "value" => "HU111111"
+                        },
+                        {
+                            "type"  => "personal_number",
+                            "value" => "1111111111"
+                        }]}};
+        });
+    $client->set_authentication_and_status('ID_DOCUMENT', 'test');
+    is($client->mifir_id, 'SK1111111111', 'mifir id is set for with document_number');
+    $client->mifir_id(undef);
+    $client->citizen('cy');
+    $user_mock->mock(
+        'get_onfido_user_reports',
+        sub {
+            return {
+                'passport' => {
+                    "gender"           => "Female",
+                    "document_type"    => "passport",
+                    "document_numbers" => [{
+                            "type"  => "document_number",
+                            "value" => "111111"
+                        },
+                        {
+                            "type"  => "personal_number",
+                            "value" => "1111111111"
+                        }]}};
+        });
+    $client->set_authentication_and_status('ID_DOCUMENT', 'test');
+    is($client->mifir_id, 'CY111111', 'mifir id is set for with personal_number');
     $client->citizen(undef);
-    is($client->update_mifir_id_concat(), 0, 'should return false if there is no citizenship');
+    is($client->update_mifir_id(), 0, 'should return false if there is no citizenship');
 };
 done_testing();

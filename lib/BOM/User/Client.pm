@@ -598,7 +598,7 @@ sub set_authentication_and_status {
         $self->set_authentication('ID_DOCUMENT', {status => 'pass'}, $staff);
         BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $self->loginid});
         $address_verified = 1;
-        $self->update_mifir_id_concat();
+        $self->update_mifir_id();
     }
 
     if ($client_authentication eq 'ID_ONLINE') {
@@ -655,26 +655,71 @@ sub _notify_cs_about_authenticated_mf {
 
 }
 
-=head2 update_mifir_id_concat
+=head2 update_mifir_id
 
 Update MIFIR ID for a client using concat
 
 =cut
 
-sub update_mifir_id_concat {
+sub update_mifir_id {
     my $self = shift;
     return 0 unless $self->citizen;
-    return 0 unless $self->broker_code eq 'MF';
-    my $mifir_concat = request()->brand->countries_instance->is_mifir_concat_allowed($self->citizen);
-    if ($mifir_concat and not defined($self->mifir_id)) {
-        $self->mifir_id(
-            mifir_concat({
-                    cc         => $self->citizen,
-                    date       => $self->date_of_birth,
-                    first_name => $self->first_name,
-                    last_name  => $self->last_name,
-                }));
-        $self->save;
+    my @allowed_broker_codes = request()->brand->countries_instance->allowed_mifir_broker_codes($self->citizen);
+    return 0 unless grep { $_ eq $self->broker_code } @allowed_broker_codes;
+    return 1 if $self->mifir_id;
+    my @allowed_mifir_methods = request()->brand->countries_instance->allowed_mifir_methods($self->citizen);
+    my %allowed_methods       = (
+        'concat' => \&_update_mifir_id_concat,
+        'onfido' => \&_update_mifir_id_onfido
+    );
+
+    foreach my $method (@allowed_mifir_methods) {
+        return 1 if $allowed_methods{$method}->($self);
+    }
+    BOM::Config::Redis::redis_replicated_write()->sadd("mifir_id_update_failed", $self->loginid);
+    return 0;
+}
+
+=head2 _update_mifir_id_concat
+
+Update MIFIR ID for a client using concat
+
+=cut
+
+sub _update_mifir_id_concat {
+    my $self = shift;
+    $self->mifir_id(
+        mifir_concat({
+                cc         => $self->citizen,
+                date       => $self->date_of_birth,
+                first_name => $self->first_name,
+                last_name  => $self->last_name,
+            }));
+    $self->save;
+    return 1;
+}
+
+=head2 _update_mifir_id_onfido
+
+Update MIFIR ID for a client using concat
+
+=cut
+
+sub _update_mifir_id_onfido {
+    my $self                  = shift;
+    my $onfido_document_types = request()->brand->countries_instance->onfido_mifir_document_types($self->citizen);
+    my $documents             = $self->user->get_onfido_user_reports();
+    for my $doc_type (@$onfido_document_types) {
+        my $document = $documents->{$doc_type->{'document_type'}};
+        if ($document) {
+            for my $document_number (@{$document->{'document_numbers'}}) {
+                if ($document_number->{'type'} eq $doc_type->{'field_name'}) {
+                    $self->mifir_id(uc($self->citizen . $document_number->{'value'}));
+                    $self->save;
+                    return 1;
+                }
+            }
+        }
     }
 }
 
