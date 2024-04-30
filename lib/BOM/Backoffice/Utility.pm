@@ -13,7 +13,12 @@ use Time::Piece;
 
 use Exporter qw(import export_to_level);
 
-our @EXPORT_OK = qw(get_languages master_live_server_error is_valid_time is_valid_date_time get_payout_currencies);
+our @EXPORT_OK =
+    qw(update_self_exclusion_time_settings get_languages master_live_server_error is_valid_time is_valid_date_time get_payout_currencies);
+use constant exclude_date => {
+    "EXCLUDEUNTIL" => "exclude_until",
+    "TIMEOUTUNTIL" => "timeout_until"
+};
 
 sub get_languages {
     return {
@@ -213,6 +218,31 @@ Return all the groups we have in backoffice with write access
 
 sub write_access_groups {
     return qw(AntiFraud CSWrite Compliance P2PWrite Payments QuantsWrite DealingWrite AccountsAdmin AccountsLimited);
+}
+
+=head2 update_self_exclusion_time_settings
+
+update self_exlusion settings for date type fields
+
+=cut
+
+sub update_self_exclusion_time_settings {
+    my ($client) = @_;
+    for my $field (qw(EXCLUDEUNTIL TIMEOUTUNTIL)) {
+        my $date_until  = request()->param($field) || undef;
+        my $field_param = exclude_date->{$field};
+
+        for my $sibling_id ($client->user->bom_real_loginids) {
+
+            my $sibling = BOM::User::Client::get_instance({'loginid' => $sibling_id});
+
+            $date_until = Date::Utility->new($date_until)->epoch if $date_until;
+
+            $sibling->set_exclusion->$field_param($date_until);
+
+            $sibling->save;
+        }
+    }
 }
 
 1;

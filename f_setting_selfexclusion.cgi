@@ -12,6 +12,7 @@ use BOM::Database::ClientDB;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
+use BOM::Backoffice::Utility;
 use Date::Utility;
 
 use f_brokerincludeall;
@@ -160,7 +161,7 @@ if (request()->http_method eq 'POST') {
     $form_exclusion_until_date = Date::Utility->new($form_exclusion_until_date) if $form_exclusion_until_date;
 
     my $exclude_until_date;
-
+    BOM::Backoffice::Utility::update_self_exclusion_time_settings($client);
     if ($client->get_self_exclusion->exclude_until) {
         $exclude_until_date = Date::Utility->new($client->get_self_exclusion->exclude_until);
     }

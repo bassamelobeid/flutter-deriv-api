@@ -10,6 +10,7 @@ use HTML::Entities;
 use BOM::User::Client;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Utility;
 use BOM::Backoffice::Form;
 
 use f_brokerincludeall;
@@ -137,6 +138,7 @@ if ($self_exclusion) {
         $audit->{max_deposit_30day}->{changed_stamp},
         $audit->{max_deposit_30day}->{prev_value},
         $audit->{max_deposit_30day}->{changed_by}) if $deposit_limit_enabled and exists $audit->{max_deposit_30day};
+    update_self_exclusion_time_settings($client);
 
     if ($info) {
         $page .=
