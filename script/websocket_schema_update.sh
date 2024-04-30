@@ -2,25 +2,27 @@
 # This script formats and copies the JSON schema files used for the API Playground
 # from binary-websocket-api to the respective repositories. 
 # 07/2021 we are currently copying for two sites api.deriv.com and developers.binary.com.
-# developers.binary.com will soon be retired and redirect to api.deriv.com.
+# note that developers.binary.com is retired and redirect to api.deriv.com, but is
+# still used for internal purposes.
 
 # developers.binary.com - repo is binary-com/websockets
-# api.deriv.com - repo is binary-com/deriv-api-docs
+# api.deriv.com - repo is deriv-com/deriv-api-docs
 
-# To test this fork binary-com/websockets and binary-com/deriv-api-docs then supply your git username as an argument
+# To test this fork binary-com/websockets and deriv-com/deriv-api-docs then supply your git username as an argument
 
-GITORG=${1:-binary-com}
+GITORG_BINARY=${1:-binary-com}
+GITORG_DERIV=${1:-deriv-com}
 set -ex
 
 rm -rf /tmp/websockets
 rm -rf /tmp/deriv-websockets
 
-git clone git@github.com:${GITORG}/websockets /tmp/websockets
-git clone git@github.com:${GITORG}/deriv-api-docs /tmp/deriv-websockets
+git clone git@github.com:${GITORG_BINARY}/websockets /tmp/websockets
+git clone git@github.com:${GITORG_DERIV}/deriv-api-docs /tmp/deriv-websockets
 
 cd /tmp/websockets
-git config --local user.email "sysadmin@binary.com"
-git config --local user.name "CircleCI"
+git config --local user.email "sysadmin@deriv.com"
+git config --local user.name "Github Workflow"
 
 rsync /home/git/regentmarkets/binary-websocket-api/config /tmp/websockets/ --delete -a
 
@@ -45,7 +47,7 @@ tee /dev/stderr <<<"$X" | grep -q 'nothing to commit'
 git push origin HEAD
 
 
-# repeat the push for api.deriv.com 
+# repeat the push for api.deriv.com
 cd /tmp/deriv-websockets
 git diff | cat
 git add -A
