@@ -268,6 +268,7 @@ sub _build_stop_out {
 
     my $args = $self->_order->{stop_out};
     # override basis_spot if it's next tick execution
+    # DO NOT modifty order_date because it will affect contract sell/update.
     $args->{basis_spot} = $self->basis_spot if $self->next_tick_execution;
 
     return BOM::Product::LimitOrder->new({%$args, %{$self->_limit_order_args('stop_out')}});
@@ -370,15 +371,17 @@ sub _build_hit_tick {
         $end_time = $self->date_pricing->is_before($self->date_expiry) ? $self->date_pricing->epoch : $self->date_expiry->epoch;
     }
 
-    my $stop_out_tick =
-        $self->_get_breaching_tick($self->stop_out->order_date->epoch, $end_time, {$self->stop_out_side => $self->stop_out->barrier_value});
+    my $stop_out_tick = $self->_get_breaching_tick(max($self->stop_out->order_date->epoch, $self->entry_tick->epoch),
+        $end_time, {$self->stop_out_side => $self->stop_out->barrier_value});
     my $take_profit_tick =
         ($self->take_profit and defined $self->take_profit->barrier_value)
-        ? $self->_get_breaching_tick($self->take_profit->order_date->epoch, $end_time, {$self->take_profit_side => $self->take_profit->barrier_value})
+        ? $self->_get_breaching_tick(max($self->take_profit->order_date->epoch, $self->entry_tick->epoch),
+        $end_time, {$self->take_profit_side => $self->take_profit->barrier_value})
         : undef;
     my $stop_loss_tick =
         ($self->stop_loss and defined $self->stop_loss->barrier_value)
-        ? $self->_get_breaching_tick($self->stop_loss->order_date->epoch, $end_time, {$self->stop_loss_side => $self->stop_loss->barrier_value})
+        ? $self->_get_breaching_tick(max($self->stop_loss->order_date->epoch, $self->entry_tick->epoch),
+        $end_time, {$self->stop_loss_side => $self->stop_loss->barrier_value})
         : undef;
 
     # there's a small chance both stop out and take profit can happen (mostly due to delay in sell)

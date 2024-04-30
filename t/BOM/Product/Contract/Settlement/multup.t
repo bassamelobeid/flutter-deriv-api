@@ -712,4 +712,88 @@ subtest 'past date expiry' => sub {
     is $c->value + 0,        $c->bid_price + 0,     'value == bid price';
 };
 
+subtest 'stop out tick at contract start time' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [89,  $now->epoch,     'R_100'],
+        [100, $now->epoch + 1, 'R_100'],
+        [89,  $now->epoch + 2, 'R_100']);
+    my $args = {
+        date_start   => $now,
+        date_pricing => $now->epoch + 1,
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $now->epoch,
+                basis_spot   => '89.00',
+            },
+        },
+        next_tick_execution => 1,
+    };
+
+    my $c = produce_contract($args);
+    note "stop out barrier is defined at " . $c->stop_out->barrier_value;
+    is $c->basis_spot,                  100,         'basis spot reset to entry spot';
+    is $c->stop_out->order_date->epoch, $now->epoch, 'stop out order date unchanged';
+    ok !$c->is_expired, 'not expired';
+    ok !$c->hit_tick,   'no hit tick';
+
+    $args->{date_pricing} = $now->epoch + 2;
+    $c = produce_contract($args);
+    ok $c->is_expired, 'expired';
+    ok $c->hit_tick,   'hit tick';
+    is $c->hit_tick->quote, 89,              'hit at 89';
+    is $c->hit_tick->epoch, $now->epoch + 2, 'hit at next tick after entry tick';
+};
+
+subtest 'take profit tick at contract start time' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [110, $now->epoch,     'R_100'],
+        [100, $now->epoch + 1, 'R_100'],
+        [102, $now->epoch + 2, 'R_100']);
+    my $args = {
+        date_start   => $now,
+        date_pricing => $now->epoch + 1,
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $now->epoch,
+                basis_spot   => '89.00',
+            },
+            take_profit => {
+                order_type   => 'take_profit',
+                order_amount => 10,
+                order_date   => $now->epoch,
+                basis_spot   => '89.00',
+            },
+        },
+        next_tick_execution => 1,
+    };
+
+    my $c = produce_contract($args);
+    note "take profit barrier is defined at " . $c->take_profit->barrier_value;
+    is $c->basis_spot, 100, 'basis spot reset to entry spot';
+    ok !$c->is_expired, 'not expired';
+    ok !$c->hit_tick,   'no hit tick';
+
+    $args->{date_pricing} = $now->epoch + 2;
+    $c = produce_contract($args);
+    ok $c->is_expired, 'expired';
+    ok $c->hit_tick,   'hit tick';
+    is $c->hit_tick->quote, 102,             'hit at 102';
+    is $c->hit_tick->epoch, $now->epoch + 2, 'hit at next tick after entry tick';
+};
 done_testing();
