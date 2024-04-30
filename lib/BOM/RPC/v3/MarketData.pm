@@ -13,19 +13,16 @@ This package is a collection of utility functions that implement remote procedur
 use strict;
 use warnings;
 
-use List::Util qw(uniq);
-use List::Util qw(any);
-use Date::Utility;
 use BOM::Config::Chronicle;
-
-use LandingCompany::Registry;
-use ExchangeRates::CurrencyConverter qw(convert_currency);
-use BOM::User::Client;
 use BOM::Config::CurrencyConfig;
-
-use BOM::RPC::Registry '-dsl';
 use BOM::Platform::Context qw (localize request);
+use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
+use BOM::User::Client;
+use Date::Utility;
+use ExchangeRates::CurrencyConverter qw(convert_currency get_current_spread);
+use LandingCompany::Registry;
+use List::Util qw(uniq);
 
 use constant {
     EE_LOOKUP_PERIOD => 14,    #14 days in the future, 14 days in the past
@@ -58,6 +55,7 @@ rpc exchange_rates => sub {
 
     my $base_currency   = $params->{args}->{base_currency};
     my $target_currency = $params->{args}->{target_currency};
+    my $include_spread  = $params->{args}->{include_spread};
     my $is_subscribed   = $params->{args}->{subscribe};
     my $country_code    = request()->country_code;
 
@@ -75,9 +73,43 @@ rpc exchange_rates => sub {
     # if both base and local currencies are available, user wants a specific exchange rate
     my %rates_hash;
     if ($base_currency and $target_currency) {
-        ## no critic (RequireCheckingReturnValueOfEval)
-        eval { $rates_hash{$target_currency} = convert_currency(1, $base_currency, $target_currency) };
-    } elsif ($base_currency && $is_subscribed && !$target_currency) {
+        my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($target_currency);
+        return BOM::RPC::v3::Utility::create_error($invalid_currency) if $invalid_currency;
+
+        if ($include_spread) {
+            my ($spread, $is_inverted) = get_current_spread($base_currency, $target_currency);
+            my ($spot_rate, $ask_rate, $bid_rate);
+
+            # If spread is undefined, it's safe to assign it to 0
+            $spread //= 0;
+
+            ## no critic (RequireCheckingReturnValueOfEval)
+            eval { $spot_rate = convert_currency(1, $base_currency, $target_currency); };
+            $rates_hash{$target_currency}{spot_rate} = $spot_rate;
+
+            if (defined $spot_rate) {
+                # If the spread belongs to the inverted currency pair,
+                # we compute the ask and bid rates using its reciprocal rates.
+                if ($is_inverted) {
+                    my $reciprocal_spot_rate = convert_currency(1, $target_currency, $base_currency);
+                    my $reciprocal_ask_rate  = $reciprocal_spot_rate + ($spread / 2);
+                    my $reciprocal_bid_rate  = $reciprocal_spot_rate - ($spread / 2);
+                    $ask_rate = 1 / $reciprocal_bid_rate;
+                    $bid_rate = 1 / $reciprocal_ask_rate;
+                } else {
+                    $ask_rate = $spot_rate + ($spread / 2);
+                    $bid_rate = $spot_rate - ($spread / 2);
+                }
+
+                $rates_hash{$target_currency}{ask_rate} = $ask_rate;
+                $rates_hash{$target_currency}{bid_rate} = $bid_rate;
+            }
+        } else {
+            ## no critic (RequireCheckingReturnValueOfEval)
+            eval { $rates_hash{$target_currency} = convert_currency(1, $base_currency, $target_currency); };
+        }
+
+    } elsif (($base_currency && $is_subscribed && !$target_currency) || ($include_spread && !$target_currency)) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'MissingRequiredParams',
             message_to_client => localize('Target currency is required.'),
@@ -85,6 +117,7 @@ rpc exchange_rates => sub {
     } else {
         foreach my $currency (uniq(keys %BOM::Config::CurrencyConfig::ALL_CURRENCIES, LandingCompany::Registry::all_currencies())) {
             next if $currency eq $base_currency;
+
             ## no critic (RequireCheckingReturnValueOfEval)
             eval { $rates_hash{$currency} = convert_currency(1, $base_currency, $currency) };
         }

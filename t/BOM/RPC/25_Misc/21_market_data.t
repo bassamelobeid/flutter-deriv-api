@@ -3,35 +3,88 @@
 use strict;
 use warnings;
 
-use Test::More;
-use Test::Mojo;
-use Test::Exception;
-use Test::MockModule;
-use Test::Warnings;
-use Format::Util::Numbers qw(formatnumber);
-
-use Quant::Framework::EconomicEventCalendar;
-use BOM::Test::Data::Utility::UnitTestMarketData;
-use Try::Tiny;
 use BOM::Config::Chronicle;
+use BOM::Test::Data::Utility::UnitTestMarketData;
 use BOM::Test::RPC::QueueClient;
 use BOM::RPC::v3::MarketData;
 use Email::Stuffer::TestLinks;
+use Format::Util::Numbers qw(roundnear);
+use Quant::Framework::EconomicEventCalendar;
+use Test::Deep;
+use Test::Exception;
+use Test::MockModule;
+use Test::Mojo;
+use Test::More;
+use Test::Warnings;
+use Try::Tiny;
 
-my $c = BOM::Test::RPC::QueueClient->new();
+my $base_currency = 'USD';
+my $c             = BOM::Test::RPC::QueueClient->new();
+my $result;
 
-my ($base, $result);
 subtest 'invalid currency' => sub {
-    $base = 'INVALID';
-    $c->call_ok('exchange_rates', {args => {base_currency => $base}})
-        ->has_no_system_error->has_error->error_code_is('InvalidCurrency', 'Returns correct error code if currency is invalid')
-        ->error_message_is('The provided currency INVALID is invalid.', 'Returns correct error message if currency is invalid');
+    my $invalid_currency = 'INVALID';
+    my %error            = (
+        'error_code'    => 'InvalidCurrency',
+        'error_message' => 'The provided currency INVALID is invalid.'
+    );
+
+    $c->call_ok('exchange_rates', {args => {base_currency => $invalid_currency}})
+        ->has_no_system_error->has_error->error_code_is($error{error_code}, 'Returns correct error code if base currency is invalid')
+        ->error_message_is($error{error_message}, 'Returns correct error message if base currency is invalid');
+
+    $c->call_ok(
+        'exchange_rates',
+        {
+            args => {
+                base_currency   => $base_currency,
+                target_currency => $invalid_currency,
+            }}
+    )->has_no_system_error->has_error->error_code_is($error{error_code}, 'Returns correct error code if target currency is invalid')
+        ->error_message_is($error{error_message}, 'Returns correct error message if target currency is invalid');
+};
+
+subtest 'missing required params' => sub {
+    my %error = (
+        'error_code'    => 'MissingRequiredParams',
+        'error_message' => 'Target currency is required.'
+    );
+
+    $result = $c->call_ok(
+        'exchange_rates',
+        {
+            args => {
+                base_currency => $base_currency,
+                subscribe     => 1
+            }})
+        ->has_no_system_error->has_error->error_code_is($error{error_code},
+        'Returns correct error code if target currency is not passed when subscribing')
+        ->error_message_is($error{error_message}, 'Returns correct error message if target currency is not passed when subscribing');
+
+    $c->call_ok(
+        'exchange_rates',
+        {
+            args => {
+                base_currency  => $base_currency,
+                include_spread => 1
+            }})
+        ->has_no_system_error->has_error->error_code_is($error{error_code},
+        'Returns correct error code if target currency is not passed when spread is requested')
+        ->error_message_is($error{error_message}, 'Returns correct error message if target currency is not passed when spread is requested');
 };
 
 subtest 'exchange rates' => sub {
-    $base = 'USD';
-    my $target_currency          = 'BTC';
+    my $target_currency = 'BTC';
+    my %spread_dataset  = ('exchange_rates_spread::BTC/USD' => '2.424');
+    my %expected_result = (
+        "spot_rate" => roundnear(0.000001, 1 / 5500),
+        "ask_rate"  => roundnear(0.000001, 1 / (5500 - (2.424 / 2))),
+        "bid_rate"  => roundnear(0.000001, 1 / (5500 + (2.424 / 2))),
+    );
+
     my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+    my $mock_redis               = Test::MockModule->new('RedisDB');
+
     $mocked_CurrencyConverter->mock(
         'in_usd',
         sub {
@@ -48,19 +101,19 @@ subtest 'exchange rates' => sub {
             $from_currency eq 'USD' and return 1 * $price;
             return 0;
         });
+    $mock_redis->mock('get', sub { my ($self, $key) = @_; return $spread_dataset{$key} });
 
     $result = $c->call_ok(
         'exchange_rates',
         {
             args => {
-                base_currency   => $base,
+                base_currency   => $base_currency,
                 target_currency => $target_currency,
-                subscribe       => 1
             }})->has_no_system_error->has_no_error->result;
 
-    ok $result->{date},                                               "Date tag";
-    ok $result->{base_currency} && $base eq $result->{base_currency}, "Base currency";
-    ok $result->{rates},                                              "Rates tag";
+    ok $result->{date},                                                        "Date tag";
+    ok $result->{base_currency} && $base_currency eq $result->{base_currency}, "Base currency";
+    ok $result->{rates},                                                       "Rates tag";
     ok(exists $result->{rates}->{$target_currency}, "Target currency rate is provided");
     is(scalar keys %{$result->{rates}}, 1, "Only 1 exchange rate provided");
     cmp_ok($result->{rates}->{BTC}, '==', 1 / 5500, 'correct rate for BTC');
@@ -69,67 +122,41 @@ subtest 'exchange rates' => sub {
         'exchange_rates',
         {
             args => {
-                base_currency   => $base,
+                base_currency   => $base_currency,
                 target_currency => $target_currency,
+                include_spread  => 1
             }})->has_no_system_error->has_no_error->result;
 
-    ok $result->{date},                                               "Date tag";
-    ok $result->{base_currency} && $base eq $result->{base_currency}, "Base currency";
-    ok $result->{rates},                                              "Rates tag";
+    ok $result->{date},                                                        "Date tag";
+    ok $result->{base_currency} && $base_currency eq $result->{base_currency}, "Base currency";
+    ok $result->{rates}->{$target_currency}->{spot_rate},                      "Spot rate tag";
+    ok $result->{rates}->{$target_currency}->{ask_rate},                       "Ask rate tag";
+    ok $result->{rates}->{$target_currency}->{bid_rate},                       "Bid rate tag";
     ok(exists $result->{rates}->{$target_currency}, "Target currency rate is provided");
+
     is(scalar keys %{$result->{rates}}, 1, "Only 1 exchange rate provided");
-    cmp_ok($result->{rates}->{BTC}, '==', 1 / 5500, 'correct rate for BTC');
+    cmp_ok(roundnear(0.000001, $result->{rates}->{BTC}->{spot_rate}), '==', $expected_result{spot_rate}, 'correct spot rate for USD_BTC');
+    cmp_ok(roundnear(0.000001, $result->{rates}->{BTC}->{ask_rate}),  '==', $expected_result{ask_rate},  'correct ask rate for USD_BTC');
+    cmp_ok(roundnear(0.000001, $result->{rates}->{BTC}->{bid_rate}),  '==', $expected_result{bid_rate},  'correct bid rate for USD_BTC');
 
-    $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}})->has_no_system_error->has_no_error->result;
+    $result = $c->call_ok('exchange_rates', {args => {base_currency => $base_currency}})->has_no_system_error->has_no_error->result;
 
-    ok $result->{date},                                               "Date tag";
-    ok $result->{base_currency} && $base eq $result->{base_currency}, "Base currency";
-    ok $result->{rates},                                              "Rates tag";
+    ok $result->{date},                                                        "Date tag";
+    ok $result->{base_currency} && $base_currency eq $result->{base_currency}, "Base currency";
+    ok $result->{rates},                                                       "Rates tag";
     is(scalar keys %{$result->{rates}}, 7, "All 7 exchange rates are provided");
 
     my @expected_currencies = ('AUD', 'BTC', 'ETH', 'EUR', 'GBP', 'JPY', 'LTC');
     my @actual_currencies   = sort (keys %{$result->{rates}});
 
     is_deeply(\@actual_currencies, \@expected_currencies, 'Currency pairs with USD');
-    cmp_ok($result->{rates}->{AUD}, '==', 1 / 0.9,    'correct rate for AUD');
-    cmp_ok($result->{rates}->{BTC}, '==', 1 / 5500,   'correct rate for BTC');
-    cmp_ok($result->{rates}->{ETH}, '==', 1 / 500,    'correct rate for ETH');
-    cmp_ok($result->{rates}->{EUR}, '==', 1 / 1.18,   'correct rate for EUR');
-    cmp_ok($result->{rates}->{GBP}, '==', 1 / 1.3333, 'correct rate for GBP');
-    cmp_ok($result->{rates}->{JPY}, '==', 1 / 0.0089, 'correct rate for JPY');
-    cmp_ok($result->{rates}->{LTC}, '==', 1 / 120,    'correct rate for LTC');
-
-    $result = $c->call_ok(
-        'exchange_rates',
-        {
-            args => {
-                base_currency => $base,
-                subscribe     => 1
-            }}
-    )->has_no_system_error->has_error->error_code_is('MissingRequiredParams', 'Returns correct error code if target currency arg is not passed')
-        ->error_message_is('Target currency is required.');
-
-    $result = $c->call_ok(
-        'exchange_rates',
-        {
-            args => {
-                base_currency   => $base,
-                target_currency => 'INVALID',
-                subscribe       => 1
-            }}
-    )->has_no_system_error->has_error->error_code_is('ExchangeRatesNotAvailable', 'Returns correct error code if currency pair does not exist')
-        ->error_message_is('Exchange rates are not currently available.');
-
-    $result = $c->call_ok(
-        'exchange_rates',
-        {
-            args => {
-                base_currency   => $base,
-                target_currency => 'INVALID',
-            }}
-    )->has_no_system_error->has_error->error_code_is('ExchangeRatesNotAvailable', 'Returns correct error code if currency pair does not exist')
-        ->error_message_is('Exchange rates are not currently available.');
-
+    cmp_ok($result->{rates}->{AUD}, '==', 1 / 0.9,    'correct rate for USD_AUD');
+    cmp_ok($result->{rates}->{BTC}, '==', 1 / 5500,   'correct rate for USD_BTC');
+    cmp_ok($result->{rates}->{ETH}, '==', 1 / 500,    'correct rate for USD_ETH');
+    cmp_ok($result->{rates}->{EUR}, '==', 1 / 1.18,   'correct rate for USD_EUR');
+    cmp_ok($result->{rates}->{GBP}, '==', 1 / 1.3333, 'correct rate for USD_GBP');
+    cmp_ok($result->{rates}->{JPY}, '==', 1 / 0.0089, 'correct rate for USD_JPY');
+    cmp_ok($result->{rates}->{LTC}, '==', 1 / 120,    'correct rate for USD_LTC');
 };
 
 subtest 'economic_calendar' => sub {

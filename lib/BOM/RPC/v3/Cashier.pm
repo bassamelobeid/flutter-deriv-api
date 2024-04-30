@@ -1763,6 +1763,7 @@ rpc transfer_between_accounts => sub {
             from_client   => $client_from,
             to_client     => $client_to,
             country       => $client_from->residence,
+            apply_spread  => 1,
             );
     } catch ($err) {
         log_exception();
