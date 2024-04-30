@@ -14,24 +14,21 @@ use strict;
 use warnings;
 no indirect;
 
-use Date::Utility;
-use ExchangeRates::CurrencyConverter qw( convert_currency );
-use Format::Util::Numbers            qw( get_min_unit financialrounding );
-use List::Util                       qw( any none );
-use Scalar::Util                     qw( looks_like_number );
-use Syntax::Keyword::Try;
-
-use LandingCompany::Registry;
-
 use BOM::Config::CurrencyConfig;
-use BOM::Platform::Utility qw(error_map create_error);
-use Log::Any               qw( $log );
-use BOM::Platform::Event::Emitter;
-use BOM::Database::ClientDB;
-
 use BOM::Config::Runtime;
+use BOM::Database::ClientDB;
 use BOM::Platform::Context qw( request localize );
+use BOM::Platform::Event::Emitter;
+use BOM::Platform::Utility qw(error_map create_error);
 use BOM::User::Client;
+use Date::Utility;
+use ExchangeRates::CurrencyConverter qw(convert_currency convert_currency_with_spread);
+use Format::Util::Numbers            qw( get_min_unit financialrounding );
+use LandingCompany::Registry;
+use List::Util   qw( any none );
+use Log::Any     qw( $log );
+use Scalar::Util qw( looks_like_number );
+use Syntax::Keyword::Try;
 
 # custom error codes to override the default error code CashierForwardError
 use constant OVERRIDE_ERROR_CODES => qw(
@@ -254,13 +251,16 @@ Takes for the following named args:
 
 =item * C<to_currency> - The currency of the receiving account
 
-=item * C<country> - to determine country specific fees, optional
-
 =item * C<from_client> - A L<BOM::User::Client> instance of the sending client
 Optional: only required to ascertain if client qualifies for PA fee exemption
 
 =item * C<to_client> - A L<BOM::User::Client> instance of the receiving client
 Optional: only required to ascertain if client qualifies for PA fee exemption
+
+=item * C<country> - to determine country specific fees, optional
+
+=item * C<apply_spread> - A boolean flag that applies spread on the currency exchange.
+Optional: Only applied in internal transfers.
 
 =back
 
@@ -287,19 +287,23 @@ B<Note>: If a minimum fee was enforced then this will not reflect the actual fee
 sub calculate_to_amount_with_fees {
     my %args = @_;
 
-    my ($amount, $from_currency, $to_currency, $fm_client, $to_client, $country) =
-        @args{qw(amount from_currency to_currency from_client to_client country)};
+    my ($amount, $from_currency, $to_currency, $fm_client, $to_client, $country, $apply_spread) =
+        @args{qw(amount from_currency to_currency from_client to_client country apply_spread)};
 
     my $rate_expiry = BOM::Config::CurrencyConfig::rate_expiry($from_currency, $to_currency);
 
     return ($amount, 0, 0, 0, 0) if $from_currency eq $to_currency;
 
     # Fee exemption for transfers between an authorised payment agent account and another account under that user.
-    return (convert_currency($amount, $from_currency, $to_currency, $rate_expiry), 0, 0, 0, 0)
-        if (defined $fm_client
+    if (   defined $fm_client
         && defined $to_client
         && $fm_client->is_same_user_as($to_client)
-        && ($fm_client->is_pa_and_authenticated() || $to_client->is_pa_and_authenticated()));
+        && ($fm_client->is_pa_and_authenticated() || $to_client->is_pa_and_authenticated()))
+    {
+        return $apply_spread
+            ? (convert_currency_with_spread($amount, $from_currency, $to_currency, $rate_expiry), 0, 0, 0, 0)
+            : (convert_currency($amount, $from_currency, $to_currency, $rate_expiry), 0, 0, 0, 0);
+    }
 
     my $currency_config = BOM::Config::CurrencyConfig::transfer_between_accounts_fees($country);
     my $fee_percent     = $currency_config->{$from_currency}->{$to_currency};
@@ -319,7 +323,10 @@ sub calculate_to_amount_with_fees {
         $fee_applied = $fee_calculated_by_percent;
     }
 
-    $amount = convert_currency(($amount - $fee_applied), $from_currency, $to_currency, $rate_expiry);
+    $amount =
+        $apply_spread
+        ? convert_currency_with_spread(($amount - $fee_applied), $from_currency, $to_currency, $rate_expiry)
+        : convert_currency(($amount - $fee_applied), $from_currency, $to_currency, $rate_expiry);
 
     die "The amount ($amount) is below the minimum allowed amount (" . get_min_unit($to_currency) . ") for $to_currency."
         if $amount < get_min_unit($to_currency);

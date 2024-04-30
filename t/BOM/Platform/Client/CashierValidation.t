@@ -1,27 +1,25 @@
 use strict;
 use warnings;
 
+use BOM::Config::CurrencyConfig;
+use BOM::Config::Runtime;
+use BOM::Platform::Client::CashierValidation;
+use BOM::Platform::Context qw(localize);
+use BOM::Platform::Utility qw(error_map);
+use BOM::Rules::Engine;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::User::Client;
 use Date::Utility;
-use Test::More;
+use ExchangeRates::CurrencyConverter;
+use Format::Util::Numbers qw/get_min_unit roundcommon/;
+use List::Util;
+use Test::Deep;
 use Test::Exception;
 use Test::Fatal;
 use Test::MockModule;
 use Test::MockObject;
+use Test::More;
 use Test::Warnings;
-use Test::Deep;
-
-use ExchangeRates::CurrencyConverter;
-use Format::Util::Numbers qw/get_min_unit roundcommon/;
-use List::Util;
-
-use BOM::User::Client;
-use BOM::Config::CurrencyConfig;
-use BOM::Config::Runtime;
-use BOM::Platform::Client::CashierValidation;
-use BOM::Rules::Engine;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Utility                     qw(error_map);
-use BOM::Platform::Context                     qw(localize);
 
 my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $mlt_client, $mf_client, $mx_client, $rule_engine) = ('CashierForwardError');
 
@@ -518,8 +516,10 @@ subtest 'Calculate to amount and fees' => sub {
     my $mock_forex  = Test::MockModule->new('BOM::Platform::Client::CashierValidation', no_auto => 1);
     my $mock_fees   = Test::MockModule->new('BOM::Config::CurrencyConfig',              no_auto => 1);
     my $mock_client = Test::MockModule->new('BOM::User::Client',                        no_auto => 1);
-    my $fees_country;
+    my $mock_spread = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+    my ($fees_country, $from_currency, $to_currency, $mock_rate);
 
+    $mock_forex->mock(convert_currency => sub { (shift) * $mock_rate });
     $mock_fees->mock(
         transfer_between_accounts_fees => sub {
             $fees_country = shift;
@@ -537,7 +537,26 @@ subtest 'Calculate to amount and fees' => sub {
                 }
 
             };
-        });
+        },
+    );
+    $mock_spread->mock(
+        get_current_spread => sub {
+            ($from_currency, $to_currency) = @_;
+
+            my $spread = {
+                'USD' => {
+                    'UST' => 0.4,
+                    'BTC' => 0.000008,
+                    'EUR' => 0.31
+                }};
+
+            return
+                  $spread->{$from_currency}->{$to_currency} ? ($spread->{$from_currency}->{$to_currency}, 0)
+                : $spread->{$to_currency}->{$from_currency} ? ($spread->{$to_currency}->{$from_currency}, 1)
+                :                                             undef;
+        },
+        convert_currency => sub { (shift) * $mock_rate },
+    );
 
     my @tests = ({
             name => 'Fiat to stable crypto',
@@ -547,12 +566,16 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'UST',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 1,
+            mock_spread    => 0.4,
+            is_inverted    => 0,
             fee_applied    => 0.1,
             fee_percent    => 0.1,
             fee_min        => get_min_unit('USD'),
             fee_calculated => 0.1,
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'Stable coin to fiat',
@@ -562,12 +585,16 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'USD',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 1,
+            mock_spread    => 0.4,
+            is_inverted    => 1,
             fee_applied    => 0.2,
             fee_percent    => 0.2,
             fee_min        => get_min_unit('UST'),
             fee_calculated => 0.2,
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'Minimum fee enforcement (lower than threshold)',
@@ -577,12 +604,16 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'USD',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 1,
+            mock_spread    => 0.4,
+            is_inverted    => 1,
             fee_applied    => get_min_unit('UST'),
             fee_percent    => 0.2,
             fee_min        => get_min_unit('UST'),
             fee_calculated => 0.002,
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'Minimum fee enforcement 2 (lower than threshold)',
@@ -592,12 +623,16 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'UST',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 1,
+            mock_spread    => 0.4,
+            is_inverted    => 0,
             fee_applied    => get_min_unit('USD'),
             fee_percent    => 0.1,
             fee_min        => get_min_unit('USD'),
             fee_calculated => 0.00104,
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'Fiat to crypto',
@@ -607,12 +642,16 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'BTC',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 7000,
+            mock_spread    => 0.000008,
+            is_inverted    => 0,
             fee_applied    => 0.3,
             fee_percent    => 0.3,
             fee_min        => get_min_unit('USD'),
             fee_calculated => 0.3,
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'Fiat to crypto - converted amount below minimum',
@@ -622,9 +661,13 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'BTC',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
-            mock_rate => 7000,
-            error     => 'The amount \(0\) is below the minimum allowed amount \(0.00000001\) for BTC',
+            mock_rate     => 7000,
+            mock_spread   => 0.000008,
+            is_inverted   => 0,
+            transfer_type => 'internal transfer',
+            error         => 'The amount \(0\) is below the minimum allowed amount \(0.00000001\) for BTC',
         },
         {
             name => 'Crypto to fiat',
@@ -634,12 +677,16 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'USD',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 1 / 7000,
+            mock_spread    => 0.000008,
+            is_inverted    => 1,
             fee_applied    => 0.4,
             fee_percent    => 0.4,
             fee_min        => get_min_unit('BTC'),
             fee_calculated => 0.4,
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'MF (USD) to MLT (USD)',
@@ -693,13 +740,17 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'BTC',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 7000,
+            mock_spread    => 0.000008,
+            is_inverted    => 0,
             fee_applied    => 0,
             fee_percent    => 0,
             fee_min        => 0,
             fee_calculated => 0,
-            auth_loginids  => [$cr_client->loginid]
+            auth_loginids  => [$cr_client->loginid],
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'PA fee exemption #2 (clients under same user, receiever is PA',
@@ -709,13 +760,17 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'USD',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 1 / 7000,
+            mock_spread    => 0.000008,
+            is_inverted    => 1,
             fee_applied    => 0,
             fee_percent    => 0,
             fee_min        => 0,
             fee_calculated => 0,
-            auth_loginids  => [$cr_client_2->loginid]
+            auth_loginids  => [$cr_client_2->loginid],
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'PA fee exemption #3 (clients under same user, both are PA',
@@ -725,13 +780,17 @@ subtest 'Calculate to amount and fees' => sub {
                 to_currency   => 'BTC',
                 from_client   => $cr_client,
                 to_client     => $cr_client_2,
+                apply_spread  => 1,
             },
             mock_rate      => 7000,
+            mock_spread    => 0.000008,
+            is_inverted    => 0,
             fee_applied    => 0,
             fee_percent    => 0,
             fee_min        => 0,
             fee_calculated => 0,
-            auth_loginids  => [$cr_client->loginid, $cr_client_2->loginid]
+            auth_loginids  => [$cr_client->loginid, $cr_client_2->loginid],
+            transfer_type  => 'internal transfer',
         },
         {
             name => 'No fee',
@@ -739,14 +798,13 @@ subtest 'Calculate to amount and fees' => sub {
                 amount        => 100,
                 from_currency => 'BTC',
                 to_currency   => 'ETH',
+                apply_spread  => 1,
             },
-            mock_rate => 1,
-            error     => 'No transfer fee found for BTC-ETH',
+            mock_rate     => 1,
+            transfer_type => 'internal transfer',
+            error         => 'No transfer fee found for BTC-ETH',
         },
     );
-
-    my $mock_rate;
-    $mock_forex->mock(convert_currency => sub { (shift) * $mock_rate });
 
     my @auth_loginids;
     $mock_client->mock(
@@ -765,12 +823,22 @@ subtest 'Calculate to amount and fees' => sub {
                 my ($amount, $fee_applied, $fee_percent, $fee_min, $fee_calculated) =
                     BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($test->{args}->%*);
 
-                my $expected_amount = ($test->{args}{amount} - $test->{fee_applied}) * $mock_rate;
-                cmp_ok $amount,                                '==', $expected_amount,                               'Correct amount sent';
-                cmp_ok $fee_applied,                           '==', $test->{fee_applied},                           'Correct fee percent';
-                cmp_ok $fee_percent,                           '==', $test->{fee_percent},                           'Correct fee percent';
-                cmp_ok $fee_min,                               '==', $test->{fee_min},                               'Correct fee percent';
-                cmp_ok roundcommon(0.000001, $fee_calculated), '==', roundcommon(0.000001, $test->{fee_calculated}), 'Correct calculated fee';
+                my $expected_amount;
+                if (exists $test->{transfer_type} && $test->{transfer_type} eq 'internal transfer') {
+                    $expected_amount =
+                        $test->{is_inverted}
+                        ? ($test->{args}{amount} - $test->{fee_applied}) * (1 / ($mock_rate + ($test->{mock_spread} / 2)))
+                        : ($test->{args}{amount} - $test->{fee_applied}) * ($mock_rate - ($test->{mock_spread} / 2));
+                } else {
+                    $expected_amount = ($test->{args}{amount} - $test->{fee_applied}) * $mock_rate;
+                }
+
+                cmp_ok $amount,      '==', $expected_amount,     'Correct amount sent';
+                cmp_ok $fee_applied, '==', $test->{fee_applied}, 'Correct amount of fee applied';
+                cmp_ok $fee_percent, '==', $test->{fee_percent}, 'Correct fee percent';
+                cmp_ok $fee_min,     '==', $test->{fee_min},     'Correct minimum fee';
+                cmp_ok roundcommon(0.000001, $fee_calculated), '==', roundcommon(0.000001, $test->{fee_calculated}),
+                    'Correct effective calculated fee';
                 is $fees_country, $test->{args}{country}, 'country passed to transfer_between_accounts_fees()';
             };
 
