@@ -22,6 +22,10 @@ p2p_archived_ad:
         exists: 1
       adverts:
         exists: 1
+verify_change_email:
+  - verify_change_email:
+      verification_uri:
+        exists: 1
 mt5_signup:
   - mt5_signup_demo:
       brand: deriv

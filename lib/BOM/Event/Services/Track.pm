@@ -295,6 +295,9 @@ my @TRANSACTIONAL_EVENTS = qw(
     p2p_archived_ad
     mt5_inactive_account_closed
     crypto_withdrawal_sent_email
+    professional_status_requested
+    confirm_change_email
+    verify_change_email
     mt5_signup
     trading_platform_account_created
 );

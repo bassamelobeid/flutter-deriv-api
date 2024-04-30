@@ -6227,6 +6227,42 @@ subtest 'verify_change_email' => sub {
     is scalar @track_args,            7,                               'OK event';
 };
 
+subtest 'verify_change_email - transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name       => 'Aname',
+            email            => 'any_email@anywhere.com',
+            language         => 'EN',
+            verification_uri => 'dummy.com'
+        }};
+    undef @track_args;
+    undef @transactional_args;
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_change_email};
+    my $result  = $handler->($args)->get;
+    ok $result, 'OK result';
+    my ($customer, %args_got) = @track_args;
+    is $args_got{event},                  'track_verify_change_email',     "event event name";
+    is $args_got{properties}{first_name}, $args->{properties}{first_name}, "event properties";
+    is scalar @track_args,                7,                               'OK event';
+    ok @transactional_args, 'CIO transactional is invoked';
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+};
+
 subtest 'confirm_change_email' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -6254,6 +6290,42 @@ subtest 'confirm_change_email' => sub {
     is $args{event},                  'confirm_change_email',          "event name";
     is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
     is scalar @track_args,            7,                               'OK event';
+};
+
+subtest 'confirm_change_email - transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name => 'Aname',
+            email      => 'any_email@anywhere.com',
+            language   => 'EN',
+        }};
+    undef @track_args;
+    undef @transactional_args;
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{confirm_change_email};
+    my $result  = $handler->($args)->get;
+    ok $result, 'OK result';
+    my ($customer, %args_got) = @track_args;
+    is $args_got{event},                  'track_confirm_change_email',    "event name";
+    is $args_got{properties}{first_name}, $args->{properties}{first_name}, "event properties";
+    is scalar @track_args,                7,                               'OK event';
+    ok @transactional_args, 'CIO transactional is invoked';
+
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
+
 };
 
 subtest 'crypto_withdrawal_email event' => sub {
