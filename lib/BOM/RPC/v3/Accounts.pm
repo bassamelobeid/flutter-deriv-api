@@ -1989,6 +1989,7 @@ Returns undef.
 sub _send_change_email_verification_email {
     my ($client, $event, %event_args) = @_;
     die unless defined $event;
+    my $ttl = $event_args{time_to_expire_in_min} // '';
     BOM::Platform::Event::Emitter::emit(
         $event,
         {
@@ -1996,10 +1997,10 @@ sub _send_change_email_verification_email {
             properties => {
                 first_name            => $client->first_name,
                 email                 => $event_args{email},
-                code                  => $event_args{code}                  // '',
-                verification_uri      => $event_args{uri}                   // '',
-                live_chat_url         => $event_args{live_chat_url}         // '',
-                time_to_expire_in_min => $event_args{time_to_expire_in_min} // '',
+                code                  => $event_args{code}          // '',
+                verification_uri      => $event_args{uri}           // '',
+                live_chat_url         => $event_args{live_chat_url} // '',
+                time_to_expire_in_min => "$ttl",
                 social_signup         => $event_args{social_signup} ? 1 : 0,
             }});
     return undef;
