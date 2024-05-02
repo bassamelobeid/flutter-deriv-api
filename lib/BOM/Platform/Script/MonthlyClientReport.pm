@@ -63,7 +63,7 @@ sub run {
     };
 
     printf "Generating reports for date: %s...\n", $date;
-    for my $broker (@{$params{brokers} // [qw/ MLT MX MF CR /]}) {
+    for my $broker (@{$params{brokers} // [qw/ MLT MX MF CR CRW MFW /]}) {
         for my $crdr (@{$params{report} // [qw/ debit credit /]}) {
             printf "%5s / %6s: %s.. ", $broker, $crdr, scalar(localtime);
             my $rows = go
