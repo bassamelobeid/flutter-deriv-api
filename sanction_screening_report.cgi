@@ -21,6 +21,7 @@ my $sanction_data = BOM::Backoffice::CustomSanctionScreening::retrieve_custom_sa
 my $data = $sanction_data->{data};
 
 if ($data) {
+    PrintContentType_excel(FILE_NAME);
     my $first_record = $data->[0];
     my @headers      = keys %$first_record;
 
@@ -30,7 +31,6 @@ if ($data) {
         my @values = map { $row->{$_} } @headers;
         $csv->print(\*STDOUT, \@values);
     }
-    PrintContentType_excel(FILE_NAME);
 } else {
     PrintContentType();
     code_exit_BO("No custom client list uploaded!!!");

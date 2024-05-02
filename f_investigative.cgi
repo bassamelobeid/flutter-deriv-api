@@ -75,11 +75,16 @@ if (BOM::Backoffice::FileUpload::is_post_request($cgi)) {
     if ($error_message) {
         code_exit_BO($error_message);
     }
-    my $csv_data = BOM::Backoffice::CustomSanctionScreening::read_custom_sanction_csv_file($cgi);
-    if (BOM::Backoffice::CustomSanctionScreening::save_custom_sanction_data_to_redis($csv_data)) {
-        print "<p class=\"error\">Error saving file!!</p>";
+    my ($csv_data, $csv_error) = BOM::Backoffice::CustomSanctionScreening::read_custom_sanction_csv_file($cgi);
+    if ($csv_error) {
+        print "<p class=\"error\">Error: $csv_error</p>";
     } else {
-        print "<p class=\"success\">File saved successfully</p>";
+        my $save_success = BOM::Backoffice::CustomSanctionScreening::save_custom_sanction_data_to_redis($csv_data);
+        if ($save_success) {
+            print "<p class=\"success\">File saved successfully.</p>";
+        } else {
+            print "<p class=\"error\">Error saving file!!</p>";
+        }
     }
 }
 
