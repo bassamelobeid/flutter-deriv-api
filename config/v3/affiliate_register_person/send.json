@@ -51,7 +51,7 @@
         "address_state": {
             "description": "Possible value receive from `states_list` call.",
             "type": "string",
-            "pattern": "^[\\p{L}\\p{Nd}\\s'.,-]{0,100}$"
+            "pattern": "^[\\s\\S]*"
         },
         "address_street": {
             "description": "Within 70 characters, with no leading whitespaces and may contain letters/numbers and/or any of following characters '.,:;()@#/-",
@@ -140,7 +140,7 @@
         "phone": {
             "description": "Registered phone number of the affiliate. Starting with `+` followed by 8-35 digits, allowing hyphens or space.",
             "type": "string",
-            "pattern": "^\\+((-|\\s)*[0-9]){8,35}$",
+            "pattern": "^\\+?((-|\\s)*[0-9]){8,35}$",
             "sensitive": 1
         },
         "phone_code": {
@@ -204,7 +204,7 @@
         "whatsapp_number": {
             "description": "Whatsapp phone number of the affiliate. Starting with `+` followed by 8-35 digits, allowing hyphens or space.",
             "type": "string",
-            "pattern": "^\\+((-|\\s)*[0-9]){8,35}$",
+            "pattern": "^\\+?((-|\\s)*[0-9]){8,35}$",
             "sensitive": 1
         },
         "whatsapp_number_phoneCode": {
