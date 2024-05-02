@@ -371,7 +371,7 @@ jobs:
       - benchmark_SD
       - Pricing-Engine-Tests
       - dependent
-    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: regentmarkets/github-actions/ci-test-status@master
