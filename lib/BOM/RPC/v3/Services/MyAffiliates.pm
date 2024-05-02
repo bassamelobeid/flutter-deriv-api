@@ -68,6 +68,14 @@ sub affiliate_add_general {
         PARAM_age            => $args->{over_18_declaration} eq 1 ? "over_eighteen" : "not_eighteen"
     };
 
+    # Removing special characters like , ;''"":&
+    # Leaving the non-latin character
+    # Example:
+    # London, Great Britain => London
+    # île de Man stays île de Man
+
+    $fields->{PARAM_state} =~ s/[^\p{L}\p{N}\s]//g;
+
     if ($args->{type_of_account} eq BUSINESS_ACC_TYPE) {
         if (!(defined($args->{company_name}) && defined($args->{company_registration_number}))) {
             return {

@@ -314,4 +314,47 @@ subtest 'new affiliate account with password MyAffiliate successful' => sub {
     my $result = $rpc_ct->call_ok('affiliate_register_person', $params)->has_no_system_error->result;
 };
 
+subtest 'new affiliate account with address_state with a special character MyAffiliate successful' => sub {
+    $mock_myAffiliate_server->unmock_all();
+    $mock_myAffiliate_server->redefine(
+        'register_affiliate',
+        sub {
+            return Future->done(1);
+        });
+
+    my $email = 'new_aff' . rand(999) . '@deriv.com';
+
+    $params->{args} = {
+        affiliate_register_person => 1,
+        address_city              => "nouaceur",
+        address_postcode          => "123452",
+        address_state             => "London, Great Britian",
+        address_street            => "someplace",
+        bta                       => 12345,
+        citizenship               => "id",
+        country                   => "id",
+        commission_plan           => 2,
+        company_name              => "XYZltd",
+        currency                  => "USD",
+        date_of_birth             => "1992-01-02",
+        email                     => $email,
+        first_name                => "affiliatefirstname",
+        last_name                 => "affiliatelastname",
+        non_pep_declaration       => 1,
+        over_18_declaration       => 1,
+        password                  => "Abc@1234",
+        phone_code                => 971,
+        phone                     => "+971541234",
+        tnc_accepted              => 1,
+        tnc_affiliate_accepted    => 1,
+        type_of_account           => 1,
+        user_name                 => "MyAffUser" . rand(999),
+        whatsapp_number_phoneCode => 971,
+        whatsapp_number           => "+971541233",
+        website_url               => "www.xyz.com"
+    };
+
+    my $result = $rpc_ct->call_ok('affiliate_register_person', $params)->has_no_system_error->result;
+};
+
 done_testing();
