@@ -53,7 +53,7 @@ jobs:
     secrets: inherit
   ci_test_status:
     needs: [syntax_diff_unit, dependent, core]
-    if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check the status of required tests
