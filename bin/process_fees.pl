@@ -184,6 +184,7 @@ read_csv_row_and_callback(
             $row{transaction_id} = $transaction_id if $is_transaction_id_required;
 
             if ($error) {
+                $log->errorf('Error on %s - %s', $login_id, $error);
                 $client_account_table .= construct_row_line(%row, error => $error);
                 push @invalid_lines, qq[<a href="#ln$line_number">Invalid line $line_number</a> : ] . encode_entities($error);
                 return;
@@ -216,6 +217,7 @@ read_csv_row_and_callback(
                     $log->errorf('%s failed - %s', $login_id, $err);
                 };
                 if ($err) {
+                    $log->errorf('Failed on %s - %s', $login_id, $err);
                     $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
                     return;
                 } elsif ($action eq 'credit' and $payment_type !~ /^affiliate_reward|arbitrary_markup|free_gift$/) {
