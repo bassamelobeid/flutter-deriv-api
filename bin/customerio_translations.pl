@@ -31,8 +31,4 @@ push @tokens, split(/\s*?,\s*?/, $ENV{CUSTOMERIO_TOKENS_REAL}) if $ENV{CUSTOMERI
 
 die "token is required\n" unless @tokens;
 
-for my $i (1 .. @tokens) {
-    $log->debugf('processing token %i of %i', $i, scalar @tokens);
-    my $cio = BOM::Backoffice::Script::CustomerIOTranslation->new(token => $tokens[$i - 1]);
-    $cio->update_campaigns_and_snippets($filter_campaign);
-}
+BOM::Backoffice::Script::CustomerIOTranslation::update_all_envs_and_email_warnings(\@tokens, $filter_campaign);

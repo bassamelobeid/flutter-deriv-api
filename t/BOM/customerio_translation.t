@@ -258,15 +258,14 @@ subtest 'generate snippet' => sub {
         loc_text     => 'hello [_1]',
         orig_text    => 'hello {{event.name}}',
         placeholders => ['x']};
-
-    is $cio->generate_snippet($item, 'my campaign'), 'hello {{event.name}}', 'original text used when localize dies';
+    is(($cio->generate_snippet($item, 'my campaign'))[0], 'hello {{event.name}}', 'original text used when localize dies');
 
     $mock_cio->mock(localize => sub { BOM::Platform::Context::request->language . ' ' . shift });
 
     $item->{loc_text} = 'hello';
 
     is(
-        $cio->generate_snippet($item, 'my campaign'),
+        ($cio->generate_snippet($item, 'my campaign'))[0],
         q/{% if event.lang == "CN" %}
 CN hello
 {% elsif event.lang == "FR" %}
