@@ -48,6 +48,3 @@ mt5_signup:
         contains:
           - financial
           - financial_stp
-trading_platform_account_created:
-  - svg_all_derivx_signup:
-      platform: dxtrade

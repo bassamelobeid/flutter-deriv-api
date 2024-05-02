@@ -299,7 +299,6 @@ my @TRANSACTIONAL_EVENTS = qw(
     confirm_change_email
     verify_change_email
     mt5_signup
-    trading_platform_account_created
 );
 
 my $loop = IO::Async::Loop->new;
