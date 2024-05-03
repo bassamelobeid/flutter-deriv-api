@@ -5,12 +5,14 @@ use warnings;
 
 no indirect;
 
+use BOM::MyAffiliates;
 use BOM::Config;
 use BOM::TradingPlatform;
 use BOM::Database::CommissionDB;
 use BOM::User::Client;
 use WebService::MyAffiliates;
 use Log::Any qw($log);
+use Syntax::Keyword::Try;
 
 =head2 ctrader_account_created
 
@@ -39,6 +41,7 @@ sub ctrader_account_created {
     die 'Account type needed'   unless $params->{account_type};
 
     my $myaffiliates_config = BOM::Config::third_party()->{myaffiliates};
+    my $my_affiliates       = BOM::MyAffiliates->new();
     my $aff_webservice      = WebService::MyAffiliates->new(
         user    => $myaffiliates_config->{user},
         pass    => $myaffiliates_config->{pass},
@@ -60,16 +63,27 @@ sub ctrader_account_created {
             my $aff_id         = $affiliate->{external_affiliate_id};
             my $affiliate_user = $aff_webservice->get_user($aff_id);
             if ($affiliate_user->{STATUS} eq 'accepted') {
-                my $client = BOM::User::Client->new({loginid => $params->{loginid}});
-                my $ct     = BOM::TradingPlatform->new(
-                    platform => 'ctrader',
-                    client   => $client
-                );
 
-                $ct->register_partnerid({
-                        partnerid    => $params->{binary_user_id},
-                        ctid_userid  => $params->{ctid_userid},
-                        account_type => $params->{account_type}});
+                try {
+                    my $token = $my_affiliates->get_token({affiliate_id => $aff_id});
+                    if ($token) {
+                        my $client = BOM::User::Client->new({loginid => $params->{loginid}});
+                        my $ct     = BOM::TradingPlatform->new(
+                            platform => 'ctrader',
+                            client   => $client
+                        );
+
+                        $ct->register_partnerid({
+                                partnerid    => $token,
+                                ctid_userid  => $params->{ctid_userid},
+                                account_type => $params->{account_type}});
+                    } else {
+                        $log->errorf("Null MyAffiliate token for affiliate - %s.", $aff_id);
+                    }
+                } catch ($error) {
+                    $log->errorf("Failed to get MyAffiliate token for affiliate - %s due to : \n%s", $aff_id, $error);
+                }
+
             }
         }
     }

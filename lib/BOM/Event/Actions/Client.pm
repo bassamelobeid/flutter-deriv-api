@@ -4536,7 +4536,7 @@ sub link_affiliate_client {
         if ($platform eq 'dxtrade') {
             $redis_write = BOM::Config::Redis::redis_cfds_write();
         } elsif ($platform eq 'ctrader') {
-            $redis_write = BOM::Config::Redis::redis_ctrader_bridge_write();
+            $redis_write = BOM::Config::Redis::redis_ctrader_write();
         }
         $redis_write->execute('xadd', $stream, '*', 'platform', $platform, 'account_id', $loginid) if $redis_write;
     } catch ($e) {
