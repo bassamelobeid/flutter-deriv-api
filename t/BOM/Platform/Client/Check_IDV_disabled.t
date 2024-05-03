@@ -94,6 +94,28 @@ subtest 'has idv' => sub {
 };
 
 subtest 'idv_configuration' => sub {
+    subtest 'force check_for_update' => sub {
+        my $forced;
+        my $app_config_mock = Test::MockModule->new(ref(BOM::Config::Runtime->instance->app_config));
+        $app_config_mock->mock(
+            'check_for_update',
+            sub {
+                my ($self, $force) = @_;
+                $forced //= $force;
+                return $app_config_mock->original('check_for_update')->(@_);
+            });
+
+        $forced = undef;
+        BOM::Platform::Utility::idv_configuration();
+        ok !$forced, 'by default, force argument is not sent to check_for_update';
+
+        $forced = undef;
+        BOM::Platform::Utility::idv_configuration({force_update => 1});
+        ok $forced, 'when provided, force argument is sent to check_for_update';
+
+        $app_config_mock->unmock_all();
+    };
+
     subtest 'bogus config' => sub {
         my $countries_mock = Test::MockModule->new('Brands::Countries');
         my $idv_config     = {};

@@ -407,9 +407,24 @@ sub has_idv {
 
 Builds an IDV configuration bundle.
 
+Takes the following parameter as a HASH ref:
+
+=over 4
+
+=item * C<force> - (optional) flag to override the Dynamic Settings `check_for_update` cooldown.
+
+=back
+
 =cut
 
 sub idv_configuration {
+    my $args = shift;
+    $args = {} unless ref($args) eq 'HASH';
+
+    my $force      = $args->{force_update} // 0;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update($force);
+
     my $brand_countries_obj = Brands::Countries->new;
     my $idv_countries       = $brand_countries_obj->get_idv_config() // {};
     my $additional_config   = BOM::Config::identity_verification()   // {};
