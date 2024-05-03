@@ -40,27 +40,34 @@ sub nodejs_hello {
 
 Handler for the `send_idv_configuration` event.
 
-Calls IdentityVerification::send_idv_configuration sub and sends a DD metric.
+Calls IdentityVerification::send_idv_configuration.
+
+Takes the following parameter as a HASH ref:
 
 =over 4
 
-=item * C<provider> - the provider that should be disabled.
-
-=item * C<ttl> - specified expire time of the redis key.
+=item * C<force> - (optional) flag to override the Dynamic Settings `check_for_update` cooldown.
 
 =back
 
 =cut
 
 async sub send_idv_configuration {
-    await BOM::Event::Actions::Client::IdentityVerification::send_idv_configuration();
+    my $args = shift;
+    BOM::Event::Actions::Client::IdentityVerification::send_idv_configuration($args);
 }
 
 =head2 idv_configuration_disable_provider
 
 Handler for the `idv_configuration_disable_provider` event.
 
-Calls IdentityVerification::disable_provider and sends a DD metric.
+Calls IdentityVerification::disable_provider.
+
+=over 4
+
+=item * C<provider> - the provider that should be disabled.
+
+=back
 
 =cut
 
@@ -73,7 +80,13 @@ async sub idv_configuration_disable_provider {
 
 Handler for the `idv_configuration_enable_provider` event.
 
-Calls IdentityVerification::enable_provider and sends a DD metric.
+Calls IdentityVerification::enable_provider.
+
+=over 4
+
+=item * C<provider> - the provider that should be enabled.
+
+=back
 
 =cut
 

@@ -116,7 +116,7 @@ subtest 'unimplemented provider' => sub {
         type            => 'national_id'
     });
     $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-    is $idv_event_handler->($args)->get, undef, 'The process jumped out due to unimplemented provider';
+    is $idv_event_handler->($args)->get, 1, 'the event processed without error, unimplemented providers are handled by identity_verification service';
 
     $mock_idv_event->unmock_all;
 };
@@ -133,7 +133,7 @@ subtest 'disabled document type from a specific provider' => sub {
     });
 
     $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-    is $idv_event_handler->($args)->get, undef, 'The process jumped out due to disabled document type';
+    is $idv_event_handler->($args)->get, 1, 'the event processed without error, disabled document types are handled by identity_verification service';
 
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw( )]);
 };

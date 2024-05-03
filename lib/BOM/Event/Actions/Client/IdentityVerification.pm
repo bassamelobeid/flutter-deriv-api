@@ -142,10 +142,6 @@ async sub verify_identity {
 
     die 'No standby document found, IDV request skipped.' unless $document;
 
-    my $provider = _has_provider($document->{issuing_country}, $document->{document_type});
-
-    return undef unless $provider;
-
     my @common_datadog_tags = (sprintf('document_type:%s', $document->{document_type}), sprintf('country:%s', $document->{issuing_country}));
 
     try {
@@ -192,8 +188,7 @@ async sub verify_identity {
                 messages    => [IDV_MESSAGES->{UNAVAILABLE_MICROSERVICE}],
             });
 
-            $log->errorf('An error occurred while triggering IDV for document %s associated by client %s via provider %s due to %s',
-                $document->{id}, $loginid, $provider, $e);
+            $log->errorf('An error occurred while triggering IDV for document %s associated by client %s due to %s', $document->{id}, $loginid, $e);
         }
 
         exception_logged();
@@ -966,12 +961,21 @@ sub response_hash_destructuring {
 
 =head2 send_idv_configuration
 
-Send encoded IDV configuration bundle.
+Send IDV configuration bundle and send a DD metric.
+
+Takes the following parameter as a HASH ref:
+
+=over 4
+
+=item * C<force> - (optional) flag to override the Dynamic Settings `check_for_update` cooldown.
+
+=back
 
 =cut
 
 async sub send_idv_configuration {
-    my $config = BOM::Platform::Utility::idv_configuration();
+    my $args   = shift;
+    my $config = BOM::Platform::Utility::idv_configuration($args);
     BOM::Platform::Event::Emitter::emit('idv_configuration', $config);
     DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.configuration_bundle_sent');
     return;
@@ -979,7 +983,7 @@ async sub send_idv_configuration {
 
 =head2 disable_provider
 
-Disable an IDV provider as per configuration service request and send IDV configuration bundle.
+Disable an IDV provider as per configuration service request, send IDV configuration bundle and send a DD metric.
 
 The information is stored in a redis key.
 The presence of this key is checked when assessing for the availability of the service.
@@ -1014,13 +1018,13 @@ async sub disable_provider {
 
 =head2 enable_provider
 
-Enable an IDV provider as per configuration service request and send IDV configuration bundle.
+Enable an IDV provider as per configuration service request, send IDV configuration bundle and send a DD metric.
 
 The information stored in the redis key is deleted.
 
 =over 4
 
-=item * C<provider> - the provider that should be disabled.
+=item * C<provider> - the provider that should be enabled.
 
 =back
 

@@ -44,6 +44,16 @@ subtest 'send_idv_configuration' => sub {
             push @doggy_bag, shift;
         });
 
+    my $app_config_mock = Test::MockModule->new(ref(BOM::Config::Runtime->instance->app_config));
+    my $forced;
+    $app_config_mock->mock(
+        'check_for_update',
+        sub {
+            my ($self, $force) = @_;
+            $forced //= $force;
+            return $app_config_mock->original('check_for_update')->(@_);
+        });
+
     BOM::Event::Actions::External::send_idv_configuration->get;
     is exists($emissions->{idv_configuration}), 1, 'idv_configuration event emitted';
 
@@ -53,8 +63,26 @@ subtest 'send_idv_configuration' => sub {
 
     cmp_deeply [@doggy_bag], ['event.identity_verification.configuration_bundle_sent'], 'Expected dog bag';
 
+    ok !$forced, 'by default, force argument is not sent to check_for_update';
+
+    @doggy_bag = ();
+    $emissions = {};
+    $forced    = undef;
+
+    BOM::Event::Actions::External::send_idv_configuration({force_update => 1})->get;
+    is exists($emissions->{idv_configuration}), 1, 'idv_configuration event emitted';
+
+    my $config = BOM::Platform::Utility::idv_configuration();
+    my $sent   = $emissions->{idv_configuration};
+    cmp_deeply($sent, $config, 'Expected bundle sent.');
+
+    cmp_deeply [@doggy_bag], ['event.identity_verification.configuration_bundle_sent'], 'Expected dog bag';
+
+    ok $forced, 'when provided, force argument is sent to check_for_update';
+
     $mocked_emitter->unmock_all();
     $dog_mock->unmock_all();
+    $app_config_mock->unmock_all();
 };
 
 subtest 'idv_configuration_disable_provider' => sub {
